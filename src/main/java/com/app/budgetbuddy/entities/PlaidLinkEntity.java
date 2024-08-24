@@ -20,7 +20,7 @@ public class PlaidLinkEntity
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="id")
+    @JoinColumn(name="userid")
     private UserEntity user;
 
     @Column(name="access_token")
