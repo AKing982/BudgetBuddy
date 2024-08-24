@@ -54,6 +54,8 @@ jobs:
       run: export NODE_OPTIONS=--openssl-legacy-provider
     
     - name: Build and test React application
+      env:
+        CI: false
       run: |
         cd webapps
         npm ci
