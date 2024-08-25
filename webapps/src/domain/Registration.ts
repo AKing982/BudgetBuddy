@@ -16,6 +16,7 @@ class Registration {
         this.initialBalance = balance;
         this.currency = currency;
     }
+
 }
 
 export {}

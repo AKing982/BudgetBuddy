@@ -15,6 +15,8 @@ import {
     Button,
     Box,
     Divider,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
@@ -28,10 +30,56 @@ import CreditScoreIcon from '@mui/icons-material/CreditScore';
 import MainAppBar from "./MainAppBar";
 import DrawerMenu from "./DrawerMenu";
 import {useNavigate} from "react-router-dom";
+import RecentTransactionsTable from "./RecentTransactionsTable";
+import SpendingTracker from "./SpendingTracker";
+import AccountSummary from "./AccountSummary";
+import PaymentCharges from "./PaymentCharges";
+import Sidebar from "./Sidebar";
+
+
+const useDynamicSpacing = () => {
+    const theme = useTheme();
+    const isXs = useMediaQuery(theme.breakpoints.only('xs'));
+    const isSm = useMediaQuery(theme.breakpoints.only('sm'));
+    const isMd = useMediaQuery(theme.breakpoints.only('md'));
+    const isLg = useMediaQuery(theme.breakpoints.only('lg'));
+    const isXl = useMediaQuery(theme.breakpoints.only('xl'));
+
+    if (isXs) return 1;
+    if (isSm) return 1.5;
+    if (isMd) return 2;
+    if (isLg) return 1;
+    if (isXl) return 1;
+    return 2; // Default spacing
+};
 
 const DashboardPage: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
     const navigate = useNavigate();
+    const spacing = useDynamicSpacing();
+    const theme = useTheme();
+    const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+    const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
+    // const spacing = 2; // You can adjust this or use your dynamic spacing logic
+    // const tightSpacing = 1; // Adjust as needed
+    // const responsiveSpacing = isMdUp ? -120 : 0; // Adjust as needed
+    //
+
+
+    const tightSpacing = Math.max(-220, spacing - 200);
+
+    const getResponsiveSpacing = () => {
+        if(isLgUp){
+            return 20;
+        }
+        if(isMdUp){
+            return -80;
+        }
+        return 0;
+    }
+
+    const responsiveSpacing = getResponsiveSpacing();
+
 
     const handleDrawerToggle = () => {
         setDrawerOpen(!drawerOpen);
@@ -80,97 +128,100 @@ const DashboardPage: React.FC = () => {
         </Box>
     );
 
-
-
     return (
-        <>
-            <MainAppBar onMenuClick={handleDrawerToggle} />
-            <DrawerMenu open={drawerOpen} onClose={handleDrawerToggle}/>
-            <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-                <Grid container spacing={3}>
-                    {/* Main content */}
-                    <Grid item xs={12} md={8}>
-                        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                            <Typography variant="h4" component="h1" gutterBottom>
-                                Good afternoon, Alexander
-                            </Typography>
-                            <Typography variant="h6" gutterBottom>
-                                Current spend this month
-                            </Typography>
-                            <Typography variant="h3" component="p" gutterBottom>
-                                $1,634
-                            </Typography>
-                            {/* Placeholder for chart */}
-                            <Box sx={{ height: 300, bgcolor: 'lightgrey', my: 2 }} />
-                            <Typography variant="h6" gutterBottom>
-                                Recent Transactions
-                            </Typography>
-                            <List>
-                                {/* Sample transaction items */}
-                                {[
-                                    { date: '8/8', name: 'WinCo', amount: '$25.47' },
-                                    { date: '8/7', name: 'WinCo', amount: '$6.26' },
-                                    { date: '8/6', name: 'Questongas Questangas Questangas', amount: '$12.79' },
-                                ].map((transaction, index) => (
-                                    <ListItem key={index}>
-                                        <ListItemText
-                                            primary={transaction.name}
-                                            secondary={transaction.date}
-                                        />
-                                        <Typography>{transaction.amount}</Typography>
-                                    </ListItem>
-                                ))}
-                            </List>
-                            <Button variant="outlined">See more transactions</Button>
-                        </Paper>
+        <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
+            <Sidebar />
+            <Box sx={{ flexGrow: 1, p: spacing, ml: { md: responsiveSpacing } }}>
+                <Grid container spacing={2}>
+                    {/* Header */}
+                    <Grid item xs={2}>
+                        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: spacing }}>
+                            Good morning, Alexander
+                        </Typography>
                     </Grid>
 
-                    {/* Right sidebar */}
-                    <Grid item xs={12} md={4}>
-                        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                            <Typography variant="h6" gutterBottom>Accounts</Typography>
-                            <List>
-                                {[
-                                    { name: 'Checking', amount: '$168' },
-                                    { name: 'Credit Cards', amount: 'Add +' },
-                                    { name: 'Net Cash', amount: '$168' },
-                                    { name: 'Savings', amount: '$918' },
-                                    { name: 'Investments', amount: 'Add +' },
-                                ].map((account, index) => (
-                                    <ListItem key={index}>
-                                        <ListItemText primary={account.name} />
-                                        <Typography>{account.amount}</Typography>
-                                    </ListItem>
-                                ))}
-                            </List>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="h6" gutterBottom>Coming Up</Typography>
-                            <Typography variant="body2" gutterBottom>
-                                You have 3 recurring charges due within the next 7 days for $38.06.
-                            </Typography>
-                            {/* Calendar placeholder */}
-                            <Box sx={{ height: 100, bgcolor: 'lightgrey', my: 2 }} />
-                            <List>
-                                {[
-                                    { name: 'Hulu', amount: '$8.57', days: 2 },
-                                    { name: 'JetBrains', amount: '$14.48', days: 5 },
-                                    { name: 'YouTube Premium', amount: '$15.01', days: 6 },
-                                ].map((bill, index) => (
-                                    <ListItem key={index}>
-                                        <ListItemText
-                                            primary={bill.name}
-                                            secondary={`in ${bill.days} days`}
-                                        />
-                                        <Typography>{bill.amount}</Typography>
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Paper>
+                    {/* Main Content Area and Right Sidebar Container */}
+                    <Grid item xs={12}>
+                        <Grid container spacing={tightSpacing}>
+                            {/* Main Content Area */}
+                            <Grid item xs={12} md={8}>
+                                <Grid container spacing={spacing}>
+                                    {/* Expense Spending Tracker */}
+                                    <Grid item xs={12}>
+                                        <SpendingTracker />
+                                    </Grid>
+
+                                    {/* Transactions Table */}
+                                    <Grid item xs={12}>
+                                        <RecentTransactionsTable />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            {/* Right Sidebar */}
+                            <Grid item xs={12} md={4}>
+                                <Grid container spacing={spacing}>
+                                    <Grid item xs={12} md={isMdUp ? 12 : 6}>
+                                        <AccountSummary />
+                                    </Grid>
+                                    <Grid item xs={12} md={isMdUp ? 12 : 6}>
+                                        <PaymentCharges />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Grid>
                     </Grid>
                 </Grid>
-            </Container>
-        </>
+            </Box>
+        </Box>
     );
+
+    //
+    // return (
+    //     <Box sx={{bgcolor: '#F3F4F6', minHeight: '100vh', p: spacing }}>
+    //         <Grid container spacing={2} sx={{ ml: { md: responsiveSpacing } }}>
+    //             {/* Header */}
+    //             <Grid item xs={2}>
+    //                 <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: spacing }}>
+    //                     Good morning, Alexander
+    //                 </Typography>
+    //             </Grid>
+    //
+    //             {/* Main Content Area and Sidebar Container */}
+    //             <Grid item xs={12}>
+    //                 <Grid container spacing={tightSpacing}>
+    //                     {/* Main Content Area */}
+    //                     <Grid item xs={12} md={8}>
+    //                         <Grid container spacing={spacing}>
+    //                             {/* Expense Spending Tracker */}
+    //                             <Grid item xs={12}>
+    //                                 <SpendingTracker />
+    //                             </Grid>
+    //
+    //                             {/* Transactions Table */}
+    //                             <Grid item xs={12}>
+    //                                 <RecentTransactionsTable />
+    //                             </Grid>
+    //                         </Grid>
+    //                     </Grid>
+    //
+    //                     {/* Sidebar */}
+    //                     <Grid item xs={12} md={4}>
+    //                         <Grid container spacing={spacing}>
+    //                             <Grid item xs={12} md={isMdUp ? 12 : 6}>
+    //                                 <AccountSummary />
+    //                             </Grid>
+    //                             <Grid item xs={12} md={isMdUp ? 12 : 6}>
+    //                                 <PaymentCharges />
+    //                             </Grid>
+    //                         </Grid>
+    //                     </Grid>
+    //                 </Grid>
+    //             </Grid>
+    //         </Grid>
+    //     </Box>
+    // );
+
 };
 
 export default DashboardPage;
