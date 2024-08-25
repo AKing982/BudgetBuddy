@@ -6,7 +6,7 @@ import {
     Container,
     TextField,
     Typography,
-    Paper, Grid, Link, createTheme, ThemeProvider
+    Paper, Grid, Link, createTheme, ThemeProvider, CssBaseline
 } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 import {useNavigate} from "react-router-dom";
@@ -109,6 +109,7 @@ const LoginForm: React.FC = () => {
 
     return (
         <ThemeProvider theme={theme}>
+            <CssBaseline />
             <Container component="main" maxWidth="xs">
                 <Paper elevation={3} sx={{
                     marginTop: 8,
