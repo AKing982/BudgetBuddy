@@ -49,13 +49,27 @@ const SpendingTracker: React.FC = () => {
     const lastPeriodSpend = spendingData[0]?.amount || 0;
     const difference = currentSpend - lastPeriodSpend;
 
+    const handleSpentText = (period: PeriodType) : string => {
+        switch(period)
+        {
+            case "monthly":
+                return "Current spend this month";
+            case "daily":
+                return "Current spend this day";
+            case "weekly":
+                return "Current spend this week";
+            default:
+                throw new Error("Invalid period found: ", period);
+        }
+    }
+
     return (
         <Card sx={{ maxWidth: 1050, margin: 'auto', mt: 4 }}>
             <CardContent>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                     <Box>
                         <Typography variant="subtitle1">
-                            Current spend this {period}
+                            {handleSpentText(period)}
                         </Typography>
                         <Typography variant="h3" component="div">
                             ${currentSpend.toLocaleString()}

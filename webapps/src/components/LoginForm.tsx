@@ -1,5 +1,5 @@
 
-import React, { useState, FormEvent } from 'react';
+import React, {useState, FormEvent, useCallback, useRef} from 'react';
 import {
     Box,
     Button,
@@ -11,6 +11,9 @@ import {
 import { LockOutlined } from '@mui/icons-material';
 import {useNavigate} from "react-router-dom";
 import {authenticateUser, LoginCredentials} from "../api/LoginApiService";
+import {PlaidLinkOnSuccessMetadata} from "react-plaid-link";
+import PlaidService from "../services/PlaidService";
+import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
 
 
 interface LoginFormData {
@@ -65,6 +68,9 @@ const LoginForm: React.FC = () => {
         password: ''
     });
     const [formErrors, setFormErrors] = useState<FormErrors>({});
+    const [linkToken, setLinkToken] = useState<string | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const plaidLinkRef = useRef<PlaidLinkRef>(null);
 
     const navigate = useNavigate();
 
@@ -75,6 +81,7 @@ const LoginForm: React.FC = () => {
             [name]: value,
         }));
     };
+
 
     const validateForm = (): boolean => {
         const newErrors: FormErrors = {};
@@ -94,9 +101,18 @@ const LoginForm: React.FC = () => {
             };
             console.log('LoginData: ', loginData);
             const response = await authenticateUser(loginData);
+            if(response != null){
+                setIsAuthenticated(true);
+                const plaidService = PlaidService.getInstance();
+                // Fetch the link token
+                const response = await plaidService.createLinkToken();
+                if(response != null){
+                    setLinkToken(response);
+                    navigate('/dashboard');
+                }
+            }
             console.log('Response: ', response);
             // await new Promise(resolve => setTimeout(resolve, 3000));
-            navigate('/dashboard');
         }catch(err)
         {
             console.error(err);
@@ -106,6 +122,16 @@ const LoginForm: React.FC = () => {
     const handleRegister = () => {
         navigate('/register');
     }
+
+    const handlePlaidReady = useCallback(() => {
+        if(plaidLinkRef.current){
+            plaidLinkRef.current.open()
+        }
+    }, []);
+
+    const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
+        console.log('Plaid Connection Successful', publicToken, metadata)
+    }, []);
 
     return (
         <ThemeProvider theme={theme}>
@@ -120,7 +146,7 @@ const LoginForm: React.FC = () => {
                 }}>
                     <LockOutlined sx={{ m: 1, bgcolor: 'secondary.main', padding: 1, borderRadius: '50%', color: 'white' }} />
                     <Typography component="h1" variant="h5">
-                        Sign in to Budget App
+                        Sign in to Budget Buddy
                     </Typography>
                     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
                         <TextField
@@ -169,7 +195,15 @@ const LoginForm: React.FC = () => {
                             onClick={handleRegister}>
                             Register
                         </Button>
+                        {isAuthenticated && linkToken && (
+                            <PlaidLink
+                              linkToken={linkToken}
+                              onSuccess={handlePlaidSuccess}
+                              onConnect={handlePlaidReady}
+                              ref={plaidLinkRef}
+                              />
 
+                        )}
                     </Box>
                 </Paper>
             </Container>
