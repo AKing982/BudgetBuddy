@@ -1,16 +1,15 @@
 package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.services.PlaidLinkService;
-import com.plaid.client.model.ItemPublicTokenExchangeRequest;
-import com.plaid.client.model.ItemPublicTokenExchangeResponse;
-import com.plaid.client.model.LinkTokenCreateRequest;
-import com.plaid.client.model.LinkTokenCreateResponse;
+import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import retrofit2.Call;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Service
 public class PlaidLinkTokenProcessor extends AbstractPlaidManager
@@ -28,7 +27,13 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      * @return the created link token request
      */
     public LinkTokenCreateRequest createLinkTokenRequest(String clientUserId){
-        return null;
+        if(clientUserId.isEmpty()){
+            throw new IllegalArgumentException("Client user id cannot be empty");
+        }
+        return new LinkTokenCreateRequest()
+                .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
+                .products(Arrays.asList(Products.AUTH, Products.TRANSACTIONS))
+                .countryCodes(Arrays.asList(CountryCode.US));
     }
 
     /**
@@ -37,8 +42,13 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      * @param clientUserId the ID of the client user
      * @return the created link token response
      */
-    public LinkTokenCreateResponse createLinkToken(String clientUserId){
-        return null;
+    public LinkTokenCreateResponse createLinkToken(String clientUserId) throws IOException {
+        if(clientUserId.isEmpty()){
+            throw new IllegalArgumentException("Client user id cannot be empty");
+        }
+        LinkTokenCreateRequest linkTokenCreateRequest = createLinkTokenRequest(clientUserId);
+        Call<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest);
+        return linkTokenResponse.execute().body();
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
+import com.app.budgetbuddy.entities.PlaidTransactionEntity;
 import com.app.budgetbuddy.services.PlaidService;
 import com.plaid.client.model.LinkTokenCreateRequest;
 import com.plaid.client.model.LinkTokenCreateResponse;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -42,6 +44,14 @@ public class PlaidController {
     public ResponseEntity<?> getTransactions(@RequestParam Long userId,
                                              @RequestParam LocalDate startDate,
                                              @RequestParam LocalDate endDate){
+        return null;
+    }
+
+    @GetMapping("/transactions/filtered")
+    public ResponseEntity<?> getFilteredTransactions(@RequestParam Long userId,
+                                                                                @RequestParam LocalDate startDate,
+                                                                                @RequestParam LocalDate endDate,
+                                                                                @RequestParam int pageCount){
         return null;
     }
 

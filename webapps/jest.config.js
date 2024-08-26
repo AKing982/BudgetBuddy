@@ -3,7 +3,7 @@ module.exports = {
         '^.+\\.(ts|tsx|js|jsx)$': 'ts-jest',
     },
     transformIgnorePatterns: [
-        'node_modules/(?!(axios)/)',
+        'webapps/node_modules/(?!(axios)/)',
     ],
     moduleNameMapper: {
         '^axios$': require.resolve('axios'),

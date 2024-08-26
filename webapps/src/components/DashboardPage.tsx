@@ -66,11 +66,11 @@ const DashboardPage: React.FC = () => {
     //
 
 
-    const tightSpacing = Math.max(-220, spacing - 200);
+    const tightSpacing = Math.max(-120, spacing - 120);
 
     const getResponsiveSpacing = () => {
         if(isLgUp){
-            return 20;
+            return 0;
         }
         if(isMdUp){
             return -80;
@@ -128,46 +128,89 @@ const DashboardPage: React.FC = () => {
         </Box>
     );
 
+    // return (
+    //     <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
+    //         <Sidebar />
+    //         <Box sx={{ flexGrow: 1, p: spacing, ml: { md: responsiveSpacing } }}>
+    //             <Grid container spacing={2}>
+    //                 {/* Header */}
+    //                 <Grid item xs={2}>
+    //                     <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: spacing }}>
+    //                         Good morning, Alexander
+    //                     </Typography>
+    //                 </Grid>
+    //
+    //                 {/* Main Content Area and Right Sidebar Container */}
+    //                 <Grid item xs={12}>
+    //                     <Grid container spacing={tightSpacing}>
+    //                         {/* Main Content Area */}
+    //                         <Grid item xs={12} md={8}>
+    //                             <Grid container spacing={spacing}>
+    //                                 {/* Expense Spending Tracker */}
+    //                                 <Grid item xs={12}>
+    //                                     <SpendingTracker />
+    //                                 </Grid>
+    //
+    //                                 {/* Transactions Table */}
+    //                                 <Grid item xs={12}>
+    //                                     <RecentTransactionsTable />
+    //                                 </Grid>
+    //                             </Grid>
+    //                         </Grid>
+    //
+    //                         {/* Right Sidebar */}
+    //                         <Grid item xs={12} md={4}>
+    //                             <Grid container spacing={spacing}>
+    //                                 <Grid item xs={12} md={isMdUp ? 12 : 6}>
+    //                                     <AccountSummary />
+    //                                 </Grid>
+    //                                 <Grid item xs={12} md={isMdUp ? 12 : 6}>
+    //                                     <PaymentCharges />
+    //                                 </Grid>
+    //                             </Grid>
+    //                         </Grid>
+    //                     </Grid>
+    //                 </Grid>
+    //             </Grid>
+    //         </Box>
+    //     </Box>
+    // );
+
     return (
         <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
             <Sidebar />
-            <Box sx={{ flexGrow: 1, p: spacing, ml: { md: responsiveSpacing } }}>
-                <Grid container spacing={2}>
+            <Box component="main" sx={{ flexGrow: 1, p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Grid container spacing={1}>
                     {/* Header */}
-                    <Grid item xs={2}>
-                        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: spacing }}>
+                    <Grid item xs={6}>
+                        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 2 }}>
                             Good morning, Alexander
                         </Typography>
                     </Grid>
 
-                    {/* Main Content Area and Right Sidebar Container */}
-                    <Grid item xs={12}>
-                        <Grid container spacing={tightSpacing}>
-                            {/* Main Content Area */}
-                            <Grid item xs={12} md={8}>
-                                <Grid container spacing={spacing}>
-                                    {/* Expense Spending Tracker */}
-                                    <Grid item xs={12}>
-                                        <SpendingTracker />
-                                    </Grid>
-
-                                    {/* Transactions Table */}
-                                    <Grid item xs={12}>
-                                        <RecentTransactionsTable />
-                                    </Grid>
-                                </Grid>
+                    {/* Main Content Area */}
+                    <Grid item xs={12} md={8}>
+                        <Grid container spacing={1}>
+                            {/* Expense Spending Tracker */}
+                            <Grid item xs={12}>
+                                <SpendingTracker />
                             </Grid>
 
-                            {/* Right Sidebar */}
-                            <Grid item xs={12} md={4}>
-                                <Grid container spacing={spacing}>
-                                    <Grid item xs={12} md={isMdUp ? 12 : 6}>
-                                        <AccountSummary />
-                                    </Grid>
-                                    <Grid item xs={12} md={isMdUp ? 12 : 6}>
-                                        <PaymentCharges />
-                                    </Grid>
-                                </Grid>
+                            {/* Transactions Table */}
+                            <Grid item xs={12}>
+                                <RecentTransactionsTable />
+                            </Grid>
+                        </Grid>
+                    </Grid>
+
+                    {/* Right Sidebar */}
+                    <Grid item xs={6} md={4}>
+                        <Grid container spacing={1}>
+                            <Grid item xs={12}>
+                                <AccountSummary />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <PaymentCharges />
                             </Grid>
                         </Grid>
                     </Grid>
@@ -175,53 +218,6 @@ const DashboardPage: React.FC = () => {
             </Box>
         </Box>
     );
-
-    //
-    // return (
-    //     <Box sx={{bgcolor: '#F3F4F6', minHeight: '100vh', p: spacing }}>
-    //         <Grid container spacing={2} sx={{ ml: { md: responsiveSpacing } }}>
-    //             {/* Header */}
-    //             <Grid item xs={2}>
-    //                 <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: spacing }}>
-    //                     Good morning, Alexander
-    //                 </Typography>
-    //             </Grid>
-    //
-    //             {/* Main Content Area and Sidebar Container */}
-    //             <Grid item xs={12}>
-    //                 <Grid container spacing={tightSpacing}>
-    //                     {/* Main Content Area */}
-    //                     <Grid item xs={12} md={8}>
-    //                         <Grid container spacing={spacing}>
-    //                             {/* Expense Spending Tracker */}
-    //                             <Grid item xs={12}>
-    //                                 <SpendingTracker />
-    //                             </Grid>
-    //
-    //                             {/* Transactions Table */}
-    //                             <Grid item xs={12}>
-    //                                 <RecentTransactionsTable />
-    //                             </Grid>
-    //                         </Grid>
-    //                     </Grid>
-    //
-    //                     {/* Sidebar */}
-    //                     <Grid item xs={12} md={4}>
-    //                         <Grid container spacing={spacing}>
-    //                             <Grid item xs={12} md={isMdUp ? 12 : 6}>
-    //                                 <AccountSummary />
-    //                             </Grid>
-    //                             <Grid item xs={12} md={isMdUp ? 12 : 6}>
-    //                                 <PaymentCharges />
-    //                             </Grid>
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //             </Grid>
-    //         </Grid>
-    //     </Box>
-    // );
-
 };
 
 export default DashboardPage;
