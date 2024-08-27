@@ -18,8 +18,8 @@ public class PlaidAccountManager extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidAccountManager.class);
 
-    public PlaidAccountManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi) {
-        super(plaidLinkService, plaidApi);
+    public PlaidAccountManager(PlaidLinkService plaidLinkService) {
+        super(plaidLinkService);
     }
 
     /**

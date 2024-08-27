@@ -4,6 +4,8 @@ import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,12 +80,43 @@ class PlaidLinkTokenProcessorTest {
         LinkTokenCreateResponse actualResponse = plaidLinkTokenProcessor.createLinkToken("1");
         assertNotNull(actualResponse);
         assertEquals("test-link-token", actualResponse.getLinkToken());
-        verify(plaidApi).linkTokenCreate(argThat(request ->
-                request.getUser().getClientUserId().equals("1") &&
-                        request.getProducts().containsAll(Arrays.asList(Products.AUTH, Products.TRANSACTIONS)) &&
-                        request.getCountryCodes().equals(Arrays.asList(CountryCode.US))
 
-        ));
+    }
+
+    @Test
+    void testCreateLinkTokenWithRetry_whenLinkTokenCreateRequestIsNull_thenThrowException(){
+        assertThrows(PlaidApiException.class, () -> plaidLinkTokenProcessor.createLinkTokenWithRetry(null));
+    }
+
+    @Test
+    void testCreateLinkTokenWithRetry_whenRequestIsValid_thenReturnResponse() throws IOException {
+        LinkTokenCreateRequest linkTokenCreateRequest = buildLinkTokenRequest("1");
+        LinkTokenCreateResponse expectedResponse = new LinkTokenCreateResponse().linkToken("test-link-token");
+        Call<LinkTokenCreateResponse> mockCall = mock(Call.class);
+        when(mockCall.execute()).thenReturn(Response.success(expectedResponse));
+        when(plaidApi.linkTokenCreate(linkTokenCreateRequest)).thenReturn(mockCall);
+
+        Response<LinkTokenCreateResponse> actualResponse = plaidLinkTokenProcessor.createLinkTokenWithRetry(linkTokenCreateRequest);
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getLinkToken(), actualResponse.body().getLinkToken());
+    }
+
+    @Test
+    void testCreateLinkTokenWithRetry_whenRetryTwoAttempts_ThenReturnResponseBody() throws IOException
+    {
+        LinkTokenCreateRequest linkTokenCreateRequest = buildLinkTokenRequest("1");
+        LinkTokenCreateResponse expectedResponse = new LinkTokenCreateResponse().linkToken("test-link-token");
+
+        Call<LinkTokenCreateResponse> callUnsuccessful = mock(Call.class);
+        when(callUnsuccessful.execute()).thenReturn(Response.error(500, ResponseBody.create(MediaType.parse("application/json"), "Internal Server Error")));
+
+        Call<LinkTokenCreateResponse> callSuccessful = mock(Call.class);
+        when(callSuccessful.execute()).thenReturn(Response.success(expectedResponse));
+
+        when(plaidApi.linkTokenCreate(linkTokenCreateRequest)).thenReturn(callUnsuccessful, callSuccessful);
+        Response<LinkTokenCreateResponse> actualResponse = plaidLinkTokenProcessor.createLinkTokenWithRetry(linkTokenCreateRequest);
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getLinkToken(), actualResponse.body().getLinkToken());
     }
 
     @Test

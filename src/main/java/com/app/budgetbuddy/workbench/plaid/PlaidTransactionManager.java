@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 public class PlaidTransactionManager extends AbstractPlaidManager
 {
 
-    public PlaidTransactionManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi) {
-        super(plaidLinkService, plaidApi);
+    public PlaidTransactionManager(PlaidLinkService plaidLinkService) {
+        super(plaidLinkService);
     }
 }

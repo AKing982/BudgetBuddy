@@ -1,6 +1,6 @@
-import axios, {AxiosInstance} from "axios";
+
 import apiUrl from '../config/api'
-import * as string_decoder from "node:string_decoder";
+import axios, {AxiosInstance, AxiosStatic} from "axios";
 
 interface PlaidLinkToken {
     link_token: string;
@@ -26,16 +26,26 @@ interface Transaction {
 class PlaidService {
 
     private static instance: PlaidService;
+    private static axios: AxiosInstance;
 
-    constructor(){}
+    constructor(){
+        PlaidService.axios = axios.create({
+            baseURL: 'http://localhost:8080/api/plaid',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+    }
 
     public static getInstance() : PlaidService
     {
         if(!PlaidService.instance){
             PlaidService.instance = new PlaidService();
+            PlaidService.axios = require('axios').default as AxiosStatic;
         }
         return PlaidService.instance;
     }
+
 
     public createLinkTokenRequest(userId: string | null) : LinkTokenCreateRequest {
         return {
@@ -43,17 +53,17 @@ class PlaidService {
         };
     }
 
-    public async createLinkToken() : Promise<string> {
+    public async createLinkToken() : Promise<any> {
         try
         {
             let userId = sessionStorage.getItem('userId');
-            const linkTokenRequest = this.createLinkTokenRequest(userId);
+            const linkTokenRequest = this.createLinkTokenRequest("1");
             this.validateLinkTokenRequest(linkTokenRequest);
             const response = await axios.post<PlaidLinkToken>(`http://localhost:8080/api/plaid/create_link_token`, {
-                linkTokenRequest
+               userId: "1"
             });
-            console.log('Link Token Response: ', response);
-            return response.data.link_token;
+            console.log('Link Token: ', response);
+            return response.data;
         }catch(error)
         {
             console.error('Error creating Plaid Link Token: ', error);
@@ -74,7 +84,7 @@ class PlaidService {
         }
         try
         {
-            const response = await axios.post<PlaidExchangeResponse>('/exchange-public-token', {public_token: publicToken});
+            const response = await PlaidService.axios.post<PlaidExchangeResponse>('/exchange-public-token', {public_token: publicToken});
             return response.data;
         }catch(error)
         {
@@ -91,7 +101,7 @@ class PlaidService {
         try
         {
             const userId = sessionStorage.getItem('userId');
-            const response = await axios.get(`http://localhost:8080/api/plaid/transactions/filtered`, {
+            const response = await PlaidService.axios.get(`http://localhost:8080/api/plaid/transactions/filtered`, {
                 params: {
                     userId,
                     startDate,
@@ -111,7 +121,7 @@ class PlaidService {
     {
         try
         {
-            const response = await axios.get<Transaction[]>('/transactions', {
+            const response = await PlaidService.axios.get<Transaction[]>('/transactions', {
                 params: {startDate, endDate},
             });
             return response.data;

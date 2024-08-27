@@ -103,14 +103,14 @@ const LoginForm: React.FC = () => {
             const response = await authenticateUser(loginData);
             if(response != null){
                 setIsAuthenticated(true);
+                console.log('Is Authenticated: ', isAuthenticated);
                 const plaidService = PlaidService.getInstance();
                 // Fetch the link token
                 const response = await plaidService.createLinkToken();
-                console.log('Link Token Response: ', response);
-                if(response != null){
-                    setLinkToken(response);
-                    navigate('/dashboard');
-                }
+                console.log('Response: ', response);
+                console.log('Link Token: ', response.linkToken);
+                setLinkToken(response.linkToken);
+                navigate('/dashboard');
             }
             console.log('Response: ', response);
             // await new Promise(resolve => setTimeout(resolve, 3000));

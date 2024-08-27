@@ -19,7 +19,7 @@ public class PlaidConfig
     @Value("${plaid.secret}")
     private String plaidSecret;
 
-    @Bean
+    @Bean(name="plaid")
     public PlaidApi plaidApi(){
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(chain -> {

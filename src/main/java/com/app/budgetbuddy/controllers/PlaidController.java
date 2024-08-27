@@ -37,7 +37,8 @@ public class PlaidController {
 
         LinkTokenCreateResponse linkTokenCreateResponse = plaidLinkTokenProcessor.createLinkToken(userId);
         String linkToken = linkTokenCreateResponse.getLinkToken();
-        return ResponseEntity.status(201).body(linkToken);
+        LOGGER.info("Found Link Token: {}", linkToken);
+        return ResponseEntity.status(201).body(linkTokenCreateResponse);
     }
 
     @GetMapping("/accounts")

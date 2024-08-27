@@ -7,6 +7,7 @@ import com.plaid.client.request.PlaidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -18,10 +19,16 @@ import java.util.Arrays;
 public class PlaidLinkTokenProcessor extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidLinkTokenProcessor.class);
+    private PlaidApi plaidApi;
 
     @Autowired
-    public PlaidLinkTokenProcessor(PlaidLinkService plaidLinkService, PlaidApi plaidApi) {
-        super(plaidLinkService, plaidApi);
+    public PlaidLinkTokenProcessor(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi) {
+        super(plaidLinkService);
+        if(plaidApi == null){
+            throw new RuntimeException("Plaid Api is null");
+        }
+        this.plaidApi = plaidApi;
+
     }
 
     /**
@@ -36,8 +43,12 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         }
         return new LinkTokenCreateRequest()
                 .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
-                .products(Arrays.asList(Products.AUTH, Products.TRANSACTIONS))
-                .countryCodes(Arrays.asList(CountryCode.US));
+                .clientName("BudgetBuddy")
+                .products(Arrays.asList( Products.TRANSACTIONS,
+                        Products.AUTH))
+                .countryCodes(Arrays.asList(CountryCode.US))
+                .language("en");
+
     }
 
     /**
@@ -51,10 +62,39 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
             throw new IllegalArgumentException("Client user id cannot be empty");
         }
         LinkTokenCreateRequest linkTokenCreateRequest = createLinkTokenRequest(clientUserId);
-        Call<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest);
-        LOGGER.info("Link Token: {}", linkTokenResponse.execute().body().getLinkToken());
-        Response<LinkTokenCreateResponse> response = linkTokenResponse.execute();
+        Response<LinkTokenCreateResponse> response = createLinkTokenWithRetry(linkTokenCreateRequest);
         return response.body();
+    }
+
+    public Response<LinkTokenCreateResponse> createLinkTokenWithRetry(LinkTokenCreateRequest linkTokenCreateRequest) throws IOException {
+        if(linkTokenCreateRequest == null){
+            throw new PlaidApiException("Link token create request is null");
+        }
+        Response<LinkTokenCreateResponse> response = null;
+        int MAX_ATTEMPTS = 3;
+        int attempts = 0;
+        do
+        {
+            attempts++;
+            Call<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest);
+            response = linkTokenResponse.execute();
+            if(!response.isSuccessful()){
+                try
+                {
+                    Thread.sleep(1000);
+                }catch(InterruptedException e)
+                {
+                    throw new PlaidApiException("Error while waiting for the next attempt: ", e);
+                }
+            }
+
+        }while(attempts < MAX_ATTEMPTS && !response.isSuccessful());
+
+        if(response.isSuccessful()){
+            return response;
+        }else{
+            throw new PlaidApiException("Failed to create link token after " + attempts + " attempts");
+        }
     }
 
     /**

@@ -9,12 +9,10 @@ import java.util.Optional;
 public abstract class AbstractPlaidManager
 {
     protected PlaidLinkService plaidLinkService;
-    protected PlaidApi plaidApi;
 
-    public AbstractPlaidManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi)
+    public AbstractPlaidManager(PlaidLinkService plaidLinkService)
     {
         this.plaidLinkService = plaidLinkService;
-        this.plaidApi = plaidApi;
     }
 
     protected Optional<PlaidLinkEntity> getPlaidLinkByUserId(Long userId){

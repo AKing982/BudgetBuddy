@@ -9,7 +9,6 @@
     "@mui/material": "^5.16.7",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/user-event": "^13.5.0",
-    "@types/jest": "^27.5.2",
     "@types/node": "^16.18.105",
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
@@ -25,8 +24,13 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test --transformIgnorePatterns \"node_modules/(?!axios)/\"",
+    "test": "jest",
     "eject": "react-scripts eject"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.[t|j]sx?$": "babel-jest"
+    }
   },
   "eslintConfig": {
     "extends": [
@@ -47,7 +51,11 @@
     ]
   },
   "devDependencies": {
+    "@babel/cli": "^7.24.8",
+    "@babel/preset-typescript": "^7.24.7",
     "@testing-library/react": "^16.0.0",
+    "@types/jest": "^29.5.12",
+    "babel-jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.5.4"
   }
