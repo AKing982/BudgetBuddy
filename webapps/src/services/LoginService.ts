@@ -11,8 +11,9 @@ class LoginService {
         this.password = pass;
     }
 
-    public async fetchUserIdByUsername(user: string) : Promise<number>
+    public async fetchUserIdByUsername(user: string | null) : Promise<number>
     {
+        console.log('Fetching UserId for username: ', user);
         try
         {
             const response = await axios.get(`${apiUrl}/api/users/username`, {
@@ -20,6 +21,7 @@ class LoginService {
                     username: user
                 }
             });
+            console.log('UserID: ', response.data);
             return response.data;
         }catch(err)
         {

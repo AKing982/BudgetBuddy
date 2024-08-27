@@ -10,4 +10,6 @@ public interface UserService extends ServiceModel<UserEntity>
     Optional<UserEntity> findByEmail(String email);
     UserEntity createUserFromRegistration(Registration registration);
     Optional<UserEntity> findByUsername(String username);
+    Long findUserIdByEmail(String email);
+    Long findUserIdByUsername(String username);
 }

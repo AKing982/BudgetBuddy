@@ -12,8 +12,15 @@ interface LinkTokenCreateRequest {
 }
 
 interface PlaidExchangeResponse {
-    access_token: string;
-    item_id: string;
+    accessToken: string;
+    itemID: string;
+    userID: number;
+}
+
+interface PlaidLinkRequest {
+    accessToken: string;
+    itemID: string;
+    userID: number;
 }
 
 interface ExchangePublicTokenDTO{
@@ -57,6 +64,39 @@ class PlaidService {
         };
     }
 
+    private createPlaidLinkRequest(accessToken: string, itemID: string, userID: number) : PlaidLinkRequest {
+        return {
+            accessToken: accessToken,
+            itemID: itemID,
+            userID: userID
+        }
+    }
+
+    public async savePlaidLinkToDatabase(accessToken: string, itemID: string, userID: number) : Promise<any>
+    {
+        if(accessToken === null || itemID === null || userID < 0){
+            console.log('AccessToken: ', accessToken);
+            console.log('ItemID: ', itemID);
+            console.log('UserID: ', userID);
+            throw new Error("Invalid Plaid Link Criteria found: ");
+        }
+
+        const request = this.createPlaidLinkRequest(accessToken, itemID, userID);
+        console.log('PlaidLinkRequest: ', request);
+        try
+        {
+            const response = await axios.post(`${apiUrl}/api/plaid/link`, {
+                request
+            });
+            return response.data;
+
+        }catch(error)
+        {
+            console.error('There was an error saving the Plaid Link: ', error);
+            throw error;
+        }
+    }
+
     public async createLinkToken() : Promise<any> {
         try
         {
@@ -81,30 +121,27 @@ class PlaidService {
         }
     }
 
-
-    public async exchangePublicToken(publicToken: string) : Promise<PlaidExchangeResponse>
+    public async exchangePublicToken(publicToken: string, userId: number) : Promise<PlaidExchangeResponse>
     {
         if(publicToken == null){
             throw new Error("Public Token cannot be null");
-        }
-
-        let userId = sessionStorage.getItem('userId');
-        if(!userId){
-            throw new Error("User ID not found in session storage");
         }
 
         const exchangePublicTokenDTO: ExchangePublicTokenDTO = {
             exchangePublicTokenMap: new Map([[Number(userId), publicToken]])
         };
 
+        console.log('Exchange Public Token Map: ', exchangePublicTokenDTO.exchangePublicTokenMap.entries());
+
         try
         {
-            const response = await PlaidService.axios.post<PlaidExchangeResponse>('/exchange-public-token',
+            const response = await axios.post<PlaidExchangeResponse>(`${apiUrl}/api/plaid/exchange_public_token`,
                 this.mapToObject(exchangePublicTokenDTO.exchangePublicTokenMap));
+            console.log('Response: ', response);
             return response.data;
         }catch(error)
         {
-            console.error('Error creating Plaid Link Token: ', error);
+            console.error('Error exchanging public token: ', error);
             throw error;
         }
     }

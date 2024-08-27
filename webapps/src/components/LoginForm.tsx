@@ -15,6 +15,7 @@ import {PlaidLinkOnSuccessMetadata} from "react-plaid-link";
 import PlaidService from "../services/PlaidService";
 import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
 import plaidService from "../services/PlaidService";
+import LoginService from "../services/LoginService";
 
 
 interface LoginFormData {
@@ -26,6 +27,12 @@ interface FormErrors {
     username?: string;
     password?: string;
 
+}
+
+interface PlaidExchangeResponse {
+    accessToken: string;
+    itemID: string;
+    userID: number;
 }
 
 const theme = createTheme({
@@ -100,6 +107,7 @@ const LoginForm: React.FC = () => {
                 username: formData.email,
                 password: formData.password
             };
+            sessionStorage.setItem('username',formData.email);
             console.log('LoginData: ', loginData);
             const response = await authenticateUser(loginData);
             setIsAuthenticated(true);
@@ -135,20 +143,45 @@ const LoginForm: React.FC = () => {
         }
     }, []);
 
+    const handlePlaidLinkSaveResponse = async (response: PlaidExchangeResponse) : Promise<void> => {
+        const {accessToken, itemID , userID} = response;
+        try
+        {
+            console.log('AccessToken: ', accessToken);
+            console.log('ItemID: ', itemID);
+            console.log('UserID: ', userID);
+            const plaidService = PlaidService.getInstance();
+            const response = await plaidService.savePlaidLinkToDatabase(accessToken, itemID, userID);
+            if(response.status === 201){
+                return response.data;
+            }
+        }catch(error)
+        {
+            console.error('There was an error saving the plaid link to the server: ', error);
+            throw error;
+        }
+    }
+
     const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
         try
         {
             const plaidService = PlaidService.getInstance();
-            const response = await plaidService.exchangePublicToken(publicToken);
+            const loginService = new LoginService(formData.email, formData.password);
+            const username: string | null = sessionStorage.getItem('username');
+            const userId = await loginService.fetchUserIdByUsername(username);
 
-
+            const response = await plaidService.exchangePublicToken(publicToken, userId);
+            const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
+            if(plaidLinkResponse != null){
+                navigate('/dashboard');
+            }
         }catch(error)
         {
             console.error('Error exchanging public token: ', error);
         }
         console.log('Plaid Connection Successful', publicToken, metadata)
 
-        navigate('/dashboard');
+
     }, [navigate]);
 
     return (

@@ -2,6 +2,9 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.config.JpaConfig;
 import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
+import com.app.budgetbuddy.domain.PlaidLinkRequest;
+import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.plaid.client.model.ItemPublicTokenExchangeResponse;
@@ -28,7 +31,10 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -58,6 +64,9 @@ class PlaidControllerTest {
 
     @MockBean
     private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
+
+    @MockBean
+    private PlaidLinkService plaidLinkService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -108,6 +117,99 @@ class PlaidControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testExchangePublicToken_whenExchangePublicTokeMapIsEmpty_thenReturnBadRequest() throws Exception {
+        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
+
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+        mockMvc.perform(post("/api/plaid/exchange_public_token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testExchangePublicToken_WhenValueNotFound_thenReturnBadRequest() throws Exception {
+        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
+        exchangePublicTokenMap.put(1L, null);
+
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+
+        mockMvc.perform(post("/api/plaid/exchange_public_token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testExchangePublicToken_whenAccessTokenEmpty_thenReturnNotFound() throws Exception {
+        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
+        exchangePublicTokenMap.put(1L, "public_token");
+
+        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("");
+        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
+
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+
+        mockMvc.perform(post("/api/plaid/exchange_public_token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testExchangePublicToken_whenMapIsValid_thenReturnOk() throws Exception {
+        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
+        exchangePublicTokenMap.put(1L, "public_token");
+
+        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
+        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
+
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+
+        mockMvc.perform(post("/api/plaid/exchange_public_token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(status().isOk());
+
+    }
+
+    @Test
+    void testSaveAccessToken_whenPlaidLinkRequestIsNull_thenReturnBadRequest() throws Exception {
+
+        String jsonString = objectMapper.writeValueAsString(null);
+        mockMvc.perform(post("/api/plaid/link")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSaveAccessToken_whenAccessTokenIsNullOrEmpty_thenReturnBadRequest() throws Exception {
+        PlaidLinkRequest plaidLinkRequest = new PlaidLinkRequest("", "3232323232", 1L);
+
+        String jsonString = objectMapper.writeValueAsString(plaidLinkRequest);
+
+        mockMvc.perform(post("/api/plaid/link")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void testSaveAccessToken_whenPlaidLinkRequestValid_thenReturnStatusCreated() throws Exception {
+        PlaidLinkRequest plaidLinkRequest = new PlaidLinkRequest("e23232320", "chhsdfsdfasdf", 1L);
+        when(plaidLinkService.createPlaidLink(anyString(), anyString(), anyLong())).thenReturn(Optional.of(new PlaidLinkEntity()));
+
+        String jsonString = objectMapper.writeValueAsString(plaidLinkRequest);
+
+        mockMvc.perform(post("/api/plaid/link")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isCreated());
     }
 
 

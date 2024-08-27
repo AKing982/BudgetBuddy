@@ -29,9 +29,6 @@ public class PlaidLinkEntity
     @Column(name="item_id")
     private String itemId;
 
-    @Column(name="institution_name")
-    private String institutionName;
-
     @Column(name="createdAt")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdAt;
