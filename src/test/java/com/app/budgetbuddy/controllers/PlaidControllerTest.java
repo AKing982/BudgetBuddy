@@ -1,8 +1,10 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.config.JpaConfig;
+import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
+import com.plaid.client.model.ItemPublicTokenExchangeResponse;
 import com.plaid.client.model.LinkTokenCreateRequest;
 import com.plaid.client.model.LinkTokenCreateResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -23,6 +25,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -83,8 +88,26 @@ class PlaidControllerTest {
     }
 
     @Test
-    void testExchangePublicToken_whenPublicTokenIsEmpty_thenReturnBadRequest() throws Exception {
+    void testExchangePublicToken_whenExchangePublicTokenDTOIsNull_thenReturnBadRequest() throws Exception {
+       String jsonString = objectMapper.writeValueAsString(null);
+       mockMvc.perform(post("/api/plaid/exchange_public_token")
+               .contentType(MediaType.APPLICATION_JSON)
+               .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
 
+    @Test
+    void testExchangePublicToken_whenExchangePublicTokenDTOIsNotNull_thenReturnOk() throws Exception {
+        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
+        exchangePublicTokenMap.put(1L, "public_token");
+        String jsonString = objectMapper.writeValueAsString(new ExchangePublicTokenDTO(exchangePublicTokenMap));
+        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
+        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
+
+        mockMvc.perform(post("/api/plaid/exchange_public_token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(status().isOk());
     }
 
 

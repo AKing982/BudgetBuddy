@@ -52,10 +52,8 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         }
         LinkTokenCreateRequest linkTokenCreateRequest = createLinkTokenRequest(clientUserId);
         Call<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest);
+        LOGGER.info("Link Token: {}", linkTokenResponse.execute().body().getLinkToken());
         Response<LinkTokenCreateResponse> response = linkTokenResponse.execute();
-        if(!response.isSuccessful()){
-            throw new IOException(response.message());
-        }
         return response.body();
     }
 

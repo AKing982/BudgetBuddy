@@ -1,6 +1,18 @@
 package com.app.budgetbuddy.domain;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.Map;
 
-public record ExchangePublicTokenDTO(Map<Long, String> publicTokenMap) {
+@Data
+@NoArgsConstructor
+public class ExchangePublicTokenDTO
+{
+    private Map<Long, String> exchangePublicTokenMap;
+
+    public ExchangePublicTokenDTO(Map<Long, String> exchangePublicTokenMap)
+    {
+        this.exchangePublicTokenMap = exchangePublicTokenMap;
+    }
 }

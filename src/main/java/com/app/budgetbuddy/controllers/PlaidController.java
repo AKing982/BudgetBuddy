@@ -3,15 +3,18 @@ package com.app.budgetbuddy.controllers;
 import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
+import com.plaid.client.model.ItemPublicTokenExchangeResponse;
 import com.plaid.client.model.LinkTokenCreateResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping(value="/api/plaid")
@@ -43,8 +46,12 @@ public class PlaidController {
     }
 
     @PostMapping("/exchange_public_token")
-    public ResponseEntity<?> exchangePublicToken(@RequestBody ExchangePublicTokenDTO exchangePublicTokenDTO){
-        return null;
+    public ResponseEntity<?> exchangePublicToken(@RequestBody ExchangePublicTokenDTO exchangePublicTokenDTO) throws IOException, InterruptedException {
+        Map<Long, String> exchangePublicTokenMap = exchangePublicTokenDTO.getExchangePublicTokenMap();
+        String publicToken = exchangePublicTokenMap.get(1L);
+        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = plaidLinkTokenProcessor.exchangePublicToken(publicToken);
+        String accessToken = itemPublicTokenExchangeResponse.getAccessToken();
+        return ResponseEntity.ok(accessToken);
     }
 
     @GetMapping("/transactions")

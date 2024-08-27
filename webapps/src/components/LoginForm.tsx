@@ -106,6 +106,7 @@ const LoginForm: React.FC = () => {
                 const plaidService = PlaidService.getInstance();
                 // Fetch the link token
                 const response = await plaidService.createLinkToken();
+                console.log('Link Token Response: ', response);
                 if(response != null){
                     setLinkToken(response);
                     navigate('/dashboard');
