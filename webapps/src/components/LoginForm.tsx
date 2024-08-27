@@ -14,6 +14,7 @@ import {authenticateUser, LoginCredentials} from "../api/LoginApiService";
 import {PlaidLinkOnSuccessMetadata} from "react-plaid-link";
 import PlaidService from "../services/PlaidService";
 import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
+import plaidService from "../services/PlaidService";
 
 
 interface LoginFormData {
@@ -101,8 +102,8 @@ const LoginForm: React.FC = () => {
             };
             console.log('LoginData: ', loginData);
             const response = await authenticateUser(loginData);
+            setIsAuthenticated(true);
             if(response != null){
-                setIsAuthenticated(true);
                 console.log('Is Authenticated: ', isAuthenticated);
                 const plaidService = PlaidService.getInstance();
                 // Fetch the link token
@@ -110,7 +111,11 @@ const LoginForm: React.FC = () => {
                 console.log('Response: ', response);
                 console.log('Link Token: ', response.linkToken);
                 setLinkToken(response.linkToken);
-                navigate('/dashboard');
+                if(plaidLinkRef.current){
+                    plaidLinkRef.current.open();
+                }else{
+                    console.log('Authenticated Failed');
+                }
             }
             console.log('Response: ', response);
             // await new Promise(resolve => setTimeout(resolve, 3000));
@@ -131,8 +136,20 @@ const LoginForm: React.FC = () => {
     }, []);
 
     const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
+        try
+        {
+            const plaidService = PlaidService.getInstance();
+            const response = await plaidService.exchangePublicToken(publicToken);
+
+
+        }catch(error)
+        {
+            console.error('Error exchanging public token: ', error);
+        }
         console.log('Plaid Connection Successful', publicToken, metadata)
-    }, []);
+
+        navigate('/dashboard');
+    }, [navigate]);
 
     return (
         <ThemeProvider theme={theme}>
@@ -196,7 +213,7 @@ const LoginForm: React.FC = () => {
                             onClick={handleRegister}>
                             Register
                         </Button>
-                        {isAuthenticated && linkToken && (
+                        {linkToken && (
                             <PlaidLink
                               linkToken={linkToken}
                               onSuccess={handlePlaidSuccess}

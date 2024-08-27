@@ -5,7 +5,7 @@ import {
     PlaidLinkOptions,
     usePlaidLink
 } from "react-plaid-link";
-import {RefObject, useCallback, useEffect, useImperativeHandle, useState} from "react";
+import {forwardRef, RefObject, useCallback, useEffect, useImperativeHandle, useState} from "react";
 import {Simulate} from "react-dom/test-utils";
 
 
@@ -25,13 +25,14 @@ interface Metadata {
     [key: string]: any;
 }
 
-const PlaidLink: React.FC<PlaidLinkProps> = ({linkToken, onSuccess, onConnect}, ref) => {
+
+const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken, onSuccess, onConnect }, ref) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [isLinked, setIsLinked] = useState<boolean>(false);
 
     const onExit: PlaidLinkOnExit = useCallback((err, metadata) => {
-        if(err != null){
+        if (err != null) {
             setError(err.display_message || 'Error linking account');
         }
     }, []);
@@ -54,18 +55,18 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({linkToken, onSuccess, onConnect}, 
         onExit,
     };
 
-    const {open, ready} = usePlaidLink(config);
+    const { open, ready } = usePlaidLink(config);
 
     useImperativeHandle(ref, () => ({
         open: () => {
-            if(ready){
+            if (ready) {
                 open();
             }
         }
     }));
 
     useEffect(() => {
-        if(ready && onConnect){
+        if (ready && onConnect) {
             onConnect();
         }
     }, [ready, onConnect]);
@@ -81,6 +82,7 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({linkToken, onSuccess, onConnect}, 
     }
 
     return null;
-}
+});
+
 
 export default PlaidLink;

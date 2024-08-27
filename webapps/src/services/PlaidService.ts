@@ -1,6 +1,6 @@
 
 import apiUrl from '../config/api'
-import axios, {AxiosInstance, AxiosStatic} from "axios";
+import axios, {AxiosError, AxiosInstance, AxiosStatic} from "axios";
 
 interface PlaidLinkToken {
     link_token: string;
@@ -14,6 +14,10 @@ interface LinkTokenCreateRequest {
 interface PlaidExchangeResponse {
     access_token: string;
     item_id: string;
+}
+
+interface ExchangePublicTokenDTO{
+    exchangePublicTokenMap: Map<number, string>;
 }
 
 interface Transaction {
@@ -77,14 +81,26 @@ class PlaidService {
         }
     }
 
+
     public async exchangePublicToken(publicToken: string) : Promise<PlaidExchangeResponse>
     {
         if(publicToken == null){
             throw new Error("Public Token cannot be null");
         }
+
+        let userId = sessionStorage.getItem('userId');
+        if(!userId){
+            throw new Error("User ID not found in session storage");
+        }
+
+        const exchangePublicTokenDTO: ExchangePublicTokenDTO = {
+            exchangePublicTokenMap: new Map([[Number(userId), publicToken]])
+        };
+
         try
         {
-            const response = await PlaidService.axios.post<PlaidExchangeResponse>('/exchange-public-token', {public_token: publicToken});
+            const response = await PlaidService.axios.post<PlaidExchangeResponse>('/exchange-public-token',
+                this.mapToObject(exchangePublicTokenDTO.exchangePublicTokenMap));
             return response.data;
         }catch(error)
         {
@@ -131,5 +147,45 @@ class PlaidService {
             throw error;
         }
     }
+
+    public async fetchAndLinkPlaidAccounts(userID: number) {
+        try
+        {
+            const  response = await axios.get(`http://localhost:8080/api/plaid/accounts`, {
+                params: {
+                    userID: userID
+                }
+            });
+
+            if(response.status === 200 || response.status === 201){
+                console.log('Found response: ', response.data);
+                return response.data;
+            }else{
+                console.log(`Request completed with status: ${response.status}`);
+                return null;
+            }
+        }catch(error){
+            if (axios.isAxiosError(error)) {
+                // This is an Axios error
+                const axiosError = error as AxiosError;
+                if (axiosError.response) {
+                    console.error(`Server responded with status ${axiosError.response.status}: `, axiosError.response.data);
+                } else if (axiosError.request) {
+                    console.error('No response received for the request: ', axiosError.request);
+                } else {
+                    console.error('Error', axiosError.message);
+                }
+            } else {
+                // This is not an Axios error
+                console.error('An unexpected error occurred:', error);
+            }
+            return null;
+        }
+    }
+
+    private mapToObject(map: Map<number, string>): { [key: number]: string } {
+        return Object.fromEntries(Array.from(map));
+    }
+
 }
 export default PlaidService;
