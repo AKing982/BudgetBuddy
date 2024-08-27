@@ -1,12 +1,15 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -16,6 +19,7 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidLinkTokenProcessor.class);
 
+    @Autowired
     public PlaidLinkTokenProcessor(PlaidLinkService plaidLinkService, PlaidApi plaidApi) {
         super(plaidLinkService, plaidApi);
     }
@@ -48,7 +52,11 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         }
         LinkTokenCreateRequest linkTokenCreateRequest = createLinkTokenRequest(clientUserId);
         Call<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest);
-        return linkTokenResponse.execute().body();
+        Response<LinkTokenCreateResponse> response = linkTokenResponse.execute();
+        if(!response.isSuccessful()){
+            throw new IOException(response.message());
+        }
+        return response.body();
     }
 
     /**
@@ -57,8 +65,12 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      * @param publicToken the public token to be exchanged for an access token
      * @return the item public token exchange request
      */
-    public ItemPublicTokenExchangeRequest itemPublicTokenExchangeRequest(String publicToken){
-        return null;
+    public ItemPublicTokenExchangeRequest createPublicTokenExchangeRequest(String publicToken){
+        if(publicToken.isEmpty()){
+            throw new IllegalArgumentException("Public token cannot be empty");
+        }
+        return new ItemPublicTokenExchangeRequest()
+                .publicToken(publicToken);
     }
 
     /**
@@ -71,6 +83,13 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      */
     public ItemPublicTokenExchangeResponse exchangePublicToken(String publicToken) throws IOException, InterruptedException
     {
-        return null;
+        if(publicToken.isEmpty()){
+            throw new IllegalArgumentException("Public token cannot be empty");
+        }
+        ItemPublicTokenExchangeRequest itemPublicTokenExchangeRequest = createPublicTokenExchangeRequest(publicToken);
+
+        Call<ItemPublicTokenExchangeResponse> publicTokenExchangeResponseCall = plaidApi.itemPublicTokenExchange(itemPublicTokenExchangeRequest);
+        Response<ItemPublicTokenExchangeResponse> response = publicTokenExchangeResponseCall.execute();
+        return response.body();
     }
 }

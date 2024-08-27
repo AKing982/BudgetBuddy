@@ -1,33 +1,40 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
-import com.app.budgetbuddy.entities.PlaidTransactionEntity;
 import com.app.budgetbuddy.services.PlaidService;
-import com.plaid.client.model.LinkTokenCreateRequest;
+import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.plaid.client.model.LinkTokenCreateResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping(value="/api/plaid")
 @CrossOrigin(origins="http://localhost:3000")
 public class PlaidController {
 
-    private PlaidService plaidService;
+    private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
+    private Logger LOGGER = LoggerFactory.getLogger(PlaidController.class);
 
     @Autowired
-    public PlaidController(PlaidService plaidService) {
-        this.plaidService = plaidService;
+    public PlaidController(PlaidLinkTokenProcessor plaidLinkTokenProcessor) {
+        this.plaidLinkTokenProcessor = plaidLinkTokenProcessor;
     }
 
     @PostMapping("/create_link_token")
-    public ResponseEntity<?> createLinkToken(@RequestBody LinkTokenCreateRequest linkTokenCreateRequest){
-        return null;
+    public ResponseEntity<?> createLinkToken(@RequestBody String userId) throws IOException {
+        if(userId.isEmpty()){
+            return ResponseEntity.badRequest().body("Username cannot be empty");
+        }
+
+        LinkTokenCreateResponse linkTokenCreateResponse = plaidLinkTokenProcessor.createLinkToken(userId);
+        String linkToken = linkTokenCreateResponse.getLinkToken();
+        return ResponseEntity.status(201).body(linkToken);
     }
 
     @GetMapping("/accounts")

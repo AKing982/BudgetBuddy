@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
@@ -11,11 +12,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import retrofit2.Call;
+import retrofit2.Response;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PlaidLinkTokenProcessorTest {
@@ -31,6 +36,7 @@ class PlaidLinkTokenProcessorTest {
 
     @BeforeEach
     void setUp() {
+        plaidLinkTokenProcessor = new PlaidLinkTokenProcessor(plaidLinkService, plaidApi);
     }
 
     @Test
@@ -47,6 +53,9 @@ class PlaidLinkTokenProcessorTest {
 
         LinkTokenCreateRequest actualRequest = plaidLinkTokenProcessor.createLinkTokenRequest(clientUserId);
         assertNotNull(actualRequest);
+        assertEquals(clientUserId, actualRequest.getUser().getClientUserId());
+        assertTrue(actualRequest.getProducts().containsAll(Arrays.asList(Products.AUTH, Products.TRANSACTIONS)));
+        assertEquals(Arrays.asList(CountryCode.US), actualRequest.getCountryCodes());
     }
 
     @Test
@@ -56,9 +65,62 @@ class PlaidLinkTokenProcessorTest {
     }
 
     @Test
-    void testCreateLinkToken_whenClientUserIdIsValid(){
-        LinkTokenCreateRequest request = buildLinkTokenRequest("1");
+    void testCreateLinkToken_whenClientUserIdIsValid() throws IOException {
+        LinkTokenCreateRequest expectedRequest = buildLinkTokenRequest("1");
+        LinkTokenCreateResponse expectedResponse = new LinkTokenCreateResponse().linkToken("test-link-token");
 
+        Call<LinkTokenCreateResponse> mockCall = mock(Call.class);
+        when(plaidApi.linkTokenCreate(any(LinkTokenCreateRequest.class))).thenReturn(mockCall);
+
+        Response<LinkTokenCreateResponse> mockResponse = Response.success(expectedResponse);
+        when(mockCall.execute()).thenReturn(mockResponse);
+
+        LinkTokenCreateResponse actualResponse = plaidLinkTokenProcessor.createLinkToken("1");
+        assertNotNull(actualResponse);
+        assertEquals("test-link-token", actualResponse.getLinkToken());
+        verify(plaidApi).linkTokenCreate(argThat(request ->
+                request.getUser().getClientUserId().equals("1") &&
+                        request.getProducts().containsAll(Arrays.asList(Products.AUTH, Products.TRANSACTIONS)) &&
+                        request.getCountryCodes().equals(Arrays.asList(CountryCode.US))
+
+        ));
+    }
+
+    @Test
+    void testItemPublicExchangeTokenRequest_whenPublicTokenIsEmpty(){
+        String publicToken = "";
+        assertThrows(IllegalArgumentException.class, () -> plaidLinkTokenProcessor.createPublicTokenExchangeRequest(publicToken));
+    }
+
+    @Test
+    void testItemPublicExchangeTokenRequest_whenPublicTokenIsValid(){
+        String publicToken = "1";
+        ItemPublicTokenExchangeRequest itemPublicTokenExchangeRequest = new ItemPublicTokenExchangeRequest().publicToken(publicToken);
+        ItemPublicTokenExchangeRequest actual = plaidLinkTokenProcessor.createPublicTokenExchangeRequest(publicToken);
+        assertNotNull(actual);
+        assertEquals(publicToken, actual.getPublicToken());
+    }
+
+    @Test
+    void testExchangePublicToken_whenPublicTokenIsEmpty(){
+        String publicToken = "";
+        assertThrows(IllegalArgumentException.class, () -> plaidLinkTokenProcessor.exchangePublicToken(publicToken));
+    }
+
+    @Test
+    void testExchangePublicToken_whenPublicTokenIsValid() throws IOException, InterruptedException {
+        String publicToken = "1";
+
+        ItemPublicTokenExchangeResponse exchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("test-access-token");
+        Call<ItemPublicTokenExchangeResponse> mockCall = mock(Call.class);
+
+        when(plaidApi.itemPublicTokenExchange(any(ItemPublicTokenExchangeRequest.class))).thenReturn(mockCall);
+        Response<ItemPublicTokenExchangeResponse> mockResponse = Response.success(exchangeResponse);
+        when(mockCall.execute()).thenReturn(mockResponse);
+
+        ItemPublicTokenExchangeResponse actual = plaidLinkTokenProcessor.exchangePublicToken(publicToken);
+        assertNotNull(actual);
+        assertEquals("test-access-token", actual.getAccessToken());
     }
 
     public LinkTokenCreateRequest buildLinkTokenRequest(String clientUserId)
