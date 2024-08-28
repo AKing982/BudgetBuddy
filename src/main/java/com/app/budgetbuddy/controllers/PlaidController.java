@@ -1,7 +1,8 @@
 package com.app.budgetbuddy.controllers;
 
-import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
+
 import com.app.budgetbuddy.domain.ExchangeResponse;
+import com.app.budgetbuddy.domain.PlaidExchangeRequest;
 import com.app.budgetbuddy.domain.PlaidLinkRequest;
 import com.app.budgetbuddy.domain.PlaidLinkStatus;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
@@ -58,15 +59,11 @@ public class PlaidController {
     }
 
     @PostMapping("/exchange_public_token")
-    public ResponseEntity<?> exchangePublicToken(@RequestBody ExchangePublicTokenDTO exchangePublicTokenDTO) throws IOException, InterruptedException {
-        Map<Long, String> exchangePublicTokenMap = exchangePublicTokenDTO.getExchangePublicTokenMap();
-        LOGGER.info("Exchange Public Token Map: {}", exchangePublicTokenMap.values());
-        if(exchangePublicTokenMap.isEmpty()){
-            return ResponseEntity.badRequest().body("Exchange Public Token Map is empty");
-        }
+    public ResponseEntity<?> exchangePublicToken(@RequestBody PlaidExchangeRequest exchangeRequest) throws IOException, InterruptedException {
 
-        Map.Entry<Long, String> entry = exchangePublicTokenMap.entrySet().iterator().next();
-        String publicToken = entry.getValue();
+        Long userID = exchangeRequest.getUserId();
+        String publicToken = exchangeRequest.getPublicToken();
+
         if(publicToken == null || publicToken.isEmpty()){
             return ResponseEntity.badRequest().body("Exchange Public Token Map is empty");
         }
@@ -74,7 +71,6 @@ public class PlaidController {
         ItemPublicTokenExchangeResponse exchangePublicTokenResponse = plaidLinkTokenProcessor.exchangePublicToken(publicToken);
         String accessToken = exchangePublicTokenResponse.getAccessToken();
         String itemId = exchangePublicTokenResponse.getItemId();
-        Long userID = entry.getKey();
         LOGGER.info("Access Token: {}", accessToken);
         LOGGER.info("Item ID: {}", itemId);
         if(accessToken == null || accessToken.isEmpty()){
@@ -88,11 +84,12 @@ public class PlaidController {
     @GetMapping("/{userId}/plaid-link")
     public ResponseEntity<PlaidLinkStatus> checkPlaidLinkStatus(@PathVariable Long userId){
         Optional<PlaidLinkEntity> plaidLink = plaidLinkService.findPlaidLinkByUserID(userId);
+        LOGGER.info("PlaidLink: " + plaidLink);
         if(plaidLink.isPresent()){
             PlaidLinkStatus plaidLinkStatus = new PlaidLinkStatus(true);
             return ResponseEntity.ok(plaidLinkStatus);
         }
-        return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(new PlaidLinkStatus(false));
     }
 
     @PostMapping("/link")

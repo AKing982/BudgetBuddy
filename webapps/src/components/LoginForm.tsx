@@ -1,20 +1,23 @@
-
-import React, {useState, FormEvent, useCallback, useRef} from 'react';
+import React, {FormEvent, useCallback, useRef, useState} from 'react';
 import {
     Box,
     Button,
     Container,
+    createTheme,
+    CssBaseline,
+    Grid,
+    Link,
+    Paper,
     TextField,
-    Typography,
-    Paper, Grid, Link, createTheme, ThemeProvider, CssBaseline
+    ThemeProvider,
+    Typography
 } from '@mui/material';
-import { LockOutlined } from '@mui/icons-material';
+import {LockOutlined} from '@mui/icons-material';
 import {useNavigate} from "react-router-dom";
 import {authenticateUser, LoginCredentials} from "../api/LoginApiService";
 import {PlaidLinkOnSuccessMetadata} from "react-plaid-link";
 import PlaidService from "../services/PlaidService";
 import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
-import plaidService from "../services/PlaidService";
 import LoginService from "../services/LoginService";
 
 
@@ -28,6 +31,11 @@ interface FormErrors {
     password?: string;
 
 }
+
+interface PlaidLinkStatus {
+    isLinked: boolean;
+}
+
 
 interface PlaidExchangeResponse {
     accessToken: string;
@@ -98,7 +106,6 @@ const LoginForm: React.FC = () => {
         setFormErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }
-
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
         try
@@ -115,14 +122,23 @@ const LoginForm: React.FC = () => {
                 console.log('Is Authenticated: ', isAuthenticated);
                 const plaidService = PlaidService.getInstance();
                 // Fetch the link token
-                const response = await plaidService.createLinkToken();
-                console.log('Response: ', response);
-                console.log('Link Token: ', response.linkToken);
-                setLinkToken(response.linkToken);
-                if(plaidLinkRef.current){
-                    plaidLinkRef.current.open();
+
+                const isPlaidLinkedResponse = await handlePlaidLinkVerification(1);
+                const isPlaidLinked = isPlaidLinkedResponse.isLinked;
+                if(!isPlaidLinked){
+                    const response = await plaidService.createLinkToken();
+
+                    console.log('Response: ', response);
+                    console.log('Link Token: ', response.linkToken);
+                    setLinkToken(response.linkToken);
+
+                    if(plaidLinkRef.current){
+                        plaidLinkRef.current.open();
+                    }else{
+                        console.error('Plaid Link reference is not available');
+                    }
                 }else{
-                    console.log('Authenticated Failed');
+                    navigate('/dashboard');
                 }
             }
             console.log('Response: ', response);
@@ -132,6 +148,7 @@ const LoginForm: React.FC = () => {
             console.error(err);
         }
     };
+
 
     const handleRegister = () => {
         navigate('/register');
@@ -162,6 +179,20 @@ const LoginForm: React.FC = () => {
         }
     }
 
+    const handlePlaidLinkVerification = async (userId: number) : Promise<PlaidLinkStatus> => {
+        try
+        {
+            const plaidService = PlaidService.getInstance();
+            return await plaidService.checkPlaidLinkStatusByUserId(userId);
+
+        }catch(error)
+        {
+            console.error('There was an error verifying the user has a plaid link: ', error);
+            throw error;
+        }
+
+    }
+
     const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
         try
         {
@@ -172,9 +203,7 @@ const LoginForm: React.FC = () => {
 
             const response = await plaidService.exchangePublicToken(publicToken, userId);
             const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
-            if(plaidLinkResponse != null){
-                navigate('/dashboard');
-            }
+            navigate('/dashboard');
         }catch(error)
         {
             console.error('Error exchanging public token: ', error);

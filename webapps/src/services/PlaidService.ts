@@ -26,8 +26,9 @@ interface PlaidLinkRequest {
     userID: string;
 }
 
-interface ExchangePublicTokenDTO{
-    exchangePublicTokenMap: Map<number, string>;
+interface PlaidExchangeRequest{
+    userId: number;
+    publicToken: string;
 }
 
 interface Transaction {
@@ -77,12 +78,22 @@ class PlaidService {
 
     public async checkPlaidLinkStatusByUserId(userId: number) : Promise<PlaidLinkStatus>
     {
+        if(userId < 1){
+            throw new Error("Invalid userId. UserId must be a positive number.");
+        }
         try
         {
-            return await axios.get(`http://localhost:8080/api/plaid/${userId}/plaid-link`);
+            const response = await axios.get(`${apiUrl}/api/plaid/${userId}/plaid-link`);
+            return response.data;
         }catch(error)
         {
-            console.error('There was an error validating the plaid link exists: ', error);
+            if (axios.isAxiosError(error)) {
+                console.error('Error checking Plaid link status:', error.message);
+                console.error('Error response:', error.response?.data);
+                console.error('Error status:', error.response?.status);
+            } else {
+                console.error('Unexpected error:', error);
+            }
             throw error;
         }
     }
@@ -117,13 +128,12 @@ class PlaidService {
     public async createLinkToken() : Promise<any> {
         try
         {
-            let userId = sessionStorage.getItem('userId');
+
+            // let userId = sessionStorage.getItem('userId');
             const linkTokenRequest = this.createLinkTokenRequest("1");
-            this.validateLinkTokenRequest(linkTokenRequest);
             const response = await axios.post<PlaidLinkToken>(`http://localhost:8080/api/plaid/create_link_token`, {
                userId: "1"
             });
-            console.log('Link Token: ', response);
             return response.data;
         }catch(error)
         {
@@ -144,16 +154,12 @@ class PlaidService {
             throw new Error("Public Token cannot be null");
         }
 
-        const exchangePublicTokenDTO: ExchangePublicTokenDTO = {
-            exchangePublicTokenMap: new Map([[Number(userId), publicToken]])
-        };
-
-        console.log('Exchange Public Token Map: ', exchangePublicTokenDTO.exchangePublicTokenMap.entries());
-
         try
         {
-            const response = await axios.post<PlaidExchangeResponse>(`${apiUrl}/api/plaid/exchange_public_token`,
-                this.mapToObject(exchangePublicTokenDTO.exchangePublicTokenMap));
+            const response = await axios.post<PlaidExchangeResponse>(`${apiUrl}/api/plaid/exchange_public_token`, {
+                userId: userId,
+                publicToken: publicToken
+            });
             console.log('Response: ', response);
             return response.data;
         }catch(error)

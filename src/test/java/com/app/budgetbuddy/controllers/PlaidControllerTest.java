@@ -1,7 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.config.JpaConfig;
-import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
+import com.app.budgetbuddy.domain.PlaidExchangeRequest;
 import com.app.budgetbuddy.domain.PlaidLinkRequest;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
@@ -115,7 +115,12 @@ class PlaidControllerTest {
     void testExchangePublicToken_whenExchangePublicTokenDTOIsNotNull_thenReturnOk() throws Exception {
         Map<Long, String> exchangePublicTokenMap = new HashMap<>();
         exchangePublicTokenMap.put(1L, "public_token");
-        String jsonString = objectMapper.writeValueAsString(new ExchangePublicTokenDTO(exchangePublicTokenMap));
+
+        Long userID = 1L;
+        String publicToken = "public_token";
+        PlaidExchangeRequest exchangeRequest = new PlaidExchangeRequest(userID, publicToken);
+
+        String jsonString = objectMapper.writeValueAsString(exchangeRequest);
         ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
         when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
 
@@ -129,8 +134,8 @@ class PlaidControllerTest {
     void testExchangePublicToken_whenExchangePublicTokeMapIsEmpty_thenReturnBadRequest() throws Exception {
         Map<Long, String> exchangePublicTokenMap = new HashMap<>();
 
-        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
+        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest();
+        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonString))
@@ -139,12 +144,12 @@ class PlaidControllerTest {
 
     @Test
     void testExchangePublicToken_WhenValueNotFound_thenReturnBadRequest() throws Exception {
-        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
-        exchangePublicTokenMap.put(1L, null);
 
-        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
+        Long userID = 1L;
 
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
+        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest(userID, null);
+
+        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
 
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -155,15 +160,14 @@ class PlaidControllerTest {
     @Test
     void testExchangePublicToken_whenAccessTokenEmpty_thenReturnNotFound() throws Exception {
 
-        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
-        exchangePublicTokenMap.put(1L, "public_token");
-
-        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
+        Long userID = 1L;
+        String publicToken = "public_token";
+        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest(userID, publicToken);
 
         ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("");
         when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
 
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
+        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
 
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -173,15 +177,14 @@ class PlaidControllerTest {
 
     @Test
     void testExchangePublicToken_whenMapIsValid_thenReturnOk() throws Exception {
-        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
-        exchangePublicTokenMap.put(1L, "public_token");
-
-        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
+        Long userId = 1L;
+        String publicToken = "public_token";
+        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest(userId, publicToken);
 
         ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
         when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
 
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
+        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
 
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                         .contentType(MediaType.APPLICATION_JSON)

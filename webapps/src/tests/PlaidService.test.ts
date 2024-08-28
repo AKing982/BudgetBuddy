@@ -36,9 +36,31 @@ describe('PlaidService', () => {
         const responseData: PlaidLinkStatus = {isLinked: true};
         mockAxios.get.mockResolvedValueOnce({ data: responseData  });
 
-        const result = serviceInstance.checkPlaidLinkStatusByUserId(userId);
+        const result = await serviceInstance.checkPlaidLinkStatusByUserId(userId);
+        console.log(result);
         expect(result).toEqual(responseData);
         expect(mockAxios.get).toBeCalledWith(`${apiUrl}/api/plaid/${userId}/plaid-link`);
+    });
+
+    test('checkPlaidLinkStatusByUserId throws error for userId = -1', async () => {
+        const serviceInstance = PlaidService.getInstance();
+        const userId = -1;
+        await expect(serviceInstance.checkPlaidLinkStatusByUserId(userId))
+            .rejects
+            .toThrow('Invalid userId. UserId must be a positive number.');
+
+    });
+
+    test('checkPlaidLinkStatusByUserId when response is null', async () => {
+        const serviceInstance = PlaidService.getInstance();
+        const userId = 1;
+        const apiUrl = "http://localhost:8080";
+
+        mockAxios.get.mockResolvedValueOnce({data: null});
+
+        const result = await serviceInstance.checkPlaidLinkStatusByUserId(userId);
+        expect(result).toBeNull();
+        expect(mockAxios.get).toHaveBeenCalledWith(`${apiUrl}/api/plaid/${userId}/plaid-link`);
     });
 
     test('createLinkToken axios post call', async () => {
