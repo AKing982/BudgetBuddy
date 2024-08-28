@@ -1,5 +1,4 @@
-
-import apiUrl from '../config/api'
+import {apiUrl} from '../config/api'
 import axios, {AxiosError, AxiosInstance, AxiosStatic} from "axios";
 
 interface PlaidLinkToken {
@@ -14,13 +13,17 @@ interface LinkTokenCreateRequest {
 interface PlaidExchangeResponse {
     accessToken: string;
     itemID: string;
-    userID: number;
+    userID: bigint;
+}
+
+interface PlaidLinkStatus {
+    isLinked: boolean;
 }
 
 interface PlaidLinkRequest {
     accessToken: string;
     itemID: string;
-    userID: number;
+    userID: string;
 }
 
 interface ExchangePublicTokenDTO{
@@ -64,15 +67,27 @@ class PlaidService {
         };
     }
 
-    private createPlaidLinkRequest(accessToken: string, itemID: string, userID: number) : PlaidLinkRequest {
+    private createPlaidLinkRequest(accessToken: string, itemID: string, userID: bigint) : PlaidLinkRequest {
         return {
             accessToken: accessToken,
             itemID: itemID,
-            userID: userID
+            userID: userID.toString()
         }
     }
 
-    public async savePlaidLinkToDatabase(accessToken: string, itemID: string, userID: number) : Promise<any>
+    public async checkPlaidLinkStatusByUserId(userId: number) : Promise<PlaidLinkStatus>
+    {
+        try
+        {
+            return await axios.get(`http://localhost:8080/api/plaid/${userId}/plaid-link`);
+        }catch(error)
+        {
+            console.error('There was an error validating the plaid link exists: ', error);
+            throw error;
+        }
+    }
+
+    public async savePlaidLinkToDatabase(accessToken: string, itemID: string, userID: bigint) : Promise<any>
     {
         if(accessToken === null || itemID === null || userID < 0){
             console.log('AccessToken: ', accessToken);
@@ -81,12 +96,14 @@ class PlaidService {
             throw new Error("Invalid Plaid Link Criteria found: ");
         }
 
-        const request = this.createPlaidLinkRequest(accessToken, itemID, userID);
+        const request: PlaidLinkRequest = this.createPlaidLinkRequest(accessToken, itemID, userID);
         console.log('PlaidLinkRequest: ', request);
         try
         {
-            const response = await axios.post(`${apiUrl}/api/plaid/link`, {
-                request
+            const response = await axios.post<PlaidLinkRequest>(`${apiUrl}/api/plaid/link`, {
+                accessToken: accessToken,
+                itemID: itemID,
+                userID: userID
             });
             return response.data;
 

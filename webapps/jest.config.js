@@ -1,15 +1,11 @@
 module.exports = {
-    globals: {
-        "ts-jest": {
-            isolatedModules: true,
-        },
-    },
+    preset: 'ts-jest',
+    testEnvironment: 'node',
     transform: {
-        '^.+\\.(ts|tsx|js|jsx)$': 'ts-jest',
+        '^.+\\.(ts|tsx|js|jsx)$': ['babel-jest', { presets: ['@babel/preset-env', '@babel/preset-react', '@babel/preset-typescript'] }],
     },
-    moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
     transformIgnorePatterns: [
-        'webapps/node_modules/(?!(axios)/)',
+        'node_modules/(?!(axios)/)',
     ],
     moduleNameMapper: {
         '^axios$': require.resolve('axios'),

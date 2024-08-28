@@ -3,6 +3,7 @@ package com.app.budgetbuddy.controllers;
 import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
 import com.app.budgetbuddy.domain.ExchangeResponse;
 import com.app.budgetbuddy.domain.PlaidLinkRequest;
+import com.app.budgetbuddy.domain.PlaidLinkStatus;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
@@ -57,7 +58,8 @@ public class PlaidController {
     }
 
     @PostMapping("/exchange_public_token")
-    public ResponseEntity<?> exchangePublicToken(@RequestBody Map<Long, String> exchangePublicTokenMap) throws IOException, InterruptedException {
+    public ResponseEntity<?> exchangePublicToken(@RequestBody ExchangePublicTokenDTO exchangePublicTokenDTO) throws IOException, InterruptedException {
+        Map<Long, String> exchangePublicTokenMap = exchangePublicTokenDTO.getExchangePublicTokenMap();
         LOGGER.info("Exchange Public Token Map: {}", exchangePublicTokenMap.values());
         if(exchangePublicTokenMap.isEmpty()){
             return ResponseEntity.badRequest().body("Exchange Public Token Map is empty");
@@ -83,6 +85,16 @@ public class PlaidController {
         return ResponseEntity.ok(exchangeResponse);
     }
 
+    @GetMapping("/{userId}/plaid-link")
+    public ResponseEntity<PlaidLinkStatus> checkPlaidLinkStatus(@PathVariable Long userId){
+        Optional<PlaidLinkEntity> plaidLink = plaidLinkService.findPlaidLinkByUserID(userId);
+        if(plaidLink.isPresent()){
+            PlaidLinkStatus plaidLinkStatus = new PlaidLinkStatus(true);
+            return ResponseEntity.ok(plaidLinkStatus);
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
     @PostMapping("/link")
     public ResponseEntity<?> savePlaidLink(@RequestBody PlaidLinkRequest plaidLinkRequest){
 
@@ -102,8 +114,9 @@ public class PlaidController {
         try
         {
             String itemId = plaidLinkRequest.itemID();
-            Long userID = plaidLinkRequest.userID();
-            createAndSavePlaidLink(accessToken, itemId, userID);
+            String userID = plaidLinkRequest.userID();
+            Long uID = Long.parseLong(userID);
+            createAndSavePlaidLink(accessToken, itemId, uID);
             return ResponseEntity.status(HttpStatus.CREATED).build();
 
         }catch(PlaidLinkException e)

@@ -32,7 +32,7 @@ interface FormErrors {
 interface PlaidExchangeResponse {
     accessToken: string;
     itemID: string;
-    userID: number;
+    userID: bigint;
 }
 
 const theme = createTheme({

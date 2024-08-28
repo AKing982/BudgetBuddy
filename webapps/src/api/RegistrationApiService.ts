@@ -1,4 +1,4 @@
-import apiUrl from "../config/api";
+import {apiUrl} from "../config/api";
 import axios from "axios";
 
 export interface Registration

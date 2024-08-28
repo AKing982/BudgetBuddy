@@ -4,17 +4,20 @@ import com.app.budgetbuddy.config.JpaConfig;
 import com.app.budgetbuddy.domain.ExchangePublicTokenDTO;
 import com.app.budgetbuddy.domain.PlaidLinkRequest;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.plaid.client.model.ItemPublicTokenExchangeResponse;
 import com.plaid.client.model.LinkTokenCreateRequest;
 import com.plaid.client.model.LinkTokenCreateResponse;
+import com.plaid.client.request.PlaidApi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.devtools.autoconfigure.OptionalLiveReloadServer;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -51,6 +54,9 @@ class PlaidControllerTest {
             .withDatabaseName("buddy")
             .withUsername("buddy")
             .withPassword("buddy");
+
+    @MockBean
+    private PlaidApi plaid;
 
     @DynamicPropertySource
     static void registerPgProperties(DynamicPropertyRegistry registry) {
@@ -123,7 +129,8 @@ class PlaidControllerTest {
     void testExchangePublicToken_whenExchangePublicTokeMapIsEmpty_thenReturnBadRequest() throws Exception {
         Map<Long, String> exchangePublicTokenMap = new HashMap<>();
 
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonString))
@@ -135,7 +142,9 @@ class PlaidControllerTest {
         Map<Long, String> exchangePublicTokenMap = new HashMap<>();
         exchangePublicTokenMap.put(1L, null);
 
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
+
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
 
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -145,13 +154,16 @@ class PlaidControllerTest {
 
     @Test
     void testExchangePublicToken_whenAccessTokenEmpty_thenReturnNotFound() throws Exception {
+
         Map<Long, String> exchangePublicTokenMap = new HashMap<>();
         exchangePublicTokenMap.put(1L, "public_token");
+
+        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
 
         ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("");
         when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
 
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
 
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -164,10 +176,12 @@ class PlaidControllerTest {
         Map<Long, String> exchangePublicTokenMap = new HashMap<>();
         exchangePublicTokenMap.put(1L, "public_token");
 
+        ExchangePublicTokenDTO exchangePublicTokenDTO = new ExchangePublicTokenDTO(exchangePublicTokenMap);
+
         ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
         when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
 
-        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenMap);
+        String jsonString = objectMapper.writeValueAsString(exchangePublicTokenDTO);
 
         mockMvc.perform(post("/api/plaid/exchange_public_token")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -188,7 +202,7 @@ class PlaidControllerTest {
 
     @Test
     void testSaveAccessToken_whenAccessTokenIsNullOrEmpty_thenReturnBadRequest() throws Exception {
-        PlaidLinkRequest plaidLinkRequest = new PlaidLinkRequest("", "3232323232", 1L);
+        PlaidLinkRequest plaidLinkRequest = new PlaidLinkRequest("", "3232323232", "1L");
 
         String jsonString = objectMapper.writeValueAsString(plaidLinkRequest);
 
@@ -201,7 +215,7 @@ class PlaidControllerTest {
 
     @Test
     void testSaveAccessToken_whenPlaidLinkRequestValid_thenReturnStatusCreated() throws Exception {
-        PlaidLinkRequest plaidLinkRequest = new PlaidLinkRequest("e23232320", "chhsdfsdfasdf", 1L);
+        PlaidLinkRequest plaidLinkRequest = new PlaidLinkRequest("e23232320", "chhsdfsdfasdf", "1");
         when(plaidLinkService.createPlaidLink(anyString(), anyString(), anyLong())).thenReturn(Optional.of(new PlaidLinkEntity()));
 
         String jsonString = objectMapper.writeValueAsString(plaidLinkRequest);
@@ -210,6 +224,35 @@ class PlaidControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonString))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void testCheckPlaidLinkStatus_whenUserIdIsValid_thenReturnOk() throws Exception {
+        Long userId = 1L;
+
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLink()));
+
+        mockMvc.perform(get("/api/plaid/{userId}/plaid-link", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    private PlaidLinkEntity createPlaidLink(){
+        PlaidLinkEntity plaidLinkEntity = new PlaidLinkEntity();
+        plaidLinkEntity.setItemId("234234234234");
+        plaidLinkEntity.setAccessToken("access_token");
+        plaidLinkEntity.setUser(createUserEntity());
+        return plaidLinkEntity;
+    }
+
+    private UserEntity createUserEntity(){
+        UserEntity userEntity = new UserEntity();
+        userEntity.setFirstName("firstName");
+        userEntity.setLastName("lastName");
+        userEntity.setEmail("email");
+        userEntity.setPassword("password");
+        userEntity.setId(1L);
+        return userEntity;
     }
 
 

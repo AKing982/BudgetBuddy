@@ -1,6 +1,6 @@
-import apiUrl from "../config/api"
+import {apiUrl} from "../config/api"
 import axios, {AxiosError} from "axios";
-import api from "../config/api";
+
 
 
 export interface AuthenticationResponse {

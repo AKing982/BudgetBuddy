@@ -4,5 +4,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record PlaidLinkRequest(@JsonProperty("accessToken") String accessToken,
                                @JsonProperty("itemID") String itemID,
-                               @JsonProperty("userID") Long userID) {
+                               @JsonProperty("userID") String userID) {
 }

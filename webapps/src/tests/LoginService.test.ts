@@ -1,5 +1,5 @@
 // System imports
-import LoginService from './LoginService';
+import LoginService from '../services/LoginService';
 import axios from "axios";
 
 

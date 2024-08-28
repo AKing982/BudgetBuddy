@@ -4,6 +4,7 @@ import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.UserNotFoundException;
 import com.app.budgetbuddy.repositories.PlaidLinkRepository;
+import com.app.budgetbuddy.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +17,13 @@ import java.util.Optional;
 public class PlaidLinkServiceImpl implements PlaidLinkService
 {
     private final PlaidLinkRepository plaidLinkRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public PlaidLinkServiceImpl(PlaidLinkRepository plaidLinkRepository){
+    public PlaidLinkServiceImpl(PlaidLinkRepository plaidLinkRepository,
+                                UserRepository userRepository){
         this.plaidLinkRepository = plaidLinkRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -53,9 +57,14 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
         return Optional.of(plaidLinkEntity);
     }
 
+    @Override
+    public Optional<PlaidLinkEntity> findPlaidLinkByUserID(Long userID) {
+        return plaidLinkRepository.findPlaidLinkByUserId(userID);
+    }
+
     private UserEntity findUserByUserID(Long userID)
     {
-        Optional<UserEntity> user = plaidLinkRepository.findUserByUserId(userID);
+        Optional<UserEntity> user = userRepository.findById(userID);
         if(user.isEmpty()){
             throw new UserNotFoundException("User not found");
         }
