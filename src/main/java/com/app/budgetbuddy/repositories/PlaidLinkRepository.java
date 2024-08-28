@@ -17,4 +17,7 @@ public interface PlaidLinkRepository extends JpaRepository<PlaidLinkEntity, Long
 
     @Query("SELECT pl FROM PlaidLinkEntity pl WHERE pl.user.id =:id")
     Optional<PlaidLinkEntity> findPlaidLinkByUserId(@Param("id") Long id);
+
+    @Query("SELECT pl FROM PlaidLinkEntity pl WHERE pl.user.id =:id AND pl.accessToken =:token")
+    Optional<PlaidLinkEntity> findPlaidLinkByUserIdAndAccessToken(@Param("id") Long id, @Param("token") String token);
 }

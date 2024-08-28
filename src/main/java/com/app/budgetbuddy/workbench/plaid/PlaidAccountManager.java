@@ -1,6 +1,8 @@
 package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.domain.PlaidAccount;
+import com.app.budgetbuddy.exceptions.PlaidApiException;
+import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.plaid.client.model.AccountBase;
 import com.plaid.client.model.AccountsGetRequest;
@@ -29,7 +31,10 @@ public class PlaidAccountManager extends AbstractPlaidManager
      * @param accessToken The access token to be used for creating the accounts request.
      * @return An instance of AccountsGetRequest class.
      */
-    public AccountsGetRequest createAccountRequest(String accessToken){
+    public AccountsGetRequest createAccountRequest(Long userId, String accessToken) throws PlaidApiException {
+        if(accessToken.isEmpty()){
+            throw new PlaidApiException("No Access token found.");
+        }
         return null;
     }
 

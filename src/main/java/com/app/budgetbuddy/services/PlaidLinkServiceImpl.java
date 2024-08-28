@@ -62,6 +62,11 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
         return plaidLinkRepository.findPlaidLinkByUserId(userID);
     }
 
+    @Override
+    public Optional<PlaidLinkEntity> findPlaidLinkByUserIdAndAccessToken(Long userID, String accessToken) {
+        return plaidLinkRepository.findPlaidLinkByUserIdAndAccessToken(userID, accessToken);
+    }
+
     private UserEntity findUserByUserID(Long userID)
     {
         Optional<UserEntity> user = userRepository.findById(userID);
