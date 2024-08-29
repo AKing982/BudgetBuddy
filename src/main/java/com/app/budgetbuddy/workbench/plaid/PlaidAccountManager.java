@@ -1,6 +1,9 @@
 package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.domain.PlaidAccount;
+import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.exceptions.InvalidAccessTokenException;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
@@ -10,18 +13,26 @@ import com.plaid.client.model.AccountsGetResponse;
 import com.plaid.client.request.PlaidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.quartz.QuartzDataSource;
 import org.springframework.stereotype.Service;
+import retrofit2.Call;
+import retrofit2.Response;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class PlaidAccountManager extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidAccountManager.class);
+    private PlaidApi plaidApi;
 
-    public PlaidAccountManager(PlaidLinkService plaidLinkService) {
+    public PlaidAccountManager(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi) {
         super(plaidLinkService);
+        this.plaidApi = plaidApi;
     }
 
     /**
@@ -31,22 +42,32 @@ public class PlaidAccountManager extends AbstractPlaidManager
      * @param accessToken The access token to be used for creating the accounts request.
      * @return An instance of AccountsGetRequest class.
      */
-    public AccountsGetRequest createAccountRequest(Long userId, String accessToken) throws PlaidApiException {
+    public AccountsGetRequest createAccountRequest(String accessToken) throws PlaidApiException {
         if(accessToken.isEmpty()){
             throw new PlaidApiException("No Access token found.");
         }
-        return null;
+        //TODO: Implement testing for case when access token doesn't match access token being passed
+        return new AccountsGetRequest()
+                .accessToken(accessToken);
     }
 
     /**
      * Retrieves the accounts associated with a given user.
      *
-     * @param accessToken The access token for the user.
      * @param userId The user ID.
      * @return The response containing the accounts for the user.
      */
-    public AccountsGetResponse getAccountsForUser(String accessToken, String userId){
-        return null;
+    public AccountsGetResponse getAccountsForUser(Long userId) throws IOException {
+        if(userId == null){
+            throw new InvalidUserIDException("Invalid user ID.");
+        }
+        PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
+        String accessToken = plaidLinkEntity.getAccessToken();
+        AccountsGetRequest request = createAccountRequest(accessToken);
+
+        Call<AccountsGetResponse> accountsResponse = plaidApi.accountsGet(request);
+        Response<AccountsGetResponse> response = accountsResponse.execute();
+        return response.body();
     }
 
     /**
@@ -56,7 +77,7 @@ public class PlaidAccountManager extends AbstractPlaidManager
      * @param accountsGetRequest The request object containing the necessary information to retrieve the accounts.
      * @return The response containing the accounts for the user.
      */
-    public AccountsGetResponse getAccountsForUserWithRetryResponse(AccountsGetRequest accountsGetRequest){
+    public AccountsGetResponse getAccountsForUserWithRetryResponse(int retryCount, AccountsGetRequest accountsGetRequest){
         return null;
     }
 
@@ -71,6 +92,16 @@ public class PlaidAccountManager extends AbstractPlaidManager
     }
 
 
+    private PlaidLinkEntity findPlaidLinkByUserId(Long userId){
+        if(userId == null){
+            throw new InvalidUserIDException("Invalid user ID.");
+        }
+        Optional<PlaidLinkEntity> plaidLinkOptional = plaidLinkService.findPlaidLinkByUserID(userId);
+        if(plaidLinkOptional.isEmpty()){
+            throw new PlaidLinkException("No plaid link found for userID: " + userId);
+        }
+        return plaidLinkOptional.get();
+    }
 
 
 
