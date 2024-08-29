@@ -77,8 +77,29 @@ public class PlaidAccountManager extends AbstractPlaidManager
      * @param accountsGetRequest The request object containing the necessary information to retrieve the accounts.
      * @return The response containing the accounts for the user.
      */
-    public AccountsGetResponse getAccountsForUserWithRetryResponse(int retryCount, AccountsGetRequest accountsGetRequest){
-        return null;
+    public Response<AccountsGetResponse> getAccountsForUserWithRetryResponse(AccountsGetRequest accountsGetRequest) throws IOException {
+        int attempts = 0;
+        int MAX_ATTEMPTS = 3;
+        Response<AccountsGetResponse> accountsResponse = null;
+        do
+        {
+           Call<AccountsGetResponse> accountsGetResponseResponse = plaidApi.accountsGet(accountsGetRequest);
+           accountsResponse = accountsGetResponseResponse.execute();
+           try
+           {
+               if(accountsResponse.isSuccessful()){
+                   break;
+               }else{
+                   attempts++;
+                   Thread.sleep(500);
+               }
+           }catch(InterruptedException e)
+           {
+               LOGGER.error("There was a problem while trying to retrieve accounts from Plaid API.", e);
+           }
+
+        }while(attempts < MAX_ATTEMPTS);
+        return accountsResponse;
     }
 
     /**
