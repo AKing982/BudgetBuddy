@@ -16,9 +16,11 @@ import com.plaid.client.model.AccountsGetResponse;
 import com.plaid.client.model.ItemPublicTokenExchangeResponse;
 import com.plaid.client.model.LinkTokenCreateResponse;
 import com.plaid.client.model.TransactionsGetResponse;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -146,8 +148,8 @@ public class PlaidController {
 
     @GetMapping("/transactions")
     public ResponseEntity<?> getTransactions(@RequestParam Long userId,
-                                             @RequestParam LocalDate startDate,
-                                             @RequestParam LocalDate endDate){
+                                             @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                             @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
         if(userId < 1){
             return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
         }
