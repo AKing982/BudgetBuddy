@@ -120,11 +120,6 @@ class PlaidAccountManagerTest {
         assertEquals(expectedResponse.getAccounts(), actualResponse.body().getAccounts());
    }
 
-   @Test
-   void testGetAccountsForUser_whenFirstResponseFails_thenCallRetryAndReturnResponse(){
-        
-   }
-
 
    private AccountBase testAccount(){
         AccountBase accountBase = new AccountBase();

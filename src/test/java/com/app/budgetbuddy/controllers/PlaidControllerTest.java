@@ -7,10 +7,9 @@ import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
+import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
-import com.plaid.client.model.ItemPublicTokenExchangeResponse;
-import com.plaid.client.model.LinkTokenCreateRequest;
-import com.plaid.client.model.LinkTokenCreateResponse;
+import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,9 +31,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -57,6 +54,9 @@ class PlaidControllerTest {
 
     @MockBean
     private PlaidApi plaid;
+
+    @MockBean
+    private PlaidAccountManager plaidAccountManager;
 
     @DynamicPropertySource
     static void registerPgProperties(DynamicPropertyRegistry registry) {
@@ -238,6 +238,52 @@ class PlaidControllerTest {
         mockMvc.perform(get("/api/plaid/{userId}/plaid-link", userId)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
+    }
+
+
+    @Test
+    void testGetAllAccounts_whenUserIsIsInvalid_thenReturnBadRequest() throws Exception {
+        Long userId = -1L;
+
+        mockMvc.perform(get("/api/plaid/accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("userId", String.valueOf(userId)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetAllAccounts_whenUserIdIsValid_thenReturnOk() throws Exception {
+        List<AccountBase> accountBaseList = new ArrayList<>();
+        accountBaseList.add(testAccount());
+        accountBaseList.add(testAccount());
+        Long userId = 1L;
+
+        AccountsGetResponse expectedResponse = new AccountsGetResponse();
+        expectedResponse.setAccounts(accountBaseList);
+
+        when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(expectedResponse);
+
+        mockMvc.perform(get("/api/plaid/accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("userId", String.valueOf(userId)))
+                .andExpect(status().isOk());
+    }
+
+    private AccountBase testAccount(){
+        AccountBase accountBase = new AccountBase();
+        accountBase.setName("Test Checking");
+        accountBase.setBalances(createAccountBalance());
+        accountBase.setAccountId("e23abs2");
+        accountBase.setSubtype(AccountSubtype.CHECKING);
+        accountBase.setType(AccountType.DEPOSITORY);
+        return accountBase;
+    }
+
+    private AccountBalance createAccountBalance(){
+        AccountBalance accountBalance = new AccountBalance();
+        accountBalance.setCurrent(Double.valueOf(1200));
+        accountBalance.setAvailable(Double.valueOf(1050));
+        return accountBalance;
     }
 
     private PlaidLinkEntity createPlaidLink(){

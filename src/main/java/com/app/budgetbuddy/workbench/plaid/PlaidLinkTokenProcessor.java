@@ -44,8 +44,7 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         return new LinkTokenCreateRequest()
                 .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
                 .clientName("BudgetBuddy")
-                .products(Arrays.asList( Products.TRANSACTIONS,
-                        Products.AUTH))
+                .products(Arrays.asList( Products.TRANSACTIONS))
                 .countryCodes(Arrays.asList(CountryCode.US))
                 .language("en");
 

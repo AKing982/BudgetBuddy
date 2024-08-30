@@ -9,7 +9,9 @@ import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
+import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
+import com.plaid.client.model.AccountsGetResponse;
 import com.plaid.client.model.ItemPublicTokenExchangeResponse;
 import com.plaid.client.model.LinkTokenCreateResponse;
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -32,12 +35,15 @@ public class PlaidController {
 
     private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
     private PlaidLinkService plaidLinkService;
+    private PlaidAccountManager plaidAccountManager;
     private Logger LOGGER = LoggerFactory.getLogger(PlaidController.class);
 
     @Autowired
     public PlaidController(PlaidLinkTokenProcessor plaidLinkTokenProcessor,
+                           PlaidAccountManager plaidAccountManager,
                            PlaidLinkService plaidLinkService) {
         this.plaidLinkTokenProcessor = plaidLinkTokenProcessor;
+        this.plaidAccountManager = plaidAccountManager;
         this.plaidLinkService = plaidLinkService;
     }
 
@@ -55,7 +61,18 @@ public class PlaidController {
 
     @GetMapping("/accounts")
     public ResponseEntity<?> getAllAccounts(@RequestParam Long userId){
-        return null;
+        if(userId < 1){
+            return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
+        }
+        try
+        {
+            AccountsGetResponse accountsResponse = plaidAccountManager.getAccountsForUser(userId);
+            return ResponseEntity.status(200).body(accountsResponse);
+
+        }catch(IOException e)
+        {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @PostMapping("/exchange_public_token")

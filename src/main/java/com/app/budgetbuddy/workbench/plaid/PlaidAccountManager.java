@@ -2,7 +2,6 @@ package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.domain.PlaidAccount;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
-import com.app.budgetbuddy.exceptions.InvalidAccessTokenException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
@@ -14,7 +13,6 @@ import com.plaid.client.request.PlaidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.quartz.QuartzDataSource;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -64,9 +62,7 @@ public class PlaidAccountManager extends AbstractPlaidManager
         PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
         String accessToken = plaidLinkEntity.getAccessToken();
         AccountsGetRequest request = createAccountRequest(accessToken);
-
-        Call<AccountsGetResponse> accountsResponse = plaidApi.accountsGet(request);
-        Response<AccountsGetResponse> response = accountsResponse.execute();
+        Response<AccountsGetResponse> response = getAccountsForUserWithRetryResponse(request);
         return response.body();
     }
 
