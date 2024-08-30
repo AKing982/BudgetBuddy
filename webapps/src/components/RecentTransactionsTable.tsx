@@ -46,6 +46,7 @@ const transactions: Transaction[] = [
 ];
 
 const RecentTransactionsTable: React.FC = () => {
+
     return (
         <Paper elevation={3} sx={{ maxWidth: 1050, margin: 'auto', mt: 4, borderRadius: '12px', overflow: 'hidden' }}>
             <Box p={3} sx={{ backgroundColor: '#F9FAFB' }}>

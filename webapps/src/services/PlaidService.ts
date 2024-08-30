@@ -197,7 +197,7 @@ class PlaidService {
     {
         try
         {
-            const response = await PlaidService.axios.get<Transaction[]>('/transactions', {
+            const response = await PlaidService.axios.get<Transaction[]>(`${apiUrl}/api/plaid/transactions`, {
                 params: {startDate, endDate},
             });
             return response.data;

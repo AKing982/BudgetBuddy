@@ -35,6 +35,7 @@ import SpendingTracker from "./SpendingTracker";
 import AccountSummary from "./AccountSummary";
 import PaymentCharges from "./PaymentCharges";
 import Sidebar from "./Sidebar";
+import PlaidService from "../services/PlaidService";
 
 
 const useDynamicSpacing = () => {
@@ -60,6 +61,7 @@ const DashboardPage: React.FC = () => {
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
     const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
+    const plaidService = PlaidService.getInstance();
     // const spacing = 2; // You can adjust this or use your dynamic spacing logic
     // const tightSpacing = 1; // Adjust as needed
     // const responsiveSpacing = isMdUp ? -120 : 0; // Adjust as needed
