@@ -19,11 +19,10 @@ import java.util.Arrays;
 public class PlaidLinkTokenProcessor extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidLinkTokenProcessor.class);
-    private PlaidApi plaidApi;
 
     @Autowired
     public PlaidLinkTokenProcessor(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi) {
-        super(plaidLinkService);
+        super(plaidLinkService, plaidApi);
         if(plaidApi == null){
             throw new RuntimeException("Plaid Api is null");
         }

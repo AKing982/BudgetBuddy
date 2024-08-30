@@ -11,9 +11,11 @@ import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
+import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.plaid.client.model.AccountsGetResponse;
 import com.plaid.client.model.ItemPublicTokenExchangeResponse;
 import com.plaid.client.model.LinkTokenCreateResponse;
+import com.plaid.client.model.TransactionsGetResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,15 +38,18 @@ public class PlaidController {
     private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
     private PlaidLinkService plaidLinkService;
     private PlaidAccountManager plaidAccountManager;
+    private PlaidTransactionManager plaidTransactionManager;
     private Logger LOGGER = LoggerFactory.getLogger(PlaidController.class);
 
     @Autowired
     public PlaidController(PlaidLinkTokenProcessor plaidLinkTokenProcessor,
                            PlaidAccountManager plaidAccountManager,
-                           PlaidLinkService plaidLinkService) {
+                           PlaidLinkService plaidLinkService,
+                           PlaidTransactionManager plaidTransactionManager) {
         this.plaidLinkTokenProcessor = plaidLinkTokenProcessor;
         this.plaidAccountManager = plaidAccountManager;
         this.plaidLinkService = plaidLinkService;
+        this.plaidTransactionManager = plaidTransactionManager;
     }
 
     @PostMapping("/create_link_token")
@@ -143,7 +148,19 @@ public class PlaidController {
     public ResponseEntity<?> getTransactions(@RequestParam Long userId,
                                              @RequestParam LocalDate startDate,
                                              @RequestParam LocalDate endDate){
-        return null;
+        if(userId < 1){
+            return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
+        }
+        try
+        {
+            TransactionsGetResponse transactionsGetResponse = plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate);
+            return ResponseEntity.status(200).body(transactionsGetResponse);
+
+        }catch(IOException e)
+        {
+            LOGGER.error("There was an error getting the transactions", e);
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @GetMapping("/transactions/filtered")

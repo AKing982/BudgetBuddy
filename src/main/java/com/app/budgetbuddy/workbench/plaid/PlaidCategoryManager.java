@@ -18,8 +18,8 @@ public class PlaidCategoryManager extends AbstractPlaidManager
     private Map<String, String> categoryMap = new ConcurrentHashMap<>();
 
 
-    public PlaidCategoryManager(PlaidLinkService plaidLinkService) {
-        super(plaidLinkService);
+    public PlaidCategoryManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi) {
+        super(plaidLinkService, plaidApi);
     }
 
     public Category getCategoryProperties(String categoryId) throws IOException

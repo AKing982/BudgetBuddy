@@ -7,8 +7,10 @@ import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
+import com.app.budgetbuddy.services.PlaidTransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
+import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +33,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.LocalDate;
 import java.util.*;
 
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -57,6 +60,9 @@ class PlaidControllerTest {
 
     @MockBean
     private PlaidAccountManager plaidAccountManager;
+
+    @MockBean
+    private PlaidTransactionManager plaidTransactionManager;
 
     @DynamicPropertySource
     static void registerPgProperties(DynamicPropertyRegistry registry) {
@@ -266,6 +272,64 @@ class PlaidControllerTest {
         mockMvc.perform(get("/api/plaid/accounts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .param("userId", String.valueOf(userId)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetTransactions_whenUserIdIsInvalid_thenThrowBadRequest() throws Exception {
+        Long userId = -1L;
+        LocalDate startDate = LocalDate.of(2024, 6, 1);
+        LocalDate endDate = LocalDate.of(2024, 6, 5);
+        mockMvc.perform(get("/api/plaid/transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("userId", String.valueOf(userId))
+                        .param("startDate", String.valueOf(startDate))
+                        .param("endDate",String.valueOf(endDate)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetTransactions_WhenStartDateIsNull_thenThrowBadRequest() throws Exception {
+        Long userId = 1L;
+        LocalDate startDate = null;
+        LocalDate endDate = LocalDate.of(2024, 6, 1);
+        mockMvc.perform(get("/api/plaid/transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("userId", String.valueOf(userId))
+                .param("startDate", String.valueOf(startDate))
+                .param("endDate", String.valueOf(endDate)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetTransactions_whenEndDateIsNull_thenThrowBadRequest() throws Exception {
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2024, 6, 1);
+        LocalDate endDate = null;
+
+        mockMvc.perform(get("/api/plaid/transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("userId", String.valueOf(userId))
+                .param("startDate", String.valueOf(startDate))
+                .param("endDate", String.valueOf(endDate)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetTransactions_whenRequestParametersValid_thenReturnResponse() throws Exception {
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2024, 6, 1);
+        LocalDate endDate = LocalDate.of(2024, 6, 5);
+
+        TransactionsGetResponse transactionsGetResponse = new TransactionsGetResponse();
+
+        when(plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate)).thenReturn(transactionsGetResponse);
+
+        mockMvc.perform(get("/api/plaid/transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("userId", String.valueOf(userId))
+                .param("startDate", String.valueOf(startDate))
+                .param("endDate", String.valueOf(endDate)))
                 .andExpect(status().isOk());
     }
 

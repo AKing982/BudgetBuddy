@@ -26,11 +26,9 @@ import java.util.Set;
 public class PlaidAccountManager extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidAccountManager.class);
-    private PlaidApi plaidApi;
 
     public PlaidAccountManager(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi) {
-        super(plaidLinkService);
-        this.plaidApi = plaidApi;
+        super(plaidLinkService, plaidApi);
     }
 
     /**
@@ -109,16 +107,7 @@ public class PlaidAccountManager extends AbstractPlaidManager
     }
 
 
-    private PlaidLinkEntity findPlaidLinkByUserId(Long userId){
-        if(userId == null){
-            throw new InvalidUserIDException("Invalid user ID.");
-        }
-        Optional<PlaidLinkEntity> plaidLinkOptional = plaidLinkService.findPlaidLinkByUserID(userId);
-        if(plaidLinkOptional.isEmpty()){
-            throw new PlaidLinkException("No plaid link found for userID: " + userId);
-        }
-        return plaidLinkOptional.get();
-    }
+
 
 
 
