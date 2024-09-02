@@ -34,11 +34,7 @@ public abstract class AbstractPlaidManager
         return plaidLinkOptional.get();
     }
 
-    protected Optional<PlaidLinkEntity> getPlaidLinkByUserId(Long userId){
-        return null;
-    }
-
     protected String getPlaidAccessToken(PlaidLinkEntity plaidLinkEntity){
-        return null;
+        return plaidLinkEntity.getAccessToken();
     }
 }

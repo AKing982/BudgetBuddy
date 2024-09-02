@@ -1,15 +1,15 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserEntity;
-import com.app.budgetbuddy.exceptions.IllegalDateException;
-import com.app.budgetbuddy.exceptions.InvalidAccessTokenException;
-import com.app.budgetbuddy.exceptions.InvalidStartDateException;
+import com.app.budgetbuddy.exceptions.*;
+import com.app.budgetbuddy.services.AccountService;
 import com.app.budgetbuddy.services.PlaidLinkService;
-import com.plaid.client.model.Transaction;
-import com.plaid.client.model.TransactionCode;
-import com.plaid.client.model.TransactionsGetRequest;
-import com.plaid.client.model.TransactionsGetResponse;
+import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.workbench.converter.TransactionConverter;
+import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
@@ -17,21 +17,27 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.shaded.org.apache.commons.lang3.ObjectUtils;
 import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PlaidTransactionManagerTest {
@@ -44,6 +50,12 @@ class PlaidTransactionManagerTest {
 
     @Mock
     private PlaidApi plaidApi;
+
+    @Mock
+    private TransactionService transactionService;
+
+    @Mock
+    private TransactionConverter transactionConverter;
 
     @BeforeEach
     void setUp() {
@@ -180,10 +192,114 @@ class PlaidTransactionManagerTest {
         assertEquals(expectedResponse.getTotalTransactions(), actualResponse.body().getTotalTransactions());
     }
 
+    @Test
+    void testSaveTransactionToDatabase_whenTransactionListIsEmpty(){
+        List<Transaction> transactions = new ArrayList<>();
+        assertThrows(TransactionsNotFoundException.class, () -> {
+            transactionManager.saveTransactionsToDatabase(transactions);
+        });
+    }
 
+    @Test
+    void testSaveTransactionToDatabase_whenTransactionElementNullThenSkipAndSaveTransaction() {
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(null);
+        transactions.add(createTransaction());
+
+        List<TransactionsEntity> expected = Arrays.asList(createTransactionEntity());
+        when(transactionConverter.convert(createTransaction())).thenReturn(createTransactionEntity());
+        doNothing().when(transactionService).save(createTransactionEntity());
+        List<TransactionsEntity> actual = transactionManager.saveTransactionsToDatabase(transactions);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < actual.size(); i++){
+            assertEquals(expected.get(i).getTransactionId(), actual.get(i).getTransactionId());
+            assertEquals(expected.get(i).getAccount().getAccountId(), actual.get(i).getAccount().getAccountId());
+            assertEquals(expected.get(i).getCategoryId(), actual.get(i).getCategoryId());
+            assertEquals(expected.get(i).getAuthorizedDate(), actual.get(i).getAuthorizedDate());
+            assertEquals(expected.get(i).isPending(), actual.get(i).isPending());
+            assertEquals(expected.get(i).getDescription(), actual.get(i).getDescription());
+            assertEquals(expected.get(i).getAmount(), actual.get(i).getAmount());
+            assertEquals(expected.get(i).getCategories(), actual.get(i).getCategories());
+            assertEquals(expected.get(i).getPosted(), actual.get(i).getPosted());
+        }
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideNullParameters")
+    void testSaveTransactionToDatabase_whenTransactionParametersAreNull(String transactionId, AccountEntity account, String description,
+                                                                        BigDecimal amount, Boolean isPending, List<String> categories, String categoryId, LocalDate authorizedDate, Class<? extends Exception> expectedException){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createTransaction());
+        transactions.add(createTransaction());
+
+        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
+        TransactionsEntity transactionsEntity = createTransaction(transactionId, account, description, amount, isPending, categories, categoryId, authorizedDate);
+        transactionsEntities.add(transactionsEntity);
+        assertThrows(expectedException, () -> {
+            transactionManager.saveTransactionsToDatabase(transactions);
+        });
+
+    }
 
     @AfterEach
     void tearDown() {
+    }
+
+    private static Stream<Arguments> provideNullParameters() {
+        return Stream.of(
+                Arguments.of("e232323", null, "description", BigDecimal.ONE, true, Arrays.asList("category"), "cat1", LocalDate.now(), NullPointerException.class),
+                Arguments.of(null, createAccountEntity(), "description", BigDecimal.ONE, true, Arrays.asList("category"), "cat1", LocalDate.now(), NullPointerException.class),
+                Arguments.of("e232323", createAccountEntity(), null, BigDecimal.ONE, true, Arrays.asList("category"), "cat1", LocalDate.now(), NullPointerException.class),
+                Arguments.of("e232323", createAccountEntity(), "description", null, true, Arrays.asList("category"), "cat1", LocalDate.now(), NullPointerException.class),
+                Arguments.of("e232323", createAccountEntity(), "description", BigDecimal.ONE, true, null, "cat1", LocalDate.now(), NullPointerException.class),
+                Arguments.of("e232323", createAccountEntity(), "description", BigDecimal.ONE, true, Arrays.asList("category"), null, LocalDate.now(), NullPointerException.class),
+                Arguments.of("e232323", createAccountEntity(), "description", BigDecimal.ONE, true, Arrays.asList("category"), "cat1", null, NullPointerException.class)
+        );
+    }
+
+    private TransactionsEntity createTransaction(String transactionId, AccountEntity account, String description, BigDecimal amount, boolean isPending, List<String> categories, String categoryId, LocalDate authorizedDate){
+        return TransactionsEntity.builder()
+                .transactionId(transactionId)
+                .pending(isPending)
+                .authorizedDate(authorizedDate)
+                .categories(categories)
+                .account(account)
+                .amount(amount)
+                .description(description)
+                .categoryId(categoryId)
+                .build();
+    }
+
+    private TransactionsEntity createTransactionEntity(){
+        TransactionsEntity transactionsEntity = new TransactionsEntity();
+        transactionsEntity.setId(1L);
+        transactionsEntity.setAccount(createAccountEntity());
+        transactionsEntity.setDescription("description");
+        transactionsEntity.setAmount(BigDecimal.ONE);
+        transactionsEntity.setId(1L);
+        transactionsEntity.setPending(false);
+        return transactionsEntity;
+    }
+
+    private static AccountEntity createAccountEntity(){
+        AccountEntity accountEntity = new AccountEntity();
+        accountEntity.setId(1L);
+        accountEntity.setAccountName("Test Checking");
+        accountEntity.setMask("0000");
+        accountEntity.setSubtype(AccountSubtype.CHECKING);
+        accountEntity.setType(AccountType.DEPOSITORY);
+        accountEntity.setBalance(BigDecimal.valueOf(120));
+        accountEntity.setUser(createUserEntity());
+        return accountEntity;
+    }
+
+    private UserEntity createUser(){
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(1L);
+        userEntity.setUsername("testUser");
+        return userEntity;
     }
 
     private Transaction createTransaction(){
@@ -207,7 +323,7 @@ class PlaidTransactionManagerTest {
         return plaidLinkEntity;
     }
 
-    private UserEntity createUserEntity(){
+    private static UserEntity createUserEntity(){
         UserEntity userEntity = new UserEntity();
         userEntity.setEmail("email@email.com");
         userEntity.setPassword("password");

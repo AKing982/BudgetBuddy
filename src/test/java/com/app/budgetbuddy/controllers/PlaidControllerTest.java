@@ -3,6 +3,7 @@ package com.app.budgetbuddy.controllers;
 import com.app.budgetbuddy.config.JpaConfig;
 import com.app.budgetbuddy.domain.PlaidExchangeRequest;
 import com.app.budgetbuddy.domain.PlaidLinkRequest;
+import com.app.budgetbuddy.domain.TransactionRequest;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.PlaidLinkService;
@@ -64,6 +65,8 @@ class PlaidControllerTest {
     @MockBean
     private PlaidTransactionManager plaidTransactionManager;
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @DynamicPropertySource
     static void registerPgProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
@@ -80,7 +83,6 @@ class PlaidControllerTest {
     @MockBean
     private PlaidLinkService plaidLinkService;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
@@ -333,6 +335,30 @@ class PlaidControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void testSaveTransactions_whenTransactionRequestIsNull_thenReturnBadRequest() throws Exception {
+
+        String jsonString = objectMapper.writeValueAsString(null);
+        mockMvc.perform(post("/api/plaid/save-transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSaveTransactions_whenTransactionRequestIsValid_thenReturnOk() throws Exception {
+        List<Transaction> transactionList = new ArrayList<>();
+        transactionList.add(createTransaction());
+        transactionList.add(createTransaction());
+
+        TransactionRequest transactionRequest = new TransactionRequest(transactionList);
+        String jsonString = objectMapper.writeValueAsString(transactionRequest);
+        mockMvc.perform(post("/api/plaid/save-transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isOk());
+    }
+
     private AccountBase testAccount(){
         AccountBase accountBase = new AccountBase();
         accountBase.setName("Test Checking");
@@ -367,6 +393,20 @@ class PlaidControllerTest {
         userEntity.setId(1L);
         return userEntity;
     }
+
+    private Transaction createTransaction(){
+        Transaction transaction = new Transaction();
+        transaction.setName("Test Transaction");
+        transaction.setMerchantName("Test Merchant Name");
+        transaction.setTransactionId("transactionId");
+        transaction.setPending(false);
+        transaction.setDate(LocalDate.now());
+        transaction.setAccountId("accountId");
+        transaction.setTransactionCode(TransactionCode.CASH);
+        transaction.setAmount(Double.valueOf(120));
+        return transaction;
+    }
+
 
 
     @AfterEach

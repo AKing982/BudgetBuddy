@@ -1,21 +1,16 @@
 package com.app.budgetbuddy.controllers;
 
 
-import com.app.budgetbuddy.domain.ExchangeResponse;
-import com.app.budgetbuddy.domain.PlaidExchangeRequest;
-import com.app.budgetbuddy.domain.PlaidLinkRequest;
-import com.app.budgetbuddy.domain.PlaidLinkStatus;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
-import com.plaid.client.model.AccountsGetResponse;
-import com.plaid.client.model.ItemPublicTokenExchangeResponse;
-import com.plaid.client.model.LinkTokenCreateResponse;
-import com.plaid.client.model.TransactionsGetResponse;
+import com.plaid.client.model.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +24,8 @@ import retrofit2.Response;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -170,6 +167,22 @@ public class PlaidController {
                                                                                 @RequestParam LocalDate startDate,
                                                                                 @RequestParam LocalDate endDate,
                                                                                 @RequestParam int pageCount){
+        return null;
+    }
+
+    @PostMapping("/save-transactions")
+    public ResponseEntity<?> saveTransactions(@RequestBody TransactionRequest transactionRequest) throws IOException {
+        LOGGER.info("TransactionRequest: {}", transactionRequest);
+        if(transactionRequest == null){
+            return ResponseEntity.badRequest().body("Transaction Request is null");
+        }
+        List<Transaction> transactions = transactionRequest.getTransactions();
+        List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactions);
+        return ResponseEntity.status(200).body(savedTransactions);
+    }
+
+    @PostMapping("/save-accounts")
+    public ResponseEntity<?> saveAccounts(@RequestParam Long userId){
         return null;
     }
 
