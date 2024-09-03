@@ -14,5 +14,5 @@ import java.util.List;
 @NoArgsConstructor
 public class TransactionRequest
 {
-    List<Transaction> transactions;
+    List<TransactionDTO> transactions;
 }

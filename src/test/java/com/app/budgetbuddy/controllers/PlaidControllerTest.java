@@ -3,12 +3,15 @@ package com.app.budgetbuddy.controllers;
 import com.app.budgetbuddy.config.JpaConfig;
 import com.app.budgetbuddy.domain.PlaidExchangeRequest;
 import com.app.budgetbuddy.domain.PlaidLinkRequest;
+import com.app.budgetbuddy.domain.TransactionDTO;
 import com.app.budgetbuddy.domain.TransactionRequest;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.services.PlaidTransactionService;
+import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
@@ -34,6 +37,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -64,6 +68,9 @@ class PlaidControllerTest {
 
     @MockBean
     private PlaidTransactionManager plaidTransactionManager;
+
+    @MockBean
+    private TransactionDTOConverter transactionDTOConverter;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -347,9 +354,9 @@ class PlaidControllerTest {
 
     @Test
     void testSaveTransactions_whenTransactionRequestIsValid_thenReturnOk() throws Exception {
-        List<Transaction> transactionList = new ArrayList<>();
-        transactionList.add(createTransaction());
-        transactionList.add(createTransaction());
+        List<TransactionDTO> transactionList = new ArrayList<>();
+        transactionList.add(createTransactionDTO());
+        transactionList.add(createTransactionDTO());
 
         TransactionRequest transactionRequest = new TransactionRequest(transactionList);
         String jsonString = objectMapper.writeValueAsString(transactionRequest);
@@ -357,6 +364,25 @@ class PlaidControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonString))
                 .andExpect(status().isOk());
+    }
+
+    private TransactionDTO createTransactionDTO() {
+        TransactionDTO transactionDTO = new TransactionDTO(
+                "e11212",                          // accountId
+                new BigDecimal("120.00"),          // amount
+                "USD",                             // isoCurrencyCode
+                List.of("Food", "Groceries"),      // categories
+                "cat123",                          // categoryId
+                LocalDate.now().toString(),                   // date
+                "Supermarket XYZ",                 // merchantName
+                "Weekly grocery shopping",         // description
+                "Grocery Purchase",                // name
+                false,                             // pending
+                "txn987654321",                    // transactionId
+                LocalDate.now().minusDays(1).toString(),      // authorizedDate
+                TransactionCode.PURCHASE           // transactionCode
+        );
+        return transactionDTO;
     }
 
     private AccountBase testAccount(){

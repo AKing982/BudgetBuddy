@@ -2,11 +2,9 @@ package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
-import com.app.budgetbuddy.exceptions.InvalidAccessTokenException;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
-import com.app.budgetbuddy.exceptions.PlaidApiException;
-import com.app.budgetbuddy.exceptions.PlaidLinkException;
+import com.app.budgetbuddy.exceptions.*;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.workbench.converter.AccountBaseConverter;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import okhttp3.MediaType;
@@ -44,6 +42,9 @@ class PlaidAccountManagerTest {
 
     @InjectMocks
     private PlaidAccountManager plaidAccountManager;
+
+    @Mock
+    private AccountBaseConverter accountBaseConverter;
 
     @BeforeEach
     void setUp() {
@@ -119,7 +120,7 @@ class PlaidAccountManagerTest {
         assertNotNull(actualResponse);
         assertEquals(expectedResponse.getAccounts(), actualResponse.body().getAccounts());
    }
-
+   
 
    private AccountBase testAccount(){
         AccountBase accountBase = new AccountBase();

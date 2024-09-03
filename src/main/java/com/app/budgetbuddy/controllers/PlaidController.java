@@ -7,6 +7,7 @@ import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
+import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
@@ -38,17 +39,20 @@ public class PlaidController {
     private PlaidLinkService plaidLinkService;
     private PlaidAccountManager plaidAccountManager;
     private PlaidTransactionManager plaidTransactionManager;
+    private TransactionDTOConverter transactionDTOConverter;
     private Logger LOGGER = LoggerFactory.getLogger(PlaidController.class);
 
     @Autowired
     public PlaidController(PlaidLinkTokenProcessor plaidLinkTokenProcessor,
                            PlaidAccountManager plaidAccountManager,
                            PlaidLinkService plaidLinkService,
-                           PlaidTransactionManager plaidTransactionManager) {
+                           PlaidTransactionManager plaidTransactionManager,
+                           TransactionDTOConverter transactionDTOConverter) {
         this.plaidLinkTokenProcessor = plaidLinkTokenProcessor;
         this.plaidAccountManager = plaidAccountManager;
         this.plaidLinkService = plaidLinkService;
         this.plaidTransactionManager = plaidTransactionManager;
+        this.transactionDTOConverter = transactionDTOConverter;
     }
 
     @PostMapping("/create_link_token")
@@ -176,8 +180,11 @@ public class PlaidController {
         if(transactionRequest == null){
             return ResponseEntity.badRequest().body("Transaction Request is null");
         }
-        List<Transaction> transactions = transactionRequest.getTransactions();
-        List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactions);
+        List<TransactionDTO> transactions = transactionRequest.getTransactions();
+        List<Transaction> transactionsList = transactions.stream()
+                .map(transactionDTOConverter::convert)
+                .toList();
+        List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactionsList);
         return ResponseEntity.status(200).body(savedTransactions);
     }
 

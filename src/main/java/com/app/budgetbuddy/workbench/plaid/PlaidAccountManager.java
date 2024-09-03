@@ -1,23 +1,28 @@
 package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.domain.PlaidAccount;
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
-import com.app.budgetbuddy.exceptions.PlaidApiException;
-import com.app.budgetbuddy.exceptions.PlaidLinkException;
+import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.*;
+import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.workbench.converter.AccountBaseConverter;
 import com.plaid.client.model.AccountBase;
 import com.plaid.client.model.AccountsGetRequest;
 import com.plaid.client.model.AccountsGetResponse;
 import com.plaid.client.request.PlaidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.annotation.AccessType;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,9 +31,16 @@ import java.util.Set;
 public class PlaidAccountManager extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidAccountManager.class);
+    private AccountBaseConverter accountBaseConverter;
+    private UserRepository userRepository;
 
-    public PlaidAccountManager(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi) {
+    @Autowired
+    public PlaidAccountManager(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi,
+                               AccountBaseConverter accountBaseConverter,
+                               UserRepository userRepository) {
         super(plaidLinkService, plaidApi);
+        this.accountBaseConverter = accountBaseConverter;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -94,6 +106,25 @@ public class PlaidAccountManager extends AbstractPlaidManager
 
         }while(attempts < MAX_ATTEMPTS);
         return accountsResponse;
+    }
+
+    public List<AccountEntity> savePlaidAccountsToDatabase(List<AccountBase> accounts, Long userId) throws PlaidApiException {
+        if(accounts.isEmpty()){
+            throw new AccountsNotFoundException("No accounts found.");
+        }
+        Optional<UserEntity> user = userRepository.findById(userId);
+        if(user.isEmpty()){
+            throw new UserNotFoundException("User not found.");
+        }
+        UserEntity userEntity = user.get();
+        List<AccountEntity> accountEntities = new ArrayList<>();
+        for(AccountBase account : accounts){
+            if(account != null){
+                AccountEntity accountEntity = accountBaseConverter.convert(account, userEntity);
+                accountEntities.add(accountEntity);
+            }
+        }
+        return accountEntities;
     }
 
     /**
