@@ -263,6 +263,22 @@ class PlaidService {
         }
     }
 
+    public async fetchRecurringChargesForUser(userId: number){
+        if(userId < 1){
+            throw new Error('Invalid userId. UserId must be a positive number.');
+        }
+        try
+        {
+            const response = await axios.get(`${apiUrl}/api/plaid/users/${userId}/recurring-transactions`);
+            return response.data;
+
+        }catch(error)
+        {
+            console.error(`There was an error fetching recurring charges for userId: ${userId}: `, error);
+            throw error;
+        }
+    }
+
     private mapToObject(map: Map<number, string>): { [key: number]: string } {
         return Object.fromEntries(Array.from(map));
     }

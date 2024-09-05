@@ -4,6 +4,7 @@ import PlaidService from '../services/PlaidService';
 import axios from "axios";
 
 import {jest} from '@jest/globals'
+import {apiUrl} from "../config/api";
 
 interface PlaidLinkStatus {
     isLinked: boolean;
@@ -87,6 +88,24 @@ describe('PlaidService', () => {
             {"1": "publicToken"}
         );
     });
+
+    test('fetchRecurringChargesForUser when userId invalid, then throw Error', async () => {
+        const serviceInstance = PlaidService.getInstance();
+        const userId = -1;
+        await expect(serviceInstance.fetchRecurringChargesForUser(userId)).rejects.toThrow('Invalid userId. UserId must be a positive number.');
+    });
+
+    test('fetchRecurringChargesForUser when userId is valid', async () => {
+        const serviceInstance = PlaidService.getInstance();
+        const userId = 1;
+        const apiUrl = "http://localhost:8080";
+        const responseData = { charges: [] };
+        mockAxios.get.mockResolvedValueOnce({ data: responseData });
+
+        const result = await serviceInstance.fetchRecurringChargesForUser(userId);
+        expect(result).toEqual(responseData);
+        expect(mockAxios.get).toHaveBeenCalledWith(`${apiUrl}/api/plaid/users/${userId}/recurring-transactions`);
+    })
 
 
 });

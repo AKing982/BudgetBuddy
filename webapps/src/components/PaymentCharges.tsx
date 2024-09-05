@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Box,
     Typography,
@@ -10,12 +10,51 @@ import {
     Paper,
     Avatar
 } from '@mui/material';
+import PlaidService from "../services/PlaidService";
 
 interface Charge {
     name: string;
     dueDate: string;
     amount: string;
     icon: string;
+}
+
+interface RecurringTransactionResponse {
+    inflowStreams: TransactionStream[];
+    outflowStreams: TransactionStream[];
+    updatedDatetime: string;
+    requestId: string;
+}
+
+interface TransactionStream {
+    accountId: string;
+    active: boolean;
+    averageAmount: Amount;
+    category: string[];
+    categoryId: string;
+    description: string;
+    firstDate: Date;
+    frequency: string;
+    lastAmount: Amount;
+    lastDate: Date;
+    lastUserModifiedDate: Date;
+    merchantName: string;
+    personalFinanceCategory: PersonalFinanceCategory;
+    status: string;
+    transactionIds: string[];
+    userModified: boolean;
+}
+
+interface Amount {
+    amount: number;
+    isoCurrency: string | null;
+    unofficialCurrency: string | null;
+}
+
+interface PersonalFinanceCategory {
+    primary: string;
+    detailed: string;
+    confidenceLevel: string;
 }
 
 const charges: Charge[] = [
@@ -30,38 +69,76 @@ const charges: Charge[] = [
 ];
 
 const PaymentCharges: React.FC = () => {
+    const [recurringCharges, setRecurringCharges] = useState<RecurringTransactionResponse | null>([]);
+    const plaidService = PlaidService.getInstance();
+
+    useEffect(() => {
+        const fetchCharges = async () => {
+            try
+            {
+                const userId = Number(sessionStorage.getItem('userId'));
+                if(isNaN(userId)){
+                    throw new Error(`Invalid UserId: ${userId}`);
+                }
+                const fetchedRecurringCharges = await plaidService.fetchRecurringChargesForUser(userId);
+                console.log('Fetched Recurring Charges: ', fetchedRecurringCharges);
+                setRecurringCharges(fetchedRecurringCharges);
+            }catch(error)
+            {
+                console.error('There was an error fetching recurring charges: ', error);
+            }
+        }
+        fetchCharges();
+    }, []);
+
+    const getUpcomingCharges = (streams: TransactionStream[]) : TransactionStream[] => {
+        const now = new Date();
+        const thirteenDaysLater = new Date(now.getTime() + 13 * 24 * 60 * 60 * 1000);
+        return streams.filter(stream => {
+            const nextDate = new Date(stream.lastDate);
+            return nextDate <= thirteenDaysLater && stream.active;
+        });
+    };
+
+    const parseDate = (dateString: string): Date => {
+        // This assumes dateString is in format "YYYY-MM-DD"
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    };
+
+    const formatDate = (dateString: string): string => {
+        const date = parseDate(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const upcomingCharges = recurringCharges ? getUpcomingCharges(recurringCharges.outflowStreams) : [];
+    const totalAmount = upcomingCharges.reduce((sum, charge) => sum + Math.abs(charge.lastAmount.amount), 0);
+
     return (
         <Paper elevation={3} sx={{ maxWidth: 400, margin: 'auto', mt: 2, borderRadius: '12px', overflow: 'hidden' }}>
             <Box sx={{ p: 2, backgroundColor: '#F9FAFB' }}>
                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#111827', mb: 2 }}>COMING UP</Typography>
                 <Typography variant="body2" sx={{ color: '#4B5563', mb: 2 }}>
-                    You have {charges.length} recurring charges due within the next 13 days for ${charges.reduce((sum, charge) => sum + parseFloat(charge.amount.slice(1)), 0).toFixed(2)}.
+                    You have {upcomingCharges.length} recurring charges due within the next 13 days for ${totalAmount.toFixed(2)}.
                 </Typography>
                 <List disablePadding>
-                    {charges.map((charge, index) => (
+                    {upcomingCharges.map((charge, index) => (
                         <ListItem
-                            key={index}
-                            divider={index !== charges.length - 1}
+                            key={`${charge.accountId}-${index}`}
+                            divider={index !== upcomingCharges.length - 1}
                             sx={{
                                 py: 1.5,
                                 '&:hover': { backgroundColor: '#F3F4F6' }
                             }}
                         >
                             <ListItemIcon>
-                                <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor:
-                                        charge.name === 'Hulu' ? '#1DB954' :
-                                            charge.name === 'JetBrains' ? '#000000' :
-                                                charge.name === 'YouTube Premium' ? '#FF0000' :
-                                                    charge.name === 'PAYPAL INST XFER' ? '#003087' :
-                                                        charge.name === 'American Express Card P...' ? '#006FCF' :
-                                                            '#6B7280'
-                                }}>
-                                    {charge.icon}
+                                <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor: getBgColor(charge.merchantName) }}>
+                                    {(charge.merchantName || charge.description || 'U')[0].toUpperCase()}
                                 </Avatar>
                             </ListItemIcon>
                             <ListItemText
-                                primary={charge.name}
-                                secondary={charge.dueDate}
+                                primary={charge.merchantName || charge.description}
+                                secondary={formatDate(charge.lastDate)}
                                 primaryTypographyProps={{
                                     sx: { fontWeight: 'medium', color: '#111827' }
                                 }}
@@ -71,7 +148,7 @@ const PaymentCharges: React.FC = () => {
                             />
                             <ListItemSecondaryAction>
                                 <Typography sx={{ fontWeight: 'bold', color: '#111827' }}>
-                                    {charge.amount}
+                                    ${Math.abs(charge.lastAmount.amount).toFixed(2)}
                                 </Typography>
                             </ListItemSecondaryAction>
                         </ListItem>
@@ -81,5 +158,17 @@ const PaymentCharges: React.FC = () => {
         </Paper>
     );
 };
+
+const getBgColor = (merchantName: string): string => {
+    switch (merchantName.toLowerCase()) {
+        case 'hulu': return '#1DB954';
+        case 'jetbrains': return '#000000';
+        case 'youtube premium': return '#FF0000';
+        case 'paypal inst xfer': return '#003087';
+        case 'american express card p...': return '#006FCF';
+        default: return '#6B7280';
+    }
+};
+
 
 export default PaymentCharges;

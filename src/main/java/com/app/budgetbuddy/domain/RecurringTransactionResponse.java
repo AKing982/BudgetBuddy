@@ -3,6 +3,7 @@ package com.app.budgetbuddy.domain;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -22,8 +23,8 @@ public class RecurringTransactionResponse
         private String categoryId;
         private String description;
         private String merchantName;
-        private String firstDate;
-        private String lastDate;
+        private LocalDate firstDate;
+        private LocalDate lastDate;
         private String frequency;
         private List<String> transactionIds;
         private Amount averageAmount;

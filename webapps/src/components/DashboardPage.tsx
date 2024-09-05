@@ -62,11 +62,6 @@ const DashboardPage: React.FC = () => {
     const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
     const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
     const plaidService = PlaidService.getInstance();
-    // const spacing = 2; // You can adjust this or use your dynamic spacing logic
-    // const tightSpacing = 1; // Adjust as needed
-    // const responsiveSpacing = isMdUp ? -120 : 0; // Adjust as needed
-    //
-
 
     const tightSpacing = Math.max(-120, spacing - 120);
 
@@ -129,54 +124,6 @@ const DashboardPage: React.FC = () => {
             </List>
         </Box>
     );
-
-    // return (
-    //     <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
-    //         <Sidebar />
-    //         <Box sx={{ flexGrow: 1, p: spacing, ml: { md: responsiveSpacing } }}>
-    //             <Grid container spacing={2}>
-    //                 {/* Header */}
-    //                 <Grid item xs={2}>
-    //                     <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: spacing }}>
-    //                         Good morning, Alexander
-    //                     </Typography>
-    //                 </Grid>
-    //
-    //                 {/* Main Content Area and Right Sidebar Container */}
-    //                 <Grid item xs={12}>
-    //                     <Grid container spacing={tightSpacing}>
-    //                         {/* Main Content Area */}
-    //                         <Grid item xs={12} md={8}>
-    //                             <Grid container spacing={spacing}>
-    //                                 {/* Expense Spending Tracker */}
-    //                                 <Grid item xs={12}>
-    //                                     <SpendingTracker />
-    //                                 </Grid>
-    //
-    //                                 {/* Transactions Table */}
-    //                                 <Grid item xs={12}>
-    //                                     <RecentTransactionsTable />
-    //                                 </Grid>
-    //                             </Grid>
-    //                         </Grid>
-    //
-    //                         {/* Right Sidebar */}
-    //                         <Grid item xs={12} md={4}>
-    //                             <Grid container spacing={spacing}>
-    //                                 <Grid item xs={12} md={isMdUp ? 12 : 6}>
-    //                                     <AccountSummary />
-    //                                 </Grid>
-    //                                 <Grid item xs={12} md={isMdUp ? 12 : 6}>
-    //                                     <PaymentCharges />
-    //                                 </Grid>
-    //                             </Grid>
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //             </Grid>
-    //         </Box>
-    //     </Box>
-    // );
 
     return (
         <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>

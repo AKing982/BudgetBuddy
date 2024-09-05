@@ -8,6 +8,7 @@ import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
+import com.app.budgetbuddy.workbench.converter.TransactionStreamConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
@@ -136,7 +137,7 @@ public class PlaidController {
             List<TransactionStream> outFlowingStream = transactionsRecurringGetResponse.getOutflowStreams();
             List<TransactionStream> inFlowingStream = transactionsRecurringGetResponse.getInflowStreams();
             RecurringTransactionResponse recurringTransactionResponse = createRecurringTransactionResponse(inFlowingStream, outFlowingStream);
-            return ResponseEntity.status(200).body(transactionsRecurringGetResponse);
+            return ResponseEntity.status(200).body(recurringTransactionResponse);
 
         }catch(IOException e)
         {
@@ -213,13 +214,8 @@ public class PlaidController {
     private RecurringTransactionResponse createRecurringTransactionResponse(List<TransactionStream> inflowingStream, List<TransactionStream> outflowingStream){
         RecurringTransactionResponse recurringTransactionResponse = new RecurringTransactionResponse();
 
-        recurringTransactionResponse.setInflowStreams(inflowingStream != null
-                ? new ArrayList<>(inflowingStream)
-                : new ArrayList<>());
-
-        recurringTransactionResponse.setOutflowStreams(outflowingStreams != null
-                ? new ArrayList<>(outflowingStreams)
-                : new ArrayList<>());
+        recurringTransactionResponse.setInflowStreams(TransactionStreamConverter.convertTransactionStreams(inflowingStream));
+        recurringTransactionResponse.setOutflowStreams(TransactionStreamConverter.convertTransactionStreams(outflowingStream));
 
         recurringTransactionResponse.setUpdatedDatetime(OffsetDateTime.now());
         recurringTransactionResponse.setRequestId("1234");
