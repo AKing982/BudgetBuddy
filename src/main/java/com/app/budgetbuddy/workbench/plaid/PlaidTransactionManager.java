@@ -7,10 +7,7 @@ import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.workbench.converter.TransactionConverter;
-import com.plaid.client.model.AccountsGetRequest;
-import com.plaid.client.model.Transaction;
-import com.plaid.client.model.TransactionsGetRequest;
-import com.plaid.client.model.TransactionsGetResponse;
+import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import jakarta.transaction.InvalidTransactionException;
 import org.slf4j.Logger;
@@ -93,6 +90,56 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }while(attempts < MAX_ATTEMPTS);
         return transactionsGetResponse;
     }
+
+    public TransactionsRecurringGetResponse getRecurringTransactionsForUser(Long userId) throws IOException {
+        if(userId < 1){
+            throw new InvalidUserIDException("Invalid user ID");
+        }
+        PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
+        String accessToken = getPlaidAccessToken(plaidLink);
+        TransactionsRecurringGetRequestOptions options = new TransactionsRecurringGetRequestOptions()
+                .includePersonalFinanceCategory(true);
+
+        TransactionsRecurringGetRequest request = new TransactionsRecurringGetRequest()
+                .accessToken(accessToken)
+                .options(options);
+
+        Call<TransactionsRecurringGetResponse> callResponse = plaidApi.transactionsRecurringGet(request);
+        return callResponse.execute().body();
+    }
+
+    private TransactionsRecurringGetResponse getRecurringTransactionsResponseWithRetry(TransactionsRecurringGetRequest request) throws IOException {
+        if (request == null) {
+            throw new IllegalArgumentException("TransactionsRecurringGetRequest cannot be null");
+        }
+
+        int attempts = 0;
+        int MAX_ATTEMPTS = 3;
+        Response<TransactionsRecurringGetResponse> response = null;
+
+        do {
+            Call<TransactionsRecurringGetResponse> call = plaidApi.transactionsRecurringGet(request);
+            response = call.execute();
+
+            if (response.isSuccessful()) {
+                return response.body();
+            } else {
+                attempts++;
+                LOGGER.warn("Attempt {} failed to get recurring transactions. Status code: {}",
+                        attempts, response.code());
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    LOGGER.error("Sleep interrupted while retrying to get recurring transactions", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        } while (attempts < MAX_ATTEMPTS);
+
+        throw new IOException("Failed to get recurring transactions after " + MAX_ATTEMPTS + " attempts. Last status code: " +
+                (response != null ? response.code() : "N/A"));
+    }
+
 
     public List<TransactionsEntity> saveTransactionsToDatabase(final List<Transaction> transactionList){
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();

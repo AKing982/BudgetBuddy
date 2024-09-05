@@ -30,10 +30,7 @@ import retrofit2.Response;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -241,6 +238,52 @@ class PlaidTransactionManagerTest {
             transactionManager.saveTransactionsToDatabase(transactions);
         });
 
+    }
+
+    @Test
+    void testGetRecurringTransactionsForUser_whenUserIdNotValid_thenThrowException(){
+        Long userId = -1L;
+        assertThrows(InvalidUserIDException.class, () -> {
+            transactionManager.getRecurringTransactionsForUser(userId);
+        });
+    }
+
+    @Test
+    void testGetRecurringTransactionsForUser_whenUserIdValid() throws IOException {
+        Long userId = 1L;
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
+        TransactionsRecurringGetRequestOptions options = new TransactionsRecurringGetRequestOptions()
+                .includePersonalFinanceCategory(true);
+
+        TransactionsRecurringGetRequest transactionsRecurringGetRequest = new TransactionsRecurringGetRequest()
+                .accessToken("access_token")
+                .options(options);
+
+        TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
+        expectedResponse.setInflowStreams(Collections.singletonList(createTransactionStream()));
+        expectedResponse.setOutflowStreams(Collections.singletonList(createTransactionStream()));
+
+        Call<TransactionsRecurringGetResponse> callSuccessful = mock(Call.class);
+        Response<TransactionsRecurringGetResponse> response = Response.success(expectedResponse);
+
+        when(plaidApi.transactionsRecurringGet(transactionsRecurringGetRequest)).thenReturn(callSuccessful);
+        when(callSuccessful.execute()).thenReturn(response);
+
+        TransactionsRecurringGetResponse actual = transactionManager.getRecurringTransactionsForUser(userId);
+        assertNotNull(actual);
+        assertEquals(expectedResponse.getInflowStreams(), actual.getInflowStreams());
+        assertEquals(expectedResponse.getOutflowStreams(), actual.getOutflowStreams());
+        verify(plaidLinkService, times(1)).findPlaidLinkByUserID(userId);
+        verify(plaidApi).transactionsRecurringGet(transactionsRecurringGetRequest);
+    }
+
+    private TransactionStream createTransactionStream() {
+        TransactionStream transactionStream = new TransactionStream();
+        transactionStream.setAccountId("accountId");
+        transactionStream.setCategoryId("categoryId");
+        transactionStream.setDescription("description");
+        transactionStream.setAverageAmount(new TransactionStreamAmount().amount(100.0).isoCurrencyCode("USD"));
+        return transactionStream;
     }
 
     @AfterEach

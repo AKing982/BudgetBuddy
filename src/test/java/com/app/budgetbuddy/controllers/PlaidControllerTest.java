@@ -366,6 +366,26 @@ class PlaidControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void testGetRecurringTransactions_whenUserIdIsInvalid_thenReturnBadRequest() throws Exception {
+        Long userId = -1L;
+
+        mockMvc.perform(get("/api/plaid/users/{userId}/recurring-transactions", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetRecurringTransactions_whenUserIdIsValid_thenReturnOk() throws Exception {
+        Long userId = 1L;
+        TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
+
+        when(plaidTransactionManager.getRecurringTransactionsForUser(userId)).thenReturn(expectedResponse);
+        mockMvc.perform(get("/api/plaid/users/{userId}/recurring-transactions", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
     private TransactionDTO createTransactionDTO() {
         TransactionDTO transactionDTO = new TransactionDTO(
                 "e11212",                          // accountId

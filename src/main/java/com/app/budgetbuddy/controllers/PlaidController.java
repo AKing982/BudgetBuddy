@@ -26,6 +26,7 @@ import retrofit2.Response;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -68,8 +69,8 @@ public class PlaidController {
         return ResponseEntity.status(201).body(linkTokenCreateResponse);
     }
 
-    @GetMapping("/accounts")
-    public ResponseEntity<?> getAllAccounts(@RequestParam Long userId){
+    @GetMapping("/users/{userId}/accounts")
+    public ResponseEntity<?> getUserAccounts(@PathVariable Long userId){
         if(userId < 1){
             return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
         }
@@ -124,9 +125,23 @@ public class PlaidController {
         return ResponseEntity.ok(exchangeResponse);
     }
 
-    @GetMapping("/{userId}/recurring")
+    @GetMapping("/users/{userId}/recurring-transactions")
     public ResponseEntity<?> getRecurringTransactions(@PathVariable Long userId){
-        return null;
+        if(userId < 1){
+            return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
+        }
+        try
+        {
+            TransactionsRecurringGetResponse transactionsRecurringGetResponse = plaidTransactionManager.getRecurringTransactionsForUser(userId);
+            List<TransactionStream> outFlowingStream = transactionsRecurringGetResponse.getOutflowStreams();
+            List<TransactionStream> inFlowingStream = transactionsRecurringGetResponse.getInflowStreams();
+            RecurringTransactionResponse recurringTransactionResponse = createRecurringTransactionResponse(inFlowingStream, outFlowingStream);
+            return ResponseEntity.status(200).body(transactionsRecurringGetResponse);
+
+        }catch(IOException e)
+        {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @GetMapping("/{userId}/plaid-link")
@@ -193,6 +208,22 @@ public class PlaidController {
             LOGGER.error("There was an error getting the transactions", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
+    }
+
+    private RecurringTransactionResponse createRecurringTransactionResponse(List<TransactionStream> inflowingStream, List<TransactionStream> outflowingStream){
+        RecurringTransactionResponse recurringTransactionResponse = new RecurringTransactionResponse();
+
+        recurringTransactionResponse.setInflowStreams(inflowingStream != null
+                ? new ArrayList<>(inflowingStream)
+                : new ArrayList<>());
+
+        recurringTransactionResponse.setOutflowStreams(outflowingStreams != null
+                ? new ArrayList<>(outflowingStreams)
+                : new ArrayList<>());
+
+        recurringTransactionResponse.setUpdatedDatetime(OffsetDateTime.now());
+        recurringTransactionResponse.setRequestId("1234");
+        return recurringTransactionResponse;
     }
 
     private List<TransactionResponse> createTransactionResponse(List<Transaction> transactions){

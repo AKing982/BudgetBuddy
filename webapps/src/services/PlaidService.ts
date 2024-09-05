@@ -219,11 +219,7 @@ class PlaidService {
     public async fetchAccounts(userID: number) {
         try
         {
-            const response = await axios.get(`${apiUrl}/api/plaid/accounts`, {
-                params: {
-                    userId: userID
-                }
-            });
+            const response = await axios.get(`${apiUrl}/api/plaid/users/${userID}/accounts`);
             return response.data;
         }catch(err)
         {
