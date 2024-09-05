@@ -27,7 +27,7 @@ describe('LoginService', () => {
       data: userId
     });
 
-    const loginService: LoginService = new LoginService(user, pass);
+    const loginService: LoginService = new LoginService();
     const result: number = await loginService.fetchUserIdByUsername(user);
 
     expect(result).toEqual(userId);
@@ -41,7 +41,7 @@ describe('LoginService', () => {
     const error = new Error('There was an error fetching the userId');
     mockGet.mockRejectedValueOnce(error);
 
-    const loginService: LoginService = new LoginService(user, pass);
+    const loginService: LoginService = new LoginService();
 
     await expect(loginService.fetchUserIdByUsername(user))
       .rejects.toThrow('There was an error fetching the userId');

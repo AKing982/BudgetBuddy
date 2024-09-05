@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Box,
     Typography,
@@ -22,24 +22,65 @@ import {
     Add,
     Info
 } from '@mui/icons-material';
+import PlaidService from "../services/PlaidService";
 
 interface Account {
+    accountId: string;
     name: string;
     balance: string;
-    icon: React.ReactNode;
+    type: string;
+    subtype: string;
     action: 'gear' | 'add';
     color?: string;
 }
+//
+// const accounts: Account[] = [
+//     { name: 'Checking', balance: '$168', icon: <AccountBalance />, action: 'gear', color: '#7C3AED' },
+//     { name: 'Credit Cards', balance: 'Add', icon: <CreditCard />, action: 'add', color: '#6B7280' },
+//     { name: 'Net Cash', balance: '$168', icon: <MonetizationOn />, action: 'gear', color: '#10B981' },
+//     { name: 'Savings', balance: '$918', icon: <Savings />, action: 'gear', color: '#7C3AED' },
+//     { name: 'Investments', balance: 'Add', icon: <ShowChart />, action: 'add', color: '#6B7280' },
+// ];
+//
 
-const accounts: Account[] = [
-    { name: 'Checking', balance: '$168', icon: <AccountBalance />, action: 'gear', color: '#7C3AED' },
-    { name: 'Credit Cards', balance: 'Add', icon: <CreditCard />, action: 'add', color: '#6B7280' },
-    { name: 'Net Cash', balance: '$168', icon: <MonetizationOn />, action: 'gear', color: '#10B981' },
-    { name: 'Savings', balance: '$918', icon: <Savings />, action: 'gear', color: '#7C3AED' },
-    { name: 'Investments', balance: 'Add', icon: <ShowChart />, action: 'add', color: '#6B7280' },
-];
 
 const AccountSummary: React.FC = () => {
+    const [plaidAccounts, setPlaidAccounts] = useState<Account[]>([]);
+    const plaidService = PlaidService.getInstance();
+
+    useEffect(() => {
+        const fetchAccounts = async() => {
+            try
+            {
+                const userID = Number(sessionStorage.getItem('userId'));
+                const fetchedAccounts = await plaidService.fetchAccounts(userID);
+                console.log('Fetched accounts: ', fetchedAccounts);
+                setPlaidAccounts(fetchedAccounts);
+            }catch(error)
+            {
+                console.error('There was an error getting accounts: ', error);
+            }
+        }
+        fetchAccounts();
+    }, [])
+
+    const getIconForAccount = (type: string) => {
+        switch(type){
+            case "Checking":
+                return <AccountBalance />
+            case "Credit Cards":
+                return <CreditCard />
+            case "Net Cash":
+                return <MonetizationOn />
+            case "Savings":
+                return <Savings />
+            case "Investments":
+                return <ShowChart />
+            default:
+                return <AccountBalance />
+        }
+    }
+
     return (
         <Paper elevation={3} sx={{
             maxWidth: 400,
@@ -68,17 +109,17 @@ const AccountSummary: React.FC = () => {
                     </Box>
                 </Box>
                 <List disablePadding>
-                    {accounts.map((account, index) => (
+                    {plaidAccounts.map((account, index) => (
                         <ListItem
                             key={index}
-                            divider={index !== accounts.length - 1}
+                            divider={index !== plaidAccounts.length - 1}
                             sx={{
                                 py: 1.5,
                                 '&:hover': { backgroundColor: '#F3F4F6' }
                             }}
                         >
                             <ListItemIcon sx={{ minWidth: 40 }}>
-                                {React.cloneElement(account.icon as React.ReactElement, { sx: { color: account.color } })}
+                                {React.cloneElement(getIconForAccount(account.type), { sx: { color: account.color } })}
                             </ListItemIcon>
                             <ListItemText
                                 primary={account.name}
@@ -98,7 +139,7 @@ const AccountSummary: React.FC = () => {
                                                 color: account.name === 'Net Cash' ? '#10B981' : '#111827'
                                             }}
                                         >
-                                            {account.balance}
+                                            ${account.balance}
                                         </Typography>
                                         {account.action === 'gear' ? (
                                             <IconButton edge="end" aria-label="settings" size="small">

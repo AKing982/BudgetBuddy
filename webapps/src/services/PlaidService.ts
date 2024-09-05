@@ -32,12 +32,19 @@ interface PlaidExchangeRequest{
 }
 
 interface Transaction {
-    transaction_id: string;
+    transactionId: string;
+    accountId: string;
     amount: number;
-    date: string;
+    categories: string[];
+    categoryId: string;
+    date: Date;
     name: string;
+    merchantName: string;
+    pending: boolean;
+    logoUrl: string;
+    authorizedDate: Date;
+    transactionType: string;
 }
-
 class PlaidService {
 
     private static instance: PlaidService;
@@ -129,10 +136,10 @@ class PlaidService {
         try
         {
 
-            // let userId = sessionStorage.getItem('userId');
-            const linkTokenRequest = this.createLinkTokenRequest("1");
+             let userId = sessionStorage.getItem('userId');
+            // const linkTokenRequest = this.createLinkTokenRequest(userId);
             const response = await axios.post<PlaidLinkToken>(`http://localhost:8080/api/plaid/create_link_token`, {
-               userId: "1"
+               userId: userId
             });
             return response.data;
         }catch(error)
@@ -197,8 +204,9 @@ class PlaidService {
     {
         try
         {
+            let userId = 1;
             const response = await PlaidService.axios.get<Transaction[]>(`${apiUrl}/api/plaid/transactions`, {
-                params: {startDate, endDate},
+                params: {userId, startDate, endDate},
             });
             return response.data;
         }catch(error)
@@ -206,6 +214,22 @@ class PlaidService {
             console.error('Error fetching transactions: ', error);
             throw error;
         }
+    }
+
+    public async fetchAccounts(userID: number) {
+        try
+        {
+            const response = await axios.get(`${apiUrl}/api/plaid/accounts`, {
+                params: {
+                    userId: userID
+                }
+            });
+            return response.data;
+        }catch(err)
+        {
+            console.error('There was an error fetching accounts: ', err);
+        }
+
     }
 
     public async fetchAndLinkPlaidAccounts(userID: number) {

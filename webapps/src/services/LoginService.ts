@@ -3,12 +3,8 @@ import {apiUrl} from "../config/api";
 import axios from "axios";
 
 class LoginService {
-    private username: string;
-    private password: string;
 
-    constructor(user: string, pass: string){
-        this.username = user;
-        this.password = pass;
+    constructor(){
     }
 
     public async fetchUserIdByUsername(user: string | null) : Promise<number>

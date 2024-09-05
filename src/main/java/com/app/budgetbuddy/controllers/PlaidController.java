@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,12 +76,29 @@ public class PlaidController {
         try
         {
             AccountsGetResponse accountsResponse = plaidAccountManager.getAccountsForUser(userId);
-            return ResponseEntity.status(200).body(accountsResponse);
+            List<AccountResponse> accountResponseList = createAccountResponse(accountsResponse.getAccounts());
+            return ResponseEntity.status(200).body(accountResponseList);
 
         }catch(IOException e)
         {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
+    }
+
+    private List<AccountResponse> createAccountResponse(List<AccountBase> accountBaseList){
+        List<AccountResponse> accountResponseList = new ArrayList<>();
+        for(AccountBase accountBase: accountBaseList){
+            if(accountBase != null){
+                String accountId = accountBase.getAccountId();
+                String name = accountBase.getName();
+                BigDecimal balance = BigDecimal.valueOf(accountBase.getBalances().getCurrent());
+                String type = String.valueOf(accountBase.getType());
+                String subtype = String.valueOf(accountBase.getSubtype());
+                AccountResponse accountResponse = new AccountResponse(accountId, name, balance, type, subtype);
+                accountResponseList.add(accountResponse);
+            }
+        }
+        return accountResponseList;
     }
 
     @PostMapping("/exchange_public_token")
@@ -104,6 +122,11 @@ public class PlaidController {
 
         ExchangeResponse exchangeResponse = createExchangeResponse(accessToken, itemId, userID);
         return ResponseEntity.ok(exchangeResponse);
+    }
+
+    @GetMapping("/{userId}/recurring")
+    public ResponseEntity<?> getRecurringTransactions(@PathVariable Long userId){
+        return null;
     }
 
     @GetMapping("/{userId}/plaid-link")
@@ -154,16 +177,44 @@ public class PlaidController {
         if(userId < 1){
             return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
         }
+        LOGGER.info("UserId: {}", userId);
+        LOGGER.info("Retrieving transactions for startDate: {}", startDate);
+        LOGGER.info("Retrieving transactions for endDate: {}", endDate);
+
         try
         {
             TransactionsGetResponse transactionsGetResponse = plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate);
-            return ResponseEntity.status(200).body(transactionsGetResponse);
+            List<Transaction> transactions = transactionsGetResponse.getTransactions();
+            List<TransactionResponse> transactionResponses = createTransactionResponse(transactions);
+            return ResponseEntity.status(200).body(transactionResponses);
 
         }catch(IOException e)
         {
             LOGGER.error("There was an error getting the transactions", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
+    }
+
+    private List<TransactionResponse> createTransactionResponse(List<Transaction> transactions){
+        // Build the Transaction Response
+        List<TransactionResponse> transactionResponses = new ArrayList<>();
+        for(Transaction transaction : transactions){
+            String transactionId = transaction.getTransactionId();
+            String accountId = transaction.getAccountId();
+            BigDecimal amount = BigDecimal.valueOf(transaction.getAmount());
+            List<String> categories = transaction.getCategory();
+            String categoryId = transaction.getCategoryId();
+            LocalDate date = transaction.getDate();
+            String name = transaction.getName();
+            String merchantName = transaction.getMerchantName();
+            boolean isPending = transaction.getPending();
+            String logoUrl = transaction.getLogoUrl();
+            LocalDate authorizedDate = transaction.getAuthorizedDate();
+            String transactionType = transaction.getTransactionType().toString();
+            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categories, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate, transactionType);
+            transactionResponses.add(transactionResponse);
+        }
+        return transactionResponses;
     }
 
     @GetMapping("/transactions/filtered")

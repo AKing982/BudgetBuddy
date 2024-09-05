@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Table,
     TableBody,
@@ -24,15 +24,25 @@ import {
     Code,
     ChevronRight
 } from '@mui/icons-material';
+import PlaidService from "../services/PlaidService";
+import TransactionRow from "./TransactionRow";
 
 interface Transaction {
-    date: string;
+    transactionId: string;
+    accountId: string;
+    amount: number;
+    categories: string[];
+    categoryId: string;
+    date: Date;
     name: string;
-    amount: string;
-    icon: React.ReactNode;
+    merchantName: string;
+    pending: boolean;
+    logoUrl: string;
+    authorizedDate: Date;
+    transactionType: string;
 }
 
-const transactions: Transaction[] = [
+const transactions = [
     { date: '8/8', name: 'WinCo', amount: '$25.47', icon: <ShoppingCart sx={{ color: '#EF4444' }} /> },
     { date: '8/7', name: 'WinCo', amount: '$6.26', icon: <ShoppingCart sx={{ color: '#EF4444' }} /> },
     { date: '8/6', name: 'Questargas Questargas Questargas Questargas, 08-06-2024 @ 0:00 Tr...', amount: '$12.79', icon: <Receipt sx={{ color: '#3B82F6' }} /> },
@@ -45,7 +55,37 @@ const transactions: Transaction[] = [
     { date: '8/4', name: 'Pin Purchase Harmons - Dist 11453 S. Parkway P South J, 08-04-2024 ...', amount: '$3.90', icon: <ShoppingCart sx={{ color: '#EF4444' }} /> },
 ];
 
+
+
 const RecentTransactionsTable: React.FC = () => {
+
+    const [plaidTransactions, setPlaidTransactions] = useState<Transaction[]>([]);
+    const plaidService = new PlaidService();
+
+    const fetchMonthBeginning = (year: number, month: number) : string => {
+        return new Date(year, month - 1, 1).toISOString().split('T')[0];
+    }
+
+    const fetchMonthEnding = (year: number, month: number) : string => {
+        return new Date(year, month, 0).toISOString().split('T')[0];
+    }
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const fetchTransactions = await plaidService.getTransactions(
+                    fetchMonthBeginning(2024, 1),
+                    fetchMonthEnding(2024, 9)
+                );
+                setPlaidTransactions(fetchTransactions);
+                console.log('Transactions: ', fetchTransactions);
+            } catch (error) {
+                console.error("Error fetching transactions:", error);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     return (
         <Paper elevation={3} sx={{ maxWidth: 1050, margin: 'auto', mt: 4, borderRadius: '12px', overflow: 'hidden' }}>
@@ -65,28 +105,8 @@ const RecentTransactionsTable: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {transactions.map((transaction, index) => (
-                                <TableRow
-                                    key={index}
-                                    sx={{
-                                        '&:hover': { backgroundColor: '#F3F4F6' },
-                                        '&:last-child td, &:last-child th': { border: 0 }
-                                    }}
-                                >
-                                    <TableCell sx={{ color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>{transaction.date}</TableCell>
-                                    <TableCell sx={{ borderBottom: '1px solid #E5E7EB' }}>
-                                        <Box display="flex" alignItems="center">
-                                            {transaction.icon}
-                                            <Typography variant="body2" sx={{ ml: 1, color: '#111827' }}>{transaction.name}</Typography>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ fontWeight: 'medium', color: '#111827', borderBottom: '1px solid #E5E7EB' }}>{transaction.amount}</TableCell>
-                                    <TableCell align="right" sx={{ borderBottom: '1px solid #E5E7EB' }}>
-                                        <IconButton size="small" sx={{ color: '#6B7280' }}><Edit /></IconButton>
-                                        <IconButton size="small" sx={{ color: '#6B7280' }}><Block /></IconButton>
-                                        <IconButton size="small" sx={{ color: '#6B7280' }}><ChevronRight /></IconButton>
-                                    </TableCell>
-                                </TableRow>
+                            {plaidTransactions.map((transaction) => (
+                                <TransactionRow key={transaction.transactionId} transaction={transaction} />
                             ))}
                         </TableBody>
                     </Table>

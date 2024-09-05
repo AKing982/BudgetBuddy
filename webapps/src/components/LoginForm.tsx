@@ -19,6 +19,7 @@ import {PlaidLinkOnSuccessMetadata} from "react-plaid-link";
 import PlaidService from "../services/PlaidService";
 import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
 import LoginService from "../services/LoginService";
+import loginService from "../services/LoginService";
 
 
 interface LoginFormData {
@@ -118,6 +119,10 @@ const LoginForm: React.FC = () => {
             console.log('LoginData: ', loginData);
             const response = await authenticateUser(loginData);
             setIsAuthenticated(true);
+            const loginService = new LoginService();
+            const userId = await loginService.fetchUserIdByUsername(formData.email);
+            console.log('UserID: ', userId);
+            sessionStorage.setItem('userId', String(userId));
             if(response != null){
                 console.log('Is Authenticated: ', isAuthenticated);
                 const plaidService = PlaidService.getInstance();
@@ -134,6 +139,8 @@ const LoginForm: React.FC = () => {
 
                     if(plaidLinkRef.current){
                         plaidLinkRef.current.open();
+                        // Fetch and link plaid accounts
+
                     }else{
                         console.error('Plaid Link reference is not available');
                     }
@@ -197,9 +204,9 @@ const LoginForm: React.FC = () => {
         try
         {
             const plaidService = PlaidService.getInstance();
-            const loginService = new LoginService(formData.email, formData.password);
+            const loginService = new LoginService();
             const username: string | null = sessionStorage.getItem('username');
-            const userId = await loginService.fetchUserIdByUsername(username);
+            const userId = Number(sessionStorage.getItem('userId'));
 
             const response = await plaidService.exchangePublicToken(publicToken, userId);
             const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
