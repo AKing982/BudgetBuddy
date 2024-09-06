@@ -23,7 +23,8 @@ public class SpendingController {
     }
 
     @GetMapping("/total/{userId}")
-    public ResponseEntity<?> getSpendingTotal(@PathVariable Long userId){
+    public ResponseEntity<?> getSpendingTotal(@PathVariable Long userId,
+                                              ){
         return null;
     }
 
