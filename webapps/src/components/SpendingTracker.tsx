@@ -11,6 +11,7 @@ import {
     Box,
     SelectChangeEvent
 } from '@mui/material';
+import PlaidService from "../services/PlaidService";
 
 interface SpendingData {
     date: string;
@@ -38,6 +39,7 @@ const generateDummyData = (period: string): SpendingData[] => {
 const SpendingTracker: React.FC = () => {
     const [period, setPeriod] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
     const [spendingData, setSpendingData] = useState<SpendingData[]>(generateDummyData('monthly'));
+    const plaidService = PlaidService.getInstance();
 
     const handlePeriodChange = (event: SelectChangeEvent<PeriodType>) => {
         const newPeriod = event.target.value as 'monthly' | 'weekly' | 'daily';

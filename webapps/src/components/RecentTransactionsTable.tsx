@@ -105,7 +105,7 @@ const RecentTransactionsTable: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {plaidTransactions.map((transaction) => (
+                            {plaidTransactions.slice(0, 10).map((transaction) => (
                                 <TransactionRow key={transaction.transactionId} transaction={transaction} />
                             ))}
                         </TableBody>

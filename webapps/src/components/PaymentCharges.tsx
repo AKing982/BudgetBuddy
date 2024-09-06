@@ -36,7 +36,7 @@ interface TransactionStream {
     firstDate: Date;
     frequency: string;
     lastAmount: Amount;
-    lastDate: Date;
+    lastDate: string;
     lastUserModifiedDate: Date;
     merchantName: string;
     personalFinanceCategory: PersonalFinanceCategory;
@@ -69,7 +69,7 @@ const charges: Charge[] = [
 ];
 
 const PaymentCharges: React.FC = () => {
-    const [recurringCharges, setRecurringCharges] = useState<RecurringTransactionResponse | null>([]);
+    const [recurringCharges, setRecurringCharges] = useState<RecurringTransactionResponse | null>(null);
     const plaidService = PlaidService.getInstance();
 
     useEffect(() => {
