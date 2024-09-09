@@ -19,11 +19,6 @@ public class SpendingCalculatorService
         this.transactionService = transactionService;
     }
 
-    public List<PlaidTransaction> loadPlaidTransactionsForUser(Long userID)
-    {
-        return null;
-    }
-
     public BigDecimal calculateSpendingForPeriod(LocalDate startDate, LocalDate endDate){
         return null;
     }
@@ -31,4 +26,14 @@ public class SpendingCalculatorService
     public BigDecimal calculateAverageSpendingForPeriod(LocalDate startDate, LocalDate endDate){
         return null;
     }
+
+    public List<PlaidTransaction> getTopExpenses(BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+    public BigDecimal calculateRecurringSpending(BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+
 }

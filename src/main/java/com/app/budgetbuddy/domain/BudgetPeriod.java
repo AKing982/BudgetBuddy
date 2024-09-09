@@ -1,11 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-public enum BudgetPeriod
-{
-    DAILY,
-    WEEKLY,
-    MONTHLY,
-    BIWEEKLY,
-    YEARLY,
-    QUARTERLY
+import java.time.LocalDate;
+
+public record BudgetPeriod(Period period, LocalDate startDate, LocalDate endDate) {
 }

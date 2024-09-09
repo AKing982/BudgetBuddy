@@ -1,11 +1,13 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -36,5 +38,10 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     public Optional<TransactionsEntity> findById(Long id) {
         return transactionRepository.findById(id);
+    }
+
+    public List<PlaidTransaction> loadPlaidTransactionsForUser(Long userID)
+    {
+        return null;
     }
 }
