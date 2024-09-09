@@ -24,7 +24,8 @@ public class SpendingController {
 
     @GetMapping("/total/{userId}")
     public ResponseEntity<?> getSpendingTotal(@PathVariable Long userId,
-                                              ){
+                                              @RequestParam LocalDate startDate,
+                                              @RequestParam(required = false) LocalDate endDate){
         return null;
     }
 
@@ -36,12 +37,13 @@ public class SpendingController {
     @GetMapping("/average/{userId}")
     public ResponseEntity<?> getSpendingAverage(@PathVariable Long userId,
                                                 @RequestParam LocalDate startDate,
-                                                @RequestParam LocalDate endDate){
+                                                @RequestParam(required = false) LocalDate endDate){
         return null;
     }
 
     @GetMapping("/breakdown")
-    public ResponseEntity<?> getSpendingBreakdown(@RequestParam PeriodRequest periodRequest){
+    public ResponseEntity<?> getSpendingBreakdown(@RequestParam Long userId,
+                                                  @RequestParam PeriodRequest periodRequest){
         return null;
     }
 
