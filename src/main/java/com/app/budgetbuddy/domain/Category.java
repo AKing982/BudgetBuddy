@@ -1,8 +1,13 @@
 package com.app.budgetbuddy.domain;
 
+import jakarta.persistence.Embeddable;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Embeddable
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class Category
 {
     private Long id;

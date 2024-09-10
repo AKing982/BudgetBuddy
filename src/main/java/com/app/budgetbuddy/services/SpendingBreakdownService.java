@@ -15,11 +15,11 @@ import java.util.Map;
 @Service
 public class SpendingBreakdownService
 {
-    private final SpendingCalculatorService spendingCalculatorService;
+    private final TransactionService transactionService;
 
     @Autowired
-    public SpendingBreakdownService(SpendingCalculatorService spendingCalculatorService){
-        this.spendingCalculatorService = spendingCalculatorService;
+    public SpendingBreakdownService(TransactionService transactionService){
+        this.transactionService = transactionService;
     }
 
     public List<SpendingCategory> getSpendingCategoriesByPeriod(BudgetPeriod budgetPeriod){

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.app.budgetbuddy.domain.Category;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -52,11 +53,14 @@ public class TransactionsEntity
     private LocalDate authorizedDate;
 
     @Embedded
+    private Category category;
+
+    @Embedded
     private PersonalFinanceCategory personalFinanceCategory;
 
     @ElementCollection
     @CollectionTable(name="transaction_categories", joinColumns=@JoinColumn(name="transaction_id"))
     @Column(name="category")
-    private List<String> categories = new ArrayList<>();
+    private List<Category> categories = new ArrayList<>();
 
 }
