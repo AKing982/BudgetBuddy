@@ -159,11 +159,11 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     }
 
     public void validateTransactionParameterForNulls(TransactionsEntity transactionsEntity){
-        if(transactionsEntity.getTransactionId() == null
+        if(transactionsEntity.getTransactionReferenceNumber() == null
                 || transactionsEntity.getAccount() == null
                 || transactionsEntity.getAmount() == null
                 || transactionsEntity.getDescription() == null
-                || transactionsEntity.getCategories() == null
+//                || transactionsEntity.getCategories() == null
                 || transactionsEntity.getAuthorizedDate() == null){
                 throw new NullPointerException("Invalid transaction parameter");
 

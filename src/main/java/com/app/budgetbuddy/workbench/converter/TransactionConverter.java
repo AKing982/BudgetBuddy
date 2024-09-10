@@ -29,11 +29,11 @@ public class TransactionConverter implements Converter<Transaction, Transactions
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
         transactionsEntity.setDescription(transaction.getOriginalDescription());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
-        transactionsEntity.setCategories(transaction.getCategory());
+//        transactionsEntity.setCategories(transaction.getCategory());
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
-        transactionsEntity.setPersonalFinanceCategory(null);
+//        transactionsEntity.setPersonalFinanceCategory(null);
         return transactionsEntity;
     }
 

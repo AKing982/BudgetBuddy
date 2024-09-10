@@ -16,17 +16,17 @@ public class AccountEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="accountId")
-    private String accountId;
+    @Column(name="account_reference_number")
+    private String accountReferenceNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="userId")
     private UserEntity user;
 
-    @Column(name = "account_name")
+    @Column(name = "accountName")
     private String accountName;
 
-    @Column(name="official_name")
+    @Column(name="officialName")
     private String officialName;
 
     @Column(name="type")

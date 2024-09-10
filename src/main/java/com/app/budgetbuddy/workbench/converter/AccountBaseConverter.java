@@ -9,7 +9,7 @@ public class AccountBaseConverter
 
     public AccountEntity convert(AccountBase accountBase, UserEntity userEntity) {
         AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setAccountId(accountBase.getAccountId());
+        accountEntity.setAccountReferenceNumber(accountBase.getAccountId());
         accountEntity.setAccountName(accountBase.getName());
         accountEntity.setSubtype(accountBase.getSubtype());
         accountEntity.setType(accountBase.getType());

@@ -10,13 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class Category
 {
-    private Long id;
     private String name;
-    private String description;
+    private String categoryDescription;
 
-    public Category(Long id, String name, String description) {
-        this.id = id;
+    public Category(String name, String description) {
         this.name = name;
-        this.description = description;
+        this.categoryDescription = description;
     }
 }

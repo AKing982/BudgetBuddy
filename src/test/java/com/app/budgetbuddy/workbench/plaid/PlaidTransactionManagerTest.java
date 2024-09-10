@@ -210,14 +210,14 @@ class PlaidTransactionManagerTest {
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
         for(int i = 0; i < actual.size(); i++){
-            assertEquals(expected.get(i).getTransactionId(), actual.get(i).getTransactionId());
-            assertEquals(expected.get(i).getAccount().getAccountId(), actual.get(i).getAccount().getAccountId());
+            assertEquals(expected.get(i).getTransactionReferenceNumber(), actual.get(i).getTransactionReferenceNumber());
+            assertEquals(expected.get(i).getAccount().getAccountReferenceNumber(), actual.get(i).getAccount().getAccountReferenceNumber());
             assertEquals(expected.get(i).getCategoryId(), actual.get(i).getCategoryId());
             assertEquals(expected.get(i).getAuthorizedDate(), actual.get(i).getAuthorizedDate());
             assertEquals(expected.get(i).isPending(), actual.get(i).isPending());
             assertEquals(expected.get(i).getDescription(), actual.get(i).getDescription());
             assertEquals(expected.get(i).getAmount(), actual.get(i).getAmount());
-            assertEquals(expected.get(i).getCategories(), actual.get(i).getCategories());
+//            assertEquals(expected.get(i).getCategories(), actual.get(i).getCategories());
             assertEquals(expected.get(i).getPosted(), actual.get(i).getPosted());
         }
 
@@ -304,10 +304,10 @@ class PlaidTransactionManagerTest {
 
     private TransactionsEntity createTransaction(String transactionId, AccountEntity account, String description, BigDecimal amount, boolean isPending, List<String> categories, String categoryId, LocalDate authorizedDate){
         return TransactionsEntity.builder()
-                .transactionId(transactionId)
+                .transactionReferenceNumber(transactionId)
                 .pending(isPending)
                 .authorizedDate(authorizedDate)
-                .categories(categories)
+//                .categories(categories)
                 .account(account)
                 .amount(amount)
                 .description(description)

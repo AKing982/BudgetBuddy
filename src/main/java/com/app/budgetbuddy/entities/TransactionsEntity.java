@@ -22,11 +22,11 @@ public class TransactionsEntity
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="accountId")
+    @JoinColumn(name="acctid")
     private AccountEntity account;
 
-    @Column(name="transactionId")
-    private String transactionId;
+    @Column(name="transaction_reference_number", unique=true)
+    private String transactionReferenceNumber;
 
     @Column(name = "amount")
     private BigDecimal amount;
@@ -37,10 +37,10 @@ public class TransactionsEntity
     @Column(name="posted")
     private LocalDate posted;
 
-    @Column(name="isoCurrencyCode")
+    @Column(name="currencyCode")
     private String isoCurrencyCode;
 
-    @Column(name="categoryId")
+    @Column(name="categoryid")
     private String categoryId;
 
     @Column(name="merchantName")
@@ -49,18 +49,15 @@ public class TransactionsEntity
     @Column(name="pending")
     private boolean pending;
 
-    @Column(name="authorizedDate")
+    @Column(name="authorizeddate")
     private LocalDate authorizedDate;
 
-    @Embedded
-    private Category category;
+    @Column(name="createdat")
+    private LocalDate createDate;
 
-    @Embedded
-    private PersonalFinanceCategory personalFinanceCategory;
-
-    @ElementCollection
-    @CollectionTable(name="transaction_categories", joinColumns=@JoinColumn(name="transaction_id"))
-    @Column(name="category")
-    private List<Category> categories = new ArrayList<>();
+//    @ElementCollection
+//    @CollectionTable(name="transaction_categories", joinColumns=@JoinColumn(name="id"))
+//    @Column(name="category")
+//    private List<String> categories = new ArrayList<>();
 
 }

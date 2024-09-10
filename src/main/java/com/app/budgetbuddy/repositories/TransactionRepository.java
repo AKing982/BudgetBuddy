@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -24,14 +25,14 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t WHERE t.authorizedDate =:date")
     Collection<TransactionsEntity> findByAuthorizedDate(@Param("date") LocalDate date);
 
-    @Query("SELECT t FROM TransactionsEntity t WHERE t.account.accountId =:accountId")
-    Optional<TransactionsEntity> findTransactionByAccountId(@Param("accountId") String accountId);
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.account.accountReferenceNumber =:accountId")
+    Optional<TransactionsEntity> findTransactionByAccountReferenceNumber(@Param("accountId") String accountId);
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.id =:id AND t.description =:descr")
     Optional<TransactionsEntity> findTransactionByDescription(@Param("descr") String description, @Param("id") Long id);
 
-    @Query("SELECT t FROM TransactionsEntity t WHERE t.transactionId =:id")
-    Optional<TransactionsEntity> findTransactionByTransactionId(@Param("id") String transactionId);
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.transactionReferenceNumber =:id")
+    Optional<TransactionsEntity> findTransactionByTransactionReferenceNumber(@Param("id") String transactionId);
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.merchantName =:merchant")
     Collection<TransactionsEntity> findTransactionsByMerchant(@Param("merchant") String merchant);
@@ -43,13 +44,24 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     BigDecimal sumAmountByCategoryAndDateRange(@Param("category") Category category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT AVG(t.amount) FROM TransactionsEntity t WHERE t.category =:category AND t.posted BETWEEN :startDate AND :endDate")
-    BigDecimal averageAmountByCategoryAndDateRange(@Param("category") Category category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    BigDecimal findAverageSpendingByCategoryAndDateRange(@Param("category") Category category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    BigDecimal sumAmountByDate()
+    @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.posted =:date")
+    BigDecimal findSpendingByDate(@Param("date") LocalDate date);
 
+    @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted =:date GROUP BY t.posted, t.category, t.amount")
+    List<Object[]> getDailySpendingBreakdown(@Param("date") LocalDate date);
 
+    @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.posted, t.category, t.amount")
+    List<Object[]> getSpendingBreakdownOverDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate")
+    List<Object[]> getSpendingCategoriesByPeriod(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.category =:category")
+    BigDecimal getTotalSpendingByCategory(@Param("category") Category category);
 
+//    @Query("SELECT t.category, SUM(t.amount) / (SELECT SUM(t2.amount) FROM TransactionsEntity t2) * 100 FROM TransactionsEntity t GROUP BY t.category")
+//    List<Object[]> getSpendingBreakdownByPercentage();
 
 }
