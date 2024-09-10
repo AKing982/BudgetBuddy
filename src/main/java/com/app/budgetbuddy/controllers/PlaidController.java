@@ -2,6 +2,7 @@ package com.app.budgetbuddy.controllers;
 
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
@@ -96,7 +97,27 @@ public class PlaidController {
                 BigDecimal balance = BigDecimal.valueOf(accountBase.getBalances().getCurrent());
                 String type = String.valueOf(accountBase.getType());
                 String subtype = String.valueOf(accountBase.getSubtype());
-                AccountResponse accountResponse = new AccountResponse(accountId, name, balance, type, subtype);
+                String mask = accountBase.getMask();
+                String officialName = accountBase.getOfficialName();
+                AccountResponse accountResponse = new AccountResponse(accountId, name, balance, type,mask, officialName, subtype);
+                accountResponseList.add(accountResponse);
+            }
+        }
+        return accountResponseList;
+    }
+
+    private List<AccountResponse> createAccountResponseFromAccounts(List<AccountEntity> accounts){
+        List<AccountResponse> accountResponseList = new ArrayList<>();
+        for(AccountEntity account: accounts){
+            if(account != null){
+                String accountId = account.getAccountReferenceNumber();
+                String name = account.getAccountName();
+                BigDecimal balance = account.getBalance();
+                String type = String.valueOf(account.getType());
+                String subtype = String.valueOf(account.getSubtype());
+                String mask = account.getMask();
+                String officialName = account.getOfficialName();
+                AccountResponse accountResponse = new AccountResponse(accountId, name, balance, type,mask, officialName, subtype);
                 accountResponseList.add(accountResponse);
             }
         }
@@ -238,11 +259,32 @@ public class PlaidController {
             String logoUrl = transaction.getLogoUrl();
             LocalDate authorizedDate = transaction.getAuthorizedDate();
             String transactionType = transaction.getTransactionType().toString();
-            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categories, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate, transactionType);
+            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categoryId, date, name, merchantName, isPending, authorizedDate);
             transactionResponses.add(transactionResponse);
         }
         return transactionResponses;
     }
+
+    private List<TransactionResponse> createTransactionResponseFromEntities(List<TransactionsEntity> transactionsEntities){
+        List<TransactionResponse> transactionResponses = new ArrayList<>();
+        for(TransactionsEntity transactionsEntity : transactionsEntities){
+            if(transactionsEntity == null){
+                String transactionId = transactionsEntity.getTransactionReferenceNumber();
+                String accountRefNumber = transactionsEntity.getAccount().getAccountReferenceNumber();
+                BigDecimal amount = transactionsEntity.getAmount();
+                String categoryId = transactionsEntity.getCategoryId();
+                LocalDate date = transactionsEntity.getPosted();
+                String name = transactionsEntity.getDescription();
+                String merchantName = transactionsEntity.getMerchantName();
+                boolean isPending = transactionsEntity.isPending();
+                LocalDate authorizedDate = transactionsEntity.getAuthorizedDate();
+                TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountRefNumber, amount, categoryId, date, name, merchantName, isPending, authorizedDate);
+                transactionResponses.add(transactionResponse);
+            }
+        }
+        return transactionResponses;
+    }
+
 
     @GetMapping("/transactions/filtered")
     public ResponseEntity<?> getFilteredTransactions(@RequestParam Long userId,
@@ -263,12 +305,30 @@ public class PlaidController {
                 .map(transactionDTOConverter::convert)
                 .toList();
         List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactionsList);
-        return ResponseEntity.status(200).body(savedTransactions);
+        List<TransactionResponse> transactionResponses = createTransactionResponseFromEntities(savedTransactions);
+        return ResponseEntity.status(200).body(transactionResponses);
     }
 
     @PostMapping("/save-accounts")
-    public ResponseEntity<?> saveAccounts(@RequestParam Long userId){
-        return null;
+    public ResponseEntity<?> saveAccounts(@RequestBody PlaidAccountRequest plaidAccountRequest){
+        Long userId = plaidAccountRequest.userId();
+        List<PlaidAccount> accounts = plaidAccountRequest.accounts();
+        if(userId < 1){
+            return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
+        }
+        if(accounts.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+        try
+        {
+            List<AccountEntity> accountEntities = plaidAccountManager.savePlaidAccountsToDatabase(accounts, userId);
+            List<AccountResponse> accountResponses = createAccountResponseFromAccounts(accountEntities);
+            return ResponseEntity.status(200).body(accountResponses);
+
+        }catch(Exception e)
+        {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @GetMapping("/balances")

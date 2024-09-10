@@ -20,7 +20,7 @@ public class AccountEntity {
     private String accountReferenceNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="userId")
+    @JoinColumn(name="userid")
     private UserEntity user;
 
     @Column(name = "accountName")

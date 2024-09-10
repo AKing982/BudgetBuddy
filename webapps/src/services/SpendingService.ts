@@ -6,10 +6,6 @@ enum Period {
     Yearly = "Yearly"
 }
 
-interface Transaction {
-    amount: number;
-    date: Date;
-}
 
 class SpendingService {
 

@@ -55,6 +55,12 @@ public class TransactionsEntity
     @Column(name="createdat")
     private LocalDate createDate;
 
+    @Embedded
+    private Category category;
+
+//    @Embedded
+//    private PersonalFinanceCategory personalFinanceCategory;
+//
 //    @ElementCollection
 //    @CollectionTable(name="transaction_categories", joinColumns=@JoinColumn(name="id"))
 //    @Column(name="category")

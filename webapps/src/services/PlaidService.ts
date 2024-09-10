@@ -1,5 +1,6 @@
 import {apiUrl} from '../config/api'
 import axios, {AxiosError, AxiosInstance, AxiosStatic} from "axios";
+import {Plaid} from "react-plaid-link";
 
 interface PlaidLinkToken {
     link_token: string;
@@ -31,20 +32,59 @@ interface PlaidExchangeRequest{
     publicToken: string;
 }
 
+interface PlaidAccount {
+    accountId: string;
+    name: string;
+    officialName: string;
+    balance: number;
+    type: string;
+    subtype: string;
+    mask: string;
+}
+
 interface Transaction {
     transactionId: string;
     accountId: string;
     amount: number;
     categories: string[];
     categoryId: string;
-    date: Date;
+    date: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;
     logoUrl: string;
-    authorizedDate: Date;
+    authorizedDate: Date | string;
     transactionType: string;
 }
+
+interface TransactionDTO {
+    accountId: string;
+    amount: number;
+    isoCurrencyCode: string;
+    categoryId: string;
+    date: string;
+    merchantName: string;
+    name: string;
+    pending: boolean;
+    transactionId: string;
+    authorizedDate: string;
+}
+
+interface PlaidAccountRequest {
+    userId: number;
+    account: PlaidAccount[];
+}
+
+interface AccountResponse {
+    accountId: string;
+    name: string;
+    balance: number;
+    type: string;
+    subtype: string;
+    officialName: string;
+    mask: string;
+}
+
 class PlaidService {
 
     private static instance: PlaidService;
@@ -200,18 +240,63 @@ class PlaidService {
         }
     }
 
-    public async getTransactions(startDate: string, endDate: string) : Promise<Transaction[]>
+    public async getTransactions(startDate: string, endDate: string, userId: number) : Promise<Transaction[]>
     {
+        console.log('StartDate: ', startDate);
+        console.log('EndDate: ', endDate);
+        console.log('userId: ', userId);
         try
         {
-            let userId = 1;
-            const response = await PlaidService.axios.get<Transaction[]>(`${apiUrl}/api/plaid/transactions`, {
+            const response = await axios.get<Transaction[]>(`${apiUrl}/api/plaid/transactions`, {
                 params: {userId, startDate, endDate},
             });
+            console.log('Response Data: ', response.data);
             return response.data;
         }catch(error)
         {
             console.error('Error fetching transactions: ', error);
+            throw error;
+        }
+    }
+
+    private createTransactionRequest(transactions: Transaction[]): TransactionDTO[] {
+        return transactions.map(transaction => ({
+            accountId: transaction.accountId,
+            amount: transaction.amount,
+            isoCurrencyCode: 'USD',
+            categoryId: transaction.categoryId,
+            date: this.ensureDate(transaction.date).toISOString(),
+            merchantName: transaction.merchantName,
+            name: transaction.name,
+            pending: transaction.pending,
+            transactionId: transaction.transactionId,
+            authorizedDate: this.ensureDate(transaction.authorizedDate).toISOString()
+        }));
+    }
+
+    private ensureDate(date: Date | string): Date {
+        if (date instanceof Date) return date;
+        const parsedDate = new Date(date);
+        if (isNaN(parsedDate.getTime())) {
+            throw new Error(`Invalid date: ${date}`);
+        }
+        return parsedDate;
+    }
+
+    public async fetchAndSaveTransactions(startDate: string, endDate: string, userId: number) {
+        try
+        {
+            const transactions = await this.getTransactions(startDate, endDate, userId);
+            const transactionRequest = this.createTransactionRequest(transactions);
+            console.log('Transaction Request: ', transactionRequest);
+            const response = await axios.post<TransactionDTO[]>(`${apiUrl}/api/plaid/save-transactions`, {
+                transactions: transactionRequest
+            });
+            console.log('Response: ', response.data);
+            return response.data;
+        }catch(error)
+        {
+            console.error('Error saving transactions to the database.');
             throw error;
         }
     }
@@ -228,15 +313,38 @@ class PlaidService {
 
     }
 
+    public createAccountRequest(accounts: AccountResponse[], userId: number): PlaidAccountRequest {
+        const accountData = accounts.map(account => ({
+            accountId: account.accountId,
+            balance: account.balance,
+            name: account.name,
+            subtype: account.subtype,
+            type: account.type,
+            officialName: account.officialName,
+            mask: account.mask
+        }));
+        return {
+            userId: userId,
+            account: accountData
+        };
+    }
+
     public async fetchAndLinkPlaidAccounts(userID: number) {
         try
         {
-            const  response = await axios.get(`http://localhost:8080/api/plaid/accounts`, {
+            const response = await axios.get<AccountResponse[]>(`${apiUrl}/api/plaid/users/${userID}/accounts`, {
                 params: {
                     userID: userID
                 }
             });
-
+            const accountData = response.data;
+            const accountRequest = this.createAccountRequest(accountData, userID);
+            console.log('Account Request: ', accountRequest);
+            const savedAccountsResponse = await axios.post(`${apiUrl}/api/plaid/save-accounts`, {
+                userId: userID,
+                accounts: accountData
+            });
+            console.log('Saved Accounts Response: ', savedAccountsResponse.data);
             if(response.status === 200 || response.status === 201){
                 console.log('Found response: ', response.data);
                 return response.data;

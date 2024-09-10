@@ -14,13 +14,10 @@ public class TransactionDTOConverter implements Converter<TransactionDTO, Transa
         transaction.setMerchantName(transactionDTO.merchantName());
         transaction.setAmount(Double.valueOf(String.valueOf(transactionDTO.amount())));
         transaction.setTransactionId(transactionDTO.transactionId());
-        transaction.setOriginalDescription(transactionDTO.description());
         transaction.setPending(transactionDTO.pending());
-        transaction.setTransactionCode(transactionDTO.transactionCode());
         transaction.setAuthorizedDate(LocalDate.parse(transactionDTO.authorizedDate()));
         transaction.setAccountId(transactionDTO.accountId());
         transaction.setName(transactionDTO.name());
-        transaction.setCategory(transactionDTO.categories());
         transaction.setCategoryId(transactionDTO.categoryId());
         return transaction;
     }

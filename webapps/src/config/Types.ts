@@ -4,11 +4,11 @@ interface Transaction {
     amount: number;
     categories: string[];
     categoryId: string;
-    date: Date;
+    date: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;
     logoUrl: string;
-    authorizedDate: Date;
+    authorizedDate: Date | string;
     transactionType: string;
 }

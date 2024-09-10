@@ -209,7 +209,17 @@ const LoginForm: React.FC = () => {
             const userId = Number(sessionStorage.getItem('userId'));
 
             const response = await plaidService.exchangePublicToken(publicToken, userId);
+
             const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
+
+            const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
+            console.log('Linked Accounts: ', linkedAccounts);
+            const startDate = '2018-01-01';
+            const endDate = new Date().toISOString().split('T')[0];
+            const savedTransactions = await plaidService.fetchAndSaveTransactions(startDate, endDate, userId);
+            console.log('Saved Transactions: ', savedTransactions);
+
+
             navigate('/dashboard');
         }catch(error)
         {

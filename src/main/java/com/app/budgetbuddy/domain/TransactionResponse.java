@@ -16,14 +16,14 @@ public class TransactionResponse
     private String transactionId;
     private String accountId;
     private BigDecimal amount;
-    private List<String> categories;
+//    private List<String> categories;
     private String categoryId;
     private LocalDate date;
     private String name;
     private String merchantName;
     private boolean pending;
-    private String logoURL;
+//    private String logoURL;
     private LocalDate authorizedDate;
-    private String transactionType;
+//    private String transactionType;
 
 }

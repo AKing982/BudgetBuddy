@@ -33,12 +33,12 @@ interface Transaction {
     amount: number;
     categories: string[];
     categoryId: string;
-    date: Date;
+    date: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;
     logoUrl: string;
-    authorizedDate: Date;
+    authorizedDate: Date | string;
     transactionType: string;
 }
 
@@ -73,9 +73,11 @@ const RecentTransactionsTable: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const userId = Number(sessionStorage.getItem('userId'));
                 const fetchTransactions = await plaidService.getTransactions(
                     fetchMonthBeginning(2024, 1),
-                    fetchMonthEnding(2024, 9)
+                    fetchMonthEnding(2024, 9),
+                    userId
                 );
                 setPlaidTransactions(fetchTransactions);
                 console.log('Transactions: ', fetchTransactions);

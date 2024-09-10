@@ -1,10 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.config.JpaConfig;
-import com.app.budgetbuddy.domain.PlaidExchangeRequest;
-import com.app.budgetbuddy.domain.PlaidLinkRequest;
-import com.app.budgetbuddy.domain.TransactionDTO;
-import com.app.budgetbuddy.domain.TransactionRequest;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.PlaidLinkService;
@@ -386,21 +383,80 @@ class PlaidControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void testSaveAccounts_whenAccountRequestIsNull_thenReturnBadRequest() throws Exception {
+        String jsonString = objectMapper.writeValueAsString(null);
+        mockMvc.perform(post("/api/plaid/save-accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSaveAccounts_whenAccountRequestHasInvalidUserId_thenReturnBadRequest() throws Exception {
+        Long userId = -1L;
+        List<PlaidAccount> accounts = new ArrayList<>();
+        PlaidAccountRequest plaidAccountRequest = new PlaidAccountRequest(userId, accounts);
+        String jsonString = objectMapper.writeValueAsString(plaidAccountRequest);
+
+        mockMvc.perform(post("/api/plaid/save-accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSaveAccounts_whenAccountsListIsEmpty_thenReturnNotFound() throws Exception {
+        Long userId = 1L;
+        List<PlaidAccount> accounts = new ArrayList<>();
+        PlaidAccountRequest plaidAccountRequest = new PlaidAccountRequest(userId, accounts);
+        String jsonString = objectMapper.writeValueAsString(plaidAccountRequest);
+
+        mockMvc.perform(post("/api/plaid/save-accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testSaveAccounts_whenPlaidAccountRequestIsValid_thenReturnOk() throws Exception {
+        Long userId = 1L;
+        List<PlaidAccount> accounts = new ArrayList<>();
+        accounts.add(createPlaidAccount());
+        accounts.add(createPlaidAccount());
+        PlaidAccountRequest plaidAccountRequest = new PlaidAccountRequest(userId, accounts);
+        String jsonString = objectMapper.writeValueAsString(plaidAccountRequest);
+
+        mockMvc.perform(post("/api/plaid/save-accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString))
+                .andExpect(status().isOk());
+    }
+
+    private PlaidAccount createPlaidAccount(){
+        PlaidAccount account = new PlaidAccount();
+        account.setAccountId("e23232");
+        account.setBalance(BigDecimal.TEN);
+        account.setName("Test Account");
+        account.setSubtype("checking");
+        account.setType("DEPOSITORY");
+        return account;
+    }
+
     private TransactionDTO createTransactionDTO() {
         TransactionDTO transactionDTO = new TransactionDTO(
                 "e11212",                          // accountId
                 new BigDecimal("120.00"),          // amount
                 "USD",                             // isoCurrencyCode
-                List.of("Food", "Groceries"),      // categories
+//                List.of("Food", "Groceries"),      // categories
                 "cat123",                          // categoryId
                 LocalDate.now().toString(),                   // date
                 "Supermarket XYZ",                 // merchantName
-                "Weekly grocery shopping",         // description
                 "Grocery Purchase",                // name
                 false,                             // pending
                 "txn987654321",                    // transactionId
-                LocalDate.now().minusDays(1).toString(),      // authorizedDate
-                TransactionCode.PURCHASE           // transactionCode
+                LocalDate.now().minusDays(1).toString()     // authorizedDate
+                // transactionCode
         );
         return transactionDTO;
     }

@@ -10,11 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class Category
 {
-    private String name;
+    private String categoryName;
     private String categoryDescription;
 
     public Category(String name, String description) {
-        this.name = name;
+        this.categoryName = name;
         this.categoryDescription = description;
     }
 }

@@ -15,6 +15,8 @@ public class AccountResponse
     private String name;
     private BigDecimal balance;
     private String type;
+    private String mask;
+    private String officialName;
     private String subtype;
 
 }

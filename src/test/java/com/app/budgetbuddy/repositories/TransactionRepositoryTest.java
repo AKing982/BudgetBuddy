@@ -24,6 +24,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -100,7 +102,7 @@ class TransactionRepositoryTest {
                 .merchantName("Test Merchant 1")
                 .pending(false)
                 .authorizedDate(LocalDate.now().minusDays(1))
-//                .category(new Category("Groceries", "Food and household items"))
+                .category(new Category("Groceries", "Food and household items"))
                 .build();
 
         transaction2 = TransactionsEntity.builder()
@@ -113,8 +115,8 @@ class TransactionRepositoryTest {
                 .categoryId("category2")
                 .merchantName("Test Merchant 2")
                 .pending(true)
-                .authorizedDate(LocalDate.now())
-//                .category(new Category("Entertainment", "Movies, games, etc."))
+                .authorizedDate(LocalDate.of(2024, 6, 29))
+                .category(new Category("Entertainment", "Movies, games, etc."))
                 .build();
         entityManager.persist(transaction1);
         entityManager.persist(transaction2);
@@ -128,6 +130,100 @@ class TransactionRepositoryTest {
         assertThat(transactions).hasSize(1);
         assertThat(transactions).contains(transaction1);
     }
+
+    @Test
+    void findByPendingTrue(){
+        Collection<TransactionsEntity> transactions = transactionRepository.findByPendingTrue();
+        assertThat(transactions).hasSize(1);
+        assertThat(transactions).contains(transaction2);
+    }
+
+    @Test
+    void findByAuthorizedDate(){
+        Collection<TransactionsEntity> transactions = transactionRepository.findByAuthorizedDate(LocalDate.of(2024, 6, 29));
+        assertThat(transactions).hasSize(1);
+        assertThat(transactions).contains(transaction2);
+    }
+
+    @Test
+    void findTransactionByDescription() {
+        Optional<TransactionsEntity> transaction = transactionRepository.findTransactionByDescription("Test Transaction 1", transaction1.getId());
+        assertThat(transaction).isPresent();
+        assertThat(transaction.get()).isEqualTo(transaction1);
+    }
+
+    @Test
+    void findTransactionByTransactionId() {
+        Optional<TransactionsEntity> transaction = transactionRepository.findTransactionByTransactionReferenceNumber("TRX001");
+        assertThat(transaction).isPresent();
+        assertThat(transaction.get()).isEqualTo(transaction1);
+    }
+
+    @Test
+    void findTransactionsByMerchant() {
+        Collection<TransactionsEntity> transactions = transactionRepository.findTransactionsByMerchant("Test Merchant 1");
+        assertThat(transactions).hasSize(1);
+        assertThat(transactions).contains(transaction1);
+    }
+
+    @Test
+    void sumAmountByDateRange() {
+        BigDecimal sum = transactionRepository.sumAmountByDateRange(LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+        assertThat(sum).isEqualByComparingTo(new BigDecimal("300.00"));
+    }
+
+    @Test
+    void sumAmountByCategoryAndDateRange() {
+        BigDecimal sum = transactionRepository.sumAmountByCategoryAndDateRange(
+                category1, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+        assertThat(sum).isEqualByComparingTo(new BigDecimal("100.00"));
+    }
+
+    @Test
+    void findAverageSpendingByCategoryAndDateRange() {
+        BigDecimal avg = transactionRepository.findAverageSpendingByCategoryAndDateRange(
+                category1, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+        assertThat(avg).isEqualByComparingTo(new BigDecimal("100.00"));
+    }
+
+    @Test
+    void findSpendingByDate() {
+        BigDecimal spending = transactionRepository.findSpendingByDate(LocalDate.now());
+        assertThat(spending).isEqualByComparingTo(new BigDecimal("100.00"));
+    }
+
+    @Test
+    void getDailySpendingBreakdown() {
+        List<Object[]> breakdown = transactionRepository.getDailySpendingBreakdown(LocalDate.now());
+        assertThat(breakdown).hasSize(1);
+        Object[] result = breakdown.get(0);
+        assertThat(result[0]).isEqualTo(LocalDate.now());
+        assertThat(result[1]).isEqualToComparingFieldByField(category1);
+        assertThat((BigDecimal) result[2]).isEqualByComparingTo(new BigDecimal("100.00"));
+    }
+
+    @Test
+    void getSpendingBreakdownOverDateRange() {
+        List<Object[]> breakdown = transactionRepository.getSpendingBreakdownOverDateRange(
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+        assertThat(breakdown).hasSize(2);
+        // Add more specific assertions based on your expected results
+    }
+
+    @Test
+    void getSpendingCategoriesByPeriod() {
+        List<Object[]> categories = transactionRepository.getSpendingCategoriesByPeriod(
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+        assertThat(categories).hasSize(2);
+        // Add more specific assertions based on your expected results
+    }
+
+    @Test
+    void getTotalSpendingByCategory() {
+        BigDecimal total = transactionRepository.getTotalSpendingByCategory(category1);
+        assertThat(total).isEqualByComparingTo(new BigDecimal("100.00"));
+    }
+
 
 
 

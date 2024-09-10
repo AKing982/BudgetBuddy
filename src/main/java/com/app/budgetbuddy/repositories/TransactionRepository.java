@@ -25,9 +25,6 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t WHERE t.authorizedDate =:date")
     Collection<TransactionsEntity> findByAuthorizedDate(@Param("date") LocalDate date);
 
-    @Query("SELECT t FROM TransactionsEntity t WHERE t.account.accountReferenceNumber =:accountId")
-    Optional<TransactionsEntity> findTransactionByAccountReferenceNumber(@Param("accountId") String accountId);
-
     @Query("SELECT t FROM TransactionsEntity t WHERE t.id =:id AND t.description =:descr")
     Optional<TransactionsEntity> findTransactionByDescription(@Param("descr") String description, @Param("id") Long id);
 
@@ -55,13 +52,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.posted, t.category, t.amount")
     List<Object[]> getSpendingBreakdownOverDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate")
+    @Query("SELECT t.category.categoryName, t.category.categoryDescription, SUM(t.amount) as totalAmount FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.category.categoryDescription, t.category.categoryName")
     List<Object[]> getSpendingCategoriesByPeriod(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.category =:category")
     BigDecimal getTotalSpendingByCategory(@Param("category") Category category);
-
-//    @Query("SELECT t.category, SUM(t.amount) / (SELECT SUM(t2.amount) FROM TransactionsEntity t2) * 100 FROM TransactionsEntity t GROUP BY t.category")
-//    List<Object[]> getSpendingBreakdownByPercentage();
-
 }

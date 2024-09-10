@@ -5,7 +5,9 @@ import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.*;
+import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.repositories.UserRepository;
+import com.app.budgetbuddy.services.AccountService;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.workbench.converter.AccountBaseConverter;
 import com.plaid.client.model.AccountBase;
@@ -33,14 +35,17 @@ public class PlaidAccountManager extends AbstractPlaidManager
     private Logger LOGGER = LoggerFactory.getLogger(PlaidAccountManager.class);
     private AccountBaseConverter accountBaseConverter;
     private UserRepository userRepository;
+    private AccountService accountService;
 
     @Autowired
     public PlaidAccountManager(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi,
                                AccountBaseConverter accountBaseConverter,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               AccountService accountService) {
         super(plaidLinkService, plaidApi);
         this.accountBaseConverter = accountBaseConverter;
         this.userRepository = userRepository;
+        this.accountService = accountService;
     }
 
     /**
@@ -108,7 +113,7 @@ public class PlaidAccountManager extends AbstractPlaidManager
         return accountsResponse;
     }
 
-    public List<AccountEntity> savePlaidAccountsToDatabase(List<AccountBase> accounts, Long userId) throws PlaidApiException {
+    public List<AccountEntity> savePlaidAccountsToDatabase(List<PlaidAccount> accounts, Long userId) throws PlaidApiException {
         if(accounts.isEmpty()){
             throw new AccountsNotFoundException("No accounts found.");
         }
@@ -118,9 +123,10 @@ public class PlaidAccountManager extends AbstractPlaidManager
         }
         UserEntity userEntity = user.get();
         List<AccountEntity> accountEntities = new ArrayList<>();
-        for(AccountBase account : accounts){
+        for(PlaidAccount account : accounts){
             if(account != null){
                 AccountEntity accountEntity = accountBaseConverter.convert(account, userEntity);
+                accountService.save(accountEntity);
                 accountEntities.add(accountEntity);
             }
         }
