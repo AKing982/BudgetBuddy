@@ -90,6 +90,16 @@ const AccountSummary: React.FC = () => {
         }
     }
 
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+
+
     return (
         <Paper elevation={3} sx={{
             maxWidth: 400,
@@ -152,7 +162,7 @@ const AccountSummary: React.FC = () => {
                                                 color: account.name === 'Net Cash' ? '#10B981' : '#111827'
                                             }}
                                         >
-                                            ${account.balance}
+                                            {formatCurrency(parseFloat(account.balance))}
                                         </Typography>
                                         {account.action === 'gear' ? (
                                             <IconButton edge="end" aria-label="settings" size="small">
