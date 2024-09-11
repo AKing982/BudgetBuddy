@@ -47,7 +47,7 @@ const DashboardPage: React.FC = () => {
     const plaidService = PlaidService.getInstance();
 
     const getResponsiveSpacing = () => {
-        return isMdUp ? 2 : 1;
+        return isMdUp ? 1 : 1;
     }
 
     const spacing = getResponsiveSpacing();
@@ -185,7 +185,7 @@ const DashboardPage: React.FC = () => {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
             <Sidebar />
-            <Box component="main" sx={{ flexGrow: 0, p: { xs: 1, sm: 2, md: 3 } }}>
+            <Box component="main" sx={{ flexGrow: 0, p: { xs: 1, sm: 3, md: 3 } }}>
                 <Grid container spacing={1}>
                     {/* Main Content Area */}
                     <Grid item xs={12} md={7}>
