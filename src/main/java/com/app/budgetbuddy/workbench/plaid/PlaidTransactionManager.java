@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.*;
@@ -141,13 +142,13 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     }
 
 
-    public List<TransactionsEntity> saveTransactionsToDatabase(final List<Transaction> transactionList){
+    public List<TransactionsEntity> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList){
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         if(transactionList.isEmpty()){
             throw new TransactionsNotFoundException("Transactions not found.");
         }
 
-        for(Transaction transaction : transactionList){
+        for(PlaidTransaction transaction : transactionList){
             if(transaction != null){
                 TransactionsEntity transactionsEntity = transactionConverter.convert(transaction);
                 validateTransactionParameterForNulls(transactionsEntity);

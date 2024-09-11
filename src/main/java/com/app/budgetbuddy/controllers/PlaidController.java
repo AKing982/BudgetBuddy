@@ -250,7 +250,7 @@ public class PlaidController {
             String transactionId = transaction.getTransactionId();
             String accountId = transaction.getAccountId();
             BigDecimal amount = BigDecimal.valueOf(transaction.getAmount());
-            List<String> categories = transaction.getCategory();
+//            List<String> categories = transaction.getCategory();
             String categoryId = transaction.getCategoryId();
             LocalDate date = transaction.getDate();
             String name = transaction.getName();
@@ -259,7 +259,7 @@ public class PlaidController {
             String logoUrl = transaction.getLogoUrl();
             LocalDate authorizedDate = transaction.getAuthorizedDate();
             String transactionType = transaction.getTransactionType().toString();
-            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categoryId, date, name, merchantName, isPending, authorizedDate);
+            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate);
             transactionResponses.add(transactionResponse);
         }
         return transactionResponses;
@@ -276,9 +276,10 @@ public class PlaidController {
                 LocalDate date = transactionsEntity.getPosted();
                 String name = transactionsEntity.getDescription();
                 String merchantName = transactionsEntity.getMerchantName();
+                String logoUrl = transactionsEntity.getLogoUrl();
                 boolean isPending = transactionsEntity.isPending();
                 LocalDate authorizedDate = transactionsEntity.getAuthorizedDate();
-                TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountRefNumber, amount, categoryId, date, name, merchantName, isPending, authorizedDate);
+                TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountRefNumber, amount, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate);
                 transactionResponses.add(transactionResponse);
             }
         }
@@ -301,9 +302,11 @@ public class PlaidController {
             return ResponseEntity.badRequest().body("Transaction Request is null");
         }
         List<TransactionDTO> transactions = transactionRequest.getTransactions();
-        List<Transaction> transactionsList = transactions.stream()
+        LOGGER.info("TransactionDTOs: {}", transactions);
+        List<PlaidTransaction> transactionsList = transactions.stream()
                 .map(transactionDTOConverter::convert)
                 .toList();
+        LOGGER.info("Converted Transactions: {}", transactionsList);
         try
         {
             List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactionsList);

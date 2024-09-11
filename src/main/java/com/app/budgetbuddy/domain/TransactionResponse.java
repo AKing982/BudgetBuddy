@@ -22,7 +22,7 @@ public class TransactionResponse
     private String name;
     private String merchantName;
     private boolean pending;
-//    private String logoURL;
+    private String logoURL;
     private LocalDate authorizedDate;
 //    private String transactionType;
 

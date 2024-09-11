@@ -49,6 +49,9 @@ public class TransactionsEntity
     @Column(name="pending")
     private boolean pending;
 
+    @Column(name="logo")
+    private String logoUrl;
+
     @Column(name="authorizeddate")
     private LocalDate authorizedDate;
 

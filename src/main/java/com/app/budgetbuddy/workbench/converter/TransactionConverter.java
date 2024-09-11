@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.converter;
 
+import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.AccountNotFoundException;
@@ -9,10 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Component
-public class TransactionConverter implements Converter<Transaction, TransactionsEntity>
+public class TransactionConverter implements Converter<PlaidTransaction, TransactionsEntity>
 {
     private final AccountRepository accountRepository;
 
@@ -22,16 +24,19 @@ public class TransactionConverter implements Converter<Transaction, Transactions
     }
 
     @Override
-    public TransactionsEntity convert(Transaction transaction) {
+    public TransactionsEntity convert(PlaidTransaction transaction) {
         TransactionsEntity transactionsEntity = new TransactionsEntity();
         transactionsEntity.setPending(transaction.getPending());
-        transactionsEntity.setAmount(BigDecimal.valueOf(transaction.getAmount()));
+        transactionsEntity.setAmount(transaction.getAmount());
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
-        transactionsEntity.setDescription(transaction.getOriginalDescription());
+        transactionsEntity.setDescription(transaction.getDescription());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
+        transactionsEntity.setCategoryId(transaction.getCategoryId());
 //        transactionsEntity.setCategories(transaction.getCategory());
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
+        transactionsEntity.setCreateDate(LocalDate.now());
+        transactionsEntity.setLogoUrl(transaction.getLogo());
         transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
         transactionsEntity.setTransactionReferenceNumber(transaction.getTransactionId());
 //        transactionsEntity.setPersonalFinanceCategory(null);

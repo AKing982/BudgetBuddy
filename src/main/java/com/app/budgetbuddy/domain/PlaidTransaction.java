@@ -4,6 +4,7 @@ import com.plaid.client.model.TransactionCode;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class PlaidTransaction
 {
     private String transactionId;
@@ -24,6 +26,7 @@ public class PlaidTransaction
     private String description;
     private String name;
     private Boolean pending;
+    private String logo;
     private LocalDate authorizedDate;
     private TransactionCode transactionCode;
 }

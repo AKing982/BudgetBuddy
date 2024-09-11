@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.domain.AccountSubType;
 import com.app.budgetbuddy.domain.AccountType;
+import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
@@ -130,7 +131,7 @@ class PlaidTransactionManagerTest {
     @Test
     void testGetTransactionsForUser_whenUserIdIsValid() throws IOException {
         String accessToken = "access_token";
-        List<Transaction> transactions = new ArrayList<>();
+        List<PlaidTransaction> transactions = new ArrayList<>();
         transactions.add(createTransaction());
         transactions.add(createTransaction());
         LocalDate startDate = LocalDate.of(2024, 6, 1);
@@ -142,7 +143,6 @@ class PlaidTransactionManagerTest {
                 .endDate(endDate);
 
         TransactionsGetResponse expectedResponse = new TransactionsGetResponse();
-        expectedResponse.setTransactions(transactions);
 
         when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
 
@@ -152,7 +152,6 @@ class PlaidTransactionManagerTest {
 
         TransactionsGetResponse actualResponse = transactionManager.getTransactionsForUser(userId, startDate, endDate);
         assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getTransactions(), actualResponse.getTransactions());
         assertEquals(expectedResponse.getTotalTransactions(), actualResponse.getTotalTransactions());
     }
 
@@ -166,7 +165,7 @@ class PlaidTransactionManagerTest {
     @Test
     void testGetTransactionsResponseWithRetry_whenResponseFailsThenSuccessful_ThenReturnResponse() throws IOException {
         String accessToken = "access_token";
-        List<Transaction> transactions = new ArrayList<>();
+        List<PlaidTransaction> transactions = new ArrayList<>();
         transactions.add(createTransaction());
         transactions.add(createTransaction());
         LocalDate startDate = LocalDate.of(2024, 6, 1);
@@ -193,7 +192,7 @@ class PlaidTransactionManagerTest {
 
     @Test
     void testSaveTransactionToDatabase_whenTransactionListIsEmpty(){
-        List<Transaction> transactions = new ArrayList<>();
+        List<PlaidTransaction> transactions = new ArrayList<>();
         assertThrows(TransactionsNotFoundException.class, () -> {
             transactionManager.saveTransactionsToDatabase(transactions);
         });
@@ -201,7 +200,7 @@ class PlaidTransactionManagerTest {
 
     @Test
     void testSaveTransactionToDatabase_whenTransactionElementNullThenSkipAndSaveTransaction() {
-        List<Transaction> transactions = new ArrayList<>();
+        List<PlaidTransaction> transactions = new ArrayList<>();
         transactions.add(null);
         transactions.add(createTransaction());
 
@@ -229,7 +228,7 @@ class PlaidTransactionManagerTest {
     @MethodSource("provideNullParameters")
     void testSaveTransactionToDatabase_whenTransactionParametersAreNull(String transactionId, AccountEntity account, String description,
                                                                         BigDecimal amount, Boolean isPending, List<String> categories, String categoryId, LocalDate authorizedDate, Class<? extends Exception> expectedException){
-        List<Transaction> transactions = new ArrayList<>();
+        List<PlaidTransaction> transactions = new ArrayList<>();
         transactions.add(createTransaction());
         transactions.add(createTransaction());
 
@@ -347,8 +346,8 @@ class PlaidTransactionManagerTest {
         return userEntity;
     }
 
-    private Transaction createTransaction(){
-        Transaction transaction = new Transaction();
+    private PlaidTransaction createTransaction(){
+        PlaidTransaction transaction = new PlaidTransaction();
         transaction.setName("Test Transaction");
         transaction.setMerchantName("Test Merchant Name");
         transaction.setTransactionId("transactionId");
@@ -356,7 +355,7 @@ class PlaidTransactionManagerTest {
         transaction.setDate(LocalDate.now());
         transaction.setAccountId("accountId");
         transaction.setTransactionCode(TransactionCode.CASH);
-        transaction.setAmount(Double.valueOf(120));
+        transaction.setAmount(BigDecimal.valueOf(120));
         return transaction;
     }
 

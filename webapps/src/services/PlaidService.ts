@@ -67,6 +67,7 @@ interface TransactionDTO {
     name: string;
     pending: boolean;
     transactionId: string;
+    logo: string;
     authorizedDate: string;
 }
 
@@ -270,6 +271,7 @@ class PlaidService {
             name: transaction.name,
             pending: transaction.pending,
             transactionId: transaction.transactionId,
+            logo: transaction.logoUrl,
             authorizedDate: this.ensureDate(transaction.authorizedDate).toISOString()
         }));
     }

@@ -456,7 +456,8 @@ class PlaidControllerTest {
                 "Grocery Purchase",                // name
                 false,                             // pending
                 "txn987654321",                    // transactionId
-                LocalDate.now().minusDays(1).toString()     // authorizedDate
+                LocalDate.now().minusDays(1).toString(),  // authorizedDate,
+                "test.png"
                 // transactionCode
         );
         return transactionDTO;
