@@ -52,7 +52,7 @@ interface Transaction {
     name: string;
     merchantName: string;
     pending: boolean;
-    logoUrl: string;
+    logoURL: string;
     authorizedDate: Date | string;
     transactionType: string;
 }
@@ -67,7 +67,7 @@ interface TransactionDTO {
     name: string;
     pending: boolean;
     transactionId: string;
-    logo: string;
+    logoUrl: string;
     authorizedDate: string;
 }
 
@@ -271,7 +271,7 @@ class PlaidService {
             name: transaction.name,
             pending: transaction.pending,
             transactionId: transaction.transactionId,
-            logo: transaction.logoUrl,
+            logoUrl: transaction.logoURL,
             authorizedDate: this.ensureDate(transaction.authorizedDate).toISOString()
         }));
     }
@@ -289,6 +289,7 @@ class PlaidService {
         try
         {
             const transactions = await this.getTransactions(startDate, endDate, userId);
+            console.log('Transaction received: ', transactions);
             const transactionRequest = this.createTransactionRequest(transactions);
             console.log('Transaction Request: ', transactionRequest);
             const response = await axios.post<TransactionDTO[]>(`${apiUrl}/api/plaid/save-transactions`, {

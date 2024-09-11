@@ -43,8 +43,14 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT AVG(t.amount) FROM TransactionsEntity t WHERE t.category =:category AND t.posted BETWEEN :startDate AND :endDate")
     BigDecimal findAverageSpendingByCategoryAndDateRange(@Param("category") Category category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.posted =:date")
-    BigDecimal findSpendingByDate(@Param("date") LocalDate date);
+//    @Query("SELECT SUM(CASE " +
+//            "    WHEN t.amount > 0 THEN t.amount " +
+//            "    WHEN t.amount < 0 THEN t.amount * -1 " +
+//            "    ELSE 0 " +
+//            "END) as totalAmount " +
+//            "FROM Transaction t " +
+//            "WHERE t.authorizedDate =:date")
+//    BigDecimal findSpendingByDate(@Param("date") LocalDate date);
 
     @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted =:date GROUP BY t.posted, t.category, t.amount")
     List<Object[]> getDailySpendingBreakdown(@Param("date") LocalDate date);

@@ -188,11 +188,6 @@ class TransactionRepositoryTest {
         assertThat(avg).isEqualByComparingTo(new BigDecimal("100.00"));
     }
 
-    @Test
-    void findSpendingByDate() {
-        BigDecimal spending = transactionRepository.findSpendingByDate(LocalDate.now());
-        assertThat(spending).isEqualByComparingTo(new BigDecimal("100.00"));
-    }
 
     @Test
     void getDailySpendingBreakdown() {

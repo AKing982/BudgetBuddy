@@ -25,7 +25,7 @@ public class TransactionDTOConverter implements Converter<TransactionDTO, PlaidT
         transaction.setAuthorizedDate(OffsetDateTime.parse(transactionDTO.authorizedDate()).toLocalDate());
         transaction.setAccountId(transactionDTO.accountId());
         transaction.setName(transactionDTO.name());
-        transaction.setLogo(transactionDTO.logo());
+        transaction.setLogo(transactionDTO.logoUrl());
         transaction.setCategoryId(transactionDTO.categoryId());
         transaction.setIsoCurrencyCode(transactionDTO.isoCurrencyCode());
         transaction.setDescription(transactionDTO.name());

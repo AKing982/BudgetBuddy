@@ -19,6 +19,10 @@ public class SpendingCalculatorService
         this.transactionService = transactionService;
     }
 
+    public BigDecimal calculateDailySpending(LocalDate date){
+        return null;
+    }
+
     public BigDecimal calculateSpendingForPeriod(LocalDate startDate, LocalDate endDate){
         return null;
     }

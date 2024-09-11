@@ -9,5 +9,5 @@ import java.util.List;
 
 public record TransactionDTO(@JsonProperty("accountId") String accountId, @JsonProperty("amount") BigDecimal amount, @JsonProperty("isoCurrencyCode") String isoCurrencyCode, @JsonProperty("categoryId") String categoryId, @JsonProperty("date") String date,
                              @JsonProperty("merchantName") String merchantName, @JsonProperty("name") String name, @JsonProperty("pending") Boolean pending, @JsonProperty("transactionId") String transactionId,
-                             @JsonProperty("authorizedDate") String authorizedDate, @JsonProperty("logo") String logo) {
+                             @JsonProperty("authorizedDate") String authorizedDate, @JsonProperty("logoUrl") String logoUrl) {
 }

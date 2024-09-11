@@ -33,9 +33,9 @@ const TransactionRow: React.FC<TransactionRowProps> = ({transaction}) => {
             <TableCell sx={{ color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>{formattedDate}</TableCell>
             <TableCell sx={{ borderBottom: '1px solid #E5E7EB' }}>
                 <Box display="flex" alignItems="center">
-                    {transaction.logoUrl && !imageError ? (
+                    {transaction.logoURL && !imageError ? (
                         <img
-                            src={transaction.logoUrl}
+                            src={transaction.logoURL}
                             alt={`${transaction.name} logo`}
                             style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }}
                             onError={handleImageError}

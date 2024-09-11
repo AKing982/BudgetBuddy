@@ -37,7 +37,7 @@ interface Transaction {
     name: string;
     merchantName: string;
     pending: boolean;
-    logoUrl: string;
+    logoURL: string;
     authorizedDate: Date | string;
     transactionType: string;
 }
