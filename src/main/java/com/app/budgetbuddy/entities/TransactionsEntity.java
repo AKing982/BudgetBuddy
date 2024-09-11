@@ -25,7 +25,7 @@ public class TransactionsEntity
     @JoinColumn(name="acctid")
     private AccountEntity account;
 
-    @Column(name="transaction_reference_number", unique=true)
+    @Column(name="transaction_reference_number")
     private String transactionReferenceNumber;
 
     @Column(name = "amount")

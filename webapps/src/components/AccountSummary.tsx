@@ -9,7 +9,7 @@ import {
     ListItemSecondaryAction,
     IconButton,
     Button,
-    Paper
+    Paper, CircularProgress
 } from '@mui/material';
 import {
     AccountBalance,
@@ -46,9 +46,11 @@ interface Account {
 
 const AccountSummary: React.FC = () => {
     const [plaidAccounts, setPlaidAccounts] = useState<Account[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const plaidService = PlaidService.getInstance();
 
     useEffect(() => {
+        setIsLoading(true);
         const fetchAccounts = async() => {
             try
             {
@@ -60,8 +62,15 @@ const AccountSummary: React.FC = () => {
             {
                 console.error('There was an error getting accounts: ', error);
             }
-        }
-        fetchAccounts();
+        };
+
+        const timer = setTimeout(() => {
+            fetchAccounts().finally(() => {
+                setIsLoading(false);
+            });
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, [])
 
     const getIconForAccount = (type: string) => {
@@ -108,7 +117,11 @@ const AccountSummary: React.FC = () => {
                         </Button>
                     </Box>
                 </Box>
-                <List disablePadding>
+                {isLoading ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" height={200}>
+                        <CircularProgress />
+                    </Box>
+                ) : (  <List disablePadding>
                     {plaidAccounts.map((account, index) => (
                         <ListItem
                             key={index}
@@ -171,7 +184,8 @@ const AccountSummary: React.FC = () => {
                             </ListItemSecondaryAction>
                         </ListItem>
                     ))}
-                </List>
+                </List>)}
+
             </Box>
         </Paper>
     );

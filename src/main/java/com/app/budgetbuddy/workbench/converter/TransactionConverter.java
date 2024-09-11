@@ -33,6 +33,7 @@ public class TransactionConverter implements Converter<Transaction, Transactions
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
+        transactionsEntity.setTransactionReferenceNumber(transaction.getTransactionId());
 //        transactionsEntity.setPersonalFinanceCategory(null);
         return transactionsEntity;
     }

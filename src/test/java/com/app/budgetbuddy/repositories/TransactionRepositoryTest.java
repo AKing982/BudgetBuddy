@@ -1,12 +1,14 @@
 package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.config.JpaConfig;
+import com.app.budgetbuddy.domain.AccountSubType;
+import com.app.budgetbuddy.domain.AccountType;
 import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserEntity;
+
 import com.plaid.client.model.AccountSubtype;
-import com.plaid.client.model.AccountType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +72,7 @@ class TransactionRepositoryTest {
         account1.setAccountName("Checking Account");
         account1.setOfficialName("Test Checking Account");
         account1.setType(AccountType.DEPOSITORY);
-        account1.setSubtype(AccountSubtype.CHECKING);
+        account1.setSubtype(AccountSubType.CHECKING);
         account1.setMask("1234");
         account1.setBalance(new BigDecimal("1000.00"));
 
@@ -80,7 +82,7 @@ class TransactionRepositoryTest {
         account2.setAccountName("Savings Account");
         account2.setOfficialName("Test Savings Account");
         account2.setType(AccountType.DEPOSITORY);
-        account2.setSubtype(AccountSubtype.SAVINGS);
+        account2.setSubtype(AccountSubType.SAVINGS);
         account2.setMask("5678");
         account2.setBalance(new BigDecimal("5000.00"));
 

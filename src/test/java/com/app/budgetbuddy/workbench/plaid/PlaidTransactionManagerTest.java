@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.domain.AccountSubType;
+import com.app.budgetbuddy.domain.AccountType;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
@@ -331,7 +333,7 @@ class PlaidTransactionManagerTest {
         accountEntity.setId(1L);
         accountEntity.setAccountName("Test Checking");
         accountEntity.setMask("0000");
-        accountEntity.setSubtype(AccountSubtype.CHECKING);
+        accountEntity.setSubtype(AccountSubType.CHECKING);
         accountEntity.setType(AccountType.DEPOSITORY);
         accountEntity.setBalance(BigDecimal.valueOf(120));
         accountEntity.setUser(createUserEntity());

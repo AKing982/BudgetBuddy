@@ -1,7 +1,7 @@
 package com.app.budgetbuddy.entities;
 
-import com.plaid.client.model.AccountSubtype;
-import com.plaid.client.model.AccountType;
+import com.app.budgetbuddy.domain.AccountSubType;
+import com.app.budgetbuddy.domain.AccountType;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -33,7 +33,7 @@ public class AccountEntity {
     private AccountType type;
 
     @Column(name="subType")
-    private AccountSubtype subtype;
+    private AccountSubType subtype;
 
     @Column(name="mask")
     private String mask;

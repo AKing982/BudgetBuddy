@@ -10,7 +10,7 @@ import {
     Button,
     IconButton,
     Typography,
-    Box
+    Box, CircularProgress
 } from '@mui/material';
 import {
     ShoppingCart,
@@ -60,6 +60,7 @@ const transactions = [
 const RecentTransactionsTable: React.FC = () => {
 
     const [plaidTransactions, setPlaidTransactions] = useState<Transaction[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const plaidService = new PlaidService();
 
     const fetchMonthBeginning = (year: number, month: number) : string => {
@@ -72,6 +73,7 @@ const RecentTransactionsTable: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            setIsLoading(true);
             try {
                 const userId = Number(sessionStorage.getItem('userId'));
                 const fetchTransactions = await plaidService.getTransactions(
@@ -86,7 +88,13 @@ const RecentTransactionsTable: React.FC = () => {
             }
         };
 
-        fetchData();
+        const timer = setTimeout(() => {
+            fetchData().finally(() => {
+                setIsLoading(false);
+            })
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, []);
 
     return (
@@ -107,9 +115,19 @@ const RecentTransactionsTable: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {plaidTransactions.slice(0, 10).map((transaction) => (
-                                <TransactionRow key={transaction.transactionId} transaction={transaction} />
-                            ))}
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={4}>
+                                        <Box display="flex" justifyContent="center" alignItems="center" height={200}>
+                                            <CircularProgress />
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                plaidTransactions.slice(0, 10).map((transaction) => (
+                                    <TransactionRow key={transaction.transactionId} transaction={transaction} />
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>

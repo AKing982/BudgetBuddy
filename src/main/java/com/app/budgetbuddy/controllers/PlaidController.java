@@ -304,9 +304,17 @@ public class PlaidController {
         List<Transaction> transactionsList = transactions.stream()
                 .map(transactionDTOConverter::convert)
                 .toList();
-        List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactionsList);
-        List<TransactionResponse> transactionResponses = createTransactionResponseFromEntities(savedTransactions);
-        return ResponseEntity.status(200).body(transactionResponses);
+        try
+        {
+            List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactionsList);
+
+            List<TransactionResponse> transactionResponses = createTransactionResponseFromEntities(savedTransactions);
+            return ResponseEntity.status(200).body(transactionResponses);
+
+        }catch(Exception e)
+        {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @PostMapping("/save-accounts")
@@ -327,6 +335,7 @@ public class PlaidController {
 
         }catch(Exception e)
         {
+            LOGGER.error("There was an error saving accounts: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }

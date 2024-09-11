@@ -165,8 +165,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 || transactionsEntity.getDescription() == null
 //                || transactionsEntity.getCategories() == null
                 || transactionsEntity.getAuthorizedDate() == null){
-                throw new NullPointerException("Invalid transaction parameter");
-
+                LOGGER.error("TransactionEntity Parameter found null: {}", transactionsEntity.toString());
         }
     }
 
