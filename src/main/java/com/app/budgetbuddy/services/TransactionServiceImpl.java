@@ -43,8 +43,12 @@ public class TransactionServiceImpl implements TransactionService
         transactionRepository.save(transactionsEntity);
     }
 
+
     @Override
     public void delete(TransactionsEntity transactionsEntity) {
+        if(transactionsEntity == null){
+            throw new NullPointerException("transactionsEntity is null");
+        }
         transactionRepository.delete(transactionsEntity);
     }
 

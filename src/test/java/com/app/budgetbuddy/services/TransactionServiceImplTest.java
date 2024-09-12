@@ -2,6 +2,7 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.AccountSubType;
 import com.app.budgetbuddy.domain.AccountType;
+import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserEntity;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,6 +25,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -85,12 +88,18 @@ class TransactionServiceImplTest {
         Mockito.verify(transactionRepository).save(transactionsEntity);
     }
 
-    @ParameterizedTest
-    @MethodSource("provideTransactions")
-    void testSave_whenTransactionEntityParametersFoundNull(){
-
+    @Test
+    void testDelete_whenTransactionEntityIsNull_thenThrowException(){
+        assertThrows(NullPointerException.class, () -> transactionService.delete(null));
     }
 
+    @Test
+    void testDelete(){
+        TransactionsEntity transactionsEntity = createTransactionsEntity();
+        transactionService.delete(transactionsEntity);
+
+        Mockito.verify(transactionRepository).delete(transactionsEntity);
+    }
 
 
     private UserEntity createUserEntity(){
