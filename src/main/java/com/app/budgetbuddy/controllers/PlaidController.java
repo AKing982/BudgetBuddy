@@ -250,7 +250,7 @@ public class PlaidController {
             String transactionId = transaction.getTransactionId();
             String accountId = transaction.getAccountId();
             BigDecimal amount = BigDecimal.valueOf(transaction.getAmount());
-//            List<String> categories = transaction.getCategory();
+            List<String> categories = transaction.getCategory();
             String categoryId = transaction.getCategoryId();
             LocalDate date = transaction.getDate();
             String name = transaction.getName();
@@ -259,7 +259,7 @@ public class PlaidController {
             String logoUrl = transaction.getLogoUrl();
             LocalDate authorizedDate = transaction.getAuthorizedDate();
             String transactionType = transaction.getTransactionType().toString();
-            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate);
+            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categories, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate);
             transactionResponses.add(transactionResponse);
         }
         return transactionResponses;

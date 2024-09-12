@@ -23,12 +23,23 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Collection<TransactionsEntity> findAll() {
-        return transactionRepository.findAll();
+    public List<TransactionsEntity> findAll()
+    {
+        try
+        {
+            return transactionRepository.findAll();
+
+        }catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void save(TransactionsEntity transactionsEntity) {
+        if(transactionsEntity == null){
+            throw new NullPointerException("transactionsEntity is null");
+        }
         transactionRepository.save(transactionsEntity);
     }
 
@@ -42,10 +53,6 @@ public class TransactionServiceImpl implements TransactionService
         return transactionRepository.findById(id);
     }
 
-    public List<PlaidTransaction> loadPlaidTransactionsForUser(Long userID)
-    {
-        return null;
-    }
 
     @Override
     public Collection<TransactionsEntity> getTransactionsByAmountBetween(BigDecimal startAmount, BigDecimal endAmount) {
@@ -65,6 +72,11 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     public Collection<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount) {
         return List.of();
+    }
+
+    @Override
+    public Collection<TransactionsEntity> loadTransactionsForUser(Long userId) {
+        return transactionRepository.findTransactionsByUser(userId);
     }
 
     @Override

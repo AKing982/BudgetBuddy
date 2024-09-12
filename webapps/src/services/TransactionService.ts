@@ -1,3 +1,6 @@
+import axios from "axios";
+import {apiUrl} from "../config/api";
+
 interface Transaction {
     transactionId: string;
     accountId: string;
@@ -28,12 +31,19 @@ class TransactionService {
         return TransactionService.instance;
     }
 
-    public async fetchTransactionsByUserId(userId: number) : Promise<Transaction[] | null>
-    {
-        if(userId < 1){
-            throw new Error('Invalid userId. UserId must be a positive number.');
-        }
-        return null;
-    }
+    // public async fetchTransactionsByUserId(userId: number) : Promise<Transaction[]>
+    // {
+    //     if(userId < 1){
+    //         throw new Error('Invalid userId. UserId must be a positive number.');
+    //     }
+    //     try
+    //     {
+    //         const response = await axios.get(`${apiUrl}/api/transaction/${userId}`);
+    //         return response.data;
+    //     }catch(error)
+    //     {
+    //         console.error('There as an error fetching transactions from the server: ', error);
+    //     }
+    // }
 }
 export default TransactionService;

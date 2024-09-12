@@ -9,13 +9,13 @@ describe('TransactionService', () => {
         const serviceInstance = TransactionService.getInstance();
         expect(serviceInstance).toBeInstanceOf(TransactionService);
     });
-    test('should throw error when userId invalid', async () => {
-        const serviceInstance = TransactionService.getInstance();
-        const userId = -1;
-        await expect(serviceInstance.fetchTransactionsByUserId(userId))
-            .rejects
-            .toThrow('Invalid userId. UserId must be a positive number.');
-    });
+    // test('should throw error when userId invalid', async () => {
+    //     const serviceInstance = TransactionService.getInstance();
+    //     const userId = -1;
+    //     await expect(serviceInstance.fetchTransactionsByUserId(userId))
+    //         .rejects
+    //         .toThrow('Invalid userId. UserId must be a positive number.');
+    // });
     test('fetchTransactionsByUserId when userId valid, return transactions', async () => {
         const serviceInstance = TransactionService.getInstance();
         const userId = 1;

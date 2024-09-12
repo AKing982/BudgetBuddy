@@ -16,7 +16,7 @@ public class TransactionResponse
     private String transactionId;
     private String accountId;
     private BigDecimal amount;
-//    private List<String> categories;
+    private List<String> categories;
     private String categoryId;
     private LocalDate date;
     private String name;
@@ -26,4 +26,17 @@ public class TransactionResponse
     private LocalDate authorizedDate;
 //    private String transactionType;
 
+
+    public TransactionResponse(String transactionId, String accountId, BigDecimal amount, String categoryId, LocalDate date, String name, String merchantName, boolean pending, String logoURL, LocalDate authorizedDate) {
+        this.transactionId = transactionId;
+        this.accountId = accountId;
+        this.amount = amount;
+        this.categoryId = categoryId;
+        this.date = date;
+        this.name = name;
+        this.merchantName = merchantName;
+        this.pending = pending;
+        this.logoURL = logoURL;
+        this.authorizedDate = authorizedDate;
+    }
 }

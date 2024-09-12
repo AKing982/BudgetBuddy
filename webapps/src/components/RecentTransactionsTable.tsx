@@ -166,8 +166,8 @@ const RecentTransactionsTable: React.FC = () => {
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Date</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Name</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Actions</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Amount</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Actions</TableCell>
                                 <TableCell sx={{ width: 20, borderBottom: '2px solid #E5E7EB' }}></TableCell>
                             </TableRow>
                         </TableHead>
