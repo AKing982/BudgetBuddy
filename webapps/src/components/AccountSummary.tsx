@@ -23,6 +23,8 @@ import {
     Info
 } from '@mui/icons-material';
 import PlaidService from "../services/PlaidService";
+import {ChevronDown, LucideIcon, Plus, RefreshCcw} from "lucide-react";
+import {styled} from "@mui/material/styles";
 
 interface Account {
     accountId: string;
@@ -43,6 +45,20 @@ interface Account {
 // ];
 //
 
+
+interface IconWrapperProps {
+    render: (props: {size: number; color: string}) => React.ReactNode;
+    size?: number;
+    color?: string;
+}
+
+const IconWrapper: React.FC<IconWrapperProps> = ({ render, size = 20, color = '#6B7280' }) => {
+    return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size, color }}>
+      {render({ size, color })}
+    </span>
+    );
+};
 
 const AccountSummary: React.FC = () => {
     const [plaidAccounts, setPlaidAccounts] = useState<Account[]>([]);
@@ -97,7 +113,103 @@ const AccountSummary: React.FC = () => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(amount);
-    }
+     }
+    // return (
+    //     <Paper elevation={3} sx={{
+    //         maxWidth: 400,
+    //         margin: 'auto',
+    //         mt: 2,
+    //         borderRadius: '12px',
+    //         overflow: 'hidden',
+    //         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    //     }}>
+    //         <Box sx={{ p: 2, backgroundColor: '#FFFFFF' }}>
+    //             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+    //                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#111827' }}>ACCOUNTS</Typography>
+    //                 <Box display="flex" alignItems="center">
+    //                     <IconWrapper render={(props) => <RefreshCcw {...props} />} size={16} />
+    //                     <Typography variant="body2" sx={{ color: '#6B7280', mx: 1 }}>13 hours ago</Typography>
+    //                     <Button
+    //                         size="small"
+    //                         sx={{
+    //                             color: '#DC2626',
+    //                             textTransform: 'none',
+    //                             fontWeight: 'bold',
+    //                             '&:hover': { backgroundColor: 'transparent' }
+    //                         }}
+    //                     >
+    //                         Sync now
+    //                     </Button>
+    //                 </Box>
+    //             </Box>
+    //             {isLoading ? (
+    //                 <Box display="flex" justifyContent="center" alignItems="center" height={200}>
+    //                     <CircularProgress />
+    //                 </Box>
+    //             ) : (
+    //                 <List disablePadding>
+    //                     {plaidAccounts.map((account, index) => (
+    //                         <ListItem
+    //                             key={index}
+    //                             divider={index !== plaidAccounts.length - 1}
+    //                             sx={{
+    //                                 py: 1.5,
+    //                                 '&:hover': { backgroundColor: '#F3F4F6' }
+    //                             }}
+    //                         >
+    //                             <Box sx={{ minWidth: 40, mr: 2 }}>
+    //                                 {getIconForAccount(account.type)}
+    //                             </Box>
+    //                             <ListItemText
+    //                                 primary={account.name}
+    //                                 primaryTypographyProps={{
+    //                                     sx: { fontWeight: 'medium', color: '#111827' }
+    //                                 }}
+    //                             />
+    //                             <ListItemSecondaryAction>
+    //                                 {account.balance !== 'Add' ? (
+    //                                     <Box display="flex" alignItems="center">
+    //                                         <Typography
+    //                                             variant="body1"
+    //                                             component="span"
+    //                                             sx={{
+    //                                                 mr: 1,
+    //                                                 fontWeight: 'bold',
+    //                                                 color: account.name === 'Net Cash' ? '#10B981' : '#111827'
+    //                                             }}
+    //                                         >
+    //                                             {formatCurrency(parseFloat(account.balance))}
+    //                                         </Typography>
+    //                                         {account.name === 'Net Cash' ? (
+    //                                             <IconWrapper render={(props) => <Info {...props}/>} size={16} />
+    //                                         ) : (
+    //                                             account.action === 'gear' ? (
+    //                                                 <IconWrapper render={(props) => <ChevronDown {...props}/>} size={16} />
+    //                                             ) : (
+    //                                                 <IconWrapper render={(props) => <Plus {...props}/>} size={16} color="#DC2626" />
+    //                                             )
+    //                                         )}
+    //                                     </Box>
+    //                                 ) : (
+    //                                     <Button
+    //                                         startIcon={<IconWrapper render={(props) => <Plus {...props}/>} size={16} color="#DC2626" />}
+    //                                         sx={{
+    //                                             color: '#DC2626',
+    //                                             fontWeight: 'bold',
+    //                                             '&:hover': { backgroundColor: 'transparent' }
+    //                                         }}
+    //                                     >
+    //                                         Add
+    //                                     </Button>
+    //                                 )}
+    //                             </ListItemSecondaryAction>
+    //                         </ListItem>
+    //                     ))}
+    //                 </List>
+    //             )}
+    //         </Box>
+    //     </Paper>
+    // );
 
 
     return (

@@ -55,6 +55,9 @@ const transactions = [
     { date: '8/4', name: 'Pin Purchase Harmons - Dist 11453 S. Parkway P South J, 08-04-2024 ...', amount: '$3.90', icon: <ShoppingCart sx={{ color: '#EF4444' }} /> },
 ];
 
+const getActionIcons = () => {
+
+}
 
 
 const RecentTransactionsTable: React.FC = () => {
@@ -96,13 +99,66 @@ const RecentTransactionsTable: React.FC = () => {
 
         return () => clearTimeout(timer);
     }, []);
-
+    //
+    // return (
+    //     <Paper elevation={3} sx={{ maxWidth: 1050, margin: 'auto', mt: 4, borderRadius: '12px', overflow: 'hidden' }}>
+    //         <Box p={3} sx={{ backgroundColor: '#F9FAFB' }}>
+    //             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+    //                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#111827' }}>Recent Transactions</Typography>
+    //                 <Typography variant="body2" sx={{ color: '#6B7280' }}>You've had 26 transactions so far this month</Typography>
+    //             </Box>
+    //             <TableContainer component={Box}>
+    //                 <Table>
+    //                     <TableHead>
+    //                         <TableRow>
+    //                             <TableCell sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Date</TableCell>
+    //                             <TableCell sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Name</TableCell>
+    //                             <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Amount</TableCell>
+    //                             <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Actions</TableCell>
+    //                         </TableRow>
+    //                     </TableHead>
+    //                     <TableBody>
+    //                         {isLoading ? (
+    //                             <TableRow>
+    //                                 <TableCell colSpan={4}>
+    //                                     <Box display="flex" justifyContent="center" alignItems="center" height={200}>
+    //                                         <CircularProgress />
+    //                                     </Box>
+    //                                 </TableCell>
+    //                             </TableRow>
+    //                         ) : (
+    //                             plaidTransactions.slice(0, 10).map((transaction) => (
+    //                                 <TransactionRow key={transaction.transactionId} transaction={transaction} />
+    //                             ))
+    //                         )}
+    //                     </TableBody>
+    //                 </Table>
+    //             </TableContainer>
+    //             <Box mt={2} display="flex" justifyContent="center">
+    //                 <Button
+    //                     variant="outlined"
+    //                     sx={{
+    //                         textTransform: 'none',
+    //                         borderColor: '#D1D5DB',
+    //                         color: '#374151',
+    //                         '&:hover': {
+    //                             borderColor: '#9CA3AF',
+    //                             backgroundColor: '#F3F4F6'
+    //                         }
+    //                     }}
+    //                 >
+    //                     See more transactions
+    //                 </Button>
+    //             </Box>
+    //         </Box>
+    //     </Paper>
+    // );
     return (
         <Paper elevation={3} sx={{ maxWidth: 1050, margin: 'auto', mt: 4, borderRadius: '12px', overflow: 'hidden' }}>
             <Box p={3} sx={{ backgroundColor: '#F9FAFB' }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#111827' }}>Recent Transactions</Typography>
-                    <Typography variant="body2" sx={{ color: '#6B7280' }}>You've had 26 transactions so far this month</Typography>
+                    <Typography variant="body2" sx={{ color: '#6B7280' }}>You've had 35 transactions so far this month</Typography>
                 </Box>
                 <TableContainer component={Box}>
                     <Table>
@@ -110,22 +166,23 @@ const RecentTransactionsTable: React.FC = () => {
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Date</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Name</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Amount</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Actions</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Amount</TableCell>
+                                <TableCell sx={{ width: 20, borderBottom: '2px solid #E5E7EB' }}></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={4}>
+                                    <TableCell colSpan={5}>
                                         <Box display="flex" justifyContent="center" alignItems="center" height={200}>
                                             <CircularProgress />
                                         </Box>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                plaidTransactions.slice(0, 10).map((transaction) => (
-                                    <TransactionRow key={transaction.transactionId} transaction={transaction} />
+                                plaidTransactions.slice(0,10).map((transaction, index) => (
+                                    <TransactionRow key={index} transaction={transaction} />
                                 ))
                             )}
                         </TableBody>

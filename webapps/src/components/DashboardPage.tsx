@@ -99,127 +99,93 @@ const DashboardPage: React.FC = () => {
             </List>
         </Box>
     );
-    //
-    // return (
-    //     <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
-    //         <Sidebar />
-    //         <Box component="main" sx={{ flexGrow: 1, p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-    //             <Grid container spacing={spacing}>
-    //                 {/* Header */}
-    //                 <Grid item xs={6}>
-    //                     <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 2 }}>
-    //                         Good morning, Alexander
-    //                     </Typography>
-    //                 </Grid>
-    //
-    //                 {/* Main Content Area */}
-    //                 <Grid item xs={12} md={7}>
-    //                     <Grid container spacing={spacing}>
-    //                         {/* Expense Spending Tracker */}
-    //                         <Grid item xs={12}>
-    //                             <SpendingTracker />
-    //                         </Grid>
-    //
-    //                         {/* Transactions Table */}
-    //                         <Grid item xs={12}>
-    //                             <RecentTransactionsTable />
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //
-    //                 {/* Right Sidebar */}
-    //                 <Grid item xs={6} md={2}>
-    //                     <Grid container spacing={1}>
-    //                         <Grid item xs={12}>
-    //                             <AccountSummary />
-    //                         </Grid>
-    //                         <Grid item xs={12}>
-    //                             <PaymentCharges />
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //             </Grid>
-    //         </Box>
-    //     </Box>
-    // );
-
-    // return (
-    //     <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
-    //         <Sidebar />
-    //         <Box component="main" sx={{ flexGrow: 0, p: { xs: 1, sm: 2, md: 3 } }}>
-    //             <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 1 }}>
-    //                 Good morning, Alexander
-    //             </Typography>
-    //
-    //             <Grid container spacing={1}>  {/* Reduced overall grid spacing */}
-    //                 {/* Main Content Area */}
-    //                 <Grid item xs={12} md={7}>  {/* Increased width on md screens */}
-    //                     <Grid container spacing={spacing}>
-    //                         {/* Expense Spending Tracker */}
-    //                         <Grid item xs={12}>
-    //                             <SpendingTracker />
-    //                         </Grid>
-    //
-    //                         {/* Transactions Table */}
-    //                         <Grid item xs={12}>
-    //                             <RecentTransactionsTable />
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //
-    //                 {/* Right Sidebar */}
-    //                 <Grid item xs={12} md={2}>  {/* Adjusted width on md screens */}
-    //                     <Grid container spacing={1}>
-    //                         <Grid item xs={12}>
-    //                             <AccountSummary />
-    //                         </Grid>
-    //                         <Grid item xs={12}>
-    //                             <PaymentCharges />
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //             </Grid>
-    //         </Box>
-    //     </Box>
-    // );
     return (
         <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
-            <Sidebar />
-            <Box component="main" sx={{ flexGrow: 0, p: { xs: 1, sm: 3, md: 3 } }}>
-                <Grid container spacing={1}>
-                    {/* Main Content Area */}
-                    <Grid item xs={12} md={7}>
-                        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 1 }}>
-                            Good morning, Alexander
-                        </Typography>
-                        <Grid container spacing={spacing}>
-                            {/* Expense Spending Tracker */}
-                            <Grid item xs={12}>
-                                <SpendingTracker />
-                            </Grid>
-
-                            {/* Transactions Table */}
-                            <Grid item xs={12}>
-                                <RecentTransactionsTable />
-                            </Grid>
-                        </Grid>
-                    </Grid>
-
-                    {/* Right Sidebar */}
-                    <Grid item xs={12} md={3}>
-                        <Grid container spacing={1}>
-                            <Grid item xs={12}>
-                                <AccountSummary />
-                            </Grid>
-                            <Grid item xs={12}>
-                                <PaymentCharges />
-                            </Grid>
-                        </Grid>
-                    </Grid>
+            <Grid container>
+                {/* Sidebar */}
+                <Grid item xs={12} md={3} lg={2}>
+                    <Sidebar />
                 </Grid>
-            </Box>
+
+                {/* Main Content */}
+                <Grid item xs={12} md={9} lg={10}>
+                    <Box component="main" sx={{ p: { xs: 1, sm: 2, md: 3 }, height: '100%' }}>
+                        <Grid container spacing={spacing}>
+                            {/* Main Content Area */}
+                            <Grid item xs={12} lg={5}>
+                                <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 2 }}>
+                                    Good morning, Alexander
+                                </Typography>
+                                <Grid container spacing={spacing}>
+                                    {/* Expense Spending Tracker */}
+                                    <Grid item xs={12}>
+                                        <SpendingTracker />
+                                    </Grid>
+
+                                    {/* Transactions Table */}
+                                    <Grid item xs={12}>
+                                        <RecentTransactionsTable />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            {/* Right Sidebar */}
+                            <Grid item xs={12} lg={3}>
+                                <Grid container spacing={spacing}>
+                                    <Grid item xs={12}>
+                                        <AccountSummary />
+                                    </Grid>
+                                    <Grid item xs={12} lg={12}>
+                                        <PaymentCharges />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                </Grid>
+            </Grid>
         </Box>
     );
+
+    //
+    // return (
+    //     <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
+    //         <Sidebar />
+    //         <Box component="main" sx={{ flexGrow: 0, p: { xs: 1, sm: 3, md: 3 } }}>
+    //             <Grid container spacing={1}>
+    //                 {/* Main Content Area */}
+    //                 <Grid item xs={12} md={7}>
+    //                     <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 1 }}>
+    //                         Good morning, Alexander
+    //                     </Typography>
+    //                     <Grid container spacing={spacing}>
+    //                         {/* Expense Spending Tracker */}
+    //                         <Grid item xs={12}>
+    //                             <SpendingTracker />
+    //                         </Grid>
+    //
+    //                         {/* Transactions Table */}
+    //                         <Grid item xs={12}>
+    //                             <RecentTransactionsTable />
+    //                         </Grid>
+    //                     </Grid>
+    //                 </Grid>
+    //
+    //                 {/* Right Sidebar */}
+    //                 <Grid item xs={12} md={3}>
+    //                     <Grid container spacing={1}>
+    //                         <Grid item xs={12}>
+    //                             <AccountSummary />
+    //                         </Grid>
+    //                         <Grid item xs={12}>
+    //                             <PaymentCharges />
+    //                         </Grid>
+    //                     </Grid>
+    //                 </Grid>
+    //             </Grid>
+    //         </Box>
+    //     </Box>
+    // );
 };
 
 export default DashboardPage;

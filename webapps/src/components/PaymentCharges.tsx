@@ -71,6 +71,7 @@ const charges: Charge[] = [
 const PaymentCharges: React.FC = () => {
     const [recurringCharges, setRecurringCharges] = useState<RecurringTransactionResponse | null>(null);
     const plaidService = PlaidService.getInstance();
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchCharges = async () => {
