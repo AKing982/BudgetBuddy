@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.TransactionsEntity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface TransactionService extends ServiceModel<TransactionsEntity>
@@ -17,8 +18,8 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Collection<TransactionsEntity> loadTransactionsForUser(Long userId);
     Collection<TransactionsEntity> getTransactionsByPendingTrue();
     Collection<TransactionsEntity> getTransactionsByAuthorizedDate(LocalDate date);
-    Optional<TransactionsEntity> getTransactionByAccountId(String accountId);
-    Optional<TransactionsEntity> getTransactionByDescription(String description);
+    List<TransactionsEntity> getTransactionsByAccountId(String accountId);
+    List<TransactionsEntity> getTransactionsByDescription(String description);
     Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId);
     Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName);
 }

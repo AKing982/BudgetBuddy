@@ -17,16 +17,28 @@ import java.util.Optional;
 public interface TransactionRepository extends JpaRepository<TransactionsEntity, Long>
 {
     @Query("SELECT t FROM TransactionsEntity t WHERE t.amount BETWEEN :startAmount AND :endAmount")
-    Collection<TransactionsEntity> findByAmountBetween(@Param("startAmount") BigDecimal startAmount, @Param("endAmount") BigDecimal endAmount);
+    List<TransactionsEntity> findByAmountBetween(@Param("startAmount") BigDecimal startAmount, @Param("endAmount") BigDecimal endAmount);
+
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.amount =:amount")
+    List<TransactionsEntity> findByAmount(@Param("amount") BigDecimal amount);
+
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.amount >=:amount")
+    List<TransactionsEntity> findByAmountGreaterThan(@Param("amount") BigDecimal amount);
+
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.amount <=:amount")
+    List<TransactionsEntity> findByAmountLessThan(@Param("amount") BigDecimal amount);
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.pending = true")
-    Collection<TransactionsEntity> findByPendingTrue();
+    List<TransactionsEntity> findByPendingTrue();
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.authorizedDate =:date")
-    Collection<TransactionsEntity> findByAuthorizedDate(@Param("date") LocalDate date);
+    List<TransactionsEntity> findByAuthorizedDate(@Param("date") LocalDate date);
 
-    @Query("SELECT t FROM TransactionsEntity t WHERE t.id =:id AND t.description =:descr")
-    Optional<TransactionsEntity> findTransactionByDescription(@Param("descr") String description, @Param("id") Long id);
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.account.accountReferenceNumber =:num")
+    List<TransactionsEntity> findByAccountReferenceNumber(@Param("num") String num);
+
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.description =:descr")
+    List<TransactionsEntity> findTransactionByDescription(@Param("descr") String description);
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.transactionReferenceNumber =:id")
     Optional<TransactionsEntity> findTransactionByTransactionReferenceNumber(@Param("id") String transactionId);

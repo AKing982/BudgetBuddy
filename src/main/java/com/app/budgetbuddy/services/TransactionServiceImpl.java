@@ -2,20 +2,22 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
+import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.TransactionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class TransactionServiceImpl implements TransactionService
 {
     private final TransactionRepository transactionRepository;
+    private final Logger LOGGER = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
     @Autowired
     public TransactionServiceImpl(TransactionRepository transactionRepository){
@@ -59,23 +61,47 @@ public class TransactionServiceImpl implements TransactionService
 
 
     @Override
-    public Collection<TransactionsEntity> getTransactionsByAmountBetween(BigDecimal startAmount, BigDecimal endAmount) {
-        return List.of();
+    public List<TransactionsEntity> getTransactionsByAmountBetween(BigDecimal startAmount, BigDecimal endAmount) {
+        if(startAmount == null || endAmount == null){
+            throw new IllegalArgumentException("startAmount is null");
+        }
+
+        if(startAmount.compareTo(endAmount) == 0){
+            throw new InvalidDataException("Date amounts are identical");
+        }
+        try
+        {
+            return transactionRepository.findByAmountBetween(startAmount, endAmount);
+
+        }catch(Exception e) {
+            LOGGER.error("There was an error fetching transactions from the database: {}", e.getMessage());
+            throw new InvalidDataException("There was an error fetching transactions from the database");
+        }
     }
 
     @Override
-    public Collection<TransactionsEntity> getTransactionsByAmount(BigDecimal amount) {
-        return List.of();
+    public List<TransactionsEntity> getTransactionsByAmount(BigDecimal amount)
+    {
+        validateTransactionAmount(amount);
+        try
+        {
+            return transactionRepository.findByAmount(amount);
+        }catch(Exception e) {
+            LOGGER.error("There was an error fetching transactions from the database: {}", e.getMessage());
+            throw new InvalidDataException("There was an error fetching transactions from the database");
+        }
     }
 
     @Override
-    public Collection<TransactionsEntity> getTransactionsByAmountGreaterThan(BigDecimal amount) {
-        return List.of();
+    public List<TransactionsEntity> getTransactionsByAmountGreaterThan(BigDecimal amount) {
+        validateTransactionAmount(amount);
+        return transactionRepository.findByAmountGreaterThan(amount);
     }
 
     @Override
-    public Collection<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount) {
-        return List.of();
+    public List<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount) {
+        validateTransactionAmount(amount);
+        return transactionRepository.findByAmountLessThan(amount);
     }
 
     @Override
@@ -84,32 +110,49 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Collection<TransactionsEntity> getTransactionsByPendingTrue() {
-        return List.of();
+    public List<TransactionsEntity> getTransactionsByPendingTrue() {
+        return transactionRepository.findByPendingTrue();
     }
 
     @Override
-    public Collection<TransactionsEntity> getTransactionsByAuthorizedDate(LocalDate date) {
-        return List.of();
+    public List<TransactionsEntity> getTransactionsByAuthorizedDate(LocalDate date) {
+        if(date == null){
+            throw new NullPointerException("date is null");
+        }
+        return transactionRepository.findByAuthorizedDate(date);
     }
 
     @Override
-    public Optional<TransactionsEntity> getTransactionByAccountId(String accountId) {
-        return Optional.empty();
+    public List<TransactionsEntity> getTransactionsByAccountId(String accountId) {
+        if(accountId.isEmpty()){
+            throw new IllegalArgumentException("accountId is empty");
+        }
+        return transactionRepository.findByAccountReferenceNumber(accountId);
     }
 
     @Override
-    public Optional<TransactionsEntity> getTransactionByDescription(String description) {
-        return Optional.empty();
+    public List<TransactionsEntity> getTransactionsByDescription(String description) {
+        if(description == null){
+            throw new NullPointerException("description is null");
+        }
+        return transactionRepository.findTransactionByDescription(description);
     }
 
     @Override
     public Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId) {
         return Optional.empty();
+
+        
     }
 
     @Override
     public Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName) {
         return List.of();
+    }
+
+    private void validateTransactionAmount(BigDecimal amount) {
+        if(amount.compareTo(BigDecimal.ZERO) == 0){
+            throw new NullPointerException("Null Amount found");
+        }
     }
 }

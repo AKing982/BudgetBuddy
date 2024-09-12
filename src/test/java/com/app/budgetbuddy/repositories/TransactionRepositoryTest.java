@@ -147,12 +147,6 @@ class TransactionRepositoryTest {
         assertThat(transactions).contains(transaction2);
     }
 
-    @Test
-    void findTransactionByDescription() {
-        Optional<TransactionsEntity> transaction = transactionRepository.findTransactionByDescription("Test Transaction 1", transaction1.getId());
-        assertThat(transaction).isPresent();
-        assertThat(transaction.get()).isEqualTo(transaction1);
-    }
 
     @Test
     void findTransactionByTransactionId() {
