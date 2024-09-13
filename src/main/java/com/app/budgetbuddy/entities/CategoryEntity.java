@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -21,22 +22,38 @@ public class CategoryEntity
     @Column(name="categoryid")
     private Long id;
 
-    @Column(name="categoryRefNumber", unique = true, length=50)
-    private String categoryRefNumber;
+    @Column(name="categoryId", unique = true, length=50)
+    private String categoryId;
 
-    @Column(name="categoryname")
-    private String categoryname;
+    @Column(name="name")
+    private String name;
 
-    @Column(name="categorydescription")
-    private String categorydescription;
+    @Column(name="description")
+    private String description;
+
+    @Column(name="type")
+    private String type;
+
+    @Column(name="is_active")
+    private boolean isActive;
+
+    @Column(name="is_custom")
+    private boolean isCustom;
+
+    @Column(name="createdBy")
+    private Long createdBy;
+
+    @Column(name="createdat")
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime createdat;
 
     @OneToMany(mappedBy="category")
     private List<TransactionsEntity> transactions;
 
     public CategoryEntity(Long id, String categoryId, String name, String description) {
         this.id = id;
-        this.categoryRefNumber = categoryId;
-        this.categoryname = name;
-        this.categorydescription = description;
+        this.categoryId = categoryId;
+        this.name = name;
+        this.description = description;
     }
 }

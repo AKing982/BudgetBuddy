@@ -397,7 +397,7 @@ class TransactionServiceImplTest {
         transactionsEntity.setCreateDate(LocalDate.now());
         transactionsEntity.setTransactionReferenceNumber("e232323232");
         transactionsEntity.setPosted(LocalDate.now());
-        transactionsEntity.setCategoryId("522223");
+//        transactionsEntity.setCategoryId("522223");
         transactionsEntity.setMerchantName("testMerchantName");
         transactionsEntity.setIsoCurrencyCode("USD");
         transactionsEntity.setPending(false);
@@ -414,7 +414,7 @@ class TransactionServiceImplTest {
         transactionsEntity.setCreateDate(LocalDate.now());
         transactionsEntity.setTransactionReferenceNumber("e232323232");
         transactionsEntity.setPosted(LocalDate.now());
-        transactionsEntity.setCategoryId("522223");
+//        transactionsEntity.setCategoryId("522223");
         transactionsEntity.setMerchantName("testMerchantName");
         transactionsEntity.setIsoCurrencyCode("USD");
         transactionsEntity.setPending(true);
@@ -432,7 +432,7 @@ class TransactionServiceImplTest {
         transactionsEntity.setTransactionReferenceNumber("e232323232");
         transactionsEntity.setPosted(LocalDate.now());
         transactionsEntity.setAuthorizedDate(LocalDate.of(2024, 6, 1));
-        transactionsEntity.setCategoryId("522223");
+//        transactionsEntity.setCategoryId("522223");
         transactionsEntity.setMerchantName("testMerchantName");
         transactionsEntity.setIsoCurrencyCode("USD");
         transactionsEntity.setPending(false);

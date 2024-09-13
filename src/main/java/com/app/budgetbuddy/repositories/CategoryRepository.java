@@ -11,11 +11,14 @@ import java.util.Optional;
 @Repository
 public interface CategoryRepository extends JpaRepository<CategoryEntity, Long>
 {
-    @Query("SELECT c FROM CategoryEntity c WHERE c.categoryname =:name")
+    @Query("SELECT c FROM CategoryEntity c WHERE c.name =:name")
     Optional<CategoryEntity> findByName(@Param("name") String name);
 
-    @Query("SELECT c FROM CategoryEntity c WHERE c.categorydescription LIKE :descr")
+    @Query("SELECT c FROM CategoryEntity c WHERE c.description LIKE :descr")
     Optional<CategoryEntity> findByDescription(@Param("descr") String descr);
+
+    @Query("SELECT c FROM CategoryEntity c WHERE c.categoryId LIKE :num")
+    Optional<CategoryEntity> findByCategoryRefNumber(@Param("num") String num);
 
 
 }

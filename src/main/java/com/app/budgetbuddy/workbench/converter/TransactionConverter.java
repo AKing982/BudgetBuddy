@@ -5,7 +5,9 @@ import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.AccountNotFoundException;
+import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.repositories.AccountRepository;
+import com.app.budgetbuddy.repositories.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,10 +18,13 @@ import java.util.Optional;
 public class TransactionConverter implements Converter<PlaidTransaction, TransactionsEntity>
 {
     private final AccountRepository accountRepository;
+    private final CategoryRepository categoryRepository;
 
     @Autowired
-    public TransactionConverter(AccountRepository accountRepository){
+    public TransactionConverter(AccountRepository accountRepository,
+                                CategoryRepository categoryRepository){
         this.accountRepository = accountRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
@@ -30,8 +35,7 @@ public class TransactionConverter implements Converter<PlaidTransaction, Transac
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
         transactionsEntity.setDescription(transaction.getDescription());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
-        transactionsEntity.setCategory();
-
+        transactionsEntity.setCategory(fetchCategoryByCategoryId(transaction.getCategoryId()));
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setCreateDate(LocalDate.now());
@@ -41,8 +45,13 @@ public class TransactionConverter implements Converter<PlaidTransaction, Transac
         return transactionsEntity;
     }
 
-    private CategoryEntity 
-
+    private CategoryEntity fetchCategoryByCategoryId(String categoryId){
+        Optional<CategoryEntity> category = categoryRepository.findByCategoryRefNumber(categoryId);
+        if(category.isEmpty()){
+            throw new CategoryNotFoundException("Category with id " + categoryId + " not found");
+        }
+        return category.get();
+    }
 
     private AccountEntity fetchAccountByAccountId(String accountId){
         Optional<AccountEntity> accountEntity = accountRepository.findByAccountId(accountId);

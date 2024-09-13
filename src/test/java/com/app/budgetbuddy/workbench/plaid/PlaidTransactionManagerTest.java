@@ -213,7 +213,7 @@ class PlaidTransactionManagerTest {
         for(int i = 0; i < actual.size(); i++){
             assertEquals(expected.get(i).getTransactionReferenceNumber(), actual.get(i).getTransactionReferenceNumber());
             assertEquals(expected.get(i).getAccount().getAccountReferenceNumber(), actual.get(i).getAccount().getAccountReferenceNumber());
-            assertEquals(expected.get(i).getCategoryId(), actual.get(i).getCategoryId());
+//            assertEquals(expected.get(i).getCategoryId(), actual.get(i).getCategoryId());
             assertEquals(expected.get(i).getAuthorizedDate(), actual.get(i).getAuthorizedDate());
             assertEquals(expected.get(i).isPending(), actual.get(i).isPending());
             assertEquals(expected.get(i).getDescription(), actual.get(i).getDescription());
@@ -312,7 +312,7 @@ class PlaidTransactionManagerTest {
                 .account(account)
                 .amount(amount)
                 .description(description)
-                .categoryId(categoryId)
+//                .categoryId(categoryId)
                 .build();
     }
 

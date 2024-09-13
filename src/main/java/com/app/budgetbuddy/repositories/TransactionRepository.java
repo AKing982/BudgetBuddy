@@ -68,7 +68,7 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.posted, t.category, t.amount")
     List<Object[]> getSpendingBreakdownOverDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT t.category.categoryname, t.category.categorydescription, SUM(t.amount) as totalAmount FROM TransactionsEntity t JOIN t.category c WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.category.categoryDescription, t.category.categoryName")
+    @Query("SELECT t.category.name, t.category.description, SUM(t.amount) as totalAmount FROM TransactionsEntity t JOIN t.category c WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.category.description, t.category.name")
     List<Object[]> getSpendingCategoriesByPeriod(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT SUM(t.amount) FROM TransactionsEntity t JOIN t.category c WHERE c =:category")

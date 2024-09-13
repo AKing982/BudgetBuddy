@@ -39,4 +39,9 @@ public class CategoryServiceImpl implements CategoryService
     public Optional<CategoryEntity> findById(Long id) {
         return Optional.empty();
     }
+
+    @Override
+    public CategoryEntity createAndSaveCategory(String categoryId, String categoryName, String description) {
+        return null;
+    }
 }

@@ -105,11 +105,11 @@ class TransactionRepositoryTest {
                 .description("Test Transaction 1")
                 .posted(LocalDate.now())
                 .isoCurrencyCode("USD")
-                .categoryId("category1")
+//                .categoryId("category1")
                 .merchantName("Test Merchant 1")
                 .pending(false)
                 .authorizedDate(LocalDate.now().minusDays(1))
-                .categories(categoriesSet1)
+//                .categories(categoriesSet1)
                 .build();
 
         transaction2 = TransactionsEntity.builder()
@@ -119,11 +119,11 @@ class TransactionRepositoryTest {
                 .description("Test Transaction 2")
                 .posted(LocalDate.now().plusDays(1))
                 .isoCurrencyCode("USD")
-                .categoryId("category2")
+//                .categoryId("category2")
                 .merchantName("Test Merchant 2")
                 .pending(true)
                 .authorizedDate(LocalDate.of(2024, 6, 29))
-                .categories(categoriesSet2)
+//                .categories(categoriesSet2)
                 .build();
         entityManager.persist(transaction1);
         entityManager.persist(transaction2);
