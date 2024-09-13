@@ -352,6 +352,19 @@ class TransactionServiceImplTest {
        }
    }
 
+   @Test
+   void testGetTransactionByTransactionId_whenTransactionIdIsNull_thenThrowException(){
+        String transactionId = null;
+        assertThrows(NullPointerException.class, () -> {
+            transactionService.getTransactionByTransactionId(transactionId);
+        });
+   }
+
+   @Test
+   void testGetTransactionsByTransactionId_whenTransactionIdIsValid(){
+
+   }
+
 
     private UserEntity createUserEntity(){
         UserEntity userEntity = new UserEntity();

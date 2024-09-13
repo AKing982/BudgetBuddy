@@ -13,14 +13,15 @@ import {
     IconButton,
     Typography,
     Box,
-    Checkbox, Chip,
+    Checkbox, Chip, InputAdornment,
 } from '@mui/material';
 import { Search, ArrowDownToLine, ChevronDown, Edit, XCircle } from 'lucide-react';
 import Sidebar from "./Sidebar";
+import CategoryDropdown from "./CategoryDropdown";
 
 
 const TransactionsPage: React.FC = () => {
-    const [transactions] = useState<Transaction[]>([
+    const [transactions, setTransactions] = useState<Transaction[]>([
         {
             transactionId: '1',
             accountId: 'acc1',
@@ -56,107 +57,149 @@ const TransactionsPage: React.FC = () => {
         return new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
     };
 
+    const handleCategoryChange = (transactionId: string, newCategory: string) => {
+        setTransactions(prevTransactions =>
+            prevTransactions.map(transaction =>
+                transaction.transactionId === transactionId
+                    ? { ...transaction, categories: [newCategory] }
+                    : transaction
+            )
+        );
+    }
+
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ p: 3, maxWidth: 'calc(100% - 240px)', ml: '240px' }}>
             <Sidebar />
-            <Box sx={{ flexGrow: 1, p: 3, maxWidth: 'calc(100% - 240px)', ml: '240px' }}>
-                <Typography variant="h4" gutterBottom>
-                    Transactions
-                </Typography>
+            <Typography variant="h4" sx={{
+                fontWeight: 'bold',
+                color: '#3E2723', // Dark brown color for "Transactions"
+                mb: 2
+            }}>
+                Transactions
+            </Typography>
 
-                <Box sx={{ mb: 2 }}>
-                    <TextField
-                        fullWidth
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search your transactions..."
-                        InputProps={{
-                            startAdornment: <Search size={20} style={{ marginRight: 8 }} />,
-                        }}
-                        sx={{ mb: 2 }}
-                    />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Box>
-                            <Button variant="outlined" sx={{ mr: 1 }}>Date</Button>
-                            <Button variant="outlined" sx={{ mr: 1 }}>Category</Button>
-                            <Button variant="outlined" sx={{ mr: 1 }}>Account</Button>
-                            <Button variant="outlined">Amount</Button>
-                        </Box>
-                        <Box>
-                            <Button
-                                variant="outlined"
-                                startIcon={<ArrowDownToLine size={20} />}
-                                sx={{ mr: 2 }}
-                            >
-                                Export
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                endIcon={<ChevronDown size={20} />}
-                            >
-                                Sort by date
-                            </Button>
-                        </Box>
-                    </Box>
+            <Paper
+                elevation={0}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: '#F5F5F5', // Light grey background
+                    borderRadius: '8px',
+                    p: '4px 16px',
+                    mb: 3
+                }}
+            >
+                <Search size={20} color="#9E9E9E" />
+                <TextField
+                    variant="standard"
+                    placeholder="Search your transactions..."
+                    fullWidth
+                    InputProps={{
+                        disableUnderline: true,
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <Box sx={{ width: 8 }} />
+                            </InputAdornment>
+                        ),
+                    }}
+                    sx={{
+                        '& .MuiInputBase-input': {
+                            pl: 1,
+                            fontSize: '0.875rem',
+                            '&::placeholder': {
+                                color: '#9E9E9E',
+                                opacity: 1,
+                            },
+                        },
+                    }}
+                />
+            </Paper>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Box>
+                    <Button variant="outlined" sx={{ mr: 1, borderRadius: 2 }}>Date</Button>
+                    <Button variant="outlined" sx={{ mr: 1, borderRadius: 2 }}>Category</Button>
+                    <Button variant="outlined" sx={{ mr: 1, borderRadius: 2 }}>Account</Button>
+                    <Button variant="outlined" sx={{ borderRadius: 2 }}>Amount</Button>
                 </Box>
+                <Box>
+                    <Button
+                        variant="outlined"
+                        startIcon={<ArrowDownToLine size={20} />}
+                        sx={{ mr: 2, borderRadius: 2 }}
+                    >
+                        Export
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        endIcon={<ChevronDown size={20} />}
+                        sx={{ borderRadius: 2 }}
+                    >
+                        Sort by date
+                    </Button>
+                </Box>
+            </Box>
 
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
+            <TableContainer component={Paper} sx={{ boxShadow: 3, borderRadius: 4, overflow: 'hidden' }}>
+                <Table sx={{ minWidth: 650 }}>
+                    <TableHead>
+                        <TableRow sx={{ backgroundColor: 'background.paper' }}>
+                            <TableCell padding="checkbox">
+                                <Checkbox />
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Category</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {transactions.map((transaction) => (
+                            <TableRow
+                                key={transaction.transactionId}
+                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                            >
                                 <TableCell padding="checkbox">
                                     <Checkbox />
                                 </TableCell>
-                                <TableCell>Date</TableCell>
-                                <TableCell>Name</TableCell>
-                                <TableCell>Category</TableCell>
-                                <TableCell>Actions</TableCell>
-                                <TableCell align="right">Amount</TableCell>
+                                <TableCell>{formatDate(transaction.date)}</TableCell>
+                                <TableCell>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        {transaction.logoURL && (
+                                            <img
+                                                src={transaction.logoURL}
+                                                alt={`${transaction.merchantName} logo`}
+                                                style={{ width: 24, height: 24, marginRight: 8, borderRadius: '50%' }}
+                                            />
+                                        )}
+                                        {transaction.name}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                  <CategoryDropdown
+                                      category={transaction.categories[0]}
+                                      onCategoryChange={(newCategory) => handleCategoryChange(transaction.transactionId, newCategory)}/>
+                                </TableCell>
+                                <TableCell>
+                                    <IconButton size="small" sx={{ borderRadius: 2 }}>
+                                        <Edit size={16} />
+                                    </IconButton>
+                                    <IconButton size="small" sx={{ borderRadius: 2 }}>
+                                        <XCircle size={16} />
+                                    </IconButton>
+                                </TableCell>
+                                <TableCell align="right">
+                                    ${transaction.amount.toFixed(2)}
+                                </TableCell>
                             </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {transactions.map((transaction) => (
-                                <TableRow key={transaction.transactionId}>
-                                    <TableCell padding="checkbox">
-                                        <Checkbox />
-                                    </TableCell>
-                                    <TableCell>{formatDate(transaction.date)}</TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            {transaction.logoURL && (
-                                                <img
-                                                    src={transaction.logoURL}
-                                                    alt={`${transaction.merchantName} logo`}
-                                                    style={{ width: 24, height: 24, marginRight: 8, borderRadius: '50%' }}
-                                                />
-                                            )}
-                                            {transaction.name}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                        {transaction.categories.map((category, index) => (
-                                            <Chip key={index} label={category} size="small" sx={{ mr: 0.5 }} />
-                                        ))}
-                                    </TableCell>
-                                    <TableCell>
-                                        <IconButton size="small">
-                                            <Edit size={16} />
-                                        </IconButton>
-                                        <IconButton size="small">
-                                            <XCircle size={16} />
-                                        </IconButton>
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        ${transaction.amount.toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Box>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         </Box>
     );
+
 }
 
 export default TransactionsPage;

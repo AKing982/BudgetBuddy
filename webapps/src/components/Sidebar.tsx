@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Box,
     Typography,
@@ -28,19 +28,45 @@ import {
     Settings,
     MessageSquare,
 } from 'lucide-react';
+import {useLocation, useNavigate} from "react-router-dom";
+import SidebarMenu from "./SidebarMenu";
 
-const Sidebar = () => {
+
+interface MenuItem {
+    text: string;
+    icon: React.ReactNode;
+    path: string;
+}
+
+const Sidebar: React.FC = () => {
     const theme = useTheme();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [selectedItem, setSelectedItem] = useState<string>('');
+    const [showSettingsMenu, setShowSettingsMenu] = useState<boolean>(false);
 
     const menuItems = [
-        { text: 'Dashboard', icon: <Dashboard /> },
-        { text: 'Recurring', icon: <EventRepeat /> },
-        { text: 'Spending', icon: <AttachMoney /> },
-        { text: 'Budgets', icon: <AccountBalance /> },
-        { text: 'Net Worth', icon: <TrendingUp /> },
-        { text: 'Transactions', icon: <Search /> },
-        { text: 'Credit Score', icon: <CreditScore /> },
+        { text: 'Dashboard', icon: <Dashboard /> , path: '/dashboard'},
+        { text: 'Recurring', icon: <EventRepeat />, path: '/recurring' },
+        { text: 'Spending', icon: <AttachMoney /> , path: '/spending'},
+        { text: 'Budgets', icon: <AccountBalance /> , path: '/budgets'},
+        { text: 'Net Worth', icon: <TrendingUp />, path: '/net-worth' },
+        { text: 'Transactions', icon: <Search /> , path: '/transactions'},
+        { text: 'Credit Score', icon: <CreditScore />, path: '/score' },
     ];
+
+    useEffect(() => {
+        const currentPath = location.pathname;
+        const currentItem = menuItems.find(item => item.path === currentPath);
+        if(currentItem){
+            setSelectedItem(currentItem.text);
+        }
+    }, [location]);
+
+    const handleItemClick = (path: string, text: string): void => {
+        navigate(path);
+        setSelectedItem(text);
+    }
 
     return (
         <Box
@@ -78,7 +104,11 @@ const Sidebar = () => {
                 </Typography>
                 <Box>
                     <Bell size={18} style={{ marginRight: 12, cursor: 'pointer' }} />
-                    <Settings size={18} style={{ cursor: 'pointer' }} />
+                    <Settings
+                        size={18}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => setShowSettingsMenu(!showSettingsMenu)}/>
+                    {showSettingsMenu && <SidebarMenu />}
                 </Box>
             </Box>
             <List sx={{ flexGrow: 1, pt: 1 }}>
@@ -86,6 +116,8 @@ const Sidebar = () => {
                     <ListItem
                         button
                         key={item.text}
+                        onClick={() => handleItemClick(item.path, item.text)}
+                        selected={selectedItem === item.text}
                         sx={{
                             py: 1.5,
                             px: 2,
@@ -141,148 +173,6 @@ const Sidebar = () => {
             </ListItem>
         </Box>
     );
-
-    // return (
-    //     <Box
-    //         sx={{
-    //             width: 240,
-    //             height: '100vh',
-    //             bgcolor: 'white',
-    //             color: 'text.primary',
-    //             borderRight: '1px solid',
-    //             borderColor: 'divider',
-    //             display: 'flex',
-    //             flexDirection: 'column',
-    //             position: 'fixed',
-    //             left: 0,
-    //             right: 0,
-    //             overflowY: 'auto'
-    //         }}
-    //     >
-    //         <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-    //             <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-    //                 BudgetBuddy
-    //             </Typography>
-    //         </Box>
-    //         <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-    //             <Typography variant="body2">
-    //                 Hi, Alexander
-    //             </Typography>
-    //             <Box>
-    //                 <Bell size={20} style={{ marginRight: 8 }} />
-    //                 <Settings size={20} />
-    //             </Box>
-    //         </Box>
-    //         <Typography variant="body2" sx={{ px: 2, py: 1, color: theme.palette.primary.main }}>
-    //             Go Premium &gt;
-    //         </Typography>
-    //         <List sx={{ flexGrow: 1, pt: 0 }}>
-    //             {menuItems.map((item) => (
-    //                 <ListItem
-    //                     button
-    //                     key={item.text}
-    //                     sx={{
-    //                         '&:hover': {
-    //                             bgcolor: 'action.hover',
-    //                         },
-    //                         py: 1,
-    //                     }}
-    //                 >
-    //                     <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
-    //                     <ListItemText primary={item.text} />
-    //                 </ListItem>
-    //             ))}
-    //         </List>
-    //         <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-    //             <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-    //                 "Creativity is intelligence having fun."
-    //             </Typography>
-    //             <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
-    //                 Albert Einstein
-    //             </Typography>
-    //         </Box>
-    //         <ListItem
-    //             button
-    //             sx={{
-    //                 bgcolor: theme.palette.grey[100],
-    //                 '&:hover': {
-    //                     bgcolor: theme.palette.grey[200],
-    //                 },
-    //                 borderRadius: 1,
-    //                 m: 1,
-    //             }}
-    //         >
-    //             <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><MessageSquare size={20} /></ListItemIcon>
-    //             <ListItemText primary="Chat with us" />
-    //         </ListItem>
-    //     </Box>
-    // );
-    //
-    // return (
-    //     <Box
-    //         sx={{
-    //             width: 280,
-    //             height: '120vh',
-    //             bgcolor: theme.palette.primary.main,
-    //             color: theme.palette.primary.contrastText,
-    //             boxShadow: 3,
-    //             display: 'flex',
-    //             flexDirection: 'column',
-    //         }}
-    //     >
-    //         <Box sx={{ p: 3, textAlign: 'center' }}>
-    //             <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
-    //                 BudgetBuddy
-    //             </Typography>
-    //             <Typography variant="subtitle1">
-    //                 Hi, Alexander
-    //             </Typography>
-    //         </Box>
-    //         <Divider sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
-    //         <List sx={{ flexGrow: 1 }}>
-    //             {menuItems.map((item) => (
-    //                 <ListItem
-    //                     button
-    //                     key={item.text}
-    //                     sx={{
-    //                         '&:hover': {
-    //                             bgcolor: 'rgba(255,255,255,0.1)',
-    //                         },
-    //                         borderRadius: 1,
-    //                         my: 0.5,
-    //                         mx: 1,
-    //                     }}
-    //                 >
-    //                     <ListItemIcon sx={{ color: 'inherit' }}>{item.icon}</ListItemIcon>
-    //                     <ListItemText primary={item.text} />
-    //                 </ListItem>
-    //             ))}
-    //         </List>
-    //         <Box sx={{ p: 2, mt: 'auto' }}>
-    //             <Typography variant="body2" sx={{ fontStyle: 'italic', opacity: 0.8 }}>
-    //                 "Budget for your future self."
-    //             </Typography>
-    //             <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-    //                 © 2024 BudgetBuddy
-    //             </Typography>
-    //         </Box>
-    //         <ListItem
-    //             button
-    //             sx={{
-    //                 bgcolor: theme.palette.secondary.main,
-    //                 color: theme.palette.secondary.contrastText,
-    //                 '&:hover': {
-    //                     bgcolor: theme.palette.secondary.dark,
-    //                 },
-    //                 borderRadius: 1,
-    //                 m: 1,
-    //             }}
-    //         >
-    //             <ListItemIcon sx={{ color: 'inherit' }}><Chat /></ListItemIcon>
-    //             <ListItemText primary="Chat with us" />
-    //         </ListItem>
-    //     </Box>
-    // );
 
 };
 

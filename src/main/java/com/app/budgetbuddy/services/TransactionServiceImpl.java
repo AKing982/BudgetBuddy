@@ -140,6 +140,9 @@ public class TransactionServiceImpl implements TransactionService
 
     @Override
     public Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId) {
+        if(transactionId == null){
+            throw new NullPointerException("TransactionId is null");
+        }
         return Optional.empty();
 
         
