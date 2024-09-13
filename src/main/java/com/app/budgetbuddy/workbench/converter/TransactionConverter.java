@@ -2,14 +2,13 @@ package com.app.budgetbuddy.workbench.converter;
 
 import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.AccountNotFoundException;
 import com.app.budgetbuddy.repositories.AccountRepository;
-import com.plaid.client.model.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -31,17 +30,19 @@ public class TransactionConverter implements Converter<PlaidTransaction, Transac
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
         transactionsEntity.setDescription(transaction.getDescription());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
-        transactionsEntity.setCategoryId(transaction.getCategoryId());
-//        transactionsEntity.setCategories(transaction.getCategory());
+        transactionsEntity.setCategory();
+
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setCreateDate(LocalDate.now());
         transactionsEntity.setLogoUrl(transaction.getLogo());
         transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
         transactionsEntity.setTransactionReferenceNumber(transaction.getTransactionId());
-//        transactionsEntity.setPersonalFinanceCategory(null);
         return transactionsEntity;
     }
+
+    private CategoryEntity 
+
 
     private AccountEntity fetchAccountByAccountId(String accountId){
         Optional<AccountEntity> accountEntity = accountRepository.findByAccountId(accountId);

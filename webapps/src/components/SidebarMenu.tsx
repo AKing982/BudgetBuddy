@@ -7,7 +7,12 @@ interface SidebarMenuItem {
     path: string;
 }
 
-const SidebarMenu: React.FC = () => {
+interface SideBarMenuItemProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+const SidebarMenu: React.FC<SideBarMenuItemProps> = ({isOpen, onClose}) => {
     const navigate = useNavigate();
 
     const menuItems = [
@@ -18,7 +23,11 @@ const SidebarMenu: React.FC = () => {
 
     const handleItemClick = (path: string) => {
         navigate(path);
+        onClose();
     }
+
+    if (!isOpen) return null
+
 
     return (
         <Paper

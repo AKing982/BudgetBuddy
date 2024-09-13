@@ -5,6 +5,7 @@ import com.app.budgetbuddy.domain.AccountSubType;
 import com.app.budgetbuddy.domain.AccountType;
 import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 
@@ -25,9 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,8 +46,8 @@ class TransactionRepositoryTest {
     private TransactionsEntity transaction1;
     private TransactionsEntity transaction2;
 
-    private Category category1;
-    private Category category2;
+    private CategoryEntity category1;
+    private CategoryEntity category2;
     private AccountEntity account1;
     private AccountEntity account2;
     private UserEntity user;
@@ -90,8 +89,14 @@ class TransactionRepositoryTest {
         entityManager.persist(account2);
 
         // Create test categories
-        category1 = new Category("Groceries", "Food and household items");
-        category2 = new Category("Entertainment", "Movies, games, etc.");
+        category1 = new CategoryEntity(1L, "e223232", "Food and household items", "Food and household items");
+        category2 = new CategoryEntity(1L, "e55555","Entertainment","Entertainment");
+
+        Set<CategoryEntity> categoriesSet1 = new HashSet<>();
+        categoriesSet1.add(category1);
+
+        Set<CategoryEntity> categoriesSet2 = new HashSet<>();
+        categoriesSet2.add(category2);
 
         transaction1 = TransactionsEntity.builder()
                 .account(account1)
@@ -104,7 +109,7 @@ class TransactionRepositoryTest {
                 .merchantName("Test Merchant 1")
                 .pending(false)
                 .authorizedDate(LocalDate.now().minusDays(1))
-                .category(new Category("Groceries", "Food and household items"))
+                .categories(categoriesSet1)
                 .build();
 
         transaction2 = TransactionsEntity.builder()
@@ -118,7 +123,7 @@ class TransactionRepositoryTest {
                 .merchantName("Test Merchant 2")
                 .pending(true)
                 .authorizedDate(LocalDate.of(2024, 6, 29))
-                .category(new Category("Entertainment", "Movies, games, etc."))
+                .categories(categoriesSet2)
                 .build();
         entityManager.persist(transaction1);
         entityManager.persist(transaction2);

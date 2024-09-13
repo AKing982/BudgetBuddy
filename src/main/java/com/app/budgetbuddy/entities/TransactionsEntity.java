@@ -25,6 +25,10 @@ public class TransactionsEntity
     @JoinColumn(name="acctid")
     private AccountEntity account;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="categoryid")
+    private CategoryEntity category;
+
     @Column(name="transaction_reference_number")
     private String transactionReferenceNumber;
 
@@ -39,9 +43,6 @@ public class TransactionsEntity
 
     @Column(name="currencyCode")
     private String isoCurrencyCode;
-
-    @Column(name="categoryid")
-    private String categoryId;
 
     @Column(name="merchantName")
     private String merchantName;
@@ -58,15 +59,5 @@ public class TransactionsEntity
     @Column(name="createdat")
     private LocalDate createDate;
 
-    @Embedded
-    private Category category;
-
-//    @Embedded
-//    private PersonalFinanceCategory personalFinanceCategory;
-//
-//    @ElementCollection
-//    @CollectionTable(name="transaction_categories", joinColumns=@JoinColumn(name="id"))
-//    @Column(name="category")
-//    private List<String> categories = new ArrayList<>();
 
 }

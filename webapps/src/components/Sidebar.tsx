@@ -44,6 +44,7 @@ const Sidebar: React.FC = () => {
     const location = useLocation();
     const [selectedItem, setSelectedItem] = useState<string>('');
     const [showSettingsMenu, setShowSettingsMenu] = useState<boolean>(false);
+    const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
     const menuItems = [
         { text: 'Dashboard', icon: <Dashboard /> , path: '/dashboard'},
@@ -67,6 +68,14 @@ const Sidebar: React.FC = () => {
         navigate(path);
         setSelectedItem(text);
     }
+
+    const handleMenuToggle = () => {
+        setIsMenuOpen(!isMenuOpen);
+    };
+
+    const handleMenuClose = () => {
+        setIsMenuOpen(false);
+    };
 
     return (
         <Box
@@ -107,8 +116,7 @@ const Sidebar: React.FC = () => {
                     <Settings
                         size={18}
                         style={{ cursor: 'pointer' }}
-                        onClick={() => setShowSettingsMenu(!showSettingsMenu)}/>
-                    {showSettingsMenu && <SidebarMenu />}
+                        onClick={handleMenuToggle}/>
                 </Box>
             </Box>
             <List sx={{ flexGrow: 1, pt: 1 }}>
@@ -171,6 +179,7 @@ const Sidebar: React.FC = () => {
                 <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><MessageSquare size={20} /></ListItemIcon>
                 <ListItemText primary="Chat with us" primaryTypographyProps={{ fontWeight: 600 }} />
             </ListItem>
+            <SidebarMenu isOpen={isMenuOpen} onClose={handleMenuClose} />
         </Box>
     );
 

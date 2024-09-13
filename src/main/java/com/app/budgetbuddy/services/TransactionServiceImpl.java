@@ -1,6 +1,5 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.TransactionRepository;

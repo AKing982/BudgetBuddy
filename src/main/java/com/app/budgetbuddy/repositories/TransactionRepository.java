@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.domain.Category;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -55,20 +56,11 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate")
     BigDecimal sumAmountByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.category =:category AND t.posted BETWEEN :startDate AND :endDate")
-    BigDecimal sumAmountByCategoryAndDateRange(@Param("category") Category category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    @Query("SELECT SUM(t.amount) FROM TransactionsEntity t JOIN t.category c WHERE c =:category AND t.posted BETWEEN :startDate AND :endDate")
+    BigDecimal sumAmountByCategoryAndDateRange(@Param("category") CategoryEntity category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT AVG(t.amount) FROM TransactionsEntity t WHERE t.category =:category AND t.posted BETWEEN :startDate AND :endDate")
-    BigDecimal findAverageSpendingByCategoryAndDateRange(@Param("category") Category category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-
-//    @Query("SELECT SUM(CASE " +
-//            "    WHEN t.amount > 0 THEN t.amount " +
-//            "    WHEN t.amount < 0 THEN t.amount * -1 " +
-//            "    ELSE 0 " +
-//            "END) as totalAmount " +
-//            "FROM Transaction t " +
-//            "WHERE t.authorizedDate =:date")
-//    BigDecimal findSpendingByDate(@Param("date") LocalDate date);
+    BigDecimal findAverageSpendingByCategoryAndDateRange(@Param("category") CategoryEntity category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted =:date GROUP BY t.posted, t.category, t.amount")
     List<Object[]> getDailySpendingBreakdown(@Param("date") LocalDate date);
@@ -76,9 +68,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.posted, t.category, t.amount")
     List<Object[]> getSpendingBreakdownOverDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT t.category.categoryName, t.category.categoryDescription, SUM(t.amount) as totalAmount FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.category.categoryDescription, t.category.categoryName")
+    @Query("SELECT t.category.categoryname, t.category.categorydescription, SUM(t.amount) as totalAmount FROM TransactionsEntity t JOIN t.category c WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.category.categoryDescription, t.category.categoryName")
     List<Object[]> getSpendingCategoriesByPeriod(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.category =:category")
-    BigDecimal getTotalSpendingByCategory(@Param("category") Category category);
+    @Query("SELECT SUM(t.amount) FROM TransactionsEntity t JOIN t.category c WHERE c =:category")
+    BigDecimal getTotalSpendingByCategory(@Param("category") CategoryEntity category);
 }
