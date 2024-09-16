@@ -5,9 +5,7 @@ interface Transaction {
     transactionId: string;
     accountId: string;
     amount: number;
-    categoryName: string;
-    categoryDescription: string;
-    categoryId: string;
+    categories: string[];
     date: Date | string;
     name: string;
     merchantName: string;
@@ -38,7 +36,7 @@ class TransactionService {
     //     }
     //     try
     //     {
-    //         const response = await axios.get(`${apiUrl}/api/transaction/${userId}`);
+    //         const response = await axios.get<Transaction[]>(`${apiUrl}/api/transaction/${userId}`);
     //         return response.data;
     //     }catch(error)
     //     {

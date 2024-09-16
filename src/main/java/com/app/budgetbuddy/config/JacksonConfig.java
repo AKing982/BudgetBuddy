@@ -1,9 +1,10 @@
 package com.app.budgetbuddy.config;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.*;
+
+import com.fasterxml.jackson.datatype.hibernate5.jakarta.Hibernate5JakartaModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
@@ -22,16 +23,17 @@ public class JacksonConfig
     private static final String DATE_FORMAT = "yyyy-MM-dd";
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
-//    @Bean
-//    public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer(){
-//        return builder -> {
-//            builder.simpleDateFormat(DATE_TIME_FORMAT);
-//            builder.serializers(new LocalDateSerializer(DateTimeFormatter.ofPattern(DATE_FORMAT)));
-//            builder.serializers(new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
-//            builder.deserializers(new LocalDateDeserializer(DateTimeFormatter.ofPattern(DATE_FORMAT)));
-//            builder.deserializers(new CustomLocalDateDeserializer());
-//        };
-//    }
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        Hibernate5JakartaModule hibernate5Module = new Hibernate5JakartaModule();
+        hibernate5Module.configure(Hibernate5JakartaModule.Feature.FORCE_LAZY_LOADING, false);
+        mapper.registerModule(hibernate5Module);
+        mapper.enable(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN);
+        mapper.registerModule(new JavaTimeModule());
+        return mapper;
+    }
+
 //
 //    public static class CustomLocalDateDeserializer extends JsonDeserializer<LocalDate> {
 //        @Override

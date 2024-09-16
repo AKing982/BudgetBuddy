@@ -1,6 +1,8 @@
 package com.app.budgetbuddy.entities;
 
 import com.app.budgetbuddy.domain.Category;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,17 +21,20 @@ public class TransactionsEntity
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="id", columnDefinition = "BIGINT")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="acctid")
+    @JsonManagedReference
     private AccountEntity account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="categoryid")
+    @JsonManagedReference
     private CategoryEntity category;
 
-    @Column(name="transaction_reference_number")
+    @Column(name="transactionid")
     private String transactionReferenceNumber;
 
     @Column(name = "amount")

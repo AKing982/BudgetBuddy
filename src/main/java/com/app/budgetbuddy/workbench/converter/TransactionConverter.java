@@ -35,7 +35,7 @@ public class TransactionConverter implements Converter<PlaidTransaction, Transac
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
         transactionsEntity.setDescription(transaction.getDescription());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
-        transactionsEntity.setCategory(fetchCategoryByCategoryId(transaction.getCategoryId()));
+        transactionsEntity.setCategory(null);
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setCreateDate(LocalDate.now());

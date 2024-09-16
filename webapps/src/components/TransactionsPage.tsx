@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Table,
     TableBody,
@@ -18,6 +18,7 @@ import {
 import { Search, ArrowDownToLine, ChevronDown, Edit, XCircle } from 'lucide-react';
 import Sidebar from "./Sidebar";
 import CategoryDropdown from "./CategoryDropdown";
+import TransactionService from '../services/TransactionService';
 
 
 const TransactionsPage: React.FC = () => {
@@ -52,6 +53,8 @@ const TransactionsPage: React.FC = () => {
         },
         // Add more mock transactions as needed
     ]);
+
+
 
     const formatDate = (date: Date | string) => {
         return new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
