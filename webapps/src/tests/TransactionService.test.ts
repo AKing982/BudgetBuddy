@@ -29,7 +29,7 @@ describe('TransactionService', () => {
                 name: 'Restaurant XYZ',
                 merchantName: 'XYZ Corp',
                 pending: false,
-                logoUrl: 'http://example.com/logo.png',
+                logoURL: 'http://example.com/logo.png',
                 authorizedDate: '2023-09-16',
                 transactionType: 'debit'
             }
@@ -84,7 +84,53 @@ describe('TransactionService', () => {
             await expect(serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, new Date('invalid'), validEndDate))
                 .rejects
                 .toThrow('Invalid startDate. startDate must be a valid date object.');
-        })
+        });
+        test('fetchTransactionsByUserAndDateRange should throw error when endDate is invalid', async() => {
+            await expect(serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, validStartDate, new Date('invalid')))
+                .rejects
+                .toThrow('Invalid endDate. endDate must be a valid date object.');
+        });
+
+        test('fetchTransactionsByUserAndDateRange should throw error for non-integer userId', async() => {
+            await expect(serviceInstance.fetchTransactionsByUserAndDateRange(1.5, validStartDate, validEndDate))
+                .rejects
+                .toThrow('Invalid userId. UserId must be an integer.');
+        });
+        test('fetchTransactionsByUserAndDateRange should return transactions when startDate is before Enddate', async() => {
+
+        });
+        test('fetchTransactionsByUserAndDateRange should return transactions when parameters valid', async() => {
+            const mockTransactions = [
+                {
+                    transactionId: '123',
+                    accountId: 'acc123',
+                    amount: 100,
+                    categories: ['food'],
+                    date: '2023-09-17',
+                    name: 'Restaurant XYZ',
+                    merchantName: 'XYZ Corp',
+                    pending: false,
+                    logoURL: 'http://example.com/logo.png',
+                    authorizedDate: '2023-09-16',
+                    transactionType: 'debit'
+                }
+            ]
+
+            mockAxios.get.mockResolvedValueOnce({data: mockTransactions});
+            const result = await serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, validStartDate, validEndDate);
+            expect(result.length).toEqual(1);
+            expect(result).toEqual(mockTransactions);
+        });
+        test('should throw error for non-404 API errors', async () => {
+            mockAxios.get.mockRejectedValueOnce({
+                isAxiosError: true,
+                response: { status: 500 }
+            } as AxiosError);
+
+            await expect(serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, validStartDate, validEndDate))
+                .rejects.toThrow();
+        });
+
     })
 
 
