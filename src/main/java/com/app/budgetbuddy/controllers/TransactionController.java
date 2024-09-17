@@ -2,6 +2,7 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.TransactionDTO;
 import com.app.budgetbuddy.entities.TransactionsEntity;
+import com.app.budgetbuddy.exceptions.TransactionsNotFoundException;
 import com.app.budgetbuddy.services.TransactionService;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,27 +35,42 @@ public class TransactionController {
 
     @GetMapping("/by-amount-range")
     public ResponseEntity<?> getTransactionsByAmountRange(@RequestParam @NotNull BigDecimal startAmount, @RequestParam @NotNull BigDecimal endAmount) {
-        return ResponseEntity.badRequest().build();
+        List<TransactionsEntity> transactionsEntities = (List<TransactionsEntity>) transactionService.getTransactionsByAmountBetween(startAmount, endAmount);
+        return ResponseEntity.ok(transactionsEntities);
     }
 
     @GetMapping("/{userId}/pending")
-    public ResponseEntity<?> getPendingTransactionsForUser(@PathVariable Long userId) {
-        return null;
+    public ResponseEntity<?> getPendingTransactionsForUser(@PathVariable @NotNull Long userId) {
+        if(userId < 1L){
+            return ResponseEntity.badRequest().body("User id must be greater than 1");
+        }
+        List<TransactionsEntity> pendingTransactions = (List<TransactionsEntity>) transactionService.getTransactionsByPendingTrue();
+        return ResponseEntity.ok(pendingTransactions);
     }
 
     @GetMapping("/by-amount")
-    public ResponseEntity<?> getTransactionsByAmount(@RequestParam BigDecimal startAmount) {
-        return null;
+    public ResponseEntity<?> getTransactionsByAmount(@RequestParam @NotNull BigDecimal startAmount) {
+        List<TransactionsEntity> transactionsEntities = (List<TransactionsEntity>) transactionService.getTransactionsByAmount(startAmount);
+        return ResponseEntity.ok(transactionsEntities);
     }
 
     @GetMapping("/by-date")
-    public ResponseEntity<?> getTransactionsByDate(@RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate date) {
-        return null;
+    public ResponseEntity<?> getTransactionsByDate(@RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<TransactionsEntity> transactionsEntityList = (List<TransactionsEntity>) transactionService.getTransactionsByAuthorizedDate(date);
+        return ResponseEntity.ok(transactionsEntityList);
     }
 
     @GetMapping("/{userId}")
     public ResponseEntity<?> getTransactionsForUser(@PathVariable Long userId) {
         return null;
+    }
+
+    @GetMapping("/{userId}/by-date")
+    public ResponseEntity<?> getTransactionsForUserByDateRange(@PathVariable @NotNull Long userId,
+                                                               @RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                               @RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        List<TransactionsEntity> transactionsEntities = transactionService.getTransactionsForUserAndDateRange(userId, startDate, endDate);
+        return ResponseEntity.ok(transactionsEntities);
     }
 
     @PostMapping("/save-transactions")

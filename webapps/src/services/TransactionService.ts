@@ -29,19 +29,34 @@ class TransactionService {
         return TransactionService.instance;
     }
 
-    // public async fetchTransactionsByUserId(userId: number) : Promise<Transaction[]>
-    // {
-    //     if(userId < 1){
-    //         throw new Error('Invalid userId. UserId must be a positive number.');
-    //     }
-    //     try
-    //     {
-    //         const response = await axios.get<Transaction[]>(`${apiUrl}/api/transaction/${userId}`);
-    //         return response.data;
-    //     }catch(error)
-    //     {
-    //         console.error('There as an error fetching transactions from the server: ', error);
-    //     }
-    // }
+    public async fetchTransactionsByUserAndDateRange(userId: number, startDate: Date, endDate: Date) {
+        if(userId < 1){
+            throw new Error('Invalid userId. UserId must be a positive number.');
+        }
+    }
+
+    public async fetchTransactionsByUserId(userId: number): Promise<Transaction[]>
+    {
+        if(!Number.isInteger(userId)){
+            throw new Error('Invalid userId. UserId must be an integer.');
+        }
+
+        if(userId < 1){
+            throw new Error('Invalid userId. UserId must be a positive number.');
+        }
+        try
+        {
+            const response = await axios.get<Transaction[]>(`${apiUrl}/api/transaction/${userId}`);
+            if(response.data.length === 0){
+                return [];
+            }
+            return response.data;
+        }catch(error)
+        {
+            // For all other errors, we'll log and rethrow
+            console.error('There was an error fetching transactions from the server: ', error);
+            throw error;
+        }
+    }
 }
 export default TransactionService;

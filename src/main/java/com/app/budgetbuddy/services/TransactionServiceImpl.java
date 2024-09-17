@@ -109,6 +109,14 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public List<TransactionsEntity> getTransactionsForUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
+        if(startDate == null || endDate == null){
+            throw new NullPointerException("StartDate is null");
+        }
+        return transactionRepository.findTransactionsByUserIdAndDateRange(userId, startDate, endDate);
+    }
+
+    @Override
     public List<TransactionsEntity> getTransactionsByPendingTrue() {
         return transactionRepository.findByPendingTrue();
     }

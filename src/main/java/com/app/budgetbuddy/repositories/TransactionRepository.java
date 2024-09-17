@@ -51,6 +51,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     Collection<TransactionsEntity> findTransactionsByUser(@Param("id") Long id);
 
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.authorizedDate BETWEEN :startDate AND :endDate")
+    List<TransactionsEntity> findTransactionsByUserIdAndDateRange(@Param("id") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.authorizedDate BETWEEN :startDate AND :endDate")
     Collection<TransactionsEntity> findTransactionsByUserAndPeriod(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate")

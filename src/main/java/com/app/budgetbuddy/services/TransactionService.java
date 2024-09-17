@@ -16,6 +16,7 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Collection<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount);
 
     Collection<TransactionsEntity> loadTransactionsForUser(Long userId);
+    List<TransactionsEntity> getTransactionsForUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     Collection<TransactionsEntity> getTransactionsByPendingTrue();
     Collection<TransactionsEntity> getTransactionsByAuthorizedDate(LocalDate date);
     List<TransactionsEntity> getTransactionsByAccountId(String accountId);

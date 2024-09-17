@@ -353,6 +353,48 @@ class TransactionServiceImplTest {
    }
 
    @Test
+   void testGetTransactionsForUserAndDateRange_whenStartDateIsNull_thenThrowException(){
+        Long userId = 1L;
+        LocalDate startDate = null;
+        LocalDate endDate = LocalDate.of(2024, 6, 2);
+        assertThrows(NullPointerException.class, () -> {
+            transactionService.getTransactionsForUserAndDateRange(userId, startDate, endDate);
+        });
+   }
+
+   @Test
+   void testGetTransactionsForUserAndDateRange_whenEndDateIsNull_thenThrowException(){
+       Long userId = 1L;
+       LocalDate startDate = LocalDate.of(2024, 6, 1);
+       LocalDate endDate = null;
+       assertThrows(NullPointerException.class, () -> {
+           transactionService.getTransactionsForUserAndDateRange(userId, startDate, endDate);
+       });
+   }
+
+   @Test
+   void testGetTransactionsForUserAndDateRange(){
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2024, 6, 1);
+        LocalDate endDate = LocalDate.of(2024, 6, 2);
+        List<TransactionsEntity> expected = new ArrayList<>();
+        expected.add(createTransactionsEntity());
+
+        Mockito.when(transactionRepository.findTransactionsByUserIdAndDateRange(userId, startDate, endDate)).thenReturn(expected);
+        List<TransactionsEntity> actual = transactionService.getTransactionsForUserAndDateRange(userId, startDate, endDate);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        assertTrue(actual.containsAll(expected));
+        for(int i = 0; i < actual.size(); i++){
+            assertEquals(expected.get(i).getId(), actual.get(i).getId());
+            assertEquals(expected.get(i).getDescription(), actual.get(i).getDescription());
+            assertEquals(expected.get(i).getAmount(), actual.get(i).getAmount());
+            assertEquals(expected.get(i).getAuthorizedDate(), actual.get(i).getAuthorizedDate());
+            assertEquals(expected.get(i).getAccount().getId(), actual.get(i).getAccount().getId());
+        }
+   }
+
+   @Test
    void testGetTransactionByTransactionId_whenTransactionIdIsNull_thenThrowException(){
         String transactionId = null;
         assertThrows(NullPointerException.class, () -> {

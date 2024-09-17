@@ -101,9 +101,24 @@ const PaymentCharges: React.FC = () => {
         });
     };
 
-    const parseDate = (dateString: string): Date => {
+    const parseDate = (dateString: string | null | undefined): Date => {
         // This assumes dateString is in format "YYYY-MM-DD"
-        const [year, month, day] = dateString.split('-').map(Number);
+        if(!dateString || typeof dateString !== 'string'){
+            console.error('Invalid date string:', dateString);
+            return new Date();
+        }
+
+        const parts = dateString.split('-');
+        if(parts.length !== 3){
+            console.error('Date string is not in expected format (YYYY-MM-DD):', dateString);
+            return new Date();
+        }
+
+        const [year, month, day] = parts.map(Number);
+        if(isNaN(year) || isNaN(month) || isNaN(day)){
+            console.error('Date parts are not valid numbers:', {year, month, day});
+            return new Date();
+        }
         return new Date(year, month - 1, day);
     };
 
