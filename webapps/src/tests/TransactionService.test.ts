@@ -70,8 +70,8 @@ describe('TransactionService', () => {
 
     describe('fetchTransactionsByUserAndDateRange', () => {
         const validUserId = 1;
-        const validStartDate = new Date('2023-01-01');
-        const validEndDate = new Date('2023-12-31');
+        const validStartDate = new Date('2023-01-01').toISOString().split('T')[0];
+        const validEndDate = new Date('2023-12-31').toISOString().split('T')[0];
 
         test('fetchTransactionsByUserAndDateRange should throw error with invalid userId', async () => {
             const userId = -1;
@@ -81,12 +81,12 @@ describe('TransactionService', () => {
         });
         test('fetchTransactionsByUserAndDateRange should throw error when startDate is invalid', async () => {
 
-            await expect(serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, new Date('invalid'), validEndDate))
+            await expect(serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, 'invalid', validEndDate))
                 .rejects
                 .toThrow('Invalid startDate. startDate must be a valid date object.');
         });
         test('fetchTransactionsByUserAndDateRange should throw error when endDate is invalid', async() => {
-            await expect(serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, validStartDate, new Date('invalid')))
+            await expect(serviceInstance.fetchTransactionsByUserAndDateRange(validUserId, validStartDate, 'invalid'))
                 .rejects
                 .toThrow('Invalid endDate. endDate must be a valid date object.');
         });

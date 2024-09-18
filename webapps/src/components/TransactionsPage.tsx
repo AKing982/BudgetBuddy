@@ -23,36 +23,58 @@ import TransactionService from '../services/TransactionService';
 
 const TransactionsPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([
-        {
-            transactionId: '1',
-            accountId: 'acc1',
-            amount: 22.16,
-            categories: ['Groceries'],
-            date: '2023-09-11',
-            name: 'WinCo',
-            merchantName: 'WinCo Foods',
-            pending: false,
-            logoURL: 'https://example.com/winco-logo.png',
-            authorizedDate: '2023-09-11',
-            transactionType: 'purchase',
-        },
-        {
-            transactionId: '2',
-            accountId: 'acc2',
-            amount: 19.54,
-            categories: ['Loan Payment'],
-            // categoryId: 'cat2',
-            date: '2023-09-11',
-            name: 'Affirm',
-            merchantName: 'Affirm',
-            pending: false,
-            logoURL: 'https://example.com/affirm-logo.png',
-            authorizedDate: '2023-09-11',
-            transactionType: 'payment',
-        },
+        // {
+        //     transactionId: '1',
+        //     accountId: 'acc1',
+        //     amount: 22.16,
+        //     categories: ['Groceries'],
+        //     date: '2023-09-11',
+        //     name: 'WinCo',
+        //     merchantName: 'WinCo Foods',
+        //     pending: false,
+        //     logoURL: 'https://example.com/winco-logo.png',
+        //     authorizedDate: '2023-09-11',
+        //     transactionType: 'purchase',
+        // },
+        // {
+        //     transactionId: '2',
+        //     accountId: 'acc2',
+        //     amount: 19.54,
+        //     categories: ['Loan Payment'],
+        //     // categoryId: 'cat2',
+        //     date: '2023-09-11',
+        //     name: 'Affirm',
+        //     merchantName: 'Affirm',
+        //     pending: false,
+        //     logoURL: 'https://example.com/affirm-logo.png',
+        //     authorizedDate: '2023-09-11',
+        //     transactionType: 'payment',
+        // },
         // Add more mock transactions as needed
     ]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
+    useEffect(() => {
+        const fetchTransactions = async() => {
+            setIsLoading(true);
+            try
+            {
+                const transactionService = TransactionService.getInstance();
+                let userId = Number(sessionStorage.getItem('userId'));
+                let startDate = transactionService.getStartDate();
+                let endDate = new Date().toISOString().split('T')[0];
+                const response: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
+                console.log('Transaction Response: ', response);
+                setTransactions(response || []);
+            }catch(error){
+                console.error('There was an error fetching the transactions from the server: ', error);
+                throw error;
+            }finally {
+                setIsLoading(false);
+            }
+        };
+        fetchTransactions();
+    }, [])
 
 
     const formatDate = (date: Date | string) => {

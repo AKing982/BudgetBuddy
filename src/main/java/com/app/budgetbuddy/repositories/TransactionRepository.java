@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -50,7 +51,7 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id ")
     Collection<TransactionsEntity> findTransactionsByUser(@Param("id") Long id);
 
-    @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.authorizedDate BETWEEN :startDate AND :endDate")
+    @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.posted BETWEEN :startDate AND :endDate")
     List<TransactionsEntity> findTransactionsByUserIdAndDateRange(@Param("id") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.authorizedDate BETWEEN :startDate AND :endDate")
@@ -76,4 +77,8 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
 
     @Query("SELECT SUM(t.amount) FROM TransactionsEntity t JOIN t.category c WHERE c =:category")
     BigDecimal getTotalSpendingByCategory(@Param("category") CategoryEntity category);
+
+    @Modifying
+    @Query("UPDATE TransactionsEntity t SET t.category =:category")
+    Optional<TransactionsEntity> updateTransactionCategory(@Param("category") CategoryEntity category);
 }

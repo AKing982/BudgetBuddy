@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name="categories")
@@ -49,6 +51,9 @@ public class CategoryEntity
 
     @OneToMany(mappedBy="category")
     private List<TransactionsEntity> transactions;
+
+    @OneToMany(mappedBy="category")
+    private Set<UserCategoryEntity> userCategories = new HashSet<>();
 
     public CategoryEntity(Long id, String categoryId, String name, String description) {
         this.id = id;

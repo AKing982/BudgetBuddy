@@ -37,7 +37,13 @@ class TransactionService {
        }
     }
 
-    public async fetchTransactionsByUserAndDateRange(userId: number, startDate: Date, endDate: Date) {
+    public getStartDate() : string {
+        const currentDate = new Date();
+        currentDate.setMonth(currentDate.getDay() - 15);
+        return currentDate.toISOString().split('T')[0];
+    }
+
+    public async fetchTransactionsByUserAndDateRange(userId: number, startDate: string, endDate: string) {
         if(userId < 1){
             throw new Error('Invalid userId. UserId must be a positive number.');
         }
@@ -45,12 +51,6 @@ class TransactionService {
             throw new Error('Invalid userId. UserId must be an integer.');
         }
 
-        if(!(startDate instanceof Date) || isNaN(startDate.getTime())){
-            throw new Error('Invalid startDate. startDate must be a valid date object.');
-        }
-        if(!(endDate instanceof Date) || isNaN(endDate.getTime())){
-            throw new Error('Invalid endDate. endDate must be a valid date object.');
-        }
         try
         {
             const response = await axios.get<Transaction[]>(`${apiUrl}/api/transaction/${userId}/by-date`, {

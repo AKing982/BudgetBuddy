@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name="users")
@@ -36,5 +38,20 @@ public class UserEntity {
     @Column(name="createdat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;
+
+    @OneToMany(mappedBy="user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserCategoryEntity> userCategories = new HashSet<>();
+
+    public void addCategory(CategoryEntity category) {
+        UserCategoryEntity userCategoryEntity = new UserCategoryEntity();
+        userCategoryEntity.setCategory(category);
+        userCategoryEntity.setUser(this);
+        userCategoryEntity.setCreatedat(LocalDateTime.now());
+        userCategories.add(userCategoryEntity);
+    }
+
+    public void removeCategory(CategoryEntity category) {
+        userCategories.removeIf(uc -> uc.getCategory().equals(category));
+    }
 
 }

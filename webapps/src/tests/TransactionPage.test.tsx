@@ -3,6 +3,7 @@ import {render, screen, fireEvent, within} from '@testing-library/react';
 import '@testing-library/jest-dom';
 import TransactionsPage from "../components/TransactionsPage";
 import {Router} from "react-router-dom";
+import userEvent from "@testing-library/user-event";
 
 
 // Mock the Sidebar component
@@ -95,22 +96,31 @@ describe('TransactionsPage', () => {
         expect(screen.getByText('$19.54')).toBeInTheDocument();
     });
 
-    test('allows changing transaction category', () => {
-        const categoryDropdowns = screen.getAllByRole('category-dropdown');
-        expect(categoryDropdowns).toHaveLength(2); // Assuming two transactions
+    test('allows changing transaction category', async () => {
+        render(<TransactionsPage/>);
+
+        // Find all category dropdown buttons within the table
+        const table = screen.getAllByRole('table')[0];
+        const categoryButtons = within(table).getAllByRole('button', { name: /(groceries|loan payment)/i });
+
+        expect(categoryButtons).toHaveLength(2); // Assuming two transactions
 
         // Check initial values
-        expect(categoryDropdowns[0]).toHaveValue('Groceries');
-        expect(categoryDropdowns[1]).toHaveValue('Loan Payment');
+        expect(categoryButtons[0]).toHaveTextContent(/groceries/i);
+        expect(categoryButtons[1]).toHaveTextContent(/loan payment/i);
 
-        // Change the category of the first transaction
-        fireEvent.change(categoryDropdowns[0], { target: { value: 'New Category' } });
+        // Open the category dropdown for the first transaction
+        await userEvent.click(categoryButtons[0]);
+
+        // Find and click the "Dining & Drinks" option
+        const diningOption = await screen.findByRole('option', { name: /dining & drinks/i });
+        await userEvent.click(diningOption);
 
         // Check if the category has been updated
-        expect(categoryDropdowns[0]).toHaveValue('New Category');
+        expect(categoryButtons[0]).toHaveTextContent(/dining & drinks/i);
 
         // The second dropdown should remain unchanged
-        expect(categoryDropdowns[1]).toHaveValue('Loan Payment');
+        expect(categoryButtons[1]).toHaveTextContent(/loan payment/i);
     });
 
 
