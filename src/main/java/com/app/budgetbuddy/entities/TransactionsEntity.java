@@ -20,9 +20,8 @@ public class TransactionsEntity
 {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="id", columnDefinition = "BIGINT")
-    private Long id;
+    @Column(name="transactionId")
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="acctid")
@@ -33,9 +32,6 @@ public class TransactionsEntity
     @JoinColumn(name="categoryid")
     @JsonManagedReference
     private CategoryEntity category;
-
-    @Column(name="transactionid")
-    private String transactionReferenceNumber;
 
     @Column(name = "amount")
     private BigDecimal amount;

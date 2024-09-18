@@ -66,7 +66,7 @@ class TransactionRepositoryTest {
 
         // Create test accounts
         account1 = new AccountEntity();
-        account1.setAccountReferenceNumber("ACC001");
+        account1.setId("ACC001");
         account1.setUser(user);
         account1.setAccountName("Checking Account");
         account1.setOfficialName("Test Checking Account");
@@ -76,7 +76,7 @@ class TransactionRepositoryTest {
         account1.setBalance(new BigDecimal("1000.00"));
 
         account2 = new AccountEntity();
-        account2.setAccountReferenceNumber("ACC002");
+        account2.setId("ACC002");
         account2.setUser(user);
         account2.setAccountName("Savings Account");
         account2.setOfficialName("Test Savings Account");
@@ -89,8 +89,8 @@ class TransactionRepositoryTest {
         entityManager.persist(account2);
 
         // Create test categories
-        category1 = new CategoryEntity(1L, "e223232", "Food and household items", "Food and household items");
-        category2 = new CategoryEntity(1L, "e55555","Entertainment","Entertainment");
+        category1 = new CategoryEntity("e223232", "Food and household items", "Food and household items");
+        category2 = new CategoryEntity("e55555","Entertainment","Entertainment");
 
         Set<CategoryEntity> categoriesSet1 = new HashSet<>();
         categoriesSet1.add(category1);
@@ -100,7 +100,7 @@ class TransactionRepositoryTest {
 
         transaction1 = TransactionsEntity.builder()
                 .account(account1)
-                .transactionReferenceNumber("TRX001")
+                .id("TRX001")
                 .amount(new BigDecimal("100.00"))
                 .description("Test Transaction 1")
                 .posted(LocalDate.now())
@@ -114,7 +114,7 @@ class TransactionRepositoryTest {
 
         transaction2 = TransactionsEntity.builder()
                 .account(account2)
-                .transactionReferenceNumber("TRX002")
+                .id("TRX002")
                 .amount(new BigDecimal("200.00"))
                 .description("Test Transaction 2")
                 .posted(LocalDate.now().plusDays(1))
@@ -155,7 +155,7 @@ class TransactionRepositoryTest {
 
     @Test
     void findTransactionByTransactionId() {
-        Optional<TransactionsEntity> transaction = transactionRepository.findTransactionByTransactionReferenceNumber("TRX001");
+        Optional<TransactionsEntity> transaction = transactionRepository.findTransactionByTransactionId("TRX001");
         assertThat(transaction).isPresent();
         assertThat(transaction.get()).isEqualTo(transaction1);
     }

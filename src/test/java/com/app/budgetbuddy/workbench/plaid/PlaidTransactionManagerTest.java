@@ -211,8 +211,8 @@ class PlaidTransactionManagerTest {
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
         for(int i = 0; i < actual.size(); i++){
-            assertEquals(expected.get(i).getTransactionReferenceNumber(), actual.get(i).getTransactionReferenceNumber());
-            assertEquals(expected.get(i).getAccount().getAccountReferenceNumber(), actual.get(i).getAccount().getAccountReferenceNumber());
+            assertEquals(expected.get(i).getId(), actual.get(i).getId());
+            assertEquals(expected.get(i).getAccount().getId(), actual.get(i).getAccount().getId());
 //            assertEquals(expected.get(i).getCategoryId(), actual.get(i).getCategoryId());
             assertEquals(expected.get(i).getAuthorizedDate(), actual.get(i).getAuthorizedDate());
             assertEquals(expected.get(i).isPending(), actual.get(i).isPending());
@@ -305,7 +305,7 @@ class PlaidTransactionManagerTest {
 
     private TransactionsEntity createTransaction(String transactionId, AccountEntity account, String description, BigDecimal amount, boolean isPending, List<String> categories, String categoryId, LocalDate authorizedDate){
         return TransactionsEntity.builder()
-                .transactionReferenceNumber(transactionId)
+                .id(transactionId)
                 .pending(isPending)
                 .authorizedDate(authorizedDate)
 //                .categories(categories)
@@ -318,18 +318,17 @@ class PlaidTransactionManagerTest {
 
     private TransactionsEntity createTransactionEntity(){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setId(1L);
         transactionsEntity.setAccount(createAccountEntity());
         transactionsEntity.setDescription("description");
         transactionsEntity.setAmount(BigDecimal.ONE);
-        transactionsEntity.setId(1L);
+        transactionsEntity.setId("TRX3001");
         transactionsEntity.setPending(false);
         return transactionsEntity;
     }
 
     private static AccountEntity createAccountEntity(){
         AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setId(1L);
+        accountEntity.setId("A234242");
         accountEntity.setAccountName("Test Checking");
         accountEntity.setMask("0000");
         accountEntity.setSubtype(AccountSubType.CHECKING);

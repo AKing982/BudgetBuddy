@@ -63,6 +63,7 @@ const TransactionsPage: React.FC = () => {
                 let userId = Number(sessionStorage.getItem('userId'));
                 let startDate = transactionService.getStartDate();
                 let endDate = new Date().toISOString().split('T')[0];
+                console.log('EndDate: ', endDate);
                 const response: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
                 console.log('Transaction Response: ', response);
                 setTransactions(response || []);

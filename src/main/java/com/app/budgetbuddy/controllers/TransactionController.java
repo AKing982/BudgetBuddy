@@ -1,10 +1,15 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.TransactionDTO;
+import com.app.budgetbuddy.domain.TransactionResponse;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.TransactionsNotFoundException;
+import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.TransactionService;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(value="/api/transaction")
@@ -21,10 +28,14 @@ import java.util.List;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final CategoryService categoryService;
+    private final Logger LOGGER = LoggerFactory.getLogger(TransactionController.class);
 
     @Autowired
-    public TransactionController(TransactionService transactionService) {
+    public TransactionController(TransactionService transactionService,
+                                 CategoryService categoryService) {
         this.transactionService = transactionService;
+        this.categoryService = categoryService;
     }
 
     @GetMapping("/")
@@ -70,7 +81,40 @@ public class TransactionController {
                                                                @RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
                                                                @RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate) {
         List<TransactionsEntity> transactionsEntities = transactionService.getTransactionsForUserAndDateRange(userId, startDate, endDate);
-        return ResponseEntity.ok(transactionsEntities);
+        List<TransactionResponse> transactionResponses = createTransactionResponse(transactionsEntities);
+        LOGGER.info("Sending Transaction Response to client: {}", transactionResponses);
+        return ResponseEntity.ok(transactionResponses);
+    }
+
+    private List<TransactionResponse> createTransactionResponse(final List<TransactionsEntity> transactionsEntities) {
+        List<TransactionResponse> transactionResponses = new ArrayList<>();
+        for(TransactionsEntity transaction: transactionsEntities){
+            TransactionResponse transactionResponse = new TransactionResponse();
+            transactionResponse.setAmount(transaction.getAmount());
+            transactionResponse.setTransactionId(transaction.getId());
+            transactionResponse.setName(transaction.getMerchantName());
+            transactionResponse.setPending(transaction.isPending());
+            transactionResponse.setAccountId(transaction.getAccount().getId());
+            transactionResponse.setLogoURL(transaction.getLogoUrl());
+            transactionResponse.setAuthorizedDate(transaction.getAuthorizedDate());
+            // Safely set the category ID
+            transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getId()));
+            transactionResponse.setMerchantName(transaction.getMerchantName());
+            transactionResponses.add(transactionResponse);
+        }
+        return transactionResponses;
+    }
+
+    private String fetchCategory(final String categoryId){
+        Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
+        if(categoryEntity.isPresent()){
+            return categoryEntity.get().getId();
+        }
+        return categoryId;
+    }
+
+    private List<String> getCategoriesForTransaction(String transactionId, String categoryId){
+        return null;
     }
 
     @PostMapping("/save-transactions")

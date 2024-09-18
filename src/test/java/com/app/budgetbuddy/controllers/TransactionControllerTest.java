@@ -89,10 +89,9 @@ class TransactionControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id", is(transactionsEntity.getId().intValue())))
-                .andExpect(jsonPath("$[0].account.id", is(transactionsEntity.getAccount().getId().intValue())))
-                .andExpect(jsonPath("$[0].category.id", is(transactionsEntity.getCategory().getId().intValue())))
-                .andExpect(jsonPath("$[0].transactionReferenceNumber", is(transactionsEntity.getTransactionReferenceNumber())))
+                .andExpect(jsonPath("$[0].id", is(transactionsEntity.getId())))
+                .andExpect(jsonPath("$[0].account.id", is(transactionsEntity.getAccount().getId())))
+                .andExpect(jsonPath("$[0].category.id", is(transactionsEntity.getCategory().getId())))
                 .andExpect(jsonPath("$[0].description", is(transactionsEntity.getDescription())))
                 .andExpect(jsonPath("$[0].isoCurrencyCode", is(transactionsEntity.getIsoCurrencyCode())))
                 .andExpect(jsonPath("$[0].merchantName", is(transactionsEntity.getMerchantName())))
@@ -270,9 +269,8 @@ class TransactionControllerTest {
     private AccountEntity createAccountEntity() {
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setBalance(BigDecimal.valueOf(100));
-        accountEntity.setId(1L);
         accountEntity.setAccountName("testAccountName");
-        accountEntity.setAccountReferenceNumber("343232");
+        accountEntity.setId("343232");
         accountEntity.setMask("0000");
         accountEntity.setType(AccountType.DEPOSITORY);
         accountEntity.setUser(createUserEntity());
@@ -282,9 +280,8 @@ class TransactionControllerTest {
 
     private CategoryEntity createCategoryEntity() {
         CategoryEntity category = new CategoryEntity();
-        category.setCategoryId("56763344");
+        category.setId("56763344");
         category.setCreatedBy(1L);
-        category.setId(1L);
         category.setCustom(true);
         category.setActive(true);
         category.setName("Travel");
@@ -295,12 +292,11 @@ class TransactionControllerTest {
 
     private TransactionsEntity createTransactionsEntityWithAmount(BigDecimal amount){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setId(1L);
         transactionsEntity.setLogoUrl("testLogo");
         transactionsEntity.setDescription("description");
         transactionsEntity.setAmount(amount);
         transactionsEntity.setCreateDate(LocalDate.now());
-        transactionsEntity.setTransactionReferenceNumber("e232323232");
+        transactionsEntity.setId("e232323232");
         transactionsEntity.setPosted(LocalDate.now());
 //        transactionsEntity.setCategoryId("522223");
         transactionsEntity.setMerchantName("testMerchantName");
@@ -312,12 +308,11 @@ class TransactionControllerTest {
 
     private TransactionsEntity createTransactionsEntity(){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setId(1L);
         transactionsEntity.setLogoUrl("testLogo");
         transactionsEntity.setDescription("description");
         transactionsEntity.setAmount(new BigDecimal("120"));
         transactionsEntity.setCreateDate(LocalDate.now());
-        transactionsEntity.setTransactionReferenceNumber("e232323232");
+        transactionsEntity.setId("e232323232");
         transactionsEntity.setCategory(createCategoryEntity());
         transactionsEntity.setPosted(LocalDate.now());
         transactionsEntity.setAuthorizedDate(LocalDate.of(2024, 6, 1));

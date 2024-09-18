@@ -11,6 +11,6 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<AccountEntity, Long>
 {
-    @Query("SELECT a FROM AccountEntity a WHERE a.accountReferenceNumber =:acctID")
+    @Query("SELECT a FROM AccountEntity a WHERE a.id =:acctID")
     Optional<AccountEntity> findByAccountId(@Param("acctID") String acctID);
 }

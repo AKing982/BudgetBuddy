@@ -110,7 +110,7 @@ public class PlaidController {
         List<AccountResponse> accountResponseList = new ArrayList<>();
         for(AccountEntity account: accounts){
             if(account != null){
-                String accountId = account.getAccountReferenceNumber();
+                String accountId = account.getId();
                 String name = account.getAccountName();
                 BigDecimal balance = account.getBalance();
                 String type = String.valueOf(account.getType());
@@ -269,10 +269,10 @@ public class PlaidController {
         List<TransactionResponse> transactionResponses = new ArrayList<>();
         for(TransactionsEntity transactionsEntity : transactionsEntities){
             if(transactionsEntity == null){
-                String transactionId = transactionsEntity.getTransactionReferenceNumber();
-                String accountRefNumber = transactionsEntity.getAccount().getAccountReferenceNumber();
+                String transactionId = transactionsEntity.getId();
+                String accountRefNumber = transactionsEntity.getAccount().getId();
                 BigDecimal amount = transactionsEntity.getAmount();
-                String categoryId = transactionsEntity.getCategory().getCategoryId();
+                String categoryId = transactionsEntity.getCategory().getId();
                 LocalDate date = transactionsEntity.getPosted();
                 String name = transactionsEntity.getDescription();
                 String merchantName = transactionsEntity.getMerchantName();

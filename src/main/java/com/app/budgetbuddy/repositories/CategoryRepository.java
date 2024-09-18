@@ -14,10 +14,13 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long>
     @Query("SELECT c FROM CategoryEntity c WHERE c.name =:name")
     Optional<CategoryEntity> findByName(@Param("name") String name);
 
+    @Query("SELECT c FROM CategoryEntity c WHERE c.id =:categoryId")
+    Optional<CategoryEntity> findByCategoryId(@Param("categoryId") String categoryId);
+
     @Query("SELECT c FROM CategoryEntity c WHERE c.description LIKE :descr")
     Optional<CategoryEntity> findByDescription(@Param("descr") String descr);
 
-    @Query("SELECT c FROM CategoryEntity c WHERE c.categoryId LIKE :num")
+    @Query("SELECT c FROM CategoryEntity c WHERE c.id LIKE :num")
     Optional<CategoryEntity> findByCategoryRefNumber(@Param("num") String num);
 
 

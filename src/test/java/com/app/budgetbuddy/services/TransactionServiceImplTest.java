@@ -100,8 +100,8 @@ class TransactionServiceImplTest {
     void testFindById(){
         TransactionsEntity transactionsEntity = createTransactionsEntity();
         Optional<TransactionsEntity> transactionsEntityOptional = Optional.of(transactionsEntity);
-        Mockito.when(transactionRepository.findById(transactionsEntity.getId())).thenReturn(transactionsEntityOptional);
-        Optional<TransactionsEntity> actual = transactionService.findById(transactionsEntity.getId());
+        Mockito.when(transactionRepository.findTransactionByTransactionId(transactionsEntity.getId())).thenReturn(transactionsEntityOptional);
+        Optional<TransactionsEntity> actual = transactionService.getTransactionById(transactionsEntity.getId());
         assertNotNull(actual);
         assertTrue(actual.isPresent());
         assertEquals(transactionsEntity.getId(), actual.get().getId());
@@ -309,7 +309,7 @@ class TransactionServiceImplTest {
 
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         transactionsEntities.add(transaction);
-        Mockito.when(transactionRepository.findByAccountReferenceNumber("343232")).thenReturn(transactionsEntities);
+        Mockito.when(transactionRepository.findByAccountId("343232")).thenReturn(transactionsEntities);
         List<TransactionsEntity> actual = transactionService.getTransactionsByAccountId("343232");
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
@@ -420,7 +420,7 @@ class TransactionServiceImplTest {
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setBalance(BigDecimal.valueOf(100));
         accountEntity.setAccountName("testAccountName");
-        accountEntity.setAccountReferenceNumber("343232");
+        accountEntity.setId("343232");
         accountEntity.setMask("0000");
         accountEntity.setType(AccountType.DEPOSITORY);
         accountEntity.setUser(createUserEntity());
@@ -432,12 +432,11 @@ class TransactionServiceImplTest {
 
     private TransactionsEntity createTransactionsEntityWithAmount(BigDecimal amount){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setId(1L);
         transactionsEntity.setLogoUrl("testLogo");
         transactionsEntity.setDescription("description");
         transactionsEntity.setAmount(amount);
         transactionsEntity.setCreateDate(LocalDate.now());
-        transactionsEntity.setTransactionReferenceNumber("e232323232");
+        transactionsEntity.setId("e232323232");
         transactionsEntity.setPosted(LocalDate.now());
 //        transactionsEntity.setCategoryId("522223");
         transactionsEntity.setMerchantName("testMerchantName");
@@ -449,12 +448,11 @@ class TransactionServiceImplTest {
 
     private TransactionsEntity createTransactionsEntityWithPendingTrue(){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setId(1L);
         transactionsEntity.setLogoUrl("testLogo");
         transactionsEntity.setDescription("description");
         transactionsEntity.setAmount(new BigDecimal("100.00"));
         transactionsEntity.setCreateDate(LocalDate.now());
-        transactionsEntity.setTransactionReferenceNumber("e232323232");
+        transactionsEntity.setId("e232323232");
         transactionsEntity.setPosted(LocalDate.now());
 //        transactionsEntity.setCategoryId("522223");
         transactionsEntity.setMerchantName("testMerchantName");
@@ -466,12 +464,11 @@ class TransactionServiceImplTest {
 
     private TransactionsEntity createTransactionsEntity(){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setId(1L);
         transactionsEntity.setLogoUrl("testLogo");
         transactionsEntity.setDescription("description");
         transactionsEntity.setAmount(new BigDecimal("100.00"));
         transactionsEntity.setCreateDate(LocalDate.now());
-        transactionsEntity.setTransactionReferenceNumber("e232323232");
+        transactionsEntity.setId("e232323232");
         transactionsEntity.setPosted(LocalDate.now());
         transactionsEntity.setAuthorizedDate(LocalDate.of(2024, 6, 1));
 //        transactionsEntity.setCategoryId("522223");

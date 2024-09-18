@@ -19,7 +19,7 @@ public class UserCategoryEntity {
     private Long id;
 
     @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="user_id")
+    @JoinColumn(name="userid")
     private UserEntity user;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -61,6 +61,7 @@ interface TransactionDTO {
     accountId: string;
     amount: number;
     isoCurrencyCode: string;
+    categories: string[];
     categoryId: string;
     date: string;
     merchantName: string;
@@ -265,6 +266,7 @@ class PlaidService {
             accountId: transaction.accountId,
             amount: transaction.amount,
             isoCurrencyCode: 'USD',
+            categories: transaction.categories,
             categoryId: transaction.categoryId,
             date: this.ensureDate(transaction.date).toISOString(),
             merchantName: transaction.merchantName,

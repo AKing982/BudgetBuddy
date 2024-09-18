@@ -13,7 +13,7 @@ public class AccountBaseConverter
 
     public AccountEntity convert(PlaidAccount accountBase, UserEntity userEntity) {
         AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setAccountReferenceNumber(accountBase.getAccountId());
+        accountEntity.setId(accountBase.getAccountId());
         accountEntity.setBalance(accountBase.getBalance());
         accountEntity.setAccountName(accountBase.getName());
         accountEntity.setSubtype(AccountSubType.fromString(accountBase.getSubtype()));

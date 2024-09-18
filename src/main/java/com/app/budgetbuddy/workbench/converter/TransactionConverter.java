@@ -8,23 +8,25 @@ import com.app.budgetbuddy.exceptions.AccountNotFoundException;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
+import com.app.budgetbuddy.services.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Component
 public class TransactionConverter implements Converter<PlaidTransaction, TransactionsEntity>
 {
     private final AccountRepository accountRepository;
-    private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
 
     @Autowired
     public TransactionConverter(AccountRepository accountRepository,
-                                CategoryRepository categoryRepository){
+                                CategoryService categoryService){
         this.accountRepository = accountRepository;
-        this.categoryRepository = categoryRepository;
+        this.categoryService = categoryService;
     }
 
     @Override
@@ -35,22 +37,18 @@ public class TransactionConverter implements Converter<PlaidTransaction, Transac
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
         transactionsEntity.setDescription(transaction.getDescription());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
-        transactionsEntity.setCategory(null);
+        transactionsEntity.setCategory(createNewCategory(transaction.getCategoryId(), transaction.getCategories()));
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setCreateDate(LocalDate.now());
         transactionsEntity.setLogoUrl(transaction.getLogo());
         transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
-        transactionsEntity.setTransactionReferenceNumber(transaction.getTransactionId());
+        transactionsEntity.setId(transaction.getTransactionId());
         return transactionsEntity;
     }
 
-    private CategoryEntity fetchCategoryByCategoryId(String categoryId){
-        Optional<CategoryEntity> category = categoryRepository.findByCategoryRefNumber(categoryId);
-        if(category.isEmpty()){
-            throw new CategoryNotFoundException("Category with id " + categoryId + " not found");
-        }
-        return category.get();
+    private CategoryEntity createNewCategory(String categoryId, List<String> categories){
+        return categoryService.createAndSaveCategory(categoryId, categories);
     }
 
     private AccountEntity fetchAccountByAccountId(String accountId){

@@ -104,6 +104,16 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public Optional<TransactionsEntity> getTransactionById(String id) {
+        return transactionRepository.findTransactionByTransactionId(id);
+    }
+
+    @Override
+    public List<String> getCategoriesForTransaction(Long id, String categoryId) {
+        return List.of();
+    }
+
+    @Override
     public Collection<TransactionsEntity> loadTransactionsForUser(Long userId) {
         return transactionRepository.findTransactionsByUser(userId);
     }
@@ -134,7 +144,7 @@ public class TransactionServiceImpl implements TransactionService
         if(accountId.isEmpty()){
             throw new IllegalArgumentException("accountId is empty");
         }
-        return transactionRepository.findByAccountReferenceNumber(accountId);
+        return transactionRepository.findByAccountId(accountId);
     }
 
     @Override

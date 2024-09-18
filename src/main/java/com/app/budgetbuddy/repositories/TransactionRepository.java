@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -36,20 +37,22 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t WHERE t.authorizedDate =:date")
     List<TransactionsEntity> findByAuthorizedDate(@Param("date") LocalDate date);
 
-    @Query("SELECT t FROM TransactionsEntity t WHERE t.account.accountReferenceNumber =:num")
-    List<TransactionsEntity> findByAccountReferenceNumber(@Param("num") String num);
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.account.id =:num")
+    List<TransactionsEntity> findByAccountId(@Param("num") String num);
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.description =:descr")
     List<TransactionsEntity> findTransactionByDescription(@Param("descr") String description);
 
-    @Query("SELECT t FROM TransactionsEntity t WHERE t.transactionReferenceNumber =:id")
-    Optional<TransactionsEntity> findTransactionByTransactionReferenceNumber(@Param("id") String transactionId);
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.id =:id")
+    Optional<TransactionsEntity> findTransactionByTransactionId(@Param("id") String transactionId);
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.merchantName =:merchant")
     Collection<TransactionsEntity> findTransactionsByMerchant(@Param("merchant") String merchant);
 
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id ")
     Collection<TransactionsEntity> findTransactionsByUser(@Param("id") Long id);
+
+
 
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.posted BETWEEN :startDate AND :endDate")
     List<TransactionsEntity> findTransactionsByUserIdAndDateRange(@Param("id") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);

@@ -27,6 +27,7 @@ public class TransactionDTOConverter implements Converter<TransactionDTO, PlaidT
         transaction.setName(transactionDTO.name());
         transaction.setLogo(transactionDTO.logoUrl());
         transaction.setCategoryId(transactionDTO.categoryId());
+        transaction.setCategories(transactionDTO.categories());
         transaction.setIsoCurrencyCode(transactionDTO.isoCurrencyCode());
         transaction.setDescription(transactionDTO.name());
         LOGGER.info("Converted: {}", transaction);

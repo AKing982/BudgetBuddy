@@ -160,7 +160,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     }
 
     public void validateTransactionParameterForNulls(TransactionsEntity transactionsEntity){
-        if(transactionsEntity.getTransactionReferenceNumber() == null
+        if(transactionsEntity.getId() == null
                 || transactionsEntity.getAccount() == null
                 || transactionsEntity.getAmount() == null
                 || transactionsEntity.getDescription() == null

@@ -13,11 +13,8 @@ import java.math.BigDecimal;
 public class AccountEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name="account_reference_number")
-    private String accountReferenceNumber;
+    @Column(name="accountId")
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="userid")

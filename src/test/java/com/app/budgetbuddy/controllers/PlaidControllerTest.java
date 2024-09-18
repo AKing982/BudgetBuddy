@@ -449,7 +449,7 @@ class PlaidControllerTest {
                 "e11212",                          // accountId
                 new BigDecimal("120.00"),          // amount
                 "USD",                             // isoCurrencyCode
-//                List.of("Food", "Groceries"),      // categories
+                List.of("Food", "Groceries"),      // categories
                 "cat123",                          // categoryId
                 LocalDate.now().toString(),                   // date
                 "Supermarket XYZ",                 // merchantName

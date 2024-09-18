@@ -20,12 +20,8 @@ public class CategoryEntity
 {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="categoryid")
-    private Long id;
-
-    @Column(name="categoryId", unique = true, length=50)
-    private String categoryId;
+    private String id;
 
     @Column(name="name")
     private String name;
@@ -55,9 +51,8 @@ public class CategoryEntity
     @OneToMany(mappedBy="category")
     private Set<UserCategoryEntity> userCategories = new HashSet<>();
 
-    public CategoryEntity(Long id, String categoryId, String name, String description) {
-        this.id = id;
-        this.categoryId = categoryId;
+    public CategoryEntity(String categoryId, String name, String description) {
+        this.id = categoryId;
         this.name = name;
         this.description = description;
     }

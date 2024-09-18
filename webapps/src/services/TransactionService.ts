@@ -60,6 +60,7 @@ class TransactionService {
                     endDate: endDate
                 }
             });
+            console.log('Transactions from database: ', response.data);
             return response.data;
         }catch(error)
         {
