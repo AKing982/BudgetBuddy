@@ -19,16 +19,50 @@ import { Search, ArrowDownToLine, ChevronDown, Edit, XCircle } from 'lucide-reac
 import Sidebar from "./Sidebar";
 import CategoryDropdown from "./CategoryDropdown";
 import TransactionService from '../services/TransactionService';
+import {ArrowDownward, ArrowUpward} from "@mui/icons-material";
 
+type SortConfig = {
+    key: keyof Transaction;
+    direction: 'asc' | 'desc';
+} | null;
+
+type SortableKeys = 'posted' | 'name' | 'amount' | 'categories';
+
+type SortFunction<T> = (a: T, b: T) => number;
 
 const TransactionsPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+
+    const sortFunctions: Record<SortableKeys, SortFunction<any>> = {
+        posted: (a: string, b: string) => new Date(a).getTime() - new Date(b).getTime(),
+        name: (a: string, b: string) => a.localeCompare(b),
+        amount: (a: number, b: number) => a - b,
+        categories: (a: string[], b: string[]) => a[0]?.localeCompare(b[0] ?? '') ?? 0,
+    };
+
+    const sortedTransactions = useMemo(() => {
+        if (!sortConfig) return transactions;
+
+        return [...transactions].sort((a, b) => {
+            const sortFn = sortFunctions[sortConfig.key];
+            const result = sortFn(a[sortConfig.key], b[sortConfig.key]);
+            return sortConfig.direction === 'asc' ? result : -result;
+        });
+    }, [transactions, sortConfig]);
+
+    const handleSort = (key: SortableKeys) => {
+        setSortConfig(prevConfig => ({
+            key,
+            direction: prevConfig?.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
 
     useEffect(() => {
+        setIsLoading(true);
         const fetchTransactions = async() => {
-            setIsLoading(true);
             try
             {
                 const transactionService = TransactionService.getInstance();
@@ -46,8 +80,14 @@ const TransactionsPage: React.FC = () => {
                 setIsLoading(false);
             }
         };
-        fetchTransactions();
+
+        const timeoutId = setTimeout(() => {
+            fetchTransactions()
+        }, 2000);
+        return () => clearTimeout(timeoutId);
     }, []);
+
+
 
     const handleSearchTermChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newSearchTerm = event.target.value;
@@ -75,6 +115,17 @@ const TransactionsPage: React.FC = () => {
                 authorizedDate.includes(searchTermLowerCase);
         });
     }, [transactions, searchTerm]);
+
+
+
+    const headerConfig = [
+        { label: 'Date', key: 'posted' },
+        { label: 'Name', key: 'name' },
+        { label: 'Category', key: 'categories' },
+        { label: 'Actions', key: null },
+        { label: 'Amount', key: 'amount' }
+    ];
+
 
     const handleCategoryChange = (transactionId: string, newCategory: string) => {
         setTransactions(prevTransactions =>
@@ -208,21 +259,94 @@ const TransactionsPage: React.FC = () => {
                             <TableCell padding="checkbox">
                                 <Checkbox />
                             </TableCell>
-                            {['Date', 'Name', 'Category', 'Actions', 'Amount'].map((header) => (
+                            {headerConfig.map(({ label, key }) => (
                                 <TableCell
-                                    key={header}
+                                    key={label}
                                     sx={{
                                         fontWeight: 'bold',
                                         color: '#1A237E',
-                                        fontSize: '0.95rem'
+                                        fontSize: '0.95rem',
+                                        cursor: key ? 'pointer' : 'default',
+                                        userSelect: 'none',
+                                        '&:hover': key ? {
+                                            backgroundColor: '#E8EAF6',
+                                        } : {}
                                     }}
-                                    align={header === 'Amount' ? 'right' : 'left'}
+                                    align={label === 'Amount' ? 'right' : 'left'}
+                                    onClick={() => key && handleSort(key as keyof Transaction)}
                                 >
-                                    {header}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: label === 'Amount' ? 'flex-end' : 'flex-start' }}>
+                                        {label}
+                                        {key && sortConfig?.key === key && (
+                                            sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />
+                                        )}
+                                    </Box>
                                 </TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
+                    {/*<TableBody>*/}
+                    {/*    {isLoading ? (*/}
+                    {/*        <TableRow>*/}
+                    {/*            <TableCell colSpan={6} align="center">*/}
+                    {/*                <CircularProgress />*/}
+                    {/*            </TableCell>*/}
+                    {/*        </TableRow>*/}
+                    {/*    ) : filteredTransactions.length > 0 ? (*/}
+                    {/*        filteredTransactions.map((transaction) => (*/}
+                    {/*            <TableRow*/}
+                    {/*                key={transaction.transactionId}*/}
+                    {/*                sx={{*/}
+                    {/*                    '&:last-child td, &:last-child th': { border: 0 },*/}
+                    {/*                    '&:hover': {*/}
+                    {/*                        backgroundColor: '#F5F5F5'*/}
+                    {/*                    },*/}
+                    {/*                    transition: 'background-color 0.2s ease-in-out'*/}
+                    {/*                }}*/}
+                    {/*            >*/}
+                    {/*                <TableCell padding="checkbox">*/}
+                    {/*                    <Checkbox />*/}
+                    {/*                </TableCell>*/}
+                    {/*                <TableCell sx={{fontWeight: 'bold'}}>{formatDate(transaction.posted)}</TableCell>*/}
+                    {/*                <TableCell sx={{fontWeight: 'bold'}}>*/}
+                    {/*                    <Box sx={{ display: 'flex', alignItems: 'center' }}>*/}
+                    {/*                        {transaction.logoURL && (*/}
+                    {/*                            <img*/}
+                    {/*                                src={transaction.logoURL}*/}
+                    {/*                                alt={`${transaction.merchantName} logo`}*/}
+                    {/*                                style={{ width: 24, height: 24, marginRight: 8, borderRadius: '50%' }}*/}
+                    {/*                            />*/}
+                    {/*                        )}*/}
+                    {/*                        {transaction.name}*/}
+                    {/*                    </Box>*/}
+                    {/*                </TableCell>*/}
+                    {/*                <TableCell>*/}
+                    {/*                    <CategoryDropdown*/}
+                    {/*                        category={transaction.categories[0]}*/}
+                    {/*                        onCategoryChange={(newCategory) => handleCategoryChange(transaction.transactionId, newCategory)}*/}
+                    {/*                    />*/}
+                    {/*                </TableCell>*/}
+                    {/*                <TableCell>*/}
+                    {/*                    <IconButton size="small" sx={{ borderRadius: 2 }}>*/}
+                    {/*                        <Edit size={16} />*/}
+                    {/*                    </IconButton>*/}
+                    {/*                    <IconButton size="small" sx={{ borderRadius: 2 }}>*/}
+                    {/*                        <XCircle size={16} />*/}
+                    {/*                    </IconButton>*/}
+                    {/*                </TableCell>*/}
+                    {/*                <TableCell align="right" sx={{fontWeight: 'bold'}}>*/}
+                    {/*                    ${transaction.amount.toFixed(2)}*/}
+                    {/*                </TableCell>*/}
+                    {/*            </TableRow>*/}
+                    {/*        ))*/}
+                    {/*    ) : (*/}
+                    {/*        <TableRow>*/}
+                    {/*            <TableCell colSpan={6} align="center">*/}
+                    {/*                No transactions found*/}
+                    {/*            </TableCell>*/}
+                    {/*        </TableRow>*/}
+                    {/*    )}*/}
+                    {/*</TableBody>*/}
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
@@ -230,7 +354,7 @@ const TransactionsPage: React.FC = () => {
                                     <CircularProgress />
                                 </TableCell>
                             </TableRow>
-                        ) : filteredTransactions.length > 0 ? (
+                        ) : (
                             filteredTransactions.map((transaction) => (
                                 <TableRow
                                     key={transaction.transactionId}
@@ -277,12 +401,6 @@ const TransactionsPage: React.FC = () => {
                                     </TableCell>
                                 </TableRow>
                             ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={6} align="center">
-                                    No transactions found
-                                </TableCell>
-                            </TableRow>
                         )}
                     </TableBody>
                 </Table>
