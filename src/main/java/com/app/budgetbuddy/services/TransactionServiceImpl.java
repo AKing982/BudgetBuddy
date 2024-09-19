@@ -109,6 +109,11 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId) {
+        return transactionRepository.findTransactionByIdAndCategoryId(id, categoryId);
+    }
+
+    @Override
     public List<String> getCategoriesForTransaction(Long id, String categoryId) {
         return List.of();
     }

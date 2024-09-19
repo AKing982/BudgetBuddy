@@ -97,6 +97,8 @@ public class TransactionController {
             transactionResponse.setAccountId(transaction.getAccount().getId());
             transactionResponse.setLogoURL(transaction.getLogoUrl());
             transactionResponse.setAuthorizedDate(transaction.getAuthorizedDate());
+            transactionResponse.setPosted(transaction.getPosted());
+            transactionResponse.setCategories(getCategoriesForTransaction(transaction.getId(), transaction.getCategory().getId()));
             // Safely set the category ID
             transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getId()));
             transactionResponse.setMerchantName(transaction.getMerchantName());
@@ -114,7 +116,14 @@ public class TransactionController {
     }
 
     private List<String> getCategoriesForTransaction(String transactionId, String categoryId){
-        return null;
+        Optional<TransactionsEntity> transaction = transactionService.getTransactionByIdAndCategoryId(transactionId, categoryId);
+        List<String> categories = new ArrayList<>();
+        if(transaction.isPresent()){
+            CategoryEntity category = transaction.get().getCategory();
+            categories.add(category.getName());
+            categories.add(category.getDescription());
+        }
+        return categories;
     }
 
     @PostMapping("/save-transactions")

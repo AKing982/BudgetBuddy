@@ -33,7 +33,7 @@ interface Transaction {
     amount: number;
     categories: string[];
     categoryId: string;
-    date: Date | string;
+    posted: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;

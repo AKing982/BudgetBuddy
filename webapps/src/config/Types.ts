@@ -3,7 +3,7 @@ interface Transaction {
     accountId: string;
     amount: number;
     categories: string[];
-    date: Date | string;
+    posted: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;

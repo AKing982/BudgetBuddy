@@ -6,7 +6,7 @@ interface Transaction {
     accountId: string;
     amount: number;
     categories: string[];
-    date: Date | string;
+    posted: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;
@@ -70,6 +70,10 @@ class TransactionService {
             }
             throw error;
         }
+    }
+
+    public async updateTransactionCategory(transactionId: string, categoryId: string, newCategory: string){
+
     }
 
     public async fetchTransactionsByUserId(userId: number): Promise<Transaction[]>

@@ -258,8 +258,9 @@ public class PlaidController {
             boolean isPending = transaction.getPending();
             String logoUrl = transaction.getLogoUrl();
             LocalDate authorizedDate = transaction.getAuthorizedDate();
+            LocalDate posted = transaction.getDate();
             String transactionType = transaction.getTransactionType().toString();
-            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categories, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate);
+            TransactionResponse transactionResponse = new TransactionResponse(transactionId, accountId, amount, categories, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate, posted);
             transactionResponses.add(transactionResponse);
         }
         return transactionResponses;

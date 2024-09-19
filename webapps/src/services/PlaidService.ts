@@ -48,7 +48,7 @@ interface Transaction {
     amount: number;
     categories: string[];
     categoryId: string;
-    date: Date | string;
+    posted: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;
@@ -268,7 +268,7 @@ class PlaidService {
             isoCurrencyCode: 'USD',
             categories: transaction.categories,
             categoryId: transaction.categoryId,
-            date: this.ensureDate(transaction.date).toISOString(),
+            date: this.ensureDate(transaction.posted).toISOString(),
             merchantName: transaction.merchantName,
             name: transaction.name,
             pending: transaction.pending,

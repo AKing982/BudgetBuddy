@@ -25,7 +25,7 @@ describe('TransactionService', () => {
                 accountId: 'acc123',
                 amount: 100,
                 categories: ['food'],
-                date: '2023-09-17',
+                posted: '2023-09-17',
                 name: 'Restaurant XYZ',
                 merchantName: 'XYZ Corp',
                 pending: false,

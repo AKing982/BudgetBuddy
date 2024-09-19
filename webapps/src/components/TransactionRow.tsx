@@ -8,7 +8,7 @@ interface TransactionRowProps {
 }
 
 const TransactionRow: React.FC<TransactionRowProps> = ({transaction}) => {
-    const formattedDate = new Date(transaction.date).toLocaleDateString('en-US', {
+    const formattedDate = new Date(transaction.posted).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric'

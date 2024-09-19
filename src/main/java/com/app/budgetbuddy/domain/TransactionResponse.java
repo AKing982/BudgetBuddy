@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 public class TransactionResponse
 {
@@ -24,6 +23,7 @@ public class TransactionResponse
     private boolean pending;
     private String logoURL;
     private LocalDate authorizedDate;
+    private LocalDate posted;
 //    private String transactionType;
 
 
@@ -38,5 +38,20 @@ public class TransactionResponse
         this.pending = pending;
         this.logoURL = logoURL;
         this.authorizedDate = authorizedDate;
+    }
+
+    public TransactionResponse(String transactionId, String accountId, BigDecimal amount, List<String> categories, String categoryId, LocalDate date, String name, String merchantName, boolean pending, String logoURL, LocalDate authorizedDate, LocalDate posted) {
+        this.transactionId = transactionId;
+        this.accountId = accountId;
+        this.amount = amount;
+        this.categories = categories;
+        this.categoryId = categoryId;
+        this.date = date;
+        this.name = name;
+        this.merchantName = merchantName;
+        this.pending = pending;
+        this.logoURL = logoURL;
+        this.authorizedDate = authorizedDate;
+        this.posted = posted;
     }
 }
