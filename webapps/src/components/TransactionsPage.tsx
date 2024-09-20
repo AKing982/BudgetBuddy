@@ -21,44 +21,13 @@ import CategoryDropdown from "./CategoryDropdown";
 import TransactionService from '../services/TransactionService';
 import {ArrowDownward, ArrowUpward} from "@mui/icons-material";
 
-type SortConfig = {
-    key: keyof Transaction;
-    direction: 'asc' | 'desc';
-} | null;
 
-type SortableKeys = 'posted' | 'name' | 'amount' | 'categories';
-
-type SortFunction<T> = (a: T, b: T) => number;
 
 const TransactionsPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
-    const sortFunctions: Record<SortableKeys, SortFunction<any>> = {
-        posted: (a: string, b: string) => new Date(a).getTime() - new Date(b).getTime(),
-        name: (a: string, b: string) => a.localeCompare(b),
-        amount: (a: number, b: number) => a - b,
-        categories: (a: string[], b: string[]) => a[0]?.localeCompare(b[0] ?? '') ?? 0,
-    };
-
-    const sortedTransactions = useMemo(() => {
-        if (!sortConfig) return transactions;
-
-        return [...transactions].sort((a, b) => {
-            const sortFn = sortFunctions[sortConfig.key];
-            const result = sortFn(a[sortConfig.key], b[sortConfig.key]);
-            return sortConfig.direction === 'asc' ? result : -result;
-        });
-    }, [transactions, sortConfig]);
-
-    const handleSort = (key: SortableKeys) => {
-        setSortConfig(prevConfig => ({
-            key,
-            direction: prevConfig?.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
-        }));
-    };
 
     useEffect(() => {
         setIsLoading(true);
@@ -259,28 +228,17 @@ const TransactionsPage: React.FC = () => {
                             <TableCell padding="checkbox">
                                 <Checkbox />
                             </TableCell>
-                            {headerConfig.map(({ label, key }) => (
+                            {['Date', 'Name', 'Category', 'Actions', 'Amount'].map((header) => (
                                 <TableCell
-                                    key={label}
+                                    key={header}
                                     sx={{
                                         fontWeight: 'bold',
                                         color: '#1A237E',
-                                        fontSize: '0.95rem',
-                                        cursor: key ? 'pointer' : 'default',
-                                        userSelect: 'none',
-                                        '&:hover': key ? {
-                                            backgroundColor: '#E8EAF6',
-                                        } : {}
+                                        fontSize: '0.95rem'
                                     }}
-                                    align={label === 'Amount' ? 'right' : 'left'}
-                                    onClick={() => key && handleSort(key as keyof Transaction)}
+                                    align={header === 'Amount' ? 'right' : 'left'}
                                 >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: label === 'Amount' ? 'flex-end' : 'flex-start' }}>
-                                        {label}
-                                        {key && sortConfig?.key === key && (
-                                            sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />
-                                        )}
-                                    </Box>
+                                    {header}
                                 </TableCell>
                             ))}
                         </TableRow>
