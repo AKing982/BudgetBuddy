@@ -7,5 +7,4 @@ public class BudgetCategory
 {
     private String name;
     private String description;
-    private
 }
