@@ -79,6 +79,12 @@ public class PlaidController {
         try
         {
             AccountsGetResponse accountsResponse = plaidAccountManager.getAccountsForUser(userId);
+            if(accountsResponse == null){
+                return ResponseEntity.status(200).body(new ArrayList<>());
+            }
+            if(accountsResponse.getAccounts().isEmpty()){
+                return ResponseEntity.badRequest().body("No accounts found for user: " + userId);
+            }
             List<AccountResponse> accountResponseList = createAccountResponse(accountsResponse.getAccounts());
             return ResponseEntity.status(200).body(accountResponseList);
 
@@ -155,8 +161,14 @@ public class PlaidController {
         try
         {
             TransactionsRecurringGetResponse transactionsRecurringGetResponse = plaidTransactionManager.getRecurringTransactionsForUser(userId);
+            if(transactionsRecurringGetResponse == null){
+                return ResponseEntity.status(200).body(new ArrayList<>());
+            }
             List<TransactionStream> outFlowingStream = transactionsRecurringGetResponse.getOutflowStreams();
             List<TransactionStream> inFlowingStream = transactionsRecurringGetResponse.getInflowStreams();
+            if((outFlowingStream == null || outFlowingStream.isEmpty()) || (inFlowingStream == null || inFlowingStream.isEmpty())){
+                return ResponseEntity.status(200).body(new ArrayList<>());
+            }
             RecurringTransactionResponse recurringTransactionResponse = createRecurringTransactionResponse(inFlowingStream, outFlowingStream);
             return ResponseEntity.status(200).body(recurringTransactionResponse);
 
@@ -221,6 +233,9 @@ public class PlaidController {
         try
         {
             TransactionsGetResponse transactionsGetResponse = plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate);
+            if(transactionsGetResponse.getTransactions() == null){
+                return ResponseEntity.status(200).body(new ArrayList<>());
+            }
             List<Transaction> transactions = transactionsGetResponse.getTransactions();
             List<TransactionResponse> transactionResponses = createTransactionResponse(transactions);
             return ResponseEntity.status(200).body(transactionResponses);

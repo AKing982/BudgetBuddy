@@ -12,7 +12,8 @@ import java.util.*;
 
 @Table(name="transactions")
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)

@@ -1,10 +1,7 @@
 package com.app.budgetbuddy.entities;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -13,7 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table(name="categories")
-@Data
+@Getter
+@Setter
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class CategoryEntity

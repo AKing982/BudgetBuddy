@@ -59,6 +59,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     public TransactionsGetResponse getTransactionsForUser(Long userId, LocalDate startDate, LocalDate endDate) throws IOException {
         PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
         String accessToken = getPlaidAccessToken(plaidLink);
+        LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
         TransactionsGetRequest transactionsGetRequest = createTransactionRequest(accessToken, startDate, endDate);
         Response<TransactionsGetResponse> transactionsGetResponseResponse = getTransactionsResponseWithRetry(transactionsGetRequest);
         return transactionsGetResponseResponse.body();
@@ -98,6 +99,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
         PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
         String accessToken = getPlaidAccessToken(plaidLink);
+        LOGGER.info("Retrieving Access Token for recurring transactions: {}", accessToken);
         TransactionsRecurringGetRequestOptions options = new TransactionsRecurringGetRequestOptions()
                 .includePersonalFinanceCategory(true);
 
