@@ -110,7 +110,6 @@ public class TransactionController {
     private String fetchCategory(final String categoryId){
         Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
         if(categoryEntity.isPresent()){
-            CategoryEntity category = categoryEntity.get();
             LOGGER.info("Found Category with categoryId: {}", categoryId);
             return categoryEntity.get().getId();
         }
