@@ -1,5 +1,5 @@
 import { format, addMonths, subMonths } from 'date-fns';
-import {Box, Typography, Paper, IconButton, Grid, Button} from '@mui/material';
+import {Box, Typography, Paper, IconButton, Grid, Button, Select, MenuItem} from '@mui/material';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import React, {useState} from "react";
 import Sidebar from './Sidebar';
@@ -7,9 +7,14 @@ import BudgetOverview from './BudgetOverview';
 import TopExpenseCategory from './TopExpenseCategory';
 import BudgetPeriodTable from './BudgetPeriodTable';
 import BudgetSummary from "./BudgetSummary";
+import BudgetProgressSummary from "./BudgetProgressSummary";
+import {Add} from "@mui/icons-material";
+import AddBudgetDialog from "./AddBudgetDialog";
 
 const BudgetPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [budgetType, setBudgetType] = useState('50/30/20');
+    const [isAddBudgetDialogOpen, setIsAddBudgetDialogOpen] = useState<boolean>(false);
 
     const handlePreviousMonth = () => {
         setCurrentMonth(prevMonth => subMonths(prevMonth, 1));
@@ -24,6 +29,15 @@ const BudgetPage: React.FC = () => {
         leftToSpend: 1278.47,
         currentSpend: 982.13,
         daysLeft: 5
+    };
+
+    const handleBudgetTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+        setBudgetType(event.target.value as string);
+    };
+
+    const handleAddBudget = (newBudget: any) => {
+        // Implement the logic to add a new budget
+        console.log('Add new budget');
     };
 
     return (
@@ -47,6 +61,25 @@ const BudgetPage: React.FC = () => {
                     >
                         {format(addMonths(currentMonth, 1), 'MMM. yyyy')}
                     </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<Add />}
+                        onClick={() => setIsAddBudgetDialogOpen(true)}
+                        sx={{
+                            backgroundColor: '#800000',
+                            color: 'white',
+                            '&:hover': {
+                                backgroundColor: '#600000',
+                            },
+                        }}
+                    >
+                        Add Budget
+                    </Button>
+                    <AddBudgetDialog
+                        open={isAddBudgetDialogOpen}
+                        onClose={() => setIsAddBudgetDialogOpen(false)}
+                        onAddBudget={handleAddBudget}/>
                 </Box>
             </Box>
 
@@ -65,12 +98,17 @@ const BudgetPage: React.FC = () => {
                     </Box>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <BudgetSummary
-                        totalBudget={2260.60}
-                        leftToSpend={1278.47}
-                        currentSpend={982.13}
-                        daysLeft={5}
-                    />
+                    <Box sx={{mb: 4}}>
+                        <BudgetSummary
+                            totalBudget={2260.60}
+                            leftToSpend={1278.47}
+                            currentSpend={982.13}
+                            daysLeft={5}
+                        />
+                    </Box>
+                   <Box>
+                       <BudgetProgressSummary />
+                   </Box>
                 </Grid>
             </Grid>
         </Box>

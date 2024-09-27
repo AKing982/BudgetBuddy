@@ -56,7 +56,12 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({totalBudget,
 
     return (
         <Box>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', fontSize: '0.875rem', color: 'text.secondary' }}>
+            <Typography variant="h6" sx={{
+                mb: 2,
+                fontWeight: 'bold',
+                fontSize: '0.875rem',
+                textAlign: 'left',
+                color: 'text.secondary' }}>
                 Budget Statistics
             </Typography>
             <Box sx={{ bgcolor: 'background.paper', borderRadius: 2, boxShadow: 1, p: 3 }}>

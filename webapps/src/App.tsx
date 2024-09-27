@@ -12,6 +12,7 @@ import AccountSummary from "./components/AccountSummary";
 import PaymentCharges from "./components/PaymentCharges";
 import TransactionsPage from "./components/TransactionsPage";
 import BudgetPage from "./components/BudgetPage";
+import BudgetCategoryDetails from './components/BudgetCategoryDetails';
 
 const theme = createTheme({
     palette: {
@@ -37,6 +38,7 @@ function App() {
                       <Route path="/payments" element={<PaymentCharges />}/>
                       <Route path="/transactions" element={<TransactionsPage />}/>
                       <Route path="/budgets" element={<BudgetPage />}/>
+                      <Route path="/budget-test" element={<BudgetCategoryDetails/>}/>
                   </Routes>
               </div>
           </BrowserRouter>

@@ -128,6 +128,7 @@ public class TransactionServiceImpl implements TransactionService
         if(startDate == null || endDate == null){
             throw new NullPointerException("StartDate is null");
         }
+        LOGGER.info("UserId: {}", userId);
         return transactionRepository.findTransactionsByUserIdAndDateRange(userId, startDate, endDate);
     }
 
