@@ -61,25 +61,25 @@ const BudgetPage: React.FC = () => {
                     >
                         {format(addMonths(currentMonth, 1), 'MMM. yyyy')}
                     </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<Add />}
-                        onClick={() => setIsAddBudgetDialogOpen(true)}
-                        sx={{
-                            backgroundColor: '#800000',
-                            color: 'white',
-                            '&:hover': {
-                                backgroundColor: '#600000',
-                            },
-                        }}
-                    >
-                        Add Budget
-                    </Button>
-                    <AddBudgetDialog
-                        open={isAddBudgetDialogOpen}
-                        onClose={() => setIsAddBudgetDialogOpen(false)}
-                        onAddBudget={handleAddBudget}/>
+                    {/*<Button*/}
+                    {/*    variant="contained"*/}
+                    {/*    color="primary"*/}
+                    {/*    startIcon={<Add />}*/}
+                    {/*    onClick={() => setIsAddBudgetDialogOpen(true)}*/}
+                    {/*    sx={{*/}
+                    {/*        backgroundColor: '#800000',*/}
+                    {/*        color: 'white',*/}
+                    {/*        '&:hover': {*/}
+                    {/*            backgroundColor: '#600000',*/}
+                    {/*        },*/}
+                    {/*    }}*/}
+                    {/*>*/}
+                    {/*    Add Budget*/}
+                    {/*</Button>*/}
+                    {/*<AddBudgetDialog*/}
+                    {/*    open={isAddBudgetDialogOpen}*/}
+                    {/*    onClose={() => setIsAddBudgetDialogOpen(false)}*/}
+                    {/*    onAddBudget={handleAddBudget}/>*/}
                 </Box>
             </Box>
 

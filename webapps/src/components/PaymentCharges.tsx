@@ -93,6 +93,9 @@ const PaymentCharges: React.FC = () => {
     }, []);
 
     const getUpcomingCharges = (streams: TransactionStream[]) : TransactionStream[] => {
+        if(!streams){
+            return [];
+        }
         const now = new Date();
         const thirteenDaysLater = new Date(now.getTime() + 13 * 24 * 60 * 60 * 1000);
         return streams.filter(stream => {
