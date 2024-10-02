@@ -1,12 +1,16 @@
 package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.domain.PlaidTransaction;
+import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.*;
 import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionConverter;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
@@ -29,15 +33,21 @@ public class PlaidTransactionManager extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidTransactionManager.class);
     private final TransactionService transactionService;
+    private final RecurringTransactionService recurringTransactionService;
     private final TransactionConverter transactionConverter;
+    private final RecurringTransactionConverter recurringTransactionConverter;
 
     @Autowired
     public PlaidTransactionManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi,
                                    TransactionService transactionService,
-                                   TransactionConverter transactionConverter) {
+                                   TransactionConverter transactionConverter,
+                                   RecurringTransactionService recurringTransactionService,
+                                   RecurringTransactionConverter recurringTransactionConverter) {
         super(plaidLinkService, plaidApi);
         this.transactionService = transactionService;
         this.transactionConverter = transactionConverter;
+        this.recurringTransactionService = recurringTransactionService;
+        this.recurringTransactionConverter = recurringTransactionConverter;
     }
 
     public TransactionsGetRequest createTransactionRequest(String accessToken, LocalDate startDate, LocalDate endDate){
@@ -145,6 +155,41 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 (response != null ? response.code() : "N/A"));
     }
 
+    public List<RecurringTransactionEntity> saveRecurringTransactions(final List<RecurringTransactionDTO> recurringTransactions) throws IOException {
+        List<RecurringTransactionEntity> recurringTransactionEntities = new ArrayList<>();
+        if(recurringTransactions == null){
+            return new ArrayList<>();
+        }
+        if(recurringTransactions.isEmpty()){
+            return new ArrayList<>();
+        }
+        for(RecurringTransactionDTO recurringTransaction : recurringTransactions) {
+            RecurringTransactionEntity recurringTransactionEntity = recurringTransactionConverter.convert(recurringTransaction);
+            recurringTransactionService.save(recurringTransactionEntity);
+            recurringTransactionEntities.add(recurringTransactionEntity);
+        }
+        return recurringTransactionEntities;
+    }
+
+    private TransactionsRefreshRequest createTransactionRefreshRequest(String accessToken){
+        return new TransactionsRefreshRequest()
+                .accessToken(accessToken);
+    }
+
+    public TransactionsRefreshResponse getTransactionRefreshResponse(TransactionsRefreshRequest request) throws IOException {
+        return null;
+    }
+
+    private TransactionsSyncRequest createSyncRequest(String accessToken, String cursor, TransactionsSyncRequestOptions options){
+        return new TransactionsSyncRequest()
+                .accessToken(accessToken)
+                .cursor(cursor)
+                .options(options);
+    }
+
+    public TransactionsSyncResponse getResyncedTransactionsResponseWithRetry(TransactionsSyncRequest transactionsSyncRequest) throws IOException {
+        return null;
+    }
 
     public List<TransactionsEntity> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList){
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
@@ -173,8 +218,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 LOGGER.error("TransactionEntity Parameter found null: {}", transactionsEntity.toString());
         }
     }
-
-
 
     private TransactionsGetRequest createRequest(String accessToken, LocalDate startDate, LocalDate endDate){
         return new TransactionsGetRequest()

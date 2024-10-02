@@ -1,16 +1,14 @@
 package com.app.budgetbuddy.workbench.plaid;
 
-import com.app.budgetbuddy.domain.AccountSubType;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.domain.AccountType;
-import com.app.budgetbuddy.domain.PlaidTransaction;
-import com.app.budgetbuddy.entities.AccountEntity;
-import com.app.budgetbuddy.entities.PlaidLinkEntity;
-import com.app.budgetbuddy.entities.TransactionsEntity;
-import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.*;
 import com.app.budgetbuddy.services.AccountService;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionConverter;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
@@ -56,6 +54,12 @@ class PlaidTransactionManagerTest {
 
     @Mock
     private TransactionConverter transactionConverter;
+
+    @Mock
+    private RecurringTransactionConverter recurringTransactionConverter;
+
+    @Mock
+    private RecurringTransactionService recurringTransactionService;
 
     @BeforeEach
     void setUp() {
@@ -276,6 +280,74 @@ class PlaidTransactionManagerTest {
         assertEquals(expectedResponse.getOutflowStreams(), actual.getOutflowStreams());
         verify(plaidLinkService, times(1)).findPlaidLinkByUserID(userId);
         verify(plaidApi).transactionsRecurringGet(transactionsRecurringGetRequest);
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenRecurringTransactionsListIsEmpty_thenReturnEmptyList() throws IOException {
+        List<RecurringTransactionDTO> transactions = new ArrayList<>();
+        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenRecurringTransactionsListIsNull_thenReturnEmptyList() throws IOException {
+        List<RecurringTransactionDTO> transactions = null;
+        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenRecurringTransactionsListIsValid_thenReturnEntityList() throws IOException {
+        List<RecurringTransactionDTO> transactions = new ArrayList<>();
+        transactions.add(createRecurringTransaction());
+
+        List<RecurringTransactionEntity> expectedEntityList = new ArrayList<>();
+        expectedEntityList.add(createRecurringTransactionEntity());
+
+        when(recurringTransactionConverter.convert(createRecurringTransaction())).thenReturn(createRecurringTransactionEntity());
+        lenient().doNothing().when(recurringTransactionService).save(createRecurringTransactionEntity());
+        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
+        assertNotNull(actual);
+        assertEquals(expectedEntityList.size(), actual.size());
+
+    }
+
+    private RecurringTransactionEntity createRecurringTransactionEntity(){
+        RecurringTransactionEntity recurringTransaction = new RecurringTransactionEntity();
+        recurringTransaction.setAccount(AccountEntity.builder().id("ACC123").build());
+        recurringTransaction.setActive(true);
+        recurringTransaction.setStreamId("STREAM456");
+        recurringTransaction.setType(RecurringTransactionType.INFLOW_STREAM);
+        recurringTransaction.setAverageAmount(BigDecimal.ONE);
+        recurringTransaction.setMerchantName("Netflix");
+        recurringTransaction.setFrequency("MONTHLY");
+        recurringTransaction.setDescription("Monthly Subscription");
+        recurringTransaction.setFirstDate(LocalDate.parse("2023-01-01"));
+        recurringTransaction.setLastDate(LocalDate.parse("2024-01-01"));
+        recurringTransaction.setCategory(CategoryEntity.builder().id("CAT123").build());
+        recurringTransaction.setUser(UserEntity.builder().id(1L).build());
+        recurringTransaction.setAccount(AccountEntity.builder().id("ACC123").build());
+        return recurringTransaction;
+    }
+
+    private RecurringTransactionDTO createRecurringTransaction() {
+        return new RecurringTransactionDTO(
+                1L,                     // userId
+                "ACC123",               // accountId
+                "STREAM456",            // streamId
+                "CAT789",               // categoryId
+                "Monthly Subscription", // description
+                "Netflix",              // merchantName
+                "2023-01-01",           // firstDate
+                "2024-01-01",           // lastDate
+                "MONTHLY",              // frequency
+                new BigDecimal("9.99"), // averageAmount
+                new BigDecimal("9.99"), // lastAmount
+                true,                   // active
+                "SUBSCRIPTION"          // type
+        );
     }
 
     private TransactionStream createTransactionStream() {

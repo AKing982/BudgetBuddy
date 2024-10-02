@@ -12,6 +12,7 @@ import java.util.Set;
 @Table(name="categories")
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class CategoryEntity

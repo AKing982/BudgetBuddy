@@ -20,6 +20,7 @@ import PlaidService from "../services/PlaidService";
 import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
 import LoginService from "../services/LoginService";
 import loginService from "../services/LoginService";
+import RecurringTransactionService from "../services/RecurringTransactionService";
 
 
 interface LoginFormData {
@@ -128,7 +129,7 @@ const LoginForm: React.FC = () => {
                 const plaidService = PlaidService.getInstance();
                 // Fetch the link token
 
-                const isPlaidLinkedResponse = await handlePlaidLinkVerification(1);
+                const isPlaidLinkedResponse = await handlePlaidLinkVerification(userId);
                 const isPlaidLinked = isPlaidLinkedResponse.isLinked;
                 if(!isPlaidLinked){
                     const response = await plaidService.createLinkToken();
@@ -204,6 +205,8 @@ const LoginForm: React.FC = () => {
         try
         {
             const plaidService = PlaidService.getInstance();
+            const recurringTransactionService = new RecurringTransactionService();
+
             const loginService = new LoginService();
             const username: string | null = sessionStorage.getItem('username');
             const userId = Number(sessionStorage.getItem('userId'));
@@ -218,6 +221,9 @@ const LoginForm: React.FC = () => {
             const endDate = new Date().toISOString().split('T')[0];
             const savedTransactions = await plaidService.fetchAndSaveTransactions(startDate, endDate, userId);
             console.log('Saved Transactions: ', savedTransactions);
+
+            const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
+            console.log('Saved Recurring Transactions: ', savedRecurringTransactions);
 
 
             navigate('/dashboard');

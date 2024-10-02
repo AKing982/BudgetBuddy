@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
 
-public record RecurringTransactionDTO(@JsonProperty("userId") int userId,
+public record RecurringTransactionDTO(@JsonProperty("userId") Long userId,
                                       @JsonProperty("accountId") String accountId,
                                       @JsonProperty("streamId") String streamId,
                                       @JsonProperty("categoryId") String categoryId,

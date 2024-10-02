@@ -3,13 +3,16 @@ package com.app.budgetbuddy.entities;
 import com.app.budgetbuddy.domain.AccountSubType;
 import com.app.budgetbuddy.domain.AccountType;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Table(name="accounts")
 @Entity
 @Data
+@Builder
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class AccountEntity {
 
     @Id
