@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 
 import java.math.BigDecimal;
@@ -14,6 +15,8 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Collection<TransactionsEntity> getTransactionsByAmount(BigDecimal amount);
     Collection<TransactionsEntity> getTransactionsByAmountGreaterThan(BigDecimal amount);
     Collection<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount);
+
+    List<TransactionsEntity> createAndSaveTransactions(List<Transaction> transactions);
 
     Optional<TransactionsEntity> getTransactionById(String id);
     Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId);

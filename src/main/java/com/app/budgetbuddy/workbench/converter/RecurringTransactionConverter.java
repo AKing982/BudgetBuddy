@@ -20,10 +20,10 @@ public class RecurringTransactionConverter implements Converter<RecurringTransac
         recurringTransactionEntity.setDescription(recurringTransactionDTO.description());
         recurringTransactionEntity.setFirstDate(LocalDate.parse(recurringTransactionDTO.firstDate()));
         recurringTransactionEntity.setLastDate(LocalDate.parse(recurringTransactionDTO.lastDate()));
-        recurringTransactionEntity.setLastAmount(recurringTransactionDTO.lastAmount());
+        recurringTransactionEntity.setLastAmount(recurringTransactionDTO.lastAmount().amount());
         recurringTransactionEntity.setType(RecurringTransactionType.valueOf(recurringTransactionDTO.type()));
         recurringTransactionEntity.setStreamId(recurringTransactionDTO.streamId());
-        recurringTransactionEntity.setAverageAmount(recurringTransactionDTO.averageAmount());
+        recurringTransactionEntity.setAverageAmount(recurringTransactionDTO.averageAmount().amount());
         recurringTransactionEntity.setActive(recurringTransactionDTO.active());
         recurringTransactionEntity.setMerchantName(recurringTransactionDTO.merchantName());
         recurringTransactionEntity.setAccount(AccountEntity.builder().id(recurringTransactionDTO.accountId()).build());

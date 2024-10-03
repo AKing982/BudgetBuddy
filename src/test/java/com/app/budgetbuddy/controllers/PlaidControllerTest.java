@@ -14,6 +14,7 @@ import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.plaid.client.model.*;
 import com.plaid.client.model.AccountType;
+import com.plaid.client.model.Transaction;
 import com.plaid.client.request.PlaidApi;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

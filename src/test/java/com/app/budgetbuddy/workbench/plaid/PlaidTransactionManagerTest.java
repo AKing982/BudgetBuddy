@@ -343,8 +343,8 @@ class PlaidTransactionManagerTest {
                 "2023-01-01",           // firstDate
                 "2024-01-01",           // lastDate
                 "MONTHLY",              // frequency
-                new BigDecimal("9.99"), // averageAmount
-                new BigDecimal("9.99"), // lastAmount
+                new AmountDTO(new BigDecimal("9.99"), "", ""),
+                new AmountDTO(new BigDecimal("9.99"), "", ""),
                 true,                   // active
                 "SUBSCRIPTION"          // type
         );

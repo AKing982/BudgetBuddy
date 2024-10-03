@@ -1,8 +1,10 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.TransactionRepository;
+import com.app.budgetbuddy.workbench.converter.TransactionToEntityConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +18,14 @@ import java.util.*;
 public class TransactionServiceImpl implements TransactionService
 {
     private final TransactionRepository transactionRepository;
+    private final TransactionToEntityConverter transactionToEntityConverter;
     private final Logger LOGGER = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
     @Autowired
-    public TransactionServiceImpl(TransactionRepository transactionRepository){
+    public TransactionServiceImpl(TransactionRepository transactionRepository,
+                                  TransactionToEntityConverter transactionToEntityConverter){
         this.transactionRepository = transactionRepository;
+        this.transactionToEntityConverter = transactionToEntityConverter;
     }
 
     @Override
@@ -101,6 +106,17 @@ public class TransactionServiceImpl implements TransactionService
     public List<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount) {
         validateTransactionAmount(amount);
         return transactionRepository.findByAmountLessThan(amount);
+    }
+
+    @Override
+    public List<TransactionsEntity> createAndSaveTransactions(List<Transaction> transactions) {
+        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
+        for(Transaction transaction : transactions){
+            TransactionsEntity transactionsEntity = transactionToEntityConverter.convert(transaction);
+            save(transactionsEntity);
+            transactionsEntities.add(transactionsEntity);
+        }
+        return transactionsEntities;
     }
 
     @Override

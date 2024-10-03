@@ -92,7 +92,7 @@ describe('RecurringTransactionService', () => {
 
     beforeEach(() => {
         // Initialize service before each test
-        service = new RecurringTransactionService(sampleOutflowing, sampleInflowing);
+        // service = new RecurringTransactionService(sampleOutflowing, sampleInflowing);
     });
 
     test('should create an instance of RecurringTransactionService', () => {
@@ -100,7 +100,7 @@ describe('RecurringTransactionService', () => {
     });
     test('constructor initializes with provided transactions', () => {
 
-        const service = new RecurringTransactionService(sampleInflowing, sampleOutflowing);
+        // const service = new RecurringTransactionService(sampleInflowing, sampleOutflowing);
         expect(service.getInflowingRecurringTransactions()).toHaveLength(2);
         expect(service.getOutflowingRecurringTransactions()).toHaveLength(2);
     });

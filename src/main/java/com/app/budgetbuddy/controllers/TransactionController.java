@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionBaseRequest;
 import com.app.budgetbuddy.domain.TransactionDTO;
 import com.app.budgetbuddy.domain.TransactionResponse;
 import com.app.budgetbuddy.entities.CategoryEntity;
@@ -129,8 +131,16 @@ public class TransactionController {
     }
 
     @PostMapping("/save-transactions")
-    public ResponseEntity<?> saveTransactions(@RequestBody List<TransactionDTO> transactions) {
-        return null;
+    public ResponseEntity<?> saveTransactions(@RequestBody TransactionBaseRequest transactionBaseRequest) {
+        try
+        {
+            List<Transaction> transactions = transactionBaseRequest.getTransactions();
+            List<TransactionsEntity> transactionsEntities = transactionService.createAndSaveTransactions(transactions);
+            return ResponseEntity.ok(transactionsEntities);
+        }catch(Exception e){
+            LOGGER.error("There was an error saving the transactions", e);
+            return ResponseEntity.internalServerError().body(null);
+        }
     }
 
     @PutMapping("/{id}")

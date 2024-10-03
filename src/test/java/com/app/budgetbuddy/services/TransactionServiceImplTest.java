@@ -7,6 +7,7 @@ import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.TransactionRepository;
+import com.app.budgetbuddy.workbench.converter.TransactionToEntityConverter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,9 +35,12 @@ class TransactionServiceImplTest {
     @Mock
     private TransactionRepository transactionRepository;
 
+    @Mock
+    private TransactionToEntityConverter transactionToEntityConverter;
+
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionServiceImpl(transactionRepository);
+        transactionService = new TransactionServiceImpl(transactionRepository, transactionToEntityConverter);
     }
 
     @Test

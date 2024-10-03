@@ -1,18 +1,33 @@
 import axios from "axios";
 import {apiUrl} from "../config/api";
 
-interface TransactionStream {
+
+interface RecurringTransactionsResponse {
+    inflowStreams: any[];
+    outflowStreams: any[];
+    updatedDatetime: number;
+    requestId: string;
+}
+
+interface AmountDTO {
+    value: number;
+    currency: string;
+}
+
+interface RecurringTransactionDTO {
+    userId: number;
     accountId: string;
     streamId: string;
-    category: string[];
     categoryId: string;
     description: string;
     merchantName: string;
-    firstDate: Date;
-    lastDate: Date;
+    firstDate: string; // Ensure this is in the correct format for LocalDateArrayDeserializer
+    lastDate: string; // Ensure this is in the correct format for LocalDateArrayDeserializer
     frequency: string;
-    transactionIds: string[];
-
+    averageAmount: AmountDTO;
+    lastAmount: AmountDTO;
+    active: boolean;
+    type: string;
 }
 
 interface RecurringTransactionRequest {
@@ -25,20 +40,22 @@ interface RecurringTransaction {
     accountId: string;
     streamId: string;
     categoryId: string;
+    category: string[];
+    transactionIds: string[];
     description: string;
     merchantName: string;
-    firstDate: Date;
-    lastDate: Date;
+    firstDate: [number, number, number];
+    lastDate: [number, number, number];
     frequency: string;
-    averageAmount: number;
-    lastAmount: number;
+    averageAmount: {amount: number; isoCurrency: string | null; unofficialCurrency: string | null};
+    lastAmount: {amount: number; isoCurrency: string | null; unofficialCurrency: string | null};
     active: boolean;
     type: string;
 }
 
 type RecurringTransactionMap = {
-    outflowing: RecurringTransaction[],
-    inflowing: RecurringTransaction[]
+    outflowing: any[];
+    inflowing: any[];
 }
 
 class RecurringTransactionService {
@@ -81,9 +98,10 @@ class RecurringTransactionService {
 
         try
         {
-            const response = await axios.get(`${apiUrl}/api/plaid/users/${userId}/recurring-transactions`);
-            const {inflowingStreams, outflowingStreams} = response.data;
-            return this.createRecurringTransactionMap(outflowingStreams, inflowingStreams);
+            const response = await axios.get<RecurringTransactionsResponse>(`${apiUrl}/api/plaid/users/${userId}/recurring-transactions`);
+            console.log('Fetched Plaid Recurring Transactions: ', response.data);
+            const {outflowStreams, inflowStreams} = response.data;
+            return this.createRecurringTransactionMap(outflowStreams, inflowStreams);
 
         }catch(error){
             console.error('There was and error fetching Plaid Recurring Transactions: ', error);
@@ -126,30 +144,134 @@ class RecurringTransactionService {
         }
     }
 
-    public async addRecurringTransactions() : Promise<RecurringTransaction[]> {
+    private formatDate(date: [number, number, number] | unknown): string {
+        console.log('Formatting date:', date, 'Type:', typeof date);
+
+        if (Array.isArray(date) && date.length === 3) {
+            const [year, month, day] = date;
+            // Note: month is 0-indexed in JavaScript Date, so we subtract 1
+            return new Date(year, month - 1, day).toISOString().split('T')[0];
+        } else if (date instanceof Date) {
+            return date.toISOString().split('T')[0];
+        } else if (typeof date === 'string') {
+            // Try to parse the string date
+            const parsedDate = new Date(date);
+            if (!isNaN(parsedDate.getTime())) {
+                return parsedDate.toISOString().split('T')[0];
+            }
+            // If parsing fails, return the original string
+            return date;
+        } else if (typeof date === 'number') {
+            // Assume it's a timestamp
+            const dateObj = new Date(date);
+            return dateObj.toISOString().split('T')[0];
+        } else {
+            console.error('Invalid date format:', date);
+            return 'Invalid Date';
+        }
+    }
+
+    public transformPlaidToDTO(plaidTransaction: RecurringTransaction, userId: number): RecurringTransactionDTO {
+        console.log('Transforming Plaid transaction:', plaidTransaction);
+
+        try {
+            const dto: RecurringTransactionDTO = {
+                userId: userId,
+                accountId: plaidTransaction.accountId,
+                streamId: plaidTransaction.streamId,
+                categoryId: plaidTransaction.categoryId,
+                description: plaidTransaction.description,
+                merchantName: plaidTransaction.merchantName,
+                firstDate: this.formatDate(plaidTransaction.firstDate),
+                lastDate: this.formatDate(plaidTransaction.lastDate),
+                frequency: plaidTransaction.frequency,
+                averageAmount: {
+                    value: Number(plaidTransaction.averageAmount.amount),
+                    currency: plaidTransaction.averageAmount.isoCurrency || 'USD'
+                },
+                lastAmount: {
+                    value: Number(plaidTransaction.lastAmount.amount),
+                    currency: plaidTransaction.lastAmount.isoCurrency || 'USD'
+                },
+                active: Boolean(plaidTransaction.active),
+                type: plaidTransaction.type || 'UNKNOWN'
+            };
+
+            // Validate the DTO
+            Object.entries(dto).forEach(([key, value]) => {
+                if (value === undefined || value === null) {
+                    console.warn(`Field ${key} is ${value} in DTO`);
+                }
+            });
+
+            return dto;
+        } catch (error) {
+            console.error('Error in transformPlaidToDTO:', error);
+            console.error('Problematic transaction:', plaidTransaction);
+            throw error;
+        }
+    }
+
+    public async addRecurringTransactions() : Promise<RecurringTransactionDTO[]> {
         // Fetch Recurring transactions from plaid
         const userId = Number(sessionStorage.getItem('userId'));
         const recurringTransactionsPlaid : RecurringTransactionMap = await this.fetchPlaidRecurringTransactions(userId);
 
-        // Create the RecurringTransactionRequest
-        let outflowStream = recurringTransactionsPlaid.outflowing;
-        let inflowStream = recurringTransactionsPlaid.inflowing;
-
-        let recurringTransactionMap = this.createRecurringTransactionRequest(outflowStream, inflowStream);
-
         // Call the addRecurringTransaction endpoint
         try
         {
-            const outflowStreamsFromMap = recurringTransactionMap.outflowStreams;
-            const inflowStreamsFromMap = recurringTransactionMap.inflowStreams;
 
-            return axios.post(`${apiUrl}/api/recurring-transactions/`, {
-                outflowStreams: outflowStreamsFromMap,
-                inflowStreams: inflowStreamsFromMap
+            const outflowStreams = recurringTransactionsPlaid.outflowing
+                .filter((transaction): transaction is RecurringTransaction =>
+                    typeof transaction === 'object' && transaction !== null)
+                .map(transaction => {
+                    try {
+                        return this.transformPlaidToDTO(transaction, userId);
+                    } catch (error) {
+                        console.error('Error transforming outflow transaction:', error, transaction);
+                        return null;
+                    }
+                })
+                .filter((dto): dto is RecurringTransactionDTO => dto !== null);
+
+            const inflowStreams = recurringTransactionsPlaid.inflowing
+                .filter((transaction): transaction is RecurringTransaction =>
+                    typeof transaction === 'object' && transaction !== null)
+                .map(transaction => {
+                    try {
+                        return this.transformPlaidToDTO(transaction, userId);
+                    } catch (error) {
+                        console.error('Error transforming inflow transaction:', error, transaction);
+                        return null;
+                    }
+                })
+                .filter((dto): dto is RecurringTransactionDTO => dto !== null);
+
+            console.log('InflowStreams: ', inflowStreams);
+
+            const payload = {
+                outflowStreams,
+                inflowStreams
+            }
+
+            console.log('Request payload:', JSON.stringify(payload, null, 2));
+
+            const response = await axios.post(`${apiUrl}/api/recurring-transactions/`, payload, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
+
+            console.log('Recurring Transactions Response: ', response.data);
+            return response.data;
 
         }catch(error){
             console.error('There was an error adding the recurring transactions to the server: ', error);
+            if (axios.isAxiosError(error) && error.response) {
+                console.error('Response status:', error.response.status);
+                console.error('Response data:', error.response.data);
+                console.error('Response headers:', error.response.headers);
+            }
             return [];
         }
     }

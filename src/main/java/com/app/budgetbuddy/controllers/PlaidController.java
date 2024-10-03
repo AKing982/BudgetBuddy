@@ -14,6 +14,7 @@ import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.plaid.client.model.*;
+import com.plaid.client.model.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,7 +235,7 @@ public class PlaidController {
         {
             TransactionsGetResponse transactionsGetResponse = plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate);
             if(transactionsGetResponse.getTransactions() == null){
-                return ResponseEntity.status(200).body(new ArrayList<>());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve transactions from Plaid");
             }
             List<Transaction> transactions = transactionsGetResponse.getTransactions();
             List<TransactionResponse> transactionResponses = createTransactionResponse(transactions);

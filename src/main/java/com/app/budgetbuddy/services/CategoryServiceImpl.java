@@ -47,9 +47,12 @@ public class CategoryServiceImpl implements CategoryService
             return null;
         }
 
-        // Does the category already exist in the database?
         Optional<CategoryEntity> existingCategory = categoryRepository.findByCategoryId(categoryId);
-        return existingCategory.orElseGet(() -> categoryRepository.save(createCategory(categoryId, false, categories.get(1), categories.get(0), LocalDateTime.now(), 0L)));
+        return existingCategory.orElseGet(() -> {
+            String mainCategory = categories.get(0);
+            String subCategory = categories.size() > 1 ? categories.get(1) : null;
+            return categoryRepository.save(createCategory(categoryId, false, subCategory, mainCategory, LocalDateTime.now(), 0L));
+        });
     }
 
     @Override

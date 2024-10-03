@@ -72,7 +72,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
         TransactionsGetRequest transactionsGetRequest = createTransactionRequest(accessToken, startDate, endDate);
         Response<TransactionsGetResponse> transactionsGetResponseResponse = getTransactionsResponseWithRetry(transactionsGetRequest);
-        LOGGER.info("Transaction Response: {}", transactionsGetResponseResponse.body());
         return transactionsGetResponseResponse.body();
     }
 
@@ -85,7 +84,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         Response<TransactionsGetResponse> transactionsGetResponse = null;
         do
         {
-            LOGGER.info("Transaction Request: {}", transactionsGetRequest.toString());
             Call<TransactionsGetResponse> transactionsGetResponseCall = plaidApi.transactionsGet(transactionsGetRequest);
             transactionsGetResponse = transactionsGetResponseCall.execute();
             try

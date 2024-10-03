@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.AmountDTO;
 import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.domain.RecurringTransactionRequest;
 import com.app.budgetbuddy.domain.RecurringTransactionType;
@@ -199,12 +200,13 @@ class RecurringTransactionsControllerTest {
                 "2023-01-01",           // firstDate
                 "2024-01-01",           // lastDate
                 "MONTHLY",              // frequency
-                new BigDecimal("9.99"), // averageAmount
-                new BigDecimal("9.99"), // lastAmount
+                new AmountDTO(new BigDecimal("9.99"), "", ""),
+                new AmountDTO(new BigDecimal("9.99"), "", ""),
                 true,                   // active
                 "SUBSCRIPTION"          // type
         );
     }
+
 
     private RecurringTransactionEntity createRecurringTransactionEntity(){
         RecurringTransactionEntity recurringTransaction = new RecurringTransactionEntity();

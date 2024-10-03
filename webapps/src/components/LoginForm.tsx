@@ -21,6 +21,7 @@ import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
 import LoginService from "../services/LoginService";
 import loginService from "../services/LoginService";
 import RecurringTransactionService from "../services/RecurringTransactionService";
+import {be} from "date-fns/locale";
 
 
 interface LoginFormData {
@@ -217,9 +218,12 @@ const LoginForm: React.FC = () => {
 
             const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
             console.log('Linked Accounts: ', linkedAccounts);
-            const startDate = '2024-01-01';
+            const previousMonth = new Date().getMonth() - 1;
+            const currentYear = new Date().getFullYear();
+            const beginningPreviousMonth = new Date(currentYear, previousMonth, 1).toISOString().split('T')[0];
+            const startDate = (new Date().getMonth() - 1);
             const endDate = new Date().toISOString().split('T')[0];
-            const savedTransactions = await plaidService.fetchAndSaveTransactions(startDate, endDate, userId);
+            const savedTransactions = await plaidService.fetchAndSaveTransactions(beginningPreviousMonth, endDate, userId);
             console.log('Saved Transactions: ', savedTransactions);
 
             const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
