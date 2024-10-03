@@ -10,7 +10,7 @@ interface RecurringTransactionsResponse {
 }
 
 interface AmountDTO {
-    value: number;
+    amount: number;
     currency: string;
 }
 
@@ -21,11 +21,11 @@ interface RecurringTransactionDTO {
     categoryId: string;
     description: string;
     merchantName: string;
-    firstDate: string; // Ensure this is in the correct format for LocalDateArrayDeserializer
-    lastDate: string; // Ensure this is in the correct format for LocalDateArrayDeserializer
+    firstDate: any; // Ensure this is in the correct format for LocalDateArrayDeserializer
+    lastDate: any; // Ensure this is in the correct format for LocalDateArrayDeserializer
     frequency: string;
-    averageAmount: AmountDTO;
-    lastAmount: AmountDTO;
+    averageAmount: number;
+    lastAmount: number;
     active: boolean;
     type: string;
 }
@@ -33,6 +33,11 @@ interface RecurringTransactionDTO {
 interface RecurringTransactionRequest {
     outflowStreams: RecurringTransaction[];
     inflowStreams: RecurringTransaction[];
+}
+
+enum RecurringTransactionType {
+    OUTFLOW_STREAM = "outflowStreams",
+    INFLOW_STREAM = "inflowStreams"
 }
 
 interface RecurringTransaction {
@@ -44,11 +49,11 @@ interface RecurringTransaction {
     transactionIds: string[];
     description: string;
     merchantName: string;
-    firstDate: [number, number, number];
-    lastDate: [number, number, number];
+    firstDate: any;
+    lastDate: any;
     frequency: string;
-    averageAmount: {amount: number; isoCurrency: string | null; unofficialCurrency: string | null};
-    lastAmount: {amount: number; isoCurrency: string | null; unofficialCurrency: string | null};
+    averageAmount: number;
+    lastAmount: number;
     active: boolean;
     type: string;
 }
@@ -144,35 +149,49 @@ class RecurringTransactionService {
         }
     }
 
-    private formatDate(date: [number, number, number] | unknown): string {
-        console.log('Formatting date:', date, 'Type:', typeof date);
-
-        if (Array.isArray(date) && date.length === 3) {
-            const [year, month, day] = date;
-            // Note: month is 0-indexed in JavaScript Date, so we subtract 1
-            return new Date(year, month - 1, day).toISOString().split('T')[0];
-        } else if (date instanceof Date) {
-            return date.toISOString().split('T')[0];
-        } else if (typeof date === 'string') {
-            // Try to parse the string date
-            const parsedDate = new Date(date);
-            if (!isNaN(parsedDate.getTime())) {
-                return parsedDate.toISOString().split('T')[0];
-            }
-            // If parsing fails, return the original string
-            return date;
-        } else if (typeof date === 'number') {
-            // Assume it's a timestamp
-            const dateObj = new Date(date);
-            return dateObj.toISOString().split('T')[0];
-        } else {
-            console.error('Invalid date format:', date);
-            return 'Invalid Date';
+    private formatDate(date: string | null | Date): string | null | Date {
+        if (!date) return null;
+        try {
+            const formattedDate = new Date(date).toISOString().split('T')[0];
+            console.log('Formatted Date: ', formattedDate);
+            return formattedDate;
+        } catch (error) {
+            console.warn(`Invalid date format: ${date}`);
+            return null;
         }
     }
 
+    // private formatDate(date: [number, number, number] | unknown): string {
+    //     console.log('Formatting date:', date, 'Type:', typeof date);
+    //
+    //     if (Array.isArray(date) && date.length === 3) {
+    //         const [year, month, day] = date;
+    //         // Note: month is 0-indexed in JavaScript Date, so we subtract 1
+    //         return new Date(year, month - 1, day).toISOString().split('T')[0];
+    //     } else if (date instanceof Date) {
+    //         return date.toISOString().split('T')[0];
+    //     } else if (typeof date === 'string') {
+    //         // Try to parse the string date
+    //         const parsedDate = new Date(date);
+    //         if (!isNaN(parsedDate.getTime())) {
+    //             return parsedDate.toISOString().split('T')[0];
+    //         }
+    //         // If parsing fails, return the original string
+    //         return date;
+    //     } else if (typeof date === 'number') {
+    //         // Assume it's a timestamp
+    //         const dateObj = new Date(date);
+    //         return dateObj.toISOString().split('T')[0];
+    //     } else {
+    //         console.error('Invalid date format:', date);
+    //         return 'Invalid Date';
+    //     }
+    // }
+
     public transformPlaidToDTO(plaidTransaction: RecurringTransaction, userId: number): RecurringTransactionDTO {
         console.log('Transforming Plaid transaction:', plaidTransaction);
+
+        const transactionType = this.determineTransactionType(plaidTransaction);
 
         try {
             const dto: RecurringTransactionDTO = {
@@ -181,20 +200,17 @@ class RecurringTransactionService {
                 streamId: plaidTransaction.streamId,
                 categoryId: plaidTransaction.categoryId,
                 description: plaidTransaction.description,
-                merchantName: plaidTransaction.merchantName,
+                merchantName: plaidTransaction.merchantName || 'Unknown Merchant',
                 firstDate: this.formatDate(plaidTransaction.firstDate),
                 lastDate: this.formatDate(plaidTransaction.lastDate),
                 frequency: plaidTransaction.frequency,
-                averageAmount: {
-                    value: Number(plaidTransaction.averageAmount.amount),
-                    currency: plaidTransaction.averageAmount.isoCurrency || 'USD'
-                },
-                lastAmount: {
-                    value: Number(plaidTransaction.lastAmount.amount),
-                    currency: plaidTransaction.lastAmount.isoCurrency || 'USD'
-                },
+                averageAmount:
+                    Number(plaidTransaction.averageAmount),
+                    // currency: plaidTransaction.averageAmount.isoCurrency || 'USD
+                lastAmount: Number(plaidTransaction.lastAmount),
+                    // currency: plaidTransaction.lastAmount.isoCurrency || 'USD,
                 active: Boolean(plaidTransaction.active),
-                type: plaidTransaction.type || 'UNKNOWN'
+                type: transactionType
             };
 
             // Validate the DTO
@@ -203,7 +219,7 @@ class RecurringTransactionService {
                     console.warn(`Field ${key} is ${value} in DTO`);
                 }
             });
-
+            console.log('RecurringTransactionDTO: ', dto);
             return dto;
         } catch (error) {
             console.error('Error in transformPlaidToDTO:', error);
@@ -212,11 +228,23 @@ class RecurringTransactionService {
         }
     }
 
+    private determineTransactionType(plaidTransaction: RecurringTransaction): string {
+        // You'll need to determine how to distinguish between outflow and inflow
+        // This might be based on the transaction amount, a specific field from Plaid, or some other logic
+        // For this example, I'm assuming transactions with negative amounts are outflows
+        if (Number(plaidTransaction.averageAmount) < 0) {
+            return "OUTFLOW_STREAM";
+        } else {
+            return "INFLOW_STREAM";
+        }
+    }
+
     public async addRecurringTransactions() : Promise<RecurringTransactionDTO[]> {
         // Fetch Recurring transactions from plaid
         const userId = Number(sessionStorage.getItem('userId'));
         const recurringTransactionsPlaid : RecurringTransactionMap = await this.fetchPlaidRecurringTransactions(userId);
-
+        console.log('Recurring Transactions Plaid Inflow: ', recurringTransactionsPlaid.inflowing);
+        console.log('Recurring Transactions Plaid Outflow: ', recurringTransactionsPlaid.outflowing);
         // Call the addRecurringTransaction endpoint
         try
         {

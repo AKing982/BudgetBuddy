@@ -6,11 +6,12 @@ interface Transaction {
     accountId: string;
     amount: number;
     categories: string[];
+    categoryId: string;
     posted: Date | string;
     name: string;
     merchantName: string;
     pending: boolean;
-    logoUrl: string;
+    logoURL: string;
     authorizedDate: Date | string;
     transactionType: string;
 }

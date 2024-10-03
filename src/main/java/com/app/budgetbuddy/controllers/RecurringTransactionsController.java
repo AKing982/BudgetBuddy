@@ -1,8 +1,12 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.RecurringTransactionDTO;
+import com.app.budgetbuddy.domain.RecurringTransactionEntityResponse;
 import com.app.budgetbuddy.domain.RecurringTransactionRequest;
+import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
+import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.plaid.client.model.TransactionStream;
@@ -14,7 +18,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -36,18 +42,42 @@ public class RecurringTransactionsController
     }
 
     @GetMapping("/users/{userId}/recurring")
-    public ResponseEntity<List<RecurringTransactionEntity>> getAllRecurringTransactionsByUserId(@PathVariable Long userId){
+    public ResponseEntity<List<RecurringTransactionEntityResponse>> getAllRecurringTransactionsByUserId(@PathVariable Long userId){
         if(userId < 1L){
             return ResponseEntity.badRequest().body(null);
         }
         try
         {
             List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionService.findAllByUserId(userId);
-            return ResponseEntity.ok(recurringTransactionEntities);
+            List<RecurringTransactionEntityResponse> recurringTransactionEntityResponses = createRecurringTransactionEntityResponse(recurringTransactionEntities);
+            return ResponseEntity.ok(recurringTransactionEntityResponses);
         }catch(Exception e){
             LOGGER.error("Error while getting recurring transactions for user {}", userId, e);
         }
         return ResponseEntity.badRequest().body(null);
+    }
+
+    private List<RecurringTransactionEntityResponse> createRecurringTransactionEntityResponse(List<RecurringTransactionEntity> recurringTransactionEntities){
+        List<RecurringTransactionEntityResponse> recurringTransactionEntityResponses = new ArrayList<>();
+        for(RecurringTransactionEntity recurringTransactionEntity : recurringTransactionEntities){
+            Long id = recurringTransactionEntity.getId();
+            Long userId = recurringTransactionEntity.getUser().getId();
+            String accountId = recurringTransactionEntity.getAccount().getId();
+            String streamId = recurringTransactionEntity.getStreamId();
+            String categoryId = recurringTransactionEntity.getCategory().getId();
+            String description = recurringTransactionEntity.getDescription();
+            String merchantName = recurringTransactionEntity.getMerchantName();
+            LocalDate firstDate = recurringTransactionEntity.getFirstDate();
+            LocalDate lastDate = recurringTransactionEntity.getLastDate();
+            String frequency = recurringTransactionEntity.getFrequency();
+            BigDecimal averageAmount = recurringTransactionEntity.getAverageAmount();
+            BigDecimal lastAmount = recurringTransactionEntity.getLastAmount();
+            Boolean isActive = recurringTransactionEntity.isActive();
+            String type = recurringTransactionEntity.getType();
+            RecurringTransactionEntityResponse recurringTransactionEntityResponse = new RecurringTransactionEntityResponse(id, userId, accountId, streamId, categoryId, description, merchantName, firstDate, lastDate, frequency, averageAmount, lastAmount, isActive, type);
+            recurringTransactionEntityResponses.add(recurringTransactionEntityResponse);
+        }
+        return recurringTransactionEntityResponses;
     }
 
     @GetMapping("/{userId}/by-date-range")

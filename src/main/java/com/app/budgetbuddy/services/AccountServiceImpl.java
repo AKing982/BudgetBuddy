@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -41,5 +42,10 @@ public class AccountServiceImpl implements AccountService
     @Override
     public Optional<AccountEntity> findByAccountId(String accountId) {
         return accountRepository.findByAccountId(accountId);
+    }
+
+    @Override
+    public List<AccountEntity> findByUser(Long userId) {
+        return accountRepository.findByUserId(userId);
     }
 }

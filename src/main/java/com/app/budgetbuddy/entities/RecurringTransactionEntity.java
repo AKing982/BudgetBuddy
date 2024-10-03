@@ -63,9 +63,8 @@ public class RecurringTransactionEntity {
     @Column(name="active")
     private boolean active;
 
-    @Enumerated(EnumType.STRING)
     @Column(name="type")
-    private RecurringTransactionType type;
+    private String type;
 
     @OneToMany(mappedBy = "recurringTransaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<RecurringTransactionsLink> recurringTransactionsLinks = new HashSet<>();

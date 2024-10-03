@@ -11,6 +11,8 @@ import {
     Avatar
 } from '@mui/material';
 import PlaidService from "../services/PlaidService";
+import RecurringTransactionService from "../services/RecurringTransactionService";
+import { parse, addDays, isBefore, isEqual } from 'date-fns';
 
 interface Charge {
     name: string;
@@ -51,6 +53,24 @@ interface Amount {
     unofficialCurrency: string | null;
 }
 
+interface RecurringTransaction {
+    userId: number;
+    accountId: string;
+    streamId: string;
+    categoryId: string;
+    category: string[];
+    transactionIds: string[];
+    description: string;
+    merchantName: string;
+    firstDate: any;
+    lastDate: any;
+    frequency: string;
+    averageAmount: number;
+    lastAmount: number;
+    active: boolean;
+    type: string;
+}
+
 interface PersonalFinanceCategory {
     primary: string;
     detailed: string;
@@ -69,8 +89,8 @@ const charges: Charge[] = [
 ];
 
 const PaymentCharges: React.FC = () => {
-    const [recurringCharges, setRecurringCharges] = useState<RecurringTransactionResponse | null>(null);
-    const plaidService = PlaidService.getInstance();
+    const [recurringCharges, setRecurringCharges] = useState<RecurringTransaction[] | null>(null);
+    const recurringTransactionsService = new RecurringTransactionService();
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     useEffect(() => {
@@ -81,7 +101,7 @@ const PaymentCharges: React.FC = () => {
                 if(isNaN(userId)){
                     throw new Error(`Invalid UserId: ${userId}`);
                 }
-                const fetchedRecurringCharges = await plaidService.fetchRecurringChargesForUser(userId);
+                const fetchedRecurringCharges = await recurringTransactionsService.fetchRecurringTransactionsForUser(userId);
                 console.log('Fetched Recurring Charges: ', fetchedRecurringCharges);
                 setRecurringCharges(fetchedRecurringCharges);
             }catch(error)
@@ -92,46 +112,73 @@ const PaymentCharges: React.FC = () => {
         fetchCharges();
     }, []);
 
-    const getUpcomingCharges = (streams: TransactionStream[]) : TransactionStream[] => {
-        if(!streams){
+    const getUpcomingCharges = (streams: RecurringTransaction[]) : RecurringTransaction[] => {
+        if (!streams || !Array.isArray(streams)) {
             return [];
         }
+
         const now = new Date();
-        const thirteenDaysLater = new Date(now.getTime() + 13 * 24 * 60 * 60 * 1000);
-        return streams.filter(stream => {
-            const nextDate = new Date(stream.lastDate);
-            return nextDate <= thirteenDaysLater && stream.active;
+        const thirteenDaysLater = addDays(now, 13);
+
+        const filteredStreams = streams.filter(stream => {
+            if (!stream.lastDate || !stream.active) {
+                return false;
+            }
+
+            try {
+                // Assuming lastDate is in 'yyyy-MM-dd' format
+                const [year, month, day] = stream.lastDate;
+                const nextDate = new Date(year, month - 1, day);
+                return (isBefore(nextDate, thirteenDaysLater) || isEqual(nextDate, thirteenDaysLater)) && stream.active;
+            } catch (error) {
+                console.error(`Error parsing date for stream ${stream.streamId}:`, error);
+                return false;
+            }
         });
+
+        console.log('filteredStreams: ', filteredStreams);
+        return filteredStreams;
     };
 
-    const parseDate = (dateString: string | null | undefined): Date => {
-        // This assumes dateString is in format "YYYY-MM-DD"
-        if(!dateString || typeof dateString !== 'string'){
-            console.error('Invalid date string:', dateString);
-            return new Date();
-        }
-
-        const parts = dateString.split('-');
-        if(parts.length !== 3){
-            console.error('Date string is not in expected format (YYYY-MM-DD):', dateString);
-            return new Date();
-        }
-
-        const [year, month, day] = parts.map(Number);
-        if(isNaN(year) || isNaN(month) || isNaN(day)){
-            console.error('Date parts are not valid numbers:', {year, month, day});
-            return new Date();
-        }
-        return new Date(year, month - 1, day);
+    const parseDate = (dateArray: [number, number, number]): Date => {
+        const [year, month, day] = dateArray;
+        return new Date(year, month - 1, day);  // month is 0-indexed in JS Date
     };
 
-    const formatDate = (dateString: string): string => {
-        const date = parseDate(dateString);
+    const formatDate = (dateArray: [number, number, number]): string => {
+        const date = parseDate(dateArray);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    const upcomingCharges = recurringCharges ? getUpcomingCharges(recurringCharges.outflowStreams) : [];
-    const totalAmount = upcomingCharges.reduce((sum, charge) => sum + Math.abs(charge.lastAmount.amount), 0);
+    // const parseDate = (dateString: string | null | undefined): Date => {
+    //     // This assumes dateString is in format "YYYY-MM-DD"
+    //     if(!dateString || typeof dateString !== 'string'){
+    //         console.error('Invalid date string:', dateString);
+    //         return new Date();
+    //     }
+    //
+    //     const parts = dateString.split('-');
+    //     if(parts.length !== 3){
+    //         console.error('Date string is not in expected format (YYYY-MM-DD):', dateString);
+    //         return new Date();
+    //     }
+    //
+    //     const [year, month, day] = parts.map(Number);
+    //     if(isNaN(year) || isNaN(month) || isNaN(day)){
+    //         console.error('Date parts are not valid numbers:', {year, month, day});
+    //         return new Date();
+    //     }
+    //     return new Date(year, month - 1, day);
+    // };
+    //
+    // const formatDate = (dateString: string): string => {
+    //     const date = parseDate(dateString);
+    //     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    // };
+
+    const upcomingCharges = recurringCharges ? getUpcomingCharges(recurringCharges) : [];
+    // const upcomingCharges: any[] = [];
+    const totalAmount = upcomingCharges.reduce((sum, charge) => sum + Math.abs(charge.lastAmount), 0);
 
     return (
         <Paper elevation={3} sx={{ maxWidth: 400, margin: 'auto', mt: 2, borderRadius: '12px', overflow: 'hidden' }}>
@@ -167,7 +214,7 @@ const PaymentCharges: React.FC = () => {
                             />
                             <ListItemSecondaryAction>
                                 <Typography sx={{ fontWeight: 'bold', color: '#111827' }}>
-                                    ${Math.abs(charge.lastAmount.amount).toFixed(2)}
+                                    ${Math.abs(charge.lastAmount).toFixed(2)}
                                 </Typography>
                             </ListItemSecondaryAction>
                         </ListItem>

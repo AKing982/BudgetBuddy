@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import PlaidService from "../services/PlaidService";
 import TransactionRow from "./TransactionRow";
+import TransactionService from "../services/TransactionService";
 
 interface Transaction {
     transactionId: string;
@@ -64,7 +65,7 @@ const RecentTransactionsTable: React.FC = () => {
 
     const [plaidTransactions, setPlaidTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const plaidService = new PlaidService();
+    const transactionService = TransactionService.getInstance();
 
     const fetchMonthBeginning = (year: number, month: number) : string => {
         return new Date(year, month - 1, 1).toISOString().split('T')[0];
@@ -79,10 +80,10 @@ const RecentTransactionsTable: React.FC = () => {
             setIsLoading(true);
             try {
                 const userId = Number(sessionStorage.getItem('userId'));
-                const fetchTransactions = await plaidService.getTransactions(
+                const fetchTransactions = await transactionService.fetchTransactionsByUserAndDateRange(
+                    userId,
                     fetchMonthBeginning(2024, 1),
                     fetchMonthEnding(2024, 9),
-                    userId
                 );
                 setPlaidTransactions(fetchTransactions);
                 console.log('Transactions: ', fetchTransactions);

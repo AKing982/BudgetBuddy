@@ -197,8 +197,10 @@ class RecurringTransactionsControllerTest {
                 "CAT789",               // categoryId
                 "Monthly Subscription", // description
                 "Netflix",              // merchantName
-                "2023-01-01",           // firstDate
-                "2024-01-01",           // lastDate
+//                LocalDate.of(2023, 1, 1),           // firstDate
+//                LocalDate.of(2024, 1,1),           // lastDate
+                "2023-01-01",
+                "2024-01-01",
                 "MONTHLY",              // frequency
                 new AmountDTO(new BigDecimal("9.99"), "", ""),
                 new AmountDTO(new BigDecimal("9.99"), "", ""),
@@ -213,7 +215,7 @@ class RecurringTransactionsControllerTest {
         recurringTransaction.setAccount(AccountEntity.builder().id("ACC123").build());
         recurringTransaction.setActive(true);
         recurringTransaction.setStreamId("STREAM456");
-        recurringTransaction.setType(RecurringTransactionType.INFLOW_STREAM);
+        recurringTransaction.setType(RecurringTransactionType.INFLOW_STREAM.getValue());
         recurringTransaction.setAverageAmount(BigDecimal.ONE);
         recurringTransaction.setMerchantName("Netflix");
         recurringTransaction.setFrequency("MONTHLY");

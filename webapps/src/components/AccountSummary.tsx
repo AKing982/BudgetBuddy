@@ -25,16 +25,31 @@ import {
 import PlaidService from "../services/PlaidService";
 import {ChevronDown, LucideIcon, Plus, RefreshCcw} from "lucide-react";
 import {styled} from "@mui/material/styles";
+import AccountService from "../services/AccountService";
+
+// interface Account {
+//     accountId: string;
+//     name: string;
+//     balance: string;
+//     type: string;
+//     subtype: string;
+//     action: 'gear' | 'add';
+//     color?: string;
+// }
 
 interface Account {
     accountId: string;
+    userId: number;
     name: string;
     balance: string;
     type: string;
+    mask: string;
+    officialName: string;
     subtype: string;
     action: 'gear' | 'add';
     color?: string;
 }
+
 //
 // const accounts: Account[] = [
 //     { name: 'Checking', balance: '$168', icon: <AccountBalance />, action: 'gear', color: '#7C3AED' },
@@ -63,7 +78,7 @@ const IconWrapper: React.FC<IconWrapperProps> = ({ render, size = 20, color = '#
 const AccountSummary: React.FC = () => {
     const [plaidAccounts, setPlaidAccounts] = useState<Account[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const plaidService = PlaidService.getInstance();
+    const accountService = AccountService.getInstance();
 
     useEffect(() => {
         setIsLoading(true);
@@ -71,7 +86,7 @@ const AccountSummary: React.FC = () => {
             try
             {
                 const userID = Number(sessionStorage.getItem('userId'));
-                const fetchedAccounts = await plaidService.fetchAccounts(userID);
+                const fetchedAccounts = await accountService.fetchAccountsForUser(userID);
                 console.log('Fetched accounts: ', fetchedAccounts);
                 setPlaidAccounts(fetchedAccounts);
             }catch(error)

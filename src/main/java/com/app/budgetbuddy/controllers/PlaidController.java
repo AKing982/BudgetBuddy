@@ -234,9 +234,6 @@ public class PlaidController {
         try
         {
             TransactionsGetResponse transactionsGetResponse = plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate);
-            if(transactionsGetResponse.getTransactions() == null){
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve transactions from Plaid");
-            }
             List<Transaction> transactions = transactionsGetResponse.getTransactions();
             List<TransactionResponse> transactionResponses = createTransactionResponse(transactions);
             return ResponseEntity.status(200).body(transactionResponses);
