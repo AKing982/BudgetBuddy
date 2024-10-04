@@ -12,6 +12,8 @@ import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionConverter;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import jakarta.transaction.InvalidTransactionException;
@@ -71,6 +73,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         String accessToken = getPlaidAccessToken(plaidLink);
         LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
         TransactionsGetRequest transactionsGetRequest = createTransactionRequest(accessToken, startDate, endDate);
+        LOGGER.info("TransactionGetRequest: {}", transactionsGetRequest);
         Response<TransactionsGetResponse> transactionsGetResponseResponse = getTransactionsResponseWithRetry(transactionsGetRequest);
         return transactionsGetResponseResponse.body();
     }
@@ -81,17 +84,55 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
         int attempts = 0;
         int MAX_ATTEMPTS = 3;
+        final long INITIAL_DELAY_MS = 5000;
+        final long MAX_DELAY_MS = 300000;
         Response<TransactionsGetResponse> transactionsGetResponse = null;
         do
         {
             Call<TransactionsGetResponse> transactionsGetResponseCall = plaidApi.transactionsGet(transactionsGetRequest);
+            LOGGER.info("Transaction Response Call: {}", transactionsGetResponseCall);
             transactionsGetResponse = transactionsGetResponseCall.execute();
             try
             {
                 if(transactionsGetResponse.isSuccessful()){
+                    LOGGER.info("Transaction Response Successful");
                    break;
                 }else{
                     attempts++;
+                    if(transactionsGetResponse.errorBody() != null){
+                        String errorBody = transactionsGetResponse.errorBody().string();
+                        LOGGER.warn("Transaction Response Error: {}", transactionsGetResponse.errorBody().toString());
+                        try
+                        {
+                            JsonObject jsonError = JsonParser.parseString(errorBody).getAsJsonObject();
+                            String errorType = jsonError.has("error_type") ? jsonError.get("error_type").getAsString() : "Unknown";
+                            String errorCode = jsonError.has("error_code") ? jsonError.get("error_code").getAsString() : "Unknown";
+                            String errorMessage = jsonError.has("error_message") ? jsonError.get("error_message").getAsString() : "No error message provided";
+
+                            if("PRODUCT_NOT_READY".equals(errorCode)){
+                                LOGGER.info("Product not ready, implementing backoff strategy");
+                                long delay = Math.min(INITIAL_DELAY_MS * (long) Math.pow(2, attempts - 1), MAX_DELAY_MS);
+                                LOGGER.info("Waiting {} ms before next attempt", delay);
+                                Thread.sleep(delay);
+                                continue;
+                            }
+                            LOGGER.error("Plaid API Error - Type: {}, Code: {}, Message: {}", errorType, errorCode, errorMessage);
+
+                            // If there's a display_message, log it as well
+                            if (jsonError.has("display_message")) {
+                                String displayMessage = jsonError.get("display_message").getAsString();
+                                LOGGER.error("Display Message: {}", displayMessage);
+                            }
+
+                            // Log any additional details if present
+                            if (jsonError.has("request_id")) {
+                                LOGGER.error("Request ID: {}", jsonError.get("request_id").getAsString());
+                            }
+
+                        }catch(Exception e){
+                            LOGGER.error("Failed to parse error response: ", e);
+                        }
+                    }
                     Thread.sleep(500);
                 }
             }catch(InterruptedException e)

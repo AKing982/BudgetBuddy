@@ -100,9 +100,18 @@ public class TransactionController {
             transactionResponse.setLogoURL(transaction.getLogoUrl());
             transactionResponse.setAuthorizedDate(transaction.getAuthorizedDate());
             transactionResponse.setPosted(transaction.getPosted());
-            transactionResponse.setCategories(getCategoriesForTransaction(transaction.getId(), transaction.getCategory().getId()));
-            // Safely set the category ID
-            transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getId()));
+            // Safely handle potential null category
+            if (transaction.getCategory() != null) {
+                transactionResponse.setCategories(getCategoriesForTransaction(transaction.getId(), transaction.getCategory().getId()));
+                transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getId()));
+            } else {
+                LOGGER.warn("Transaction with ID {} has no category", transaction.getId());
+                transactionResponse.setCategories(Collections.emptyList());
+                transactionResponse.setCategoryId(null);
+            }
+
+//            // Safely set the category ID
+//            transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getId()));
             transactionResponse.setMerchantName(transaction.getMerchantName());
             transactionResponses.add(transactionResponse);
         }
@@ -110,6 +119,10 @@ public class TransactionController {
     }
 
     private String fetchCategory(final String categoryId){
+        if(categoryId == null){
+            LOGGER.warn("Category with ID {} has no category", categoryId);
+            return null;
+        }
         Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
         if(categoryEntity.isPresent()){
             LOGGER.info("Found Category with categoryId: {}", categoryId);
@@ -120,12 +133,18 @@ public class TransactionController {
     }
 
     private List<String> getCategoriesForTransaction(String transactionId, String categoryId){
+        if(categoryId == null){
+            LOGGER.info("Category with ID {} has no category", transactionId);
+            return Collections.emptyList();
+        }
         Optional<TransactionsEntity> transaction = transactionService.getTransactionByIdAndCategoryId(transactionId, categoryId);
         List<String> categories = new ArrayList<>();
         if(transaction.isPresent()){
             CategoryEntity category = transaction.get().getCategory();
             categories.add(category.getName());
             categories.add(category.getDescription());
+        }else{
+            LOGGER.warn("Transaction with ID {} has no category", transactionId);
         }
         return categories;
     }
