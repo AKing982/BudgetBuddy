@@ -41,7 +41,7 @@ const BudgetPage: React.FC = () => {
     };
 
     return (
-        <Box sx={{ p: 3, maxWidth: 1200, margin: 'auto' }}>
+        <Box sx={{ p: 3, maxWidth: 937, margin: 'auto' }}>
             <Sidebar />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>

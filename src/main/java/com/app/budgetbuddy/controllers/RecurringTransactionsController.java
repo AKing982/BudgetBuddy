@@ -99,7 +99,9 @@ public class RecurringTransactionsController
         try
         {
             List<RecurringTransactionDTO> outflowing = recurringTransactionEntity.outflowStreams();
+            LOGGER.info("Outflowing Transactions: {}", outflowing);
             List<RecurringTransactionDTO> inflowing = recurringTransactionEntity.inflowStreams();
+            LOGGER.info("Inflowing Transactions: {}", inflowing);
 
             List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionService.createRecurringTransactions(outflowing, inflowing);
             LOGGER.info("Successfully created and saved Recurring Transactions: {}", recurringTransactionEntities);

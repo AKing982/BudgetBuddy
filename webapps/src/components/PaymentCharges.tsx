@@ -177,9 +177,20 @@ const PaymentCharges: React.FC = () => {
     // };
 
     const upcomingCharges = recurringCharges ? getUpcomingCharges(recurringCharges) : [];
+    console.log('Upcoming Charges: ', upcomingCharges);
     // const upcomingCharges: any[] = [];
-    const totalAmount = upcomingCharges.reduce((sum, charge) => sum + Math.abs(charge.lastAmount), 0);
+    const totalAmount = upcomingCharges.reduce((sum, charge) => {
+        console.log('Charge: ', charge);
+        if(charge && charge.lastAmount){
+            let chargeAmount = charge.lastAmount;
+            console.log('Charge Amount: ', chargeAmount);
+            return sum + Math.abs(charge.lastAmount);
+        }
+        console.log('Current Sum: ', sum);
+        return sum;
+    }, 0);
 
+    console.log('Total Amount: ', totalAmount);
     return (
         <Paper elevation={3} sx={{ maxWidth: 400, margin: 'auto', mt: 2, borderRadius: '12px', overflow: 'hidden' }}>
             <Box sx={{ p: 2, backgroundColor: '#F9FAFB' }}>

@@ -1,8 +1,6 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.AccountResponse;
-import com.app.budgetbuddy.domain.AccountSubType;
-import com.app.budgetbuddy.domain.AccountType;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.services.AccountService;
 import org.slf4j.Logger;

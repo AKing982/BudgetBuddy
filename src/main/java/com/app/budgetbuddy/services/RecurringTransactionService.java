@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.domain.RecurringTransactionType;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
+import com.plaid.client.model.TransactionStream;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,6 +12,9 @@ import java.util.Optional;
 
 public interface RecurringTransactionService extends ServiceModel<RecurringTransactionEntity>
 {
+
+    List<RecurringTransactionEntity> createRecurringTransactionEntitiesFromStream(List<TransactionStream> outflow, List<TransactionStream> inflow, Long userId);
+
     Optional<RecurringTransactionEntity> findById(Long id);
     List<RecurringTransactionEntity> findAllByUserId(Long userId);
     List<RecurringTransactionEntity> findAllByAccountId(String accountId);

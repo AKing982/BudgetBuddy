@@ -216,19 +216,21 @@ const LoginForm: React.FC = () => {
 
             const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
 
-            const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
-            console.log('Linked Accounts: ', linkedAccounts);
-            const previousMonth = new Date().getMonth() - 1;
-            const currentYear = new Date().getFullYear();
-            const beginningPreviousMonth = new Date(currentYear, previousMonth, 1).toISOString().split('T')[0];
-            const startDate = (new Date().getMonth() - 1);
-            const endDate = new Date().toISOString().split('T')[0];
-            const savedTransactions = await plaidService.fetchAndSaveTransactions(beginningPreviousMonth, endDate, userId);
-            console.log('Saved Transactions: ', savedTransactions);
+            setTimeout(async() => {
+                const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
+                console.log('Linked Accounts: ', linkedAccounts);
+                const previousMonth = new Date().getMonth() - 1;
+                const currentYear = new Date().getFullYear();
+                const beginningPreviousMonth = new Date(currentYear, previousMonth, 1).toISOString().split('T')[0];
+                const startDate = (new Date().getMonth() - 1);
+                const endDate = new Date().toISOString().split('T')[0];
+                const savedTransactions = await plaidService.fetchAndSaveTransactions(beginningPreviousMonth, endDate, userId);
+                console.log('Saved Transactions: ', savedTransactions);
 
-            const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
-            console.log('Saved Recurring Transactions: ', savedRecurringTransactions);
+                const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
+                console.log('Saved Recurring Transactions: ', savedRecurringTransactions);
 
+            }, 6000);
 
             navigate('/dashboard');
         }catch(error)

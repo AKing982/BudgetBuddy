@@ -6,6 +6,8 @@ import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
+import com.app.budgetbuddy.workbench.converter.TransactionStreamToEntityConverter;
+import com.plaid.client.model.TransactionStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +22,21 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
 {
     private final RecurringTransactionsRepository recurringTransactionsRepository;
     private final RecurringTransactionConverter recurringTransactionConverter;
+    private final TransactionStreamToEntityConverter transactionStreamToEntityConverter;
 
     @Autowired
     public RecurringTransactionServiceImpl(RecurringTransactionsRepository recurringTransactionsRepository,
-                                           RecurringTransactionConverter recurringTransactionConverter){
+                                           RecurringTransactionConverter recurringTransactionConverter,
+                                           TransactionStreamToEntityConverter transactionStreamToEntityConverter){
         this.recurringTransactionsRepository = recurringTransactionsRepository;
         this.recurringTransactionConverter = recurringTransactionConverter;
+        this.transactionStreamToEntityConverter = transactionStreamToEntityConverter;
+    }
+
+    public List<RecurringTransactionEntity> createRecurringTransactionEntitiesFromStream(List<TransactionStream> outflow, List<TransactionStream> inflow, Long userId){
+        List<RecurringTransactionEntity> recurringTransactionEntities = transactionStreamToEntityConverter.convertTransactionStreamList(outflow, inflow, userId);
+        recurringTransactionsRepository.saveAll(recurringTransactionEntities);
+        return recurringTransactionEntities;
     }
 
     @Override

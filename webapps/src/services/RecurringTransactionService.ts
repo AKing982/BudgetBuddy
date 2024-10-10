@@ -204,10 +204,9 @@ class RecurringTransactionService {
                 firstDate: this.formatDate(plaidTransaction.firstDate),
                 lastDate: this.formatDate(plaidTransaction.lastDate),
                 frequency: plaidTransaction.frequency,
-                averageAmount:
-                    Number(plaidTransaction.averageAmount),
+                averageAmount: plaidTransaction.averageAmount,
                     // currency: plaidTransaction.averageAmount.isoCurrency || 'USD
-                lastAmount: Number(plaidTransaction.lastAmount),
+                lastAmount: plaidTransaction.lastAmount,
                     // currency: plaidTransaction.lastAmount.isoCurrency || 'USD,
                 active: Boolean(plaidTransaction.active),
                 type: transactionType

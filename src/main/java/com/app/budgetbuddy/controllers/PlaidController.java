@@ -4,12 +4,15 @@ package com.app.budgetbuddy.controllers;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
+import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionStreamConverter;
+import com.app.budgetbuddy.workbench.converter.TransactionStreamToEntityConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
@@ -45,6 +48,7 @@ public class PlaidController {
     private PlaidAccountManager plaidAccountManager;
     private PlaidTransactionManager plaidTransactionManager;
     private TransactionDTOConverter transactionDTOConverter;
+    private RecurringTransactionService recurringTransactionService;
     private Logger LOGGER = LoggerFactory.getLogger(PlaidController.class);
 
     @Autowired
@@ -52,12 +56,14 @@ public class PlaidController {
                            PlaidAccountManager plaidAccountManager,
                            PlaidLinkService plaidLinkService,
                            PlaidTransactionManager plaidTransactionManager,
-                           TransactionDTOConverter transactionDTOConverter) {
+                           TransactionDTOConverter transactionDTOConverter,
+                           RecurringTransactionService recurringTransactionService) {
         this.plaidLinkTokenProcessor = plaidLinkTokenProcessor;
         this.plaidAccountManager = plaidAccountManager;
         this.plaidLinkService = plaidLinkService;
         this.plaidTransactionManager = plaidTransactionManager;
         this.transactionDTOConverter = transactionDTOConverter;
+        this.recurringTransactionService = recurringTransactionService;
     }
 
     @PostMapping("/create_link_token")
@@ -308,6 +314,30 @@ public class PlaidController {
                                                                                 @RequestParam int pageCount){
         return null;
     }
+
+    @PostMapping("/fetch-save-recurring-transactions")
+    public ResponseEntity<List<RecurringTransactionEntity>> fetchAndSaveRecurringTransactions(@RequestParam Long userId){
+        if(userId < 1){
+            return ResponseEntity.badRequest().body(null);
+        }
+        try
+        {
+            // Fetch the recurring transaction from plaid
+            TransactionsRecurringGetResponse recurringGetResponse = plaidTransactionManager.getRecurringTransactionsForUser(userId);
+            List<TransactionStream> outflowing = recurringGetResponse.getOutflowStreams();
+            List<TransactionStream> inflowing = recurringGetResponse.getInflowStreams();
+
+            // Convert the Transaction Streams to Transaction
+            List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionService.createRecurringTransactionEntitiesFromStream(outflowing, inflowing, userId);
+            return ResponseEntity.ok(recurringTransactionEntities);
+
+        }catch(Exception e){
+            LOGGER.error("There was an error fetching or saving the recurring transactions: ", e);
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+
 
     @PostMapping("/save-transactions")
     public ResponseEntity<?> saveTransactions(@RequestBody TransactionRequest transactionRequest) throws IOException {
