@@ -25,6 +25,10 @@ public class BudgetEntity {
     @Column(name="budgetId")
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="userid")
+    private UserEntity user;
+
     @NotNull
     @Column(name="budgetName")
     private String budgetName;
@@ -34,15 +38,11 @@ public class BudgetEntity {
     private String budgetDescription;
 
     @NotNull
-    @Column(name="budgetAmount")
+    @Column(name="totalBudgetAmount")
     private BigDecimal budgetAmount;
 
-    @NotNull
-    @Column(name="remainingAmount")
-    private BigDecimal remainingAmount;
-
-    @Column(name="actual")
-    private BigDecimal actual;
+    @Column(name="monthlyIncome")
+    private BigDecimal monthlyIncome;
 
     @Column(name="startDate")
     private LocalDate startDate;
@@ -50,13 +50,13 @@ public class BudgetEntity {
     @Column(name="endDate")
     private LocalDate endDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="userid")
-    private UserEntity user;
-
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name="createdDate")
     private LocalDateTime createdDate;
+
+    @Column(name="lastUpdatedDate")
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime lastUpdatedDate;
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name="budgets")
