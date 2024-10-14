@@ -67,4 +67,9 @@ public class BudgetServiceImpl implements BudgetService
     public BigDecimal calculateRemainingBudget(Long budgetId) {
         return null;
     }
+
+    @Override
+    public Optional<BudgetEntity> updateBudget(Long id, BudgetCreateRequest updateRequest) {
+        return Optional.empty();
+    }
 }

@@ -1,10 +1,10 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.BudgetCategoryRequest;
 import com.app.budgetbuddy.services.BudgetCategoriesService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(value="/api/budget-categories")
@@ -16,5 +16,10 @@ public class BudgetCategoriesController
     @Autowired
     public BudgetCategoriesController(BudgetCategoriesService budgetCategoriesService){
         this.budgetCategoriesService = budgetCategoriesService;
+    }
+
+    @PostMapping("/")
+    public ResponseEntity<?> createBudgetCategory(@RequestBody BudgetCategoryRequest budgetCategory){
+        return null;
     }
 }

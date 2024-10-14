@@ -31,6 +31,9 @@ import SavingsGoalQuestions, {SavingsGoalData} from "./SavingsGoalQuestions";
 import SpendingControlQuestions, {SpendingControlData} from "./SpendingControlQuestions";
 import DebtPayoffQuestions, {DebtPayoffData} from "./DebtPayoffQuestions";
 import CategoryItem from "./CategoryItem";
+import BudgetService from "../services/BudgetService";
+import BudgetGoalsService from "../services/BudgetGoalsService";
+import BudgetCategoriesService from "../services/BudgetCategoriesService";
 
 interface BudgetCategory {
     name: string;
@@ -112,6 +115,9 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     const [debtPayoffData, setDebtPayoffData] = useState<DebtPayoffData | undefined>(undefined);
     const [spendingControlData, setSpendingControlData] = useState<SpendingControlData | undefined>(undefined);
     const navigate = useNavigate();
+    const budgetService = BudgetService.getInstance();
+    const budgetGoalsService = BudgetGoalsService.getInstance();
+    const budgetCategoriesService = BudgetCategoriesService.getInstance();
 
     const handleNext = () => {
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -124,7 +130,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     const handleBudgetTypeSelect = (type: string) => {
         setBudgetData({...budgetData, budgetType: type});
         handleNext();
-    }
+    };
 
     const handleIncomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setBudgetData({...budgetData, monthlyIncome: parseFloat(e.target.value) || 0});
@@ -157,6 +163,22 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
             ...prev,
             expenseCategories: prev.expenseCategories.filter((_, i) => i !== index)
         }));
+    };
+
+    const createBudgetRequest = () => {
+
+    };
+
+    const createDebtPayoffRequest = () => {
+
+    };
+
+    const createControlSpendingRequest = () => {
+
+    };
+
+    const createSavingsGoalRequest = () => {
+
     };
 
 

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(value="/api/budgets")
@@ -46,14 +47,29 @@ public class BudgetController
     }
 
 
-
     @GetMapping("/{id}")
     public ResponseEntity<BudgetEntity> getBudgetById(@PathVariable Long id){
-        return null;
+        if(id < 1L){
+            return ResponseEntity.badRequest().body(null);
+        }
+        try
+        {
+            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(id);
+            return budgetEntityOptional.map(budgetEntity -> ResponseEntity.ok().body(budgetEntity)).orElseGet(() -> ResponseEntity.notFound().build());
+        }catch(Exception e){
+            LOGGER.error("There was an error while getting the budget", e);
+            return ResponseEntity.internalServerError().body(null);
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BudgetEntity> updateBudget(@PathVariable Long id, @RequestBody BudgetEntity budget){
+    public ResponseEntity<?> updateBudget(@PathVariable Long id, @RequestBody BudgetCreateRequest budget){
+        if((budget.budgetDescription() == null || budget.budgetDescription().isEmpty()) ||
+                budget.budgetAmount() == null || budget.budgetAmount().compareTo(BigDecimal.ONE) < 1
+                || budget.endDate() == null || budget.startDate() == null || budget.monthlyIncome() == null
+                || (budget.budgetName() == null || budget.budgetName().isEmpty()) || budget.userId() == null){
+            return ResponseEntity.badRequest().body("Invalid budget request");
+        }
         return null;
     }
 
