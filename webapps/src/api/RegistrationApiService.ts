@@ -8,12 +8,10 @@ export interface Registration
     email: string;
     password: string;
     username: string;
-    balance: number;
-    currency: string;
 }
 
 export async function registerUser(registration: Registration) : Promise<any> {
-    const {firstName, lastName, email, password, username, balance, currency} = registration;
+    const {firstName, lastName, email, password, username} = registration;
     try
     {
         const response = await axios.post(`${apiUrl}/api/register/`, registration);

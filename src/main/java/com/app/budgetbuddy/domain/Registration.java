@@ -16,6 +16,4 @@ public class Registration
     private String email;
     private String username;
     private String password;
-    private BigDecimal initialBalance;
-    private String currency;
 }

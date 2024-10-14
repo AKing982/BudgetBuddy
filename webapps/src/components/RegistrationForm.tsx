@@ -17,6 +17,7 @@ import {
 import { AccountBalance } from '@mui/icons-material';
 import { registerUser, Registration } from "../api/RegistrationApiService";
 import { useNavigate } from "react-router-dom";
+import BudgetQuestionnaireForm from "./BudgetQuestionnaireForm";
 
 // Create a custom theme
 const theme = createTheme({
@@ -77,8 +78,6 @@ interface RegistrationFormData {
     username: string;
     password: string;
     confirmPassword: string;
-    initialBalance: number;
-    currency: string;
 }
 
 const RegistrationForm: React.FC = () => {
@@ -88,10 +87,9 @@ const RegistrationForm: React.FC = () => {
         email: '',
         password: '',
         username: '',
-        confirmPassword: '',
-        initialBalance: 0,
-        currency: 'USD',
+        confirmPassword: ''
     });
+    const [showBudgetQuestionnaire, setShowBudgetQuestionnaire] = useState<boolean>(false);
     const navigate = useNavigate();
 
     const handleChange = (
@@ -110,24 +108,38 @@ const RegistrationForm: React.FC = () => {
             lastName: formData.lastName,
             email: formData.email,
             username: formData.username,
-            password: formData.password,
-            balance: formData.initialBalance,
-            currency: formData.currency
+            password: formData.password
         }
     };
 
-    const handleSubmit = async (event: React.FormEvent) => {
+
+    const handleBudgetQuestionnaireSubmit = async (budgetData: any) => {
+        navigate('/');
+    }
+
+    const handleNext = async (event: React.FormEvent) => {
         event.preventDefault();
+        await handleSubmit();
+        // Here you can add any validation logic before moving to the next step
+        setShowBudgetQuestionnaire(true);
+    };
+
+    const handleSubmit = async () => {
         try {
             let request = createRegistrationRequest(formData);
             const response = await registerUser(request);
             console.log('Response: ', response);
-            await new Promise(resolve => setTimeout(resolve, 6000));
-            navigate('/');
+            console.log('ShowBudgetQuestionnaireForm: ', showBudgetQuestionnaire);
+            // await new Promise(resolve => setTimeout(resolve, 6000));
         } catch (error) {
             console.error('Error: ', error);
         }
     };
+
+    if (showBudgetQuestionnaire) {
+        console.log('calling BudgetQuestionnaireForm');
+        return <BudgetQuestionnaireForm onSubmit={handleBudgetQuestionnaireSubmit} />;
+    }
 
     return (
         <ThemeProvider theme={theme}>
@@ -150,7 +162,7 @@ const RegistrationForm: React.FC = () => {
                     <Typography component="h1" variant="h5" sx={{ mb: 3, color: 'primary.main' }}>
                         Sign up for Budget Buddy
                     </Typography>
-                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+                    <Box component="form" onSubmit={handleNext} sx={{ mt: 1, width: '100%' }}>
                         <TextField
                             margin="normal"
                             required
@@ -209,38 +221,13 @@ const RegistrationForm: React.FC = () => {
                             value={formData.confirmPassword}
                             onChange={handleChange}
                         />
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            name="initialBalance"
-                            label="Initial Balance"
-                            type="number"
-                            value={formData.initialBalance}
-                            onChange={handleChange}
-                        />
-                        <FormControl fullWidth margin="normal">
-                            <InputLabel id="currency-label">Currency</InputLabel>
-                            <Select
-                                labelId="currency-label"
-                                name="currency"
-                                value={formData.currency}
-                                label="Currency"
-                                onChange={handleChange}
-                            >
-                                <MenuItem value="USD">USD</MenuItem>
-                                <MenuItem value="EUR">EUR</MenuItem>
-                                <MenuItem value="GBP">GBP</MenuItem>
-                                <MenuItem value="JPY">JPY</MenuItem>
-                            </Select>
-                        </FormControl>
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
                             sx={{ mt: 3, mb: 2, py: 1.5 }}
                         >
-                            Sign Up
+                            Next
                         </Button>
                     </Box>
                 </Paper>

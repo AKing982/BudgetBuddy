@@ -18,11 +18,13 @@ public class BudgetGoalsEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @Column(name="budgetId")
     private BudgetEntity budget;
 
     @Column(name="goalName")
     private String goalName;
+
+    @Column(name="goalDescription")
+    private String goalDescription;
 
     @Column(name="goalType")
     private String goalType;
@@ -30,8 +32,14 @@ public class BudgetGoalsEntity {
     @Column(name="targetAmount")
     private double targetAmount;
 
-    @Column(name="currentAmount")
-    private double currentAmount;
+    @Column(name="monthlyAllocation")
+    private double monthlyAllocation;
+
+    @Column(name="currentSavings")
+    private double currentSavings;
+
+    @Column(name="savingsFrequency")
+    private String savingsFrequency;
 
     @Column(name="createdAt")
     @Temporal(TemporalType.TIMESTAMP)
