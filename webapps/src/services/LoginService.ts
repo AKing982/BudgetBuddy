@@ -25,6 +25,18 @@ class LoginService {
             throw err;
         }
     }
+
+    public async fetchMaximumUserId() : Promise<number> {
+        try
+        {
+            const response = await axios.get(`${apiUrl}/api/users/max-id`);
+            return response.data;
+
+        }catch(error){
+            console.error('There was an error fetching the latest userId: ', error);
+            throw error;
+        }
+    }
 }
 
 export default LoginService;

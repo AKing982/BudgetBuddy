@@ -41,4 +41,16 @@ public class UserController {
     public ResponseEntity<UserEntity> findUserById(@PathVariable Long id){
         return ResponseEntity.badRequest().build();
     }
+
+    @GetMapping("/max-id")
+    public ResponseEntity<Long> findMaxId(){
+        try
+        {
+            Long maxUserId = userService.findMaxUserId();
+            return ResponseEntity.ok(maxUserId);
+        }catch(Exception e){
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

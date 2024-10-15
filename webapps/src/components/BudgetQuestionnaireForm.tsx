@@ -34,10 +34,19 @@ import CategoryItem from "./CategoryItem";
 import BudgetService from "../services/BudgetService";
 import BudgetGoalsService from "../services/BudgetGoalsService";
 import BudgetCategoriesService from "../services/BudgetCategoriesService";
+import LoginService from "../services/LoginService";
+import axios from "axios";
+import {apiUrl} from "../config/api";
 
 interface BudgetCategory {
-    name: string;
-    amount: number;
+    budgetId: number;
+    categoryName: string;
+    allocatedAmount: number;
+    monthlySpendingLimit: number;
+    currentSpending: number;
+    isFixedExpense: boolean;
+    isActive: boolean;
+    priority: number;
 }
 
 interface BudgetGoal {
@@ -63,17 +72,17 @@ interface BudgetQuestions {
     spendingControlData?: SpendingControlData;
 }
 
-interface BudgetRequestData {
+interface BudgetCreateRequest {
     userid: number;
     budgetName: string;
     budgetDescription: string;
     totalBudgetAmount: number;
     monthlyIncome: number;
     startDate: Date;
-    endDate: Date;
+    endDate: string | Date | null | undefined ;
 }
 
-interface BudgetGoalsData {
+interface BudgetGoalsRequest {
     budgetId: number;
     goalName: string;
     goalDescription: string;
@@ -85,20 +94,10 @@ interface BudgetGoalsData {
     status: string;
 }
 
-interface BudgetCategoriesData {
-    budgetId: number;
-    categoryName: string;
-    allocatedAmount: number;
-    monthlySpendingLimit: number;
-    currentSpending: number;
-    isFixedExpense: boolean;
-    isActive: boolean;
-    priority: number;
+interface BudgetCategoriesRequest {
+    categories: BudgetCategory[];
 }
 
-interface SavingsGoalRequestData {
-
-}
 
 interface BudgetQuestionnaireProps {
     onSubmit: (budgetData: BudgetQuestions) => void;
@@ -167,7 +166,16 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         debtPayoffData: undefined,
         spendingControlData: undefined
     });
-    const [newCategory, setNewCategory] = useState<BudgetCategory>({name: '', amount: 0});
+    const [newCategory, setNewCategory] = useState<BudgetCategory>({
+        budgetId: 0, // You might want to set this to a default value or generate it
+        categoryName: '',
+        allocatedAmount: 0,
+        monthlySpendingLimit: 0,
+        currentSpending: 0,
+        isFixedExpense: false,
+        isActive: true,
+        priority: 0
+    });
     const [savingsGoalData, setSavingsGoalData] = useState<SavingsGoalData | undefined>(undefined);
     const [debtPayoffData, setDebtPayoffData] = useState<DebtPayoffData | undefined>(undefined);
     const [spendingControlData, setSpendingControlData] = useState<SpendingControlData | undefined>(undefined);
@@ -175,6 +183,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     const budgetService = BudgetService.getInstance();
     const budgetGoalsService = BudgetGoalsService.getInstance();
     const budgetCategoriesService = BudgetCategoriesService.getInstance();
+    const loginService = new LoginService();
 
     const handleNext = () => {
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -206,12 +215,21 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     };
 
     const handleCategoryAdd = () => {
-        if (newCategory.name && newCategory.amount) {
+        if (newCategory.categoryName && newCategory.allocatedAmount) {
             setBudgetData(prev => ({
                 ...prev,
                 expenseCategories: [...prev.expenseCategories, newCategory]
             }));
-            setNewCategory({ name: '', amount: 0 });
+            setNewCategory({
+                budgetId: 0, // You might want to generate a new ID here
+                categoryName: '',
+                allocatedAmount: 0,
+                monthlySpendingLimit: 0,
+                currentSpending: 0,
+                isFixedExpense: false,
+                isActive: true,
+                priority: 0
+            });
         }
     };
 
@@ -221,44 +239,170 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
             expenseCategories: prev.expenseCategories.filter((_, i) => i !== index)
         }));
     };
+    const endDateTarget: string | Date | null | undefined = (() => {
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
 
-    const createBudgetRequest = (budgetData: BudgetQuestions)  : BudgetRequestData => {
+        switch (budgetData.budgetType) {
+            case 'Saving for a goal':
+                return savingsGoalData?.targetDate;
+            case 'Controlling spending':
+            case 'Pay off debt':
+                return oneYearFromNow;
+            default:
+                return null; // Or handle other cases as needed
+        }
+    })();
+
+    const createBudgetRequest = async (budgetData: BudgetQuestions)  : Promise<BudgetCreateRequest> => {
         if(budgetData == null){
             throw new Error('BudgetData found null');
         }
+        const newUserId = await loginService.fetchMaximumUserId();
+        let budgetName = budgetData.budgetType === 'Saving for a goal'
+            ? 'Savings Budget'
+            : (budgetData.budgetType === 'Controlling spending'
+                ? 'Spending Control Budget'
+                : (budgetData.budgetType === 'paying off debt'
+                    ? 'Debt Payoff Budget'
+                    : 'Unknown Budget Type'));
+
         return {
-            userid: budgetData.
+            userid: newUserId,
+            budgetName: budgetName,
+            budgetDescription: budgetName,
+            totalBudgetAmount: 0,
+            monthlyIncome: budgetData.monthlyIncome,
+            startDate: new Date(),
+            endDate: endDateTarget
+        };
+    };
+
+    const createBudgetGoalsRequest = () : Omit<BudgetGoalsRequest, 'budgetId'> => {
+        switch(budgetData.budgetType){
+            case 'Saving for goal':
+                if(!savingsGoalData) throw new Error('Savings goal data is required for this budget type');
+                return {
+                    goalName: savingsGoalData.goalName,
+                    goalDescription: savingsGoalData.goalDescription,
+                    goalType: 'Savings',
+                    targetAmount: savingsGoalData.targetAmount,
+                    monthlyAllocation: 0,
+                    currentSavings: savingsGoalData.currentSavings,
+                    savingsFrequency: savingsGoalData.savingsFrequency,
+                    status: 'In Progress'
+                };
+
+            case 'Paying off debt':
+                if (!debtPayoffData) throw new Error('Debt payoff data is required for this budget type');
+                const totalDebt = debtPayoffData.debts.reduce((sum, debt) => sum + debt.amount, 0);
+                const totalAllocation = debtPayoffData.debts.reduce((sum, debt) => sum + debt.allocation, 0);
+                return {
+                    goalName: 'Debt Payoff',
+                    goalDescription: 'Paying off all debts',
+                    goalType: 'Debt Payoff',
+                    targetAmount: totalDebt,
+                    monthlyAllocation: totalAllocation,
+                    currentSavings: 0,
+                    savingsFrequency: 'monthly',
+                    status: 'In Progress'
+                };
+
+            case 'Controlling spending':
+                if(!spendingControlData) throw new Error('Spending Control Data is required for this budget type');
+                const totalSpendingLimit = spendingControlData.categories.reduce((sum, category) => sum + category.spendingLimit, 0);
+                return {
+                    goalName: 'Spending Control',
+                    goalDescription: 'Managing and reducing overall spending',
+                    goalType: 'Spending Control',
+                    targetAmount: totalSpendingLimit,
+                    monthlyAllocation: totalSpendingLimit,
+                    currentSavings: 0,
+                    savingsFrequency: 'monthly',
+                    status: 'In Progress'
+                };
+
+            default:
+                throw new Error('Invalid budget type');
+        }
+    }
+
+    const createBudgetCategoriesRequest = () : BudgetCategoriesRequest | null => {
+        if(spendingControlData){
+            const categories = spendingControlData.categories.map(category => ({
+                budgetId: 0, // This will be set after budget creation
+                categoryName: category.name,
+                allocatedAmount: category.spendingLimit,
+                monthlySpendingLimit: category.spendingLimit,
+                currentSpending: category.currentSpending,
+                isFixedExpense: false, // Assuming all categories are not fixed expenses
+                isActive: true,
+                priority: category.reductionPriority
+            }));
+
+            return { categories };
+        }
+        return null;
+    }
+
+    const handleBudgetRegistration = async (budgetData: BudgetQuestions)=> {
+        if(budgetData == null){
+            return null;
+        }
+        try
+        {
+            // Create the budget Request
+            const budgetRequest = await createBudgetRequest(budgetData);
+            // Get the response from the server
+            const budgetServerResponse = await axios.post(`${apiUrl}/budgets/`, {
+                budgetRequest
+            });
+            console.log('Budget Response: ', budgetServerResponse.data);
+            return budgetServerResponse.data;
+        }catch(error){
+            console.error('There was an error creating the budget: ', error);
+            throw error;
         }
     };
 
-    const createDebtPayoffRequest = (debtPayOffData: DebtPayoffData): DebtPayoffData => {
+    const handleBudgetGoalRegistration = async (budgetId: number) => {
+        try
+        {
+            const budgetGoalsRequest = createBudgetGoalsRequest();
+            const budgetGoalsWithId = {...budgetGoalsRequest, budgetId};
+            const budgetGoalsServerResponse = await axios.post(`${apiUrl}/budget-goals/`, {
+                budgetGoalsWithId
+            });
+            console.log('Budget Goals Response: ', budgetGoalsServerResponse.data);
+            return budgetGoalsServerResponse.data;
 
+        }catch(error){
+            console.error('There was an error sending the budget goals to the server: ', error);
+            throw error;
+        }
     };
 
-    const createControlSpendingRequest = (spendingControlData: SpendingControlData) : SpendingControlData => {
-
-    };
-
-    const createSavingsGoalRequest = (savingsGoalData: SavingsGoalData): SavingsGoalRequestData => {
-
-    };
-
-    const handleDebtPayoffRegistration = async () => {
-
-    };
-
-    const handleControlSpendingRegistration = async () => {
-
-    };
-
-    const handleSavingsGoalRegistration = async () => {
-
-    };
-
-    const handleBudgetCreationRegistration = async () => {
-
-    };
-
+    const handleBudgetCategoriesRegistration = async (budgetId: number) => {
+        try
+        {
+            const budgetCategoriesRequest = createBudgetCategoriesRequest();
+            if(budgetCategoriesRequest){
+                const categoriesWithBudgetId = budgetCategoriesRequest.categories.map(category => ({
+                    ...category,
+                    budgetId
+                }));
+                const budgetCategoriesResponse = await axios.post(`${apiUrl}/budget-categories/`, {
+                    categoriesWithBudgetId
+                });
+                console.log('Budget Categories Response: ', budgetCategoriesResponse);
+                return budgetCategoriesResponse.data;
+            }
+            return null;
+        }catch(error){
+            console.error('There was an error sending the budget categories to the server: ', error);
+            throw error;
+        }
+    }
 
     const handleSubmit = async () => {
         try {
@@ -268,14 +412,27 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                 debtPayoffData: budgetData.budgetType === 'Paying off debt' ? debtPayoffData : undefined,
                 spendingControlData: budgetData.budgetType === 'Controlling spending' ? spendingControlData : undefined,
             };
+
+            // Step 1: Register the budget
+            const createdBudget = await handleBudgetRegistration(finalBudgetData);
+            if(!createdBudget){
+                throw new Error('Failed to create budget');
+            }
+
+            // Step 2: Register the Budget Goal
+            await handleBudgetGoalRegistration(createdBudget.id);
+
+            // Step 3: Handle the Budget Categories when budget Type is controlled spending
+            if(budgetData.budgetType === 'Controlling spending'){
+                await handleBudgetCategoriesRegistration(createdBudget.id);
+            }
+
             onSubmit(finalBudgetData);
             navigate('/');
         } catch(error) {
             console.error('Error submitting budget data: ', error);
         }
     };
-
-
 
     return (
         <ThemeProvider theme={ theme}>

@@ -81,4 +81,9 @@ public class UserServiceImpl implements UserService
     public Long findUserIdByUsername(String username) {
         return userRepository.findIdByUsername(username);
     }
+
+    @Override
+    public Long findMaxUserId() {
+        return userRepository.findMaxId();
+    }
 }

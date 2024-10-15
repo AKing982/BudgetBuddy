@@ -12,4 +12,5 @@ public interface UserService extends ServiceModel<UserEntity>
     Optional<UserEntity> findByUsername(String username);
     Long findUserIdByEmail(String email);
     Long findUserIdByUsername(String username);
+    Long findMaxUserId();
 }

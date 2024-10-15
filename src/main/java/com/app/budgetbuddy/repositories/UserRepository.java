@@ -22,4 +22,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.username LIKE :user")
     Long findIdByUsername(@Param("user") String username);
+
+    @Query("SELECT max(u.id) FROM UserEntity u")
+    Long findMaxId();
 }
