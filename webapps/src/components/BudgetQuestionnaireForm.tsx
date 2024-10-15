@@ -41,9 +41,16 @@ interface BudgetCategory {
 }
 
 interface BudgetGoal {
-    name: string;
+    id?: number;
+    budgetId: number;
+    goalName: string;
+    goalDescription: string;
+    goalType: string;
     targetAmount: number;
-    targetDate: string;
+    monthlyAllocation: number;
+    currentSavings: number;
+    savingsFrequency: string;
+    status: string;
 }
 
 interface BudgetQuestions {
@@ -54,6 +61,43 @@ interface BudgetQuestions {
     savingsGoalData?: SavingsGoalData;
     debtPayoffData?: DebtPayoffData;
     spendingControlData?: SpendingControlData;
+}
+
+interface BudgetRequestData {
+    userid: number;
+    budgetName: string;
+    budgetDescription: string;
+    totalBudgetAmount: number;
+    monthlyIncome: number;
+    startDate: Date;
+    endDate: Date;
+}
+
+interface BudgetGoalsData {
+    budgetId: number;
+    goalName: string;
+    goalDescription: string;
+    goalType: string;
+    targetAmount: number;
+    monthlyAllocation: number;
+    currentSavings: number;
+    savingsFrequency: string;
+    status: string;
+}
+
+interface BudgetCategoriesData {
+    budgetId: number;
+    categoryName: string;
+    allocatedAmount: number;
+    monthlySpendingLimit: number;
+    currentSpending: number;
+    isFixedExpense: boolean;
+    isActive: boolean;
+    priority: number;
+}
+
+interface SavingsGoalRequestData {
+
 }
 
 interface BudgetQuestionnaireProps {
@@ -108,7 +152,20 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         budgetType: '',
         monthlyIncome: 0,
         expenseCategories: [],
-        financialGoal: { name: '', targetAmount: 0, targetDate: '' }
+        financialGoal: {
+            budgetId: 0,
+            goalName: '',
+            goalDescription: '',
+            goalType: '',
+            targetAmount: 0,
+            monthlyAllocation: 0,
+            currentSavings: 0,
+            savingsFrequency: '',
+            status: ''
+        },
+        savingsGoalData: undefined,
+        debtPayoffData: undefined,
+        spendingControlData: undefined
     });
     const [newCategory, setNewCategory] = useState<BudgetCategory>({name: '', amount: 0});
     const [savingsGoalData, setSavingsGoalData] = useState<SavingsGoalData | undefined>(undefined);
@@ -165,19 +222,40 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         }));
     };
 
-    const createBudgetRequest = () => {
+    const createBudgetRequest = (budgetData: BudgetQuestions)  : BudgetRequestData => {
+        if(budgetData == null){
+            throw new Error('BudgetData found null');
+        }
+        return {
+            userid: budgetData.
+        }
+    };
+
+    const createDebtPayoffRequest = (debtPayOffData: DebtPayoffData): DebtPayoffData => {
 
     };
 
-    const createDebtPayoffRequest = () => {
+    const createControlSpendingRequest = (spendingControlData: SpendingControlData) : SpendingControlData => {
 
     };
 
-    const createControlSpendingRequest = () => {
+    const createSavingsGoalRequest = (savingsGoalData: SavingsGoalData): SavingsGoalRequestData => {
 
     };
 
-    const createSavingsGoalRequest = () => {
+    const handleDebtPayoffRegistration = async () => {
+
+    };
+
+    const handleControlSpendingRegistration = async () => {
+
+    };
+
+    const handleSavingsGoalRegistration = async () => {
+
+    };
+
+    const handleBudgetCreationRegistration = async () => {
 
     };
 
