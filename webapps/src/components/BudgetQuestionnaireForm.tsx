@@ -73,7 +73,7 @@ interface BudgetQuestions {
 }
 
 interface BudgetCreateRequest {
-    userid: number;
+    userId: number;
     budgetName: string;
     budgetDescription: string;
     totalBudgetAmount: number;
@@ -239,93 +239,96 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
             expenseCategories: prev.expenseCategories.filter((_, i) => i !== index)
         }));
     };
-    const endDateTarget: string | Date | null | undefined = (() => {
-        const oneYearFromNow = new Date();
-        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    // const endDateTarget: string | Date | null | undefined = (() => {
+    //     const oneYearFromNow = new Date();
+    //     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    //
+    //     switch (budgetData.budgetType) {
+    //         case 'Saving for a goal':
+    //             return savingsGoalData?.targetDate;
+    //         case 'Controlling spending':
+    //         case 'Pay off debt':
+    //             return oneYearFromNow;
+    //         default:
+    //             return null; // Or handle other cases as needed
+    //     }
+    // })();
 
-        switch (budgetData.budgetType) {
-            case 'Saving for a goal':
-                return savingsGoalData?.targetDate;
-            case 'Controlling spending':
-            case 'Pay off debt':
-                return oneYearFromNow;
-            default:
-                return null; // Or handle other cases as needed
-        }
-    })();
+    // const createBudgetRequest = async (budgetData: BudgetQuestions)  : Promise<BudgetCreateRequest> => {
+    //     if(budgetData == null){
+    //         throw new Error('BudgetData found null');
+    //     }
+    //     const newUserId = await loginService.fetchMaximumUserId();
+    //     let budgetName = budgetData.budgetType === 'Saving for a goal'
+    //         ? 'Savings Budget'
+    //         : (budgetData.budgetType === 'Controlling spending'
+    //             ? 'Spending Control Budget'
+    //             : (budgetData.budgetType === 'paying off debt'
+    //                 ? 'Debt Payoff Budget'
+    //                 : 'Unknown Budget Type'));
+    //
+    //     const startDate = new Date();
+    //     const targetAmount = budgetData.savingsGoalData?.targetAmount;
+    //
+    //     return {
+    //         userId: newUserId,
+    //         budgetName: budgetName,
+    //         budgetDescription: budgetName,
+    //         totalBudgetAmount: 0,
+    //         monthlyIncome: budgetData.monthlyIncome,
+    //         startDate: new Date(),
+    //         endDate: endDateTarget
+    //     };
+    // };
 
-    const createBudgetRequest = async (budgetData: BudgetQuestions)  : Promise<BudgetCreateRequest> => {
-        if(budgetData == null){
-            throw new Error('BudgetData found null');
-        }
-        const newUserId = await loginService.fetchMaximumUserId();
-        let budgetName = budgetData.budgetType === 'Saving for a goal'
-            ? 'Savings Budget'
-            : (budgetData.budgetType === 'Controlling spending'
-                ? 'Spending Control Budget'
-                : (budgetData.budgetType === 'paying off debt'
-                    ? 'Debt Payoff Budget'
-                    : 'Unknown Budget Type'));
-
-        return {
-            userid: newUserId,
-            budgetName: budgetName,
-            budgetDescription: budgetName,
-            totalBudgetAmount: 0,
-            monthlyIncome: budgetData.monthlyIncome,
-            startDate: new Date(),
-            endDate: endDateTarget
-        };
-    };
-
-    const createBudgetGoalsRequest = () : Omit<BudgetGoalsRequest, 'budgetId'> => {
-        switch(budgetData.budgetType){
-            case 'Saving for goal':
-                if(!savingsGoalData) throw new Error('Savings goal data is required for this budget type');
-                return {
-                    goalName: savingsGoalData.goalName,
-                    goalDescription: savingsGoalData.goalDescription,
-                    goalType: 'Savings',
-                    targetAmount: savingsGoalData.targetAmount,
-                    monthlyAllocation: 0,
-                    currentSavings: savingsGoalData.currentSavings,
-                    savingsFrequency: savingsGoalData.savingsFrequency,
-                    status: 'In Progress'
-                };
-
-            case 'Paying off debt':
-                if (!debtPayoffData) throw new Error('Debt payoff data is required for this budget type');
-                const totalDebt = debtPayoffData.debts.reduce((sum, debt) => sum + debt.amount, 0);
-                const totalAllocation = debtPayoffData.debts.reduce((sum, debt) => sum + debt.allocation, 0);
-                return {
-                    goalName: 'Debt Payoff',
-                    goalDescription: 'Paying off all debts',
-                    goalType: 'Debt Payoff',
-                    targetAmount: totalDebt,
-                    monthlyAllocation: totalAllocation,
-                    currentSavings: 0,
-                    savingsFrequency: 'monthly',
-                    status: 'In Progress'
-                };
-
-            case 'Controlling spending':
-                if(!spendingControlData) throw new Error('Spending Control Data is required for this budget type');
-                const totalSpendingLimit = spendingControlData.categories.reduce((sum, category) => sum + category.spendingLimit, 0);
-                return {
-                    goalName: 'Spending Control',
-                    goalDescription: 'Managing and reducing overall spending',
-                    goalType: 'Spending Control',
-                    targetAmount: totalSpendingLimit,
-                    monthlyAllocation: totalSpendingLimit,
-                    currentSavings: 0,
-                    savingsFrequency: 'monthly',
-                    status: 'In Progress'
-                };
-
-            default:
-                throw new Error('Invalid budget type');
-        }
-    }
+    // const createBudgetGoalsRequest = () : Omit<BudgetGoalsRequest, 'budgetId'> => {
+    //     switch(budgetData.budgetType){
+    //         case 'Saving for goal':
+    //             if(!savingsGoalData) throw new Error('Savings goal data is required for this budget type');
+    //             return {
+    //                 goalName: savingsGoalData.goalName,
+    //                 goalDescription: savingsGoalData.goalDescription,
+    //                 goalType: 'Savings',
+    //                 targetAmount: savingsGoalData.targetAmount,
+    //                 monthlyAllocation: 0,
+    //                 currentSavings: savingsGoalData.currentSavings,
+    //                 savingsFrequency: savingsGoalData.savingsFrequency,
+    //                 status: 'In Progress'
+    //             };
+    //
+    //         case 'Paying off debt':
+    //             if (!debtPayoffData) throw new Error('Debt payoff data is required for this budget type');
+    //             const totalDebt = debtPayoffData.debts.reduce((sum, debt) => sum + debt.amount, 0);
+    //             const totalAllocation = debtPayoffData.debts.reduce((sum, debt) => sum + debt.allocation, 0);
+    //             return {
+    //                 goalName: 'Debt Payoff',
+    //                 goalDescription: 'Paying off all debts',
+    //                 goalType: 'Debt Payoff',
+    //                 targetAmount: totalDebt,
+    //                 monthlyAllocation: totalAllocation,
+    //                 currentSavings: 0,
+    //                 savingsFrequency: 'monthly',
+    //                 status: 'In Progress'
+    //             };
+    //
+    //         case 'Controlling spending':
+    //             if(!spendingControlData) throw new Error('Spending Control Data is required for this budget type');
+    //             const totalSpendingLimit = spendingControlData.categories.reduce((sum, category) => sum + category.spendingLimit, 0);
+    //             return {
+    //                 goalName: 'Spending Control',
+    //                 goalDescription: 'Managing and reducing overall spending',
+    //                 goalType: 'Spending Control',
+    //                 targetAmount: totalSpendingLimit,
+    //                 monthlyAllocation: totalSpendingLimit,
+    //                 currentSavings: 0,
+    //                 savingsFrequency: 'monthly',
+    //                 status: 'In Progress'
+    //             };
+    //
+    //         default:
+    //             throw new Error('Invalid budget type');
+    //     }
+    // }
 
     const createBudgetCategoriesRequest = () : BudgetCategoriesRequest | null => {
         if(spendingControlData){
@@ -352,10 +355,17 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         try
         {
             // Create the budget Request
-            const budgetRequest = await createBudgetRequest(budgetData);
+            const budgetRequest = await budgetService.createBudgetRequest(budgetData, savingsGoalData);
+            console.log('Budget Request: ', budgetRequest);
             // Get the response from the server
-            const budgetServerResponse = await axios.post(`${apiUrl}/budgets/`, {
-                budgetRequest
+            const budgetServerResponse = await axios.post(`${apiUrl}/api/budgets/`, {
+                userId: budgetRequest.userId,
+                budgetName: budgetRequest.budgetName,
+                budgetDescription: budgetRequest.budgetDescription,
+                budgetAmount: budgetRequest.totalBudgetAmount,
+                monthlyIncome: budgetRequest.monthlyIncome,
+                startDate: budgetRequest.startDate,
+                endDate: budgetRequest.endDate
             });
             console.log('Budget Response: ', budgetServerResponse.data);
             return budgetServerResponse.data;
@@ -370,7 +380,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         {
             const budgetGoalsRequest = createBudgetGoalsRequest();
             const budgetGoalsWithId = {...budgetGoalsRequest, budgetId};
-            const budgetGoalsServerResponse = await axios.post(`${apiUrl}/budget-goals/`, {
+            const budgetGoalsServerResponse = await axios.post(`${apiUrl}/api/budget-goals/`, {
                 budgetGoalsWithId
             });
             console.log('Budget Goals Response: ', budgetGoalsServerResponse.data);

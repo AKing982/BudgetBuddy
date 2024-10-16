@@ -1,10 +1,14 @@
 import React, {useState} from "react";
 import {Box, Button, Checkbox, FormControlLabel, Grid, SelectChangeEvent, TextField, Typography} from "@mui/material";
+import {DatePicker} from "@mui/x-date-pickers/DatePicker";
+import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
+import { LocalizationProvider } from "@mui/x-date-pickers";
 
 interface DebtItem {
     type: string;
     amount: number;
     allocation: number;
+    targetDate: Date;
 }
 
 
@@ -13,6 +17,7 @@ export interface DebtPayoffData {
     otherDebtType: string;
     otherDebtAmount: number;
     otherDebtAllocation: number;
+    otherDebtTargetDate: Date;
 }
 
 interface DebtPayoffQuestionProps {
@@ -26,14 +31,15 @@ const DebtPayoffQuestions: React.FC<DebtPayoffQuestionProps> = ({ onDataChange }
         debts: [],
         otherDebtType: '',
         otherDebtAmount: 0,
-        otherDebtAllocation: 0
+        otherDebtAllocation: 0,
+        otherDebtTargetDate: new Date()
     });
 
     const handleDebtTypeToggle = (debtType: string) => {
         setDebtPayoffData(prev => {
             const newDebts = prev.debts.some(debt => debt.type === debtType)
                 ? prev.debts.filter(debt => debt.type !== debtType)
-                : [...prev.debts, { type: debtType, amount: 0, allocation: 0 }];
+                : [...prev.debts, { type: debtType, amount: 0, allocation: 0, targetDate: new Date() }];
 
             const updatedData = { ...prev, debts: newDebts };
             onDataChange(updatedData);
@@ -41,7 +47,7 @@ const DebtPayoffQuestions: React.FC<DebtPayoffQuestionProps> = ({ onDataChange }
         });
     };
 
-    const handleDebtItemChange = (debtType: string, field: 'amount' | 'allocation', value: number) => {
+    const handleDebtItemChange = (debtType: string, field: keyof DebtItem, value: number | Date) => {
         setDebtPayoffData(prev => {
             const newDebts = prev.debts.map(debt =>
                 debt.type === debtType ? { ...debt, [field]: value } : debt
@@ -69,7 +75,9 @@ const DebtPayoffQuestions: React.FC<DebtPayoffQuestionProps> = ({ onDataChange }
                     {
                         type: prev.otherDebtType,
                         amount: prev.otherDebtAmount,
-                        allocation: prev.otherDebtAllocation
+                        allocation: prev.otherDebtAllocation,
+                        targetDate: prev.otherDebtTargetDate
+
                     }
                 ];
                 const updatedData = {
@@ -77,7 +85,8 @@ const DebtPayoffQuestions: React.FC<DebtPayoffQuestionProps> = ({ onDataChange }
                     debts: newDebts,
                     otherDebtType: '',
                     otherDebtAmount: 0,
-                    otherDebtAllocation: 0
+                    otherDebtAllocation: 0,
+                    otherDebtTargetDate: new Date()
                 };
                 onDataChange(updatedData);
                 return updatedData;
@@ -86,6 +95,9 @@ const DebtPayoffQuestions: React.FC<DebtPayoffQuestionProps> = ({ onDataChange }
     };
 
     return (
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+
+
         <Box>
             <Typography variant="h6" gutterBottom>
                 Debt Payoff Specific Questions
@@ -132,6 +144,18 @@ const DebtPayoffQuestions: React.FC<DebtPayoffQuestionProps> = ({ onDataChange }
                             onChange={(e) => handleDebtItemChange(debt.type, 'allocation', Number(e.target.value))}
                         />
                     </Grid>
+                    <Grid item xs={4}>
+                        <DatePicker
+                            label="Target Payoff Date"
+                            value={debt.targetDate}
+                            onChange={(newDate) => {
+                                if (newDate) {
+                                    handleDebtItemChange(debt.type, 'targetDate', newDate);
+                                }
+                            }}
+                            // renderInput={(params) => <TextField {...params} fullWidth />}
+                        />
+                    </Grid>
                 </Grid>
             ))}
 
@@ -174,6 +198,7 @@ const DebtPayoffQuestions: React.FC<DebtPayoffQuestionProps> = ({ onDataChange }
                 </Grid>
             </Grid>
         </Box>
+        </LocalizationProvider>
     );
 }
 export default DebtPayoffQuestions;
