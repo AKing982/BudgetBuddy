@@ -114,7 +114,7 @@ class BudgetGoalsService {
     }
 
 
-    public async createBudgetGoal(budgetId: number, budgetQuestions: BudgetQuestions, savingsGoalData: SavingsGoalData, debtPayoffData: DebtPayoffData, spendingControlData: SpendingControlData) : Promise<null>{
+    public async createBudgetGoal(budgetId: number, budgetQuestions: BudgetQuestions, savingsGoalData: SavingsGoalData, debtPayoffData: DebtPayoffData, spendingControlData: SpendingControlData) : Promise<any>{
         if(budgetQuestions == null){
             throw new Error('BudgetGoal was found null');
         }
@@ -122,7 +122,7 @@ class BudgetGoalsService {
         {
             const budgetGoalsRequest = this.createBudgetGoalsRequest(budgetQuestions, savingsGoalData, debtPayoffData, spendingControlData);
             const budgetGoalsWithId = {...budgetGoalsRequest, budgetId};
-            const response = await axios.post(`${apiUrl}/api/budget-goals/`, {
+            return await axios.post(`${apiUrl}/api/budget-goals/`, {
                 budgetId: budgetGoalsWithId.budgetId,
                 goalName: budgetGoalsWithId.goalName,
                 goalDescription: budgetGoalsWithId.goalDescription,
@@ -133,7 +133,6 @@ class BudgetGoalsService {
                 savingsFrequency: budgetGoalsWithId.savingsFrequency,
                 status: budgetGoalsWithId.status
             });
-            return response.data;
 
         }catch(error){
             console.error('There was an error creating the budget goal: ', error);

@@ -84,11 +84,25 @@ class BudgetService {
         return null;
     }
 
+    private calculateNumberOfMonths(startDate: Date, endDate: Date) : number {
+        if(!startDate || !endDate){
+            throw new Error('Invalid StartDate or EndDate found');
+        }
+        const yearDifference = endDate.getFullYear() - startDate.getFullYear();
+        const monthDifference = endDate.getMonth() - startDate.getMonth();
+        return yearDifference * 12 + monthDifference;
+    }
 
     public calculateTotalBudgetAmount(budgetType: string, startDate: Date, endDate: Date, targetAmount: number, monthlyIncome: number, currentSavings: number, monthlyAllocation: number) : number {
         if(targetAmount < 0) throw new Error('Invalid Target Amount has been entered');
+
+        // If the start Date and endDate are equal, then adjust the end date to be one month out from the start date
+        if(startDate.getTime() === endDate.getTime()){
+            endDate.setMonth(startDate.getMonth() + 1);
+        }
+
         let totalBudgetAmount = 0;
-        const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+        const months = this.calculateNumberOfMonths(startDate, endDate);
         switch(budgetType){
             case 'Saving for a goal':
                 let totalToSave = targetAmount - currentSavings;
@@ -100,7 +114,7 @@ class BudgetService {
                 let debtAmount = targetAmount;
                 totalBudgetAmount = monthlyIncome - monthlyAllocation;
 
-                // Check if the debt can be paid off within the
+                // // Check if the debt can be paid off within the
                 if(monthlyAllocation * months < debtAmount){
                     alert('Warning: The specified monthly allocation may not be sufficient to pay off the debt within the budget period');
                 }
@@ -114,13 +128,17 @@ class BudgetService {
                 throw new Error('Invalid Budget type');
         }
         return totalBudgetAmount;
-    }
-
+    };
 
     public async createBudgetRequest(budgetData: BudgetQuestions, savingsGoalData: SavingsGoalData): Promise<BudgetCreateRequest> {
-        if (budgetData == null) {
+        if (!budgetData) {
             throw new Error('BudgetData found null');
         }
+
+        if(!savingsGoalData){
+            throw new Error('SavingsGoalData found null');
+        }
+
         const newUserId = await this.loginService.fetchMaximumUserId();
         let budgetName = budgetData.budgetType === 'Saving for a goal'
             ? 'Savings Budget'
@@ -130,16 +148,21 @@ class BudgetService {
                     ? 'Debt Payoff Budget'
                     : 'Unknown Budget Type'));
 
+        let monthlyIncome = budgetData.monthlyIncome;
+        if(monthlyIncome < 0){
+            throw new Error('Invalid monthly income');
+        }
         const startDate = new Date();
-        const targetAmount = budgetData.savingsGoalData?.targetAmount;
-        const endDate = this.createEndDateTarget(budgetData, savingsGoalData);
+        const targetAmount = budgetData.savingsGoalData?.targetAmount as number;
+        const endDate = this.createEndDateTarget(budgetData, savingsGoalData) as Date;
+        const budgetAmount = this.calculateTotalBudgetAmount(budgetData.budgetType, startDate, endDate, targetAmount, monthlyIncome, savingsGoalData.currentSavings, 0);
 
         return {
             userId: newUserId,
             budgetName: budgetName,
             budgetDescription: budgetName,
-            totalBudgetAmount: 0,
-            monthlyIncome: budgetData.monthlyIncome,
+            totalBudgetAmount: budgetAmount,
+            monthlyIncome: monthlyIncome,
             startDate: new Date(),
             endDate: endDate
         };
@@ -152,25 +175,42 @@ class BudgetService {
             case 'Saving for a goal':
                 return savingsGoalData?.targetDate;
             case 'Controlling spending':
-            case 'Pay off debt':
+            case 'paying off debt':
                 return oneYearFromNow;
             default:
                 throw new Error('Invalid budget type found');
         }
-    }
+    };
 
-
-    public async saveBudget(budget: BudgetQuestions, savingsGoalData: SavingsGoalData) : Promise<Budget> {
-        if(budget == null){
+    public async saveBudget(budget: BudgetQuestions, savingsGoalData: SavingsGoalData) : Promise<any> {
+        if(!budget){
             throw new Error('Budget is null');
         }
+
+        if(!savingsGoalData){
+            throw new Error('SavingsGoalData cannot be null');
+        }
+
+        // If the budget data is empty, then throw error
+        if(Object.keys(budget).length === 0){
+            throw new Error();
+        }
+
         try
         {
             const request = await this.createBudgetRequest(budget,savingsGoalData);
-            const response = await axios.post(`${apiUrl}/api/budgets/`, {
-                request
+            if(!request){
+                throw new Error('Invalid budget request');
+            }
+            return await axios.post(`${apiUrl}/api/budgets/`, {
+                userId: request.userId,
+                budgetName: request.budgetName,
+                budgetDescription: request.budgetDescription,
+                budgetAmount: request.totalBudgetAmount,
+                monthlyIncome: request.monthlyIncome,
+                startDate: request.startDate,
+                endDate: request.endDate
             });
-            return response.data;
         }catch(error){
             console.error('There was an error saving the budget: ', error);
             throw error;
