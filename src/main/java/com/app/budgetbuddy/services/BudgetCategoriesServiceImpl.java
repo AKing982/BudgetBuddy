@@ -8,6 +8,7 @@ import com.app.budgetbuddy.repositories.BudgetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -53,7 +54,10 @@ public class BudgetCategoriesServiceImpl implements BudgetCategoriesService
        budgetCategoriesEntity.setIsFixedExpense(budgetCategory.isFixedExpense());
        budgetCategoriesEntity.setMonthlySpendingLimit(budgetCategory.monthlySpendingLimit());
        budgetCategoriesEntity.setPriority(budgetCategory.priority());
+       budgetCategoriesEntity.setAllocatedAmount(budgetCategory.allocatedAmount());
        budgetCategoriesEntity.setBudget(findBudgetEntityByBudgetId(budgetCategory.budgetId()));
+       budgetCategoriesEntity.setCreatedAt(LocalDateTime.now());
+       budgetCategoriesEntity.setUpdatedAt(LocalDateTime.now());
        return budgetCategoriesRepository.save(budgetCategoriesEntity);
     }
 

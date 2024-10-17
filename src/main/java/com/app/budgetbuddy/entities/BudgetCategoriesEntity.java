@@ -19,34 +19,35 @@ public class BudgetCategoriesEntity
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="budgetid")
     private BudgetEntity budget;
 
-    @Column(name="categoryName")
+    @Column(name="categoryname")
     private String categoryName;
 
-    @Column(name="allocatedAmount")
+    @Column(name="allocatedamount")
     private Double allocatedAmount;
 
-    @Column(name="monthlySpendingLimit")
+    @Column(name="monthlyspendinglimit")
     private Double monthlySpendingLimit;
 
-    @Column(name="currentSpending")
+    @Column(name="currentspending")
     private Double currentSpending;
 
-    @Column(name="isFixedExpense")
+    @Column(name="isfixedexpense")
     private Boolean isFixedExpense;
 
-    @Column(name="isActive")
+    @Column(name="isactive")
     private Boolean isActive;
 
     @Column(name="priority")
     private Integer priority;
 
-    @Column(name="createdAt")
+    @Column(name="createdat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdAt;
 
-    @Column(name="updatedAt")
+    @Column(name="updatedat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime updatedAt;
 

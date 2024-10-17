@@ -255,22 +255,14 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         }));
     };
 
-
     const handleBudgetRegistration = async (budgetData: BudgetQuestions)=> {
         if(budgetData == null){
             return null;
         }
         try
         {
-            // Create the budget Request
-            if(!budgetData.savingsGoalData){
-                return null;
-            }
-
-            const budgetRequest = await budgetService.createBudgetRequest(budgetData, budgetData.savingsGoalData);
-            console.log('Budget Request: ', budgetRequest);
             // Get the response from the server
-            const budgetServerResponse = await budgetService.saveBudget(budgetData, budgetData.savingsGoalData);
+            const budgetServerResponse = await budgetService.saveBudget(budgetData);
             console.log('Budget Response: ', budgetServerResponse.data);
             return budgetServerResponse.data;
         }catch(error){
@@ -283,21 +275,21 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         try {
             let goalData;
             switch (budgetData.budgetType) {
-                case 'Saving for a goal':
+                case BudgetType.SAVINGS:
                     if (!budgetData.savingsGoalData) {
                         console.error('Savings goal data is missing');
                         return null;
                     }
                     goalData = budgetData.savingsGoalData;
                     break;
-                case 'Paying off debt':
+                case BudgetType.PAY_DEBT:
                     if (!budgetData.debtPayoffData) {
                         console.error('Debt payoff data is missing');
                         return null;
                     }
                     goalData = budgetData.debtPayoffData;
                     break;
-                case 'Controlling spending':
+                case BudgetType.CONTROL_SPENDING:
                     if (!budgetData.spendingControlData) {
                         console.error('Spending control data is missing');
                         return null;
@@ -329,7 +321,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                 return null;
             }
 
-            const budgetCategories: BudgetCategoryRequest[] = budgetData.spendingControlData.categories.map(category => ({
+            const budgetCategories: BudgetCategory[] = budgetData.spendingControlData.categories.map(category => ({
                 budgetId: budgetId,
                 categoryName: category.name,
                 allocatedAmount: category.spendingLimit,
@@ -339,6 +331,10 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                 isActive: true, // Assuming all categories are active
                 priority: category.reductionPriority
             }));
+
+            budgetCategories.forEach((category, index) => {
+                console.log(`Budget Category ${index + 1}:`, category);
+            });
 
             if (budgetCategories.length === 0) {
                 console.warn('No budget categories to register');
@@ -437,7 +433,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             Select Your Budget Type
                         </Typography>
                         <Grid container spacing={2}>
-                            {['Saving for a goal', 'Paying off debt', 'Controlling spending', 'Building emergency fund'].map((type) => (
+                            {[BudgetType.SAVINGS, BudgetType.PAY_DEBT, BudgetType.CONTROL_SPENDING, BudgetType.EMERGENCY_FUND].map((type) => (
                                 <Grid item xs={6} key={type}>
                                     <Button
                                         variant="outlined"

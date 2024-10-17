@@ -40,11 +40,11 @@ describe('BudgetService', () => {
 
     describe('createBudgetRequest tests', () => {
         test('should throw error when budgetData is null', async () => {
-            await expect(budgetService.createBudgetRequest(null as any, {} as SavingsGoalData))
+            await expect(budgetService.createBudgetRequest(null as any))
                 .rejects.toThrow('BudgetData found null');
         });
         test('should throw error when savingsGoalData is null', async () => {
-            await expect(budgetService.createBudgetRequest({} as BudgetQuestions, null as any))
+            await expect(budgetService.createBudgetRequest({} as BudgetQuestions))
                 .rejects.toThrow('SavingsGoalData found null');
         });
 
@@ -77,7 +77,7 @@ describe('BudgetService', () => {
                 savingsGoalData: savingsGoalData,
             };
 
-            const result = await budgetService.createBudgetRequest(budgetData, savingsGoalData);
+            const result = await budgetService.createBudgetRequest(budgetData);
             expect(result).toEqual({
                 userId: 1,
                 budgetName: 'Savings Budget',
@@ -103,7 +103,7 @@ describe('BudgetService', () => {
                 spendingControlData: { categories: spendingControlData },
             };
 
-            const result = await budgetService.createBudgetRequest(budgetData, {} as SavingsGoalData);
+            const result = await budgetService.createBudgetRequest(budgetData);
 
             expect(result).toEqual({
                 userId: 2,
@@ -135,7 +135,7 @@ describe('BudgetService', () => {
                 debtPayoffData: debtPayoffData,
             };
 
-            const result = await budgetService.createBudgetRequest(budgetData, {} as SavingsGoalData);
+            const result = await budgetService.createBudgetRequest(budgetData);
 
             expect(result).toEqual(expect.objectContaining({
                 userId: 1,
@@ -168,7 +168,7 @@ describe('BudgetService', () => {
                 financialGoal: {} as any,
             };
 
-            await expect(budgetService.createBudgetRequest(budgetData, {} as SavingsGoalData))
+            await expect(budgetService.createBudgetRequest(budgetData))
                 .rejects.toThrow('Invalid monthly income');
         });
         test('should handle empty expense categories', async () => {
@@ -180,7 +180,7 @@ describe('BudgetService', () => {
                 financialGoal: {} as any,
             };
 
-            const result = await budgetService.createBudgetRequest(budgetData, {} as SavingsGoalData);
+            const result = await budgetService.createBudgetRequest(budgetData);
             expect(result.totalBudgetAmount).toBe(0);
         });
         test('should handle missing savingsGoalData for Savings Budget', async () => {
@@ -192,7 +192,7 @@ describe('BudgetService', () => {
                 financialGoal: {} as any,
             };
 
-            await expect(budgetService.createBudgetRequest(budgetData, undefined as any))
+            await expect(budgetService.createBudgetRequest(budgetData))
                 .rejects.toThrow('SavingsGoalData found null');
         });
 
@@ -216,7 +216,7 @@ describe('BudgetService', () => {
                 savingsGoalData: savingsGoalData,
             };
 
-            await expect(budgetService.createBudgetRequest(budgetData, savingsGoalData))
+            await expect(budgetService.createBudgetRequest(budgetData))
                 .rejects.toThrow('Savings goal target date cannot be in the past');
         });
     })
@@ -333,13 +333,13 @@ describe('BudgetService', () => {
         };
 
         test('should throw error when budget questions is null', async () => {
-            await expect(budgetService.saveBudget(null as any, {} as SavingsGoalData))
+            await expect(budgetService.saveBudget(null as any))
                 .rejects
                 .toThrow('Budget is null');
         });
 
         test('should throw error when savingsGoalData is null', async() => {
-            await expect(budgetService.saveBudget({} as BudgetQuestions, null as any))
+            await expect(budgetService.saveBudget({} as BudgetQuestions))
                 .rejects
                 .toThrow('SavingsGoalData cannot be null');
         });
@@ -347,7 +347,7 @@ describe('BudgetService', () => {
         test('should successfully save a budget', async() => {
             const mockResponse = {data: {id: 1, ...mockBudget}};
             mockAxios.post.mockResolvedValue(mockResponse);
-            const result = await budgetService.saveBudget(mockBudget, mockSavingsGoalData);
+            const result = await budgetService.saveBudget(mockBudget);
 
             expect(result).toEqual(mockResponse);
             expect(mockAxios.post).toHaveBeenCalledWith(`${apiUrl}/api/budgets/`, {
@@ -365,7 +365,7 @@ describe('BudgetService', () => {
             // Mock createBudgetRequest to return null
             jest.spyOn(budgetService as any, 'createBudgetRequest').mockResolvedValue(null);
 
-            await expect(budgetService.saveBudget(mockBudget, mockSavingsGoalData))
+            await expect(budgetService.saveBudget(mockBudget))
                 .rejects.toThrow('Invalid budget request');
 
             expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -378,7 +378,7 @@ describe('BudgetService', () => {
             const errorMessage = 'Network Error';
             mockAxios.post.mockRejectedValue(new Error(errorMessage));
 
-            await expect(budgetService.saveBudget(mockBudget, mockSavingsGoalData))
+            await expect(budgetService.saveBudget(mockBudget))
                 .rejects.toThrow(errorMessage);
 
             expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -389,14 +389,14 @@ describe('BudgetService', () => {
 
         test('should handle empty budget object', async() => {
             const emptyBudget = {} as BudgetQuestions;
-            await expect(budgetService.saveBudget(emptyBudget, mockSavingsGoalData))
+            await expect(budgetService.saveBudget(emptyBudget))
                 .rejects.toThrow();
         });
         test('should handle malformed API response', async () => {
             const malformedResponse = { data: 'Not a budget object' };
             mockAxios.post.mockResolvedValue(malformedResponse);
 
-            const result = await budgetService.saveBudget(mockBudget, mockSavingsGoalData);
+            const result = await budgetService.saveBudget(mockBudget);
 
             expect(result).toEqual(malformedResponse);
         });

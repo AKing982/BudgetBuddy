@@ -14,18 +14,11 @@ interface BudgetCategories {
 }
 
 interface BudgetCategoryRequestWrapper{
-    categories: BudgetCategoryRequest[];
+    categories: BudgetCategory[];
 }
 
 export interface BudgetCategoryRequest {
-    budgetId: number;
-    categoryName: string;
-    allocatedAmount: number;
-    monthlySpendingLimit: number;
-    currentSpending: number;
-    isFixedExpense: boolean;
-    isActive: boolean;
-    priority: number;
+    categories: BudgetCategory[];
 }
 
 
@@ -43,7 +36,7 @@ class BudgetCategoriesService {
         return BudgetCategoriesService.instance;
     }
 
-    private createBudgetCategoryRequest(budgetCategories: BudgetCategoryRequest[]): BudgetCategoryRequestWrapper {
+    private createBudgetCategoryRequest(budgetCategories: BudgetCategory[]): BudgetCategoryRequest {
         return {
             categories: budgetCategories
         };
@@ -56,8 +49,8 @@ class BudgetCategoriesService {
         try
         {
             const request = this.createBudgetCategoryRequest(budgetCategories);
-            return await axios.post(`${apiUrl}/budget-categories/`, {
-                request
+            return await axios.post(`${apiUrl}/api/budget-categories/`, {
+                categories: budgetCategories
             });
 
         }catch(error){
