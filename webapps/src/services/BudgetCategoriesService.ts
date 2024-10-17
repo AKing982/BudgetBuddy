@@ -1,6 +1,6 @@
-import BudgetCategoryDetails from "../components/BudgetCategoryDetails";
 import axios from "axios";
 import {apiUrl} from "../config/api";
+import {BudgetCategory} from "../utils/BudgetUtils";
 
 interface BudgetCategories {
     budgetId: number;
@@ -13,7 +13,11 @@ interface BudgetCategories {
     priority: number;
 }
 
-interface BudgetCategoryRequest {
+interface BudgetCategoryRequestWrapper{
+    categories: BudgetCategoryRequest[];
+}
+
+export interface BudgetCategoryRequest {
     budgetId: number;
     categoryName: string;
     allocatedAmount: number;
@@ -39,30 +43,22 @@ class BudgetCategoriesService {
         return BudgetCategoriesService.instance;
     }
 
-    private createBudgetCategoryRequest(budgetCategory: BudgetCategories) : BudgetCategoryRequest {
+    private createBudgetCategoryRequest(budgetCategories: BudgetCategoryRequest[]): BudgetCategoryRequestWrapper {
         return {
-            budgetId: budgetCategory.budgetId,
-            categoryName: budgetCategory.categoryName,
-            allocatedAmount: budgetCategory.allocatedAmount,
-            monthlySpendingLimit: budgetCategory.monthlySpendingLimit,
-            currentSpending: budgetCategory.currentSpending,
-            isFixedExpense: budgetCategory.isFixedExpense,
-            isActive: budgetCategory.isActive,
-            priority: budgetCategory.priority
+            categories: budgetCategories
         };
     }
 
-    public async createBudgetCategory(budgetCategory: BudgetCategories) : Promise<null> {
-        if(budgetCategory == null){
+    public async createBudgetCategory(budgetCategories: BudgetCategory[]) : Promise<any> {
+        if(budgetCategories == null){
             throw new Error('Budget Category was found null');
         }
         try
         {
-            const request = this.createBudgetCategoryRequest(budgetCategory);
-            const response = await axios.post(`${apiUrl}/budget-categories/`, {
+            const request = this.createBudgetCategoryRequest(budgetCategories);
+            return await axios.post(`${apiUrl}/budget-categories/`, {
                 request
             });
-            return response.data;
 
         }catch(error){
             console.error('There was an error creating the budget category: ', error);

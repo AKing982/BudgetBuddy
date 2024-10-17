@@ -33,7 +33,7 @@ import DebtPayoffQuestions, {DebtPayoffData} from "./DebtPayoffQuestions";
 import CategoryItem from "./CategoryItem";
 import BudgetService from "../services/BudgetService";
 import BudgetGoalsService from "../services/BudgetGoalsService";
-import BudgetCategoriesService from "../services/BudgetCategoriesService";
+import BudgetCategoriesService, {BudgetCategoryRequest} from "../services/BudgetCategoriesService";
 import LoginService from "../services/LoginService";
 import axios from "axios";
 import {apiUrl} from "../config/api";
@@ -72,27 +72,6 @@ interface BudgetQuestions {
     spendingControlData?: SpendingControlData;
 }
 
-interface BudgetCreateRequest {
-    userId: number;
-    budgetName: string;
-    budgetDescription: string;
-    totalBudgetAmount: number;
-    monthlyIncome: number;
-    startDate: Date;
-    endDate: string | Date | null | undefined ;
-}
-
-interface BudgetGoalsRequest {
-    budgetId: number;
-    goalName: string;
-    goalDescription: string;
-    goalType: string;
-    targetAmount: number;
-    monthlyAllocation: number;
-    currentSavings: number;
-    savingsFrequency: string;
-    status: string;
-}
 
 interface BudgetCategoriesRequest {
     categories: BudgetCategory[];
@@ -176,9 +155,6 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         isActive: true,
         priority: 0
     });
-    const [savingsGoalData, setSavingsGoalData] = useState<SavingsGoalData | undefined>(undefined);
-    const [debtPayoffData, setDebtPayoffData] = useState<DebtPayoffData | undefined>(undefined);
-    const [spendingControlData, setSpendingControlData] = useState<SpendingControlData | undefined>(undefined);
     const navigate = useNavigate();
     const budgetService = BudgetService.getInstance();
     const budgetGoalsService = BudgetGoalsService.getInstance();
@@ -241,8 +217,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     };
 
     const createBudgetCategoriesRequest = () : BudgetCategoriesRequest | null => {
-        if(spendingControlData){
-            const categories = spendingControlData.categories.map(category => ({
+        if(budgetData.spendingControlData){
+            const categories = budgetData.spendingControlData.categories.map(category => ({
                 budgetId: 0, // This will be set after budget creation
                 categoryName: category.name,
                 allocatedAmount: category.spendingLimit,
@@ -258,6 +234,28 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         return null;
     }
 
+    const handleSavingsGoalDataChange = (data: SavingsGoalData) => {
+        setBudgetData(prevData => ({
+            ...prevData,
+            savingsGoalData: data
+        }));
+    };
+
+    const handleDebtPayoffDataChange = (data: DebtPayoffData) => {
+        setBudgetData(prevData => ({
+            ...prevData,
+            debtPayoffData: data
+        }));
+    };
+
+    const handleSpendingControlDataChange = (data: SpendingControlData) => {
+        setBudgetData(prevData => ({
+            ...prevData,
+            spendingControlData: data
+        }));
+    };
+
+
     const handleBudgetRegistration = async (budgetData: BudgetQuestions)=> {
         if(budgetData == null){
             return null;
@@ -265,14 +263,14 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         try
         {
             // Create the budget Request
-            if(!savingsGoalData){
+            if(!budgetData.savingsGoalData){
                 return null;
             }
 
-            const budgetRequest = await budgetService.createBudgetRequest(budgetData, savingsGoalData);
+            const budgetRequest = await budgetService.createBudgetRequest(budgetData, budgetData.savingsGoalData);
             console.log('Budget Request: ', budgetRequest);
             // Get the response from the server
-            const budgetServerResponse = await budgetService.saveBudget(budgetData, savingsGoalData);
+            const budgetServerResponse = await budgetService.saveBudget(budgetData, budgetData.savingsGoalData);
             console.log('Budget Response: ', budgetServerResponse.data);
             return budgetServerResponse.data;
         }catch(error){
@@ -282,69 +280,137 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     };
 
     const handleBudgetGoalRegistration = async (budgetId: number) => {
-        try
-        {
-            if(!savingsGoalData || !debtPayoffData || !spendingControlData){
-                return null;
+        try {
+            let goalData;
+            switch (budgetData.budgetType) {
+                case 'Saving for a goal':
+                    if (!budgetData.savingsGoalData) {
+                        console.error('Savings goal data is missing');
+                        return null;
+                    }
+                    goalData = budgetData.savingsGoalData;
+                    break;
+                case 'Paying off debt':
+                    if (!budgetData.debtPayoffData) {
+                        console.error('Debt payoff data is missing');
+                        return null;
+                    }
+                    goalData = budgetData.debtPayoffData;
+                    break;
+                case 'Controlling spending':
+                    if (!budgetData.spendingControlData) {
+                        console.error('Spending control data is missing');
+                        return null;
+                    }
+                    goalData = budgetData.spendingControlData;
+                    break;
+                default:
+                    console.error('Invalid budget type');
+                    return null;
             }
-            const budgetGoalsServerResponse = await budgetGoalsService.createBudgetGoal(budgetId, budgetData, savingsGoalData, debtPayoffData, spendingControlData);
+
+            const budgetGoalsServerResponse = await budgetGoalsService.createBudgetGoal(
+                budgetId,
+                budgetData,
+                goalData
+            );
             console.log('Budget Goals Response: ', budgetGoalsServerResponse.data);
             return budgetGoalsServerResponse.data;
-        }catch(error){
+        } catch (error) {
             console.error('There was an error sending the budget goals to the server: ', error);
             throw error;
         }
     };
 
     const handleBudgetCategoriesRegistration = async (budgetId: number) => {
-        try
-        {
-            const budgetCategoriesRequest = createBudgetCategoriesRequest();
-            if(budgetCategoriesRequest){
-                const categoriesWithBudgetId = budgetCategoriesRequest.categories.map(category => ({
-                    ...category,
-                    budgetId
-                }));
-                const budgetCategoriesResponse = await axios.post(`${apiUrl}/budget-categories/`, {
-                    categoriesWithBudgetId
-                });
-                console.log('Budget Categories Response: ', budgetCategoriesResponse);
-                return budgetCategoriesResponse.data;
+        try {
+            if (!budgetData.spendingControlData || !budgetData.spendingControlData.categories) {
+                console.error('Spending control data is missing');
+                return null;
             }
-            return null;
-        }catch(error){
+
+            const budgetCategories: BudgetCategoryRequest[] = budgetData.spendingControlData.categories.map(category => ({
+                budgetId: budgetId,
+                categoryName: category.name,
+                allocatedAmount: category.spendingLimit,
+                monthlySpendingLimit: category.spendingLimit,
+                currentSpending: category.currentSpending,
+                isFixedExpense: false, // Assuming this is false for all categories
+                isActive: true, // Assuming all categories are active
+                priority: category.reductionPriority
+            }));
+
+            if (budgetCategories.length === 0) {
+                console.warn('No budget categories to register');
+                return null;
+            }
+
+            const budgetCategoriesResponse = await budgetCategoriesService.createBudgetCategory(budgetCategories);
+            console.log('Budget Categories Response: ', budgetCategoriesResponse);
+            return budgetCategoriesResponse.data;
+        } catch (error) {
             console.error('There was an error sending the budget categories to the server: ', error);
             throw error;
         }
     }
 
+
     const handleSubmit = async () => {
         try {
             const finalBudgetData = {
                 ...budgetData,
-                savingGoalData: budgetData.budgetType === 'Saving for a goal' ? savingsGoalData : undefined,
-                debtPayoffData: budgetData.budgetType === 'Paying off debt' ? debtPayoffData : undefined,
-                spendingControlData: budgetData.budgetType === 'Controlling spending' ? spendingControlData : undefined,
+                savingGoalData: budgetData.budgetType === 'Saving for a goal' ? budgetData.savingsGoalData : undefined,
+                debtPayoffData: budgetData.budgetType === 'Paying off debt' ? budgetData.debtPayoffData : undefined,
+                spendingControlData: budgetData.budgetType === 'Controlling spending' ? budgetData.spendingControlData : undefined,
             };
 
             // Step 1: Register the budget
-            const createdBudget = await handleBudgetRegistration(finalBudgetData);
-            if(!createdBudget){
-                throw new Error('Failed to create budget');
+            let createdBudget;
+            try {
+                console.log('Attempting to register budget...');
+                console.log('Budget Data: ', budgetData);
+                createdBudget = await handleBudgetRegistration(budgetData);
+                if (!createdBudget) {
+                    throw new Error('Budget registration returned null');
+                }
+                console.log('Budget registered successfully:', createdBudget);
+            } catch (error) {
+                console.error('Error during budget registration:', error);
+                let errorMessage = 'Failed to create budget';
+                if (error instanceof Error) {
+                    errorMessage += `: ${error.message}`;
+                } else if (typeof error === 'object' && error !== null && 'message' in error) {
+                    errorMessage += `: ${error.message}`;
+                }
+                throw new Error(errorMessage);
             }
 
             // Step 2: Register the Budget Goal
-            await handleBudgetGoalRegistration(createdBudget.id);
-
-            // Step 3: Handle the Budget Categories when budget Type is controlled spending
-            if(budgetData.budgetType === 'Controlling spending'){
-                await handleBudgetCategoriesRegistration(createdBudget.id);
+            try {
+                console.log('Attempting to register budget goal...');
+                await handleBudgetGoalRegistration(createdBudget.id);
+                console.log('Budget goal registered successfully');
+            } catch (goalError) {
+                console.error('Error during budget goal registration:', goalError);
+                // Consider whether you want to throw here or continue
             }
 
+            // Step 3: Handle the Budget Categories when budget type is controlled spending
+            if (budgetData.budgetType === 'Controlling spending') {
+                try {
+                    console.log('Attempting to register budget categories...');
+                    await handleBudgetCategoriesRegistration(createdBudget.id);
+                    console.log('Budget categories registered successfully');
+                } catch (categoriesError) {
+                    console.error('Error during budget categories registration:', categoriesError);
+                    // Consider whether you want to throw here or continue
+                }
+            }
             onSubmit(finalBudgetData);
             navigate('/');
         } catch(error) {
             console.error('Error submitting budget data: ', error);
+
         }
     };
 
@@ -418,9 +484,9 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
 
                 {activeStep === 2 && (
                     <Box>
-                        {budgetData.budgetType === 'Saving for a goal' && <SavingsGoalQuestions onDataChange={(data) => setSavingsGoalData(data)} />}
-                        {budgetData.budgetType === 'Paying off debt' && <DebtPayoffQuestions onDataChange={(data) => setDebtPayoffData(data)}/>}
-                        {budgetData.budgetType === 'Controlling spending' && <SpendingControlQuestions spendingControlData={spendingControlData} setSpendingControlData={setSpendingControlData}/>}
+                        {budgetData.budgetType === 'Saving for a goal' && <SavingsGoalQuestions onDataChange={handleSavingsGoalDataChange} />}
+                        {budgetData.budgetType === 'Paying off debt' && <DebtPayoffQuestions onDataChange={handleDebtPayoffDataChange}/>}
+                        {budgetData.budgetType === 'Controlling spending' && <SpendingControlQuestions onDataChange={handleSpendingControlDataChange} />}
 
                     </Box>
                 )}
@@ -441,32 +507,32 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             <Divider />
 
                             {/* Conditional rendering based on budget type */}
-                            {budgetData.budgetType === 'Saving for a goal' && savingsGoalData && (
+                            {budgetData.budgetType === 'Saving for a goal' && budgetData.savingsGoalData && (
                                 <ListItem>
                                     <ListItemText
                                         primary="Savings Goal"
                                         secondary={
                                             <>
-                                                <Typography component="span" display="block">Goal Name: {savingsGoalData.goalName}</Typography>
-                                                <Typography component="span" display="block">Goal Description: {savingsGoalData.goalDescription}</Typography>
-                                                <Typography component="span" display="block">Target Amount: ${savingsGoalData.targetAmount}</Typography>
-                                                <Typography component="span" display="block">Current Savings: ${savingsGoalData.currentSavings}</Typography>
-                                                <Typography component="span" display="block">Saving Frequency: {savingsGoalData.savingsFrequency}</Typography>
-                                                <Typography component="span" display="block">Target Date: {savingsGoalData.targetDate}</Typography>
+                                                <Typography component="span" display="block">Goal Name: {budgetData.savingsGoalData.goalName}</Typography>
+                                                <Typography component="span" display="block">Goal Description: {budgetData.savingsGoalData.goalDescription}</Typography>
+                                                <Typography component="span" display="block">Target Amount: ${budgetData.savingsGoalData.targetAmount}</Typography>
+                                                <Typography component="span" display="block">Current Savings: ${budgetData.savingsGoalData.currentSavings}</Typography>
+                                                <Typography component="span" display="block">Saving Frequency: {budgetData.savingsGoalData.savingsFrequency}</Typography>
+                                                <Typography component="span" display="block">Target Date: {budgetData.savingsGoalData.targetDate}</Typography>
                                             </>
                                         }
                                     />
                                 </ListItem>
                             )}
 
-                            {budgetData.budgetType === 'Paying off debt' && debtPayoffData && (
+                            {budgetData.budgetType === 'Paying off debt' && budgetData.debtPayoffData && (
                                 <ListItem>
                                     <ListItemText
                                         primary="Debt Payoff Plan"
                                         secondary={
                                             <Box>
                                                 <Typography variant="subtitle1" gutterBottom>Debt Breakdown:</Typography>
-                                                {debtPayoffData.debts.map((debt, index) => (
+                                                {budgetData.debtPayoffData.debts.map((debt, index) => (
                                                     <Box key={index} sx={{ mb: 1 }}>
                                                         <Typography component="span" display="block">
                                                             {debt.type}: ${debt.amount.toFixed(2)}
@@ -476,10 +542,10 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                                                 ))}
                                                 <Divider sx={{ my: 1 }} />
                                                 <Typography component="span" display="block" fontWeight="bold">
-                                                    Total Debt: ${debtPayoffData.debts.reduce((sum, debt) => sum + debt.amount, 0).toFixed(2)}
+                                                    Total Debt: ${budgetData.debtPayoffData.debts.reduce((sum, debt) => sum + debt.amount, 0).toFixed(2)}
                                                 </Typography>
                                                 <Typography component="span" display="block" fontWeight="bold">
-                                                    Total Monthly Allocation: ${debtPayoffData.debts.reduce((sum, debt) => sum + debt.allocation, 0).toFixed(2)}
+                                                    Total Monthly Allocation: ${budgetData.debtPayoffData.debts.reduce((sum, debt) => sum + debt.allocation, 0).toFixed(2)}
                                                 </Typography>
                                             </Box>
                                         }
@@ -487,7 +553,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                                 </ListItem>
                             )}
 
-                            {budgetData.budgetType === 'Controlling spending' && spendingControlData && (
+                            {budgetData.budgetType === 'Controlling spending' && budgetData.spendingControlData && (
                                 <ListItem>
                                     <ListItemText
                                         primary="Spending Control Plan"
@@ -511,27 +577,50 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                                                     outline: '1px solid slategrey'
                                                 }
                                             }}>
-                                                <List disablePadding>
-                                                    {spendingControlData.categories.map((category, index) => (
-                                                        <ListItem key={index} dense divider>
-                                                            <ListItemText
-                                                                primary={category.name}
-                                                                secondary={
-                                                                    <>
-                                                                        <Typography component="span" display="block">Current Spending: ${category.currentSpending}</Typography>
-                                                                        <Typography component="span" display="block">Spending Limit: ${category.spendingLimit}</Typography>
-                                                                        <Typography component="span" display="block">Reduction Priority: {category.reductionPriority}</Typography>
-                                                                    </>
-                                                                }
-                                                            />
-                                                        </ListItem>
-                                                    ))}
-                                                </List>
+                                                {budgetData.spendingControlData.categories &&
+                                                budgetData.spendingControlData.categories.length > 0 ? (
+                                                    <List disablePadding>
+                                                        {budgetData.spendingControlData.categories.map((category, index) => (
+                                                            <ListItem key={index} dense divider>
+                                                                <ListItemText
+                                                                    primary={category.name}
+                                                                    secondary={
+                                                                        <>
+                                                                            <Typography component="span" display="block">Current Spending: ${category.currentSpending}</Typography>
+                                                                            <Typography component="span" display="block">Spending Limit: ${category.spendingLimit}</Typography>
+                                                                            <Typography component="span" display="block">Reduction Priority: {category.reductionPriority}</Typography>
+                                                                        </>
+                                                                    }
+                                                                />
+                                                            </ListItem>
+                                                        ))}
+                                                    </List>
+                                                ) : (
+                                                    <Typography>No spending categories added.</Typography>
+                                                )}
                                             </Box>
                                         }
                                     />
                                 </ListItem>
                             )}
+
+                            {/*/!* Debug information *!/*/}
+                            {/*<ListItem>*/}
+                            {/*    <ListItemText*/}
+                            {/*        primary="Debug Info"*/}
+                            {/*        secondary={*/}
+                            {/*            <>*/}
+                            {/*                <Typography>Budget Type: {budgetData.budgetType}</Typography>*/}
+                            {/*                <Typography>Has Spending Control Data: {budgetData.spendingControlData ? 'Yes' : 'No'}</Typography>*/}
+                            {/*                {budgetData.spendingControlData && (*/}
+                            {/*                    <Typography>*/}
+                            {/*                        Number of categories: {budgetData.spendingControlData.categories?.length || 0}*/}
+                            {/*                    </Typography>*/}
+                            {/*                )}*/}
+                            {/*            </>*/}
+                            {/*        }*/}
+                            {/*    />*/}
+                            {/*</ListItem>*/}
 
                             {/* You can add more conditions for other budget types here */}
                         </List>

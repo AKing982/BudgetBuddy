@@ -88,16 +88,19 @@ class BudgetService {
         if(!startDate || !endDate){
             throw new Error('Invalid StartDate or EndDate found');
         }
+
         const yearDifference = endDate.getFullYear() - startDate.getFullYear();
         const monthDifference = endDate.getMonth() - startDate.getMonth();
         return yearDifference * 12 + monthDifference;
     }
 
     public calculateTotalBudgetAmount(budgetType: string, startDate: Date, endDate: Date, targetAmount: number, monthlyIncome: number, currentSavings: number, monthlyAllocation: number) : number {
+        console.log('Target Amount: ', targetAmount);
+        console.log('Current Savings: ', currentSavings);
         if(targetAmount < 0) throw new Error('Invalid Target Amount has been entered');
 
         // If the start Date and endDate are equal, then adjust the end date to be one month out from the start date
-        if(startDate.getTime() === endDate.getTime()){
+        if(startDate.getDate() === endDate.getDate()){
             endDate.setMonth(startDate.getMonth() + 1);
         }
 
@@ -106,8 +109,11 @@ class BudgetService {
         switch(budgetType){
             case 'Saving for a goal':
                 let totalToSave = targetAmount - currentSavings;
+                console.log('Total to Save: ', totalToSave);
                 let monthlySavings = totalToSave / months;
+                console.log('Monthly Savings: ', monthlySavings);
                 totalBudgetAmount = (monthlyIncome - monthlySavings);
+                console.log('Total Budget Amount for savings: ', totalBudgetAmount);
                 break;
 
             case 'paying off debt':
@@ -153,6 +159,7 @@ class BudgetService {
             throw new Error('Invalid monthly income');
         }
         const startDate = new Date();
+        console.log('target number: ', budgetData.savingsGoalData?.targetAmount);
         const targetAmount = budgetData.savingsGoalData?.targetAmount as number;
         const endDate = this.createEndDateTarget(budgetData, savingsGoalData) as Date;
         const budgetAmount = this.calculateTotalBudgetAmount(budgetData.budgetType, startDate, endDate, targetAmount, monthlyIncome, savingsGoalData.currentSavings, 0);
@@ -168,14 +175,18 @@ class BudgetService {
         };
     };
 
-    private createEndDateTarget(budgetData: BudgetQuestions, savingsGoalData: SavingsGoalData) : string | Date {
+    private createEndDateTarget(budgetData: BudgetQuestions, savingsGoalData: SavingsGoalData) : Date {
         const oneYearFromNow = new Date();
         oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
         switch(budgetData.budgetType){
             case 'Saving for a goal':
-                return savingsGoalData?.targetDate;
+                if(savingsGoalData?.targetDate){
+                    const targetDate = new Date(savingsGoalData.targetDate);
+                    return isNaN(targetDate.getTime()) ? oneYearFromNow : targetDate;
+                }
+                return oneYearFromNow;
             case 'Controlling spending':
-            case 'paying off debt':
+            case 'Paying off debt':
                 return oneYearFromNow;
             default:
                 throw new Error('Invalid budget type found');

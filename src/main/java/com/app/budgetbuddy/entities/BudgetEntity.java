@@ -1,10 +1,7 @@
 package com.app.budgetbuddy.entities;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -15,7 +12,8 @@ import java.util.Set;
 
 @Table(name="budgets")
 @Entity
-@Data
+@Getter
+@Setter
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class BudgetEntity {

@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import {AddCircleOutline} from "@mui/icons-material";
 import {Delete} from "lucide-react";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 
 export interface SpendingCategory {
     id: string;
@@ -27,74 +27,42 @@ export interface SpendingControlData {
 }
 
 interface SpendingControlQuestionsProps {
-    spendingControlData: SpendingControlData | undefined;
-    setSpendingControlData: React.Dispatch<React.SetStateAction<SpendingControlData | undefined>>;
+    onDataChange: (data: SpendingControlData) => void;
 }
 
-const SpendingControlQuestions: React.FC<SpendingControlQuestionsProps> = ({
-                                                                               spendingControlData,
-                                                                               setSpendingControlData
-                                                                           }) => {
+const SpendingControlQuestions: React.FC<SpendingControlQuestionsProps> = ({ onDataChange }) => {
+    const [categories, setCategories] = useState<SpendingCategory[]>([]);
+
+    useEffect(() => {
+        onDataChange({ categories });
+    }, [categories, onDataChange]);
+
+
     const addCategory = () => {
-        setSpendingControlData(prev => {
-            const categories = prev?.categories ?? [];
-            return {
-                categories: [
-                    ...categories,
-                    {
-                        id: Date.now().toString(),
-                        name: '',
-                        currentSpending: 0,
-                        spendingLimit: 0,
-                        reductionPriority: categories.length + 1
-                    }
-                ]
-            };
-        });
+        setCategories(prev => [
+            ...prev,
+            {
+                id: Date.now().toString(),
+                name: '',
+                currentSpending: 0,
+                spendingLimit: 0,
+                reductionPriority: prev.length + 1
+            }
+        ]);
     };
 
     const removeCategory = (id: string) => {
-        setSpendingControlData(prev => {
-            if (!prev) return prev;
-            return {
-                ...prev,
-                categories: prev.categories.filter(category => category.id !== id)
-            };
-        });
+        setCategories(prev => prev.filter(category => category.id !== id));
     };
+
 
     const handleCategoryChange = (id: string, field: keyof SpendingCategory, value: string | number) => {
-        setSpendingControlData(prev => {
-            if (!prev) return prev;
-            return {
-                ...prev,
-                categories: prev.categories.map(category =>
-                    category.id === id
-                        ? { ...category, [field]: field === 'name' ? value : Number(value) }
-                        : category
-                )
-            };
-        });
+        setCategories(prev => prev.map(category =>
+            category.id === id
+                ? { ...category, [field]: field === 'name' ? value : Number(value) }
+                : category
+        ));
     };
-
-    // If spendingControlData is undefined, initialize it with an empty categories array
-    if (!spendingControlData) {
-        return (
-            <Box>
-                <Typography variant="h6" gutterBottom>
-                    Spending Control Specific Questions
-                </Typography>
-                <Button
-                    variant="outlined"
-                    startIcon={<AddCircleOutline />}
-                    onClick={addCategory}
-                    sx={{ mb: 2 }}
-                >
-                    Add Spending Category
-                </Button>
-            </Box>
-        );
-    }
 
     return (
         <Box>
@@ -109,7 +77,7 @@ const SpendingControlQuestions: React.FC<SpendingControlQuestionsProps> = ({
             >
                 Add Spending Category
             </Button>
-            {spendingControlData.categories.map((category) => (
+            {categories.map((category) => (
                 <Box key={category.id} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: 2 }}>
                     <Grid container spacing={2} alignItems="center">
                         <Grid item xs={12} sm={6}>
@@ -145,7 +113,7 @@ const SpendingControlQuestions: React.FC<SpendingControlQuestionsProps> = ({
                             <Slider
                                 value={category.reductionPriority}
                                 min={1}
-                                max={spendingControlData.categories.length}
+                                max={categories.length}
                                 step={1}
                                 marks
                                 valueLabelDisplay="auto"
@@ -162,6 +130,26 @@ const SpendingControlQuestions: React.FC<SpendingControlQuestionsProps> = ({
             ))}
         </Box>
     );
+
+
+    // If spendingControlData is undefined, initialize it with an empty categories array
+    //     return (
+    //         <Box>
+    //             <Typography variant="h6" gutterBottom>
+    //                 Spending Control Specific Questions
+    //             </Typography>
+    //             <Button
+    //                 variant="outlined"
+    //                 startIcon={<AddCircleOutline />}
+    //                 onClick={addCategory}
+    //                 sx={{ mb: 2 }}
+    //             >
+    //                 Add Spending Category
+    //             </Button>
+    //         </Box>
+    //     );
+
+
 };
 
 export default SpendingControlQuestions;

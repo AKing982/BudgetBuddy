@@ -18,6 +18,7 @@ public class BudgetGoalsEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="budgetid")
     private BudgetEntity budget;
 
     @Column(name="goalName")

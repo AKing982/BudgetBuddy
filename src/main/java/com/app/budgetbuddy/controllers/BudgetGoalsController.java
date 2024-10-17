@@ -32,6 +32,7 @@ public class BudgetGoalsController
         try
         {
             BudgetGoalsEntity budgetGoals = budgetGoalsService.createAndSaveBudgetGoal(budgetGoalsRequest);
+            LOGGER.info("Budget Goals: {}", budgetGoals);
             return ResponseEntity.ok(budgetGoals);
 
         }catch(Exception e){

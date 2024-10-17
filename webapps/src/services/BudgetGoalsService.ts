@@ -64,25 +64,25 @@ class BudgetGoalsService {
         return BudgetGoalsService.instance;
     }
 
-    public createBudgetGoalsRequest(budgetData: BudgetQuestions, savingsGoalData: SavingsGoalData, debtPayoffData: DebtPayoffData, spendingControlData: SpendingControlData) : Omit<BudgetGoalsRequest, 'budgetId'>  {
-        switch(budgetData.budgetType){
-            case 'Saving for goal':
-                if(!savingsGoalData) throw new Error('Savings goal data is required for this budget type');
+    public createBudgetGoalsRequest(budgetData: BudgetQuestions, goalData: SavingsGoalData | DebtPayoffData | SpendingControlData) : Omit<BudgetGoalsRequest, 'budgetId'>  {
+        switch (budgetData.budgetType) {
+            case 'Saving for a goal':
+                if (!('targetAmount' in goalData)) throw new Error('Savings goal data is required for this budget type');
                 return {
-                    goalName: savingsGoalData.goalName,
-                    goalDescription: savingsGoalData.goalDescription,
+                    goalName: goalData.goalName,
+                    goalDescription: goalData.goalDescription,
                     goalType: 'Savings',
-                    targetAmount: savingsGoalData.targetAmount,
+                    targetAmount: goalData.targetAmount,
                     monthlyAllocation: 0,
-                    currentSavings: savingsGoalData.currentSavings,
-                    savingsFrequency: savingsGoalData.savingsFrequency,
+                    currentSavings: goalData.currentSavings,
+                    savingsFrequency: goalData.savingsFrequency,
                     status: 'In Progress'
                 };
 
             case 'Paying off debt':
-                if (!debtPayoffData) throw new Error('Debt payoff data is required for this budget type');
-                const totalDebt = debtPayoffData.debts.reduce((sum, debt) => sum + debt.amount, 0);
-                const totalAllocation = debtPayoffData.debts.reduce((sum, debt) => sum + debt.allocation, 0);
+                if (!('debts' in goalData)) throw new Error('Debt payoff data is required for this budget type');
+                const totalDebt = goalData.debts.reduce((sum, debt) => sum + debt.amount, 0);
+                const totalAllocation = goalData.debts.reduce((sum, debt) => sum + debt.allocation, 0);
                 return {
                     goalName: 'Debt Payoff',
                     goalDescription: 'Paying off all debts',
@@ -95,8 +95,8 @@ class BudgetGoalsService {
                 };
 
             case 'Controlling spending':
-                if(!spendingControlData) throw new Error('Spending Control Data is required for this budget type');
-                const totalSpendingLimit = spendingControlData.categories.reduce((sum, category) => sum + category.spendingLimit, 0);
+                if (!('categories' in goalData)) throw new Error('Spending Control Data is required for this budget type');
+                const totalSpendingLimit = goalData.categories.reduce((sum, category) => sum + category.spendingLimit, 0);
                 return {
                     goalName: 'Spending Control',
                     goalDescription: 'Managing and reducing overall spending',
@@ -114,15 +114,15 @@ class BudgetGoalsService {
     }
 
 
-    public async createBudgetGoal(budgetId: number, budgetQuestions: BudgetQuestions, savingsGoalData: SavingsGoalData, debtPayoffData: DebtPayoffData, spendingControlData: SpendingControlData) : Promise<any>{
+    public async createBudgetGoal(budgetId: number, budgetQuestions: BudgetQuestions, goalData: SavingsGoalData | DebtPayoffData | SpendingControlData) : Promise<any>{
         if(budgetQuestions == null){
             throw new Error('BudgetGoal was found null');
         }
         try
         {
-            const budgetGoalsRequest = this.createBudgetGoalsRequest(budgetQuestions, savingsGoalData, debtPayoffData, spendingControlData);
+            const budgetGoalsRequest = this.createBudgetGoalsRequest(budgetQuestions, goalData);
             const budgetGoalsWithId = {...budgetGoalsRequest, budgetId};
-            return await axios.post(`${apiUrl}/api/budget-goals/`, {
+            const response = await axios.post(`${apiUrl}/api/budget-goals/`, {
                 budgetId: budgetGoalsWithId.budgetId,
                 goalName: budgetGoalsWithId.goalName,
                 goalDescription: budgetGoalsWithId.goalDescription,
@@ -133,6 +133,8 @@ class BudgetGoalsService {
                 savingsFrequency: budgetGoalsWithId.savingsFrequency,
                 status: budgetGoalsWithId.status
             });
+            console.log('Budget Goals Response: ', response);
+            return response;
 
         }catch(error){
             console.error('There was an error creating the budget goal: ', error);
