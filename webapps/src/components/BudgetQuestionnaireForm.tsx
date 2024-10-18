@@ -275,21 +275,21 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         try {
             let goalData;
             switch (budgetData.budgetType) {
-                case BudgetType.SAVINGS:
+                case "Saving for a goal":
                     if (!budgetData.savingsGoalData) {
                         console.error('Savings goal data is missing');
                         return null;
                     }
                     goalData = budgetData.savingsGoalData;
                     break;
-                case BudgetType.PAY_DEBT:
+                case "Paying off debt":
                     if (!budgetData.debtPayoffData) {
                         console.error('Debt payoff data is missing');
                         return null;
                     }
                     goalData = budgetData.debtPayoffData;
                     break;
-                case BudgetType.CONTROL_SPENDING:
+                case "Controlling spending":
                     if (!budgetData.spendingControlData) {
                         console.error('Spending control data is missing');
                         return null;
@@ -433,7 +433,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             Select Your Budget Type
                         </Typography>
                         <Grid container spacing={2}>
-                            {[BudgetType.SAVINGS, BudgetType.PAY_DEBT, BudgetType.CONTROL_SPENDING, BudgetType.EMERGENCY_FUND].map((type) => (
+                            {["Saving for a goal", "Paying off debt", "Controlling spending", "Building Emergency Fund"].map((type) => (
                                 <Grid item xs={6} key={type}>
                                     <Button
                                         variant="outlined"

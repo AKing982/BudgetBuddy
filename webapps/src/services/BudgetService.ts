@@ -116,7 +116,7 @@ class BudgetService {
                 console.log('Total Budget Amount for savings: ', totalBudgetAmount);
                 break;
 
-            case 'paying off debt':
+            case 'Paying off debt':
                 let debtAmount = targetAmount;
                 totalBudgetAmount = monthlyIncome - monthlyAllocation;
 
@@ -213,7 +213,7 @@ class BudgetService {
                 return "Savings Budget";
             case 'Controlling spending':
                 return "Spending Control Budget";
-            case 'paying off debt':
+            case 'Paying off debt':
                 return "Debt Payoff Budget";
             default:
                 throw new Error('Invalid Budget Type');
