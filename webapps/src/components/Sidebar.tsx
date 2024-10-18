@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import {useLocation, useNavigate} from "react-router-dom";
 import SidebarMenu from "./SidebarMenu";
+import BudgetService, {Budget} from "../services/BudgetService";
+import {BudgetType} from "../domain/BudgetType";
 
 
 interface MenuItem {
@@ -38,6 +40,8 @@ interface MenuItem {
     path: string;
 }
 
+
+
 const Sidebar: React.FC = () => {
     const theme = useTheme();
     const navigate = useNavigate();
@@ -45,12 +49,67 @@ const Sidebar: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<string>('');
     const [showSettingsMenu, setShowSettingsMenu] = useState<boolean>(false);
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+    const [budgetType, setBudgetType] = useState<BudgetType>();
+    const budgetService = BudgetService.getInstance();
+
+    const fetchBudgetTypeFromBudget = (budget: Budget[]): BudgetType => {
+        if(budget.length === 0){
+            return BudgetType.SAVINGS;
+        }
+        // Assume the user only has a single budget
+        const singleBudget: Budget = budget[0];
+        let budgetName = singleBudget?.budgetName;
+        switch(budgetName){
+            case 'Savings Budget':
+                return BudgetType.SAVINGS;
+            case 'Spending Control Budget':
+                return BudgetType.CONTROL_SPENDING;
+            case 'Debt Payoff Budget':
+                return BudgetType.PAY_DEBT;
+            default:
+                throw new Error('Unknown Budget Name');
+        }
+
+    }
+
+    useEffect(() => {
+        const fetchBudgetType = async () => {
+            try
+            {
+                const userId = Number(sessionStorage.getItem('userId'));
+                const response = await budgetService.getBudgetTypeByUserId(userId);
+                if(!response) throw new Error('Budget Response is empty or null');
+                const fetchBudgetType = fetchBudgetTypeFromBudget(response);
+                setBudgetType(fetchBudgetType);
+
+            }catch(error){
+                console.error('Error fetching budget: ', error);
+            }
+        };
+        fetchBudgetType();
+    })
+
+
+    const getBudgetPath = () => {
+        switch (budgetType) {
+            case BudgetType.SAVINGS:
+                return '/budgets';
+            case BudgetType.CONTROL_SPENDING:
+                return '/budget-spending';
+            case BudgetType.PAY_DEBT:
+                return '/budgets-debt';
+            case BudgetType.EMERGENCY_FUND:
+                return '/budget-emergency';
+            default:
+                return '/budgets';
+        }
+    };
 
     const menuItems = [
         { text: 'Dashboard', icon: <Dashboard /> , path: '/dashboard'},
         { text: 'Recurring', icon: <EventRepeat />, path: '/recurring' },
         { text: 'Spending', icon: <AttachMoney /> , path: '/spending'},
-        { text: 'Budgets', icon: <AccountBalance /> , path: '/budgets'},
+        { text: 'Budgets', icon: <AccountBalance /> , path: getBudgetPath()},
         { text: 'Net Worth', icon: <TrendingUp />, path: '/net-worth' },
         { text: 'Transactions', icon: <Search /> , path: '/transactions'},
         { text: 'Credit Score', icon: <CreditScore />, path: '/score' },

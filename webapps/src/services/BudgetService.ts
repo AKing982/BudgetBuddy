@@ -4,9 +4,10 @@ import {SavingsGoalData} from "../components/SavingsGoalQuestions";
 import {DebtPayoffData} from "../components/DebtPayoffQuestions";
 import {SpendingControlData} from "../components/SpendingControlQuestions";
 import LoginService from "./LoginService";
+import {BudgetType} from "../domain/BudgetType";
 
 
-interface Budget {
+export interface Budget {
     id: number;
     userId: number;
     budgetName: string;
@@ -246,6 +247,20 @@ class BudgetService {
                 throw new Error('Invalid budget type found');
         }
     };
+
+    public async getBudgetTypeByUserId(userId: number) : Promise<Budget[]> {
+        if(userId < 0){
+            throw new Error('Invalid userId found');
+        }
+        try
+        {
+            const response = await axios.get(`${apiUrl}/api/budgets/budget-type/${userId}`);
+            return response.data;
+        }catch(error){
+            console.error('There was an error fetching the budget type for userId: ', userId);
+            return [];
+        }
+    }
 
     public async saveBudget(budget: BudgetQuestions) : Promise<any> {
         if(!budget){

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -71,6 +72,22 @@ public class BudgetController
             return ResponseEntity.badRequest().body("Invalid budget request");
         }
         return null;
+    }
+
+    @GetMapping("/budget-type/{userId}")
+    public ResponseEntity<?> getBudgetByUserId(@PathVariable Long userId){
+        if(userId < 1L){
+            return ResponseEntity.badRequest().body(null);
+        }
+        try
+        {
+            List<BudgetEntity> userBudgets = budgetService.getBudgetByUserId(userId);
+            return ResponseEntity.ok().body(userBudgets);
+
+        }catch(Exception e){
+            LOGGER.error("There was an error while getting the budget", e);
+            return ResponseEntity.internalServerError().body(null);
+        }
     }
 
 }

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
@@ -16,5 +17,6 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
 
     @Query("SELECT b FROM BudgetEntity b WHERE b.user.id =:id")
     List<BudgetEntity> findByUser(@Param("id") Long id);
+
 
 }

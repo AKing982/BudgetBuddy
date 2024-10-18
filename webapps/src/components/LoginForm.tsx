@@ -22,6 +22,7 @@ import LoginService from "../services/LoginService";
 import loginService from "../services/LoginService";
 import RecurringTransactionService from "../services/RecurringTransactionService";
 import {be} from "date-fns/locale";
+import BudgetService from "../services/BudgetService";
 
 
 interface LoginFormData {
@@ -90,6 +91,7 @@ const LoginForm: React.FC = () => {
     const [linkToken, setLinkToken] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const plaidLinkRef = useRef<PlaidLinkRef>(null);
+    const budgetService = BudgetService.getInstance();
 
     const navigate = useNavigate();
 
@@ -147,7 +149,7 @@ const LoginForm: React.FC = () => {
                         console.error('Plaid Link reference is not available');
                     }
                 }else{
-                    navigate('/dashboard');
+                    navigate('/dashboard')
                 }
             }
             console.log('Response: ', response);

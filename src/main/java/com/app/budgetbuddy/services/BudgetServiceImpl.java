@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -56,6 +57,11 @@ public class BudgetServiceImpl implements BudgetService
         budgetEntity.setMonthlyIncome(createRequest.monthlyIncome());
         budgetEntity.setLastUpdatedDate(null);
         return budgetRepository.save(budgetEntity);
+    }
+
+    @Override
+    public List<BudgetEntity> getBudgetByUserId(Long id) {
+        return budgetRepository.findByUser(id);
     }
 
     @Override
