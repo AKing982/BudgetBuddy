@@ -97,7 +97,7 @@ const Sidebar: React.FC = () => {
             case BudgetType.CONTROL_SPENDING:
                 return '/budget-spending';
             case BudgetType.PAY_DEBT:
-                return '/budgets-debt';
+                return '/budget-debt';
             case BudgetType.EMERGENCY_FUND:
                 return '/budget-emergency';
             default:
