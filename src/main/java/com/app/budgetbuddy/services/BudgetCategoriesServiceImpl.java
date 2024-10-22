@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -59,6 +60,11 @@ public class BudgetCategoriesServiceImpl implements BudgetCategoriesService
        budgetCategoriesEntity.setCreatedAt(LocalDateTime.now());
        budgetCategoriesEntity.setUpdatedAt(LocalDateTime.now());
        return budgetCategoriesRepository.save(budgetCategoriesEntity);
+    }
+
+    @Override
+    public List<BudgetCategoriesEntity> findByBudgetId(Long budgetId) {
+        return budgetCategoriesRepository.findAllByBudgetId(budgetId);
     }
 
     private BudgetEntity findBudgetEntityByBudgetId(Long budgetId) {

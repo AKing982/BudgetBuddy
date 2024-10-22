@@ -19,4 +19,5 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
     List<BudgetEntity> findByUser(@Param("id") Long id);
 
 
+
 }
