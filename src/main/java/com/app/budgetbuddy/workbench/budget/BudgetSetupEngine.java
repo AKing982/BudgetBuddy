@@ -6,10 +6,24 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class BudgetSetupEngine
 {
+
+    public BigDecimal initializeBudgetExpenses(){
+        return null;
+    }
+
+    public Map<Long, List<Category>> loadTopBudgetExpenseCategories(){
+        return null;
+    }
+
+    public BigDecimal calculateInitialSavingsData(){
+        return null;
+    }
+
     public BigDecimal calculateBudgetAmountForBudget(Budget budget){
         return null;
     }
