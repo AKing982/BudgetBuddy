@@ -34,15 +34,16 @@ public class BudgetCalculator
         return null;
     }
 
-    public BigDecimal calculateTotalBudgetHealth(final Budget budget){
+    public BigDecimal calculateTotalBudgetHealth(final BigDecimal budgetAmount, final BigDecimal budgetActual, final BigDecimal remainingBudget, final String budgetDescription){
         return null;
     }
 
-    public BigDecimal calculateTotalSavings(final Budget budget){
+    public BigDecimal calculateTotalSavings(final Long budgetId, final BigDecimal budgetAmount, final BigDecimal budgetActual, final BigDecimal leftOver, final String budgetDescription){
+
         return null;
     }
 
-    public BigDecimal calculateTotalCategorySavings(final Budget budget, final Category category){
+    public BigDecimal calculateTotalCategorySavings(final Long budgetId, final Category category){
         return null;
     }
 
@@ -95,9 +96,6 @@ public class BudgetCalculator
         return budgetEntity.orElseThrow(() -> new IllegalArgumentException("Budget id " + budgetId + " not found"));
     }
 
-    private BudgetCategoriesEntity getBudgetCategoriesEntityById(Long budgetId){
-
-    }
 
     public BigDecimal calculateRemainingBudgetAmountForCategory(final Category category, final Budget budget){
         return null;

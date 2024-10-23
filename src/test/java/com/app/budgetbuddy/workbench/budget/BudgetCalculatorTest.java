@@ -28,20 +28,10 @@ class BudgetCalculatorTest {
     @Mock
     private BudgetGoalsService budgetGoalsService;
 
-    private Budget testBudget;
-
     private Category testCategory;
 
     @BeforeEach
     void setUp() {
-        testBudget = new Budget();
-        testBudget.setId(1L);
-        testBudget.setBudgetAmount(new BigDecimal("500.00"));
-        testBudget.setBudgetDescription("test budget");
-        testBudget.setBudgetName("test budget");
-        testBudget.setLeftOver(new BigDecimal("100.00"));
-        testBudget.setUserId(1L);
-        testBudget.setActual(new BigDecimal("400.00"));
 
         testCategory = new Category();
         testCategory.setCategoryDescription("Groceries and Supermarkets");
@@ -51,7 +41,7 @@ class BudgetCalculatorTest {
     @Test
     void testCalculateActualBudgetedAmountForCategory_whenCategoryIsNull_thenThrowException(){
         assertThrows(IllegalArgumentException.class, () -> {
-            budgetCalculator.calculateActualBudgetedAmountForCategory(null, testBudget);
+            budgetCalculator.calculateActualBudgetedAmountForCategory(null, 1L);
         });
     }
 
