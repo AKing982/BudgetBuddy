@@ -1,6 +1,8 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.Budget;
+import com.app.budgetbuddy.domain.BudgetPeriod;
+import com.app.budgetbuddy.domain.BudgetStats;
 import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.entities.BudgetEntity;
@@ -12,7 +14,9 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 @Component
 public class BudgetCalculator
@@ -30,7 +34,7 @@ public class BudgetCalculator
         this.budgetCategoriesService = budgetCategoriesService;
     }
 
-    public BigDecimal calculateSavingsGoalProgress(final Budget budget){
+    public BigDecimal calculateSavingsGoalProgress(final Budget budget, List<Category> spendingCategories, BudgetPeriod budgetPeriod, Long userId){
         return null;
     }
 
@@ -51,37 +55,62 @@ public class BudgetCalculator
         return null;
     }
 
+    public BudgetStats calculateBudgetStats(final Long userId, final BigDecimal leftOver, final BigDecimal totalSpent, final BigDecimal totalBudgeted, final BigDecimal totalRemaining){
+        return null;
+    }
+
+    public BigDecimal calculateLeftOverBudgetAmount(Budget budget, BudgetPeriod budgetPeriod, List<Category> categories){
+        return null;
+    }
+
+    public BigDecimal calculateRemainingBudgetAmount(final Budget budget, BudgetPeriod budgetPeriod, List<Category> categories){
+        return null;
+    }
+
+    public BigDecimal calculateTotalExpenses(List<Category> categories, BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+    public BigDecimal calculateMonthlyBudgetedAmount(BudgetPeriod budgetPeriod, Budget budget){
+        return null;
+    }
+
+    public BigDecimal calculateBiWeeklyBudgetedAmount(BudgetPeriod budgetPeriod, Budget budget){
+        return null;
+    }
+
+    public BigDecimal calculateWeeklyBudgetedAmount(BudgetPeriod budgetPeriod, Budget budget){
+        return null;
+    }
+
+    public Map<Category, BigDecimal> createCategoryBudgetAmountMap(final List<Category> categories, final Budget budget, final BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+    public BigDecimal generateCategoryBudgetAmount(final Category category, final Budget budget, final BudgetPeriod budgetPeriod){
+        if(category == null || budgetPeriod == null){
+            throw new IllegalArgumentException("Invalid category or budget period");
+        }
+        if(budget == null){
+            throw new IllegalArgumentException("Invalid budget");
+        }
+
+        // Does the user already have a budget?
+        // Is that budget a spending budget?
+           // if the budget is a spending budget
+           // Does the user have budget category that matches the category?
+             // If yes, then use the allocated amount as the budget amount
+            // If no, then use a percentage of the budget amount as the allocated amount
+        // Is the budget a spending control budget?
+        // Is the budget a paying off debt budget?
+
+        return null;
+    }
+
+    @Deprecated
     public BigDecimal calculateActualBudgetedAmountForCategory(final Category category, final Long budgetId){
         if(category == null){
             throw new IllegalArgumentException("Category or Budget cannot be null");
-        }
-        BudgetEntity budgetEntity = getBudgetEntityById(budgetId);
-        String budgetDescription = budgetEntity.getBudgetDescription();
-        BigDecimal budgetedAmount;
-        if(budgetDescription.equals("Spending Control Budget"))
-        {
-            // Are there any Budget Categories with this budget?
-            List<BudgetCategoriesEntity> budgetCategories = getBudgetCategoriesByBudgetId(budgetId);
-            if(budgetCategories.isEmpty())
-            {
-                return BigDecimal.ZERO;
-            }
-            else
-            {
-                for(BudgetCategoriesEntity budgetCategory : budgetCategories)
-                {
-                    if(budgetCategory != null)
-                    {
-                        String categoryName = category.getCategoryName();
-                        String categoryDescription = category.getCategoryDescription();
-                        if(categoryName.equals(budgetCategory.getCategoryName()) || categoryDescription.equals(budgetCategory.getCategoryName()))
-                        {
-                            budgetedAmount = BigDecimal.valueOf(budgetCategory.getAllocatedAmount());
-                            break;
-                        }
-                    }
-                }
-            }
         }
 
         return null;

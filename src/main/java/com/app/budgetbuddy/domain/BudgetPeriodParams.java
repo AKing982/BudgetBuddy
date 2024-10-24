@@ -13,16 +13,22 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class BudgetPeriodParams
 {
-    private Category category;
     private BigDecimal budgeted;
     private BigDecimal actual;
     private BigDecimal remaining;
+    private DateRange dateRange;
+    private boolean isOverBudget;
+    private double spendingPercentage;
+    private BudgetStatus budgetStatus;
 
-    public BudgetPeriodParams(Category category, BigDecimal budgeted, BigDecimal actual, BigDecimal remaining) {
-        this.category = category;
+    public BudgetPeriodParams(BigDecimal budgeted, BigDecimal actual, BigDecimal remaining, DateRange dateRange, boolean isOverBudget, double spendingPercentage, BudgetStatus budgetStatus) {
         this.budgeted = budgeted;
         this.actual = actual;
         this.remaining = remaining;
+        this.dateRange = dateRange;
+        this.isOverBudget = isOverBudget;
+        this.spendingPercentage = spendingPercentage;
+        this.budgetStatus = budgetStatus;
     }
 
     @Override
@@ -30,11 +36,11 @@ public class BudgetPeriodParams
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BudgetPeriodParams that = (BudgetPeriodParams) o;
-        return Objects.equals(category, that.category) && Objects.equals(budgeted, that.budgeted) && Objects.equals(actual, that.actual) && Objects.equals(remaining, that.remaining);
+        return isOverBudget == that.isOverBudget && Double.compare(spendingPercentage, that.spendingPercentage) == 0 && Objects.equals(budgeted, that.budgeted) && Objects.equals(actual, that.actual) && Objects.equals(remaining, that.remaining) && Objects.equals(dateRange, that.dateRange) && budgetStatus == that.budgetStatus;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(category, budgeted, actual, remaining);
+        return Objects.hash(budgeted, actual, remaining, dateRange, isOverBudget, spendingPercentage, budgetStatus);
     }
 }

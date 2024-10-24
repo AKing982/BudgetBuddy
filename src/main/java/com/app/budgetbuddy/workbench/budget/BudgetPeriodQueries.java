@@ -1,13 +1,14 @@
 package com.app.budgetbuddy.workbench.budget;
 
-import com.app.budgetbuddy.domain.BudgetPeriod;
-import com.app.budgetbuddy.domain.BudgetPeriodParams;
-import com.app.budgetbuddy.domain.Period;
+import com.app.budgetbuddy.domain.*;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -24,7 +25,15 @@ public class BudgetPeriodQueries
         this.budgetCalculator = budgetCalculator;
     }
 
+    public List<DateRange> calculatePeriodDateRanges(LocalDate selectedDate, Period period) {
+        return null;
+    }
+
     public String createBudgetQueryFromPeriod(final Period period){
+        return null;
+    }
+
+    private BudgetPeriodParams createBudgetPeriodParams(BigDecimal budgeted, BigDecimal actual, BigDecimal remaining, DateRange dateRange, boolean isOverBudget, BudgetStatus budgetStatus){
         return null;
     }
 
@@ -37,15 +46,15 @@ public class BudgetPeriodQueries
     }
 
 
-    public List<BudgetPeriodParams> getWeeklyBudgetPeriodData(BudgetPeriod budgetPeriod){
+    public List<BudgetPeriodParams> getWeeklyBudgetPeriodQuery(BudgetPeriod budgetPeriod){
         return null;
     }
 
-    public List<BudgetPeriodParams> getBiWeeklyBudgetPeriodData(BudgetPeriod budgetPeriod){
+    public List<BudgetPeriodParams> getBiWeeklyBudgetPeriodQuery(BudgetPeriod budgetPeriod){
         return null;
     }
 
-    public List<BudgetPeriodParams> getDailyBudgetPeriodData(BudgetPeriod budgetPeriod){
+    public List<BudgetPeriodParams> getDailyBudgetPeriodQuery(BudgetPeriod budgetPeriod){
         return null;
     }
 }
