@@ -65,6 +65,14 @@ public class DateRange
         return false;
     }
 
+    public boolean isWithinBiWeek(LocalDate date){
+        return false;
+    }
+
+    public boolean isWithinWeek(LocalDate date){
+        return false;
+    }
+
     public long getDaysInRange(){
         return 0;
     }
