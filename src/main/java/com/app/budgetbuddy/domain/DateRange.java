@@ -4,14 +4,17 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class DateRange
+public class DateRange implements Comparable<DateRange>
 {
     private LocalDate startDate;
     private LocalDate endDate;
@@ -22,79 +25,165 @@ public class DateRange
     }
 
     public List<DateRange> splitByPeriod(Period period){
-        return null;
+        switch(period)
+        {
+            case MONTHLY -> {
+                return splitIntoMonths();
+            }
+            case WEEKLY -> {
+                return splitIntoWeeks();
+            }
+            case BIWEEKLY -> {
+                return splitIntoBiWeeks();
+            }
+            case DAILY -> {
+                return splitIntoDays();
+            }
+            default -> {
+                throw new UnsupportedOperationException("Unsupported period: " + period);
+            }
+        }
     }
 
     public Integer getDateRangeDifference(LocalDate startDate, LocalDate endDate){
-        return null;
+        return Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
     }
 
     public DateRange incrementNextPeriod(Period period){
-        return null;
+        switch(period)
+        {
+            case MONTHLY -> {
+                return new DateRange(startDate.plusMonths(1), endDate.plusMonths(1));
+            }
+            case WEEKLY -> {
+                return new DateRange(startDate.plusWeeks(1), endDate.plusWeeks(1));
+            }
+            case BIWEEKLY -> {
+                return new DateRange(startDate.plusWeeks(2), endDate.plusWeeks(2));
+            }
+            case DAILY -> {
+                return new DateRange(startDate.plusDays(1), endDate.plusDays(1));
+            }
+            default -> {
+                throw new UnsupportedOperationException("Unsupported period: " + period);
+            }
+        }
     }
 
     public List<DateRange> splitIntoDays(){
-        return null;
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate current = startDate;
+        while(!current.isAfter(endDate)){
+            dateRanges.add(new DateRange(current, current));
+            current = current.plusDays(1);
+        }
+        return dateRanges;
     }
 
     public List<DateRange> splitIntoWeeks(){
-        return null;
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate current = startDate;
+        while(!current.isAfter(endDate)){
+            dateRanges.add(new DateRange(current, current));
+            current = current.plusWeeks(1);
+        }
+        return dateRanges;
     }
 
     public List<DateRange> splitIntoBiWeeks(){
-        return null;
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate current = startDate;
+        while(!current.isAfter(endDate)){
+            dateRanges.add(new DateRange(current, current));
+            current = current.plusWeeks(2);
+        }
+        return dateRanges;
     }
 
     public List<DateRange> splitIntoMonths(){
-        return null;
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate current = startDate;
+        while(!current.isAfter(endDate)){
+            dateRanges.add(new DateRange(current, current));
+            current = current.plusMonths(1);
+        }
+        return dateRanges;
     }
 
     public DateRange incrementToPreviousPeriod(Period period){
-        return null;
+        switch(period)
+        {
+            case MONTHLY -> {
+                return new DateRange(startDate.minusMonths(1), endDate.minusMonths(1));
+            }
+            case WEEKLY -> {
+                return new DateRange(startDate.minusWeeks(1), endDate.minusWeeks(1));
+            }
+            case BIWEEKLY -> {
+                return new DateRange(startDate.minusWeeks(2), endDate.minusWeeks(2));
+            }
+            case DAILY -> {
+                return new DateRange(startDate.minusDays(1), endDate.minusDays(1));
+            }
+            default -> {
+                throw new UnsupportedOperationException("Unsupported period: " + period);
+            }
+        }
+
     }
 
     public boolean containsDate(LocalDate date){
-        return false;
+        return (date.isEqual(startDate) || date.isAfter(startDate) && (date.isEqual(endDate) || date.isBefore(endDate)));
     }
 
     public boolean dateOverlaps(DateRange otherDateRange){
-        return false;
+        return this.startDate.isBefore(otherDateRange.endDate) && otherDateRange.startDate.isBefore(this.endDate);
     }
 
     public boolean isWithinMonth(LocalDate date){
-        return false;
+        return date.getYear() == startDate.getYear() && date.getMonth() == startDate.getMonth();
     }
 
     public boolean isWithinBiWeek(LocalDate date){
-        return false;
+        long daysDifference = ChronoUnit.DAYS.between(startDate, date);
+        return daysDifference >= 0 && daysDifference < 14;
     }
 
     public boolean isWithinWeek(LocalDate date){
-        return false;
+        long daysDifference = ChronoUnit.DAYS.between(startDate, date);
+        return daysDifference >= 0 && daysDifference < 7;
     }
 
     public long getDaysInRange(){
-        return 0;
+        return ChronoUnit.DAYS.between(startDate, endDate) + 1;
     }
 
     public long getMonthsInRange(){
-        return 0;
+        return ChronoUnit.MONTHS.between(startDate, endDate);
     }
 
     public long getWeeksInRange(){
-        return 0;
+        return ChronoUnit.WEEKS.between(startDate, endDate);
     }
 
     public long getYearsInRange(){
-        return 0;
+        return ChronoUnit.YEARS.between(startDate, endDate);
     }
 
     public long getBiWeeksInRange(){
-        return 0;
+        return getDaysInRange() / 14;
     }
 
     public String formatDateRange(){
-        return "";
+        return String.format("%s to %s", startDate, endDate);
     }
 
+    @Override
+    public int compareTo(@NotNull DateRange o) {
+        int result = this.startDate.compareTo(o.startDate);
+        if(result == 0){
+            result = this.endDate.compareTo(o.endDate);
+        }
+        return result;
+    }
 }

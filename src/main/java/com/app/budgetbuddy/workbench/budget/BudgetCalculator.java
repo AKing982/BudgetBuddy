@@ -15,9 +15,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Component
 public class BudgetCalculator {
@@ -42,19 +40,6 @@ public class BudgetCalculator {
     }
 
     public BigDecimal calculateTotalBudgetHealth(final BigDecimal budgetAmount, final BigDecimal budgetActual, final BigDecimal remainingBudget, final String budgetDescription) {
-        return null;
-    }
-
-    public BigDecimal calculateTotalSavings(final Long budgetId, final BigDecimal budgetAmount, final BigDecimal budgetActual, final BigDecimal leftOver, final String budgetDescription) {
-
-        return null;
-    }
-
-    public BigDecimal calculateTotalCategorySavings(final Long budgetId, final Category category) {
-        return null;
-    }
-
-    public BigDecimal calculateTotalBudgetedAmountForCategory(final Category category, final Budget budget) {
         return null;
     }
 
@@ -141,47 +126,50 @@ public class BudgetCalculator {
     }
 
 
-    public BigDecimal calculateCategoryBudgetAmountForPeriod(final String categoryName, final String categoryDescription, final Budget budget, final BudgetPeriod budgetPeriod)
+    public BigDecimal calculateCategoryBudgetAmountForPeriod(final String categoryName, final BigDecimal categorySpending, final BigDecimal totalSpendingOnCategories, final Budget budget, final BudgetPeriod budgetPeriod)
     {
         Period period = getPeriodFromBudgetPeriod(budgetPeriod);
+        LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+        LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+        validateStartDateAndEndDate(startDate, endDate);
+        DateRange dateRange = createDateRange(startDate, endDate);
+
+        BigDecimal budgetAmount = budget.getBudgetAmount();
+        BigDecimal categoryProportion = getCategoryBudgetAmountProportion(budgetAmount, categorySpending, totalSpendingOnCategories);
+
         if(period == Period.MONTHLY)
         {
-            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
-            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
-
-            validateStartDateAndEndDate(startDate, endDate);
-
-            DateRange monthRange = createDateRange(startDate, endDate);
-            Boolean isStartDateWithinMonth = monthRange.isWithinMonth(startDate);
-            Boolean isEndDateWithinMonth = monthRange.isWithinMonth(endDate);
+            boolean isStartDateWithinMonth = dateRange.isWithinMonth(startDate);
+            boolean isEndDateWithinMonth = dateRange.isWithinMonth(endDate);
             if(isStartDateWithinMonth && isEndDateWithinMonth)
             {
-                List<UserBudgetCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
-                if(userBudgetCategories == null || userBudgetCategories.isEmpty())
-                {
-                    return BigDecimal.ZERO;
-                }
-                BigDecimal totalSpendingForAllCategories = getTotalSpendingForAllUserBudgetCategories(userBudgetCategories);
-                for(UserBudgetCategoryEntity userBudgetCategory : userBudgetCategories)
-                {
-                    String userBudgetCategoryName = userBudgetCategory.getCategory().getName();
-                    String userBudgetDescription = userBudgetCategory.getCategory().getDescription();
-                    boolean isCategoryNameOrDescriptionMatch = userBudgetCategoryName.matches(categoryName) || userBudgetDescription.matches(categoryDescription);
-                    if(isCategoryNameOrDescriptionMatch)
-                    {
-                        BigDecimal totalCategorySpending = BigDecimal.valueOf(userBudgetCategory.getActual());
-                        BigDecimal totalCategoryBudgeted = BigDecimal.valueOf(userBudgetCategory.getBudgetedAmount());
-                        BigDecimal categoryProportion = getCategoryBudgetAmountProportion(categoryName, totalCategorySpending, totalCategoryBudgeted, totalSpendingForAllCategories);
-                        BigDecimal budgetedAmountForCategory = categoryProportion.multiply(budget.getBudgetAmount());
-                    }
-                }
+                return categoryProportion.multiply(budgetAmount);
             }
         }
         else if(period == Period.WEEKLY)
         {
-
+            boolean isStartDateWithinWeek = dateRange.isWithinWeek(startDate);
+            boolean isEndDateWithinWeek = dateRange.isWithinWeek(endDate);
+            if(isStartDateWithinWeek && isEndDateWithinWeek)
+            {
+                BigDecimal numberOfWeeks = BigDecimal.valueOf(dateRange.getWeeksInRange());
+                return categoryProportion.multiply(budgetAmount).divide(numberOfWeeks, RoundingMode.CEILING);
+            }
         }
+        else if(period == Period.BIWEEKLY)
+        {
+            boolean isStartDateWithinBiWeek = dateRange.isWithinBiWeek(startDate);
+            boolean isEndDateWithinBiWeek = dateRange.isWithinBiWeek(endDate);
+            if(isStartDateWithinBiWeek && isEndDateWithinBiWeek)
+            {
+                BigDecimal numberOfBiWeeks = BigDecimal.valueOf(dateRange.getBiWeeksInRange());
+                return categoryProportion.multiply(budgetAmount).divide(numberOfBiWeeks, RoundingMode.CEILING);
+            }
+        }
+        return BigDecimal.ZERO;
     }
+
+
 
     public BigDecimal calculateBiWeeklyBudgetedAmount(final BudgetPeriod budgetPeriod, final Budget budget)
     {
@@ -206,8 +194,16 @@ public class BudgetCalculator {
         return BigDecimal.ZERO;
     }
 
-    public BigDecimal calculateWeeklyBudgetedAmount(final BudgetPeriod budgetPeriod, final Budget budget)
+    private void validateBudgetPeriodAndBudget(BudgetPeriod budgetPeriod, Budget budget)
     {
+        if(budgetPeriod == null || budget == null){
+            throw new RuntimeException("BudgetPeriod or Budget is null");
+        }
+    }
+
+    public BigDecimal calculateBudgetedAmountByPeriod(final BudgetPeriod budgetPeriod, final Budget budget)
+    {
+        validateBudgetPeriodAndBudget(budgetPeriod, budget);
         Period weeklyPeriod = budgetPeriod.period();
         if(weeklyPeriod == Period.WEEKLY)
         {
@@ -229,8 +225,26 @@ public class BudgetCalculator {
         return BigDecimal.ZERO;
     }
 
-    public Map<Category, BigDecimal> createCategoryBudgetAmountMap(final List<Category> categories, final Budget budget, final BudgetPeriod budgetPeriod) {
-        return null;
+    public TreeMap<DateRange, List<UserBudgetCategoryEntity>> createCategoryBudgetAmountMapForPeriod(final Budget budget, final BudgetPeriod budgetPeriod)
+    {
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> categoryToCategoryBudgetMap = new TreeMap<>();
+        LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+        LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+        validateStartDateAndEndDate(startDate, endDate);
+
+        // Get the Date Range
+        DateRange dateRange = createDateRange(startDate, endDate);
+
+        // Create Categories for the specified period?
+        List<UserBudgetCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
+        if(userBudgetCategories == null || userBudgetCategories.isEmpty())
+        {
+            return new TreeMap<>();
+        }
+
+        List<UserBudgetCategoryEntity> userBudgetCategoryEntities = new ArrayList<>(userBudgetCategories);
+        categoryToCategoryBudgetMap.getOrDefault(dateRange, userBudgetCategoryEntities);
+        return categoryToCategoryBudgetMap;
     }
 
     private DateRange createDateRange(LocalDate startDate, LocalDate endDate)
@@ -289,7 +303,7 @@ public class BudgetCalculator {
         return category.getActual();
     }
 
-    public BigDecimal getTotalSavedInCategoriesByPeriod(final BudgetPeriod budgetPeriod, final Budget budget)
+    public BigDecimal getTotalSavedInUserBudgetCategoriesByPeriod(final BudgetPeriod budgetPeriod, final Budget budget)
     {
         if(budgetPeriod == null || budget == null)
         {
@@ -297,18 +311,13 @@ public class BudgetCalculator {
         }
 
         List<UserBudgetCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), budgetPeriod.startDate(), budgetPeriod.endDate());
-        if(userBudgetCategories == null || userBudgetCategories.isEmpty())
-        {
-            return BigDecimal.ZERO;
-        }
-
         BigDecimal totalSavedAmount = BigDecimal.ZERO;
         for(UserBudgetCategoryEntity userBudgetCategoryEntity : userBudgetCategories)
         {
             Double categorySpending = userBudgetCategoryEntity.getActual();
             Double categoryBudgetedAmount = userBudgetCategoryEntity.getBudgetedAmount();
             BigDecimal savedInCategory = getTotalSavedInCategory(categorySpending, categoryBudgetedAmount);
-            totalSavedAmount = totalSavedAmount.add(savedInCategory);
+            totalSavedAmount = totalSavedAmount.add(savedInCategory).setScale(2, RoundingMode.HALF_UP);
         }
         return totalSavedAmount;
     }
@@ -333,20 +342,25 @@ public class BudgetCalculator {
         BigDecimal totalSavedAmount = BigDecimal.ZERO;
         for(Category category : categories)
         {
-            BigDecimal totalCategorySpending = category.getActual();
-            BigDecimal totalBudgetedForCategory = category.getBudgetedAmount();
-
-            BigDecimal savedAmount = totalBudgetedForCategory.subtract(totalCategorySpending);
-            totalSavedAmount = totalSavedAmount.add(savedAmount);
+            if(category != null)
+            {
+                BigDecimal totalCategorySpending = category.getActual();
+                BigDecimal totalBudgetedForCategory = category.getBudgetedAmount();
+                if(totalCategorySpending != null && totalBudgetedForCategory != null)
+                {
+                    BigDecimal savedAmount = totalBudgetedForCategory.subtract(totalCategorySpending);
+                    totalSavedAmount = totalSavedAmount.add(savedAmount);
+                }
+            }
         }
         return totalSavedAmount;
     }
 
-    public BigDecimal getCategoryBudgetAmountProportion(final String categoryName, final BigDecimal totalCategorySpending, final BigDecimal totalBudgetAmount, final BigDecimal totalSpendingOnCategories)
+    public BigDecimal getCategoryBudgetAmountProportion(final BigDecimal totalCategorySpending, final BigDecimal totalBudgetAmount, final BigDecimal totalSpendingOnCategories)
     {
-        if(categoryName == null || totalCategorySpending == null || totalBudgetAmount == null || totalSpendingOnCategories == null)
+        if(totalCategorySpending == null || totalBudgetAmount == null || totalSpendingOnCategories == null)
         {
-            throw new IllegalArgumentException("Invalid input parameters");
+            throw new IllegalArgumentException("Invalid totalCategorySpending or TotalBudgetAmount or Total Spending on Categories cannot be null");
         }
         if(totalSpendingOnCategories.compareTo(BigDecimal.ZERO) == 0)
         {

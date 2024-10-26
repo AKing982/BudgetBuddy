@@ -15,7 +15,7 @@ public interface UserBudgetCategoryRepository extends JpaRepository<UserBudgetCa
     @Query("SELECT u FROM UserBudgetCategoryEntity u WHERE u.user.id =:id")
     List<UserBudgetCategoryEntity> findAllByUserId(@Param("id") Long id);
 
-    @Query("SELECT u FROM UserBudgetCategoryEntity u WHERE u.user.id =:id AND u.isactive =:true")
+    @Query("SELECT u FROM UserBudgetCategoryEntity u WHERE u.user.id =:id AND u.isactive = true")
     List<UserBudgetCategoryEntity> findActiveCategoriesByUser(@Param("id") Long userId);
 
     @Query("SELECT u FROM UserBudgetCategoryEntity u WHERE u.user.id =:id AND u.startDate =:startDate AND u.endDate =:endDate")
@@ -24,7 +24,7 @@ public interface UserBudgetCategoryRepository extends JpaRepository<UserBudgetCa
     @Query("SELECT SUM(u.budgetedAmount) FROM UserBudgetCategoryEntity u WHERE u.user.id =:id AND u.startDate =:start AND u.endDate =:end")
     Integer sumBudgetedAmountByUserAndDateRange(@Param("id") Long userId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
-    @Query("SELECT u FROM UserBudgetCategoryEntity u WHERE u.user.id =:userId AND u.category.name =:name")
+
 
 
 }
