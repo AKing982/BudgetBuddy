@@ -284,11 +284,121 @@ class BudgetCalculatorTest {
 
     @Test
     void testCalculateWeeklyBudgetedAmount_whenPeriodIsWeekly_thenReturnBudgetAmount(){
-        BudgetPeriod weeklyBudgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 9, 30), LocalDate.of(2024, 10, 6));
+        BudgetPeriod weeklyBudgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
 
-        BigDecimal expectedWeeklyBudgetAmount = new BigDecimal("125");
+        BigDecimal expectedWeeklyBudgetAmount = new BigDecimal("125.00");
         BigDecimal actualBudgetAmount = budgetCalculator.calculateBudgetedAmountByPeriod(weeklyBudgetPeriod, testBudget);
         assertEquals(expectedWeeklyBudgetAmount, actualBudgetAmount);
+    }
+
+    @Test
+    void testCalculateBudgetedAmount_whenPeriodIsWeekly_DateRangeIsSameWeek_thenReturnBudgetAmount(){
+        BudgetPeriod weeklyBudgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 9, 28), LocalDate.of(2024, 10, 5));
+        BigDecimal expectedWeeklyBudgetAmount = new BigDecimal("115.48");
+        BigDecimal actualBudgetAmount = budgetCalculator.calculateBudgetedAmountByPeriod(weeklyBudgetPeriod, testBudget);
+        assertEquals(expectedWeeklyBudgetAmount, actualBudgetAmount);
+    }
+
+    @Test
+    void testCalculateBudgetedAmountByPeriod_whenPeriodIsBiWeekly_thenReturnBudgetAmount(){
+        BudgetPeriod biWeeklyBudgetPeriod = new BudgetPeriod(Period.BIWEEKLY, LocalDate.of(2024, 9, 28), LocalDate.of(2024, 10, 12));
+        BigDecimal expectedBiWeeklyBudgetAmount = new BigDecimal("230.42");
+        BigDecimal actualBudgetAmount = budgetCalculator.calculateBudgetedAmountByPeriod(biWeeklyBudgetPeriod, testBudget);
+        assertEquals(expectedBiWeeklyBudgetAmount, actualBudgetAmount);
+        assertNotNull(actualBudgetAmount);
+    }
+
+    @Test
+    void testCalculateBudgetedAmountByPeriod_whenPeriodIsDaily_thenReturnBudgetAmount(){
+        BudgetPeriod dailyBudgetPeriod = new BudgetPeriod(Period.DAILY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
+        BigDecimal expectedDailyBudgetAmount = new BigDecimal("16.13");
+        BigDecimal actualBudgetAmount = budgetCalculator.calculateBudgetedAmountByPeriod(dailyBudgetPeriod, testBudget);
+        assertEquals(expectedDailyBudgetAmount, actualBudgetAmount);
+        assertNotNull(actualBudgetAmount);
+    }
+
+    @Test
+    void testCalculateBudgetedAmountByPeriod_whenPeriodIsDailyAndDateRangeIsSameDay_thenReturnBudgetAmount(){
+        BudgetPeriod dailyBudgetPeriod = new BudgetPeriod(Period.DAILY, LocalDate.of(2024, 10, 1),  LocalDate.of(2024, 10,1));
+        BigDecimal expected = new BigDecimal("16.45");
+        BigDecimal actual = budgetCalculator.calculateBudgetedAmountByPeriod(dailyBudgetPeriod, testBudget);
+        assertEquals(expected, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCalculateBudgetedAmountByPeriod_whenPeriodIsMonthly_thenReturnBudgetAmount(){
+        BudgetPeriod monthlyBudgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
+        BigDecimal expectedMonthlyBudgetAmount = new BigDecimal("500.00");
+        BigDecimal actual = budgetCalculator.calculateBudgetedAmountByPeriod(monthlyBudgetPeriod, testBudget);
+        assertEquals(expectedMonthlyBudgetAmount, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenCategorySpendingIsNull_thenReturnZero(){
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Gas", null, new BigDecimal("890"), testBudget, testBudgetPeriod);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenTotalSpendingOnCategoriesIsNull_thenReturnZero(){
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Gas", new BigDecimal("250"), null, testBudget, testBudgetPeriod);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenBudgetIsNull_thenReturnZero(){
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Gas", new BigDecimal("250"), new BigDecimal("890"), null, testBudgetPeriod);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenPeriodIsMonthly_thenReturnBudgetAmount(){
+        BudgetPeriod monthlyBudgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
+        BigDecimal categorySpending = new BigDecimal("500");
+        BigDecimal totalSpendingOnCategories = new BigDecimal("2965.00");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070.00"));
+
+        BigDecimal expectedCategoryBudgetAmount = new BigDecimal("517.60");
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Groceries", categorySpending, totalSpendingOnCategories, budget, monthlyBudgetPeriod);
+        assertEquals(expectedCategoryBudgetAmount, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenMonthStartsPreviousMonthToNextMonth_thenReturnBudgetAmount(){
+        BudgetPeriod monthBudgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 28), LocalDate.of(2024, 10, 26));
+        BigDecimal categorySpending = new BigDecimal("1200.00");
+        BigDecimal totalSpendingOnCategories = new BigDecimal("2965.00");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070.00"));
+        BigDecimal expectedCategoryBudgetAmount = new BigDecimal("1242.43");
+
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Rent", categorySpending, totalSpendingOnCategories, budget, monthBudgetPeriod);
+        assertEquals(expectedCategoryBudgetAmount, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenPeriodIsWeekly_thenReturnBudgetAmount(){
+        BudgetPeriod weeklyBudgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
+        BigDecimal categorySpending = new BigDecimal("500.00");
+        BigDecimal totalSpendingOnCategories = new BigDecimal("2965.00");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070.00"));
+        BigDecimal expectedCategoryBudgetAmount = new BigDecimal("129.40");
+
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Groceries", categorySpending, totalSpendingOnCategories, budget, weeklyBudgetPeriod);
+        assertEquals(expectedCategoryBudgetAmount, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenPeriodIsWeeklyAndDatesAreSameWeek_thenReturnBudgetAmount(){
+        BudgetPeriod weeklyBudgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 8));
+
     }
 
     private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {

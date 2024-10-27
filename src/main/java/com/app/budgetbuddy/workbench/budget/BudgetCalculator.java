@@ -125,9 +125,22 @@ public class BudgetCalculator {
         return totalSpending;
     }
 
+    public Map<String, BigDecimal> createCategoryToBudgetMap(Category category, BudgetPeriod budgetPeriod)
+    {
+        return null;
+    }
+
+    private BigDecimal getCategoryBudget(BigDecimal categoryProportion, BigDecimal budgetAmount)
+    {
+        return categoryProportion.multiply(budgetAmount).setScale(2, RoundingMode.HALF_UP);
+    }
 
     public BigDecimal calculateCategoryBudgetAmountForPeriod(final String categoryName, final BigDecimal categorySpending, final BigDecimal totalSpendingOnCategories, final Budget budget, final BudgetPeriod budgetPeriod)
     {
+        if(categorySpending == null || totalSpendingOnCategories == null || budget == null || budgetPeriod == null)
+        {
+            return BigDecimal.ZERO;
+        }
         Period period = getPeriodFromBudgetPeriod(budgetPeriod);
         LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
         LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
@@ -135,64 +148,65 @@ public class BudgetCalculator {
         DateRange dateRange = createDateRange(startDate, endDate);
 
         BigDecimal budgetAmount = budget.getBudgetAmount();
-        BigDecimal categoryProportion = getCategoryBudgetAmountProportion(budgetAmount, categorySpending, totalSpendingOnCategories);
-
-        if(period == Period.MONTHLY)
+        BigDecimal categoryProportion = getCategoryBudgetAmountProportion(categorySpending, budgetAmount, totalSpendingOnCategories);
+        switch(period)
         {
-            boolean isStartDateWithinMonth = dateRange.isWithinMonth(startDate);
-            boolean isEndDateWithinMonth = dateRange.isWithinMonth(endDate);
-            if(isStartDateWithinMonth && isEndDateWithinMonth)
-            {
-                return categoryProportion.multiply(budgetAmount);
+            case MONTHLY -> {
+                boolean isStartDateWithinMonth = dateRange.isWithinMonth(startDate);
+                boolean isEndDateWithinMonth = dateRange.isWithinMonth(endDate);
+                if(isStartDateWithinMonth && isEndDateWithinMonth)
+                {
+                    return getCategoryBudget(categoryProportion, budgetAmount);
+                }
+                else
+                {
+                    boolean isWithinMonth = dateRange.isWithinMonth(startDate, endDate);
+                    if(isWithinMonth)
+                    {
+                        return getCategoryBudget(categoryProportion, budgetAmount);
+                    }
+                }
+            }
+            case WEEKLY -> {
+                // Get the Weekly budget amount
+                BigDecimal weeklyBudgetAmount = calculateBudgetedAmountByPeriod(budgetPeriod, budget);
+                return getCategoryBudget(categoryProportion, weeklyBudgetAmount);
             }
         }
-        else if(period == Period.WEEKLY)
-        {
-            boolean isStartDateWithinWeek = dateRange.isWithinWeek(startDate);
-            boolean isEndDateWithinWeek = dateRange.isWithinWeek(endDate);
-            if(isStartDateWithinWeek && isEndDateWithinWeek)
-            {
-                BigDecimal numberOfWeeks = BigDecimal.valueOf(dateRange.getWeeksInRange());
-                return categoryProportion.multiply(budgetAmount).divide(numberOfWeeks, RoundingMode.CEILING);
-            }
-        }
-        else if(period == Period.BIWEEKLY)
-        {
-            boolean isStartDateWithinBiWeek = dateRange.isWithinBiWeek(startDate);
-            boolean isEndDateWithinBiWeek = dateRange.isWithinBiWeek(endDate);
-            if(isStartDateWithinBiWeek && isEndDateWithinBiWeek)
-            {
-                BigDecimal numberOfBiWeeks = BigDecimal.valueOf(dateRange.getBiWeeksInRange());
-                return categoryProportion.multiply(budgetAmount).divide(numberOfBiWeeks, RoundingMode.CEILING);
-            }
-        }
-        return BigDecimal.ZERO;
+//
+//        if(period == Period.MONTHLY)
+//        {
+//            boolean isStartDateWithinMonth = dateRange.isWithinMonth(startDate);
+//            boolean isEndDateWithinMonth = dateRange.isWithinMonth(endDate);
+//            if(isStartDateWithinMonth && isEndDateWithinMonth)
+//            {
+//                return categoryProportion.multiply(budgetAmount);
+//            }
+//        }
+//        else if(period == Period.WEEKLY)
+//        {
+//            boolean isStartDateWithinWeek = dateRange.isWithinWeek(startDate);
+//            boolean isEndDateWithinWeek = dateRange.isWithinWeek(endDate);
+//            if(isStartDateWithinWeek && isEndDateWithinWeek)
+//            {
+//                BigDecimal numberOfWeeks = BigDecimal.valueOf(dateRange.getWeeksInRange());
+//                return categoryProportion.multiply(budgetAmount).divide(numberOfWeeks, RoundingMode.CEILING);
+//            }
+//        }
+//        else if(period == Period.BIWEEKLY)
+//        {
+//            boolean isStartDateWithinBiWeek = dateRange.isWithinBiWeek(startDate);
+//            boolean isEndDateWithinBiWeek = dateRange.isWithinBiWeek(endDate);
+//            if(isStartDateWithinBiWeek && isEndDateWithinBiWeek)
+//            {
+//                BigDecimal numberOfBiWeeks = BigDecimal.valueOf(dateRange.getBiWeeksInRange());
+//                return categoryProportion.multiply(budgetAmount).divide(numberOfBiWeeks, RoundingMode.CEILING);
+//            }
+//        }
+//        return BigDecimal.ZERO;
+        return null;
     }
 
-
-
-    public BigDecimal calculateBiWeeklyBudgetedAmount(final BudgetPeriod budgetPeriod, final Budget budget)
-    {
-        Period biweeklyPeriod = budgetPeriod.period();
-        if(biweeklyPeriod == Period.BIWEEKLY)
-        {
-            LocalDate startDate = budgetPeriod.startDate();
-            LocalDate endDate = budgetPeriod.endDate();
-            if(startDate == null || endDate == null)
-            {
-                return BigDecimal.ZERO;
-            }
-            DateRange biweeklyRange = createDateRange(startDate, endDate);
-            Boolean isStartDateWithinBiWeek = biweeklyRange.isWithinBiWeek(startDate);
-            Boolean isEndDateWithinBiWeek = biweeklyRange.isWithinBiWeek(endDate);
-            if(isStartDateWithinBiWeek && isEndDateWithinBiWeek)
-            {
-                BigDecimal budgetedAmount = budget.getBudgetAmount();
-                return budgetedAmount.divide(BigDecimal.valueOf(2), RoundingMode.CEILING);
-            }
-        }
-        return BigDecimal.ZERO;
-    }
 
     private void validateBudgetPeriodAndBudget(BudgetPeriod budgetPeriod, Budget budget)
     {
@@ -204,22 +218,51 @@ public class BudgetCalculator {
     public BigDecimal calculateBudgetedAmountByPeriod(final BudgetPeriod budgetPeriod, final Budget budget)
     {
         validateBudgetPeriodAndBudget(budgetPeriod, budget);
-        Period weeklyPeriod = budgetPeriod.period();
-        if(weeklyPeriod == Period.WEEKLY)
+        Period period = budgetPeriod.period();
+        LocalDate startDate = budgetPeriod.startDate();
+        LocalDate endDate = budgetPeriod.endDate();
+        DateRange dateRange = createDateRange(startDate, endDate);
+        BigDecimal budgetedAmount = budget.getBudgetAmount();
+        switch(period)
         {
-            LocalDate startDate = budgetPeriod.startDate();
-            LocalDate endDate = budgetPeriod.endDate();
-            DateRange weeklyRange = createDateRange(startDate, endDate);
-            Boolean isStartDateWithinWeek = weeklyRange.isWithinWeek(startDate);
-            Boolean isEndDateWithinWeek = weeklyRange.isWithinWeek(endDate);
-            if(isStartDateWithinWeek && isEndDateWithinWeek)
-            {
-                BigDecimal budgetedAmount = budget.getBudgetAmount();
+            case WEEKLY -> {
+
+                boolean isWithinWeek = dateRange.isWithinWeek(startDate, endDate);
+                System.out.println("IsWithinWeek: " + isWithinWeek);
+                if(isWithinWeek)
+                {
+                    BigDecimal weekyConstant = new BigDecimal("4.33");
+                    return budgetedAmount.divide(weekyConstant, RoundingMode.CEILING);
+                }
 
                 // Get the number of weeks in the current month
-                long numberOfWeeksInPeriod = weeklyRange.getWeeksInRange();
-                BigDecimal numberOfWeeks = BigDecimal.valueOf(numberOfWeeksInPeriod);
+                long numberOfWeeksInPeriod = dateRange.getWeeksInRange();
+
+                System.out.println("Number of Weeks: "+ numberOfWeeksInPeriod);
+                BigDecimal numberOfWeeks = BigDecimal.valueOf(numberOfWeeksInPeriod).setScale(1, RoundingMode.CEILING);
                 return budgetedAmount.divide(numberOfWeeks, RoundingMode.CEILING);
+            }
+            case BIWEEKLY -> {
+
+                    long numberOfBiWeeksInPeriod = dateRange.getBiWeeksInRange();
+                    System.out.println("Number of Weeks: "+ numberOfBiWeeksInPeriod);
+                    BigDecimal biWeeklyBudgetAmount = budgetedAmount.divide(BigDecimal.valueOf(2.17), RoundingMode.CEILING);
+                    return biWeeklyBudgetAmount.multiply(BigDecimal.valueOf(numberOfBiWeeksInPeriod));
+            }
+            case DAILY -> {
+                long numberOfDaysInPeriod = dateRange.getDaysInRange();
+                if(startDate.equals(endDate))
+                {
+                    return budgetedAmount.divide(BigDecimal.valueOf(30.4), RoundingMode.CEILING);
+                }
+                return budgetedAmount.divide(new BigDecimal(numberOfDaysInPeriod), RoundingMode.CEILING);
+            }
+            case MONTHLY -> {
+                long numberOfDaysInPeriod = dateRange.getDaysInRange();
+                if(numberOfDaysInPeriod <= 31)
+                {
+                    return budgetedAmount;
+                }
             }
         }
         return BigDecimal.ZERO;
@@ -366,8 +409,12 @@ public class BudgetCalculator {
         {
             return BigDecimal.ZERO;
         }
-        BigDecimal categorySpendingProportion = totalCategorySpending.divide(totalSpendingOnCategories, 2, BigDecimal.ROUND_HALF_UP);
-        return categorySpendingProportion.multiply(totalBudgetAmount).setScale(2, BigDecimal.ROUND_HALF_UP);
+        System.out.println("Category spending: " + totalCategorySpending);
+        System.out.println("Total Spending on Categories: " + totalSpendingOnCategories);
+        BigDecimal categoryBudgetAmountProportion = totalCategorySpending.divide(totalSpendingOnCategories, 4, RoundingMode.HALF_UP);
+        System.out.println("Category Proportion: " + categoryBudgetAmountProportion);
+        return categoryBudgetAmountProportion;
+//        return categorySpendingProportion.multiply(totalBudgetAmount).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
 

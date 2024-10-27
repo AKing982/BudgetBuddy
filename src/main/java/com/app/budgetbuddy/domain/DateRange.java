@@ -140,18 +140,29 @@ public class DateRange implements Comparable<DateRange>
         return this.startDate.isBefore(otherDateRange.endDate) && otherDateRange.startDate.isBefore(this.endDate);
     }
 
+    public boolean isWithinMonth(LocalDate startDate, LocalDate endDate){
+        long daysDifference = ChronoUnit.DAYS.between(startDate, endDate);
+        return daysDifference >= 0 && daysDifference <= 31;
+    }
+
     public boolean isWithinMonth(LocalDate date){
         return date.getYear() == startDate.getYear() && date.getMonth() == startDate.getMonth();
     }
 
     public boolean isWithinBiWeek(LocalDate date){
         long daysDifference = ChronoUnit.DAYS.between(startDate, date);
-        return daysDifference >= 0 && daysDifference < 14;
+        return daysDifference >= 0 && daysDifference <= 14;
     }
 
     public boolean isWithinWeek(LocalDate date){
         long daysDifference = ChronoUnit.DAYS.between(startDate, date);
-        return daysDifference >= 0 && daysDifference < 7;
+        return daysDifference >= 0 && daysDifference <= 7;
+    }
+
+    public boolean isWithinWeek(LocalDate startDate, LocalDate endDate)
+    {
+        long daysDifference = ChronoUnit.DAYS.between(startDate, endDate);
+        return daysDifference >= 0 && daysDifference <= 7;
     }
 
     public long getDaysInRange(){
