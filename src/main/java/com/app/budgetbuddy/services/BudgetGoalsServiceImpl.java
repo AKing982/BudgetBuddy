@@ -63,6 +63,11 @@ public class BudgetGoalsServiceImpl implements BudgetGoalsService
         return budgetGoalsRepository.save(budgetGoalsEntity);
     }
 
+    @Override
+    public Optional<BudgetGoalsEntity> findByBudgetId(Long budgetId) {
+        return budgetGoalsRepository.findById(budgetId);
+    }
+
     private BudgetEntity findBudgetById(Long budgetId){
         if(budgetId == null){
             return null;

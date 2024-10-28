@@ -11,7 +11,6 @@ public class Budget
     private Long id;
     private BigDecimal budgetAmount;
     private BigDecimal actual;
-    private BigDecimal leftOver;
     private Long userId;
     private String budgetName;
     private String budgetDescription;

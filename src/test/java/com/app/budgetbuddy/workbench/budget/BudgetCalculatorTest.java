@@ -1,9 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
-import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
@@ -21,10 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,6 +44,14 @@ class BudgetCalculatorTest {
     private Category testCategory2;
 
     private Category testCategory3;
+
+    private Category testCategory4;
+
+    private UserBudgetCategoryEntity userBudgetCategory;
+
+    private UserBudgetCategoryEntity userBudgetCategory2;
+
+    private UserBudgetCategoryEntity userBudgetCategory3;
 
     private Budget testBudget;
 
@@ -87,14 +90,38 @@ class BudgetCalculatorTest {
         testCategory3.setActive(true);
         testCategory3.setCategoryType(CategoryType.RENT);
 
+        userBudgetCategory = new UserBudgetCategoryEntity();
+        userBudgetCategory.setBudgetedAmount(500.00);
+        userBudgetCategory.setActual(340.00);
+        userBudgetCategory.setStartDate(LocalDate.of(2024, 6, 1));
+        userBudgetCategory.setEndDate(LocalDate.of(2024, 6, 30));
+        userBudgetCategory.setId(1L);
+        userBudgetCategory.setCategory(createCategory("Groceries", "Groceries"));
+        userBudgetCategory.setIsactive(true);
 
+        userBudgetCategory2 = new UserBudgetCategoryEntity();
+        userBudgetCategory2.setBudgetedAmount(150.00);
+        userBudgetCategory2.setActual(67.00);
+        userBudgetCategory2.setStartDate(LocalDate.of(2024, 6, 1));
+        userBudgetCategory2.setEndDate(LocalDate.of(2024, 6, 30));
+        userBudgetCategory2.setId(2L);
+        userBudgetCategory2.setIsactive(true);
+        userBudgetCategory2.setCategory(createCategory("Subscriptions", "Subscriptions"));
+
+        userBudgetCategory3 = new UserBudgetCategoryEntity();
+        userBudgetCategory3.setBudgetedAmount(1200.00);
+        userBudgetCategory3.setActual(1200.00);
+        userBudgetCategory3.setStartDate(LocalDate.of(2024, 6, 1));
+        userBudgetCategory3.setEndDate(LocalDate.of(2024, 6, 30));
+        userBudgetCategory3.setId(3L);
+        userBudgetCategory3.setCategory(createCategory("Rent", "Rent"));
+        userBudgetCategory3.setIsactive(true);
 
         testBudget = new Budget();
         testBudget.setActual(new BigDecimal("400.00"));
         testBudget.setBudgetName("Test Budget");
         testBudget.setBudgetDescription("Test Budget Description");
         testBudget.setBudgetAmount(new BigDecimal("500.00"));
-        testBudget.setLeftOver(new BigDecimal("100.00"));
         testBudget.setUserId(1L);
         testBudget.setId(1L);
 
@@ -103,7 +130,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testGetTotalSavedInCategories_whenCategoriesListIsEmpty_thenReturnZero(){
-        List<Category> categories = new ArrayList<>();
+        Set<Category> categories = new HashSet<>();
 
         BigDecimal actual = budgetCalculator.getTotalSavedInCategories(categories);
         assertEquals(0, actual.intValue());
@@ -111,7 +138,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testGetTotalSavedInCategories_whenCategoryListHasTwoItems_thenReturnSaved(){
-        List<Category> categories = new ArrayList<>();
+        Set<Category> categories = new HashSet<>();
         categories.add(testCategory);
         categories.add(testCategory2);
 
@@ -124,7 +151,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testGetTotalSavedInCategories_whenCategoryItemIsNull_thenReturnZero(){
-        List<Category> categories = new ArrayList<>();
+        Set<Category> categories = new HashSet<>();
         categories.add(testCategory);
         categories.add(null);
 
@@ -135,7 +162,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testGetTotalSavedInCategories_whenCategorySpendingIsNull_thenSkipAndReturnSaved(){
-        List<Category> categories = new ArrayList<>();
+        Set<Category> categories = new HashSet<>();
         categories.add(testCategory);
         categories.add(testCategory3);
 
@@ -438,23 +465,23 @@ class BudgetCalculatorTest {
     }
 
     @Test
-    void testCreateCategoryBudgetAmountMapForPeriod_whenBudgetIsNull_thenReturnEmptyTreeMap(){
+    void testLoadCategoryBudgetsForPeriod_whenBudgetIsNull_thenReturnEmptyTreeMap(){
         TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
 
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> actual = budgetCalculator.createCategoryBudgetAmountMapForPeriod(null, testBudgetPeriod);
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> actual = budgetCalculator.loadCategoryBudgetsForPeriod(null, testBudgetPeriod);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testCreateCategoryBudgetAmountMapForPeriod_whenBudgetPeriodIsNull_thenReturnEmptyTreeMap(){
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = budgetCalculator.createCategoryBudgetAmountMapForPeriod(testBudget, null);
+    void testLoadCategoryBudgetsForPeriod_whenBudgetPeriodIsNull_thenReturnEmptyTreeMap(){
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, null);
         assertNotNull(userBudgetCategoryMap);
         assertTrue(userBudgetCategoryMap.isEmpty());
     }
 
     @Test
-    void testCreateCategoryBudgetAmountMapForPeriod_returnTreeMap(){
+    void testLoadCategoryBudgetsForPeriod_returnTreeMap(){
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
         TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
         DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
@@ -464,7 +491,7 @@ class BudgetCalculatorTest {
         userBudgetCategoryMap.put(dateRange, expectedUserBudgets);
 
         Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15))).thenReturn(expectedUserBudgets);
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.createCategoryBudgetAmountMapForPeriod(testBudget, budgetPeriod);
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
         assertEquals(userBudgetCategoryMap.size(), userBudgets.size());
         assertEquals(userBudgetCategoryMap.get(dateRange).size(), userBudgets.get(dateRange).size());
         for(int i = 0; i < expectedUserBudgets.size(); i++){
@@ -474,14 +501,14 @@ class BudgetCalculatorTest {
     }
 
     @Test
-    void testCreateCategoryBudgetAmountForPeriod_whenServiceReturnsEmptyArray_thenReturnEmptyTreeMap(){
+    void testLoadCategoryBudgetsForPeriod_whenServiceReturnsEmptyArray_thenReturnEmptyTreeMap(){
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
         DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
 
         Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15)))
                 .thenReturn(new ArrayList<>());
 
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.createCategoryBudgetAmountMapForPeriod(testBudget, budgetPeriod);
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
 
         assertNotNull(userBudgets);
         assertEquals(1, userBudgets.size());
@@ -490,14 +517,193 @@ class BudgetCalculatorTest {
     }
 
     @Test
-    void testCreateCategoryBudgetAmountForPeriod_whenNoUserBudgetCategories_thenReturnEmptyTreeMap(){
+    void testLoadCategoryBudgetsForPeriod_withInvalidDates_thenThrowException() {
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 15), LocalDate.of(2024, 10, 1));
 
+        assertThrows(IllegalArgumentException.class, () -> {
+            budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testLoadCategoryBudgetsForPeriod_withWeeklyBudgetPeriod() {
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7));
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7));
+
+        List<UserBudgetCategoryEntity> expectedUserBudgets = new ArrayList<>();
+        expectedUserBudgets.add(createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7), 125.00, 100.00));
+
+        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7)))
+                .thenReturn(expectedUserBudgets);
+
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
+
+        assertEquals(1, userBudgets.size());
+        assertEquals(expectedUserBudgets.size(), userBudgets.get(dateRange).size());
+        assertEquals(expectedUserBudgets.get(0), userBudgets.get(dateRange).get(0));
     }
 
     @Test
     void testCreateCategoryBudgetAmountForPeriod_whenSingleDayRange_thenThrowException(){
 
     }
+
+
+    @Test
+    void testCreateCategoryBudgetMap_whenBudgetPeriodIsNull_thenReturnEmptyMap(){
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("890"), null);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_thenReturnMap(){
+        Map<String, BigDecimal> categoryToBudgetMap = new HashMap<>();
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
+        categorySpendings.add(createCategorySpending("Gas", new BigDecimal("67")));
+        categoryToBudgetMap.put("Groceries", new BigDecimal("536.02"));
+        categoryToBudgetMap.put("Gas", new BigDecimal("69.38"));
+
+        BudgetPeriod monthlyBudgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
+
+        BigDecimal totalSpendingOnAllCategories = new BigDecimal("2965");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070"));
+
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, budget, totalSpendingOnAllCategories, monthlyBudgetPeriod);
+        assertNotNull(actual);
+        assertEquals(categoryToBudgetMap.size(), actual.size());
+        for(Map.Entry<String, BigDecimal> entry : categoryToBudgetMap.entrySet()){
+            assertTrue(actual.containsKey(entry.getKey()));
+            assertEquals(entry.getValue(), actual.get(entry.getKey()));
+        }
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenCategorySpendingHasNullEntry_thenSkipAndReturnMap(){
+        Map<String, BigDecimal> categoryToBudgetMap = new HashMap<>();
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
+        categorySpendings.add(null);
+        categoryToBudgetMap.put("Groceries", new BigDecimal("536.02"));
+
+        BudgetPeriod monthlyBudgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
+
+        BigDecimal totalSpendingOnAllCategories = new BigDecimal("2965");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070"));
+
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, budget, totalSpendingOnAllCategories, monthlyBudgetPeriod);
+        assertNotNull(actual);
+        assertEquals(categoryToBudgetMap.size(), actual.size());
+        for(Map.Entry<String, BigDecimal> entry : categoryToBudgetMap.entrySet()){
+            assertTrue(actual.containsKey(entry.getKey()));
+            assertEquals(entry.getValue(), actual.get(entry.getKey()));
+        }
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenCategorySpendingListIsEmpty_thenReturnEmptyMap(){
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("890"), testBudgetPeriod);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenBudgetIsNull_thenReturnEmptyMap() {
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, null, new BigDecimal("890"), testBudgetPeriod);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenTotalSpendingOnAllCategoriesIsZero_thenReturnEmptyMap() {
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, BigDecimal.ZERO, testBudgetPeriod);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenTotalSpendingOnAllCategoriesIsNegative_thenReturnEmptyMap() {
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("-890"), testBudgetPeriod);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenDuplicateCategoryNames_thenReturnLatestOrCumulativeAmount() {
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("100")));
+        categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("200")));
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("300"), testBudgetPeriod);
+        assertNotNull(actual);
+        assertEquals(1, actual.size());
+        assertEquals(new BigDecimal("Amount Based on Latest Entry or Cumulative Logic"), actual.get("Groceries"));
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenCategoryNameIsNull_thenSkipAndReturnMap() {
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending(null, new BigDecimal("200")));
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("200"), testBudgetPeriod);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetMap_whenActualSpendingIsNull_thenSkipAndReturnMap() {
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        categorySpendings.add(createCategorySpending("Groceries", null));
+        Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("200"), testBudgetPeriod);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCalculateSavingsGoalProgress_WhenBudgetIsNull_thenReturnZero(){
+        Set<UserBudgetCategoryEntity> categories = new HashSet<>();
+        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(null, categories);
+        assertNotNull(actual);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateSavingsGoalProgress_whenSpendingCategoriesIsEmpty_ThenReturnZero(){
+        Set<UserBudgetCategoryEntity> categories = new HashSet<>();
+        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(testBudget, categories);
+        assertNotNull(actual);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateSavingsGoalProgress_thenReturnProgress(){
+        Set<UserBudgetCategoryEntity> categories = new HashSet<>();
+        categories.add(userBudgetCategory);
+        categories.add(userBudgetCategory2);
+        categories.add(userBudgetCategory3);
+
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070"));
+        budget.setActual(new BigDecimal("1443"));
+        budget.setId(1L);
+
+        Mockito.lenient().when(budgetGoalsService.findByBudgetId(1L)).thenReturn(Optional.of(createBudgetGoals(2400, 200, 125, new BigDecimal("3070.00"), new BigDecimal(3260), LocalDate.of(2024, 10, 28), LocalDate.of(2025, 2, 25))));
+        BigDecimal expectedOverAllSavings = new BigDecimal("61.00");
+        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(budget, categories);
+        assertEquals(expectedOverAllSavings, actual);
+    }
+
+
 
     private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {
         // Create different BudgetPeriod instances
@@ -513,14 +719,12 @@ class BudgetCalculatorTest {
         budget1.setUserId(1L);
         budget1.setBudgetAmount(new BigDecimal("5000.0"));
         budget1.setActual(new BigDecimal("4000.0"));
-        budget1.setLeftOver(new BigDecimal("1000.0"));
 
         Budget budget2 = new Budget();
         budget2.setId(2L);
         budget2.setUserId(1L);
         budget2.setBudgetAmount(new BigDecimal("10000.0"));
         budget2.setActual(new BigDecimal("8000.0"));
-        budget2.setLeftOver(new BigDecimal("2000.0"));
 
         // Create UserBudgetCategoryEntity lists for different periods
         List<UserBudgetCategoryEntity> userBudgetCategoriesMonthly = List.of(
@@ -557,12 +761,48 @@ class BudgetCalculatorTest {
         );
     }
 
+    private BudgetGoalsEntity createBudgetGoals(double targetAmount, double monthlyAllocation, double currentSavings, BigDecimal budgetAmount, BigDecimal income, LocalDate startDate, LocalDate endDate)
+    {
+        BudgetGoalsEntity budgetGoals = new BudgetGoalsEntity();
+        budgetGoals.setBudget(createBudgetEntity(budgetAmount, income, startDate, endDate));
+        budgetGoals.setCurrentSavings(currentSavings);
+        budgetGoals.setGoalName("Goal Test");
+        budgetGoals.setGoalDescription("Goal Description");
+        budgetGoals.setMonthlyAllocation(monthlyAllocation);
+        budgetGoals.setSavingsFrequency("MONTHLY");
+        budgetGoals.setTargetAmount(targetAmount);
+        return budgetGoals;
+    }
+
+    private BudgetEntity createBudgetEntity(BigDecimal budgetAmount, BigDecimal monthlyIncome, LocalDate startDate, LocalDate endDate)
+    {
+        BudgetEntity budgetEntity = new BudgetEntity();
+        budgetEntity.setId(1L);
+        budgetEntity.setBudgetAmount(budgetAmount);
+        budgetEntity.setBudgetName("Test Budget");
+        budgetEntity.setBudgetDescription("Test Budget Description");
+        budgetEntity.setMonthlyIncome(monthlyIncome);
+        budgetEntity.setUser(createUser());
+        budgetEntity.setStartDate(startDate);
+        budgetEntity.setEndDate(endDate);
+        return budgetEntity;
+    }
+
+
     private static CategoryEntity createCategory(String name, String description){
         CategoryEntity category = new CategoryEntity();
         category.setDescription(description);
         category.setName(name);
         category.setActive(true);
         return category;
+    }
+
+    private CategorySpending createCategorySpending(String category, BigDecimal spending)
+    {
+        CategorySpending categorySpending = new CategorySpending();
+        categorySpending.setActualSpending(spending);
+        categorySpending.setCategoryName(category);
+        return categorySpending;
     }
 
     private static UserEntity createUser(){
