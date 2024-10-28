@@ -22,7 +22,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -398,6 +400,102 @@ class BudgetCalculatorTest {
     @Test
     void testCalculateCategoryBudgetAmountForPeriod_whenPeriodIsWeeklyAndDatesAreSameWeek_thenReturnBudgetAmount(){
         BudgetPeriod weeklyBudgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 8));
+        BigDecimal categorySpending = new BigDecimal("500.00");
+        BigDecimal totalSpendingOnCategories = new BigDecimal("2965.00");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070.00"));
+        BigDecimal expectedCategoryBudgetAmount = new BigDecimal("119.54");
+
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Groceries", categorySpending, totalSpendingOnCategories, budget, weeklyBudgetPeriod);
+        assertEquals(expectedCategoryBudgetAmount, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenPeriodIsBiWeekly_thenReturnBudgetAmount(){
+        BudgetPeriod biweeklybudgetPeriod = new BudgetPeriod(Period.BIWEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 31));
+        BigDecimal categorySpending = new BigDecimal("500.00");
+        BigDecimal totalSpendingOnCategories = new BigDecimal("2965.00");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070.00"));
+        BigDecimal expectedCategoryBudgetAmount = new BigDecimal("238.53");
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Groceries",categorySpending, totalSpendingOnCategories, budget, biweeklybudgetPeriod);
+        assertEquals(expectedCategoryBudgetAmount, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCalculateCategoryBudgetAmountForPeriod_whenPeriodIsBetweenTwoDatesInMonth_thenReturnBudgetAmount(){
+        BudgetPeriod biWeeklyBudgetPeriod = new BudgetPeriod(Period.BIWEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
+        BigDecimal categorySpending = new BigDecimal("500.00");
+        BigDecimal totalSpendingOnCategories = new BigDecimal("2965.00");
+        Budget budget = new Budget();
+        budget.setBudgetAmount(new BigDecimal("3070.00"));
+        BigDecimal expectedCategoryBudgetAmount = new BigDecimal("238.53");
+        BigDecimal actual = budgetCalculator.calculateCategoryBudgetAmountForPeriod("Groceries", categorySpending, totalSpendingOnCategories, budget, biWeeklyBudgetPeriod);
+        assertEquals(expectedCategoryBudgetAmount, actual);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testCreateCategoryBudgetAmountMapForPeriod_whenBudgetIsNull_thenReturnEmptyTreeMap(){
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
+
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> actual = budgetCalculator.createCategoryBudgetAmountMapForPeriod(null, testBudgetPeriod);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetAmountMapForPeriod_whenBudgetPeriodIsNull_thenReturnEmptyTreeMap(){
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = budgetCalculator.createCategoryBudgetAmountMapForPeriod(testBudget, null);
+        assertNotNull(userBudgetCategoryMap);
+        assertTrue(userBudgetCategoryMap.isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetAmountMapForPeriod_returnTreeMap(){
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
+        List<UserBudgetCategoryEntity> expectedUserBudgets = new ArrayList<>();
+        expectedUserBudgets.add(createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024,10, 1), LocalDate.of(2024, 10, 7), 125.00, 100.00));
+        expectedUserBudgets.add(createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7), 67.00, 35.00));
+        userBudgetCategoryMap.put(dateRange, expectedUserBudgets);
+
+        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15))).thenReturn(expectedUserBudgets);
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.createCategoryBudgetAmountMapForPeriod(testBudget, budgetPeriod);
+        assertEquals(userBudgetCategoryMap.size(), userBudgets.size());
+        assertEquals(userBudgetCategoryMap.get(dateRange).size(), userBudgets.get(dateRange).size());
+        for(int i = 0; i < expectedUserBudgets.size(); i++){
+            assertEquals(expectedUserBudgets.get(i), userBudgets.get(dateRange).get(i));
+        }
+        assertEquals(userBudgetCategoryMap, userBudgets);
+    }
+
+    @Test
+    void testCreateCategoryBudgetAmountForPeriod_whenServiceReturnsEmptyArray_thenReturnEmptyTreeMap(){
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
+
+        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15)))
+                .thenReturn(new ArrayList<>());
+
+        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.createCategoryBudgetAmountMapForPeriod(testBudget, budgetPeriod);
+
+        assertNotNull(userBudgets);
+        assertEquals(1, userBudgets.size());
+        assertTrue(userBudgets.containsKey(dateRange));
+        assertTrue(userBudgets.get(dateRange).isEmpty());
+    }
+
+    @Test
+    void testCreateCategoryBudgetAmountForPeriod_whenNoUserBudgetCategories_thenReturnEmptyTreeMap(){
+
+    }
+
+    @Test
+    void testCreateCategoryBudgetAmountForPeriod_whenSingleDayRange_thenThrowException(){
 
     }
 

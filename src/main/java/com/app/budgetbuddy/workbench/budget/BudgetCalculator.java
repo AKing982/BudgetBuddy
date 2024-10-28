@@ -172,39 +172,12 @@ public class BudgetCalculator {
                 BigDecimal weeklyBudgetAmount = calculateBudgetedAmountByPeriod(budgetPeriod, budget);
                 return getCategoryBudget(categoryProportion, weeklyBudgetAmount);
             }
+            case BIWEEKLY -> {
+                BigDecimal biWeeklyBudgetAmount = calculateBudgetedAmountByPeriod(budgetPeriod, budget);
+                return getCategoryBudget(categoryProportion, biWeeklyBudgetAmount);
+            }
         }
-//
-//        if(period == Period.MONTHLY)
-//        {
-//            boolean isStartDateWithinMonth = dateRange.isWithinMonth(startDate);
-//            boolean isEndDateWithinMonth = dateRange.isWithinMonth(endDate);
-//            if(isStartDateWithinMonth && isEndDateWithinMonth)
-//            {
-//                return categoryProportion.multiply(budgetAmount);
-//            }
-//        }
-//        else if(period == Period.WEEKLY)
-//        {
-//            boolean isStartDateWithinWeek = dateRange.isWithinWeek(startDate);
-//            boolean isEndDateWithinWeek = dateRange.isWithinWeek(endDate);
-//            if(isStartDateWithinWeek && isEndDateWithinWeek)
-//            {
-//                BigDecimal numberOfWeeks = BigDecimal.valueOf(dateRange.getWeeksInRange());
-//                return categoryProportion.multiply(budgetAmount).divide(numberOfWeeks, RoundingMode.CEILING);
-//            }
-//        }
-//        else if(period == Period.BIWEEKLY)
-//        {
-//            boolean isStartDateWithinBiWeek = dateRange.isWithinBiWeek(startDate);
-//            boolean isEndDateWithinBiWeek = dateRange.isWithinBiWeek(endDate);
-//            if(isStartDateWithinBiWeek && isEndDateWithinBiWeek)
-//            {
-//                BigDecimal numberOfBiWeeks = BigDecimal.valueOf(dateRange.getBiWeeksInRange());
-//                return categoryProportion.multiply(budgetAmount).divide(numberOfBiWeeks, RoundingMode.CEILING);
-//            }
-//        }
-//        return BigDecimal.ZERO;
-        return null;
+        return BigDecimal.ZERO;
     }
 
 
@@ -246,8 +219,7 @@ public class BudgetCalculator {
 
                     long numberOfBiWeeksInPeriod = dateRange.getBiWeeksInRange();
                     System.out.println("Number of Weeks: "+ numberOfBiWeeksInPeriod);
-                    BigDecimal biWeeklyBudgetAmount = budgetedAmount.divide(BigDecimal.valueOf(2.17), RoundingMode.CEILING);
-                    return biWeeklyBudgetAmount.multiply(BigDecimal.valueOf(numberOfBiWeeksInPeriod));
+                    return budgetedAmount.divide(BigDecimal.valueOf(2.17), RoundingMode.CEILING);
             }
             case DAILY -> {
                 long numberOfDaysInPeriod = dateRange.getDaysInRange();
@@ -270,6 +242,10 @@ public class BudgetCalculator {
 
     public TreeMap<DateRange, List<UserBudgetCategoryEntity>> createCategoryBudgetAmountMapForPeriod(final Budget budget, final BudgetPeriod budgetPeriod)
     {
+        if(budget == null || budgetPeriod == null)
+        {
+            return new TreeMap<>();
+        }
         TreeMap<DateRange, List<UserBudgetCategoryEntity>> categoryToCategoryBudgetMap = new TreeMap<>();
         LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
         LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
@@ -280,13 +256,14 @@ public class BudgetCalculator {
 
         // Create Categories for the specified period?
         List<UserBudgetCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
-        if(userBudgetCategories == null || userBudgetCategories.isEmpty())
+        if(userBudgetCategories == null)
         {
             return new TreeMap<>();
         }
 
         List<UserBudgetCategoryEntity> userBudgetCategoryEntities = new ArrayList<>(userBudgetCategories);
-        categoryToCategoryBudgetMap.getOrDefault(dateRange, userBudgetCategoryEntities);
+        categoryToCategoryBudgetMap.put(dateRange, userBudgetCategoryEntities);
+
         return categoryToCategoryBudgetMap;
     }
 
