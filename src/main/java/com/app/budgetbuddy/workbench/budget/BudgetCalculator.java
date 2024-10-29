@@ -95,14 +95,20 @@ public class BudgetCalculator {
 
         // 1. Is the remaining budget amount positive
         BigDecimal remainingBudgetAmount = budgetAmount.subtract(budgetActual);
+
+        BigDecimal budgetUtilizationScore = BigDecimal.ZERO;
         if(remainingBudgetAmount.compareTo(BigDecimal.ZERO) > 0)
         {
-
+            budgetUtilizationScore = remainingBudgetAmount.divide(budgetAmount, 2, RoundingMode.CEILING);
         }
 
         // 2. Is the SavingsGoalProgress between 1 and 100?
+        if(savingsGoalProgress.compareTo(BigDecimal.ZERO) < 0 || savingsGoalProgress.compareTo(new BigDecimal("100.00")) > 0){
+            throw new IllegalArgumentException("Savings Goals Progress should be between 0 and 100");
+        }
 
-        return null;
+        return budgetUtilizationScore.multiply(BigDecimal.valueOf(0.5))
+                .add(savingsGoalProgress.multiply(BigDecimal.valueOf(0.5)));
     }
 
     public BudgetStats calculateBudgetStats(final Long userId, final BigDecimal leftOver, final BigDecimal totalSpent, final BigDecimal totalBudgeted, final BigDecimal totalRemaining) {
