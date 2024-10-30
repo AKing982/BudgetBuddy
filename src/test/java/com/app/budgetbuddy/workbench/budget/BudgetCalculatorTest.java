@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.*;
+import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
@@ -38,6 +39,9 @@ class BudgetCalculatorTest {
 
     @Mock
     private UserBudgetCategoryService  userBudgetCategoryService;
+
+    @Mock
+    private BudgetValidator budgetValidator;
 
     private Category testCategory;
 
@@ -701,6 +705,53 @@ class BudgetCalculatorTest {
         BigDecimal expectedOverAllSavings = new BigDecimal("61.00");
         BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(budget, categories);
         assertEquals(expectedOverAllSavings, actual);
+    }
+
+    @Test
+    void testCalculateTotalBudgetHealth_whenBudgetAmountIsNull_thenReturnZero(){
+        BigDecimal actual = budgetCalculator.calculateTotalBudgetHealth(null, new BigDecimal("500"), new BigDecimal("67"));
+        assertNotNull(actual);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateTotalBudgetHealth_whenBudgetActualIsNull_thenReturnZero(){
+        BigDecimal actual = budgetCalculator.calculateTotalBudgetHealth(new BigDecimal("3070"), null, new BigDecimal("67"));
+        assertNotNull(actual);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateTotalBudgetHealth_whenBudgetAmountIsNegative_ThrowException(){
+        BigDecimal budgetAmount = new BigDecimal("-17.00");
+
+        assertThrows(InvalidBudgetAmountException.class, () -> {
+
+            budgetValidator.validateBudgetAmount(budgetAmount);
+            budgetCalculator.calculateTotalBudgetHealth(budgetAmount, new BigDecimal("500"), new BigDecimal("67"));
+        });
+    }
+
+    @Test
+    void testCalculateTotalBudgetHealth_thenReturnBudgetHealth(){
+        BigDecimal budgetAmount = new BigDecimal("3070");
+        BigDecimal budgetActual = new BigDecimal("1607");
+        BigDecimal budgetSavingsProgress = new BigDecimal("37.21");
+
+        BigDecimal expectedBudgetHealthTotal = new BigDecimal("18.845");
+        BigDecimal actualHealthTotal = budgetCalculator.calculateTotalBudgetHealth(budgetAmount, budgetActual, budgetSavingsProgress);
+        assertEquals(expectedBudgetHealthTotal, actualHealthTotal);
+    }
+
+    @Test
+    void testCalculateTotalBudgetHealth_whenBudgetAmountIsZero(){
+        BigDecimal budgetAmount = BigDecimal.ZERO;
+        BigDecimal budgetActual = new BigDecimal("1607");
+        BigDecimal budgetSavingsProgress = new BigDecimal("37.21");
+
+        BigDecimal expectedBudgetHealthTotal = new BigDecimal("18.605");
+        BigDecimal actual = budgetCalculator.calculateTotalBudgetHealth(budgetAmount, budgetActual, budgetSavingsProgress);
+        assertEquals(expectedBudgetHealthTotal, actual);
     }
 
 

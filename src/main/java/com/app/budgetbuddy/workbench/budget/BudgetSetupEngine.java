@@ -1,6 +1,9 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
+import com.app.budgetbuddy.entities.BudgetGoalsEntity;
+import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.services.BudgetCategoriesService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
@@ -42,20 +45,37 @@ public class BudgetSetupEngine
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
 
-    private BigDecimal getCalculatedBudgetAmountForCategory(Category category, Long budgetId){
+    public Budget loadUserBudget(Long userId)
+    {
         return null;
     }
 
-    private BigDecimal getCalculatedActualBudgetAmountForCategory(Category category, Long budgetId){
+    public BudgetGoalsEntity loadUserBudgetGoals(Long userId)
+    {
         return null;
     }
 
-    private BigDecimal getCalculatedRemainingBudgetAmountForCategory(Category category, Long budgetId){
+    public Map<Long, SavingsGoal> loadUserSavingsGoal(Long userId)
+    {
+        return null;
+    }
+
+    public BudgetCategoriesEntity loadUserBudgetCategories(Long userId){
         return null;
     }
 
     public void budgetInitializer(Budget budget, List<Category> categories, List<BudgetStats> budgetStats, BudgetPeriod budgetPeriod){
 
+    }
+
+    public List<Transaction> fetchPlaidTransactionsForUser(Long userId)
+    {
+        return null;
+    }
+
+    public List<UserBudgetCategoryEntity> createUserBudgetCategories(Budget budget, BudgetPeriod budgetPeriod)
+    {
+        return null;
     }
 
     public Boolean checkIfBudgetCategoriesExist(){
@@ -87,6 +107,10 @@ public class BudgetSetupEngine
     }
 
     public Map<Long, List<Category>> loadTopBudgetExpenseCategories(final List<Transaction> transactions, BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+    public Map<String, Category> loadBudgetPeriodCategories(final BudgetPeriod budgetPeriod, final Budget budget){
         return null;
     }
 

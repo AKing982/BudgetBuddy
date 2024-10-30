@@ -6,6 +6,8 @@ import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
+import com.app.budgetbuddy.exceptions.InvalidBudgetActualAmountException;
+import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
 import com.app.budgetbuddy.services.BudgetCategoriesService;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
@@ -25,16 +27,19 @@ public class BudgetCalculator {
     private final BudgetGoalsService budgetGoalsService;
     private final BudgetCategoriesService budgetCategoriesService;
     private final UserBudgetCategoryService userBudgetCategoryService;
+    private final BudgetValidator budgetValidator;
 
     @Autowired
     public BudgetCalculator(BudgetService budgetService,
                             BudgetGoalsService budgetGoalsService,
                             BudgetCategoriesService budgetCategoriesService,
-                            UserBudgetCategoryService userBudgetCategoryService) {
+                            UserBudgetCategoryService userBudgetCategoryService,
+                            BudgetValidator budgetValidator) {
         this.budgetService = budgetService;
         this.budgetGoalsService = budgetGoalsService;
         this.budgetCategoriesService = budgetCategoriesService;
         this.userBudgetCategoryService = userBudgetCategoryService;
+        this.budgetValidator = budgetValidator;
     }
 
     private BudgetGoalsEntity getBudgetGoals(Long budgetId)
@@ -91,7 +96,22 @@ public class BudgetCalculator {
         return BigDecimal.ZERO;
     }
 
-    public BigDecimal calculateTotalBudgetHealth(final BigDecimal budgetAmount, final BigDecimal budgetActual, BigDecimal savingsGoalProgress) {
+    public BigDecimal calculateTotalBudgetHealth(final BigDecimal budgetAmount, final BigDecimal budgetActual, BigDecimal savingsGoalProgress)
+    {
+        if(budgetAmount == null || budgetActual == null || savingsGoalProgress == null)
+        {
+            return BigDecimal.ZERO;
+        }
+
+        if(budgetAmount.compareTo(BigDecimal.ZERO) < 0)
+        {
+            throw new InvalidBudgetAmountException("Invalid Budget Amount: " + budgetAmount + "Unable to calculate Total Budget Health");
+        }
+
+        if(budgetActual.compareTo(BigDecimal.ZERO) < 0)
+        {
+            throw new InvalidBudgetActualAmountException("Invalid Budget Actual Amount: " + budgetActual + "Unable to calculate Total Budget Health");
+        }
 
         // 1. Is the remaining budget amount positive
         BigDecimal remainingBudgetAmount = budgetAmount.subtract(budgetActual);
@@ -115,7 +135,8 @@ public class BudgetCalculator {
         return null;
     }
 
-    public BigDecimal calculateTotalCategoryExpensesForPeriod(final Budget budget, final BudgetPeriod budgetPeriod) {
+    public BigDecimal calculateTotalCategoryExpensesForPeriod(final Budget budget, final BudgetPeriod budgetPeriod)
+    {
         if(budget == null || budgetPeriod == null)
         {
             return BigDecimal.ZERO;
