@@ -16,16 +16,18 @@ public class BudgetPeriodQueries
 {
     @PersistenceContext
     private EntityManager entityManager;
-    private BudgetCalculator budgetCalculator;
 
     @Autowired
-    public BudgetPeriodQueries(EntityManager entityManager,
-                               BudgetCalculator budgetCalculator){
+    public BudgetPeriodQueries(EntityManager entityManager){
         this.entityManager = entityManager;
-        this.budgetCalculator = budgetCalculator;
     }
 
     public List<DateRange> calculatePeriodDateRanges(LocalDate selectedDate, Period period) {
+        return null;
+    }
+
+    public BudgetPeriodParams getDailyBudgetPeriodQuery(LocalDate date)
+    {
         return null;
     }
 
@@ -37,7 +39,7 @@ public class BudgetPeriodQueries
         return null;
     }
 
-    public List<BudgetPeriodParams> getMonthlyBudgetPeriodQuery(BudgetPeriod budgetPeriod){
+    public List<BudgetPeriodParams> getBudgetPeriodQuery(BudgetPeriod budgetPeriod){
 //        Period monthlyPeriod = budgetPeriod.period();
 //        if(monthlyPeriod == Period.MONTHLY){
 //            String jpql = "SELECT c.name "
@@ -46,15 +48,4 @@ public class BudgetPeriodQueries
     }
 
 
-    public List<BudgetPeriodParams> getWeeklyBudgetPeriodQuery(BudgetPeriod budgetPeriod){
-        return null;
-    }
-
-    public List<BudgetPeriodParams> getBiWeeklyBudgetPeriodQuery(BudgetPeriod budgetPeriod){
-        return null;
-    }
-
-    public List<BudgetPeriodParams> getDailyBudgetPeriodQuery(BudgetPeriod budgetPeriod){
-        return null;
-    }
 }

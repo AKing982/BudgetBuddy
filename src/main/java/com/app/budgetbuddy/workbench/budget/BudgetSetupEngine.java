@@ -50,6 +50,26 @@ public class BudgetSetupEngine
         return null;
     }
 
+    public void initializeDebtPlan(Budget budget)
+    {
+
+    }
+
+    public void initializeEmergencyFundPlan(Budget budget)
+    {
+
+    }
+
+    public void initializeControlSpendingPlan(Budget budget)
+    {
+
+    }
+
+    public void setupBudgetPeriodData(Long userId, BudgetPeriod budgetPeriod)
+    {
+
+    }
+
     public BudgetGoalsEntity loadUserBudgetGoals(Long userId)
     {
         return null;
