@@ -25,7 +25,6 @@ public class BudgetSetupEngine
     private final BudgetService budgetService;
     private final BudgetCalculator budgetCalculator;
     private final TransactionCategorizationService transactionCategorizationService;
-    private final BudgetCategoriesService budgetCategoriesService;
     private final BudgetCategoryBuilder budgetCategoryBuilder;
     private boolean isBudgetSetupCompleted;
 
@@ -34,14 +33,11 @@ public class BudgetSetupEngine
                              BudgetService budgetService,
                              BudgetCalculator budgetCalculator,
                              TransactionCategorizationService transactionCategorizationService,
-                             BudgetCategoriesService budgetCategoriesService,
-                             UserBudgetCategoryService userBudgetCategoryService,
                              BudgetCategoryBuilder budgetCategoryBuilder){
         this.userService = userService;
         this.budgetService = budgetService;
         this.budgetCalculator = budgetCalculator;
         this.transactionCategorizationService = transactionCategorizationService;
-        this.budgetCategoriesService = budgetCategoriesService;
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
 

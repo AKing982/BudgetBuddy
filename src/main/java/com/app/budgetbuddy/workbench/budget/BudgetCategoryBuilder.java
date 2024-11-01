@@ -7,6 +7,7 @@ import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import com.app.budgetbuddy.workbench.categories.CategoryRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,22 +15,31 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class BudgetCategoryBuilder
 {
     private UserBudgetCategoryService userBudgetCategoryService;
+    private CategoryRuleService categoryRuleService;
     private CategoryService categoryService;
     private BudgetCalculator budgetCalculator;
 
     @Autowired
     public BudgetCategoryBuilder(UserBudgetCategoryService userBudgetCategoryService,
+                                 CategoryRuleService categoryRuleService,
                                  CategoryService categoryService,
                                  BudgetCalculator budgetCalculator)
     {
         this.userBudgetCategoryService = userBudgetCategoryService;
+        this.categoryRuleService = categoryRuleService;
         this.categoryService = categoryService;
         this.budgetCalculator = budgetCalculator;
+    }
+
+    private boolean isTransactionAlreadyLinked(Transaction transaction)
+    {
+        return false;
     }
 
     public List<TransactionsEntity> fetchTransactionsForPeriod(final LocalDate startDate, final LocalDate endDate, final Long userId)
@@ -37,9 +47,14 @@ public class BudgetCategoryBuilder
         return null;
     }
 
-    public void saveUserBudgetCategories(final List<UserBudgetCategoryEntity> userBudgetCategories)
+    public Category updateCategoryOnNewTransaction(Transaction transaction)
     {
+        return null;
+    }
 
+    public boolean storeCategoriesInDatabase(Set<UserBudgetCategoryEntity> userBudgetCategories)
+    {
+        return false;
     }
 
     private UserEntity fetchUserEntityByUserId(Long userId)
@@ -52,16 +67,22 @@ public class BudgetCategoryBuilder
         return null;
     }
 
-    public BigDecimal getCategoryActualAmount(Budget budget, BudgetPeriod budgetPeriod)
+    public BigDecimal getCategoryRemainingAmount(final BudgetPeriod budgetPeriod, final CategoryBudget categoryBudget)
     {
         return null;
     }
 
-    public BigDecimal getCategoryBudgetAmount(Budget budget, BudgetPeriod budgetPeriod)
+    public BigDecimal getCategoryActualAmount(final BudgetPeriod budgetPeriod, final CategoryBudget categoryBudget)
     {
         return null;
     }
 
+    public BigDecimal getCategoryBudgetAmount(final BudgetPeriod budgetPeriod, final CategoryBudget categoryBudget)
+    {
+        return null;
+    }
+
+    // Maps the User
     public Map<Long, List<UserBudgetCategoryEntity>> initializeUserBudgetCategories(Budget budget, BudgetPeriod budgetPeriod)
     {
         return null;
@@ -72,9 +93,23 @@ public class BudgetCategoryBuilder
         return null;
     }
 
-    // Calculates remaining budget amount for a given category and budget
-    public BigDecimal calculateRemainingBudgetAmountForCategory(final Category category, final Budget budget) {
-        // Implementation
+    public Category assignTransactionToCategoryByRule(CategoryRule categoryRule, Long userId)
+    {
+        return null;
+    }
+
+    public TransactionLink linkTransactionToCategory(Transaction transaction, Category category)
+    {
+        return null;
+    }
+
+    public DateRange createCategoryPeriod(final BudgetPeriod budgetPeriod, final Transaction transaction)
+    {
+        return null;
+    }
+
+    public List<UserBudgetCategoryEntity> detectAndUpdateNewTransactions()
+    {
         return null;
     }
 
