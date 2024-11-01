@@ -16,7 +16,7 @@ public class UserCategoryRule extends CategoryRule
     private boolean isActive;
     private int priority;
 
-    public UserCategoryRule(String categoryName, String merchantPattern, String descriptionPattern, double frequency, TransactionType transactionType, boolean isRecurring, User user, LocalDateTime createdDate, LocalDateTime modifiedDate, boolean isActive, int priority) {
+    public UserCategoryRule(String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring, User user, LocalDateTime createdDate, LocalDateTime modifiedDate, boolean isActive, int priority) {
         super(categoryName, merchantPattern, descriptionPattern, frequency, transactionType, isRecurring);
         this.user = user;
         this.createdDate = createdDate;

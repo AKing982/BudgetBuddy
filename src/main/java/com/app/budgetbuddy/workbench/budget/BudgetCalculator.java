@@ -278,6 +278,11 @@ public class BudgetCalculator {
         }
     }
 
+    public BigDecimal calculateNewBudgetedAmountFromRemainingAmount(Category category, Period period, LocalDate startDate, LocalDate endDate, BigDecimal remainingAmount)
+    {
+        return null;
+    }
+
     public BigDecimal calculateBudgetedAmountByPeriod(final BudgetPeriod budgetPeriod, final Budget budget)
     {
         validateBudgetPeriodAndBudget(budgetPeriod, budget);

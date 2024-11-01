@@ -16,11 +16,11 @@ public class CategoryRule
     private String categoryName;
     private String merchantPattern;
     private String descriptionPattern;
-    private double frequency;
+    private String frequency;
     private TransactionType transactionType;
     private boolean isRecurring;
 
-    public CategoryRule(String categoryName, String merchantPattern, String descriptionPattern, double frequency, TransactionType transactionType, boolean isRecurring) {
+    public CategoryRule(String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring) {
         this.categoryName = categoryName;
         this.merchantPattern = merchantPattern;
         this.descriptionPattern = descriptionPattern;
@@ -34,7 +34,7 @@ public class CategoryRule
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CategoryRule that = (CategoryRule) o;
-        return Double.compare(frequency, that.frequency) == 0 && isRecurring == that.isRecurring && Objects.equals(categoryName, that.categoryName) && Objects.equals(merchantPattern, that.merchantPattern) && Objects.equals(descriptionPattern, that.descriptionPattern) && transactionType == that.transactionType;
+        return isRecurring == that.isRecurring && Objects.equals(categoryName, that.categoryName) && Objects.equals(merchantPattern, that.merchantPattern) && Objects.equals(descriptionPattern, that.descriptionPattern) && Objects.equals(frequency, that.frequency) && transactionType == that.transactionType;
     }
 
     @Override

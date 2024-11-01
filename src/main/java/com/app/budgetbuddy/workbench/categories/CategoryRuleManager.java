@@ -1,20 +1,20 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.Category;
-import com.app.budgetbuddy.domain.CategoryRule;
-import com.app.budgetbuddy.domain.UserCategoryRule;
-import com.plaid.client.model.Transaction;
+import com.app.budgetbuddy.domain.*;
+
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface CategoryRuleManager
 {
     CategoryRule userUpdatedCategoryRule(UserCategoryRule userCategoryRule);
     CategoryRule updateCategoryRuleForTransaction(CategoryRule categoryRule);
-    Boolean isCategoryRuleMatchForTransaction(CategoryRule categoryRule);
+    Boolean isCategoryRuleMatchForTransaction(CategoryRule categoryRule, Transaction transaction);
 
     List<UserCategoryRule> getUserCategoryRules(Long userId);
+    Set<CategoryRule> createCategoryRuleListFromTransactions(List<Transaction> transactions, List<RecurringTransactionDTO> recurringTransactionDTOs);
     List<CategoryRule> getMatchingCategoryRulesForTransaction(Transaction transaction);
 
     boolean validateCategoryRule(CategoryRule categoryRule);
