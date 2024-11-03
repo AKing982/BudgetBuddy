@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class CategoryRuleManagerImpl implements CategoryRuleManager
@@ -31,12 +32,17 @@ public class CategoryRuleManagerImpl implements CategoryRuleManager
     }
 
     @Override
-    public CategoryRule updateCategoryRuleForTransaction(CategoryRule categoryRule) {
+    public CategoryRule updateCategoryRuleForTransaction(CategoryRule categoryRule, Transaction transaction) {
+
         return null;
     }
 
     @Override
-    public Boolean isCategoryRuleMatchForTransaction(CategoryRule categoryRule, Transaction transaction) {
+    public Boolean ruleMatchesTransaction(CategoryRule categoryRule, Transaction transaction) {
+        if(categoryRule == null || transaction == null)
+        {
+            return false;
+        }
         return null;
     }
 
@@ -46,13 +52,13 @@ public class CategoryRuleManagerImpl implements CategoryRuleManager
     }
 
     @Override
-    public Set<CategoryRule> createCategoryRuleListFromTransactions(List<Transaction> transactions,
-                                                                     List<RecurringTransactionDTO> recurringTransactionDTOs) {
+    public List<CategoryRule> createCategoryRuleListFromTransactions(List<Transaction> transactions,
+                                                                     List<RecurringTransaction> recurringTransactionDTOs) {
         if(transactions.isEmpty())
         {
-            return Set.of();
+            return List.of();
         }
-        Set<CategoryRule> categoryRules = new HashSet<>();
+        List<CategoryRule> categoryRules = new ArrayList<>();
         for(Transaction transaction : transactions)
         {
             String description = transaction.description();
@@ -70,30 +76,31 @@ public class CategoryRuleManagerImpl implements CategoryRuleManager
             categoryRules.add(categoryRule);
         }
 
-        for(RecurringTransactionDTO recurringTransactionDTO : recurringTransactionDTOs)
+        for(RecurringTransaction recurringTransactionDTO : recurringTransactionDTOs)
         {
-            String description = recurringTransactionDTO.description();
-            String merchantName = recurringTransactionDTO.merchantName();
-            CategoryEntity category = fetchCategoryById(recurringTransactionDTO.categoryId());
-            String frequency = recurringTransactionDTO.frequency();
+            String description = recurringTransactionDTO.getDescription();
+            String merchantName = recurringTransactionDTO.getMerchantName();
+            CategoryEntity category = fetchCategoryById(recurringTransactionDTO.getCategoryId());
+            String frequency = recurringTransactionDTO.getFrequency();
             CategoryRule categoryRule = new CategoryRule(
                     category.getName(),
                     merchantName,
                     description,
                     frequency,
-                    getTransactionType(null),
+                    getTransactionType(recurringTransactionDTO),
                     true
             );
+
             categoryRules.add(categoryRule);
         }
         return categoryRules;
     }
 
-    private TransactionType getTransactionType(RecurringTransactionDTO recurringTransaction) {
+    private TransactionType getTransactionType(RecurringTransaction recurringTransaction) {
         // Similar logic for recurring transactions
-        if (recurringTransaction..compareTo(BigDecimal.ZERO) < 0) {
-            return TransactionType.DEPOSIT;
-        } else if (recurringTransaction.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+        if (recurringTransaction.getAverageAmount().compareTo(BigDecimal.ZERO) < 0) {
+            if(recurringTransaction.getDescription().contains("PAY")){return TransactionType.CREDIT;};
+        } else if (recurringTransaction.getAverageAmount().compareTo(BigDecimal.ZERO) > 0) {
             return TransactionType.PURCHASE;
         }
         return TransactionType.TRANSFER;
@@ -133,7 +140,7 @@ public class CategoryRuleManagerImpl implements CategoryRuleManager
 
 
     @Override
-    public List<CategoryRule> getMatchingCategoryRulesForTransaction(Transaction transaction) {
+    public List<CategoryRule> getMatchingCategoryRulesForTransaction(final Transaction transaction) {
         return List.of();
     }
 
@@ -145,6 +152,16 @@ public class CategoryRuleManagerImpl implements CategoryRuleManager
     @Override
     public void saveOverrideAsNewRule(Transaction transaction, CategoryRule categoryRule, Category category) {
 
+    }
+
+    @Override
+    public List<Transaction> getUncategorizedTransactions(List<Transaction> transactions) {
+        return List.of();
+    }
+
+    @Override
+    public List<RecurringTransaction> getUncategorizedRecurringTransactions(List<Transaction> transactions) {
+        return List.of();
     }
 
     @Override
@@ -160,6 +177,11 @@ public class CategoryRuleManagerImpl implements CategoryRuleManager
     @Override
     public UserCategoryRule getTransactionUserCategoryRule(Transaction transaction) {
         return null;
+    }
+
+    @Override
+    public Set<UserCategoryRule> getCategoryRulesByUserId(Long userId, List<Transaction> userTransactions) {
+        return Set.of();
     }
 
     @Override

@@ -1,9 +1,7 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.CategoryRule;
-import com.app.budgetbuddy.domain.RecurringTransactionDTO;
-import com.app.budgetbuddy.domain.Transaction;
-import com.app.budgetbuddy.domain.TransactionType;
+import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.services.CategoryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,12 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,8 +41,8 @@ class CategoryRuleManagerImplTest {
     @Test
     void testCreateCategoryRuleListFromTransactions_whenTransactionsListIsEmpty(){
         List<Transaction> transactions = new ArrayList<>();
-        List<RecurringTransactionDTO> recurringTransactionDTOS = new ArrayList<>();
-        Set<CategoryRule> actual = categoryRuleManager.createCategoryRuleListFromTransactions(transactions, recurringTransactionDTOS);
+        List<RecurringTransaction> recurringTransactionDTOS = new ArrayList<>();
+        List<CategoryRule> actual = categoryRuleManager.createCategoryRuleListFromTransactions(transactions, recurringTransactionDTOS);
         assertTrue(actual.isEmpty());
     }
 
@@ -58,7 +58,12 @@ class CategoryRuleManagerImplTest {
         expectedCategoryRules.add(createAutoZoneRule());
         expectedCategoryRules.add(createWalmartRule());
 
-        List<CategoryRule> actual = categoryRuleManager.createCategoryRuleListFromTransactions(transactions);
+        List<RecurringTransaction> recurringTransactionDTOS = new ArrayList<>();
+
+
+        Mockito.when(categoryService.findCategoryById("cat-001")).thenReturn(Optional.of(createCategory("cat-001")));
+
+        List<CategoryRule> actual = categoryRuleManager.createCategoryRuleListFromTransactions(transactions, recurringTransactionDTOS);
         assertEquals(expectedCategoryRules, actual);
         for(int i = 0; i < expectedCategoryRules.size(); i++){
             assertEquals(expectedCategoryRules.get(i), actual.get(i));
@@ -67,7 +72,34 @@ class CategoryRuleManagerImplTest {
             assertEquals(expectedCategoryRules.get(i).getFrequency(), actual.get(i).getFrequency());
             assertEquals(expectedCategoryRules.get(i).isRecurring(), actual.get(i).isRecurring());
         }
+    }
 
+    @Test
+    void testRuleMatchesTransaction_whenCategoryRuleIsNull_thenReturnFalse(){
+        Boolean result = categoryRuleManager.ruleMatchesTransaction(null, createAffirmTransaction());
+        assertFalse(result);
+    }
+
+    @Test
+    void testRuleMatchesTransaction_whenTransactionIsNull_thenReturnFalse(){
+        Boolean result = categoryRuleManager.ruleMatchesTransaction(createAffirmRule(), null);
+        assertFalse(result);
+    }
+
+    @Test
+    void testRuleMatchesTransaction_thenReturnTrue(){
+        e
+    }
+
+    private CategoryEntity createCategory(String categoryId)
+    {
+        CategoryEntity category = new CategoryEntity();
+        category.setId(categoryId);
+        category.setActive(true);
+        category.setDescription("Category Description");
+        category.setName("Test Category");
+        category.setCustom(false);
+        return category;
     }
 
     private Transaction createAffirmTransaction() {

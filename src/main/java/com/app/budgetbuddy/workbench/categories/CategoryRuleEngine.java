@@ -1,40 +1,59 @@
 package com.app.budgetbuddy.workbench.categories;
 
+import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.domain.CategoryRule;
+import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class CategoryRuleEngine
 {
-    public void addCategoryRule(CategoryRule categoryRule){
+    private final CategoryRuleManager categoryRuleManager;
+    private final Map<Transaction, CategoryRule> transactionCategoryRules = new ConcurrentHashMap<>();
+    private final Map<RecurringTransaction, CategoryRule> recurringTransactionCategoryRules = new ConcurrentHashMap<>();
 
+    @Autowired
+    public CategoryRuleEngine(final CategoryRuleManager categoryRuleManager)
+    {
+        this.categoryRuleManager = categoryRuleManager;
     }
 
-    public void removeCategoryRule(CategoryRule categoryRule){
-
-    }
-
-    public boolean validateRule(CategoryRule categoryRule){
-        return false;
-    }
-
-    public List<CategoryRule> getCategoryRules() {
-        return List.of();
-    }
-
-    public String categorizeTransaction(Transaction transaction) {
-        return "";
-    }
-
-    public Map<Transaction, CategoryRule> categorizeTransactions(List<Transaction> transactions) {
+    public Map<Transaction, CategoryRule> categorizeTransactions(List<Transaction> transactions)
+    {
         return null;
     }
 
-    public void updateCategoryRule(CategoryRule categoryRule) {
-
+    public Map<RecurringTransaction, CategoryRule> categorizeRecurringTransactions(List<RecurringTransaction> recurringTransactions)
+    {
+        return null;
     }
+
+    public Map<Transaction, CategoryRule> getCategorizedTransactions()
+    {
+        return transactionCategoryRules;
+    }
+
+    public Map<RecurringTransaction, CategoryRule> getCategorizedRecurringTransactions()
+    {
+        return recurringTransactionCategoryRules;
+    }
+
+    public List<Transaction> getUncategorizedTransactions()
+    {
+        return null;
+    }
+
+    public Category categorizeSingleTransaction(Transaction transaction)
+    {
+        return null;
+    }
+
+
+
 }

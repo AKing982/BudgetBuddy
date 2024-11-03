@@ -13,5 +13,9 @@ public enum CategoryDesignator
     PAY,
     YOUTUBE,
     HARMONS,
+    AMAZON,
+    UDEMY,
+    SPOTIFY,
+    WALMART,
 
 }
