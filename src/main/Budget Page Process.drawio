@@ -97,9 +97,6 @@
             <mxPoint x="440" y="540" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="XS7kNH4wsqa0dV3q0yrt-24" value="End" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="1060" y="110" width="120" height="80" as="geometry" />
-        </mxCell>
         <mxCell id="XS7kNH4wsqa0dV3q0yrt-25" value="Start" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="10" y="720" width="120" height="60" as="geometry" />
         </mxCell>
@@ -108,6 +105,9 @@
             <mxPoint x="330" y="800" as="sourcePoint" />
             <mxPoint x="210" y="750" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="XS7kNH4wsqa0dV3q0yrt-27" value="Send Budget Categories, BudgetPeriod Queries, Budget Savings and Budget Statistics to the front end" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="1060" y="115" width="220" height="70" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
