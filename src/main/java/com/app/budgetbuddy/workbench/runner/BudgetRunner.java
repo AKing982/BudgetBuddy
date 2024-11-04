@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
-public class BudgetRunner implements Runnable
+public class BudgetRunner
 {
     private final BudgetCategoryBuilder budgetCategoryBuilder;
     private final BudgetPeriodQueries budgetPeriodQueries;
@@ -76,8 +76,4 @@ public class BudgetRunner implements Runnable
         return null;
     }
 
-    @Override
-    public void run() {
-
-    }
 }
