@@ -4,15 +4,11 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
-import com.app.budgetbuddy.services.BudgetCategoriesService;
 import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.UserBudgetCategoryService;
 import com.app.budgetbuddy.services.UserService;
-import com.app.budgetbuddy.workbench.categories.TransactionCategorizationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +20,6 @@ public class BudgetSetupEngine
     private final UserService userService;
     private final BudgetService budgetService;
     private final BudgetCalculator budgetCalculator;
-    private final TransactionCategorizationService transactionCategorizationService;
     private final BudgetCategoryBuilder budgetCategoryBuilder;
     private boolean isBudgetSetupCompleted;
 
@@ -32,12 +27,10 @@ public class BudgetSetupEngine
     public BudgetSetupEngine(UserService userService,
                              BudgetService budgetService,
                              BudgetCalculator budgetCalculator,
-                             TransactionCategorizationService transactionCategorizationService,
                              BudgetCategoryBuilder budgetCategoryBuilder){
         this.userService = userService;
         this.budgetService = budgetService;
         this.budgetCalculator = budgetCalculator;
-        this.transactionCategorizationService = transactionCategorizationService;
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
 

@@ -7,10 +7,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,7 +65,6 @@ class CategoryRuleManagerImplTest {
 
         List<RecurringTransaction> recurringTransactionDTOS = new ArrayList<>();
 
-
         Mockito.when(categoryService.findCategoryById("cat-001")).thenReturn(Optional.of(createCategory("cat-001")));
 
         List<CategoryRule> actual = categoryRuleManager.createCategoryRuleListFromTransactions(transactions, recurringTransactionDTOS);
@@ -88,7 +92,84 @@ class CategoryRuleManagerImplTest {
 
     @Test
     void testRuleMatchesTransaction_thenReturnTrue(){
-        e
+        CategoryRule groceryRule = createWalmartRule();
+        Transaction groceryTransaction = createGroceriesTransaction();
+        Boolean result = categoryRuleManager.ruleMatchesTransaction(groceryRule, groceryTransaction);
+        assertTrue(result);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideCategoryRulesAndTransactions")
+    void testRuleMatchesTransaction(CategoryRule categoryRule, Transaction transaction, boolean expectedMatch) {
+        Boolean result = categoryRuleManager.ruleMatchesTransaction(categoryRule, transaction);
+        assertEquals(expectedMatch, result);
+    }
+
+    @Test
+    void testValidateCategoryRule_whenCategoryRuleNull_thenReturnFalse(){
+        boolean result = categoryRuleManager.validateCategoryRule(null);
+        assertFalse(result);
+    }
+
+    @Test
+    void testValidateCategoryRule_whenCategoryNameIsNull_thenReturnFalse(){
+        boolean result = categoryRuleManager.validateCategoryRule(createBadCategoryRule(null, "Walmart", "Walmart"));
+        assertFalse(result);
+    }
+
+    @Test
+    void testValidateCategoryRule_whenMerchantPatternNull_thenReturnFalse(){
+        boolean result = categoryRuleManager.validateCategoryRule(createBadCategoryRule("Groceries", "Walmart", null));
+        assertFalse(result);
+    }
+
+    @Test
+    void testValidateCategoryRule_whenDescriptionPatternNull_thenReturnFalse(){
+        boolean result = categoryRuleManager.validateCategoryRule(createBadCategoryRule("Groceries", null, "Walmart"));
+        assertFalse(result);
+    }
+
+    @Test
+    void testValidateCategoryRule_returnTrue(){
+        CategoryRule groceryRule = createWalmartRule();
+        boolean result = categoryRuleManager.validateCategoryRule(groceryRule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testGetMatchingCategoryRulesForTransaction_whenTransactionIsNull_thenReturnFalse(){
+
+    }
+
+    /**
+     * Method source providing test cases for parameterized test.
+     */
+    private static Stream<Arguments> provideCategoryRulesAndTransactions() {
+        return Stream.of(
+                // Null cases
+                Arguments.of(null, null, false),
+                Arguments.of(createAffirmRule(), null, false),
+                Arguments.of(null, createAffirmTransaction(), false),
+
+                // Exact matches
+                Arguments.of(createAffirmRule(), createAffirmTransaction(), true),
+                Arguments.of(createAutoZoneRule(), createAutoZoneTransaction(), true),
+                Arguments.of(createWalmartRule(), createGroceriesTransaction(), true),
+
+                // Mismatches due to merchant pattern
+                Arguments.of(createAffirmRule(), createAutoZoneTransaction(), false),
+                Arguments.of(createWalmartRule(), createAffirmTransaction(), false),
+
+                // Partial merchant name cases
+                Arguments.of(new CategoryRule("Partial Match Test", "Auto", null, null, TransactionType.PURCHASE, false), createAutoZoneTransaction(), true),
+                Arguments.of(new CategoryRule("Partial No Match", "Aff", null, null, TransactionType.PURCHASE, false), createGroceriesTransaction(), false)
+        );
+    }
+
+
+    private CategoryRule createBadCategoryRule(String categoryName, String descriptionPattern, String merchantName)
+    {
+        return new CategoryRule(categoryName,merchantName, descriptionPattern, "MONTHLY", TransactionType.PURCHASE, false);
     }
 
     private CategoryEntity createCategory(String categoryId)
@@ -102,7 +183,7 @@ class CategoryRuleManagerImplTest {
         return category;
     }
 
-    private Transaction createAffirmTransaction() {
+    private static Transaction createAffirmTransaction() {
         return new Transaction(
                 "account-12345", // accountId
                 new BigDecimal("10.31"), // amount
@@ -120,7 +201,7 @@ class CategoryRuleManagerImplTest {
                 LocalDate.of(2024, 10, 5) // posted
         );
     }
-    private Transaction createAutoZoneTransaction() {
+    private static Transaction createAutoZoneTransaction() {
         return new Transaction(
                 "account-67890", // accountId
                 new BigDecimal("211.28"), // amount
@@ -139,7 +220,7 @@ class CategoryRuleManagerImplTest {
         );
     }
 
-    private Transaction createDepositTransfer() {
+    private static Transaction createDepositTransfer() {
         return new Transaction(
                 "account-33333", // accountId
                 new BigDecimal("-150"), // amount (negative for deposit)
@@ -158,7 +239,7 @@ class CategoryRuleManagerImplTest {
         );
     }
 
-    private Transaction createGroceriesTransaction() {
+    private static Transaction createGroceriesTransaction() {
         return new Transaction(
                 "account-44444", // accountId
                 new BigDecimal("2.55"), // amount
@@ -177,7 +258,7 @@ class CategoryRuleManagerImplTest {
         );
     }
 
-    public CategoryRule createAffirmRule() {
+    public static CategoryRule createAffirmRule() {
         return new CategoryRule(
                 "Financial",         // categoryName
                 "Affirm",            // merchantPattern
@@ -188,7 +269,7 @@ class CategoryRuleManagerImplTest {
         );
     }
 
-    public CategoryRule createAutoZoneRule() {
+    public static CategoryRule createAutoZoneRule() {
         return new CategoryRule(
                 "Automotive",        // categoryName
                 "AutoZone",          // merchantPattern
@@ -199,7 +280,7 @@ class CategoryRuleManagerImplTest {
         );
     }
 
-    public CategoryRule createWalmartRule() {
+    public static CategoryRule createWalmartRule() {
         return new CategoryRule(
                 "Supermarkets and Groceries", // categoryName
                 "Walmart",             // merchantPattern

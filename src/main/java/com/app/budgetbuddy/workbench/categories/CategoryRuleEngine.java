@@ -14,14 +14,27 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class CategoryRuleEngine
 {
-    private final CategoryRuleManager categoryRuleManager;
+    private final CategoryRuleCreator categoryRuleCreator;
+    private final CategoryRuleMatcher categoryRuleMatcher;
+    private final CategoryRulePrioritizer categoryRulePrioritizer;
+    private final UserCategoryRuleManager userCategoryRuleManager;
+    private final CategoryConflictResolver categoryConflictResolver;
     private final Map<Transaction, CategoryRule> transactionCategoryRules = new ConcurrentHashMap<>();
     private final Map<RecurringTransaction, CategoryRule> recurringTransactionCategoryRules = new ConcurrentHashMap<>();
 
     @Autowired
-    public CategoryRuleEngine(final CategoryRuleManager categoryRuleManager)
+    public CategoryRuleEngine(CategoryRuleCreator categoryRuleCreator,
+                              CategoryRuleMatcher categoryRuleMatcher,
+                              CategoryRulePrioritizer categoryRulePrioritizer,
+                              UserCategoryRuleManager userCategoryRuleManager,
+                              CategoryConflictResolver categoryConflictResolver)
     {
-        this.categoryRuleManager = categoryRuleManager;
+        this.categoryRuleCreator = categoryRuleCreator;
+        this.categoryRuleMatcher = categoryRuleMatcher;
+        this.categoryRulePrioritizer = categoryRulePrioritizer;
+        this.userCategoryRuleManager = userCategoryRuleManager;
+        this.categoryConflictResolver = categoryConflictResolver;
+
     }
 
     public Map<Transaction, CategoryRule> categorizeTransactions(List<Transaction> transactions)

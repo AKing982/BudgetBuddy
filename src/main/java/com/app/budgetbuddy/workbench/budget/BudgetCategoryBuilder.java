@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,11 +39,6 @@ public class BudgetCategoryBuilder
     private boolean isTransactionAlreadyLinked(Transaction transaction)
     {
         return false;
-    }
-
-    public List<TransactionsEntity> fetchTransactionsForPeriod(final LocalDate startDate, final LocalDate endDate, final Long userId)
-    {
-        return null;
     }
 
     public Category updateCategoryOnNewTransaction(Transaction transaction)
