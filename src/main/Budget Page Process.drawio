@@ -85,9 +85,6 @@
             <mxPoint x="1060" y="150" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="XS7kNH4wsqa0dV3q0yrt-18" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="1060" y="120" width="120" height="60" as="geometry" />
-        </mxCell>
         <mxCell id="XS7kNH4wsqa0dV3q0yrt-21" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="XS7kNH4wsqa0dV3q0yrt-15">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="390" y="590" as="sourcePoint" />
@@ -99,6 +96,9 @@
             <mxPoint x="800" y="580" as="sourcePoint" />
             <mxPoint x="440" y="540" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="XS7kNH4wsqa0dV3q0yrt-24" value="End" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="1060" y="110" width="120" height="80" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
