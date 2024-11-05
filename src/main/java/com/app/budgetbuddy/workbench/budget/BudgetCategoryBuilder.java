@@ -5,10 +5,10 @@ import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.entities.UserEntity;
-import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleService;
+import com.app.budgetbuddy.workbench.converter.UserBudgetCategoryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class BudgetCategoryBuilder
@@ -26,23 +25,21 @@ public class BudgetCategoryBuilder
     private CategoryRuleService categoryRuleService;
     private CategoryService categoryService;
     private BudgetCalculator budgetCalculator;
+    private UserBudgetCategoryConverter userBudgetCategoryConverter;
     private Logger LOGGER = LoggerFactory.getLogger(BudgetCategoryBuilder.class);
 
     @Autowired
     public BudgetCategoryBuilder(UserBudgetCategoryService userBudgetCategoryService,
                                  CategoryRuleService categoryRuleService,
                                  CategoryService categoryService,
-                                 BudgetCalculator budgetCalculator)
+                                 BudgetCalculator budgetCalculator,
+                                 UserBudgetCategoryConverter userBudgetCategoryConverter)
     {
         this.userBudgetCategoryService = userBudgetCategoryService;
         this.categoryRuleService = categoryRuleService;
         this.categoryService = categoryService;
         this.budgetCalculator = budgetCalculator;
-    }
-
-    private boolean isTransactionAlreadyLinked(Transaction transaction)
-    {
-        return false;
+        this.userBudgetCategoryConverter = userBudgetCategoryConverter;
     }
 
     public Category updateCategoryOnNewTransaction(Transaction transaction)
@@ -55,46 +52,137 @@ public class BudgetCategoryBuilder
         return false;
     }
 
-    private UserEntity fetchUserEntityByUserId(Long userId)
+    private String fetchCategoryIdByName(String categoryName)
     {
-        return null;
+        if(categoryName.isEmpty())
+        {
+            return "";
+        }
+        return categoryService.getCategoryIdByName(categoryName);
     }
 
     public CategoryEntity fetchCategoryByNameOrDescription(String categoryName, String categoryDescription)
     {
-        return null;
+        if(categoryName == null || categoryDescription == null)
+        {
+            throw new IllegalArgumentException("Category name or description cannot be null");
+        }
+        return categoryService.getCategoryByNameOrDescription(categoryDescription, categoryName)
+                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
     }
 
-    public BigDecimal getCategoryRemainingAmount(final BudgetPeriod budgetPeriod, final CategoryBudget categoryBudget)
+    public BigDecimal getCategoryRemainingAmount(final CategoryBudget categoryBudget)
     {
-        return null;
+        Double categoryBudgetAmount = categoryBudget.getCategoryBudgetAmount();
+        Double categoryActualAmount = categoryBudget.getCategorySpentAmount();
+        return BigDecimal.valueOf(categoryBudgetAmount - categoryActualAmount);
     }
 
-    public BigDecimal getCategoryActualAmount(final BudgetPeriod budgetPeriod, final CategoryBudget categoryBudget)
+    private List<String> getCategoriesFromTransactions(final List<Transaction> transactions)
     {
-        return null;
+        List<String> categoriesList = new ArrayList<>();
+        if(transactions.isEmpty())
+        {
+            return categoriesList;
+        }
+        return transactions.stream()
+                .filter(transaction -> transaction.categories() != null)
+                .flatMap(transaction -> transaction.categories().stream())
+                .distinct()  // Optional: remove duplicates if you want only unique categories
+                .toList();
     }
 
-    public BigDecimal getCategoryBudgetAmount(final BudgetPeriod budgetPeriod, final CategoryBudget categoryBudget)
+    public List<CategorySpending> createCategorySpendingList(final List<String> categories, final List<Transaction> transactions)
     {
-        return null;
+        List<CategorySpending> categorySpendingList = new ArrayList<>();
+        if(categories.isEmpty() || transactions.isEmpty())
+        {
+            return categorySpendingList;
+        }
+        for (String category : categories)
+        {
+            BigDecimal categorySpending = BigDecimal.ZERO;
+            String categoryId = fetchCategoryIdByName(category); // Reset for each category
+            for (Transaction transaction : transactions)
+            {
+                if (transaction.categories() != null && transaction.categories().contains(category))
+                {
+                    categorySpending = categorySpending.add(transaction.amount());
+                }
+            }
+            // Add one CategorySpending object for each category
+            categorySpendingList.add(new CategorySpending(categoryId, category, categorySpending));
+        }
+        return categorySpendingList;
+    }
+
+    public BigDecimal getSpendingOnAllCategories(final List<CategorySpending> categorySpendingList)
+    {
+        BigDecimal categorySpendingAmount = BigDecimal.ZERO;
+        for(CategorySpending categorySpending : categorySpendingList)
+        {
+            BigDecimal actualSpending = categorySpending.getActualSpending();
+            categorySpendingAmount = categorySpendingAmount.add(actualSpending);
+        }
+        return categorySpendingAmount;
     }
 
     // Maps the User
-    public Map<Long, List<UserBudgetCategory>> initializeUserBudgetCategories(Budget budget, BudgetPeriod budgetPeriod)
+    public List<UserBudgetCategory> initializeUserBudgetCategories(final Budget budget, final BudgetPeriod budgetPeriod, final List<Transaction> transactions)
     {
-        Map<Long, List<UserBudgetCategory>> userBudgetCategories = new HashMap<>();
-        if(budget == null || budgetPeriod == null)
+        List<UserBudgetCategory> userBudgetCategories = new ArrayList<>();
+        if(budget == null || budgetPeriod == null || transactions.isEmpty())
         {
             return userBudgetCategories;
         }
-        return null;
+
+        // 1. First determine the categories from the transactions
+        List<String> categories = getCategoriesFromTransactions(transactions);
+
+        // 2. Once categories have been determined, start determine the date periods for the categories
+        Map<String, List<DateRange>> categoryDateRanges = new HashMap<>();
+        for(String category : categories)
+        {
+            LocalDate budgetStartDate = budget.getStartDate();
+            LocalDate budgetEndDate = budget.getEndDate();
+            Period period = budgetPeriod.period();
+            categoryDateRanges = createCategoryPeriods(category, budgetStartDate, budgetEndDate, period, transactions);
+        }
+
+        // 3. Calculate/Create the category to budget map
+        List<CategorySpending> categorySpendingList = createCategorySpendingList(categories, transactions);
+        BigDecimal totalSpendingOnAllCategories = getSpendingOnAllCategories(categorySpendingList);
+        Map<String, BigDecimal> categoryToBudgetMap = budgetCalculator.createCategoryToBudgetMap(categorySpendingList, budget, totalSpendingOnAllCategories, budgetPeriod);
+        return buildUserBudgetCategoryList(categoryToBudgetMap, categorySpendingList, categoryDateRanges, budget.getUserId());
     }
 
-    public UserBudgetCategory createUserBudgetCategory(Transaction transaction)
+    private List<UserBudgetCategory> buildUserBudgetCategoryList(final Map<String, BigDecimal> categoryBudget, final List<CategorySpending> categorySpendingList, final Map<String, List<DateRange>> categoryDateRanges, Long userId)
     {
-        return null;
+        List<UserBudgetCategory> userBudgetCategories = new ArrayList<>();
+        for(CategorySpending categorySpending : categorySpendingList)
+        {
+            for(String category : categoryBudget.keySet())
+            {
+                if(categorySpending.getCategoryName().equals(category))
+                {
+                    BigDecimal categoryBudgetAmount = categoryBudget.get(category);
+                    List<DateRange> dateRanges = categoryDateRanges.get(category);
+                    for(DateRange dateRange : dateRanges){
+                        UserBudgetCategory userBudgetCategory = new UserBudgetCategory();
+                        userBudgetCategory.setUserId(userId);
+                        userBudgetCategory.setBudgetedAmount(Double.valueOf(categoryBudgetAmount.toString()));
+                        userBudgetCategory.setIsActive(true);
+                        userBudgetCategory.setCategoryId(categorySpending.getCategoryId());
+                        userBudgetCategory.setStartDate(dateRange.getStartDate());
+                        userBudgetCategory.setEndDate(dateRange.getEndDate());
+                        userBudgetCategories.add(userBudgetCategory);
+                    }
+                }
+            }
+        }
+        return userBudgetCategories;
     }
+
 
     public Category assignTransactionToCategoryByRule(CategoryRule categoryRule, Long userId)
     {
@@ -126,72 +214,6 @@ public class BudgetCategoryBuilder
         List<DateRange> dateRanges = buildDateRanges(budgetStartDate, budgetEndDate, period, transactionsByCategory);
         categoryPeriods.put(categoryName, dateRanges);
 
-//        switch(period)
-//        {
-//            case DAILY:
-//
-//                break;
-//
-//            case BIWEEKLY:
-//
-//
-//
-//                return categoryPeriods;
-//            case WEEKLY:
-//                LocalDate currentStart = budgetStartDate;
-//                LOGGER.info("BudgetStartDate: " + budgetStartDate);
-//                LOGGER.info("BudgetEndDate: " + budgetEndDate);
-//                while(!currentStart.isAfter(budgetEndDate)) {
-//                    LocalDate currentEnd = currentStart.plusDays(7);
-//                    if (currentEnd.isAfter(budgetEndDate)) {
-//                        break;
-//                    }
-//
-//                    DateRange partialWeekRange = new DateRange(currentEnd, budgetEndDate);
-//                    // TODO: If the currentEnd falls before the budgetEndDate and its before the end of the month
-//                    // TODO: Extend the currentEnd till the budgetEndDate
-//                    long numDaysBetweenBudgetEndDateAndCurrentEnd = partialWeekRange.getDaysInRange();
-//                    if (numDaysBetweenBudgetEndDateAndCurrentEnd >= 1 && numDaysBetweenBudgetEndDateAndCurrentEnd < 7)
-//                    {
-//                        if(currentEnd.isBefore(budgetEndDate)) {
-//                            currentEnd = currentEnd.plusDays(numDaysBetweenBudgetEndDateAndCurrentEnd - 1);
-//                            // Does the current fall on the start of the next month?]
-//                        }
-//                    }
-//                    LOGGER.info("Number of Days in Partial Week: " + numDaysBetweenBudgetEndDateAndCurrentEnd);
-//                    // If the current end is at the last week and its a partial week that's less than 7 days and greater than 1 day
-//                    // Then reset the current end to add the difference between the budget end date and the current end date
-//
-//
-//                    LOGGER.info("Current End: " + currentEnd);
-//                    LocalDate finalCurrentStart = currentStart;
-//                    LocalDate finalCurrentEnd = currentEnd;
-//                    List<Transaction> weeklyTransactions = transactionsByCategory.stream()
-//                                    .filter(transaction -> !transaction.posted().isBefore(finalCurrentStart) && !transaction.posted().isAfter(finalCurrentEnd))
-//                                            .toList();
-//
-//                    LOGGER.info("Weekly Transactions: " + weeklyTransactions);
-//
-//                    if (!weeklyTransactions.isEmpty())
-//                    {
-//                        LOGGER.info("Weekly StartDate: " + currentStart);
-//                        LOGGER.info("Weekly EndDate: " + currentEnd);
-//                        DateRange weeklyDateRange = new DateRange(currentStart, currentEnd);
-//                        categoryPeriods.computeIfAbsent(categoryName, k -> new ArrayList<>()).add(weeklyDateRange);
-//                        LOGGER.info("Weekly DateRange: Start = {}, End = {}", weeklyDateRange.getStartDate(), weeklyDateRange.getEndDate());
-//                    }
-//                    // Move to the next week
-//                    currentStart = currentStart.plusWeeks(1);
-//                }
-//
-//                break;
-//            case MONTHLY:
-//
-//                break;
-//            default:
-//                throw new IllegalDateException("Illegal Date Found: " + period);
-//        }
-
         LOGGER.info("Transactions Filtered By Category: {}: {}", categoryName, transactionsByCategory);
 
         LOGGER.info("Category Periods: " + categoryPeriods);
@@ -213,40 +235,30 @@ public class BudgetCategoryBuilder
 
         if(period == Period.MONTHLY)
         {
-            while(!currentStart.isBefore(budgetEnd))
-            {
-                LOGGER.info("Entering Monthly While Loop");
-                LocalDate currentEnd = currentStart.plusDays(1);
-                if(currentEnd.isAfter(budgetEnd))
-                {
-                    break;
-                }
+            // Set `currentEnd` to the last day of the month from `currentStart`, or `budgetEnd` if it falls earlier.
+            LocalDate currentEnd = budgetEnd.isBefore(currentStart.withDayOfMonth(currentStart.lengthOfMonth()))
+                    ? budgetEnd
+                    : currentStart.withDayOfMonth(currentStart.lengthOfMonth());
 
-                LocalDate finalStart = currentStart;
-                List<Transaction> transactions = filterTransactionsByDate(finalStart, currentEnd, filteredTransactions);
-                if(!transactions.isEmpty())
-                {
-                    DateRange dateRange = new DateRange(currentStart,currentEnd);
-                    dateRanges.add(dateRange);
-                    LOGGER.info("Weekly DateRange: Start = {}, End = {}", dateRange.getStartDate(), dateRange.getEndDate());
-                }
-                currentStart = currentStart.plusDays(1);
+            List<Transaction> transactions = filterTransactionsByDate(currentStart, currentEnd, filteredTransactions);
+
+            if (!transactions.isEmpty()) {
+                DateRange dateRange = new DateRange(currentStart, currentEnd);
+                dateRanges.add(dateRange);
+                LOGGER.info("Monthly DateRange: Start = {}, End = {}", dateRange.getStartDate(), dateRange.getEndDate());
             }
         }
         else
         {
             while(!currentStart.isAfter(budgetEnd))
             {
-                LOGGER.info("Entering while loop");
                 LocalDate currentEnd = incrementCurrentStartByPeriod(currentStart, period);
-                LOGGER.info("Current End: " + currentEnd);
                 if(currentEnd.isAfter(budgetEnd)){
                     break;
                 }
 
                 DateRange partialWeekRange = new DateRange(currentEnd, budgetEnd);
                 long numDaysBetweenBudgetEndDateAndCurrentEnd = partialWeekRange.getDaysInRange();
-                LOGGER.info("Number of Days between end date and budget end date: " + numDaysBetweenBudgetEndDateAndCurrentEnd);
                 if (numDaysBetweenBudgetEndDateAndCurrentEnd >= 1 && numDaysBetweenBudgetEndDateAndCurrentEnd < 7)
                 {
                     if(currentEnd.isBefore(budgetEnd))
@@ -307,11 +319,6 @@ public class BudgetCategoryBuilder
     }
 
     public List<UserBudgetCategoryEntity> detectAndUpdateNewTransactions()
-    {
-        return null;
-    }
-
-    public List<UserBudgetCategoryEntity> createUserBudgetCategoryFromTransaction(List<TransactionsEntity> transactionsEntities)
     {
         return null;
     }

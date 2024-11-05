@@ -13,7 +13,9 @@ public class UserBudgetCategory
     private Long id;
     private Long userId;
     private String categoryId;
+    private String categoryName;
     private Double budgetedAmount;
+    private Double budgetActual;
     private Boolean isActive;
     private LocalDate startDate;
     private LocalDate endDate;

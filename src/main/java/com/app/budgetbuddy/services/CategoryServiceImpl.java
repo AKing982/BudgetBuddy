@@ -60,6 +60,16 @@ public class CategoryServiceImpl implements CategoryService
         return categoryRepository.findByCategoryId(categoryId);
     }
 
+    @Override
+    public Optional<CategoryEntity> getCategoryByNameOrDescription(String description, String name) {
+        return categoryRepository.findByDescriptionOrCategoryName(description, name);
+    }
+
+    @Override
+    public String getCategoryIdByName(String categoryName) {
+        return categoryRepository.findCategoryIdByName(categoryName);
+    }
+
     private CategoryEntity createCategory(String categoryId, boolean isCustom, String name, String description, LocalDateTime created, Long id) {
         CategoryEntity categoryEntity = new CategoryEntity();
         categoryEntity.setId(categoryId);

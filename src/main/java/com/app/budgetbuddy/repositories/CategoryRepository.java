@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -23,5 +24,9 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long>
     @Query("SELECT c FROM CategoryEntity c WHERE c.id LIKE :num")
     Optional<CategoryEntity> findByCategoryRefNumber(@Param("num") String num);
 
+    @Query("SELECT c FROM CategoryEntity c WHERE c.description =:descr OR c.name =:name")
+    Optional<CategoryEntity> findByDescriptionOrCategoryName(@Param("descr") String descr, @Param("name") String name);
 
+    @Query("SELECT DISTINCT c.id FROM CategoryEntity c WHERE c.name =:name")
+    String findCategoryIdByName(@Param("name") String name);
 }

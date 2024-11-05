@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -14,6 +11,7 @@ import java.util.Objects;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class DateRange implements Comparable<DateRange>
 {

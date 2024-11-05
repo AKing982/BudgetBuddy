@@ -10,4 +10,8 @@ public interface CategoryService extends ServiceModel<CategoryEntity>
     CategoryEntity createAndSaveCategory(String categoryId, List<String> categories);
 
     Optional<CategoryEntity> findCategoryById(String categoryId);
+
+    Optional<CategoryEntity> getCategoryByNameOrDescription(String description, String name);
+
+    String getCategoryIdByName(String categoryName);
 }
