@@ -109,18 +109,6 @@ public class BudgetCategoryBuilder
     public Map<String, List<DateRange>> createCategoryPeriods(final String categoryName, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final Period period, final List<Transaction> transactions)
     {
         Map<String, List<DateRange>> categoryPeriods = new HashMap<>();
-        // 1. Filter the transaction by the category in question
-
-        // 2. As long as the transaction posted dates are within the specified budget start date and end date e.g. (Sept 1, 2024 - Sept 30, 2024)
-        // Proceed to group the transactions by
-
-        // 3. Look at the Posted dates for the transactions
-
-        // 4. Find the earliest posted dates and the latest posted dates
-
-        // 5. Using the earliest posted date as the start date and the latest posted dates as the end date
-
-        // 6. Create the DateRange object.
         if(budgetStartDate == null || budgetEndDate == null)
         {
             throw new IllegalArgumentException("budgetStartDate or budgetEndDate cannot be null");
@@ -135,75 +123,86 @@ public class BudgetCategoryBuilder
                 .filter(transaction -> !transaction.posted().isBefore(budgetStartDate) && !transaction.posted().isAfter(budgetEndDate))
                 .toList();
 
-        switch(period)
-        {
-            case DAILY:
+        List<DateRange> dateRanges = buildDateRanges(budgetStartDate, budgetEndDate, period, transactionsByCategory);
+        categoryPeriods.put(categoryName, dateRanges);
 
-                break;
-
-            case BIWEEKLY:
-
-
-
-                return categoryPeriods;
-            case WEEKLY:
-                LocalDate currentStart = budgetStartDate;
-                LOGGER.info("BudgetStartDate: " + budgetStartDate);
-                LOGGER.info("BudgetEndDate: " + budgetEndDate);
-                while(!currentStart.isAfter(budgetEndDate)) {
-                    LocalDate currentEnd = currentStart.plusDays(7);
-                    if (currentEnd.isAfter(budgetEndDate)) {
-                        break;
-                    }
-
-                    DateRange partialWeekRange = new DateRange(currentEnd, budgetEndDate);
-                    // TODO: If the currentEnd falls before the budgetEndDate and its before the end of the month
-                    // TODO: Extend the currentEnd till the budgetEndDate
-                    long numDaysBetweenBudgetEndDateAndCurrentEnd = partialWeekRange.getDaysInRange();
-                    if (numDaysBetweenBudgetEndDateAndCurrentEnd >= 1 && numDaysBetweenBudgetEndDateAndCurrentEnd < 7)
-                    {
-                        if(currentEnd.isBefore(budgetEndDate)) {
-                            currentEnd = currentEnd.plusDays(numDaysBetweenBudgetEndDateAndCurrentEnd - 1);
-                            // Does the current fall on the start of the next month?]
-                        }
-                    }
-                    LOGGER.info("Number of Days in Partial Week: " + numDaysBetweenBudgetEndDateAndCurrentEnd);
-                    // If the current end is at the last week and its a partial week that's less than 7 days and greater than 1 day
-                    // Then reset the current end to add the difference between the budget end date and the current end date
-
-                    LocalDate finalCurrentStart = currentStart;
-                    LOGGER.info("Final Current Start: " + finalCurrentStart);
-                    LOGGER.info("Current End: " + currentEnd);
-                    LocalDate finalCurrentEnd = currentEnd;
-                    List<Transaction> weeklyTransactions = transactionsByCategory.stream()
-                            .filter(transaction -> !transaction.posted().isBefore(finalCurrentStart) && !transaction.posted().isAfter(finalCurrentEnd))
-                            .toList();
-                    LOGGER.info("Weekly Transactions: " + weeklyTransactions);
-
-                    if (!weeklyTransactions.isEmpty())
-                    {
-                        LOGGER.info("Weekly StartDate: " + currentStart);
-                        LOGGER.info("Weekly EndDate: " + currentEnd);
-                        DateRange weeklyDateRange = new DateRange(currentStart, currentEnd);
-                        categoryPeriods.computeIfAbsent(categoryName, k -> new ArrayList<>()).add(weeklyDateRange);
-                        LOGGER.info("Weekly DateRange: Start = {}, End = {}", weeklyDateRange.getStartDate(), weeklyDateRange.getEndDate());
-                    }
-                    // Move to the next week
-                    currentStart = currentStart.plusWeeks(1);
-                }
-
-                break;
-            case MONTHLY:
-
-                break;
-            default:
-                throw new IllegalDateException("Illegal Date Found: " + period);
-        }
+//        switch(period)
+//        {
+//            case DAILY:
+//
+//                break;
+//
+//            case BIWEEKLY:
+//
+//
+//
+//                return categoryPeriods;
+//            case WEEKLY:
+//                LocalDate currentStart = budgetStartDate;
+//                LOGGER.info("BudgetStartDate: " + budgetStartDate);
+//                LOGGER.info("BudgetEndDate: " + budgetEndDate);
+//                while(!currentStart.isAfter(budgetEndDate)) {
+//                    LocalDate currentEnd = currentStart.plusDays(7);
+//                    if (currentEnd.isAfter(budgetEndDate)) {
+//                        break;
+//                    }
+//
+//                    DateRange partialWeekRange = new DateRange(currentEnd, budgetEndDate);
+//                    // TODO: If the currentEnd falls before the budgetEndDate and its before the end of the month
+//                    // TODO: Extend the currentEnd till the budgetEndDate
+//                    long numDaysBetweenBudgetEndDateAndCurrentEnd = partialWeekRange.getDaysInRange();
+//                    if (numDaysBetweenBudgetEndDateAndCurrentEnd >= 1 && numDaysBetweenBudgetEndDateAndCurrentEnd < 7)
+//                    {
+//                        if(currentEnd.isBefore(budgetEndDate)) {
+//                            currentEnd = currentEnd.plusDays(numDaysBetweenBudgetEndDateAndCurrentEnd - 1);
+//                            // Does the current fall on the start of the next month?]
+//                        }
+//                    }
+//                    LOGGER.info("Number of Days in Partial Week: " + numDaysBetweenBudgetEndDateAndCurrentEnd);
+//                    // If the current end is at the last week and its a partial week that's less than 7 days and greater than 1 day
+//                    // Then reset the current end to add the difference between the budget end date and the current end date
+//
+//
+//                    LOGGER.info("Current End: " + currentEnd);
+//                    LocalDate finalCurrentStart = currentStart;
+//                    LocalDate finalCurrentEnd = currentEnd;
+//                    List<Transaction> weeklyTransactions = transactionsByCategory.stream()
+//                                    .filter(transaction -> !transaction.posted().isBefore(finalCurrentStart) && !transaction.posted().isAfter(finalCurrentEnd))
+//                                            .toList();
+//
+//                    LOGGER.info("Weekly Transactions: " + weeklyTransactions);
+//
+//                    if (!weeklyTransactions.isEmpty())
+//                    {
+//                        LOGGER.info("Weekly StartDate: " + currentStart);
+//                        LOGGER.info("Weekly EndDate: " + currentEnd);
+//                        DateRange weeklyDateRange = new DateRange(currentStart, currentEnd);
+//                        categoryPeriods.computeIfAbsent(categoryName, k -> new ArrayList<>()).add(weeklyDateRange);
+//                        LOGGER.info("Weekly DateRange: Start = {}, End = {}", weeklyDateRange.getStartDate(), weeklyDateRange.getEndDate());
+//                    }
+//                    // Move to the next week
+//                    currentStart = currentStart.plusWeeks(1);
+//                }
+//
+//                break;
+//            case MONTHLY:
+//
+//                break;
+//            default:
+//                throw new IllegalDateException("Illegal Date Found: " + period);
+//        }
 
         LOGGER.info("Transactions Filtered By Category: {}: {}", categoryName, transactionsByCategory);
 
         LOGGER.info("Category Periods: " + categoryPeriods);
         return categoryPeriods;
+    }
+
+    private List<Transaction> filterTransactionsByDate(LocalDate startDate, LocalDate endDate, List<Transaction> transactions)
+    {
+        return transactions.stream()
+                .filter(transaction -> !transaction.posted().isBefore(startDate) && !transaction.posted().isAfter(endDate))
+                .toList();
     }
 
     private List<DateRange> buildDateRanges(final LocalDate budgetStart, final LocalDate budgetEnd, final Period period, final List<Transaction> filteredTransactions){
@@ -212,24 +211,82 @@ public class BudgetCategoryBuilder
         LOGGER.info("Budget StartDate: " + budgetStart);
         LOGGER.info("Budget EndDate: " + budgetEnd);
 
-        while(!currentStart.isAfter(budgetEnd))
+        if(period == Period.MONTHLY)
         {
-            LocalDate currentEnd = incrementCurrentStartByPeriod(currentStart, period);
-            if(currentEnd.isAfter(budgetStart)){
-                break;
-            }
-
-            DateRange partialWeekRange = new DateRange(currentStart, budgetEnd);
-            long numDaysBetweenBudgetEndDateAndCurrentEnd = partialWeekRange.getDaysInRange();
-            if(currentEnd.isBefore(budgetEnd))
+            while(!currentStart.isBefore(budgetEnd))
             {
+                LOGGER.info("Entering Monthly While Loop");
+                LocalDate currentEnd = currentStart.plusDays(1);
+                if(currentEnd.isAfter(budgetEnd))
+                {
+                    break;
+                }
+
+                LocalDate finalStart = currentStart;
+                List<Transaction> transactions = filterTransactionsByDate(finalStart, currentEnd, filteredTransactions);
+                if(!transactions.isEmpty())
+                {
+                    DateRange dateRange = new DateRange(currentStart,currentEnd);
+                    dateRanges.add(dateRange);
+                    LOGGER.info("Weekly DateRange: Start = {}, End = {}", dateRange.getStartDate(), dateRange.getEndDate());
+                }
+                currentStart = currentStart.plusDays(1);
+            }
+        }
+        else
+        {
+            while(!currentStart.isAfter(budgetEnd))
+            {
+                LOGGER.info("Entering while loop");
+                LocalDate currentEnd = incrementCurrentStartByPeriod(currentStart, period);
+                LOGGER.info("Current End: " + currentEnd);
+                if(currentEnd.isAfter(budgetEnd)){
+                    break;
+                }
+
+                DateRange partialWeekRange = new DateRange(currentEnd, budgetEnd);
+                long numDaysBetweenBudgetEndDateAndCurrentEnd = partialWeekRange.getDaysInRange();
+                LOGGER.info("Number of Days between end date and budget end date: " + numDaysBetweenBudgetEndDateAndCurrentEnd);
                 if (numDaysBetweenBudgetEndDateAndCurrentEnd >= 1 && numDaysBetweenBudgetEndDateAndCurrentEnd < 7)
                 {
-                    currentEnd = currentEnd.plusDays(numDaysBetweenBudgetEndDateAndCurrentEnd - 1);
+                    if(currentEnd.isBefore(budgetEnd))
+                    {
+                        currentEnd = currentEnd.plusDays(numDaysBetweenBudgetEndDateAndCurrentEnd - 1);
+                    }
                 }
+                LocalDate finalCurrentStart = currentStart;
+                LocalDate finalCurrentEnd = currentEnd;
+                List<Transaction> filteredTransactionsByDate = filterTransactionsByDate(finalCurrentStart, finalCurrentEnd, filteredTransactions);
+                if(!filteredTransactionsByDate.isEmpty())
+                {
+                    LOGGER.info("Weekly StartDate: " + currentStart);
+                    LOGGER.info("Weekly EndDate: " + currentEnd);
+                    DateRange weeklyDateRange = new DateRange(currentStart, currentEnd);
+                    dateRanges.add(weeklyDateRange);
+                    LOGGER.info("Weekly DateRange: Start = {}, End = {}", weeklyDateRange.getStartDate(), weeklyDateRange.getEndDate());
+                }
+                currentStart = incrementCurrentStart(currentStart, period);
             }
-
         }
+
+
+        return dateRanges;
+    }
+
+    private LocalDate incrementCurrentStart(LocalDate currentStart, Period period)
+    {
+        switch(period){
+            case BIWEEKLY -> {
+                return currentStart.plusWeeks(2);
+            }
+            case MONTHLY -> {
+                return currentStart.plusMonths(1);
+            }
+            case WEEKLY -> {
+                return currentStart.plusWeeks(1);
+            }
+        }
+        return null;
     }
 
     private LocalDate incrementCurrentStartByPeriod(LocalDate currentStart, Period period)

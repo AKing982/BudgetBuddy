@@ -109,9 +109,10 @@ class BudgetCategoryBuilderTest {
 //                new DateRange(LocalDate.of(2024, 9, 29), LocalDate.of(2024, 9, 30)) // Partial week if only days 29-30 have transactions
         );
 
+        Map<String, List<DateRange>> expected = new HashMap<>();
+        expected.put(categoryName, expectedWeeklyRanges);
+
         List<DateRange> dateRanges = result.get(categoryName);
-        System.out.println(dateRanges.get(0).getStartDate());
-        System.out.println(dateRanges.get(0).getEndDate());
         assertEquals(expectedWeeklyRanges.size(), dateRanges.size(), "Should have a DateRange for each weekly period");
 
         // Iterate over the expected weekly ranges and compare each with the actual results
@@ -164,12 +165,19 @@ class BudgetCategoryBuilderTest {
 
         // Expected biweekly date ranges for September 2024
         List<DateRange> expectedBiweeklyRanges = List.of(
-                new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 14)),
+                new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 15)),
                 new DateRange(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 30))
         );
 
+        Map<String, List<DateRange>> expected = new HashMap<>();
+        expected.put(categoryName, expectedBiweeklyRanges);
+
         List<DateRange> dateRanges = result.get(categoryName);
         assertEquals(expectedBiweeklyRanges.size(), dateRanges.size(), "Should have a DateRange for each biweekly period");
+
+        assertEquals(expected.get(categoryName), result.get(categoryName));
+        assertEquals(expected.get(categoryName).get(0), result.get(categoryName).get(0));
+        assertEquals(expected.get(categoryName).get(1), result.get(categoryName).get(1));
 
         // Iterate over the expected biweekly ranges and compare each with the actual results
         for (int i = 0; i < expectedBiweeklyRanges.size(); i++) {
@@ -195,6 +203,57 @@ class BudgetCategoryBuilderTest {
         ));
     }
 
+    @ParameterizedTest
+    @MethodSource("provideMonthlyTransactions")
+    @DisplayName("Test createCategoryPeriod with a month of transactions for the Groceries category (Monthly Period)")
+    void testCreateCategoryPeriodWithMonthlyGroceriesCategory(List<Transaction> transactions) {
+        String categoryName = "Groceries";
+
+        final LocalDate BUDGET_START_DATE = LocalDate.of(2024, 9, 1);
+        final LocalDate BUDGET_END_DATE = LocalDate.of(2024, 9, 30);
+
+        // Call the method under test with Period.MONTHLY
+        Map<String, List<DateRange>> result = budgetCategoryBuilder.createCategoryPeriods(
+                categoryName, BUDGET_START_DATE, BUDGET_END_DATE, Period.MONTHLY, transactions);
+
+
+        // Expected single DateRange for the entire month
+        List<DateRange> expectedMonthlyRange = List.of(
+                new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30))
+        );
+
+        Map<String, List<DateRange>> expected = new HashMap<>();
+        expected.put("Groceries", expectedMonthlyRange);
+
+        assertEquals(expected.get(categoryName), result.get(categoryName));
+        assertEquals(expected.get(categoryName).get(0), result.get(categoryName).get(0));
+
+        List<DateRange> dateRanges = result.get(categoryName);
+        assertEquals(expectedMonthlyRange.size(), dateRanges.size(), "Should have a single DateRange for the whole month");
+
+        // Compare the expected monthly range with the actual result
+        DateRange expectedRange = expectedMonthlyRange.get(0);
+        DateRange actualRange = dateRanges.get(0);
+
+        assertEquals(expectedRange.getStartDate(), actualRange.getStartDate(), "Start date for the monthly period should match");
+        assertEquals(expectedRange.getEndDate(), actualRange.getEndDate(), "End date for the monthly period should match");
+    }
+
+    private static Stream<List<Transaction>> provideMonthlyTransactions() {
+        return Stream.of(List.of(
+                // "Groceries" transactions throughout September
+                new Transaction("account-1", new BigDecimal("45.00"), "USD", List.of("Groceries"), "cat-groceries", LocalDate.of(2024, 9, 3), "Walmart Purchase", "Walmart", "Grocery Purchase", false, "txn-1", LocalDate.of(2024, 9, 3), "https://example.com/logo.png", LocalDate.of(2024, 9, 3)),
+                new Transaction("account-1", new BigDecimal("50.00"), "USD", List.of("Groceries"), "cat-groceries", LocalDate.of(2024, 9, 15), "Costco Purchase", "Costco", "Grocery Purchase", false, "txn-2", LocalDate.of(2024, 9, 15), "https://example.com/logo.png", LocalDate.of(2024, 9, 15)),
+                new Transaction("account-1", new BigDecimal("40.00"), "USD", List.of("Groceries"), "cat-groceries", LocalDate.of(2024, 9, 28), "Trader Joe's Purchase", "Trader Joe's", "Grocery Purchase", false, "txn-3", LocalDate.of(2024, 9, 28), "https://example.com/logo.png", LocalDate.of(2024, 9, 28)),
+
+                // Other category transactions throughout September
+                new Transaction("account-1", new BigDecimal("30.00"), "USD", List.of("Gas"), "cat-gas", LocalDate.of(2024, 9, 5), "Gas Station", "Shell", "Fuel Purchase", false, "txn-4", LocalDate.of(2024, 9, 5), "https://example.com/logo.png", LocalDate.of(2024, 9, 5)),
+                new Transaction("account-1", new BigDecimal("100.00"), "USD", List.of("Rent"), "cat-rent", LocalDate.of(2024, 9, 1), "Rent Payment", "Landlord", "Monthly Rent", false, "txn-5", LocalDate.of(2024, 9, 1), "https://example.com/logo.png", LocalDate.of(2024, 9, 1)),
+                new Transaction("account-1", new BigDecimal("75.00"), "USD", List.of("Utilities"), "cat-utilities", LocalDate.of(2024, 9, 17), "Electric Bill", "Electric Company", "Monthly Utility", false, "txn-6", LocalDate.of(2024, 9, 17), "https://example.com/logo.png", LocalDate.of(2024, 9, 17)),
+                new Transaction("account-1", new BigDecimal("25.00"), "USD", List.of("Dining"), "cat-dining", LocalDate.of(2024, 9, 20), "Restaurant", "Local Diner", "Dinner Out", false, "txn-7", LocalDate.of(2024, 9, 20), "https://example.com/logo.png", LocalDate.of(2024, 9, 20)),
+                new Transaction("account-1", new BigDecimal("60.00"), "USD", List.of("Subscriptions"), "cat-subscriptions", LocalDate.of(2024, 9, 10), "Netflix Subscription", "Netflix", "Monthly Subscription", false, "txn-8", LocalDate.of(2024, 9, 10), "https://example.com/logo.png", LocalDate.of(2024, 9, 10))
+        ));
+    }
 
 
     @Test
