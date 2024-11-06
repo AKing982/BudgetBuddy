@@ -28,5 +28,5 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long>
     Optional<CategoryEntity> findByDescriptionOrCategoryName(@Param("descr") String descr, @Param("name") String name);
 
     @Query("SELECT DISTINCT c.id FROM CategoryEntity c WHERE c.name =:name")
-    String findCategoryIdByName(@Param("name") String name);
+    List<String> findCategoryIdByName(@Param("name") String name);
 }

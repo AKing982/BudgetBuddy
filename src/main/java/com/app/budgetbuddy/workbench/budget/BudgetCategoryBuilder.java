@@ -52,11 +52,12 @@ public class BudgetCategoryBuilder
         return false;
     }
 
-    private String fetchCategoryIdByName(String categoryName)
+    public List<String> fetchCategoryIdByName(String categoryName)
     {
+        List<String> categoryList = new ArrayList<>();
         if(categoryName.isEmpty())
         {
-            return "";
+            return categoryList;
         }
         return categoryService.getCategoryIdByName(categoryName);
     }
@@ -102,7 +103,8 @@ public class BudgetCategoryBuilder
         for (String category : categories)
         {
             BigDecimal categorySpending = BigDecimal.ZERO;
-            String categoryId = fetchCategoryIdByName(category); // Reset for each category
+            List<String> categoryList = fetchCategoryIdByName(category);
+            String categoryId = categoryList.get(0);// Reset for each category
             for (Transaction transaction : transactions)
             {
                 if (transaction.categories() != null && transaction.categories().contains(category))

@@ -66,7 +66,7 @@ public class CategoryServiceImpl implements CategoryService
     }
 
     @Override
-    public String getCategoryIdByName(String categoryName) {
+    public List<String> getCategoryIdByName(String categoryName) {
         return categoryRepository.findCategoryIdByName(categoryName);
     }
 

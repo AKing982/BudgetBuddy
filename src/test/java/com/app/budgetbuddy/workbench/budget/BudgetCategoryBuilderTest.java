@@ -29,10 +29,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BudgetCategoryBuilderTest {
@@ -327,8 +325,9 @@ class BudgetCategoryBuilderTest {
 
         // Expected outputs for mocked methods
         List<CategorySpending> mockCategorySpendingList = new ArrayList<>();
-        mockCategorySpendingList.add(new CategorySpending("Groceries", new BigDecimal("200")));
-        mockCategorySpendingList.add(new CategorySpending("Gas", new BigDecimal("50")));
+        mockCategorySpendingList.add(new CategorySpending("cat-001","Groceries", new BigDecimal("200")));
+        mockCategorySpendingList.add(new CategorySpending("cat-002","Gas", new BigDecimal("50")));
+        mockCategorySpendingList.add(new CategorySpending("cat-003","Payments", new BigDecimal("100")));
 
         BigDecimal mockTotalSpending = new BigDecimal("250");
 
@@ -337,15 +336,13 @@ class BudgetCategoryBuilderTest {
         mockCategoryToBudgetMap.put("Gas", new BigDecimal("100"));
 
         // Mocking the methods
-        List<String> categories = List.of("Groceries", "Gas", "Payment");
+        List<String> categories = List.of("Groceries", "Gas", "Payments");
 
-        when(categoryService.getCategoryIdByName("Groceries")).thenReturn("cat-groceries");
-        when(categoryService.getCategoryIdByName("Gas")).thenReturn("cat-gas");
-        when(categoryService.getCategoryIdByName("Payment")).thenReturn("cat-payment");
+        when(categoryService.getCategoryIdByName(anyString())).thenReturn(List.of("cat-001"));
+        when(categoryService.getCategoryIdByName(anyString())).thenReturn(List.of("cat-002"));
+        when(categoryService.getCategoryIdByName(anyString())).thenReturn(List.of("cat-003"));
 
-        when(budgetCategoryBuilder.createCategorySpendingList(categories, transactions)).thenReturn(mockCategorySpendingList);
-        when(budgetCategoryBuilder.getSpendingOnAllCategories(mockCategorySpendingList)).thenReturn(mockTotalSpending);
-        when(budgetCalculator.createCategoryToBudgetMap(anyList(), any(Budget.class), any(BigDecimal.class), any(BudgetPeriod.class)))
+        lenient().when(budgetCalculator.createCategoryToBudgetMap(mockCategorySpendingList, budget, new BigDecimal("1609"), budgetPeriod))
                 .thenReturn(mockCategoryToBudgetMap);
 
         List<UserBudgetCategory> expectedBudgetCategories = new ArrayList<>();
@@ -406,13 +403,13 @@ class BudgetCategoryBuilderTest {
 
         List<CategorySpending> expectedCategorySpending = new ArrayList<>();
 
-        Mockito.when(categoryService.getCategoryIdByName("Groceries")).thenReturn("cat-001");
-        Mockito.when(categoryService.getCategoryIdByName("Gas")).thenReturn("cat-002");
-        Mockito.when(categoryService.getCategoryIdByName("Payments")).thenReturn("cat-003");
+        Mockito.when(categoryService.getCategoryIdByName("Payments")).thenReturn(List.of("cat-005"));
+        Mockito.when(categoryService.getCategoryIdByName("Gas")).thenReturn(List.of("cat-003"));
+        Mockito.when(categoryService.getCategoryIdByName("Groceries")).thenReturn(List.of("cat-001"));
 
         expectedCategorySpending.add(new CategorySpending("cat-001","Groceries", new BigDecimal("50.75")));
-        expectedCategorySpending.add(new CategorySpending("cat-002", "Gas", new BigDecimal("50.75")));
-        expectedCategorySpending.add(new CategorySpending("cat-003","Payments", new BigDecimal("50.75")));
+        expectedCategorySpending.add(new CategorySpending("cat-003", "Gas", new BigDecimal("50.75")));
+        expectedCategorySpending.add(new CategorySpending("cat-005","Payments", new BigDecimal("50.75")));
 
         List<CategorySpending> actual = budgetCategoryBuilder.createCategorySpendingList(categories, transactions);
         for(int i = 0; i < expectedCategorySpending.size(); i++)
@@ -468,8 +465,8 @@ class BudgetCategoryBuilderTest {
                 "account-12345",               // accountId
                 new BigDecimal("50.75"),       // amount
                 "USD",                         // isoCurrencyCode
-                List.of("Payments", "Subscriptions"),  // categories
-                "cat-001",                     // categoryId
+                List.of("Payments"),  // categories
+                "cat-005",                     // categoryId
                 LocalDate.of(2024, 11, 5),     // date
                 "Affirm Purchase",            // description
                 "Affirm",                     // merchantName
@@ -487,7 +484,7 @@ class BudgetCategoryBuilderTest {
                 "account-12345",               // accountId
                 new BigDecimal("50.75"),       // amount
                 "USD",                         // isoCurrencyCode
-                List.of("Groceries", "Food"),  // categories
+                List.of("Groceries"),  // categories
                 "cat-001",                     // categoryId
                 LocalDate.of(2024, 11, 1),     // date
                 "Walmart Purchase",            // description
@@ -506,7 +503,7 @@ class BudgetCategoryBuilderTest {
                 "account-12345",               // accountId
                 new BigDecimal("50.75"),       // amount
                 "USD",                         // isoCurrencyCode
-                List.of("Groceries", "Food"),  // categories
+                List.of("Groceries"),  // categories
                 "cat-001",                     // categoryId
                 LocalDate.of(2024, 11, 5),     // date
                 "WINCO Purchase",            // description
@@ -525,8 +522,8 @@ class BudgetCategoryBuilderTest {
                 "account-12345",               // accountId
                 new BigDecimal("50.75"),       // amount
                 "USD",                         // isoCurrencyCode
-                List.of("Gas Stations", "Gas"),  // categories
-                "cat-001",                     // categoryId
+                List.of("Gas"),  // categories
+                "cat-003",                     // categoryId
                 LocalDate.of(2024, 11, 4),     // date
                 "PIN Purchase - MAVERICK",            // description
                 "MAVERICK",                     // merchantName
