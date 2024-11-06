@@ -8,6 +8,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
+@ToString
 public class UserBudgetCategory
 {
     private Long id;

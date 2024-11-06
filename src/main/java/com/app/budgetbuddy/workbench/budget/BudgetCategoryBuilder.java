@@ -115,6 +115,7 @@ public class BudgetCategoryBuilder
             // Add one CategorySpending object for each category
             categorySpendingList.add(new CategorySpending(categoryId, category, categorySpending));
         }
+        LOGGER.info("Category Spending: " + categorySpendingList);
         return categorySpendingList;
     }
 
@@ -155,36 +156,56 @@ public class BudgetCategoryBuilder
         List<CategorySpending> categorySpendingList = createCategorySpendingList(categories, transactions);
         BigDecimal totalSpendingOnAllCategories = getSpendingOnAllCategories(categorySpendingList);
         Map<String, BigDecimal> categoryToBudgetMap = budgetCalculator.createCategoryToBudgetMap(categorySpendingList, budget, totalSpendingOnAllCategories, budgetPeriod);
+        LOGGER.info("Category to Budget: " + categoryToBudgetMap);
+        LOGGER.info("Category Spending List: " + categorySpendingList);
+        LOGGER.info("Category Date Ranges: " + categoryDateRanges);
         return buildUserBudgetCategoryList(categoryToBudgetMap, categorySpendingList, categoryDateRanges, budget.getUserId());
     }
 
-    private List<UserBudgetCategory> buildUserBudgetCategoryList(final Map<String, BigDecimal> categoryBudget, final List<CategorySpending> categorySpendingList, final Map<String, List<DateRange>> categoryDateRanges, Long userId)
+    public List<UserBudgetCategory> buildUserBudgetCategoryList(final Map<String, BigDecimal> categoryBudget, final List<CategorySpending> categorySpendingList, final Map<String, List<DateRange>> categoryDateRanges, Long userId)
     {
         List<UserBudgetCategory> userBudgetCategories = new ArrayList<>();
+        if(categoryBudget.isEmpty() || categorySpendingList.isEmpty() || categoryDateRanges.isEmpty())
+        {
+            LOGGER.warn("Found empty category parameters: " + categoryBudget + ", " + categorySpendingList + ", " + categoryDateRanges);
+            return userBudgetCategories;
+        }
         for(CategorySpending categorySpending : categorySpendingList)
         {
+            LOGGER.info("Category Spending: " + categorySpending);
             for(String category : categoryBudget.keySet())
             {
+                LOGGER.info("Category: " + category);
                 if(categorySpending.getCategoryName().equals(category))
                 {
                     BigDecimal categoryBudgetAmount = categoryBudget.get(category);
+                    BigDecimal categoryBudgetActual = categorySpending.getActualSpending();
+                    LOGGER.info("Category Budget Amount: " + categoryBudgetAmount);
                     List<DateRange> dateRanges = categoryDateRanges.get(category);
+                    LOGGER.info("Date Ranges: " + dateRanges);
                     for(DateRange dateRange : dateRanges){
-                        UserBudgetCategory userBudgetCategory = new UserBudgetCategory();
-                        userBudgetCategory.setUserId(userId);
-                        userBudgetCategory.setBudgetedAmount(Double.valueOf(categoryBudgetAmount.toString()));
-                        userBudgetCategory.setIsActive(true);
-                        userBudgetCategory.setCategoryId(categorySpending.getCategoryId());
-                        userBudgetCategory.setStartDate(dateRange.getStartDate());
-                        userBudgetCategory.setEndDate(dateRange.getEndDate());
+                        UserBudgetCategory userBudgetCategory = createUserBudgetCategory(userId, Double.valueOf(categoryBudgetAmount.toString()), Double.valueOf(String.valueOf(categoryBudgetActual)),category, categorySpending.getCategoryId(), dateRange.getStartDate(), dateRange.getEndDate());
                         userBudgetCategories.add(userBudgetCategory);
                     }
                 }
             }
         }
+        LOGGER.info("User Budget Categories: " + userBudgetCategories);
         return userBudgetCategories;
     }
 
+    private UserBudgetCategory createUserBudgetCategory(Long userId, Double budgetedAmount, Double budgetActual, String category, String categoryId, LocalDate startDate, LocalDate endDate){
+        UserBudgetCategory userBudgetCategory = new UserBudgetCategory();
+        userBudgetCategory.setUserId(userId);
+        userBudgetCategory.setBudgetedAmount(Double.valueOf(budgetedAmount.toString()));
+        userBudgetCategory.setIsActive(true);
+        userBudgetCategory.setCategoryName(category);
+        userBudgetCategory.setBudgetActual(budgetActual);
+        userBudgetCategory.setCategoryId(categoryId);
+        userBudgetCategory.setStartDate(startDate);
+        userBudgetCategory.setEndDate(endDate);
+        return userBudgetCategory;
+    }
 
     public Category assignTransactionToCategoryByRule(CategoryRule categoryRule, Long userId)
     {
@@ -199,6 +220,8 @@ public class BudgetCategoryBuilder
     public Map<String, List<DateRange>> createCategoryPeriods(final String categoryName, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final Period period, final List<Transaction> transactions)
     {
         Map<String, List<DateRange>> categoryPeriods = new HashMap<>();
+        LOGGER.info("Budget StartDate: " + budgetStartDate);
+        LOGGER.info("Budget EndDate: " + budgetEndDate);
         if(budgetStartDate == null || budgetEndDate == null)
         {
             throw new IllegalArgumentException("budgetStartDate or budgetEndDate cannot be null");
