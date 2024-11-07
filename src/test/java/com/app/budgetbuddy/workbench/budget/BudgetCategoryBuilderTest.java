@@ -303,77 +303,6 @@ class BudgetCategoryBuilderTest {
     }
 
     @Test
-    void testInitializeUserBudgetCategories_DateRanges()
-    {
-        Budget budget = new Budget();
-        budget.setBudgetAmount(new BigDecimal("3070"));
-        budget.setBudgetName("Savings Plan");
-        budget.setActual(new BigDecimal("1609"));
-        budget.setStartDate(LocalDate.of(2024, 9, 1));
-        budget.setEndDate(LocalDate.of(2024, 9, 30));
-        budget.setUserId(1L);
-
-        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30));
-
-        List<Transaction> transactions = new ArrayList<>();
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 3), List.of("Groceries"), "cat-001", "PIN Purchase WINCO", "WINCO", "WINCO Purchase"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 8), List.of("Gas"), "cat-003", "PIN Purchase MAVERICK", "MAVERICK", "PIN Purchase MAVERICK"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 14), List.of("Groceries"), "cat-001", "PIN Purchase WALMART", "WALMART", "PIN Purchase WALMART"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 20), List.of("Payments"), "cat-005", "AFFIRM Purchase", "AFFIRM", "AFFIRM Purchase"));
-
-        // Expected outputs for mocked methods
-        List<CategorySpending> mockCategorySpendingList = new ArrayList<>();
-        mockCategorySpendingList.add(new CategorySpending("cat-001","Groceries", new BigDecimal("200")));
-        mockCategorySpendingList.add(new CategorySpending("cat-003","Gas", new BigDecimal("50")));
-        mockCategorySpendingList.add(new CategorySpending("cat-005","Payments", new BigDecimal("100")));
-
-        BigDecimal mockTotalSpending = new BigDecimal("250");
-
-        Map<String, BigDecimal> mockCategoryToBudgetMap = new HashMap<>();
-        mockCategoryToBudgetMap.put("Groceries", new BigDecimal("150"));
-        mockCategoryToBudgetMap.put("Gas", new BigDecimal("100"));
-        mockCategoryToBudgetMap.put("Payments", new BigDecimal("200"));
-
-        Map<String, List<DateRange>> categoryPeriods = new HashMap<>();
-        categoryPeriods.put("Groceries", List.of(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8))));
-        categoryPeriods.put("Gas", List.of(new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15))));
-        categoryPeriods.put("Payments", List.of(new DateRange(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22))));
-
-        // Mocking the methods
-        List<String> categories = List.of("Groceries", "Gas", "Payments");
-
-        when(categoryService.getCategoryIdByName("Groceries")).thenReturn(List.of("cat-001"));
-        when(categoryService.getCategoryIdByName("Gas")).thenReturn(List.of("cat-003"));
-        when(categoryService.getCategoryIdByName("Payments")).thenReturn(List.of("cat-005"));
-
-        doReturn(categoryPeriods).when(budgetCategoryBuilder)
-                .createCategoryPeriods(anyString(), any(LocalDate.class), any(LocalDate.class), any(Period.class), anyList());
-
-        when(budgetCalculator.createCategoryToBudgetMap(anyList(), any(Budget.class), any(BigDecimal.class), any(BudgetPeriod.class)))
-                .thenReturn(mockCategoryToBudgetMap);
-
-        List<UserBudgetCategory> expectedBudgetCategories = new ArrayList<>();
-        expectedBudgetCategories.add(createGasBudgetCategory(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 240.00, 150.00));
-        expectedBudgetCategories.add(createGroceriesCategory(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8)));
-        expectedBudgetCategories.add(createPaymentCategory(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8)));
-        expectedBudgetCategories.add(createGroceriesCategory(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15)));
-        expectedBudgetCategories.add(createGasBudgetCategory(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22), 240.00, 32.22));
-        expectedBudgetCategories.add(createPaymentCategory(LocalDate.of(2024, 9, 22), LocalDate.of(2024, 9, 29)));
-        expectedBudgetCategories.add(createGroceriesCategory(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22)));
-
-        List<UserBudgetCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
-
-        for(int i = 0; i < expectedBudgetCategories.size(); i++)
-        {
-            assertEquals(expectedBudgetCategories.get(i).getBudgetActual(), actual.get(i).getBudgetActual());
-            assertEquals(expectedBudgetCategories.get(i).getBudgetedAmount(), actual.get(i).getBudgetedAmount());
-            assertEquals(expectedBudgetCategories.get(i).getStartDate(), actual.get(i).getStartDate());
-            assertEquals(expectedBudgetCategories.get(i).getEndDate(), actual.get(i).getEndDate());
-            assertEquals(expectedBudgetCategories.get(i).getUserId(), actual.get(i).getUserId());
-        }
-    }
-
-    @Test
     void testInitializeUserBudgetCategories_SeptMockData_returnDateRanges()
     {
         Budget budget = new Budget();
@@ -387,32 +316,117 @@ class BudgetCategoryBuilderTest {
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30));
 
         List<Transaction> transactions = new ArrayList<>();
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 1), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 3), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 4), List.of("Gas Stations"), "22009000", "PIN Purchase MAVERICK", "MAVERICK", "MAVERICK"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 5), List.of("Subscription"), "18061000", "AFFIRM Purchase", "AFFIRM", "AFFIRM"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 8), List.of("Subscription"), "18061000", "AFFIRM Purchase", "AFFIRM", "AFFIRM"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 15), List.of("Subscription"), "18061000", "Spotify", "Spotify", "Spotify"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 15), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 15), List.of("Supermarkets and Groceries"), "19047000", "Pin Purchase HARMONS", "HARMONS", "HARMONS"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 20), List.of("Gas Stations"), "22009000", "PIN Purchase MAVERICK", "MAVERICK", "MAVERICK"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 25), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 27), List.of("Subscription"), "18061000", "AFFIRM Purchase", "AFFIRM", "AFFIRM"));
-        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 30), List.of("Gas Stations"), "22009000", "PIN Purchase MAVERICK", "MAVERICK", "MAVERICK"));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 1), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO", new BigDecimal("35.23")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 3), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO", new BigDecimal("35.23")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 4), List.of("Gas Stations"), "22009000", "PIN Purchase MAVERICK", "MAVERICK", "MAVERICK", new BigDecimal("31.55")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 5), List.of("Subscription"), "18061000", "AFFIRM Purchase", "AFFIRM", "AFFIRM", new BigDecimal("19.23")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 8), List.of("Subscription"), "18061000", "AFFIRM Purchase", "AFFIRM", "AFFIRM", new BigDecimal("10.00")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 15), List.of("Subscription"), "18061000", "Spotify", "Spotify", "Spotify", new BigDecimal("12.57")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 15), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO", new BigDecimal("16.23")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 15), List.of("Supermarkets and Groceries"), "19047000", "Pin Purchase HARMONS", "HARMONS", "HARMONS", new BigDecimal("7.89")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 20), List.of("Gas Stations"), "22009000", "PIN Purchase MAVERICK", "MAVERICK", "MAVERICK", new BigDecimal("35.23")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 25), List.of("Supermarkets and Groceries"), "19047000", "PIN Purchase WINCO", "WINCO", "WINCO", new BigDecimal("17.89")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 27), List.of("Subscription"), "18061000", "AFFIRM Purchase", "AFFIRM", "AFFIRM", new BigDecimal("31.00")));
+        transactions.add(createTransactionExample(LocalDate.of(2024, 9, 30), List.of("Gas Stations"), "22009000", "PIN Purchase MAVERICK", "MAVERICK", "MAVERICK", new BigDecimal("24.56")));
 
         List<CategorySpending> mockCategorySpendingList = new ArrayList<>();
-        mockCategorySpendingList.add(new CategorySpending("19047000", "Groceries", new BigDecimal("176.24")));
-        mockCategorySpendingList.add(new CategorySpending("19047000", "Gas", new BigDecimal("93")));
-        mockCategorySpendingList.add(new CategorySpending("18061000", "Subscription", new BigDecimal("81")));
+        mockCategorySpendingList.add(new CategorySpending("19047000", "Supermarkets and Groceries", new BigDecimal("112.47")));
+        mockCategorySpendingList.add(new CategorySpending("19047000", "Gas Stations", new BigDecimal("91.34")));
+        mockCategorySpendingList.add(new CategorySpending("18061000", "Subscription", new BigDecimal("72.8")));
 
         Map<String, BigDecimal> mockCategoryToBudgetMap = new HashMap<>();
-        mockCategoryToBudgetMap.put("Groceries", new BigDecimal("112.5"));
-        mockCategoryToBudgetMap.put("Gas", new BigDecimal(""));
-        mockCategoryToBudgetMap.put("Payments", new BigDecimal("200"));
+        mockCategoryToBudgetMap.put("Supermarkets and Groceries", new BigDecimal("200"));
+        mockCategoryToBudgetMap.put("Gas Stations", new BigDecimal("100"));
+        mockCategoryToBudgetMap.put("Subscription", new BigDecimal("120"));
+
+        Map<String, List<DateRange>> categoryPeriods = new HashMap<>();
+        categoryPeriods.put("Supermarkets and Groceries", List.of(
+                new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8)),   // Covers transactions on Sept 1, 3
+                new DateRange(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22)), // Covers transactions on Sept 15
+                new DateRange(LocalDate.of(2024, 9, 25), LocalDate.of(2024, 9, 27))  // Covers transaction on Sept 25
+        ));
+
+        categoryPeriods.put("Gas Stations", List.of(
+                new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8)),   // Covers transaction on Sept 4
+                new DateRange(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 20)), // Covers transaction on Sept 20
+                new DateRange(LocalDate.of(2024, 9, 30), LocalDate.of(2024, 9, 30))  // Covers transaction on Sept 30
+        ));
+
+        categoryPeriods.put("Subscription", List.of(
+                new DateRange(LocalDate.of(2024, 9, 5), LocalDate.of(2024, 9, 8)),   // Covers transactions on Sept 5, 8
+                new DateRange(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 27))  // Covers transactions on Sept 15, 27
+        ));
+
+        when(categoryService.getCategoryIdByName("Supermarkets and Groceries")).thenReturn(List.of("19047000"));
+        when(categoryService.getCategoryIdByName("Gas Stations")).thenReturn(List.of("19047000"));
+        when(categoryService.getCategoryIdByName("Subscription")).thenReturn(List.of("18061000"));
+
+        doReturn(categoryPeriods).when(budgetCategoryBuilder)
+                .createCategoryPeriods(anyString(), any(LocalDate.class), any(LocalDate.class), any(Period.class), anyList());
+
+        when(budgetCalculator.createCategoryToBudgetMap(anyList(), any(Budget.class), any(BigDecimal.class), any(BudgetPeriod.class)))
+                .thenReturn(mockCategoryToBudgetMap);
 
 
+        List<UserBudgetCategory> expectedBudgetCategories = new ArrayList<>();
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "19047000", "Supermarkets and Groceries", 200.0, 112.47,
+                LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 1L
+        ));
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "19047000", "Supermarkets and Groceries", 200.0, 112.47,
+                LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22), 1L
+        ));
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "19047000", "Supermarkets and Groceries", 200.0, 112.47,
+                LocalDate.of(2024, 9, 25), LocalDate.of(2024, 9, 27), 1L
+        ));
 
+// Adding expected UserBudgetCategory entries for "Gas Stations"
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "22009000", "Gas Stations", 100.0, 91.34,
+                LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 1L
+        ));
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "22009000", "Gas Stations", 100.0, 91.34,
+                LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 20), 1L
+        ));
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "22009000", "Gas Stations", 100.0, 91.34,
+                LocalDate.of(2024, 9, 30), LocalDate.of(2024, 9, 30), 1L
+        ));
 
+// Adding expected UserBudgetCategory entries for "Subscription"
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "18061000", "Subscription", 120.0, 72.8,
+                LocalDate.of(2024, 9, 5), LocalDate.of(2024, 9, 8), 1L
+        ));
+        expectedBudgetCategories.add(createUserBudgetCategory(
+                "18061000", "Subscription", 120.0, 72.8,
+                LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 27), 1L
+        ));
+
+        List<UserBudgetCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
+        for(int i = 0; i < expectedBudgetCategories.size(); i++)
+        {
+            UserBudgetCategory expected = expectedBudgetCategories.get(i);
+            UserBudgetCategory actualCategory = actual.get(i);
+
+            // Log category information before the assertions
+            System.out.println("Comparing category: " + expected.getCategoryName());
+            System.out.println("Expected Budget Actual: " + expected.getBudgetActual() + ", Actual Budget Actual: " + actualCategory.getBudgetActual());
+            System.out.println("Expected Budgeted Amount: " + expected.getBudgetedAmount() + ", Actual Budgeted Amount: " + actualCategory.getBudgetedAmount());
+            System.out.println("Expected Start Date: " + expected.getStartDate() + ", Actual Start Date: " + actualCategory.getStartDate());
+            System.out.println("Expected End Date: " + expected.getEndDate() + ", Actual End Date: " + actualCategory.getEndDate());
+            System.out.println("Expected User ID: " + expected.getUserId() + ", Actual User ID: " + actualCategory.getUserId());
+
+            // Perform assertions
+            assertEquals(expected.getBudgetActual(), actualCategory.getBudgetActual(), "Budget actual does not match for category: " + expected.getCategoryName());
+            assertEquals(expected.getBudgetedAmount(), actualCategory.getBudgetedAmount(), "Budgeted amount does not match for category: " + expected.getCategoryName());
+            assertEquals(expected.getStartDate(), actualCategory.getStartDate(), "Start date does not match for category: " + expected.getCategoryName());
+            assertEquals(expected.getEndDate(), actualCategory.getEndDate(), "End date does not match for category: " + expected.getCategoryName());
+            assertEquals(expected.getUserId(), actualCategory.getUserId(), "User ID does not match for category: " + expected.getCategoryName());
+        }
 
     }
 
@@ -549,6 +563,19 @@ class BudgetCategoryBuilderTest {
         }
     }
 
+    private UserBudgetCategory createUserBudgetCategory(String categoryId, String categoryName, Double budgetedAmount, Double actualAmount, LocalDate startDate, LocalDate endDate, Long userId) {
+        UserBudgetCategory category = new UserBudgetCategory();
+        category.setCategoryId(categoryId);
+        category.setCategoryName(categoryName);
+        category.setBudgetedAmount(budgetedAmount);
+        category.setBudgetActual(actualAmount);
+        category.setStartDate(startDate);
+        category.setEndDate(endDate);
+        category.setUserId(userId);
+        category.setIsActive(true); // Assuming all categories are active for this test
+        return category;
+    }
+
     private UserBudgetCategory createGasBudgetCategory(LocalDate startDate, LocalDate endDate, Double actual, Double budgetAmount)
     {
         UserBudgetCategory gasBudgetCategory = new UserBudgetCategory();
@@ -610,10 +637,10 @@ class BudgetCategoryBuilderTest {
         );
     }
 
-    private Transaction createTransactionExample(LocalDate posted, List<String> categories, String categoryId, String description, String merchant, String name){
+    private Transaction createTransactionExample(LocalDate posted, List<String> categories, String categoryId, String description, String merchant, String name, BigDecimal amount){
         return new Transaction(
                 "account-12345",
-                new BigDecimal("120.00"),
+                amount,
                 "USD",
                 categories,
                 categoryId,

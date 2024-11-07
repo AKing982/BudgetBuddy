@@ -47,6 +47,13 @@ public class BudgetCategoryBuilder
         return null;
     }
 
+    public List<UserBudgetCategoryEntity> convertUserBudgetCategories(List<UserBudgetCategory> userBudgetCategories)
+    {
+        return null;
+    }
+
+
+
     public boolean storeCategoriesInDatabase(Set<UserBudgetCategoryEntity> userBudgetCategories)
     {
         return false;
