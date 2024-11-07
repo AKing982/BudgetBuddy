@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.TransactionRepository;
+import com.app.budgetbuddy.workbench.converter.TransactionEntityToModelConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionToEntityConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,13 +20,16 @@ public class TransactionServiceImpl implements TransactionService
 {
     private final TransactionRepository transactionRepository;
     private final TransactionToEntityConverter transactionToEntityConverter;
+    private final TransactionEntityToModelConverter transactionEntityToModelConverter;
     private final Logger LOGGER = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
     @Autowired
     public TransactionServiceImpl(TransactionRepository transactionRepository,
-                                  TransactionToEntityConverter transactionToEntityConverter){
+                                  TransactionToEntityConverter transactionToEntityConverter,
+                                  TransactionEntityToModelConverter transactionEntityToModelConverter){
         this.transactionRepository = transactionRepository;
         this.transactionToEntityConverter = transactionToEntityConverter;
+        this.transactionEntityToModelConverter = transactionEntityToModelConverter;
     }
 
     @Override
@@ -191,6 +195,32 @@ public class TransactionServiceImpl implements TransactionService
     public Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName) {
         return List.of();
     }
+
+    @Override
+    public List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate) {
+        try
+        {
+            List<TransactionsEntity> transactions = transactionRepository.findTransactionsByUserIdAndDateRange(userId, startDate, endDate);
+            if(transactions.isEmpty()){
+                LOGGER.warn("No Transactions found for userId: " + userId + " for startDate: " + startDate + " and endDate: " + endDate);
+                return List.of();
+            }
+            return convertedTransactions(transactions);
+        }catch(Exception e){
+            LOGGER.error("There was an error fetching transactions from the database: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<Transaction> convertedTransactions(List<TransactionsEntity> transactions) {
+        List<Transaction> convertedTransactions = new ArrayList<>();
+        for(TransactionsEntity transaction : transactions){
+            Transaction transaction1 = transactionEntityToModelConverter.convert(transaction);
+            convertedTransactions.add(transaction1);
+        }
+        return convertedTransactions;
+    }
+
 
     private void validateTransactionAmount(BigDecimal amount) {
         if(amount.compareTo(BigDecimal.ZERO) == 0){

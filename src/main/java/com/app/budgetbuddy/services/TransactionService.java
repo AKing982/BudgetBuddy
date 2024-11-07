@@ -29,4 +29,6 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     List<TransactionsEntity> getTransactionsByDescription(String description);
     Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId);
     Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName);
+
+    List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate);
 }
