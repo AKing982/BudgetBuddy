@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.Budget;
 import com.app.budgetbuddy.domain.BudgetCreateRequest;
 import com.app.budgetbuddy.entities.BudgetEntity;
 
@@ -18,5 +19,6 @@ public interface BudgetService extends ServiceModel<BudgetEntity>
     BigDecimal calculateRemainingBudget(Long budgetId);
 
     Optional<BudgetEntity> updateBudget(Long id, BudgetCreateRequest updateRequest);
+
 
 }
