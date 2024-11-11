@@ -197,6 +197,11 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public Double getTransactionFrequency(String transactionId) {
+        return 0.0;
+    }
+
+    @Override
     public List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate) {
         try
         {

@@ -5,8 +5,11 @@ import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
+import com.app.budgetbuddy.workbench.categories.CategoryRulePrioritizer;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleService;
 import com.app.budgetbuddy.workbench.converter.UserBudgetCategoryConverter;
 import org.slf4j.Logger;
@@ -22,29 +25,74 @@ import java.util.*;
 public class BudgetCategoryBuilder
 {
     private UserBudgetCategoryService userBudgetCategoryService;
-    private CategoryRuleService categoryRuleService;
     private CategoryService categoryService;
     private BudgetCalculator budgetCalculator;
+    private CategoryRuleEngine categoryRuleEngine;
     private UserBudgetCategoryConverter userBudgetCategoryConverter;
     private Logger LOGGER = LoggerFactory.getLogger(BudgetCategoryBuilder.class);
 
     @Autowired
     public BudgetCategoryBuilder(UserBudgetCategoryService userBudgetCategoryService,
-                                 CategoryRuleService categoryRuleService,
                                  CategoryService categoryService,
                                  BudgetCalculator budgetCalculator,
+                                 CategoryRuleEngine categoryRuleEngine,
                                  UserBudgetCategoryConverter userBudgetCategoryConverter)
     {
         this.userBudgetCategoryService = userBudgetCategoryService;
-        this.categoryRuleService = categoryRuleService;
         this.categoryService = categoryService;
         this.budgetCalculator = budgetCalculator;
         this.userBudgetCategoryConverter = userBudgetCategoryConverter;
+        this.categoryRuleEngine = categoryRuleEngine;
     }
 
-    public Category updateCategoryOnNewTransaction(Transaction transaction)
+    public UserBudgetCategory updateCategoryOnNewTransaction(final Transaction transaction, final UserBudgetCategory existingUserBudgetCategory)
     {
-        return null;
+        List<String> transactionCategories = transaction.categories();
+        String categoryId = transaction.categoryId();
+        // Match the transaction against a particular category Rule using the categoryRuleEngine?
+
+        for(String transactionCategory : transactionCategories)
+        {
+            CategoryEntity category = getCategoryById(categoryId);
+            if(category != null)
+            {
+                String categoryName = category.getName();
+                // If the category name matches the category name in the transaction
+                if(categoryName.equals(transactionCategory))
+                {
+                    // Get the transaction amount
+                    BigDecimal transactionAmount = transaction.amount();
+                    if(transactionAmount == null)
+                    {
+                        throw new IllegalArgumentException("Transaction amount cannot be null");
+                    }
+
+                    // Update the actual spending amount
+                    Double newActualAmount = existingUserBudgetCategory.getBudgetActual() + transactionAmount.doubleValue();
+
+                    // Before setting the budget actual amount
+                    // Does the new Budget actual spending stay within the budget actual spending range?
+                    if(newActualAmount >= existingUserBudgetCategory.getBudgetedAmount())
+                    {
+                        setUserBudgetCategoryOverSpendingAmount(newActualAmount, existingUserBudgetCategory);
+                        setUserBudgetCategoryBudgetActual(newActualAmount, existingUserBudgetCategory);
+                    }
+                    setUserBudgetCategoryBudgetActual(newActualAmount, existingUserBudgetCategory);
+                }
+            }
+        }
+        return existingUserBudgetCategory;
+    }
+
+    private void setUserBudgetCategoryOverSpendingAmount(Double overSpendingAmount, UserBudgetCategory existingUserBudgetCategory)
+    {
+        existingUserBudgetCategory.setOverSpendingAmount(overSpendingAmount);
+        existingUserBudgetCategory.setOverSpent(true);
+    }
+
+    private void setUserBudgetCategoryBudgetActual(Double actualAmount, UserBudgetCategory existingUserBudgetCategory)
+    {
+        existingUserBudgetCategory.setBudgetActual(actualAmount);
     }
 
     public List<UserBudgetCategoryEntity> convertUserBudgetCategories(List<UserBudgetCategory> userBudgetCategories)
@@ -52,11 +100,19 @@ public class BudgetCategoryBuilder
         return null;
     }
 
-
-
-    public boolean storeCategoriesInDatabase(Set<UserBudgetCategoryEntity> userBudgetCategories)
+    public boolean storeCategoriesInDatabase(Set<UserBudgetCategory> userBudgetCategories)
     {
         return false;
+    }
+
+    private CategoryEntity getCategoryById(String categoryId)
+    {
+        if(categoryId.isEmpty())
+        {
+            return null;
+        }
+        Optional<CategoryEntity> category = categoryService.findCategoryById(categoryId);
+        return category.orElseThrow(() -> new CategoryNotFoundException(categoryId));
     }
 
     public List<String> fetchCategoryIdByName(String categoryName)
@@ -214,14 +270,22 @@ public class BudgetCategoryBuilder
         return userBudgetCategory;
     }
 
-    public Category assignTransactionToCategoryByRule(CategoryRule categoryRule, Long userId)
+    public UserBudgetCategory assignTransactionToCategoryByRule(CategoryRule categoryRule, Transaction transaction)
     {
+
         return null;
     }
 
     public TransactionLink linkTransactionToCategory(Transaction transaction, Category category)
     {
-        return null;
+        //TODO: Implement full logic for linking and storing the link between the transaction and category
+        if(transaction == null || category == null)
+        {
+            throw new IllegalArgumentException("Transaction or Category cannot be null");
+        }
+
+
+        return new TransactionLink(category, transaction);
     }
 
     public Map<String, List<DateRange>> createCategoryPeriods(final String categoryName, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final Period period, final List<Transaction> transactions)

@@ -12,5 +12,7 @@ import java.util.Map;
 
 public interface CategoryRuleService extends ServiceModel<CategoryRuleEntity>
 {
+    CategoryRuleEntity create(CategoryRule categoryRule);
 
+    void createAll(List<CategoryRule> categoryRules);
 }

@@ -82,6 +82,8 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT SUM(t.amount) FROM TransactionsEntity t JOIN t.category c WHERE c =:category")
     BigDecimal getTotalSpendingByCategory(@Param("category") CategoryEntity category);
 
+    @Query("SELECT ")
+
     @Modifying
     @Query("UPDATE TransactionsEntity t SET t.category =:category WHERE t.id =:id")
     Optional<TransactionsEntity> updateTransactionCategory(@Param("category") CategoryEntity category, @Param("id") String transactionId);

@@ -515,6 +515,11 @@ public class BudgetCalculator {
         return userBudgetCategories;
     }
 
+    public BigDecimal calculateRemainingAmount(BigDecimal actualSpent, BigDecimal budgetedAmount)
+    {
+        return budgetedAmount.subtract(actualSpent);
+    }
+
     public BigDecimal calculateRemainingBudgetAmountForCategory(final Category category, final Budget budget){
         return null;
     }

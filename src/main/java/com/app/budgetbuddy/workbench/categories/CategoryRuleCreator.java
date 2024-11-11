@@ -4,53 +4,146 @@ import com.app.budgetbuddy.domain.CategoryRule;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionType;
+import com.app.budgetbuddy.entities.CategoryEntity;
+import com.app.budgetbuddy.entities.CategoryRuleEntity;
+import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
+import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.services.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class CategoryRuleCreator
-{
-
+public class CategoryRuleCreator {
     private Map<Transaction, CategoryRule> transactionCategoryRules = new ConcurrentHashMap<>();
     private Map<RecurringTransaction, CategoryRule> recurringCategoryRules = new ConcurrentHashMap<>();
+    private final TransactionService transactionService;
     private final CategoryRuleService categoryRuleService;
+    private final CategoryService categoryService;
 
     @Autowired
-    public CategoryRuleCreator(CategoryRuleService categoryRuleService)
-    {
+    public CategoryRuleCreator(CategoryRuleService categoryRuleService,
+                               TransactionService transactionService,
+                               CategoryService categoryService) {
         this.categoryRuleService = categoryRuleService;
+        this.transactionService = transactionService;
+        this.categoryService = categoryService;
+    }
+
+    public void saveCreatedCategoryRules(final List<CategoryRule> categoryRules) {
+        categoryRuleService.createAll(categoryRules);
     }
 
     public List<CategoryRule> createCategoryRuleListFromTransactions(List<Transaction> transactions) {
-        return null;
+        List<CategoryRule> categoryRules = new ArrayList<>();
+        for (Transaction transaction : transactions) {
+            CategoryRule rule = createCategoryRuleFromTransaction(transaction);
+            categoryRules.add(rule);
+            transactionCategoryRules.put(transaction, rule); // Cache the created rule for quick lookup
+        }
+        return categoryRules;
     }
 
     public List<CategoryRule> createCategoryRuleFromRecurringTransactions(List<RecurringTransaction> recurringTransactions) {
-        return null;
+        List<CategoryRule> categoryRules = new ArrayList<>();
+        for (RecurringTransaction recurringTransaction : recurringTransactions) {
+            List<CategoryRule> rules = createCategoryRulesFromRecurringTransaction(recurringTransaction);
+            categoryRules.addAll(rules);
+            rules.forEach(rule -> recurringCategoryRules.put(recurringTransaction, rule)); // Cache the rules
+        }
+        return categoryRules;
     }
 
+    private String getCategoryNameById(String categoryId){
+        if(categoryId.isEmpty() || categoryId == null){
+            return "";
+        }
+        CategoryEntity category = categoryService.findCategoryById(categoryId)
+                .orElseThrow(() -> new CategoryNotFoundException(categoryId));
+        return category.getName();
+    }
+
+    /**
+     * Creates one or more CategoryRules from a single recurring transaction.
+     */
     public List<CategoryRule> createCategoryRulesFromRecurringTransaction(RecurringTransaction recurringTransaction) {
-        return null;
+        List<CategoryRule> rules = new ArrayList<>();
+        String merchantPattern = recurringTransaction.getMerchantName() != null ? recurringTransaction.getMerchantName() : "";
+        String descriptionPattern = recurringTransaction.getDescription() != null ? recurringTransaction.getDescription() : "";
+        TransactionType transactionType = determineTransactionType(recurringTransaction);
+        boolean isRecurring = true; // Since it's a recurring transaction
+
+        String categoryName = getCategoryNameById(recurringTransaction.getCategoryId());
+
+        // Generate rules based on different categories the transaction might belong to
+        CategoryRule rule = new CategoryRule(
+                UUID.randomUUID().toString(),               // Generate a unique ID
+                categoryName,                               // Use category ID or description as the category name
+                merchantPattern,                            // Merchant pattern
+                descriptionPattern,                         // Description pattern
+                recurringTransaction.getFrequency(),        // Use transaction's frequency
+                transactionType,                            // Transaction type
+                isRecurring                                 // Mark as recurring
+        );
+
+        rules.add(rule); // Add the rule to the list
+        return rules;
     }
 
     public CategoryRule createCategoryRuleFromTransaction(Transaction transaction)
     {
-        return null;
+        // Generate a unique ID for the rule (could be null if ID is auto-generated by the database)
+        String categoryId = transaction.categoryId() != null ? transaction.categoryId() : UUID.randomUUID().toString();
+
+        // Use the transaction's first category if available, otherwise default to "Uncategorized"
+        String categoryName = (transaction.categories() != null && !transaction.categories().isEmpty())
+                ? transaction.categories().get(0)
+                : "Uncategorized";
+
+        // Extract merchant and description patterns from the transaction
+        String merchantPattern = transaction.merchantName() != null ? transaction.merchantName() : "";
+        String descriptionPattern = transaction.description() != null ? transaction.description() : "";
+
+        // Determine transaction type using helper method
+        TransactionType transactionType = determineTransactionType(transaction);
+
+        // Default frequency to "DAILY" if unspecified or if there's no recurring pattern
+        String frequency = "DAILY";
+
+        // Assume non-recurring unless otherwise specified or detectable
+        boolean isRecurring = false;
+
+        // Create and return the new CategoryRule
+        return new CategoryRule(
+                categoryId,
+                categoryName,
+                merchantPattern,
+                descriptionPattern,
+                frequency,
+                transactionType,
+                isRecurring
+        );
     }
 
     private TransactionType determineTransactionType(Transaction transaction)
     {
-        return null;
+        if (transaction.amount().compareTo(BigDecimal.ZERO) < 0) {
+            return TransactionType.DEBIT;
+        } else {
+            return TransactionType.CREDIT;
+        }
     }
 
     private TransactionType determineTransactionType(RecurringTransaction recurringTransaction)
     {
-        return null;
+        if (recurringTransaction.getAverageAmount().compareTo(BigDecimal.ZERO) < 0) {
+            return TransactionType.DEBIT;
+        } else {
+            return TransactionType.CREDIT;
+        }
     }
 
 

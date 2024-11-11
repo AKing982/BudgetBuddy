@@ -27,21 +27,41 @@ public class CategoryRuleServiceImpl implements CategoryRuleService
 
     @Override
     public Collection<CategoryRuleEntity> findAll() {
-        return List.of();
+        return categoryRuleRepository.findAll();
     }
 
     @Override
     public void save(CategoryRuleEntity categoryRuleEntity) {
-
+        categoryRuleRepository.save(categoryRuleEntity);
     }
 
     @Override
     public void delete(CategoryRuleEntity categoryRuleEntity) {
-
+        categoryRuleRepository.delete(categoryRuleEntity);
     }
 
     @Override
     public Optional<CategoryRuleEntity> findById(Long id) {
-        return Optional.empty();
+        return categoryRuleRepository.findById(id);
+    }
+
+    @Override
+    public CategoryRuleEntity create(CategoryRule categoryRule) {
+        CategoryRuleEntity categoryRuleEntity = new CategoryRuleEntity();
+        categoryRuleEntity.setMerchantPattern(categoryRule.getMerchantPattern());
+        categoryRuleEntity.setFrequency(categoryRule.getFrequency());
+        categoryRuleEntity.setPriority(1);
+        categoryRuleEntity.setRecurring(categoryRule.isRecurring());
+        categoryRuleEntity.setActive(true);
+        categoryRuleEntity.setDescriptionPattern(categoryRule.getDescriptionPattern());
+        return categoryRuleRepository.save(categoryRuleEntity);
+    }
+
+    @Override
+    public void createAll(List<CategoryRule> categoryRules) {
+        for(CategoryRule categoryRule : categoryRules)
+        {
+            create(categoryRule);
+        }
     }
 }

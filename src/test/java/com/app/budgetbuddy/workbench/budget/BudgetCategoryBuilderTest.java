@@ -563,6 +563,9 @@ class BudgetCategoryBuilderTest {
         }
     }
 
+    @Test
+    void
+
     private UserBudgetCategory createUserBudgetCategory(String categoryId, String categoryName, Double budgetedAmount, Double actualAmount, LocalDate startDate, LocalDate endDate, Long userId) {
         UserBudgetCategory category = new UserBudgetCategory();
         category.setCategoryId(categoryId);

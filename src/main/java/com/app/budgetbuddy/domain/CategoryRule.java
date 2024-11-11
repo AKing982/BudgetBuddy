@@ -13,12 +13,23 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class CategoryRule
 {
+    private String categoryId;
     private String categoryName;
     private String merchantPattern;
     private String descriptionPattern;
     private String frequency;
     private TransactionType transactionType;
     private boolean isRecurring;
+
+    public CategoryRule(String categoryId, String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring) {
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.merchantPattern = merchantPattern;
+        this.descriptionPattern = descriptionPattern;
+        this.frequency = frequency;
+        this.transactionType = transactionType;
+        this.isRecurring = isRecurring;
+    }
 
     public CategoryRule(String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring) {
         this.categoryName = categoryName;

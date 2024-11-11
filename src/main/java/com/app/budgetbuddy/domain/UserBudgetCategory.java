@@ -20,6 +20,8 @@ public class UserBudgetCategory
     private Boolean isActive;
     private LocalDate startDate;
     private LocalDate endDate;
+    private Double overSpendingAmount;
+    private boolean isOverSpent;
 
 
 }
