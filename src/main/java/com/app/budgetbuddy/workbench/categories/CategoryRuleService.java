@@ -15,4 +15,12 @@ public interface CategoryRuleService extends ServiceModel<CategoryRuleEntity>
     CategoryRuleEntity create(CategoryRule categoryRule);
 
     void createAll(List<CategoryRule> categoryRules);
+
+    List<CategoryRuleEntity> findByUserId(Long userId);
+
+    List<CategoryRule> getConvertedCategoryRules(List<CategoryRuleEntity> categoryRuleEntities);
+
+    CategoryRule createCategoryRuleFromEntity(CategoryRuleEntity categoryRuleEntity);
+
+    List<CategoryRuleEntity> findAllSystemCategoryRules();
 }

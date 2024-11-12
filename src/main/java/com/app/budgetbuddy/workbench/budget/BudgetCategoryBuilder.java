@@ -47,8 +47,8 @@ public class BudgetCategoryBuilder
 
     public UserBudgetCategory updateCategoryOnNewTransaction(final Transaction transaction, final UserBudgetCategory existingUserBudgetCategory)
     {
-        List<String> transactionCategories = transaction.categories();
-        String categoryId = transaction.categoryId();
+        List<String> transactionCategories = transaction.getCategories();
+        String categoryId = transaction.getCategoryId();
         // Match the transaction against a particular category Rule using the categoryRuleEngine?
 
         for(String transactionCategory : transactionCategories)
@@ -61,7 +61,7 @@ public class BudgetCategoryBuilder
                 if(categoryName.equals(transactionCategory))
                 {
                     // Get the transaction amount
-                    BigDecimal transactionAmount = transaction.amount();
+                    BigDecimal transactionAmount = transaction.getAmount();
                     if(transactionAmount == null)
                     {
                         throw new IllegalArgumentException("Transaction amount cannot be null");
@@ -150,8 +150,8 @@ public class BudgetCategoryBuilder
             return categoriesList;
         }
         return transactions.stream()
-                .filter(transaction -> transaction.categories() != null)
-                .flatMap(transaction -> transaction.categories().stream())
+                .filter(transaction -> transaction.getCategories() != null)
+                .flatMap(transaction -> transaction.getCategories().stream())
                 .distinct()  // Optional: remove duplicates if you want only unique categories
                 .toList();
     }
@@ -170,9 +170,9 @@ public class BudgetCategoryBuilder
             String categoryId = categoryList.get(0);// Reset for each category
             for (Transaction transaction : transactions)
             {
-                if (transaction.categories() != null && transaction.categories().contains(category))
+                if (transaction.getCategories() != null && transaction.getCategories().contains(category))
                 {
-                    categorySpending = categorySpending.add(transaction.amount());
+                    categorySpending = categorySpending.add(transaction.getAmount());
                 }
             }
             // Add one CategorySpending object for each category
@@ -303,8 +303,8 @@ public class BudgetCategoryBuilder
         }
 
         List<Transaction> transactionsByCategory = transactions.stream()
-                .filter(transaction -> transaction.categories() != null && transaction.categories().contains(categoryName))
-                .filter(transaction -> !transaction.posted().isBefore(budgetStartDate) && !transaction.posted().isAfter(budgetEndDate))
+                .filter(transaction -> transaction.getCategories() != null && transaction.getCategories().contains(categoryName))
+                .filter(transaction -> !transaction.getPosted().isBefore(budgetStartDate) && !transaction.getPosted().isAfter(budgetEndDate))
                 .toList();
 
         List<DateRange> dateRanges = buildDateRanges(budgetStartDate, budgetEndDate, period, transactionsByCategory);
@@ -319,7 +319,7 @@ public class BudgetCategoryBuilder
     private List<Transaction> filterTransactionsByDate(LocalDate startDate, LocalDate endDate, List<Transaction> transactions)
     {
         return transactions.stream()
-                .filter(transaction -> !transaction.posted().isBefore(startDate) && !transaction.posted().isAfter(endDate))
+                .filter(transaction -> !transaction.getPosted().isBefore(startDate) && !transaction.getPosted().isAfter(endDate))
                 .toList();
     }
 

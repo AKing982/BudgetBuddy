@@ -30,17 +30,17 @@ public class TransactionToEntityConverter implements Converter<Transaction, Tran
     @Override
     public TransactionsEntity convert(Transaction transaction) {
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setAccount(fetchAccountByAccountId(transaction.accountId()));
-        transactionsEntity.setId(transaction.transactionId());
-        transactionsEntity.setPending(transaction.pending());
-        transactionsEntity.setAmount(transaction.amount());
-        transactionsEntity.setDescription(transaction.description());
-        transactionsEntity.setPosted(transaction.posted());
-        transactionsEntity.setCategory(createNewCategory(transaction.categoryId(), transaction.categories()));
-        transactionsEntity.setLogoUrl(transaction.logoUrl());
-        transactionsEntity.setIsoCurrencyCode(transaction.isoCurrencyCode());
-        transactionsEntity.setMerchantName(transaction.merchantName());
-        transactionsEntity.setAuthorizedDate(transaction.authorizedDate());
+        transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
+        transactionsEntity.setId(transaction.getTransactionId());
+        transactionsEntity.setPending(transaction.getPending());
+        transactionsEntity.setAmount(transaction.getAmount());
+        transactionsEntity.setDescription(transaction.getDescription());
+        transactionsEntity.setPosted(transaction.getPosted());
+        transactionsEntity.setCategory(createNewCategory(transaction.getCategoryId(), transaction.getCategories()));
+        transactionsEntity.setLogoUrl(transaction.getLogoUrl());
+        transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
+        transactionsEntity.setMerchantName(transaction.getMerchantName());
+        transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
         transactionsEntity.setCreateDate(LocalDate.now());
         return transactionsEntity;
     }

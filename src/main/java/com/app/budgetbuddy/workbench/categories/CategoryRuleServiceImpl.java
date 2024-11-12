@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryRuleServiceImpl implements CategoryRuleService
@@ -59,5 +60,34 @@ public class CategoryRuleServiceImpl implements CategoryRuleService
         {
             create(categoryRule);
         }
+    }
+
+    @Override
+    public List<CategoryRuleEntity> findByUserId(Long userId) {
+        return categoryRuleRepository.findAllByUser(userId);
+    }
+
+    @Override
+    public List<CategoryRule> getConvertedCategoryRules(List<CategoryRuleEntity> categoryRuleEntities) {
+        return categoryRuleEntities.stream()
+                .map(this::createCategoryRuleFromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public CategoryRule createCategoryRuleFromEntity(CategoryRuleEntity categoryRuleEntity) {
+        CategoryRule categoryRule = new CategoryRule();
+        categoryRule.setMerchantPattern(categoryRuleEntity.getMerchantPattern());
+        categoryRule.setFrequency(categoryRuleEntity.getFrequency());
+        categoryRule.setRecurring(categoryRuleEntity.isRecurring());
+        categoryRule.setCategoryName(categoryRuleEntity.getCategory().getName());
+        categoryRule.setCategoryId(categoryRuleEntity.getCategory().getId());
+        categoryRule.setDescriptionPattern(categoryRuleEntity.getDescriptionPattern());
+        return categoryRule;
+    }
+
+    @Override
+    public List<CategoryRuleEntity> findAllSystemCategoryRules() {
+        return categoryRuleRepository.findAllByUserIsNull();
     }
 }

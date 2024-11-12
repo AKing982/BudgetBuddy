@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -40,7 +41,7 @@ class TransactionServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionServiceImpl(transactionRepository, transactionToEntityConverter);
+        MockitoAnnotations.openMocks(true);
     }
 
     @Test
