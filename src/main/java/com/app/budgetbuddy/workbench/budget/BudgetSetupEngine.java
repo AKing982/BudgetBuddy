@@ -19,18 +19,18 @@ public class BudgetSetupEngine
 {
     private final UserService userService;
     private final BudgetService budgetService;
-    private final BudgetCalculator budgetCalculator;
+    private final BudgetCalculations budgetCalculations;
     private final BudgetCategoryBuilder budgetCategoryBuilder;
     private boolean isBudgetSetupCompleted;
 
     @Autowired
     public BudgetSetupEngine(UserService userService,
                              BudgetService budgetService,
-                             BudgetCalculator budgetCalculator,
+                             BudgetCalculations budgetCalculator,
                              BudgetCategoryBuilder budgetCategoryBuilder){
         this.userService = userService;
         this.budgetService = budgetService;
-        this.budgetCalculator = budgetCalculator;
+        this.budgetCalculations = budgetCalculator;
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
 

@@ -4,7 +4,7 @@ import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.domain.CategoryRule;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
-import com.app.budgetbuddy.workbench.TransactionDataLoader;
+import com.app.budgetbuddy.services.TransactionLoaderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,16 +16,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CategoryRuleEngine
 {
     private final CategoryRuleCreator categoryRuleCreator;
-    private final TransactionCategoryRuleMatcher categoryRuleMatcher;
-    private final TransactionDataLoader transactionDataLoader;
+    private final TransactionCategorizer transactionCategorizer;
+    private final TransactionLoaderService transactionDataLoader;
 
     @Autowired
     public CategoryRuleEngine(CategoryRuleCreator categoryRuleCreator,
-                              TransactionCategoryRuleMatcher categoryRuleMatcher,
-                              TransactionDataLoader transactionDataLoader)
+                              TransactionCategorizer transactionCategorizer,
+                              TransactionLoaderService transactionDataLoader)
     {
         this.categoryRuleCreator = categoryRuleCreator;
-        this.categoryRuleMatcher = categoryRuleMatcher;
+        this.transactionCategorizer = transactionCategorizer;
         this.transactionDataLoader = transactionDataLoader;
     }
 

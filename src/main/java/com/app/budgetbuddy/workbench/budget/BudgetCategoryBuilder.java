@@ -26,7 +26,7 @@ public class BudgetCategoryBuilder
 {
     private UserBudgetCategoryService userBudgetCategoryService;
     private CategoryService categoryService;
-    private BudgetCalculator budgetCalculator;
+    private BudgetCalculations budgetCalculator;
     private CategoryRuleEngine categoryRuleEngine;
     private UserBudgetCategoryConverter userBudgetCategoryConverter;
     private Logger LOGGER = LoggerFactory.getLogger(BudgetCategoryBuilder.class);
@@ -34,7 +34,7 @@ public class BudgetCategoryBuilder
     @Autowired
     public BudgetCategoryBuilder(UserBudgetCategoryService userBudgetCategoryService,
                                  CategoryService categoryService,
-                                 BudgetCalculator budgetCalculator,
+                                 BudgetCalculations budgetCalculator,
                                  CategoryRuleEngine categoryRuleEngine,
                                  UserBudgetCategoryConverter userBudgetCategoryConverter)
     {

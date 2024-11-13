@@ -19,10 +19,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
-public class BudgetCalculator {
+public class BudgetCalculations {
     private final BudgetService budgetService;
     private final BudgetGoalsService budgetGoalsService;
     private final BudgetCategoriesService budgetCategoriesService;
@@ -30,7 +29,7 @@ public class BudgetCalculator {
     private final BudgetValidator budgetValidator;
 
     @Autowired
-    public BudgetCalculator(BudgetService budgetService,
+    public BudgetCalculations(BudgetService budgetService,
                             BudgetGoalsService budgetGoalsService,
                             BudgetCategoriesService budgetCategoriesService,
                             UserBudgetCategoryService userBudgetCategoryService,

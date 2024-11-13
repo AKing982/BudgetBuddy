@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BudgetCalculatorTest {
 
     @InjectMocks
-    private BudgetCalculator budgetCalculator;
+    private BudgetCalculations budgetCalculator;
 
     @Mock
     private BudgetService budgetService;

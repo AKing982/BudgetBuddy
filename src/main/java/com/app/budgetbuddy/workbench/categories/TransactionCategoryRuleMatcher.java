@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 @Setter
 public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<Transaction>
 {
-    private List<UserCategoryRule> userCategoryRules;
     private Map<Transaction, String> matchedTransactions = new HashMap<>();
     private List<Transaction> unmatchedTransactions = new ArrayList<>();
     private Logger LOGGER = LoggerFactory.getLogger(TransactionCategoryRuleMatcher.class);
@@ -44,16 +43,7 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
      * Loads the user category rules by a particular userId
      * @param userId
      */
-    public void loadUserCategoryRules(Long userId)
-    {
-        List<CategoryRuleEntity> categoryRuleEntities = categoryRuleService.findByUserId(userId);
-        if(!categoryRuleEntities.isEmpty()) {
-            List<CategoryRule> categoryRulesForUser = categoryRuleService.getConvertedCategoryRules(categoryRuleEntities);
-            if(!categoryRulesForUser.isEmpty()) {
-                this.systemCategoryRules.addAll(categoryRulesForUser);
-            }
-        }
-    }
+
 
     public String categorizeTransactionByUserRules(Transaction transaction, Long userId){
         if(transaction == null){
@@ -103,6 +93,7 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         return "Uncategorized";
     }
 
+    @Override
     public Boolean matchesRule(Transaction transaction, CategoryRule categoryRule)
     {
         if (transaction == null || categoryRule == null) {

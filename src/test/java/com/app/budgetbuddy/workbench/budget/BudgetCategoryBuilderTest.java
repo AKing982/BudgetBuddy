@@ -42,7 +42,7 @@ class BudgetCategoryBuilderTest {
     private CategoryService categoryService;
 
     @Mock
-    private BudgetCalculator budgetCalculator;
+    private BudgetCalculations budgetCalculator;
 
     @Mock
     private UserBudgetCategoryConverter userBudgetCategoryConverter;

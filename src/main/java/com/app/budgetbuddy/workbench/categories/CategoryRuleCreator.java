@@ -21,8 +21,6 @@ public class CategoryRuleCreator {
 
     @Autowired
     public CategoryRuleCreator(CategoryRuleService categoryRuleService,
-                               TransactionService transactionService,
-                               RecurringTransactionService recurringTransactionService,
                                CategoryService categoryService) {
         this.categoryRuleService = categoryRuleService;
         this.categoryService = categoryService;
