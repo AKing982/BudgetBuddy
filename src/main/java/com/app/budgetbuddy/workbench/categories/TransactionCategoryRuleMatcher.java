@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.CategoryRule;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.User;
 import com.app.budgetbuddy.domain.UserCategoryRule;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.CategoryRuleEntity;
@@ -54,9 +55,34 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         }
     }
 
+    public String categorizeTransactionByUserRules(Transaction transaction, Long userId){
+        if(transaction == null){
+            throw new IllegalArgumentException("Transaction cannot be null");
+        }
+        loadUserCategoryRules(userId);
+        for(UserCategoryRule userCategoryRule : userCategoryRules){
+            if(matchesRule(transaction, userCategoryRule)){
+                String categoryName = userCategoryRule.getCategoryName();
+                addMatchedTransactions(categoryName, transaction);
+                return categoryName;
+            }
+        }
+        addUnmatchedTransactions(transaction);
+        return "Uncategorized";
+    }
+
     public String categorizeTransactionByCustomRule(Transaction transaction, UserCategoryRule userCategoryRule)
     {
-        return null;
+        if(transaction == null || userCategoryRule == null){
+            throw new IllegalArgumentException("Transaction or UserCategoryRule cannot be null");
+        }
+        if(matchesRule(transaction, userCategoryRule)){
+            String categoryName = userCategoryRule.getCategoryName();
+            addMatchedTransactions(categoryName, transaction);
+            return categoryName;
+        }
+        addUnmatchedTransactions(transaction);
+        return "Uncategorized";
     }
 
     public String categorizeTransaction(Transaction transaction)
@@ -74,57 +100,58 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
             }
             addUnmatchedTransactions(transaction);
         }
-
         return "Uncategorized";
     }
 
     public Boolean matchesRule(Transaction transaction, CategoryRule categoryRule)
     {
-        if(transaction == null || categoryRule == null)
-        {
+        if (transaction == null || categoryRule == null) {
             return false;
         }
-        boolean merchantMatches = false;
-        boolean descriptionMatches = false;
-        boolean categoryListMatches = false;
-        boolean categoryIdMatches = false;
+        return matchesMerchantPattern(transaction, categoryRule) ||
+                matchesDescriptionPattern(transaction, categoryRule) ||
+                matchesCategoryList(transaction, categoryRule) ||
+                matchesCategoryId(transaction, categoryRule);
+    }
 
-        // Match on the merchant pattern
-        if(categoryRule.getMerchantPattern() != null && transaction.getMerchantName() != null && !transaction.getMerchantName().isEmpty()){
-            merchantMatches = Pattern.compile(categoryRule.getMerchantPattern(), Pattern.CASE_INSENSITIVE)
-                    .matcher(transaction.getMerchantName())
-                    .find();
-        }
+    private boolean matchesMerchantPattern(Transaction transaction, CategoryRule rule) {
+        return rule.getMerchantPattern() != null && transaction.getMerchantName() != null &&
+                Pattern.compile(rule.getMerchantPattern(), Pattern.CASE_INSENSITIVE)
+                        .matcher(transaction.getMerchantName())
+                        .find();
+    }
 
-        // Match on the description pattern
-        if(categoryRule.getDescriptionPattern() != null && transaction.getDescription() != null && !transaction.getDescription().isEmpty()){
-            descriptionMatches = Pattern.compile(categoryRule.getDescriptionPattern(), Pattern.CASE_INSENSITIVE)
-                    .matcher(transaction.getDescription())
-                    .find();
+    private boolean matchesDescriptionPattern(Transaction transaction, CategoryRule rule) {
+        return rule.getDescriptionPattern() != null && transaction.getDescription() != null &&
+                Pattern.compile(rule.getDescriptionPattern(), Pattern.CASE_INSENSITIVE)
+                        .matcher(transaction.getDescription())
+                        .find();
+    }
 
-        }
+    private boolean matchesCategoryList(Transaction transaction, CategoryRule rule) {
+        return rule.getCategoryName() != null && transaction.getCategories() != null &&
+                transaction.getCategories().contains(rule.getCategoryName());
+    }
 
-        // Match on Category List
-        if(categoryRule.getCategoryName() != null && transaction.getCategories() != null) {
-            String categoryRuleName = categoryRule.getCategoryName();
-            categoryListMatches = transaction.getCategories().contains(categoryRuleName);
-        }
-
-        // Match on Category Id
-        if(categoryRule.getCategoryName() != null && transaction.getCategoryId() != null) {
-            String transactionCategoryId = transaction.getCategoryId();
-            LOGGER.info("Transaction category ID: " + transactionCategoryId);
-            // Does the transaction categoryId have a name that matches the category name in the category rule?
-            String foundCategoryName = getCategoryNameById(transactionCategoryId);
-            LOGGER.info("Found Category Name: " + foundCategoryName);
-            categoryIdMatches = foundCategoryName.equals(categoryRule.getCategoryName());
-        }
-
-        return merchantMatches || descriptionMatches || categoryListMatches || categoryIdMatches;
+    private boolean matchesCategoryId(Transaction transaction, CategoryRule rule) {
+        String transactionCategoryId = transaction.getCategoryId();
+        return rule.getCategoryName() != null && transactionCategoryId != null &&
+                rule.getCategoryName().equals(getCategoryNameById(transactionCategoryId));
     }
 
     public List<CategoryRule> getMatchingCategoryRulesForTransaction(Transaction transaction)
     {
-        return null;
+        List<CategoryRule> matchingRules = new ArrayList<>();
+        for (CategoryRule rule : systemCategoryRules) {
+            if (matchesRule(transaction, rule)) {
+                matchingRules.add(rule);
+            }
+        }
+        for (UserCategoryRule rule : userCategoryRules) {
+            if (matchesRule(transaction, rule)) {
+                matchingRules.add(rule);
+            }
+        }
+        return matchingRules;
     }
 }

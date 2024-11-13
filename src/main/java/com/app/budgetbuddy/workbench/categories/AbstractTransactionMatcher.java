@@ -4,6 +4,8 @@ import com.app.budgetbuddy.domain.CategoryRule;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.services.CategoryService;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Getter
+@Setter
 public abstract class AbstractTransactionMatcher<T extends Transaction> implements TransactionMatcher<T> {
     protected final CategoryRuleService categoryRuleService;
     protected final CategoryService categoryService;

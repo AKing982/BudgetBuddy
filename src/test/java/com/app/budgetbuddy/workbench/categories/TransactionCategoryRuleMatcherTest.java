@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.categories;
 import com.app.budgetbuddy.domain.CategoryRule;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionType;
+import com.app.budgetbuddy.domain.UserCategoryRule;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.services.CategoryService;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TransactionCategoryRuleMatcherTest {
 
     @Mock
@@ -437,6 +441,22 @@ class TransactionCategoryRuleMatcherTest {
         assertTrue(!categoryRuleMatcher.getUnmatchedTransactions().contains(transaction));
     }
 
+    @Test
+    void testCategorizeTransactionByCustomRule_whenTransactionIsNull_thenThrowException() {
+        UserCategoryRule userCategoryRule = new UserCategoryRule();
+        userCategoryRule.setCategoryName("Supermarkets and Groceries");
+        userCategoryRule.setMerchantPattern("winco");
+        assertThrows(IllegalArgumentException.class, () -> {
+            categoryRuleMatcher.categorizeTransactionByCustomRule(null, userCategoryRule);
+        });
+    }
+
+    @Test
+    void testCategorizeTransactionByCustomRule_whenUserCategoryRuleIsNull_thenThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            categoryRuleMatcher.categorizeTransactionByCustomRule(createTransaction(), null);
+        });
+    }
 
 
     private CategoryEntity createGroceryCategory(){

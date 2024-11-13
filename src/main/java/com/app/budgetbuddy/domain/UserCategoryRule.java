@@ -2,6 +2,7 @@ package com.app.budgetbuddy.domain;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -13,6 +14,7 @@ public class UserCategoryRule extends CategoryRule
     private User user;
     private LocalDateTime createdDate;
     private LocalDateTime modifiedDate;
+    private BigDecimal amount;
     private boolean isActive;
     private int priority;
 
