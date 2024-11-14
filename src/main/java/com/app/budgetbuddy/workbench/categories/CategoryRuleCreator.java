@@ -2,22 +2,20 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.CategoryRuleEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.services.CategoryService;
-import com.app.budgetbuddy.services.RecurringTransactionService;
-import com.app.budgetbuddy.services.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class CategoryRuleCreator {
     private final CategoryRuleService categoryRuleService;
     private final CategoryService categoryService;
+    private final Map<String, CategoryRule> transactionRuleMap = new HashMap<>();
+    private final Map<String, CategoryRule> recurringTransactionRuleMap = new HashMap<>();
 
     @Autowired
     public CategoryRuleCreator(CategoryRuleService categoryRuleService,
@@ -33,6 +31,50 @@ public class CategoryRuleCreator {
         CategoryEntity category = categoryService.findCategoryById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException(categoryId));
         return category.getName();
+    }
+
+    /**
+     * Determines if a recurring transaction already has an associated category rule.
+     * If no rule exists, adds the transaction to uncategorized transactions.
+     *
+     * @param recurringTransaction The transaction to check
+     * @return true if a category rule exists for the transaction; false otherwise
+     */
+    public boolean categoryRuleIsCreatedForRecurringTransaction(final RecurringTransaction recurringTransaction){
+        return false;
+    }
+
+    /**
+     * Determines if a transaction already has an associated category rule.
+     * If no rule exists, adds the transaction to uncategorized transactions.
+     *
+     * @param transaction The transaction to check
+     * @return true if a category rule exists for the transaction; false otherwise
+     */
+    public boolean categoryRuleIsCreatedForTransaction(final Transaction transaction) {
+        return false;
+    }
+
+    public void addUncategorizedTransactions(Transaction transaction) {
+
+    }
+
+    public void addCreatedTransactionCategoryRules(final String transactionId, final CategoryRule categoryRule){
+
+    }
+
+    public List<CategoryRule> createCategoryRulesFromRecurringTransactions(final Map<RecurringTransaction, String> recurringTransactionToCategory)
+    {
+        return null;
+    }
+
+    public List<CategoryRule> createCategoryRulesFromTransactions(final Map<Transaction, String> transactionToCategory)
+    {
+        return null;
+    }
+
+    public List<CategoryRule> loadExistingCategoryRules(){
+        return null;
     }
 
     /**

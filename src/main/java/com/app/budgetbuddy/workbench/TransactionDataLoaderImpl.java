@@ -1,12 +1,7 @@
 package com.app.budgetbuddy.workbench;
 
-import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
-import com.app.budgetbuddy.domain.TransactionCriteria;
-import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
-import com.app.budgetbuddy.exceptions.InvalidStartDateException;
-import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,23 +34,23 @@ public class TransactionDataLoaderImpl implements TransactionLoader {
 
 
     @Override
-    public List<Transaction> loadRecentTransactions(Long userId) {
-        return List.of();
+    public List<Transaction> loadRecentTransactions(Long userId, int limit) {
+        return transactionService.getRecentTransactionsForUser(userId, limit);
     }
 
     @Override
     public List<Transaction> loadTransactionsByCategory(String categoryId) {
-        return List.of();
+        return transactionService.getTransactionsByCategory(categoryId);
     }
 
     @Override
-    public List<Transaction> loadPendingTransactions() {
-        return List.of();
+    public List<Transaction> loadPendingTransactions(Long userId) {
+        return transactionService.getPendingTransactionsForUser(userId);
     }
 
     @Override
     public List<Transaction> loadTransactionsByAmountRange(BigDecimal minAmount, BigDecimal maxAmount) {
-        return List.of();
+        return transactionService.getTransactionsByAmountRange(minAmount, maxAmount);
     }
 
 }

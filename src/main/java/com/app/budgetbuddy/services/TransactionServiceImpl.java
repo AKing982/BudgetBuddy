@@ -2,6 +2,7 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import com.app.budgetbuddy.workbench.converter.TransactionEntityToModelConverter;
@@ -9,6 +10,8 @@ import com.app.budgetbuddy.workbench.converter.TransactionToEntityConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -124,6 +127,21 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public List<Transaction> getTransactionsByCategory(String categoryId) {
+        if(categoryId.isEmpty()){
+            return List.of();
+        }
+        try
+        {
+            List<TransactionsEntity> transactionsEntities = transactionRepository.findByCategoryId(categoryId);
+            return convertedTransactions(transactionsEntities);
+        }catch(DataAccessException ex){
+            LOGGER.error("There was an error fetching transactions for category: {}, {}", categoryId, ex.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
     public Optional<TransactionsEntity> getTransactionById(String id) {
         return transactionRepository.findTransactionByTransactionId(id);
     }
@@ -208,6 +226,52 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount) {
+        if(startAmount == null || endAmount == null){
+            throw new IllegalArgumentException("StartAmount or endAmount is null");
+        }
+        try
+        {
+            List<TransactionsEntity> transactionsEntities = transactionRepository.findByAmountBetween(startAmount, endAmount);
+            return convertedTransactions(transactionsEntities);
+
+        }catch(DataAccessException ex){
+            LOGGER.error("There was an error fetching transactions with startAmount: {} and endAmount: {}, {}", startAmount, endAmount, ex.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<Transaction> getPendingTransactionsForUser(Long userId) {
+        if(userId <= 1L){
+            return List.of();
+        }
+        try
+        {
+            List<TransactionsEntity> transactionsEntities = transactionRepository.findPendingTransactionsForUser(userId);
+            return convertedTransactions(transactionsEntities);
+        }catch(DataAccessException ex){
+            LOGGER.error("There was an error fetching pending transacctions for user: {}, {}", userId, ex.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<Transaction> getRecentTransactionsForUser(Long userId, int limit) {
+        Pageable pageLimit = PageRequest.of(0, limit);
+        try
+        {
+            List<TransactionsEntity> transactionsEntities = transactionRepository.findRecentTransactionsByUserId(userId, pageLimit);
+            return convertedTransactions(transactionsEntities);
+
+        }catch(DataAccessException e)
+        {
+            LOGGER.error("Failed to retrieve recent transactions for user ID {}: {}", userId, e.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
     public List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate) {
         try
         {
@@ -217,7 +281,7 @@ public class TransactionServiceImpl implements TransactionService
                 return List.of();
             }
             return convertedTransactions(transactions);
-        }catch(Exception e){
+        }catch(DataAccessException e){
             LOGGER.error("There was an error fetching transactions from the database: {}", e.getMessage());
             return List.of();
         }

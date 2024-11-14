@@ -3,6 +3,7 @@ package com.app.budgetbuddy.repositories;
 import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -40,6 +41,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t WHERE t.account.id =:num")
     List<TransactionsEntity> findByAccountId(@Param("num") String num);
 
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.category.id =:id")
+    List<TransactionsEntity> findByCategoryId(@Param("id") String id);
+
     @Query("SELECT t FROM TransactionsEntity t WHERE t.description =:descr")
     List<TransactionsEntity> findTransactionByDescription(@Param("descr") String description);
 
@@ -51,6 +55,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
 
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id ")
     Collection<TransactionsEntity> findTransactionsByUser(@Param("id") Long id);
+
+    @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.pending = true")
+    List<TransactionsEntity> findPendingTransactionsForUser(@Param("id") Long id);
 
     @Query("SELECT t FROM TransactionsEntity t WHERE t.id =:id AND t.category.id =:categoryId")
     Optional<TransactionsEntity> findTransactionByIdAndCategoryId(@Param("id") String id, @Param("categoryId") String categoryId);
@@ -81,6 +88,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
 
     @Query("SELECT SUM(t.amount) FROM TransactionsEntity t JOIN t.category c WHERE c =:category")
     BigDecimal getTotalSpendingByCategory(@Param("category") CategoryEntity category);
+
+    @Query("SELECT t FROM TransactionsEntity  t JOIN t.category c JOIN t.account a WHERE a.user.id =:id ORDER BY t.posted DESC")
+    List<TransactionsEntity> findRecentTransactionsByUserId(@Param("id") Long id, Pageable pageable);
 
     @Modifying
     @Query("UPDATE TransactionsEntity t SET t.category =:category WHERE t.id =:id")

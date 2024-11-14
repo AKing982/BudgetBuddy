@@ -28,7 +28,7 @@ public class RecurringTransactionLoaderImpl implements RecurringTransactionLoade
 
 
     @Override
-    public List<RecurringTransaction> loadRecentTransactions(Long userId) {
+    public List<RecurringTransaction> loadRecentTransactions(Long userId, int limit) {
         return List.of();
     }
 
@@ -38,7 +38,7 @@ public class RecurringTransactionLoaderImpl implements RecurringTransactionLoade
     }
 
     @Override
-    public List<RecurringTransaction> loadPendingTransactions() {
+    public List<RecurringTransaction> loadPendingTransactions(Long userId) {
         return List.of();
     }
 
