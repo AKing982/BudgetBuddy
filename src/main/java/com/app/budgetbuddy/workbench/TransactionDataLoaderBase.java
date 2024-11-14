@@ -8,9 +8,8 @@ import java.util.List;
 
 public interface TransactionDataLoaderBase<T extends Transaction>
 {
-    List<T> loadTransactionsByDateRange(LocalDate startDate, LocalDate endDate);
-    List<T> loadTransactionsByUserDateRange(Long userId, LocalDate startDate, LocalDate endDate);
-    List<T> loadRecentTransactions();
+    List<T> loadTransactionsByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
+    List<T> loadRecentTransactions(Long userId);
     List<T> loadTransactionsByCategory(String categoryId);
     List<T> loadPendingTransactions();
     List<T> loadTransactionsByAmountRange(BigDecimal minAmount, BigDecimal maxAmount);

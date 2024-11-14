@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionCriteria;
+import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidStartDateException;
 import com.app.budgetbuddy.services.RecurringTransactionService;
@@ -20,29 +21,25 @@ public class TransactionDataLoaderImpl implements TransactionLoader {
     private final TransactionService transactionService;
 
     @Autowired
-    public TransactionDataLoaderImpl(final TransactionService transactionService) {
+    public TransactionDataLoaderImpl(final TransactionService transactionService)
+    {
         this.transactionService = transactionService;
     }
 
     @Override
-    public List<Transaction> loadTransactionsByDateRange(final LocalDate startDate, final LocalDate endDate) {
+    public List<Transaction> loadTransactionsByDateRange(final Long userId, final LocalDate startDate, final LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalDateException("Start date cannot be null");
         }
         if(startDate.isAfter(endDate)) {
             return List.of();
         }
-
-        return null;
+        return transactionService.getConvertedPlaidTransactions(userId, startDate, endDate);
     }
 
-    @Override
-    public List<Transaction> loadTransactionsByUserDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
-        return List.of();
-    }
 
     @Override
-    public List<Transaction> loadRecentTransactions() {
+    public List<Transaction> loadRecentTransactions(Long userId) {
         return List.of();
     }
 

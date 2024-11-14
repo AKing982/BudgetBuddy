@@ -22,17 +22,13 @@ public class RecurringTransactionLoaderImpl implements RecurringTransactionLoade
     }
 
     @Override
-    public List<RecurringTransaction> loadTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
+    public List<RecurringTransaction> loadTransactionsByDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
         return List.of();
     }
 
-    @Override
-    public List<RecurringTransaction> loadTransactionsByUserDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
-        return List.of();
-    }
 
     @Override
-    public List<RecurringTransaction> loadRecentTransactions() {
+    public List<RecurringTransaction> loadRecentTransactions(Long userId) {
         return List.of();
     }
 

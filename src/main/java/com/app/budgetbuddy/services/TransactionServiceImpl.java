@@ -144,6 +144,12 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public List<TransactionsEntity> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
+        Collection<TransactionsEntity> transactionsEntities = transactionRepository.findTransactionsByDateRange(startDate, endDate);
+        return transactionsEntities.stream().toList();
+    }
+
+    @Override
     public List<TransactionsEntity> getTransactionsForUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
         if(startDate == null || endDate == null){
             throw new NullPointerException("StartDate is null");
