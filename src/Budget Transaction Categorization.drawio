@@ -64,6 +64,30 @@
             <mxPoint x="590" y="320" as="targetPoint" />
           </mxGeometry>
         </mxCell>
+        <mxCell id="d1dQxt1BuW7B9Vv75-49-22" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="d1dQxt1BuW7B9Vv75-49-20">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="540" y="370" as="sourcePoint" />
+            <mxPoint x="474.5" y="510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d1dQxt1BuW7B9Vv75-49-24" value="Was the &#39;Refresh&#39; Transactions button clicked" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="405" y="510" width="140" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="d1dQxt1BuW7B9Vv75-49-25" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="d1dQxt1BuW7B9Vv75-49-24">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="550" y="550" as="sourcePoint" />
+            <mxPoint x="475" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d1dQxt1BuW7B9Vv75-49-26" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="d1dQxt1BuW7B9Vv75-49-24">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="590" as="sourcePoint" />
+            <mxPoint x="590" y="585" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d1dQxt1BuW7B9Vv75-49-27" value="End" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="590" y="545" width="120" height="80" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
