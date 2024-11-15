@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.CategoryRule;
 import com.app.budgetbuddy.domain.RecurringTransaction;
+import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.services.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
     }
 
     @Override
-    public String categorizeTransaction(RecurringTransaction transaction) {
+    public TransactionRule categorizeTransaction(RecurringTransaction transaction) {
         if(transaction == null){
             throw new IllegalArgumentException("Recurring transaction cannot be null");
         }

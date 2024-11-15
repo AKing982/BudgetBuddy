@@ -14,6 +14,8 @@ import java.util.*;
 public class CategoryRuleCreator {
     private final CategoryRuleService categoryRuleService;
     private final CategoryService categoryService;
+    private final Map<String, UserCategoryRule> userDefinedRulesTransactionsMap = new HashMap<>();
+    private final Map<String, UserCategoryRule> userDefinedRulesRecurringTransactionsMap = new HashMap<>();
     private final Map<String, CategoryRule> transactionRuleMap = new HashMap<>();
     private final Map<String, CategoryRule> recurringTransactionRuleMap = new HashMap<>();
 
@@ -63,6 +65,14 @@ public class CategoryRuleCreator {
 
     }
 
+    public List<UserCategoryRule> createUserDefinedRulesForTransactions(Map<Transaction, String> transactionsToCategory){
+        return null;
+    }
+
+    public List<UserCategoryRule> createUserDefinedRulesForRecurringTransactions(Map<RecurringTransaction, String> recurringTransactionToCategory){
+        return null;
+    }
+
     public List<CategoryRule> createCategoryRulesFromRecurringTransactions(final Map<RecurringTransaction, String> recurringTransactionToCategory)
     {
         return null;
@@ -74,6 +84,10 @@ public class CategoryRuleCreator {
     }
 
     public List<CategoryRule> loadExistingCategoryRules(){
+        return null;
+    }
+
+    public List<UserCategoryRule> loadExistingUserCategoryRules(){
         return null;
     }
 
@@ -102,6 +116,14 @@ public class CategoryRuleCreator {
 
         rules.add(rule); // Add the rule to the list
         return rules;
+    }
+
+    public UserCategoryRule createUserCategoryRuleForTransaction(Transaction transaction) {
+        return null;
+    }
+
+    public UserCategoryRule createUserCategoryRuleForRecurringTransaction(RecurringTransaction recurringTransaction){
+        return null;
     }
 
     public CategoryRule createCategoryRuleFromTransaction(Transaction transaction)

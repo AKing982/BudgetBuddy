@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +20,11 @@ public class TransactionCategorizer
         this.recurringTransactionCategoryRuleMatcher = recurringTransactionCategoryRuleMatcher;
     }
 
-    public String categorize(Transaction transaction){
+    public TransactionRule categorize(Transaction transaction){
         return transactionCategoryRuleMatcher.categorizeTransaction(transaction);
     }
 
-    public String categorize(RecurringTransaction recurringTransaction){
+    public TransactionRule categorize(RecurringTransaction recurringTransaction){
         return recurringTransactionCategoryRuleMatcher.categorizeTransaction(recurringTransaction);
     }
 }

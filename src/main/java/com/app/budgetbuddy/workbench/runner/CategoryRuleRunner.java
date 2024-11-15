@@ -16,4 +16,17 @@ public class CategoryRuleRunner
         this.categoryRuleEngine = categoryRuleEngine;
     }
 
+    public static void main(String[] args){
+
+    }
+
+    public void categorizeOnNewTransactions(Long userId){
+
+    }
+
+    public void categorizeOnLogin(Long userId){
+
+    }
+
+
 }

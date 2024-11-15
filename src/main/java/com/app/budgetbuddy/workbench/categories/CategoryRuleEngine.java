@@ -8,6 +8,7 @@ import com.app.budgetbuddy.services.TransactionLoaderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +19,9 @@ public class CategoryRuleEngine
     private final CategoryRuleCreator categoryRuleCreator;
     private final TransactionCategorizer transactionCategorizer;
     private final TransactionLoaderService transactionDataLoader;
+    private List<Transaction> transactions = new ArrayList<>();
+    private List<Transaction> uncategorizedTransactions = new ArrayList<>();
+    private List<RecurringTransaction> recurringTransactions = new ArrayList<>();
 
     @Autowired
     public CategoryRuleEngine(CategoryRuleCreator categoryRuleCreator,
@@ -27,6 +31,46 @@ public class CategoryRuleEngine
         this.categoryRuleCreator = categoryRuleCreator;
         this.transactionCategorizer = transactionCategorizer;
         this.transactionDataLoader = transactionDataLoader;
+    }
+
+    public void processTransactionsForUser(Long userId){
+
+    }
+
+    public void saveNewCategoryRules(Map<? extends Transaction, CategoryRule> newRules){
+
+    }
+
+    public void generateCategorizationSummary(List<Transaction> transactions, List<RecurringTransaction> recurringTransactions){
+
+    }
+
+    public void processMatchedTransactions(Map<Transaction, String> categorizedTransactions){
+
+    }
+
+    public void processMatchedRecurringTransactions(Map<RecurringTransaction, String> categorizedRecurringTransactions){
+
+    }
+
+    public void processUncategorizedTransactions(){
+
+    }
+
+    public List<Transaction> getUncategorizedTransactions() {
+        return null;
+    }
+
+    public List<RecurringTransaction> getUncategorizedRecurringTransactions() {
+        return null;
+    }
+
+    public void loadExistingTransactionsForUser(Long userId){
+
+    }
+
+    public void loadExistingRecurringTransactionsForUser(Long userId){
+
     }
 
     public Map<Transaction, CategoryRule> categorizeTransactions(List<Transaction> transactions)
@@ -39,16 +83,8 @@ public class CategoryRuleEngine
         return null;
     }
 
-    public List<Transaction> getUncategorizedTransactions()
+    public CategoryRule categorizeSingleTransaction(Transaction transaction)
     {
         return null;
     }
-
-    public Category categorizeSingleTransaction(Transaction transaction)
-    {
-        return null;
-    }
-
-
-
 }
