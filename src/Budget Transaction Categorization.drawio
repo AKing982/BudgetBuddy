@@ -55,8 +55,8 @@
             <mxPoint x="690" y="285" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="d1dQxt1BuW7B9Vv75-49-20" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="414" y="410" width="120" height="60" as="geometry" />
+        <mxCell id="d1dQxt1BuW7B9Vv75-49-20" value="Run Categorization Process (CategoryRuleRunner)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="407" y="410" width="136" height="70" as="geometry" />
         </mxCell>
         <mxCell id="d1dQxt1BuW7B9Vv75-49-21" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="d1dQxt1BuW7B9Vv75-49-14">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
