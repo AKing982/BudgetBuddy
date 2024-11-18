@@ -172,8 +172,6 @@ class TransactionDataLoaderImplTest {
                 "Expected TransactionRetrievalException in case of database error.");
     }
 
-    @Test
-    void testLoadTransactionsByCategory
 
     private TransactionsEntity createTransactionEntity(){
         TransactionsEntity transactionsEntity = new TransactionsEntity();

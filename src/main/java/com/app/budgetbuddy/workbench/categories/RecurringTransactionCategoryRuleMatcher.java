@@ -31,16 +31,17 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
             throw new IllegalArgumentException("Recurring transaction cannot be null");
         }
 
-        loadCategoryRules();
-        for(CategoryRule categoryRule : systemCategoryRules){
-            if(matchesRule(transaction, categoryRule)){
-                String categoryName = categoryRule.getCategoryName();
-                addMatchedRecurringTransactions(transaction, categoryName);
-                return categoryName;
-            }
-        }
-        addUnmatchedRecurringTransaction(transaction);
-        return "Uncategorized";
+//        loadCategoryRules();
+//        for(CategoryRule categoryRule : systemCategoryRules){
+//            if(matchesRule(transaction, categoryRule)){
+//                String categoryName = categoryRule.getCategoryName();
+//                addMatchedRecurringTransactions(transaction, categoryName);
+//                return categoryName;
+//            }
+//        }
+//        addUnmatchedRecurringTransaction(transaction);
+//        return "Uncategorized";
+        return null;
     }
 
     public void addMatchedRecurringTransactions(RecurringTransaction recurringTransaction, String category) {
@@ -53,17 +54,18 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
 
 
     @Override
-    public Boolean matchesRule(RecurringTransaction transaction, CategoryRule categoryRule) {
+    public Boolean matchesRule(TransactionRule transaction, CategoryRule categoryRule) {
 
         if (transaction == null || categoryRule == null) {
             return false;
         }
 
-        return matchOnMerchantPattern(categoryRule.getMerchantPattern(), transaction.getMerchantName()) ||
-                matchOnDescription(categoryRule.getDescriptionPattern(), transaction.getDescription()) ||
-                matchOnCategoryId(categoryRule.getCategoryId(), transaction.getCategoryId()) ||
-                matchOnFrequency(categoryRule.getFrequency(), transaction.getFrequency()) ||
-                matchOnRecurring(categoryRule.isRecurring(), transaction.getActive());
+//        return matchOnMerchantPattern(categoryRule.getMerchantPattern(), transaction.getMerchantName()) ||
+//                matchOnDescription(categoryRule.getDescriptionPattern(), transaction.getDescription()) ||
+//                matchOnCategoryId(categoryRule.getCategoryId(), transaction.getCategoryId()) ||
+//                matchOnFrequency(categoryRule.getFrequency(), transaction.getFrequency()) ||
+//                matchOnRecurring(categoryRule.isRecurring(), transaction.getActive());
+        return null;
     }
 
     private boolean matchOnMerchantPattern(String ruleMerchantPattern, String transactionMerchantName){

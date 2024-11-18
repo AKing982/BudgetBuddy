@@ -2,12 +2,15 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.CategoryRule;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.domain.UserCategoryRule;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.CategoryRuleEntity;
 import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.workbench.TransactionPatternBuilder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,12 +20,12 @@ import java.util.Optional;
 
 @Getter
 @Setter
+@Slf4j
 public abstract class AbstractTransactionMatcher<T extends Transaction> implements TransactionMatcher<T> {
     protected final CategoryRuleService categoryRuleService;
     protected final CategoryService categoryService;
     protected List<CategoryRule> systemCategoryRules = new ArrayList<>();
     protected List<UserCategoryRule> userCategoryRules;
-    private Logger LOGGER = LoggerFactory.getLogger(AbstractTransactionMatcher.class);
 
     public AbstractTransactionMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService) {
         this.categoryRuleService = categoryRuleService;
@@ -48,14 +51,14 @@ public abstract class AbstractTransactionMatcher<T extends Transaction> implemen
 
     }
 
-    protected abstract Boolean matchesRule(T transaction, CategoryRule categoryRule);
+    protected abstract Boolean matchesRule(TransactionRule transaction, CategoryRule categoryRule);
 
     protected String getCategoryNameById(String categoryId) {
         if (categoryId == null) {
             return "";
         }
         Optional<CategoryEntity> category = categoryService.findCategoryById(categoryId);
-        LOGGER.info("Found Category: " + category);
+        log.info("Found Category: " + category);
         return category.isPresent() ? category.get().getName() : "";
     }
 }

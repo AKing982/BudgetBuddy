@@ -11,16 +11,16 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class UserCategoryRule extends CategoryRule
 {
-    private User user;
+    private Long userId;
     private LocalDateTime createdDate;
     private LocalDateTime modifiedDate;
     private BigDecimal amount;
     private boolean isActive;
     private int priority;
 
-    public UserCategoryRule(String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring, User user, LocalDateTime createdDate, LocalDateTime modifiedDate, boolean isActive, int priority) {
+    public UserCategoryRule(String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring, Long userId, LocalDateTime createdDate, LocalDateTime modifiedDate, boolean isActive, int priority) {
         super(categoryName, merchantPattern, descriptionPattern, frequency, transactionType, isRecurring);
-        this.user = user;
+        this.userId = userId;
         this.createdDate = createdDate;
         this.modifiedDate = modifiedDate;
         this.isActive = isActive;
@@ -33,11 +33,11 @@ public class UserCategoryRule extends CategoryRule
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         UserCategoryRule that = (UserCategoryRule) o;
-        return isActive == that.isActive && priority == that.priority && Objects.equals(user, that.user) && Objects.equals(createdDate, that.createdDate) && Objects.equals(modifiedDate, that.modifiedDate);
+        return isActive == that.isActive && priority == that.priority && Objects.equals(userId, that.userId) && Objects.equals(createdDate, that.createdDate) && Objects.equals(modifiedDate, that.modifiedDate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), user, createdDate, modifiedDate, isActive, priority);
+        return Objects.hash(super.hashCode(), userId, createdDate, modifiedDate, isActive, priority);
     }
 }

@@ -10,9 +10,9 @@ public class PlaidCategoryManager
     private static final Map<String, PlaidCategory> categories = new HashMap<>();
 
     static {
-        for (PlaidCategories category : PlaidCategories.values()) {
-            categories.put(category.name(), new PlaidCategory(category.primaryCategory, category.secondaryCategory));
-        }
+//        for (PlaidCategories category : PlaidCategories.values()) {
+//            categories.put(category.name(), new PlaidCategory(category.primaryCategory, category.secondaryCategory));
+//        }
     }
 
     public static void addCategory(String name, String primaryCategory, String secondaryCategory) {
