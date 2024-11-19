@@ -1,15 +1,13 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.math.BigDecimal;
 import java.util.Objects;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class CategoryRule
 {
@@ -20,24 +18,16 @@ public class CategoryRule
     private String frequency;
     private TransactionType transactionType;
     private boolean isRecurring;
+    private int priority;
 
-    public CategoryRule(String categoryId, String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring) {
-        this.categoryId = categoryId;
+    public CategoryRule(String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring, int priority) {
         this.categoryName = categoryName;
         this.merchantPattern = merchantPattern;
         this.descriptionPattern = descriptionPattern;
         this.frequency = frequency;
         this.transactionType = transactionType;
         this.isRecurring = isRecurring;
-    }
-
-    public CategoryRule(String categoryName, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring) {
-        this.categoryName = categoryName;
-        this.merchantPattern = merchantPattern;
-        this.descriptionPattern = descriptionPattern;
-        this.frequency = frequency;
-        this.transactionType = transactionType;
-        this.isRecurring = isRecurring;
+        this.priority = priority;
     }
 
     @Override

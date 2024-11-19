@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 @Service
 @Getter
@@ -47,39 +48,6 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
 
     public boolean isTransactionMatched(Transaction transaction){
         return this.matchedTransactions.containsKey(transaction);
-    }
-
-    public boolean isHighPriority(Transaction transaction) {
-        return transaction.getMerchantName() != null && !transaction.getMerchantName().isEmpty()
-                && transaction.getCategories() != null && !transaction.getCategories().isEmpty();
-    }
-
-    public boolean isMediumPriority(Transaction transaction) {
-        return transaction.getDescription() != null && !transaction.getDescription().isEmpty()
-                && transaction.getCategories() != null && !transaction.getCategories().isEmpty()
-                && (transaction.getMerchantName() == null || transaction.getMerchantName().isEmpty());
-    }
-
-    public boolean isLowPriority(Transaction transaction) {
-        return transaction.getCategories() != null && !transaction.getCategories().isEmpty()
-                && (transaction.getMerchantName() == null || transaction.getMerchantName().isEmpty())
-                && (transaction.getDescription() == null || transaction.getDescription().isEmpty());
-    }
-
-    public boolean isUncategorized(Transaction transaction) {
-        return (transaction.getMerchantName() == null || transaction.getMerchantName().isEmpty())
-                && (transaction.getDescription() == null || transaction.getDescription().isEmpty())
-                && (transaction.getCategories() == null || transaction.getCategories().isEmpty());
-    }
-
-    public Integer getPriorityLevelForRule(TransactionRule transactionRule) {
-        return null;
-    }
-
-    public List<TransactionRule> sortTransactionRulesByPriority(List<TransactionRule> transactionRules) {
-        return transactionRules.stream()
-                .sorted(Comparator.comparingInt(this::getPriorityLevelForRule))
-                .toList();
     }
 
     /**
@@ -129,13 +97,14 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         loadUserCategoryRules(userId);
 
         // 2. Iterate through the user Category Rules
-        int priority = determineTransactionPriority(transaction);
+        int priority = determinePriority(transaction, userCategoryRules);
+        log.info("Priority: " + priority);
         TransactionRule transactionRule = createTransactionRuleWithPatterns(transaction, "Uncategorized", priority);
         for(UserCategoryRule userCategoryRule : userCategoryRules){
             if(!userCategoryRule.getUserId().equals(userId) || !userCategoryRule.isActive()){
                     continue;
             }
-            if(matchesRule(transactionRule, userCategoryRule)){
+            if(matchesRule(transactionRule, userCategoryRule) && userCategoryRule.getPriority() == priority){
                 log.info("Rule Matches");
                 TransactionRule matchedRule = createTransactionRuleWithPatterns(transaction, userCategoryRule.getCategoryName(), priority);
                 addMatchedTransactionRule(matchedRule.getMatchedCategory(), transactionRule);
@@ -189,64 +158,118 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         return transactionRule;
     }
 
-    public void addTransactionRuleToGroup(TransactionRule transactionRule){
-
+    private int determineSystemPriority(final Transaction transaction){
+        boolean hasMerchant = (transaction.getMerchantName() != null || !transaction.getMerchantName().isEmpty());
+        boolean hasDescription = (transaction.getDescription() != null || !transaction.getDescription().isEmpty());
+        boolean hasCategories = (transaction.getCategories() != null || !transaction.getCategories().isEmpty());
+        if(hasMerchant && hasDescription && hasCategories){
+            return PriorityLevel.HIGHEST.getValue();
+        }else if(hasMerchant && (hasDescription || hasCategories)){
+            return PriorityLevel.HIGH.getValue();
+        }else if(hasDescription && hasCategories || hasMerchant){
+            return PriorityLevel.MEDIUM.getValue();
+        }else if(hasDescription || hasCategories){
+            return PriorityLevel.LOW.getValue();
+        }
+        return PriorityLevel.NONE.getValue();
     }
 
-    public TransactionRule categorizeTransactionNoDefaultRules(Transaction transaction){
-        return null;
+    private boolean matchesMerchantPattern(Transaction transaction, UserCategoryRule userCategoryRule){
+        if(transaction.getMerchantName() == null || userCategoryRule.getMerchantPattern() == null){
+            return false;
+        }
+        try
+        {
+            return Pattern.compile(userCategoryRule.getMerchantPattern(), Pattern.CASE_INSENSITIVE)
+                    .matcher(transaction.getMerchantName())
+                    .find();
+
+        }catch(PatternSyntaxException e){
+            log.error("Invalid Merchant pattern in rule: {}", userCategoryRule.getMerchantPattern(), e);
+            return false;
+        }
     }
 
-    public void groupRulesByPriority(List<TransactionRule> transactionRules){
-
+    private boolean matchesDescriptionPattern(Transaction transaction, UserCategoryRule userCategoryRule){
+        if(transaction.getDescription() == null || userCategoryRule.getDescriptionPattern() == null){
+            return false;
+        }
+        try
+        {
+            return Pattern.compile(userCategoryRule.getDescriptionPattern(), Pattern.CASE_INSENSITIVE)
+                    .matcher(transaction.getDescription())
+                    .find();
+        }catch(PatternSyntaxException e){
+            log.error("Invalid description pattern in rule: {}", userCategoryRule.getDescriptionPattern(), e);
+            return false;
+        }
     }
 
-    public TransactionRule matchByGroupedPriority(Transaction transaction){
-        return null;
+    private boolean matchesCategoryPattern(Transaction transaction, UserCategoryRule userCategoryRule){
+        if(transaction.getCategories() == null || userCategoryRule.getCategoryName() == null){
+            return false;
+        }
+        try
+        {
+            Pattern categoryPattern = Pattern.compile(userCategoryRule.getCategoryName(), Pattern.CASE_INSENSITIVE);
+            return transaction.getCategories().stream()
+                    .anyMatch(category -> categoryPattern.matcher(category).find());
+        }catch(PatternSyntaxException e){
+            log.error("Invalid category pattern in rule: {}", userCategoryRule.getCategoryName(), e);
+            return false;
+        }
     }
 
-    public TransactionRule resolveConflictsForTransaction(Transaction transaction, List<TransactionRule> transactionRules){
-        return null;
+    private boolean hasMatchingUserRule(Transaction transaction, List<UserCategoryRule> userCategoryRules){
+        if(userCategoryRules == null || userCategoryRules.isEmpty()){
+            return false;
+        }
+
+        return userCategoryRules.stream()
+                .filter(UserCategoryRule::isActive)
+                .anyMatch(rule -> matchesUserRule(transaction, rule));
     }
 
-    public TransactionRule resolvePriorityConflict(TransactionRule transactionRule1, TransactionRule transactionRule2){
-        return null;
+    private boolean matchesUserRule(Transaction transaction, UserCategoryRule userCategoryRule){
+        return (matchesMerchantPattern(transaction, userCategoryRule) ||
+                matchesDescriptionPattern(transaction, userCategoryRule) ||
+                matchesCategoryPattern(transaction, userCategoryRule));
     }
 
-    /**
-     * Matches the transaction by priority against default system category rules
-     * @param priority
-     * @param transaction
-     * @return
-     */
-    public TransactionRule matchByPriority(int priority, Transaction transaction){
-        return null;
-    }
+    public int determinePriority(final Transaction transaction, final List<UserCategoryRule> userCategoryRules)
+    {
+        if(transaction == null)
+        {
+            return PriorityLevel.NONE.getValue();
+        }
 
-    private int determineTransactionPriority(Transaction transaction){
-        if (isHighPriority(transaction)) return 1;
-        if (isMediumPriority(transaction)) return 2;
-        if (isLowPriority(transaction)) return 3;
-        return 0;
+        if(hasMatchingUserRule(transaction, userCategoryRules)){
+            return PriorityLevel.USER_DEFINED.getValue();
+        }
+
+        return determineSystemPriority(transaction);
     }
 
     public TransactionRule categorizeTransaction(Transaction transaction)
     {
-//        if(transaction == null){
-//            return "";
-//        }
-//
-//        loadCategoryRules();
-//        for(CategoryRule categoryRule : systemCategoryRules){
-//            if(matchesRule(transaction, categoryRule)){
-//                String categoryName = categoryRule.getCategoryName();
-//                addMatchedTransactionRule(categoryName, transaction);
-//                return categoryRule.getCategoryName();
-//            }
-//            addUnmatchedTransactions(transaction);
-//        }
-//        return "Uncategorized";
-        return null;
+        if(transaction == null){
+            throw new IllegalArgumentException("Transaction Cannot be null");
+        }
+
+        loadCategoryRules();
+        int priority = determineSystemPriority(transaction);
+        TransactionRule transactionRule = createTransactionRule(transaction, UNCATEGORIZED, priority);
+        for(CategoryRule categoryRule : systemCategoryRules){
+            if(matchesRule(transactionRule, categoryRule)){
+                transactionRule = createTransactionRule(transaction, categoryRule.getCategoryName(), priority);
+
+                addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
+                return transactionRule;
+            }
+        }
+
+        addUnmatchedTransactions(transactionRule);
+        return transactionRule;
     }
 
     @Override
@@ -279,22 +302,6 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
                         .find();
     }
 
-    public void setCustomPriority(Long userId, List<String> customPriority){
-
-    }
-
-//    private TransactionRule createTransactionRule(Transaction transaction, String category, int priorityLevel){
-//        TransactionRule transactionRule = new TransactionRule();
-//        transactionRule.setCategories(transaction.getCategories());
-//        transactionRule.setRecurring(false);
-//        transactionRule.setPriority(priorityLevel);
-//        transactionRule.setTransactionId(transaction.getTransactionId());
-//        transactionRule.setMerchantPattern(transaction.getMerchantName());
-//        transactionRule.setDescriptionPattern(transaction.getDescription());
-//        transactionRule.setMatchedCategory(category);
-//        return transactionRule;
-//    }
-
     private boolean matchesDescriptionPattern(TransactionRule transaction, CategoryRule rule) {
         return rule.getDescriptionPattern() != null && transaction.getDescriptionPattern() != null &&
                 Pattern.compile(rule.getDescriptionPattern(), Pattern.CASE_INSENSITIVE)
@@ -307,27 +314,4 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
                 transaction.getCategories().contains(rule.getCategoryName());
     }
 
-    private boolean matchesCategoryId(TransactionRule transactionRule, CategoryRule rule) {
-//        String transactionCategoryId = transaction.get;
-//        return rule.getCategoryName() != null && transactionCategoryId != null &&
-//                rule.getCategoryName().equals(getCategoryNameById(transactionCategoryId));
-        return false;
-    }
-
-    public List<CategoryRule> getMatchingCategoryRulesForTransaction(Transaction transaction)
-    {
-        List<CategoryRule> matchingRules = new ArrayList<>();
-//        for (CategoryRule rule : systemCategoryRules) {
-//            if (matchesRule(transaction, rule)) {
-//                matchingRules.add(rule);
-//            }
-//        }
-//        for (UserCategoryRule rule : userCategoryRules) {
-//            if (matchesRule(transaction, rule)) {
-//                matchingRules.add(rule);
-//            }
-//        }
-//        return matchingRules;
-        return null;
-    }
 }

@@ -259,13 +259,13 @@ class TransactionCategoryRuleMatcherTest {
     @Test
     void testCategorizeTransactionByUserRules_withNonMatchingPriority() {
         // Arrange
-        Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "WINCO FOODS #15", List.of("Supermarkets And Groceries", "Shops"), "19047000");
+        Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "", List.of(""), "");
 
         UserCategoryRule userRule = createUserRule(
                 "WINCO FOODS #15",
-                "Groceries",
+                "Supermarkets And Groceries",
                 "PIN Purchase WINCO.*",
-                2  // Medium priority when transaction would be high priority
+                5  // Medium priority when transaction would be high priority
         );
         userRule.setUserId(1L);
         userRule.setActive(true);
