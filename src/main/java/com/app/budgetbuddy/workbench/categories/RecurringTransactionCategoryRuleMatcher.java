@@ -1,9 +1,10 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.CategoryRule;
-import com.app.budgetbuddy.domain.RecurringTransaction;
-import com.app.budgetbuddy.domain.TransactionRule;
+import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.workbench.TransactionPatternBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,10 +16,12 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 @Service
-public class RecurringTransactionCategoryRuleMatcher extends AbstractTransactionMatcher<RecurringTransaction>
+@Slf4j
+public class RecurringTransactionCategoryRuleMatcher extends AbstractTransactionMatcher<RecurringTransaction, RecurringTransactionRule>
 {
-    private Map<RecurringTransaction, String> matchedRecurringTransactions = new HashMap<>();
-    private List<RecurringTransaction> unmatchedRecurringTransactions = new ArrayList<>();
+    private Map<RecurringTransactionRule, String> matchedRecurringTransactionRules = new HashMap<>();
+    private List<RecurringTransactionRule> unmatchedRecurringTransactionRules = new ArrayList<>();
+    private Map<Integer, List<RecurringTransactionRule>> groupRulesByPriority = new HashMap<>();
 
     @Autowired
     public RecurringTransactionCategoryRuleMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService) {
@@ -31,48 +34,112 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
             throw new IllegalArgumentException("Recurring transaction cannot be null");
         }
 
-//        loadCategoryRules();
-//        for(CategoryRule categoryRule : systemCategoryRules){
-//            if(matchesRule(transaction, categoryRule)){
-//                String categoryName = categoryRule.getCategoryName();
-//                addMatchedRecurringTransactions(transaction, categoryName);
-//                return categoryName;
-//            }
-//        }
-//        addUnmatchedRecurringTransaction(transaction);
-//        return "Uncategorized";
+        loadCategoryRules();
+        // Create initial transaction rule
+        RecurringTransactionRule transactionRule = createTransactionRule(transaction);
+        // Check system rules first
+        for (CategoryRule categoryRule : systemCategoryRules) {
+            if (matchesRule(transactionRule, categoryRule)) {
+                RecurringTransactionRule matchedRule = createMatchedRule(transaction, categoryRule);
+                addMatchedRecurringTransactions(matchedRule, categoryRule.getCategoryName());
+                return matchedRule;
+            }
+        }
+
+        // If no system rule matches, add to unmatched
+        addUnmatchedRecurringTransaction(transactionRule);
+        return createUncategorizedRule(transaction);
+    }
+
+    public RecurringTransactionRule categorizeTransactionByUserRules(RecurringTransaction transaction, Long userId) {
+        if (transaction == null) {
+            throw new IllegalArgumentException("Recurring transaction cannot be null");
+        }
+        if (userId < 1) {
+            throw new InvalidUserIDException("User ID is invalid: " + userId);
+        }
+
+        loadUserCategoryRules(userId);
+        RecurringTransactionRule transactionRule = createTransactionRule(transaction);
+        for (UserCategoryRule userRule : userCategoryRules) {
+            if (!userRule.getUserId().equals(userId) || !userRule.isActive()) {
+                continue;
+            }
+
+            if (matchesRule(transactionRule, userRule)) {
+                RecurringTransactionRule matchedRule = createMatchedRule(transaction, userRule);
+                addMatchedRecurringTransactions(matchedRule, userRule.getCategoryName());
+                return matchedRule;
+            }
+        }
+
+        addUnmatchedRecurringTransaction(transactionRule);
+        return transactionRule;
+    }
+
+
+    public void addMatchedRecurringTransactions(RecurringTransactionRule recurringTransaction, String category) {
+        matchedRecurringTransactionRules.put(recurringTransaction, category);
+    }
+
+    public void addUnmatchedRecurringTransaction(RecurringTransactionRule recurringTransaction){
+        unmatchedRecurringTransactionRules.add(recurringTransaction);
+    }
+
+
+    private RecurringTransactionRule createTransactionRule(RecurringTransaction transaction) {
+        RecurringTransactionRule rule = new RecurringTransactionRule();
+        rule.setTransactionId(transaction.getTransactionId());
+        rule.setRecurring(true);
+        rule.setFrequency(transaction.getFrequency());
+
+        // Build patterns using TransactionPatternBuilder
+        if (transaction.getMerchantName() != null && !transaction.getMerchantName().isEmpty()) {
+            rule.setMerchantPattern(TransactionPatternBuilder.buildMerchantPattern(
+                    List.of(transaction.getMerchantName())
+            ));
+        }
+
+        if (transaction.getDescription() != null && !transaction.getDescription().isEmpty()) {
+            rule.setDescriptionPattern(TransactionPatternBuilder.buildDescriptionPattern(
+                    transaction.getDescription(),
+                    DescriptionMatchType.EXACT
+            ));
+        }
+
+        return rule;
+    }
+
+    private RecurringTransactionRule createMatchedRule(RecurringTransaction transaction, CategoryRule categoryRule) {
+//        RecurringTransactionRule rule = createTransactionRule(transaction);
+//        rule.setMatchedCategory(categoryRule.getCategoryName());
+//        rule.setPriority(categoryRule instanceof UserCategoryRule ?
+//                ((UserCategoryRule) categoryRule).getPriority() : determinePriority(transaction));
+//        return rule;
         return null;
     }
 
-    public void addMatchedRecurringTransactions(RecurringTransaction recurringTransaction, String category) {
-        matchedRecurringTransactions.put(recurringTransaction, category);
-    }
-
-    public void addUnmatchedRecurringTransaction(RecurringTransaction recurringTransaction){
-        unmatchedRecurringTransactions.add(recurringTransaction);
+    private TransactionRule createUncategorizedRule(RecurringTransaction transaction) {
+        TransactionRule rule = createTransactionRule(transaction);
+        rule.setMatchedCategory("Uncategorized");
+        rule.setPriority(0);
+        return rule;
     }
 
 
     @Override
-    public Boolean matchesRule(TransactionRule transaction, CategoryRule categoryRule) {
+    public Boolean matchesRule(RecurringTransactionRule transaction, CategoryRule categoryRule) {
 
         if (transaction == null || categoryRule == null) {
             return false;
         }
 
-//        return matchOnMerchantPattern(categoryRule.getMerchantPattern(), transaction.getMerchantName()) ||
-//                matchOnDescription(categoryRule.getDescriptionPattern(), transaction.getDescription()) ||
-//                matchOnCategoryId(categoryRule.getCategoryId(), transaction.getCategoryId()) ||
-//                matchOnFrequency(categoryRule.getFrequency(), transaction.getFrequency()) ||
-//                matchOnRecurring(categoryRule.isRecurring(), transaction.getActive());
+        return matchesMerchantPatternRule(transaction, categoryRule) ||
+                matchesDescriptionPatternRule(transaction, categoryRule) ||
+                matchesCategoryPatternRule(transaction, categoryRule) ||
+                matchOnFrequency(categoryRule.getFrequency(), transaction.getFrequency()) ||
+                matchOnRecurring(categoryRule.isRecurring(), transaction.getActive());
         return null;
-    }
-
-    private boolean matchOnMerchantPattern(String ruleMerchantPattern, String transactionMerchantName){
-        return ruleMerchantPattern != null && transactionMerchantName != null &&
-                Pattern.compile(ruleMerchantPattern, Pattern.CASE_INSENSITIVE)
-                        .matcher(transactionMerchantName)
-                        .find();
     }
 
     private boolean matchOnFrequency(String ruleFrequency, String transactionFrequency){
@@ -80,17 +147,6 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
                 Pattern.compile(ruleFrequency, Pattern.CASE_INSENSITIVE)
                         .matcher(transactionFrequency)
                         .find();
-    }
-
-    private boolean matchOnDescription(String ruleDescription, String transactionDescription){
-        return ruleDescription != null && transactionDescription != null &&
-                Pattern.compile(transactionDescription, Pattern.CASE_INSENSITIVE)
-                        .matcher(transactionDescription)
-                        .find();
-    }
-
-    private boolean matchOnCategoryId(String ruleCategoryId, String transactionCategoryId) {
-        return ruleCategoryId != null && ruleCategoryId.equals(transactionCategoryId);
     }
 
     private boolean matchOnRecurring(boolean ruleRecurring, Boolean transactionRecurring) {

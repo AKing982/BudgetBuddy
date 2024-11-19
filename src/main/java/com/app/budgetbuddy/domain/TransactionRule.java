@@ -14,8 +14,6 @@ public class TransactionRule
     private String transactionId;
     private String descriptionPattern;
     private String merchantPattern;
-    private String frequency;
-    private boolean isRecurring;
     private int priority;
     private List<String> categories;
     private String matchedCategory;

@@ -7,7 +7,6 @@ import com.app.budgetbuddy.services.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -15,10 +14,8 @@ import java.util.*;
 public class CategoryRuleCreator {
     private final CategoryRuleService categoryRuleService;
     private final CategoryService categoryService;
-    private final Map<String, UserCategoryRule> userDefinedRulesTransactionsMap = new HashMap<>();
-    private final Map<String, UserCategoryRule> userDefinedRulesRecurringTransactionsMap = new HashMap<>();
-    private final Map<String, CategoryRule> transactionRuleMap = new HashMap<>();
-    private final Map<String, CategoryRule> recurringTransactionRuleMap = new HashMap<>();
+    private final List<UserCategoryRule> userDefinedRulesTransactions = new ArrayList<>();
+    private final List<CategoryRule> systemDefinedRules = new ArrayList<>();
 
     @Autowired
     public CategoryRuleCreator(CategoryRuleService categoryRuleService,
@@ -36,64 +33,67 @@ public class CategoryRuleCreator {
         return category.getName();
     }
 
-
-    public List<CategoryRule> createSystemRules(Map<TransactionRule, String> matchedTransactions){
+    public Set<CategoryRule> createSystemRules(final Map<TransactionRule, String> matchedTransactions){
         if(matchedTransactions.isEmpty() || matchedTransactions == null){
-            return new ArrayList<>();
+            return new HashSet<>();
         }
-        List<CategoryRule> newRules = new ArrayList<>();
+
+        // 1. Initialize the New rules list
+        Set<CategoryRule> newRules = new HashSet<>();
+
+        // 2. Iterate through the matched transactions
         for(Map.Entry<TransactionRule, String> entry : matchedTransactions.entrySet()){
+
+            // 3. Validate the transaction rule and Category Name
             TransactionRule rule = entry.getKey();
             String categoryName = entry.getValue();
-
-            if(categoryRuleService.ruleExistsForPattern(
-                    rule.getMerchantPattern(),
-                    rule.getDescriptionPattern())){
-                continue;
-            }
-            CategoryRule newRule = new CategoryRule(
+            CategoryRule newRule = createCategoryRule(
                     "",
                     rule.getMatchedCategory(),
                     rule.getMerchantPattern(),
                     rule.getDescriptionPattern(),
-                    rule.getFrequency(),
-                    determineTransactionType(rule),
+                    "ONCE",
+                    TransactionType.CREDIT,
                     true,
                     rule.getPriority()
             );
+
+            // Does the newRules already contain the newly created rule?
             newRules.add(newRule);
 
         }
-        return null;
+        return newRules;
     }
 
-    public List<UserCategoryRule> createUserDefinedRules(Map<TransactionRule, String> matchedTransactions, Long userId){
+
+
+    private CategoryRule createCategoryRule(String categoryId, String category, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring, int priority){
+        return new CategoryRule(
+                categoryId,
+                category,
+                merchantPattern,
+                descriptionPattern,
+                frequency,
+                transactionType,
+                isRecurring,
+                priority);
+    }
+
+    public Set<UserCategoryRule> createUserDefinedRules(final Map<TransactionRule, String> matchedTransactions, final Long userId){
         if (matchedTransactions == null || matchedTransactions.isEmpty()) {
-            return Collections.emptyList();
+            return new HashSet<>();
         }
 
-        List<UserCategoryRule> newRules = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-
+        Set<UserCategoryRule> newRules = new HashSet<>();
         for (Map.Entry<TransactionRule, String> entry : matchedTransactions.entrySet()) {
             TransactionRule transRule = entry.getKey();
             String categoryName = entry.getValue();
-
-            // Skip if user rule already exists
-            if (categoryRuleService.userRuleExistsForPattern(
-                    userId,
-                    transRule.getMerchantPattern(),
-                    transRule.getDescriptionPattern())) {
-                continue;
-            }
-
-
             UserCategoryRule newRule = new UserCategoryRule(
                     transRule.getMatchedCategory(),
                     transRule.getMerchantPattern(),
                     transRule.getDescriptionPattern(),
-                    transRule.getFrequency(),
-                    determineTransactionType(transRule),
+                    "ONCE",
+                    TransactionType.CREDIT,
                     false,
                     transRule.getPriority(),
                     userId,
@@ -107,20 +107,12 @@ public class CategoryRuleCreator {
         return newRules;
     }
 
-    private TransactionType determineTransactionType(TransactionRule rule){
-        if(rule == null){
-            return TransactionType.NONE;
-        }
-        return "";
-    }
-
-
     public List<CategoryRule> loadExistingCategoryRules(){
-        return null;
+        return categoryRuleService.getSystemCategoryRules();
     }
 
-    public List<UserCategoryRule> loadExistingUserCategoryRules(){
-        return null;
+    public List<UserCategoryRule> loadExistingUserCategoryRules(Long userId){
+        return categoryRuleService.getUserCategoryRules(userId);
     }
 
 }

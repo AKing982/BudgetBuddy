@@ -1,10 +1,15 @@
 package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.CategoryRule;
+import com.app.budgetbuddy.domain.UserCategoryRule;
 import com.app.budgetbuddy.entities.CategoryRuleEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.repositories.CategoryRuleRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
@@ -12,6 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class CategoryRuleServiceImpl implements CategoryRuleService
 {
     private final CategoryRuleRepository categoryRuleRepository;
@@ -23,18 +29,36 @@ public class CategoryRuleServiceImpl implements CategoryRuleService
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Collection<CategoryRuleEntity> findAll() {
-        return categoryRuleRepository.findAll();
+        try
+        {
+            return categoryRuleRepository.findAll();
+        }catch(DataAccessException ex){
+            log.error("Error fetching all categories");
+            return List.of();
+        }
     }
 
     @Override
+    @Transactional
     public void save(CategoryRuleEntity categoryRuleEntity) {
-        categoryRuleRepository.save(categoryRuleEntity);
+        try
+        {
+            categoryRuleRepository.save(categoryRuleEntity);
+        }catch(DataAccessException ex){
+            log.error("There was an error saving the category rules: ", ex);
+        }
     }
 
     @Override
     public void delete(CategoryRuleEntity categoryRuleEntity) {
-        categoryRuleRepository.delete(categoryRuleEntity);
+        try
+        {
+            categoryRuleRepository.delete(categoryRuleEntity);
+        }catch(DataAccessException ex){
+            log.error("There was an error deleting the category rule: ", ex);
+        }
     }
 
     @Override
@@ -55,10 +79,13 @@ public class CategoryRuleServiceImpl implements CategoryRuleService
     }
 
     @Override
-    public void createAll(List<CategoryRule> categoryRules) {
-        for(CategoryRule categoryRule : categoryRules)
-        {
-            create(categoryRule);
+    public void createAll(final List<CategoryRule> categoryRules) {
+        try {
+            categoryRules.stream()
+                    .map(this::create)
+                    .map(categoryRuleRepository::save);
+        } catch (DataException e) {
+            log.error("Error creating multiple category rules", e);
         }
     }
 
@@ -89,5 +116,23 @@ public class CategoryRuleServiceImpl implements CategoryRuleService
     @Override
     public List<CategoryRuleEntity> findAllSystemCategoryRules() {
         return categoryRuleRepository.findAllByUserIsNull();
+    }
+
+    @Override
+    public List<CategoryRule> getSystemCategoryRules() {
+        List<CategoryRuleEntity> categoryRuleEntities = categoryRuleRepository.findAll();
+        return categoryRuleEntities.stream()
+                .filter(CategoryRuleEntity::isActive)
+                .map(this::createCategoryRuleFromEntity)
+                .toList();
+    }
+
+    @Override
+    public List<UserCategoryRule> getUserCategoryRules(Long userId) {
+        List<CategoryRuleEntity> categoryRuleEntities = categoryRuleRepository.findAllByUser(userId);
+        return categoryRuleEntities.stream()
+                .filter(CategoryRuleEntity::isActive)
+                .map(this::createCategoryRuleFromEntity)
+                .toList();
     }
 }

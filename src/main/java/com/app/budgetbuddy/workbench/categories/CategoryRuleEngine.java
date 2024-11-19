@@ -1,19 +1,18 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.Category;
-import com.app.budgetbuddy.domain.CategoryRule;
-import com.app.budgetbuddy.domain.RecurringTransaction;
-import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.TransactionLoaderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class CategoryRuleEngine
 {
     private final CategoryRuleCreator categoryRuleCreator;
@@ -34,23 +33,120 @@ public class CategoryRuleEngine
     }
 
     public void processTransactionsForUser(Long userId){
+        try {
 
+
+
+//            loadExistingTransactionsForUser(userId);
+//            loadExistingRecurringTransactionsForUser(userId);
+//
+//            Map<Transaction, CategoryRule> categorizedTransactions = categorizeTransactions(transactions);
+//            Map<RecurringTransaction, CategoryRule> categorizedRecurring = categorizeRecurringTransactions(recurringTransactions);
+//
+//            Set<CategoryRule> systemRules = categoryRuleCreator.createSystemRules(
+//                    convertToTransactionRuleMap(categorizedTransactions));
+//            Set<UserCategoryRule> userRules = categoryRuleCreator.createUserDefinedRules(
+//                    convertToTransactionRuleMap(categorizedTransactions), userId);
+//
+//            saveNewCategoryRules(systemRules);
+//            saveNewCategoryRules(userRules);
+
+            generateCategorizationSummary(transactions, recurringTransactions);
+        } catch (Exception e) {
+            log.error("Error processing transactions for user {}", userId, e);
+        }
     }
 
-    public void saveNewCategoryRules(Map<? extends Transaction, CategoryRule> newRules){
+    private Map<TransactionRule, String> convertToTransactionRuleMap(Map<? extends Transaction, CategoryRule> categorizedTransactions) {
+        Map<TransactionRule, String> result = new HashMap<>();
+        categorizedTransactions.forEach((transaction, categoryRule) -> {
+            TransactionRule transRule = new TransactionRule();
+            transRule.setTransactionId(transaction.getTransactionId());
+            transRule.setMerchantPattern(transaction.getMerchantName());
+            transRule.setDescriptionPattern(transaction.getDescription());
+            transRule.setCategories(transaction.getCategories());
+            transRule.setMatchedCategory(categoryRule.getCategoryName());
+            result.put(transRule, categoryRule.getCategoryName());
+        });
+        return result;
+    }
 
+    public void saveNewCategoryRules(Set<? extends CategoryRule> newRules)
+    {
+//        try {
+//            newRules.forEach(rule -> {
+//                if (rule instanceof UserCategoryRule) {
+//                    categoryRuleCreator.loadExistingUserCategoryRules(((UserCategoryRule) rule).getUserId())
+//                            .stream()
+//                            .filter(existingRule -> !existingRule.equals(rule))
+//                            .forEach(uniqueRule -> categoryRuleService.save(uniqueRule));
+//                } else {
+//                    categoryRuleCreator.loadExistingCategoryRules()
+//                            .stream()
+//                            .filter(existingRule -> !existingRule.equals(rule))
+//                            .forEach(uniqueRule -> categoryRuleService.save(uniqueRule));
+//                }
+//            });
+//        } catch (Exception e) {
+//            log.error("Error saving category rules", e);
+//            throw new CategoryRuleSaveException("Failed to save category rules", e);
+//        }
     }
 
     public void generateCategorizationSummary(List<Transaction> transactions, List<RecurringTransaction> recurringTransactions){
-
+//        Map<String, Integer> categoryCounts = new HashMap<>();
+//
+//        transactions.forEach(transaction ->
+//                categoryCounts.merge(transaction.getCategory(), 1, Integer::sum));
+//
+//        recurringTransactions.forEach(transaction ->
+//                categoryCounts.merge(transaction.getCategory(), 1, Integer::sum));
+//
+//        log.info("Categorization Summary:");
+//        log.info("Total Transactions: {}", transactions.size() + recurringTransactions.size());
+//        log.info("Categories Distribution: {}", categoryCounts);
+//        log.info("Uncategorized: {}", uncategorizedTransactions.size());
     }
 
-    public void processMatchedTransactions(Map<Transaction, String> categorizedTransactions){
-
+    public void processMatchedTransactions(final Map<Transaction, String> categorizedTransactions) {
+//        categorizedTransactions.forEach((transaction, category) -> {
+//            if ("Uncategorized".equals(category)) {
+//                uncategorizedTransactions.add(transaction);
+//            }
+//        });
     }
 
-    public void processMatchedRecurringTransactions(Map<RecurringTransaction, String> categorizedRecurringTransactions){
+    public void processMatchedRecurringTransactions(final Map<RecurringTransaction, String> categorizedRecurringTransactions) {
+//        categorizedRecurringTransactions.forEach((transaction, category) -> {
+//            if (!"Uncategorized".equals(category)) {
+//                transaction.setCategory(category);
+//            }
+//        });
+        return;
+    }
 
+    public Map<Transaction, CategoryRule> categorizeTransactions(List<Transaction> transactions) {
+//        return transactions.stream()
+//                .collect(Collectors.toMap(
+//                        transaction -> transaction,
+//                        transactionCategorizer::categorize,
+//                        (existing, replacement) -> existing
+//                ));
+        return null;
+    }
+
+    public Map<RecurringTransaction, CategoryRule> categorizeRecurringTransactions(List<RecurringTransaction> recurringTransactions) {
+//        return recurringTransactions.stream()
+//                .collect(Collectors.toMap(
+//                        transaction -> transaction,
+//                        transactionCategorizer::categorize,
+//                        (existing, replacement) -> existing
+//                ));
+        return null;
+    }
+
+    public CategoryRule categorizeSingleTransaction(Transaction transaction) {
+        return transactionCategorizer.categorize(transaction);
     }
 
     public void processUncategorizedTransactions(){
@@ -66,25 +162,15 @@ public class CategoryRuleEngine
     }
 
     public void loadExistingTransactionsForUser(Long userId){
-
+        LocalDate startDate = LocalDate.now().minusMonths(1);
+        LocalDate endDate = LocalDate.now();
+        this.transactions = transactionDataLoader.loadTransactionsByUserDateRange(userId, startDate, endDate);
     }
 
     public void loadExistingRecurringTransactionsForUser(Long userId){
-
+        LocalDate startDate = LocalDate.now().minusMonths(1);
+        LocalDate endDate = LocalDate.now();
+        this.recurringTransactions = transactionDataLoader.loadRecurringTransactionsByUserDateRange(userId, startDate, endDate);
     }
 
-    public Map<Transaction, CategoryRule> categorizeTransactions(List<Transaction> transactions)
-    {
-        return null;
-    }
-
-    public Map<RecurringTransaction, CategoryRule> categorizeRecurringTransactions(List<RecurringTransaction> recurringTransactions)
-    {
-        return null;
-    }
-
-    public CategoryRule categorizeSingleTransaction(Transaction transaction)
-    {
-        return null;
-    }
 }

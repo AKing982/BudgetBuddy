@@ -22,7 +22,7 @@ import java.util.regex.PatternSyntaxException;
 @Getter
 @Setter
 @Slf4j
-public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<Transaction>
+public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<Transaction, TransactionRule>
 {
     private Map<TransactionRule, String> matchedTransactions = new HashMap<>();
     private List<TransactionRule> unmatchedRules = new ArrayList<>();
@@ -63,13 +63,13 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         for(UserCategoryRule userCategoryRule : userCategoryRules){
             if(userCategoryRule.getUserId().equals(userId)){
                 boolean merchantMatches = transactionRule.getMerchantPattern().isEmpty() ||
-                        matchesMerchantPattern(transactionRule, userCategoryRule);
+                        matchesMerchantPatternRule(transactionRule, userCategoryRule);
                 log.info("MerchantMatches: " + merchantMatches);
                 boolean descriptionMatches = transactionRule.getDescriptionPattern().isEmpty() ||
-                        matchesDescriptionPattern(transactionRule, userCategoryRule);
+                        matchesDescriptionPatternRule(transactionRule, userCategoryRule);
                 log.info("DescriptionMatches: " + descriptionMatches);
                 boolean categoryMatches = transactionRule.getMatchedCategory().isEmpty() ||
-                        matchesCategoryPattern(transactionRule, userCategoryRule);
+                        matchesCategoryPatternRule(transactionRule, userCategoryRule);
                 log.info("CategoryMatches: " + categoryMatches);
                 if(descriptionMatches &&
                     userCategoryRule.isActive() && userCategoryRule.getPriority() == transactionRule.getPriority() &&
@@ -121,7 +121,6 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         rule.setMatchedCategory(category);
         rule.setPriority(priority);
         rule.setCategories(transaction.getCategories());
-        rule.setRecurring(false);
 
         // Build description pattern based on transaction type
         String description = transaction.getDescription();
@@ -147,107 +146,13 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
 
     private TransactionRule createTransactionRule(Transaction transaction, String category, int priority){
         TransactionRule transactionRule = new TransactionRule();
-        transactionRule.setFrequency("ONCE");
         transactionRule.setCategories(transaction.getCategories());
         transactionRule.setDescriptionPattern(transaction.getDescription());
         transactionRule.setMatchedCategory(category);
-        transactionRule.setRecurring(false);
         transactionRule.setTransactionId(transaction.getTransactionId());
         transactionRule.setPriority(priority);
         transactionRule.setMerchantPattern(transaction.getMerchantName());
         return transactionRule;
-    }
-
-    private int determineSystemPriority(final Transaction transaction){
-        boolean hasMerchant = (transaction.getMerchantName() != null || !transaction.getMerchantName().isEmpty());
-        boolean hasDescription = (transaction.getDescription() != null || !transaction.getDescription().isEmpty());
-        boolean hasCategories = (transaction.getCategories() != null || !transaction.getCategories().isEmpty());
-        if(hasMerchant && hasDescription && hasCategories){
-            return PriorityLevel.HIGHEST.getValue();
-        }else if(hasMerchant && (hasDescription || hasCategories)){
-            return PriorityLevel.HIGH.getValue();
-        }else if(hasDescription && hasCategories || hasMerchant){
-            return PriorityLevel.MEDIUM.getValue();
-        }else if(hasDescription || hasCategories){
-            return PriorityLevel.LOW.getValue();
-        }
-        return PriorityLevel.NONE.getValue();
-    }
-
-    private boolean matchesMerchantPattern(Transaction transaction, UserCategoryRule userCategoryRule){
-        if(transaction.getMerchantName() == null || userCategoryRule.getMerchantPattern() == null){
-            return false;
-        }
-        try
-        {
-            return Pattern.compile(userCategoryRule.getMerchantPattern(), Pattern.CASE_INSENSITIVE)
-                    .matcher(transaction.getMerchantName())
-                    .find();
-
-        }catch(PatternSyntaxException e){
-            log.error("Invalid Merchant pattern in rule: {}", userCategoryRule.getMerchantPattern(), e);
-            return false;
-        }
-    }
-
-    private boolean matchesDescriptionPattern(Transaction transaction, UserCategoryRule userCategoryRule){
-        if(transaction.getDescription() == null || userCategoryRule.getDescriptionPattern() == null){
-            return false;
-        }
-        try
-        {
-            return Pattern.compile(userCategoryRule.getDescriptionPattern(), Pattern.CASE_INSENSITIVE)
-                    .matcher(transaction.getDescription())
-                    .find();
-        }catch(PatternSyntaxException e){
-            log.error("Invalid description pattern in rule: {}", userCategoryRule.getDescriptionPattern(), e);
-            return false;
-        }
-    }
-
-    private boolean matchesCategoryPattern(Transaction transaction, UserCategoryRule userCategoryRule){
-        if(transaction.getCategories() == null || userCategoryRule.getCategoryName() == null){
-            return false;
-        }
-        try
-        {
-            Pattern categoryPattern = Pattern.compile(userCategoryRule.getCategoryName(), Pattern.CASE_INSENSITIVE);
-            return transaction.getCategories().stream()
-                    .anyMatch(category -> categoryPattern.matcher(category).find());
-        }catch(PatternSyntaxException e){
-            log.error("Invalid category pattern in rule: {}", userCategoryRule.getCategoryName(), e);
-            return false;
-        }
-    }
-
-    private boolean hasMatchingUserRule(Transaction transaction, List<UserCategoryRule> userCategoryRules){
-        if(userCategoryRules == null || userCategoryRules.isEmpty()){
-            return false;
-        }
-
-        return userCategoryRules.stream()
-                .filter(UserCategoryRule::isActive)
-                .anyMatch(rule -> matchesUserRule(transaction, rule));
-    }
-
-    private boolean matchesUserRule(Transaction transaction, UserCategoryRule userCategoryRule){
-        return (matchesMerchantPattern(transaction, userCategoryRule) ||
-                matchesDescriptionPattern(transaction, userCategoryRule) ||
-                matchesCategoryPattern(transaction, userCategoryRule));
-    }
-
-    public int determinePriority(final Transaction transaction, final List<UserCategoryRule> userCategoryRules)
-    {
-        if(transaction == null)
-        {
-            return PriorityLevel.NONE.getValue();
-        }
-
-        if(hasMatchingUserRule(transaction, userCategoryRules)){
-            return PriorityLevel.USER_DEFINED.getValue();
-        }
-
-        return determineSystemPriority(transaction);
     }
 
     public TransactionRule categorizeTransaction(Transaction transaction)
@@ -262,12 +167,10 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         for(CategoryRule categoryRule : systemCategoryRules){
             if(matchesRule(transactionRule, categoryRule)){
                 transactionRule = createTransactionRule(transaction, categoryRule.getCategoryName(), priority);
-
                 addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
                 return transactionRule;
             }
         }
-
         addUnmatchedTransactions(transactionRule);
         return transactionRule;
     }
@@ -278,40 +181,15 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         if (transaction == null || categoryRule == null) {
             return false;
         }
-        boolean matches = matchesMerchantPattern(transaction, categoryRule) ||
-                matchesDescriptionPattern(transaction, categoryRule) ||
-                matchesCategoryList(transaction, categoryRule);
+        boolean matches = matchesMerchantPatternRule(transaction, categoryRule) ||
+                matchesDescriptionPatternRule(transaction, categoryRule) ||
+                matchesCategoryPatternRule(transaction, categoryRule);
         log.info("Matches: " + matches);
         return matches;
     }
 
-    private boolean matchesMerchantPattern(TransactionRule transaction, CategoryRule rule) {
-        return rule.getMerchantPattern() != null && transaction.getMerchantPattern() != null &&
-                Pattern.compile(rule.getMerchantPattern(), Pattern.CASE_INSENSITIVE)
-                        .matcher(transaction.getMerchantPattern())
-                        .find();
-    }
 
-    private boolean matchesCategoryPattern(TransactionRule transactionRule, CategoryRule rule){
-        String categoryRuleName = rule.getCategoryName();
-        String transactionMatchedCategory = transactionRule.getMatchedCategory();
-        log.info("Transaction Category: " + transactionMatchedCategory);
-        return categoryRuleName != null && transactionMatchedCategory != null &&
-                Pattern.compile(categoryRuleName, Pattern.CASE_INSENSITIVE)
-                        .matcher(transactionMatchedCategory)
-                        .find();
-    }
 
-    private boolean matchesDescriptionPattern(TransactionRule transaction, CategoryRule rule) {
-        return rule.getDescriptionPattern() != null && transaction.getDescriptionPattern() != null &&
-                Pattern.compile(rule.getDescriptionPattern(), Pattern.CASE_INSENSITIVE)
-                        .matcher(transaction.getDescriptionPattern())
-                        .find();
-    }
 
-    private boolean matchesCategoryList(TransactionRule transaction, CategoryRule rule) {
-        return rule.getCategoryName() != null && transaction.getCategories() != null &&
-                transaction.getCategories().contains(rule.getCategoryName());
-    }
 
 }
