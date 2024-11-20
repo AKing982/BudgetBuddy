@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.CategoryRuleEntity;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import com.app.budgetbuddy.workbench.TransactionPatternBuilder;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,15 +28,15 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
     private Map<TransactionRule, String> matchedTransactions = new HashMap<>();
     private List<TransactionRule> unmatchedRules = new ArrayList<>();
     private final Map<Integer, List<TransactionRule>> groupedRulesByPriority = new HashMap<>();
-    private final String UNCATEGORIZED = "Uncategorized";
+
     private final List<String> defaultPriorityOrders = new ArrayList<>();
     private final String[] plaidCategoryList = {"Supermarkets and Groceries", "Financial", "Automotive", "Credit", "Third Party", "Withdrawal", "Gas Stations",
     "Payroll", "Digital Purchase", "Interest Earned", "Sports Clubs", "Utilities", "Glasses and Optometrist", "Personal Care", "Restaurants", "Gyms and Fitness Centers"};
     private Logger LOGGER = LoggerFactory.getLogger(TransactionCategoryRuleMatcher.class);
 
     @Autowired
-    public TransactionCategoryRuleMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService) {
-        super(categoryRuleService, categoryService);
+    public TransactionCategoryRuleMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService, PlaidCategoryManager plaidCategoryManager) {
+        super(categoryRuleService, categoryService, plaidCategoryManager);
     }
 
     public void addUnmatchedTransactions(TransactionRule transaction){
@@ -49,6 +50,7 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
     public boolean isTransactionMatched(Transaction transaction){
         return this.matchedTransactions.containsKey(transaction);
     }
+
 
     /**
      * Checks if the transactionRule has a matching a UserCategory Rule with matching priority

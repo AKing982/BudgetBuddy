@@ -3,7 +3,7 @@ package com.app.budgetbuddy.workbench.categories;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionRule;
 
-public interface TransactionMatcher<T extends Transaction>
+public interface TransactionMatcher<T extends Transaction, S extends TransactionRule>
 {
-    TransactionRule categorizeTransaction(T transaction);
+    S categorizeTransaction(T transaction);
 }

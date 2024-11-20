@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.CategoryRuleEntity;
 import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,16 +18,20 @@ import java.util.regex.PatternSyntaxException;
 @Getter
 @Setter
 @Slf4j
-public abstract class AbstractTransactionMatcher<T extends Transaction, S extends TransactionRule> implements TransactionMatcher<T> {
+public abstract class AbstractTransactionMatcher<T extends Transaction, S extends TransactionRule> implements TransactionMatcher<T, S> {
     protected final CategoryRuleService categoryRuleService;
     protected final CategoryService categoryService;
     protected List<CategoryRule> systemCategoryRules = new ArrayList<>();
     protected List<UserCategoryRule> userCategoryRules;
+    protected final PlaidCategoryManager plaidCategoryManager;
+    protected final String UNCATEGORIZED = "Uncategorized";
 
-    public AbstractTransactionMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService) {
+    public AbstractTransactionMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService,
+                                      PlaidCategoryManager plaidCategoryManager) {
         this.categoryRuleService = categoryRuleService;
         this.categoryService = categoryService;
         this.systemCategoryRules = loadCategoryRules();
+        this.plaidCategoryManager = plaidCategoryManager;
     }
 
     protected List<CategoryRule> loadCategoryRules(){
@@ -44,6 +49,17 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         return userCategoryRules.stream()
                 .filter(UserCategoryRule::isActive)
                 .anyMatch(rule -> matchesUserRule(transaction, rule));
+    }
+
+    protected boolean isValidPlaidCategory(String category){
+        try
+        {
+            return plaidCategoryManager.getCategory(category) != null;
+        }catch(Exception e){
+            log.warn("Invalid Plaid Category attempted: {}", category, e);
+            return false;
+        }
+
     }
 
     protected boolean matchesUserRule(T transaction, UserCategoryRule userCategoryRule){
@@ -89,8 +105,14 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         }
         try
         {
+            if(!isValidPlaidCategory(userCategoryRule.getCategoryName())){
+                log.warn("Rule contains invalid Plaid Category: {}", userCategoryRule.getCategoryName());
+                return false;
+            }
+
             Pattern categoryPattern = Pattern.compile(userCategoryRule.getCategoryName(), Pattern.CASE_INSENSITIVE);
             return transaction.getCategories().stream()
+                    .filter(this::isValidPlaidCategory)
                     .anyMatch(category -> categoryPattern.matcher(category).find());
         }catch(PatternSyntaxException e){
             log.error("Invalid category pattern in rule: {}", userCategoryRule.getCategoryName(), e);

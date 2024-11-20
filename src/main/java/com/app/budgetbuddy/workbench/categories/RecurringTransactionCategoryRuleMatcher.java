@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.categories;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import com.app.budgetbuddy.workbench.TransactionPatternBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,31 +25,54 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
     private Map<Integer, List<RecurringTransactionRule>> groupRulesByPriority = new HashMap<>();
 
     @Autowired
-    public RecurringTransactionCategoryRuleMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService) {
-        super(categoryRuleService, categoryService);
+    public RecurringTransactionCategoryRuleMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService, PlaidCategoryManager plaidCategoryManager) {
+        super(categoryRuleService, categoryService,  plaidCategoryManager);
     }
 
     @Override
-    public TransactionRule categorizeTransaction(RecurringTransaction transaction) {
+    public RecurringTransactionRule categorizeTransaction(RecurringTransaction transaction) {
         if(transaction == null){
             throw new IllegalArgumentException("Recurring transaction cannot be null");
         }
 
         loadCategoryRules();
         // Create initial transaction rule
-        RecurringTransactionRule transactionRule = createTransactionRule(transaction);
+        RecurringTransactionRule matchedRule = createTransactionRule(transaction);
         // Check system rules first
-        for (CategoryRule categoryRule : systemCategoryRules) {
-            if (matchesRule(transactionRule, categoryRule)) {
-                RecurringTransactionRule matchedRule = createMatchedRule(transaction, categoryRule);
-                addMatchedRecurringTransactions(matchedRule, categoryRule.getCategoryName());
+        if(!systemCategoryRules.isEmpty()){
+            for (CategoryRule categoryRule : systemCategoryRules) {
+                if (matchesRule(matchedRule, categoryRule)) {
+                    matchedRule = createMatchedRule(transaction, categoryRule);
+                    addMatchedRecurringTransactions(matchedRule, categoryRule.getCategoryName());
+                    return matchedRule;
+                }
+            }
+        }else
+        {
+            String category = getRecurringTransactionCategory(transaction);
+            if(!UNCATEGORIZED.equals(category)){
+                matchedRule = createTransactionRule(transaction);
+                matchedRule.setMatchedCategory(category);
+                matchedRule.setPriority(determineSystemPriority(transaction));
+                addMatchedRecurringTransactions(matchedRule, category);
                 return matchedRule;
             }
         }
 
         // If no system rule matches, add to unmatched
-        addUnmatchedRecurringTransaction(transactionRule);
-        return createUncategorizedRule(transaction);
+        addUnmatchedRecurringTransaction(matchedRule);
+        return matchedRule;
+    }
+
+    private String getRecurringTransactionCategory(RecurringTransaction transaction) {
+        if(transaction.getCategories() != null && !transaction.getCategories().isEmpty()){
+            for(String category : transaction.getCategories()){
+                if(isValidPlaidCategory(category)){
+                    return category;
+                }
+            }
+        }
+        return "";
     }
 
     public RecurringTransactionRule categorizeTransactionByUserRules(RecurringTransaction transaction, Long userId) {
