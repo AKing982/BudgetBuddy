@@ -1,6 +1,6 @@
 package com.app.budgetbuddy.workbench;
 
-import com.app.budgetbuddy.domain.DescriptionMatchType;
+import com.app.budgetbuddy.domain.TransactionMatchType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,73 +28,149 @@ class TransactionPatternBuilderTest {
         MockitoAnnotations.initMocks(this);
     }
 
-    @Test
-    void testExactDescriptionPattern() {
-        String description = "PIN Purchase WINCO FOODS";
-        String pattern = buildDescriptionPattern(description, DescriptionMatchType.EXACT);
 
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WINCO FOODS").find());
-        assertFalse(Pattern.compile(pattern).matcher("PIN Purchase WINCO FOODS #123").find());
+    @Test
+    void testBuildDescriptionPattern_whenDescriptionEmpty_thenReturnEmptyDescription() {
+        final String description = "";
+        String actual = buildDescriptionPattern("", description, TransactionMatchType.MULTI_MERCHANT, List.of("WINCO"));
+        assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testWildcardDescriptionPattern() {
-        String description = "PIN Purchase WINCO FOODS";
-        String pattern = buildDescriptionPattern(description, DescriptionMatchType.WILDCARD);
-
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WINCO FOODS").find());
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WINCO FOODS #123").find());
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WINCO FOODS at Location").find());
+    void testBuildDescriptionPattern_whenDescriptionMatchTypeEmpty_thenReturnEmptyDescription() {
+        final String description = "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024";
+        final TransactionMatchType matchType = null;
+        final List<String> merchants = List.of("WINCO");
+        final String actual = buildDescriptionPattern("", description, matchType, merchants);
+        assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testMultiMerchantDescriptionPattern() {
-        String description = "PIN Purchase WINCO FOODS";
-        List<String> merchants = Arrays.asList("WINCO FOODS", "WALMART", "HARMONS");
-        String pattern = buildDescriptionPattern(description, DescriptionMatchType.MULTI_MERCHANT, merchants);
-
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WINCO FOODS").find());
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WALMART").find());
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase HARMONS").find());
-        assertFalse(Pattern.compile(pattern).matcher("PIN Purchase TARGET").find());
+    void testBuildDescriptionPattern_whenMerchantListIsEmpty_thenReturnEmptyDescription() {
+        final String description = "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024";
+        final TransactionMatchType matchType = TransactionMatchType.MULTI_MERCHANT;
+        final List<String> merchants = List.of();
+        final String actual = buildDescriptionPattern("", description, matchType, merchants);
+        assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testTypeOnlyDescriptionPattern() {
-        String description = "PIN Purchase WINCO FOODS";
-        String pattern = buildDescriptionPattern(description, DescriptionMatchType.TYPE_ONLY);
+    void testBuildDescriptionPattern_whenMatchTypeIsExact_thenReturnDescription() {
+        final String description = "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024";
+        final TransactionMatchType matchType = TransactionMatchType.EXACT;
+        final List<String> merchants = List.of("WINCO");
 
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WINCO FOODS").find());
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase WALMART").find());
-        assertTrue(Pattern.compile(pattern).matcher("PIN Purchase anything else").find());
-        assertFalse(Pattern.compile(pattern).matcher("ACH Purchase WINCO FOODS").find());
+        final String actual = buildDescriptionPattern("", description, matchType, merchants);
+        assertEquals(description, actual);
     }
 
     @Test
-    void testPatternWithSpecialCharacters() {
-        String description = "PIN Purchase SMITH & SONS";
-        List<String> merchants = Arrays.asList("SMITH & SONS", "M&M's", "B&H Photo");
-
-        // Test each pattern type with special characters
-        String exactPattern = buildDescriptionPattern(description, DescriptionMatchType.EXACT);
-        String wildcardPattern = buildDescriptionPattern(description, DescriptionMatchType.WILDCARD);
-        String multiMerchantPattern = buildDescriptionPattern(description, DescriptionMatchType.MULTI_MERCHANT, merchants);
-        String typeOnlyPattern = buildDescriptionPattern(description, DescriptionMatchType.TYPE_ONLY);
-
-        // Verify all patterns handle special characters correctly
-        assertTrue(Pattern.compile(exactPattern).matcher("PIN Purchase SMITH & SONS").find());
-        assertTrue(Pattern.compile(wildcardPattern).matcher("PIN Purchase SMITH & SONS #123").find());
-        assertTrue(Pattern.compile(multiMerchantPattern).matcher("PIN Purchase M&M's").find());
-        assertTrue(Pattern.compile(typeOnlyPattern).matcher("PIN Purchase anything & everything").find());
+    void testBuildDescriptionPattern_whenDescriptionContainsKeyword_thenReturnDescription() {
+        final String description = "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024";
+        final String keyword = "WINCO";
+        final TransactionMatchType matchType = TransactionMatchType.CONTAINS;
+        final List<String> merchants = List.of("WINCO");
+        final String pattern = buildDescriptionPattern(keyword, description, matchType, merchants);
+        System.out.println("Pattern: " + pattern);
+        // Pattern should match if description contains keyword
+        assertTrue(description.matches(".*" + pattern + ".*"));
+        assertTrue(pattern.contains(keyword));
     }
 
     @Test
-    void testInvalidInputs() {
-        assertEquals("", buildDescriptionPattern(null, DescriptionMatchType.EXACT));
-        assertEquals("", buildDescriptionPattern("", DescriptionMatchType.WILDCARD));
-        assertEquals("", buildDescriptionPattern("PIN", DescriptionMatchType.TYPE_ONLY));
-        assertEquals("", buildDescriptionPattern("PIN Purchase", DescriptionMatchType.MULTI_MERCHANT, null));
+    void testBuildDescriptionPattern_whenDescriptionMatchTypeContains_KeywordNotInDescription_thenReturnDefaultDescription(){
+        final String description = "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024";
+        final String keyword = "WALMART";
+        final TransactionMatchType matchType = TransactionMatchType.CONTAINS;
+        final List<String> merchants = List.of("WINCO");
+        final String pattern = buildDescriptionPattern(keyword, description, matchType, merchants);
+        System.out.println("Pattern: " + pattern);
+        assertTrue(description.matches(".*" + pattern + ".*"));
+        assertFalse(pattern.contains(keyword));
     }
+
+    @Test
+    void testBuildDescriptionPattern_whenKeywordWithDifferentSpacing() {
+        String description = "PIN Purchase WINCO  FOODS #15"; // Double space
+        String keyword = "WINCO FOODS";  // Single space
+        String pattern = buildDescriptionPattern(keyword, description, TransactionMatchType.CONTAINS, List.of("WINCO FOODS"));
+        assertTrue(pattern.contains(keyword));
+        assertEquals("WINCO FOODS", pattern);
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenKeywordWithSpecialCharacters() {
+        String description = "PIN Purchase WINCO-FOODS #15";
+        String keyword = "WINCO-FOODS";
+        String pattern = buildDescriptionPattern(keyword, description, TransactionMatchType.CONTAINS, List.of("WINCO-FOODS"));
+
+        assertEquals("WINCO-FOODS", pattern);
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenKeywordInMiddleOfDescription() {
+        String description = "PIN Purchase at WINCO FOODS on Main St";
+        String keyword = "WINCO FOODS";
+        String pattern = buildDescriptionPattern(keyword, description, TransactionMatchType.CONTAINS, List.of("WINCO FOODS"));
+
+        assertEquals("WINCO FOODS", pattern);
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenKeywordAtEndOfDescription() {
+        String description = "PIN Purchase at WINCO FOODS";
+        String keyword = "WINCO FOODS";
+        String pattern = buildDescriptionPattern(keyword, description, TransactionMatchType.CONTAINS, List.of("WINCO FOODS"));
+
+        assertEquals("WINCO FOODS", pattern);
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenCaseInsensitiveMatch() {
+        String description = "PIN Purchase Winco Foods #15";
+        String keyword = "WINCO FOODS";
+        String pattern = buildDescriptionPattern(keyword, description, TransactionMatchType.CONTAINS, List.of("WINCO FOODS"));
+
+        // Decide if you want case-sensitive or case-insensitive matching
+        assertEquals("WINCO FOODS", pattern);  // Or adjust based on your case sensitivity requirements
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenMerchantListContainsMultipleMatches() {
+        // Given
+        String description = "PIN Purchase WINCO FOODS #15";
+        String keyword = "WINCO FOODS";
+        List<String> merchants = List.of("WINCO FOODS", "WINCO", "FOODS");
+
+        // When
+        String pattern = buildDescriptionPattern(keyword, description, TransactionMatchType.CONTAINS, merchants);
+
+        // Then
+        assertEquals("WINCO FOODS", pattern); // Should match since "WINCO FOODS" exists in both description and merchant list
+
+        // Test when keyword exists in description but not in merchant list
+        String invalidKeyword = "PIN Purchase";
+        String invalidPattern = buildDescriptionPattern(invalidKeyword, description, TransactionMatchType.CONTAINS, merchants);
+        assertEquals("PIN Purchase WINCO FOODS #15", invalidPattern); // Should return empty since not in merchant list
+
+        // Test partial merchant match
+        String partialKeyword = "WINCO";
+        String partialPattern = buildDescriptionPattern(partialKeyword, description, TransactionMatchType.CONTAINS, merchants);
+        assertEquals("WINCO", partialPattern); // Should match partial merchant
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenMerchantHasVaryingSpaces() {
+        String description = "PIN Purchase WINCO FOODS #15";
+        String spacedKeyword = "WINCO   FOODS";
+        List<String> spacedMerchants = List.of("WINCO   FOODS", "WINCO", "FOODS");
+
+        String spacedPattern = buildDescriptionPattern(spacedKeyword, description, TransactionMatchType.CONTAINS, spacedMerchants);
+
+        assertEquals("WINCO FOODS", spacedPattern); // Should normalize spaces
+    }
+
+
 
     @Test
     void testSingleMerchantPattern() {

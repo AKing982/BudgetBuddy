@@ -49,7 +49,7 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
             }
         }else
         {
-            String category = getRecurringTransactionCategory(transaction);
+            String category = getTransactionCategory(transaction);
             if(!UNCATEGORIZED.equals(category)){
                 matchedRule = createTransactionRule(transaction);
                 matchedRule.setMatchedCategory(category);
@@ -64,16 +64,7 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
         return matchedRule;
     }
 
-    private String getRecurringTransactionCategory(RecurringTransaction transaction) {
-        if(transaction.getCategories() != null && !transaction.getCategories().isEmpty()){
-            for(String category : transaction.getCategories()){
-                if(isValidPlaidCategory(category)){
-                    return category;
-                }
-            }
-        }
-        return "";
-    }
+
 
     public RecurringTransactionRule categorizeTransactionByUserRules(RecurringTransaction transaction, Long userId) {
         if (transaction == null) {
@@ -125,10 +116,10 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
         }
 
         if (transaction.getDescription() != null && !transaction.getDescription().isEmpty()) {
-            rule.setDescriptionPattern(TransactionPatternBuilder.buildDescriptionPattern(
-                    transaction.getDescription(),
-                    DescriptionMatchType.EXACT
-            ));
+//            rule.setDescriptionPattern(TransactionPatternBuilder.buildDescriptionPattern(
+//                    transaction.getDescription(),
+//                    TransactionMatchType.EXACT
+//            ));
         }
 
         return rule;
@@ -162,8 +153,7 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
                 matchesDescriptionPatternRule(transaction, categoryRule) ||
                 matchesCategoryPatternRule(transaction, categoryRule) ||
                 matchOnFrequency(categoryRule.getFrequency(), transaction.getFrequency()) ||
-                matchOnRecurring(categoryRule.isRecurring(), transaction.getActive());
-        return null;
+                matchOnRecurring(categoryRule.isRecurring(), transaction.isRecurring());
     }
 
     private boolean matchOnFrequency(String ruleFrequency, String transactionFrequency){

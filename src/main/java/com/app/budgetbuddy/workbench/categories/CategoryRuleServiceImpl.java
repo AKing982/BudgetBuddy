@@ -130,9 +130,10 @@ public class CategoryRuleServiceImpl implements CategoryRuleService
     @Override
     public List<UserCategoryRule> getUserCategoryRules(Long userId) {
         List<CategoryRuleEntity> categoryRuleEntities = categoryRuleRepository.findAllByUser(userId);
-        return categoryRuleEntities.stream()
-                .filter(CategoryRuleEntity::isActive)
-                .map(this::createCategoryRuleFromEntity)
-                .toList();
+//        return categoryRuleEntities.stream()
+//                .filter(CategoryRuleEntity::isActive)
+//                .map(this::createCategoryRuleFromEntity)
+//                .toList();
+        return null;
     }
 }

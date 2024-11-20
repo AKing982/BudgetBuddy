@@ -1,7 +1,9 @@
 package com.app.budgetbuddy.workbench;
 
 import com.app.budgetbuddy.domain.PlaidCategories;
+import com.app.budgetbuddy.domain.PlaidCategory;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -9,6 +11,7 @@ import java.util.Map;
 
 @Getter
 @Component
+@Slf4j
 public class PlaidCategoryManager
 {
     private static final Map<String, PlaidCategory> categories = new HashMap<>();
@@ -17,6 +20,7 @@ public class PlaidCategoryManager
         for (PlaidCategories category : PlaidCategories.values()) {
             categories.put(category.name(), new PlaidCategory(category.getPrimaryCategory(), category.getSecondaryCategory()));
         }
+        log.info("Loaded {} plaid categories", categories.size());
     }
 
     public static void addCategory(String name, String primaryCategory, String secondaryCategory) {
@@ -24,24 +28,10 @@ public class PlaidCategoryManager
     }
 
     public PlaidCategory getCategory(String name) {
-        return categories.get(name.toUpperCase());
+        log.info("Category: {}", name);
+        PlaidCategory plaidCategory = categories.get(name);
+        log.info("Plaid category: {}", plaidCategory);
+        return plaidCategory;
     }
 
-    public static class PlaidCategory {
-        private final String primaryCategory;
-        private final String secondaryCategory;
-
-        public PlaidCategory(String primaryCategory, String secondaryCategory) {
-            this.primaryCategory = primaryCategory;
-            this.secondaryCategory = secondaryCategory;
-        }
-
-        public String getPrimaryCategory() {
-            return primaryCategory;
-        }
-
-        public String getSecondaryCategory() {
-            return secondaryCategory;
-        }
-    }
 }

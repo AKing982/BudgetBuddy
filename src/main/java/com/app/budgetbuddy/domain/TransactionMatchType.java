@@ -1,9 +1,11 @@
 package com.app.budgetbuddy.domain;
 
-public enum DescriptionMatchType
+public enum TransactionMatchType
 {
     EXACT,
-    WILDCARD,
+    WILDCARD, //
     MULTI_MERCHANT,
+    CONTAINS,
+    STARTS_WITH,
     TYPE_ONLY
 }

@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.categories;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.CategoryRuleEntity;
+import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import lombok.Getter;
@@ -54,6 +55,8 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     protected boolean isValidPlaidCategory(String category){
         try
         {
+            PlaidCategory plaidCategory = plaidCategoryManager.getCategory(category);
+            log.info("Plaid Category: {}", plaidCategory);
             return plaidCategoryManager.getCategory(category) != null;
         }catch(Exception e){
             log.warn("Invalid Plaid Category attempted: {}", category, e);
@@ -66,6 +69,31 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         return (matchesMerchantPattern(transaction, userCategoryRule) ||
                 matchesDescriptionPattern(transaction, userCategoryRule) ||
                 matchesCategoryPattern(transaction, userCategoryRule));
+    }
+
+    protected String getTransactionCategory(T transaction) {
+        List<String> categories = transaction.getCategories();
+        log.info("Categories: {}", categories);
+        if(categories == null){
+            return UNCATEGORIZED;
+        }
+
+        if(!categories.isEmpty())
+        {
+            for(String category : categories)
+            {
+                if(category == null){
+                    continue;
+                }
+                return category;
+            }
+        }else
+        {
+            String categoryId = transaction.getCategoryId();
+            log.info("Category Id: {}", categoryId);
+            return getCategoryNameById(categoryId);
+        }
+        return UNCATEGORIZED;
     }
 
     protected boolean matchesMerchantPattern(T transaction, UserCategoryRule userCategoryRule){
@@ -177,9 +205,9 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     protected int determineSystemPriority(final T transaction){
-        boolean hasMerchant = (transaction.getMerchantName() != null || !transaction.getMerchantName().isEmpty());
-        boolean hasDescription = (transaction.getDescription() != null || !transaction.getDescription().isEmpty());
-        boolean hasCategories = (transaction.getCategories() != null || !transaction.getCategories().isEmpty());
+        boolean hasMerchant = (transaction.getMerchantName() != null && !transaction.getMerchantName().isEmpty());
+        boolean hasDescription = (transaction.getDescription() != null && !transaction.getDescription().isEmpty());
+        boolean hasCategories = (transaction.getCategories() != null && !transaction.getCategories().isEmpty());
         if(hasMerchant && hasDescription && hasCategories){
             return PriorityLevel.HIGHEST.getValue();
         }else if(hasMerchant && (hasDescription || hasCategories)){
@@ -211,7 +239,10 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
             return "";
         }
         Optional<CategoryEntity> category = categoryService.findCategoryById(categoryId);
+        if(category.isEmpty()){
+            throw new CategoryNotFoundException(categoryId);
+        }
         log.info("Found Category: " + category);
-        return category.isPresent() ? category.get().getName() : "";
+        return category.get().getName();
     }
 }

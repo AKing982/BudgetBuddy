@@ -2,8 +2,10 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.repositories.CategoryRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class CategoryServiceImpl implements CategoryService
 {
     private final CategoryRepository categoryRepository;
@@ -56,7 +59,9 @@ public class CategoryServiceImpl implements CategoryService
     }
 
     @Override
+    @Transactional
     public Optional<CategoryEntity> findCategoryById(String categoryId) {
+        log.info("CategoryId:" + categoryId);
         return categoryRepository.findByCategoryId(categoryId);
     }
 

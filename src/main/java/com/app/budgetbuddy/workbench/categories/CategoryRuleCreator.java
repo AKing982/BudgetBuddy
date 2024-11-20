@@ -88,20 +88,20 @@ public class CategoryRuleCreator {
         for (Map.Entry<TransactionRule, String> entry : matchedTransactions.entrySet()) {
             TransactionRule transRule = entry.getKey();
             String categoryName = entry.getValue();
-            UserCategoryRule newRule = new UserCategoryRule(
-                    transRule.getMatchedCategory(),
-                    transRule.getMerchantPattern(),
-                    transRule.getDescriptionPattern(),
-                    "ONCE",
-                    TransactionType.CREDIT,
-                    false,
-                    transRule.getPriority(),
-                    userId,
-                    LocalDateTime.now(),
-                    LocalDateTime.now(),
-                    true
-            );
-            newRules.add(newRule);
+//            UserCategoryRule newRule = new UserCategoryRule(
+//                    transRule.getMatchedCategory(),
+//                    transRule.getMerchantPattern(),
+//                    transRule.getDescriptionPattern(),
+//                    "ONCE",
+//                    TransactionType.CREDIT,
+//                    false,
+//                    transRule.getPriority(),
+//                    userId,
+//                    LocalDateTime.now(),
+//                    LocalDateTime.now(),
+//                    true
+//            );
+//            newRules.add(newRule);
         }
 
         return newRules;

@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -33,6 +35,9 @@ class TransactionCategoryRuleMatcherTest {
 
     @Mock
     private CategoryService categoryService;
+
+    @Mock
+    private PlaidCategoryManager plaidCategoryManager;
 
     @InjectMocks
     private TransactionCategoryRuleMatcher categoryRuleMatcher;
@@ -49,6 +54,8 @@ class TransactionCategoryRuleMatcherTest {
         categoryRule.setMerchantPattern("winco");
         categoryRule.setRecurring(false);
         categoryRule.setTransactionType(TransactionType.CREDIT);
+        when(categoryService.findCategoryById("19047000")).thenReturn(Optional.of(createGroceryCategory()));
+
         MockitoAnnotations.openMocks(this);
     }
 
@@ -231,6 +238,19 @@ class TransactionCategoryRuleMatcherTest {
     }
 
     @Test
+    void testCategorizeTransactionByUserRules_whenUserRulesEmpty_thenReturnUncategorized(){
+        Transaction transaction = createTransaction();
+
+        categoryRuleMatcher.setUserCategoryRules(List.of());
+
+        TransactionRule result = categoryRuleMatcher.categorizeTransactionByUserRules(transaction, 1L);
+        assertNotNull(result);
+        assertEquals("Uncategorized", result.getMatchedCategory());
+        assertEquals(4, result.getPriority());
+        assertEquals("PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024", result.getDescriptionPattern());
+    }
+
+    @Test
     void testCategorizeTransactionByUserRules_withMatchingPriority() {
         // Arrange
         Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "WINCO FOODS #15", List.of("Supermarkets And Groceries", "Shops"), "19047000");
@@ -279,6 +299,128 @@ class TransactionCategoryRuleMatcherTest {
         assertNotNull(result);
         assertEquals("Uncategorized", result.getMatchedCategory());
         assertTrue(categoryRuleMatcher.getUnmatchedRules().contains(result));
+    }
+
+    @Test
+    void testCategorizeTransaction_whenSystemCategoryRulesEmpty_returnPlaidCategory(){
+        Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "WINCO FOODS #15", List.of("Supermarkets and Groceries", "Shops"), "19047000");
+        categoryRuleMatcher.setSystemCategoryRules(List.of());
+
+        when(plaidCategoryManager.getCategory("Supermarkets and Groceries")).thenReturn(new PlaidCategory("Supermarkets and Groceries", "Shops"));
+
+        TransactionRule result = categoryRuleMatcher.categorizeTransaction(transaction);
+        assertNotNull(result);
+        assertEquals("Supermarkets and Groceries", result.getMatchedCategory());
+        assertEquals(4, result.getPriority());
+        assertEquals("WINCO FOODS #15", result.getMerchantPattern());
+        assertEquals("PIN Purchase WINCO FOODS #15", result.getDescriptionPattern());
+    }
+
+    @Test
+    void testCategorizeTransaction_whenSystemCategoryRulesEmpty_TransactionHasNoDescriptionOrMerchantName_returnPlaidCategory(){
+        Transaction transaction = createTransaction("", "", List.of("Supermarkets and Groceries", "Shops"), "19047000");
+        categoryRuleMatcher.setSystemCategoryRules(List.of());
+
+        when(plaidCategoryManager.getCategory("Supermarkets and Groceries")).thenReturn(new PlaidCategory("Supermarkets and Groceries", "Shops"));
+
+        TransactionRule result = categoryRuleMatcher.categorizeTransaction(transaction);
+        assertNotNull(result);
+        assertEquals("Supermarkets and Groceries", result.getMatchedCategory());
+        assertEquals(1, result.getPriority());
+        assertEquals("", result.getMerchantPattern());
+        assertEquals("", result.getDescriptionPattern());
+    }
+
+    @Test
+    void testCategorizeTransaction_whenSystemCategoryRulesEmpty_TransactionHasDescriptionAndNoMerchantNameAndCategoryId_returnPlaidCategory(){
+        Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "", List.of("Supermarkets and Groceries", "Shops"), "19047000");
+        categoryRuleMatcher.setSystemCategoryRules(List.of());
+
+        when(plaidCategoryManager.getCategory("Supermarkets and Groceries")).thenReturn(new PlaidCategory("Supermarkets and Groceries", "Shops"));
+        TransactionRule result = categoryRuleMatcher.categorizeTransaction(transaction);
+        assertNotNull(result);
+        assertEquals("Supermarkets and Groceries", result.getMatchedCategory());
+        assertEquals(2, result.getPriority());
+        assertEquals("", result.getMerchantPattern());
+    }
+
+    @Test
+    void testCategorizeTransaction_whenSystemCategoryRulesEmpty_TransactionHasOnlyDescription_thenReturnUnmatchedCategory(){
+        Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "", List.of(), "");
+        categoryRuleMatcher.setSystemCategoryRules(List.of());
+
+        when(plaidCategoryManager.getCategory("")).thenReturn(null);
+        TransactionRule result = categoryRuleMatcher.categorizeTransaction(transaction);
+        assertNotNull(result);
+        assertEquals("Uncategorized", result.getMatchedCategory());
+        assertEquals(1, result.getPriority());
+        assertEquals("", result.getMerchantPattern());
+    }
+
+    @Test
+    void testCategorizeTransaction_whenSystemCategoryRulesEmpty_TransactionHasDescriptionAndCategoryId_thenReturnCategory(){
+        Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "", List.of(), "19047000");
+        categoryRuleMatcher.setSystemCategoryRules(List.of());
+
+        when(plaidCategoryManager.getCategory("")).thenReturn(null);
+
+
+        TransactionRule result = categoryRuleMatcher.categorizeTransaction(transaction);
+        assertNotNull(result);
+        assertEquals("Supermarkets and Groceries", result.getMatchedCategory());
+        assertEquals(1, result.getPriority());
+        assertEquals("", result.getMerchantPattern());
+        assertEquals("PIN Purchase WINCO FOODS #15", result.getDescriptionPattern());
+    }
+
+    @Test
+    void testCategorizeTransaction_whenSystemCategoryRulesEmpty_whenTransactionHasNoCriteria_thenReturnUncategorized(){
+        Transaction transaction = createTransaction("", "", List.of(), "");
+        categoryRuleMatcher.setSystemCategoryRules(List.of());
+
+        when(plaidCategoryManager.getCategory("")).thenReturn(null);
+        TransactionRule result = categoryRuleMatcher.categorizeTransaction(transaction);
+        assertNotNull(result);
+        assertEquals("Uncategorized", result.getMatchedCategory());
+        assertEquals(0, result.getPriority());
+        assertEquals("", result.getMerchantPattern());
+        assertEquals("", result.getDescriptionPattern());
+    }
+
+    @Test
+    void testCategorizeTransaction_withSystemRules_multipleRulesMatchHighestPriority(){
+        Transaction transaction = createTransaction("PIN Purchase WINCO FOODS #15", "WINCO FOODS #15", List.of("Supermarkets and Groceries", "Shops"), "19047000");
+
+        CategoryRule groceriesRule = new CategoryRule();
+        groceriesRule.setCategoryId("19047000");
+        groceriesRule.setTransactionType(TransactionType.CREDIT);
+        groceriesRule.setCategoryName("Supermarkets and Groceries");
+        groceriesRule.setDescriptionPattern("WINCO FOODS.*");
+        groceriesRule.setRecurring(false);
+        groceriesRule.setFrequency("ONCE");
+        groceriesRule.setPriority(4);
+        groceriesRule.setMerchantPattern("WINCO FOODS #15");
+
+        CategoryRule shopsRule = new CategoryRule();
+        shopsRule.setCategoryId("19047001");
+        shopsRule.setTransactionType(TransactionType.CREDIT);
+        shopsRule.setCategoryName("Shops");
+        shopsRule.setDescriptionPattern(".*FOODS.*");
+        shopsRule.setRecurring(false);
+        shopsRule.setPriority(2);
+        shopsRule.setMerchantPattern(".*FOODS.*");
+
+        categoryRuleMatcher.setSystemCategoryRules(List.of(groceriesRule, shopsRule));
+        when(categoryService.findCategoryById("19047000"))
+                .thenReturn(Optional.of(createGroceryCategory()));
+
+        TransactionRule result = categoryRuleMatcher.categorizeTransaction(transaction);
+
+        assertNotNull(result);
+        assertEquals("Supermarkets and Groceries", result.getMatchedCategory());
+        assertEquals(4, result.getPriority());
+        assertEquals("WINCO FOODS #15", result.getMerchantPattern());
+        assertEquals("PIN Purchase WINCO FOODS #15", result.getDescriptionPattern());
     }
 
     private Transaction createTransaction(String description, String merchantName, List<String> categories, String categoryId){
@@ -348,9 +490,7 @@ class TransactionCategoryRuleMatcherTest {
         transactionRule.setPriority(priority);
         transactionRule.setCategories(List.of("Supermarkets and Groceries", "Shops"));
         transactionRule.setTransactionId("#2342342");
-        transactionRule.setFrequency("DAILY");
         transactionRule.setMerchantPattern("winco");
-        transactionRule.setRecurring(false);
         return transactionRule;
     }
 
