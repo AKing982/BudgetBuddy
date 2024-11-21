@@ -12,6 +12,7 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class UserCategoryRule extends CategoryRule
 {
+    private Long ruleId;
     private Long userId;
     private LocalDateTime createdDate;
     private LocalDateTime modifiedDate;

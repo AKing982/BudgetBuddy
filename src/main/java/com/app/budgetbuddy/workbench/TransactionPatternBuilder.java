@@ -15,6 +15,10 @@ public class TransactionPatternBuilder
     private static final String WILDCARD_KEY = ".*";
     private static final String SPACE_KEY = "\\s+";
     private static final String BLANK_KEY = " ";
+    private static final String PIPE_KEY = "|";
+    private static final String START_KEY = "^";
+    private static final String CONTAINS_KEY = ".";
+
     /**
      * Builds a description pattern based on match type needed
      * @param description Base transaction description
@@ -22,12 +26,13 @@ public class TransactionPatternBuilder
      * @param merchantList Optional list of merchants for MULTI_MERCHANT type
      * @return Pattern string for matching description(s)
      */
-    public static String buildDescriptionPattern(final String descriptionKeyword, final String transactionDescription, final TransactionMatchType matchType, final List<String> merchantList) {
+    public static String buildDescriptionPattern(final String transactionId, final String descriptionKeyword, final String transactionDescription, final TransactionMatchType matchType, final List<String> merchantList) {
         if(transactionDescription.isEmpty() || matchType == null || merchantList.isEmpty()){
             return "";
         }
 
         String normalizedKeyword = descriptionKeyword.toUpperCase().replaceAll(SPACE_KEY, BLANK_KEY).trim();
+        String normalizedDescription = transactionDescription.toUpperCase().replaceAll(SPACE_KEY, BLANK_KEY).trim();
         switch(matchType)
         {
             case EXACT ->
@@ -36,8 +41,6 @@ public class TransactionPatternBuilder
             }
             case CONTAINS ->
             {
-                String normalizedDescription = transactionDescription.toUpperCase().replaceAll(SPACE_KEY, BLANK_KEY).trim();
-
                 log.info("NormalizedKeyword: {}", normalizedKeyword);
                 boolean keywordMatchesOnMerchants = merchantList.stream()
                         .map(m -> m.toUpperCase().replaceAll(SPACE_KEY, BLANK_KEY))
@@ -54,52 +57,36 @@ public class TransactionPatternBuilder
                 }
             }
             case WILDCARD -> {
-                if(normalizedKeyword.endsWith(WILDCARD_KEY)){
-                    return normalizedKeyword;
+                StringBuilder wildCardPattern = new StringBuilder();
+                if(normalizedDescription.contains(normalizedKeyword)){
+                    return wildCardPattern.append(normalizedKeyword).append(WILDCARD_KEY).toString();
                 }
-                return normalizedKeyword + WILDCARD_KEY;
+
+                for (String merchant : merchantList) {
+                    String normalizedMerchant = merchant.toUpperCase().trim();
+                    if (normalizedDescription.contains(normalizedMerchant)) {
+                        if (!wildCardPattern.isEmpty()) {
+                            wildCardPattern.append(PIPE_KEY);
+                        }
+                        wildCardPattern.append(normalizedMerchant)
+                                .append(WILDCARD_KEY);
+                    }
+                }
+
+                return !wildCardPattern.isEmpty() ? wildCardPattern.toString() : normalizedDescription;
+            }
+            case MULTI_MERCHANT -> {
+                return merchantList.stream()
+                        .map(m -> m.toUpperCase().trim())
+                        .filter(normalizedDescription::contains)
+                        .collect(Collectors.joining(PIPE_KEY));
+            }
+            case STARTS_WITH -> {
+                if(normalizedDescription.startsWith(normalizedKeyword)){
+                    return START_KEY + normalizedKeyword;
+                }
             }
         }
-
-//        if (description == null || description.isEmpty()) {
-//            return "";
-//        }
-//
-//        String[] parts = description.split(" ");
-//        if (parts.length < 2) {  // Need at least transaction type (e.g., "PIN Purchase")
-//            return "";
-//        }
-//
-//        // Extract transaction type (e.g., "PIN Purchase")
-//        String transactionType = parts[0] + " " + parts[1];
-//
-//        switch (matchType) {
-//            case EXACT:
-//                return Pattern.quote(description.trim());
-//
-//            case WILDCARD:
-//                // If description contains merchant name, keep it in pattern
-//                return Pattern.quote(description.trim()) + ".*";
-//
-//            case MULTI_MERCHANT:
-//                if (merchantList == null || merchantList.isEmpty()) {
-//                    return "";
-//                }
-//                return Pattern.quote(transactionType) + " (" +
-//                        merchantList.stream()
-//                                .map(Pattern::quote)
-//                                .collect(Collectors.joining("|")) +
-//                        ")";
-//
-//            case TYPE_ONLY:
-//                return Pattern.quote(transactionType) + ".*";
-//            case CONTAINS:
-//                return Pattern.quote(transactionType) + ".*";
-//            case STARTS_WITH:
-//
-//
-//            default:
-//                return "";
 
         return null;
     }
@@ -113,7 +100,7 @@ public class TransactionPatternBuilder
      * @param merchants List of merchant names to match
      * @return Pattern string for matching merchant(s)
      */
-    public static String buildMerchantPattern(List<String> merchants) {
+    public static String buildMerchantPattern(List<String> merchants, TransactionMatchType matchType) {
         if (merchants == null || merchants.isEmpty()) {
             return "";
         }
