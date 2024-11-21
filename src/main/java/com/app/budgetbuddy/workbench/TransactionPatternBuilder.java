@@ -12,6 +12,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TransactionPatternBuilder
 {
+    private static final String WILDCARD_KEY = ".*";
+    private static final String SPACE_KEY = "\\s+";
+    private static final String BLANK_KEY = " ";
     /**
      * Builds a description pattern based on match type needed
      * @param description Base transaction description
@@ -24,26 +27,24 @@ public class TransactionPatternBuilder
             return "";
         }
 
+        String normalizedKeyword = descriptionKeyword.toUpperCase().replaceAll(SPACE_KEY, BLANK_KEY).trim();
         switch(matchType)
         {
             case EXACT ->
             {
-                return transactionDescription.replaceAll("\\s+", " ");
+                return transactionDescription.replaceAll(SPACE_KEY, BLANK_KEY).trim();
             }
             case CONTAINS ->
             {
-                String normalizedDescription = transactionDescription.toUpperCase().replaceAll("\\s+", " ");
-                String normalizedKeyword = descriptionKeyword.toUpperCase().replaceAll("\\s+", " ");
+                String normalizedDescription = transactionDescription.toUpperCase().replaceAll(SPACE_KEY, BLANK_KEY).trim();
+
                 log.info("NormalizedKeyword: {}", normalizedKeyword);
                 boolean keywordMatchesOnMerchants = merchantList.stream()
-                        .map(m -> m.toUpperCase().replaceAll("\\s+", ""))
+                        .map(m -> m.toUpperCase().replaceAll(SPACE_KEY, BLANK_KEY))
                         .anyMatch(m -> m.equals(normalizedKeyword));
                 log.info("Keyword matches on merchants: " + keywordMatchesOnMerchants);
-                if(normalizedDescription.contains(normalizedKeyword))
+                if(normalizedDescription.contains(normalizedKeyword) && keywordMatchesOnMerchants)
                 {
-                    return normalizedKeyword;
-                }
-                else if(keywordMatchesOnMerchants){
                     return normalizedKeyword;
                 }
                 else
@@ -51,6 +52,12 @@ public class TransactionPatternBuilder
                     // Look for spaces in the transaction description that occur where the keyword is
                     return transactionDescription;
                 }
+            }
+            case WILDCARD -> {
+                if(normalizedKeyword.endsWith(WILDCARD_KEY)){
+                    return normalizedKeyword;
+                }
+                return normalizedKeyword + WILDCARD_KEY;
             }
         }
 

@@ -170,7 +170,99 @@ class TransactionPatternBuilderTest {
         assertEquals("WINCO FOODS", spacedPattern); // Should normalize spaces
     }
 
+    @Test
+    void testBuildDescriptionPattern_whenMerchantHasMixedCase() {
+        String description = "PIN Purchase WINCO FOODS #15";
+        String mixedCaseKeyword = "Winco Foods";
+        List<String> mixedCaseMerchants = List.of("Winco Foods", "WINCO", "Foods");
 
+        String mixedCasePattern = buildDescriptionPattern(mixedCaseKeyword, description, TransactionMatchType.CONTAINS, mixedCaseMerchants);
+
+        assertEquals("WINCO FOODS", mixedCasePattern); // Should be case insensitive
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenMerchantHasSpecialCharacters() {
+        String specialCharsDescription = "PIN Purchase WINCO-FOODS & PHARMACY #15";
+        String specialCharsKeyword = "WINCO-FOODS";
+        List<String> specialCharsMerchants = List.of("WINCO-FOODS", "WINCO", "FOODS");
+
+        String specialCharsPattern = buildDescriptionPattern(specialCharsKeyword, specialCharsDescription,
+                TransactionMatchType.CONTAINS, specialCharsMerchants);
+
+        assertEquals("WINCO-FOODS", specialCharsPattern);
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenMerchantIsSubstring() {
+        String description = "PIN Purchase WINCO FOODS #15";
+        String subKeyword = "FOODS";
+        List<String> subMerchants = List.of("WINCO FOODS", "FOODS");
+
+        String subPattern = buildDescriptionPattern(subKeyword, description, TransactionMatchType.CONTAINS, subMerchants);
+
+        assertEquals("FOODS", subPattern);
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenMerchantListHasDuplicates() {
+        String description = "PIN Purchase WINCO FOODS #15";
+        List<String> duplicateMerchants = List.of("WINCO FOODS", "WINCO FOODS", "WINCO");
+
+        String duplicatePattern = buildDescriptionPattern("WINCO FOODS", description,
+                TransactionMatchType.CONTAINS, duplicateMerchants);
+
+        assertEquals("WINCO FOODS", duplicatePattern);
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenMerchantListHasNull() {
+        String description = "PIN Purchase WINCO FOODS #15";
+        List<String> nullMerchants = Arrays.asList("WINCO FOODS", null, "WINCO");
+
+        assertThrows(NullPointerException.class, () ->
+                buildDescriptionPattern("WINCO FOODS", description, TransactionMatchType.CONTAINS, nullMerchants));
+    }
+
+    @Test
+    void testBuildDescriptionPattern_whenMerchantHasNumbers() {
+        String numDescription = "PIN Purchase WINCO FOODS #123";
+        String numKeyword = "WINCO FOODS #123";
+        List<String> numMerchants = List.of("WINCO FOODS #123", "WINCO FOODS");
+
+        String numPattern = buildDescriptionPattern(numKeyword, numDescription,
+                TransactionMatchType.CONTAINS, numMerchants);
+
+        assertEquals("WINCO FOODS #123", numPattern);
+    }
+
+
+    @Test
+    void testBuildDescriptionPattern_whenWildcardMatchesAllTransactionsWithKeyword() {
+        // Given
+        String description = "PIN Purchase WINCO FOODS #15";
+        String keyword = "FOODS";
+        List<String> merchants = List.of("WINCO FOODS", "HARMONS FOODS", "SMITHS FOODS");
+
+        // This should match any merchant name containing WINCO:
+        // - "WINCO FOODS #15"
+        // - "WINCO PHARMACY"
+        // - "WINCO GAS"
+        String pattern = buildDescriptionPattern(keyword, description, TransactionMatchType.WILDCARD, merchants);
+        assertEquals("WINCO.*", pattern);
+
+        // Test variations of merchant names
+        List<String> testDescriptions = List.of(
+                "PIN Purchase WINCO FOODS #15",
+                "PIN Purchase WINCO PHARMACY",
+                "PIN Purchase WINCO GAS #123",
+                "PIN Purchase WINCO-MART"
+        );
+
+        // All should match the pattern
+        testDescriptions.forEach(desc ->
+                assertTrue(desc.toUpperCase().matches(pattern.toUpperCase())));
+    }
 
     @Test
     void testSingleMerchantPattern() {
