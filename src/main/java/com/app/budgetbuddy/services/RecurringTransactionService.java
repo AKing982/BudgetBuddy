@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.domain.RecurringTransactionType;
 import com.app.budgetbuddy.entities.CategoryEntity;
@@ -26,6 +27,7 @@ public interface RecurringTransactionService extends ServiceModel<RecurringTrans
     List<RecurringTransactionEntity> findByMerchantName(String merchantName);
     List<RecurringTransactionEntity> findByCategory(CategoryEntity category);
 
+    List<RecurringTransaction> getRecurringTransactions(Long userId, LocalDate startDate, LocalDate endDate);
     List<RecurringTransactionEntity> createRecurringTransactions(final List<RecurringTransactionDTO> outflowing, final List<RecurringTransactionDTO> inflowing);
     Optional<RecurringTransactionEntity> findByIdAndCategoryId(Long id, String categoryId);
 

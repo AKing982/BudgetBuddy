@@ -25,8 +25,5 @@ public class ConverterConfig
         return new TransactionEntityToModelConverter();
     }
 
-    @Bean
-    public PlaidCategoryManager plaidCategoryManager(){
-        return new PlaidCategoryManager();
-    }
+
 }

@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Getter
-@Component
 @Slf4j
+@Component
 public class PlaidCategoryManager
 {
     private static final Map<String, PlaidCategory> categories = new HashMap<>();

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.domain.RecurringTransactionType;
 import com.app.budgetbuddy.entities.CategoryEntity;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class RecurringTransactionServiceImpl implements RecurringTransactionService
@@ -102,6 +104,46 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     @Override
     public List<RecurringTransactionEntity> findByCategory(CategoryEntity category) {
         return recurringTransactionsRepository.findTransactionsByCategory(category);
+    }
+
+    @Override
+    public List<RecurringTransaction> getRecurringTransactions(Long userId, LocalDate startDate, LocalDate endDate) {
+        List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionsRepository.findTransactionsInDateRangeForUser(userId, startDate, endDate);
+        return convertRecurringTransactionEntities(recurringTransactionEntities);
+    }
+
+    private List<RecurringTransaction> convertRecurringTransactionEntities(List<RecurringTransactionEntity> recurringTransactionEntities){
+        List<RecurringTransaction> recurringTransactions = new ArrayList<>();
+        for (RecurringTransactionEntity recurringTransactionEntity : recurringTransactionEntities) {
+            RecurringTransaction recurringTransaction = new RecurringTransaction(
+                    recurringTransactionEntity.getAccount().getId().toString(),
+                    recurringTransactionEntity.getAverageAmount(),
+                    "USD", // Assuming currency is fixed as "USD". Replace with dynamic mapping if required.
+                    recurringTransactionEntity.getCategory() != null ?
+                            List.of(recurringTransactionEntity.getCategory().getName()) : new ArrayList<>(),
+                    recurringTransactionEntity.getCategory() != null ?
+                            recurringTransactionEntity.getCategory().getId().toString() : null,
+                    recurringTransactionEntity.getLastDate(), // Use `lastDate` as the transaction date
+                    recurringTransactionEntity.getDescription(),
+                    recurringTransactionEntity.getMerchantName(),
+                    recurringTransactionEntity.getMerchantName(), // Assuming `name` is the same as `merchantName`
+                    false, // Assuming `pending` is false for recurring transactions
+                    recurringTransactionEntity.getStreamId(),
+                    recurringTransactionEntity.getLastDate(), // Use `lastDate` as authorized date
+                    null, // Assuming `logoUrl` is not available in the entity
+                    recurringTransactionEntity.getLastDate(), // Use `lastDate` as posted date
+                    recurringTransactionEntity.getStreamId(),
+                    recurringTransactionEntity.getFirstDate(),
+                    recurringTransactionEntity.getLastDate(),
+                    recurringTransactionEntity.getFrequency(),
+                    recurringTransactionEntity.getAverageAmount(),
+                    recurringTransactionEntity.getLastAmount(),
+                    recurringTransactionEntity.isActive(),
+                    recurringTransactionEntity.getType()
+            );
+            recurringTransactions.add(recurringTransaction);
+        }
+        return recurringTransactions;
     }
 
     @Override

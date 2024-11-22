@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.SecondaryRow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
@@ -25,12 +27,35 @@ public class CategoryRuleRunner
     }
 
     public static void main(String[] args){
+        // Initialize Spring Application Context
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.scan("com.app.budgetbuddy"); // Adjust the package name to your project structure
+        context.refresh();
 
+        // Get the CategoryRuleRunner bean from the context
+        CategoryRuleRunner categoryRuleRunner = context.getBean(CategoryRuleRunner.class);
+
+        // Simulate testing categorizeOnNewTransactions
+        System.out.println("Testing categorizeOnNewTransactions...");
+        categoryRuleRunner.categorizeOnNewTransactions(1L);
+
+        // Simulate testing categorizeForUsers
+        System.out.println("Testing categorizeForUsers...");
+        List<Long> userIds = List.of(1L, 2L, 3L, 4L, 5L);
+        categoryRuleRunner.categorizeForUsers(userIds);
+
+        // Simulate testing categorizeOnLogin
+        System.out.println("Testing categorizeOnLogin...");
+        categoryRuleRunner.categorizeOnLogin(1L);
+
+        // Close the application context
+        context.close();
     }
 
     /**
      * Run categorization when new transactions sync
      */
+    @Async
     public void categorizeOnNewTransactions(Long userId) {
         taskExecutor.execute(() -> {
             try {
@@ -47,6 +72,7 @@ public class CategoryRuleRunner
     /**
      * Run categorization for multiple users (e.g., on system startup)
      */
+    @Async
     public void categorizeForUsers(List<Long> userIds) {
         userIds.forEach(userId -> {
             taskExecutor.execute(() -> {
@@ -63,6 +89,7 @@ public class CategoryRuleRunner
     /**
      * Run categorization on user login
      */
+    @Async
     public void categorizeOnLogin(Long userId) {
         // Use different thread pool for login categorization
         taskExecutor.execute(() -> {

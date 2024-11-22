@@ -175,9 +175,7 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         }
         log.info("System Priority: {}", priority);
         TransactionRule transactionRule = createTransactionRule(transaction, UNCATEGORIZED, priority);
-        try
-        {
-            if(!systemCategoryRules.isEmpty()){
+        if(!systemCategoryRules.isEmpty()){
                 for(CategoryRule categoryRule : systemCategoryRules){
                     if(matchesRule(transactionRule, categoryRule)){
                         transactionRule = createTransactionRule(transaction, categoryRule.getCategoryName(), priority);
@@ -198,9 +196,6 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
                 }
             }
 
-        }catch(TransactionRuleException ex){
-          log.error("Transaction Rule Exception: " + ex.getMessage());
-        }
         addUnmatchedTransactions(transactionRule);
         return transactionRule;
     }

@@ -33,7 +33,7 @@ public class CategoryRuleCreator {
         return category.getName();
     }
 
-    public Set<CategoryRule> createSystemRules(final Map<TransactionRule, String> matchedTransactions){
+    public Set<CategoryRule> createSystemRules(final List<? extends TransactionRule> matchedTransactions){
         if(matchedTransactions.isEmpty() || matchedTransactions == null){
             return new HashSet<>();
         }
@@ -42,29 +42,25 @@ public class CategoryRuleCreator {
         Set<CategoryRule> newRules = new HashSet<>();
 
         // 2. Iterate through the matched transactions
-        for(Map.Entry<TransactionRule, String> entry : matchedTransactions.entrySet()){
-
-            // 3. Validate the transaction rule and Category Name
-            TransactionRule rule = entry.getKey();
-            String categoryName = entry.getValue();
+        for(TransactionRule transactionRule : matchedTransactions){
+            String categoryName = transactionRule.getMatchedCategory();
             CategoryRule newRule = createCategoryRule(
                     "",
-                    rule.getMatchedCategory(),
-                    rule.getMerchantPattern(),
-                    rule.getDescriptionPattern(),
+                   categoryName,
+                    transactionRule.getMerchantPattern(),
+                    transactionRule.getDescriptionPattern(),
                     "ONCE",
                     TransactionType.CREDIT,
                     true,
-                    rule.getPriority()
+                    transactionRule.getPriority()
             );
 
             // Does the newRules already contain the newly created rule?
             newRules.add(newRule);
-
         }
+
         return newRules;
     }
-
 
 
     private CategoryRule createCategoryRule(String categoryId, String category, String merchantPattern, String descriptionPattern, String frequency, TransactionType transactionType, boolean isRecurring, int priority){
@@ -79,32 +75,43 @@ public class CategoryRuleCreator {
                 priority);
     }
 
-    public Set<UserCategoryRule> createUserDefinedRules(final Map<TransactionRule, String> matchedTransactions, final Long userId){
+    public Set<UserCategoryRule> createUserDefinedRules(final List<? extends TransactionRule> matchedTransactions, final Long userId){
         if (matchedTransactions == null || matchedTransactions.isEmpty()) {
             return new HashSet<>();
         }
 
         Set<UserCategoryRule> newRules = new HashSet<>();
-        for (Map.Entry<TransactionRule, String> entry : matchedTransactions.entrySet()) {
-            TransactionRule transRule = entry.getKey();
-            String categoryName = entry.getValue();
-//            UserCategoryRule newRule = new UserCategoryRule(
-//                    transRule.getMatchedCategory(),
-//                    transRule.getMerchantPattern(),
-//                    transRule.getDescriptionPattern(),
-//                    "ONCE",
-//                    TransactionType.CREDIT,
-//                    false,
-//                    transRule.getPriority(),
-//                    userId,
-//                    LocalDateTime.now(),
-//                    LocalDateTime.now(),
-//                    true
-//            );
-//            newRules.add(newRule);
-        }
+        for(TransactionRule transactionRule : matchedTransactions){
+            String categoryName = transactionRule.getMatchedCategory();
+            UserCategoryRule newRule = new UserCategoryRule(
+                    null, // `ruleId` is null for a new rule
+                    userId, // User ID from the method context
+                    LocalDateTime.now(), // Current date-time for `createdDate`
+                    LocalDateTime.now(), // Current date-time for `modifiedDate`
+                    TransactionMatchType.EXACT, // Default to `EXACT` match type
+                    "", // `matchByText` is an empty string as placeholder
+                    true // `isActive` set to true for an active rule
+            );
 
+            // Set inherited fields from the `transactionRule`
+            newRule.setCategoryName(transactionRule.getMatchedCategory());
+            newRule.setMerchantPattern(transactionRule.getMerchantPattern());
+            newRule.setDescriptionPattern(transactionRule.getDescriptionPattern());
+            newRule.setFrequency("ONCE");
+            newRule.setTransactionType(TransactionType.CREDIT); // Assuming `CREDIT` as the type
+            newRule.setRecurring(false); // Assuming the rule is not recurring
+            newRule.setPriority(transactionRule.getPriority());
+            newRules.add(newRule);
+        }
         return newRules;
+    }
+
+    public void saveUserDefinedRules(final Map<String, UserCategoryRule> userDefinedRules){
+
+    }
+
+    public void saveSystemDefinedRules(final Map<String, CategoryRule> systemDefinedRules){
+
     }
 
     public List<CategoryRule> loadExistingCategoryRules(){

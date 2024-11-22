@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.config;
 
+import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 @Configuration
 @EnableAsync
 @EnableScheduling
-@ConfigurationProperties(prefix="budgetbuddy.thread")
+@Slf4j
 public class ThreadConfig
 {
     private int corePoolSize = Runtime.getRuntime().availableProcessors();
@@ -31,6 +33,14 @@ public class ThreadConfig
         threadPoolTaskExecutor.setQueueCapacity(queueCapacity);
         threadPoolTaskExecutor.setThreadNamePrefix(threadNamePrefix);
         return threadPoolTaskExecutor;
+    }
+
+    @PreDestroy
+    public void shutdownTaskExecutor() {
+        if (threadPoolTaskExecutor() != null) {
+            log.info("Shutting down Task Executor...");
+            threadPoolTaskExecutor().shutdown();
+        }
     }
 
     @Bean

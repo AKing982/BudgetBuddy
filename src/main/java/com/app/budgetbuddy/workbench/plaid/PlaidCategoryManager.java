@@ -12,23 +12,23 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-@Service
-public class PlaidCategoryManager extends AbstractPlaidManager
-{
-    private Map<String, String> categoryMap = new ConcurrentHashMap<>();
-
-
-    public PlaidCategoryManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi) {
-        super(plaidLinkService, plaidApi);
-    }
-
-    public Category getCategoryProperties(String categoryId) throws IOException
-    {
-        return null;
-    }
-
-    public Collection<Category> getCategories()
-    {
-        return null;
-    }
-}
+//@Service
+//public class PlaidCategoryManager extends AbstractPlaidManager
+//{
+//    private Map<String, String> categoryMap = new ConcurrentHashMap<>();
+//
+//
+//    public PlaidCategoryManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi) {
+//        super(plaidLinkService, plaidApi);
+//    }
+//
+//    public Category getCategoryProperties(String categoryId) throws IOException
+//    {
+//        return null;
+//    }
+//
+//    public Collection<Category> getCategories()
+//    {
+//        return null;
+//    }
+//}
