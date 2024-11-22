@@ -4,8 +4,7 @@ public enum TransactionMatchType
 {
     EXACT,
     WILDCARD, //
-    MULTI_MERCHANT,
+//    MULTI_MERCHANT,
     CONTAINS,
     STARTS_WITH,
-    TYPE_ONLY
 }

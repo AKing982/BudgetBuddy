@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
+import com.app.budgetbuddy.exceptions.TransactionRuleException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import com.app.budgetbuddy.workbench.TransactionPatternBuilder;
@@ -14,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+
+import static com.app.budgetbuddy.workbench.TransactionPatternBuilder.buildPattern;
 
 @Service
 @Getter
@@ -97,14 +100,15 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         // 2. Iterate through the user Category Rules
         int priority = determinePriority(transaction, userCategoryRules);
         log.info("Priority: " + priority);
-        TransactionRule transactionRule = createTransactionRuleWithPatterns(transaction, "Uncategorized", priority);
+        TransactionRule transactionRule = createTransactionRuleWithPatterns(transaction, "Uncategorized","", priority);
         for(UserCategoryRule userCategoryRule : userCategoryRules){
             if(!userCategoryRule.getUserId().equals(userId) || !userCategoryRule.isActive()){
                     continue;
             }
             if(matchesRule(transactionRule, userCategoryRule) && userCategoryRule.getPriority() == priority){
                 log.info("Rule Matches");
-                TransactionRule matchedRule = createTransactionRuleWithPatterns(transaction, userCategoryRule.getCategoryName(), priority);
+                String matchByText = userCategoryRule.getMatchByText();
+                TransactionRule matchedRule = createTransactionRuleWithPatterns(transaction, userCategoryRule.getCategoryName(), matchByText, priority);
                 addMatchedTransactionRule(matchedRule.getMatchedCategory(), transactionRule);
                 return matchedRule;
             }
@@ -113,7 +117,7 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         return transactionRule;
     }
 
-    private TransactionRule createTransactionRuleWithPatterns(Transaction transaction, String category, int priority) {
+    private TransactionRule createTransactionRuleWithPatterns(Transaction transaction, String category, String userMatchByText, int priority) {
         TransactionRule rule = new TransactionRule();
         rule.setTransactionId(transaction.getTransactionId());
         rule.setMatchedCategory(category);
@@ -123,18 +127,23 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         // Build description pattern based on transaction type
         String description = transaction.getDescription();
         if (description != null && !description.isEmpty()) {
-//            String descPattern = TransactionPatternBuilder.buildDescriptionPattern(
-//                    description,
-//                    TransactionMatchType.EXACT  // or TYPE_ONLY based on your needs
-//            );
-//            rule.setDescriptionPattern(descPattern);
+            String descriptionPattern = buildPattern(
+                    description,
+                    userMatchByText,                // text to match against
+//                    Collections.emptyList(),    // no merchants needed for description
+                    TransactionMatchType.EXACT  // exact match for description
+            );
+            rule.setDescriptionPattern(descriptionPattern);
         }
 
         // Build merchant pattern - could be exact match or multi-merchant
         String merchantName = transaction.getMerchantName();
         if (merchantName != null && !merchantName.isEmpty()) {
-            String merchantPattern = TransactionPatternBuilder.buildMerchantPattern(
-                    List.of(merchantName)  // For single merchant matching
+            String merchantPattern = buildPattern(
+                    merchantName,              // text to match against
+                    userMatchByText,              // keyword to find
+//                    List.of(merchantName),     // single merchant list
+                    TransactionMatchType.EXACT // exact match for merchant
             );
             rule.setMerchantPattern(merchantPattern);
         }
@@ -158,7 +167,7 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         if(transaction == null){
             throw new IllegalArgumentException("Transaction Cannot be null");
         }
-
+        log.info("Loading Category Rules");
         loadCategoryRules();
         int priority = determineSystemPriority(transaction);
         if(priority < 1){
@@ -166,27 +175,32 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         }
         log.info("System Priority: {}", priority);
         TransactionRule transactionRule = createTransactionRule(transaction, UNCATEGORIZED, priority);
-        if(!systemCategoryRules.isEmpty()){
-            for(CategoryRule categoryRule : systemCategoryRules){
-                if(matchesRule(transactionRule, categoryRule)){
-                    transactionRule = createTransactionRule(transaction, categoryRule.getCategoryName(), priority);
+        try
+        {
+            if(!systemCategoryRules.isEmpty()){
+                for(CategoryRule categoryRule : systemCategoryRules){
+                    if(matchesRule(transactionRule, categoryRule)){
+                        transactionRule = createTransactionRule(transaction, categoryRule.getCategoryName(), priority);
+                        addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
+                        return transactionRule;
+                    }
+                }
+            }
+            else
+            {
+                String category = getTransactionCategory(transaction);
+                log.info("Category: " + category);
+                if(!UNCATEGORIZED.equals(category)){
+                    transactionRule = createTransactionRule(transaction, category, priority);
+                    log.info("Rule Matches: " + transactionRule.getMatchedCategory());
                     addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
                     return transactionRule;
                 }
             }
-        }
-        else
-        {
-            String category = getTransactionCategory(transaction);
-            log.info("Category: " + category);
-            if(!UNCATEGORIZED.equals(category)){
-                transactionRule = createTransactionRule(transaction, category, priority);
-                log.info("Rule Matches: " + transactionRule.getMatchedCategory());
-                addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
-                return transactionRule;
-            }
-        }
 
+        }catch(TransactionRuleException ex){
+          log.error("Transaction Rule Exception: " + ex.getMessage());
+        }
         addUnmatchedTransactions(transactionRule);
         return transactionRule;
     }

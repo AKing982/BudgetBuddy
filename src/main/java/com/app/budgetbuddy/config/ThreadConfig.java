@@ -22,7 +22,7 @@ public class ThreadConfig
     private int queueCapacity = 1000;
     private String threadNamePrefix = "TheadPool-";
 
-    @Bean(name="taskExecutor")
+    @Bean(name="taskExecutor2")
     public ThreadPoolTaskExecutor threadPoolTaskExecutor(){
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         threadPoolTaskExecutor.setCorePoolSize(corePoolSize);
