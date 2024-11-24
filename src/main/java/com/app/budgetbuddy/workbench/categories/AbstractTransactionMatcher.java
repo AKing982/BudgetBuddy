@@ -23,7 +23,7 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     protected final CategoryRuleService categoryRuleService;
     protected final CategoryService categoryService;
     protected List<CategoryRule> systemCategoryRules = new ArrayList<>();
-    protected List<UserCategoryRule> userCategoryRules;
+    public List<UserCategoryRule> userCategoryRules;
     protected final PlaidCategoryManager plaidCategoryManager;
     protected final String UNCATEGORIZED = "Uncategorized";
 
@@ -133,14 +133,12 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         }
         try
         {
-            if(!isValidPlaidCategory(userCategoryRule.getCategoryName())){
-                log.warn("Rule contains invalid Plaid Category: {}", userCategoryRule.getCategoryName());
-                return false;
-            }
-
+//            if(!isValidPlaidCategory(userCategoryRule.getCategoryName())){
+//                log.warn("Rule contains invalid Plaid Category: {}", userCategoryRule.getCategoryName());
+//                return false;
+//            }
             Pattern categoryPattern = Pattern.compile(userCategoryRule.getCategoryName(), Pattern.CASE_INSENSITIVE);
             return transaction.getCategories().stream()
-                    .filter(this::isValidPlaidCategory)
                     .anyMatch(category -> categoryPattern.matcher(category).find());
         }catch(PatternSyntaxException e){
             log.error("Invalid category pattern in rule: {}", userCategoryRule.getCategoryName(), e);

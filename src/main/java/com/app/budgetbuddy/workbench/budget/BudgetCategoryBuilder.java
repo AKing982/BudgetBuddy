@@ -2,15 +2,11 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
-import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
-import com.app.budgetbuddy.workbench.categories.CategoryRulePrioritizer;
-import com.app.budgetbuddy.workbench.categories.CategoryRuleService;
 import com.app.budgetbuddy.workbench.converter.UserBudgetCategoryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +39,10 @@ public class BudgetCategoryBuilder
         this.budgetCalculator = budgetCalculator;
         this.userBudgetCategoryConverter = userBudgetCategoryConverter;
         this.categoryRuleEngine = categoryRuleEngine;
+    }
+
+    public Map<String, List<Transaction>> linkCategoryToTransactions(String categoryName, ){
+
     }
 
     public UserBudgetCategory updateCategoryOnNewTransaction(final Transaction transaction, final UserBudgetCategory existingUserBudgetCategory)

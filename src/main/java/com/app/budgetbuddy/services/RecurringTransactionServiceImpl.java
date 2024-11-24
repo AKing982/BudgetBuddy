@@ -115,12 +115,21 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     private List<RecurringTransaction> convertRecurringTransactionEntities(List<RecurringTransactionEntity> recurringTransactionEntities){
         List<RecurringTransaction> recurringTransactions = new ArrayList<>();
         for (RecurringTransactionEntity recurringTransactionEntity : recurringTransactionEntities) {
+            String categoryName = null;
+            if (recurringTransactionEntity.getCategory() != null) {
+                categoryName = recurringTransactionEntity.getCategory().getName() != null
+                        ? recurringTransactionEntity.getCategory().getName()
+                        : recurringTransactionEntity.getCategory().getDescription(); // Fallback to description
+            }
+
+            List<String> categories = (categoryName != null) ? List.of(categoryName) : new ArrayList<>();
+
             RecurringTransaction recurringTransaction = new RecurringTransaction(
                     recurringTransactionEntity.getAccount().getId().toString(),
                     recurringTransactionEntity.getAverageAmount(),
                     "USD", // Assuming currency is fixed as "USD". Replace with dynamic mapping if required.
-                    recurringTransactionEntity.getCategory() != null ?
-                            List.of(recurringTransactionEntity.getCategory().getName()) : new ArrayList<>(),
+
+                    categories,
                     recurringTransactionEntity.getCategory() != null ?
                             recurringTransactionEntity.getCategory().getId().toString() : null,
                     recurringTransactionEntity.getLastDate(), // Use `lastDate` as the transaction date

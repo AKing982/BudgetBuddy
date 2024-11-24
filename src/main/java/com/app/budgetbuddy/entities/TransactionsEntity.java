@@ -29,7 +29,7 @@ public class TransactionsEntity
     @JsonManagedReference
     private AccountEntity account;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="categoryid")
     @JsonManagedReference
     private CategoryEntity category;

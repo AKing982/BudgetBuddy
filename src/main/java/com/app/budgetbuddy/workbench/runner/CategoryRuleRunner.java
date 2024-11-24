@@ -24,6 +24,7 @@ public class CategoryRuleRunner
                               @Qualifier("taskExecutor2") ThreadPoolTaskExecutor taskExecutor)
     {
         this.categoryRuleEngine = categoryRuleEngine;
+        this.taskExecutor = taskExecutor;
     }
 
     public static void main(String[] args){

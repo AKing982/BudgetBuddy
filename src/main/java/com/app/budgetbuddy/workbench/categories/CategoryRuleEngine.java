@@ -4,6 +4,10 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.TransactionLoaderService;
+import com.app.budgetbuddy.workbench.RecurringTransactionLoader;
+import com.app.budgetbuddy.workbench.RecurringTransactionLoaderImpl;
+import com.app.budgetbuddy.workbench.TransactionDataLoaderImpl;
+import com.app.budgetbuddy.workbench.TransactionLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -11,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -22,6 +27,9 @@ public class CategoryRuleEngine
     private final CategoryRuleCreator categoryRuleCreator;
     private final TransactionCategorizer transactionCategorizer;
     private final TransactionLoaderService transactionDataLoader;
+
+    private static TransactionDataLoaderImpl transactionLoader;
+    private static RecurringTransactionLoaderImpl recurringTransactionLoader;
     private Map<String, CategoryRule> categorizedTransactionSystemRules = new HashMap<>();
     private Map<String, UserCategoryRule> categorizedTransactionsUserRules = new HashMap<>();
     private Map<String, CategoryRule> categorizedRecurringTransactionSystemRules = new HashMap<>();
@@ -30,11 +38,47 @@ public class CategoryRuleEngine
     @Autowired
     public CategoryRuleEngine(CategoryRuleCreator categoryRuleCreator,
                               TransactionCategorizer transactionCategorizer,
-                              TransactionLoaderService transactionDataLoader)
+                              TransactionLoaderService transactionDataLoader,
+                              TransactionDataLoaderImpl transactionDataLoaderImpl,
+                              RecurringTransactionLoaderImpl recurringTransactionLoaderImpl)
     {
         this.categoryRuleCreator = categoryRuleCreator;
         this.transactionCategorizer = transactionCategorizer;
         this.transactionDataLoader = transactionDataLoader;
+        this.transactionLoader = transactionDataLoaderImpl;
+        this.recurringTransactionLoader = recurringTransactionLoaderImpl;
+    }
+
+    public static List<Transaction> loadTransactions(){
+        return transactionLoader.loadTransactionsByDateRange(1L, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30));
+    }
+
+    public static List<RecurringTransaction> loadRecurringTransactions(){
+        return recurringTransactionLoader.loadTransactionsByDateRange(1L, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30));
+    }
+
+    public Boolean processTransactionsForUser(List<Transaction> transactions, List<RecurringTransaction> recurringTransactions, Long userId){
+        try{
+            // 2. Apply user rules first
+            Map<String, UserCategoryRule> userCategorized = combineCategorizedTransactionUserRules(
+                    getCategorizedTransactionsWithUserRules(transactions, userId),
+                    getCategorizedRecurringTransactionsWithUserRules(recurringTransactions, userId));
+
+            Map<String, CategoryRule> systemCategorized = combineCategorizedTransactions(
+                    getCategorizedTransactionsWithSystemRules(transactions),
+                    getCategorizedRecurringTransactionsWithSystemRules(recurringTransactions));
+
+            // 4. Generate and save rules
+            saveNewRules(userCategorized, systemCategorized);
+
+            // 5. Log summary
+            generateSummary(userCategorized, systemCategorized);
+
+            return true;
+        }catch(Exception e){
+            log.error("There was an error processing transactions for user: ", e);
+            return false;
+        }
     }
 
     public Boolean processTransactionsForUser(Long userId) {
@@ -115,14 +159,36 @@ public class CategoryRuleEngine
             return Collections.emptyMap();
         }
         List<TransactionRule> transactionRulesWithSystemRules = transactionCategorizer.categorizeTransactionsBySystemRules(transactions);
-        Set<CategoryRule> systemCategoryRules = categoryRuleCreator.createSystemRules(transactionRulesWithSystemRules);
+
+        Map<String, Map<String, List<TransactionRule>>> groupedRules = categoryRuleCreator.groupTransactionRulesWithLogging(transactionRulesWithSystemRules);
+        Set<CategoryRule> consolidatedRule = categoryRuleCreator.convertGroupedRulesToCategoryRules(groupedRules, CategoryRule.class, null);
+
         for(TransactionRule transactionRule : transactionRulesWithSystemRules){
-            for(CategoryRule categoryRule : systemCategoryRules){
-                categorizedTransactionSystemRules.putIfAbsent(transactionRule.getTransactionId(), categoryRule);
-                break;
+            CategoryRule matchingRule = findMatchingCategoryRule(transactionRule, consolidatedRule);
+            if(matchingRule != null){
+                categorizedTransactionSystemRules.put(transactionRule.getTransactionId(), matchingRule);
             }
         }
         return categorizedTransactionSystemRules;
+    }
+
+    private CategoryRule findMatchingCategoryRule(TransactionRule transactionRule,
+                                                  Set<CategoryRule> categoryRules) {
+        return categoryRules.stream()
+                .filter(cr -> cr.getCategoryName().equals(transactionRule.getMatchedCategory())
+                        && cr.getMerchantPattern().equals(transactionRule.getMerchantPattern()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private UserCategoryRule findMatchingUserCategoryRule(
+            TransactionRule transactionRule,
+            Set<UserCategoryRule> userCategoryRules) {
+        return userCategoryRules.stream()
+                .filter(ucr -> ucr.getCategoryName().equals(transactionRule.getMatchedCategory())
+                        && ucr.getMerchantPattern().equals(transactionRule.getMerchantPattern()))
+                .findFirst()
+                .orElse(null);
     }
 
     public Map<String, UserCategoryRule> getCategorizedTransactionsWithUserRules(List<Transaction> transactions, Long userId){
@@ -130,11 +196,21 @@ public class CategoryRuleEngine
             return Collections.emptyMap();
         }
         List<TransactionRule> transactionRulesWithUserRules = transactionCategorizer.categorizeTransactionByUserRules(transactions, userId);
-        Set<UserCategoryRule> userCategoryRules = categoryRuleCreator.createUserDefinedRules(transactionRulesWithUserRules, userId);
+
+        Map<String, Map<String, List<TransactionRule>>> groupedRules = categoryRuleCreator.groupTransactionRulesWithLogging(transactionRulesWithUserRules);
+
+        Set<UserCategoryRule> consolidatedRules = categoryRuleCreator.convertGroupedRulesToCategoryRules(groupedRules, UserCategoryRule.class, userId);
+
         for(TransactionRule transactionRule : transactionRulesWithUserRules){
-            for(UserCategoryRule categoryRule : userCategoryRules){
-                categorizedTransactionsUserRules.putIfAbsent(transactionRule.getTransactionId(), categoryRule);
-                break;
+            UserCategoryRule matchingRule = findMatchingUserCategoryRule(
+                    transactionRule,
+                    consolidatedRules
+            );
+            if (matchingRule != null) {
+                categorizedTransactionsUserRules.put(
+                        transactionRule.getTransactionId(),
+                        matchingRule
+                );
             }
         }
         return categorizedTransactionsUserRules;
@@ -155,7 +231,7 @@ public class CategoryRuleEngine
         return categorizedRecurringTransactionSystemRules;
     }
 
-    public Map<String, UserCategoryRule> getCategorizedRecurringTransactionsWithUserRules(List<RecurringTransaction> transactions, Long userId){
+    public Map<String, UserCategoryRule> getCategorizedRecurringTransactionsWithUserRules(final List<RecurringTransaction> transactions, final Long userId){
         if(transactions == null || transactions.isEmpty()){
             return Collections.emptyMap();
         }
@@ -191,9 +267,21 @@ public class CategoryRuleEngine
     private void generateSummary(Map<String, UserCategoryRule> userCategorized,
                                  Map<String, CategoryRule> systemCategorized) {
         log.info("Categorization Summary:");
-        log.info("User Rules: {}", userCategorized.size());
-        log.info("System Rules: {}", systemCategorized.size());
-        log.info("Total Rules: {}", userCategorized.size() + systemCategorized.size());
+        log.info("Original User Rules: {}", userCategorized.size());
+        log.info("Original System Rules: {}", systemCategorized.size());
+        log.info("Total Original Rules: {}", userCategorized.size() + systemCategorized.size());
+
+        // Count unique consolidated rules
+        long uniqueUserRules = userCategorized.values().stream()
+                .distinct()
+                .count();
+        long uniqueSystemRules = systemCategorized.values().stream()
+                .distinct()
+                .count();
+
+        log.info("Consolidated User Rules: {}", uniqueUserRules);
+        log.info("Consolidated System Rules: {}", uniqueSystemRules);
+        log.info("Total Consolidated Rules: {}", uniqueUserRules + uniqueSystemRules);
     }
 
     public static void main(String[] args) {
@@ -205,76 +293,55 @@ public class CategoryRuleEngine
         // Retrieve the CategoryRuleEngine bean
         CategoryRuleEngine categoryRuleEngine = context.getBean(CategoryRuleEngine.class);
 
-        // Create sample transactions
-        List<Transaction> sampleTransactions = List.of(
-                new Transaction(
-                        "account123",
-                        BigDecimal.valueOf(50.75),
-                        "USD",
-                        List.of("Groceries", "Shopping"),
+        List<Transaction> transactions = loadTransactions();
+        List<RecurringTransaction> recurringTransactions = loadRecurringTransactions();
+
+        // Create user category rules
+        List<UserCategoryRule> userCategoryRules = List.of(
+                new UserCategoryRule(
                         "cat1",
-                        LocalDate.now(),
-                        "WINCO FOODS Purchase",
+                        "Supermarkets And Groceries",
                         "WINCO",
-                        "Winco Foods",
+                        "WINCO FOODS.*",
+                        "ONCE",
+                        TransactionType.DEBIT,
                         false,
-                        "txn123",
-                        LocalDate.now(),
-                        "http://example.com/logo.png",
-                        LocalDate.now()
+                        1,
+                        1L,
+                        LocalDateTime.now(),
+                        LocalDateTime.now(),
+                        TransactionMatchType.EXACT,
+                        "WINCO",
+                        true
                 ),
-                new Transaction(
-                        "account124",
-                        BigDecimal.valueOf(120.00),
-                        "USD",
-                        List.of("Utilities"),
+                new UserCategoryRule(
                         "cat2",
-                        LocalDate.now().minusDays(5),
-                        "POWER BILL Payment",
+                        "Utilities",
                         "ROCKY MOUNTAIN POWER",
-                        "RMP",
+                        "POWER BILL.*",
+                        "MONTHLY",
+                        TransactionType.DEBIT,
                         false,
-                        "txn124",
-                        LocalDate.now().minusDays(5),
-                        null,
-                        LocalDate.now().minusDays(5)
+                        2,
+                        1L,
+                        LocalDateTime.now(),
+                        LocalDateTime.now(),
+                        TransactionMatchType.EXACT,
+                        "POWER",
+                        true
                 )
         );
 
-        // Create sample recurring transactions
-        List<RecurringTransaction> sampleRecurringTransactions = List.of(
-                new RecurringTransaction(
-                        "account125",
-                        BigDecimal.valueOf(500.00),
-                        "USD",
-                        List.of("Rent"),
-                        "cat3",
-                        LocalDate.now().minusMonths(1),
-                        "Monthly Rent Payment",
-                        "LANDLORD INC",
-                        "Landlord",
-                        false,
-                        "recTxn1",
-                        LocalDate.now().minusMonths(1),
-                        null,
-                        LocalDate.now().minusMonths(1),
-                        "stream1",
-                        LocalDate.now().minusMonths(1),
-                        LocalDate.now(),
-                        "MONTHLY",
-                        BigDecimal.valueOf(500.00),
-                        BigDecimal.valueOf(500.00),
-                        true,
-                        "RENT"
-                )
-        );
 
         // Simulate processing transactions for a user
         Long userId = 1L;
         System.out.println("Processing transactions for user " + userId);
 
         try {
-            boolean success = categoryRuleEngine.processTransactionsForUser(userId);
+            categoryRuleEngine.transactionCategorizer.addUserCategoryRules(userCategoryRules);
+            categoryRuleEngine.transactionCategorizer.addUserCategoryRulesRecurring(userCategoryRules);
+            boolean success = categoryRuleEngine.processTransactionsForUser(transactions, recurringTransactions, userId);
+
             System.out.println("Processing completed: " + (success ? "Success" : "Failed"));
         } catch (Exception e) {
             System.err.println("Error during processing: " + e.getMessage());

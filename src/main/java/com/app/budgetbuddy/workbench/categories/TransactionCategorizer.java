@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.RecurringTransaction;
-import com.app.budgetbuddy.domain.RecurringTransactionRule;
-import com.app.budgetbuddy.domain.Transaction;
-import com.app.budgetbuddy.domain.TransactionRule;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.TransactionRuleException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +13,8 @@ import java.util.List;
 @Slf4j
 public class TransactionCategorizer
 {
-    private final TransactionCategoryRuleMatcher transactionCategoryRuleMatcher;
-    private final RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
+    private TransactionCategoryRuleMatcher transactionCategoryRuleMatcher;
+    private RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
     private List<RecurringTransactionRule> recurringTransactionRules = new ArrayList<>();
     private List<TransactionRule> transactionRules = new ArrayList<>();
 
@@ -29,6 +26,14 @@ public class TransactionCategorizer
         this.recurringTransactionCategoryRuleMatcher = recurringTransactionCategoryRuleMatcher;
     }
 
+    public void addUserCategoryRulesRecurring(List<UserCategoryRule> userCategoryRules){
+        recurringTransactionCategoryRuleMatcher.setUserCategoryRules(userCategoryRules);
+    }
+
+    public void addUserCategoryRules(List<UserCategoryRule> userCategoryRules){
+        transactionCategoryRuleMatcher.setUserCategoryRules(userCategoryRules);
+    }
+
 
     public List<TransactionRule> categorizeTransactionsBySystemRules(final List<Transaction> transactions){
         if(transactions.isEmpty())
@@ -37,6 +42,7 @@ public class TransactionCategorizer
         }
         for(Transaction transaction : transactions)
         {
+            log.info("Categorizing transaction {}", transaction);
             if(transaction == null)
             {
                 log.warn("Found null transaction. Continuing to next transaction.");
