@@ -19,6 +19,7 @@ import BudgetDebtPage from "./components/BudgetDebtPage";
 import SpendingOverview from "./components/SpendingOverview";
 import BudgetControlPage from "./components/BudgetControlPage";
 import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
+import BudgetPlannerDesigner from "./components/BudgetPlannerDesigner";
 
 const theme = createTheme({
     palette: {
@@ -50,6 +51,7 @@ function App() {
                       <Route path="/budget-debt" element={<BudgetDebtPage />}/>
                       <Route path="/budget-spending" element={<BudgetControlPage />}/>
                       <Route path="/budget-emergency" element={<BudgetEmergencyFundPage />}/>
+                      <Route path="/budget-planner" element={<BudgetPlannerDesigner />}/>
                   </Routes>
               </div>
           </BrowserRouter>

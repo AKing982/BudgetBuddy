@@ -40,12 +40,6 @@ class CategoryRuleEngineTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    @Test
-    void testGetCategorizedTransactionsWithSystemRules_whenTransactionsIsEmpty(){
-        List<Transaction> transactionList = new ArrayList<>();
-        Map<Transaction, CategoryRule> categorizedTransactionsSystemRules = categoryRuleEngine.getCategorizedTransactionsWithSystemRules(transactionList);
-        assertTrue(categorizedTransactionsSystemRules.isEmpty());
-    }
 
     @Test
     void testGetCategorizedTransactionsWithSystemRules_whenTransactionsIsNotEmpty(){

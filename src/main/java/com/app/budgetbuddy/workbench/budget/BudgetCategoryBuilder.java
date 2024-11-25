@@ -41,10 +41,6 @@ public class BudgetCategoryBuilder
         this.categoryRuleEngine = categoryRuleEngine;
     }
 
-    public Map<String, List<Transaction>> linkCategoryToTransactions(String categoryName, ){
-
-    }
-
     public UserBudgetCategory updateCategoryOnNewTransaction(final Transaction transaction, final UserBudgetCategory existingUserBudgetCategory)
     {
         List<String> transactionCategories = transaction.getCategories();
