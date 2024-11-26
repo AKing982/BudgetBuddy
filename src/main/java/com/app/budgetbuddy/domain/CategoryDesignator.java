@@ -1,21 +1,19 @@
 package com.app.budgetbuddy.domain;
 
-public enum CategoryDesignator
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+public class CategoryDesignator
 {
-    AFFIRM,
-    AUTOZONE,
-    DEPOSIT_TRANSFER,
-    PAYPAL,
-    WITHDRAWAL_TRANSFER,
-    MAVERICK,
-    WINCO,
-    SMITHS,
-    PAY,
-    YOUTUBE,
-    HARMONS,
-    AMAZON,
-    UDEMY,
-    SPOTIFY,
-    WALMART,
+   private String categoryId;
+   private String descriptionDesignator;
+   private String nameDesignator;
+   private boolean isSystemDefined;
+   private boolean isActive;
 
 }

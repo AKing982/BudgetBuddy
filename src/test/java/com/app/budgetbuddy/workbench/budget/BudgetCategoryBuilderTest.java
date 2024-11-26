@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleService;
@@ -561,6 +562,131 @@ class BudgetCategoryBuilderTest {
             assertEquals(expectedUserBudgetCategories.get(i).getEndDate(), actual.get(i).getEndDate());
             assertEquals(expectedUserBudgetCategories.get(i).getUserId(), actual.get(i).getUserId());
         }
+    }
+
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenTransactionsListEmpty_thenReturnEmptyMap(){
+        List<Transaction> emptyTransactions = new ArrayList<>();
+        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
+        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
+        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
+        Long userId = 1L;
+
+        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(emptyTransactions, categories, dateRanges, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionByDateRange_whenCategoriesListIsEmpty_thenReturnEmptyMap(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createGasTransaction());
+
+        List<String> categories = List.of();
+        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
+        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
+        Long userId = 1L;
+
+        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionByDateRange_whenDateRangesIsEmpty_thenReturnEmptyMap(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createGasTransaction());
+
+        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
+        List<DateRange> dateRanges = List.of();
+        Long userId = 1L;
+
+        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenInvalidUserId(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createGasTransaction());
+
+        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
+        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
+        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
+        Long userId = -1L;
+
+        assertThrows(InvalidUserIDException.class, () -> {
+            budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
+        });
+    }
+
+    @Test
+    void testLinkCategoryToTransactionByDateRange_testTransactionsOutSideDateRange(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createTransactionExample(LocalDate.of(2025, 1, 24),
+                List.of("Supermarkets And Groceries"), "19047000",
+                "PIN Purchase WINCO #15", "WINCO FOODS", "WINCO FOODS", new BigDecimal("120")));
+        transactions.add(createTransactionExample(LocalDate.of(2025, 5, 24),
+                List.of("Gas Stations"), "2205000", "PIN Purchase MAVERIK", "MAVERIK", "MAVERIK", new BigDecimal("37.56")));
+
+        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
+        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
+        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
+        Long userId = 1L;
+
+
+        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionByDateRange_validInput(){
+
+        Transaction walmartTransaction = createTransactionExample(LocalDate.of(2024, 9, 1), List.of("Groceries"), "19047000", "Walmart Purchase", "Walmart", "Walmart", new BigDecimal("120"));
+        Transaction wincoTransaction = createTransactionExample(LocalDate.of(2024, 9, 5), List.of("Groceries"), "19047000",  "PIN Purchase WINCO", "WINCO FOODS", "WINCO FOODS", new BigDecimal("35"));
+        Transaction gasTransaction = createTransactionExample(LocalDate.of(2024, 9, 7), List.of("Gas"), "2205000", "PIN Purchase MAVERIK", "MAVERIK", "MAVERIK", new BigDecimal("37.56"));
+
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(walmartTransaction);
+        transactions.add(wincoTransaction);
+        transactions.add(gasTransaction);
+
+        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
+        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
+        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
+        Long userId = 1L;
+
+        TransactionLink walmartGroceryCategoryLink = createTransactionLink(walmartTransaction, "Groceries");
+        TransactionLink wincoGroceryCategoryLink = createTransactionLink(wincoTransaction, "Groceries");
+
+        TransactionLink maverikGasCategoryLink = createTransactionLink(gasTransaction, "Gas");
+
+        ArrayList<TransactionLink> groceriesList = new ArrayList<>();
+        groceriesList.add(walmartGroceryCategoryLink);
+        groceriesList.add(wincoGroceryCategoryLink);
+
+        ArrayList<TransactionLink> gasList = new ArrayList<>();
+        gasList.add(maverikGasCategoryLink);
+
+        Map<String, ArrayList<TransactionLink>> expected = new HashMap<>();
+        expected.put("Groceries", groceriesList);
+        expected.put("Gas", gasList);
+
+        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
+        assertFalse(actual.isEmpty());
+        assertTrue(actual.containsKey("Groceries"));
+        assertTrue(actual.containsKey("Gas"));
+        assertTrue(actual.containsValue(groceriesList));
+        assertTrue(actual.containsValue(gasList));
+        assertEquals(1, actual.get("Groceries").size());
+        assertEquals(1, actual.get("Gas").size());
+    }
+
+    private TransactionLink createTransactionLink(Transaction transaction, String category){
+        return new TransactionLink(category, transaction);
     }
 
     private UserBudgetCategory createUserBudgetCategory(String categoryId, String categoryName, Double budgetedAmount, Double actualAmount, LocalDate startDate, LocalDate endDate, Long userId) {

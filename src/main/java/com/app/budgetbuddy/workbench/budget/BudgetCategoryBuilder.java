@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
@@ -41,8 +42,33 @@ public class BudgetCategoryBuilder
         this.categoryRuleEngine = categoryRuleEngine;
     }
 
-    public Map<String, List<Transaction>> linkCategoryToTransactions(String categoryName, ){
 
+    /**
+     * Links transactions to a particular category within a specified date range
+     * @param transactions
+     * @param matchedCategory
+     * @param transactionDateRange
+     * @param userId
+     * @return
+     */
+    public ArrayList<TransactionLink> linkCategoryToTransactionsByDateRange(final List<Transaction> transactions, final String matchedCategory, final DateRange transactionDateRange, final Long userId)
+    {
+        ArrayList<TransactionLink> transactionsByDateRange = new ArrayList<>();
+
+        if(userId < 1L)
+        {
+            throw new InvalidUserIDException("Invalid userID has been caught: " + userId);
+        }
+
+        long startTime = System.currentTimeMillis();
+        for(Transaction transaction : transactions)
+        {
+
+        }
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        LOGGER.info("Total Elapsed Time: " + duration);
+        return transactionsByDateRange;
     }
 
     public UserBudgetCategory updateCategoryOnNewTransaction(final Transaction transaction, final UserBudgetCategory existingUserBudgetCategory)
@@ -270,13 +296,7 @@ public class BudgetCategoryBuilder
         return userBudgetCategory;
     }
 
-    public UserBudgetCategory assignTransactionToCategoryByRule(CategoryRule categoryRule, Transaction transaction)
-    {
-
-        return null;
-    }
-
-    public TransactionLink linkTransactionToCategory(Transaction transaction, Category category)
+    public TransactionLink linkTransactionToCategory(Transaction transaction, String category)
     {
         //TODO: Implement full logic for linking and storing the link between the transaction and category
         if(transaction == null || category == null)
@@ -284,8 +304,8 @@ public class BudgetCategoryBuilder
             throw new IllegalArgumentException("Transaction or Category cannot be null");
         }
 
-
-        return new TransactionLink(category, transaction);
+        return null;
+//        return new TransactionLink(category, transaction);
     }
 
     public Map<String, List<DateRange>> createCategoryPeriods(final String categoryName, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final Period period, final List<Transaction> transactions)
