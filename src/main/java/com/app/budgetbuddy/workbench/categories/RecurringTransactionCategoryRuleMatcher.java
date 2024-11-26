@@ -63,8 +63,6 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
         return matchedRule;
     }
 
-
-
     public RecurringTransactionRule categorizeTransactionByUserRules(RecurringTransaction transaction, Long userId) {
         if (transaction == null) {
             throw new IllegalArgumentException("Recurring transaction cannot be null");

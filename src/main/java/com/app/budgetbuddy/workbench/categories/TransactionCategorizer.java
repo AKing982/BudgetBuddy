@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -83,6 +84,7 @@ public class TransactionCategorizer
 
             }catch(TransactionRuleException ex){
                 log.error("There was an error categorizing the transaction: ", ex);
+                return Collections.emptyList();
             }
         }
         log.info("Rules Size: {}", transactionRules.size());

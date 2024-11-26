@@ -168,15 +168,27 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
             throw new IllegalArgumentException("Transaction Cannot be null");
         }
         log.info("Loading Category Rules");
+
+        // Load the category rules in the database
         loadCategoryRules();
+
+        // Determine the transactions priority level
         int priority = determineSystemPriority(transaction);
         if(priority < 1){
             return createTransactionRule(transaction, "Uncategorized", priority);
         }
         log.info("System Priority: {}", priority);
+
+        // Initialize the TransactionRule
         TransactionRule transactionRule = createTransactionRule(transaction, UNCATEGORIZED, priority);
+
+        // If there are default system category rules
+        // Then determine if the transaction matches the category rules
         if(!systemCategoryRules.isEmpty()){
                 for(CategoryRule categoryRule : systemCategoryRules){
+                    // If the transaction rule matches against the category rule
+                    // then create a transaction rule for the transaction
+                    // then add the transaction rule to our matched transaction rules map
                     if(matchesRule(transactionRule, categoryRule)){
                         transactionRule = createTransactionRule(transaction, categoryRule.getCategoryName(), priority);
                         addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
@@ -184,6 +196,10 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
                     }
                 }
             }
+        // Else if the system category rules don't contain any default category rules
+        // then obtain the plaid category from the transaction
+        // if the category is not Uncategorized, then create the transaction rule with that category
+        // then add the transaction rule to the matched transaction rules
             else
             {
                 String category = getTransactionCategory(transaction);
