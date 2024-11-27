@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
+import com.app.budgetbuddy.exceptions.TransactionRuleException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
@@ -46,24 +47,37 @@ public class BudgetCategoryBuilder
     /**
      * Links transactions to a particular category within a specified date range
      * @param transactions
-     * @param matchedCategory
      * @param transactionDateRange
-     * @param userId
      * @return
      */
-    public ArrayList<TransactionLink> linkCategoryToTransactionsByDateRange(final List<Transaction> transactions, final String matchedCategory, final DateRange transactionDateRange, final Long userId)
+    public ArrayList<TransactionLink> linkCategoryToTransactionsByDateRange(final List<Transaction> transactions, final DateRange transactionDateRange)
     {
         ArrayList<TransactionLink> transactionsByDateRange = new ArrayList<>();
-
-        if(userId < 1L)
-        {
-            throw new InvalidUserIDException("Invalid userID has been caught: " + userId);
-        }
-
         long startTime = System.currentTimeMillis();
         for(Transaction transaction : transactions)
         {
+            try
+            {
+                LocalDate transactionPostedDate = transaction.getPosted();
+                LocalDate transactionDate = transaction.getDate();
 
+                LocalDate transactionRangeStartDate = transactionDateRange.getStartDate();
+                LocalDate transactionRangeEndDate = transactionDateRange.getEndDate();
+                boolean isTransactionPostedDateRangeValid = transactionPostedDate.isAfter(transactionRangeStartDate) && transactionPostedDate.isBefore(transactionRangeEndDate);
+                boolean isTransactionDateRangeValid = transactionDate.isAfter(transactionRangeStartDate) && transactionDate.isBefore(transactionRangeEndDate);
+                if(isTransactionDateRangeValid && isTransactionPostedDateRangeValid)
+                {
+
+                }
+                else
+                {
+                    return transactionsByDateRange;
+                }
+
+
+            }catch(TransactionRuleException e){
+
+            }
         }
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;

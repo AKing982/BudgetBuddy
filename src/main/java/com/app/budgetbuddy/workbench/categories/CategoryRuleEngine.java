@@ -338,11 +338,14 @@ public class CategoryRuleEngine
         System.out.println("Processing transactions for user " + userId);
 
         try {
+            long startTime = System.currentTimeMillis();
             categoryRuleEngine.transactionCategorizer.addUserCategoryRules(userCategoryRules);
             categoryRuleEngine.transactionCategorizer.addUserCategoryRulesRecurring(userCategoryRules);
             boolean success = categoryRuleEngine.processTransactionsForUser(transactions, recurringTransactions, userId);
-
+            long endTime = System.currentTimeMillis();
+            System.out.println(endTime - startTime);
             System.out.println("Processing completed: " + (success ? "Success" : "Failed"));
+
         } catch (Exception e) {
             System.err.println("Error during processing: " + e.getMessage());
             e.printStackTrace();
