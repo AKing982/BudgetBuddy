@@ -109,6 +109,7 @@ public class DateRange implements Comparable<DateRange>
         return dateRanges;
     }
 
+
     public DateRange incrementToPreviousPeriod(Period period){
         switch(period)
         {

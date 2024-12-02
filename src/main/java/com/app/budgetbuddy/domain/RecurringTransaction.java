@@ -8,6 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
+@ToString(callSuper = true)
 public class RecurringTransaction extends Transaction
 {
     private String streamId;

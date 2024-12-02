@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
+import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.exceptions.TransactionRuleException;
 import com.app.budgetbuddy.services.CategoryService;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class BudgetCategoryBuilder
@@ -50,39 +52,77 @@ public class BudgetCategoryBuilder
      * @param transactionDateRange
      * @return
      */
-    public ArrayList<TransactionLink> linkCategoryToTransactionsByDateRange(final List<Transaction> transactions, final DateRange transactionDateRange)
+    public ArrayList<TransactionLink> linkCategoryToTransactionsByDateRange(final List<? extends Transaction> transactions, final DateRange transactionDateRange, final Long userId)
     {
-        ArrayList<TransactionLink> transactionsByDateRange = new ArrayList<>();
+        ArrayList<TransactionLink> transactionLinks = new ArrayList<>();
+        if(transactions.isEmpty() || transactionDateRange == null) {
+            return transactionLinks;
+        }
         long startTime = System.currentTimeMillis();
-        for(Transaction transaction : transactions)
+        try
         {
-            try
+            final LocalDate startDate = transactionDateRange.getStartDate();
+            final LocalDate endDate = transactionDateRange.getEndDate();
+            if(startDate == null || endDate == null)
             {
-                LocalDate transactionPostedDate = transaction.getPosted();
-                LocalDate transactionDate = transaction.getDate();
-
-                LocalDate transactionRangeStartDate = transactionDateRange.getStartDate();
-                LocalDate transactionRangeEndDate = transactionDateRange.getEndDate();
-                boolean isTransactionPostedDateRangeValid = transactionPostedDate.isAfter(transactionRangeStartDate) && transactionPostedDate.isBefore(transactionRangeEndDate);
-                boolean isTransactionDateRangeValid = transactionDate.isAfter(transactionRangeStartDate) && transactionDate.isBefore(transactionRangeEndDate);
-                if(isTransactionDateRangeValid && isTransactionPostedDateRangeValid)
-                {
-
-                }
-                else
-                {
-                    return transactionsByDateRange;
-                }
-
-
-            }catch(TransactionRuleException e){
-
+                throw new IllegalDateException("Start date or End date cannot be null");
             }
+
+            List<Transaction> filteredTransactionsByDateRange = filterTransactionsByDateRange(transactions, transactionDateRange);
+            Map<String, List<String>> finalizedTransactionCategories = categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(filteredTransactionsByDateRange, userId, transactionDateRange);
+            if(finalizedTransactionCategories.isEmpty())
+            {
+                LOGGER.warn("Final categories are empty");
+                return transactionLinks;
+            }
+
+            for(Map.Entry<String, List<String>> entry : finalizedTransactionCategories.entrySet())
+            {
+                List<String> transactionIds = entry.getValue();
+                String category = entry.getKey();
+                for(String transactionId : transactionIds)
+                {
+                    TransactionLink transactionLink = createTransactionLink(category, transactionId);
+                    LOGGER.info("Transaction link created for category:{}, and transaction: {} " ,transactionLink.getCategory(), transactionLink.getTransactionId());
+                    transactionLinks.add(transactionLink);
+                    LOGGER.info("Transaction links size: " + transactionLinks.size());
+                }
+            }
+
+        }catch(IllegalDateException e){
+            LOGGER.error("There was an error fetching transaction dates: ", e);
+            throw e;
+        }catch(Exception e){
+            LOGGER.error("There was an error fetching the categorized transactions: ", e);
+            throw e;
         }
         long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        LOGGER.info("Total Elapsed Time: " + duration);
-        return transactionsByDateRange;
+        LOGGER.info("Total elapsed time: {} ms", (endTime - startTime));
+        return transactionLinks;
+    }
+
+    private TransactionLink createTransactionLink(String category, String transactionId)
+    {
+        return new TransactionLink(category, transactionId);
+    }
+
+    private List<Transaction> filterTransactionsByDateRange(final List<? extends Transaction> transactions, final DateRange dateRange)
+    {
+        List<Transaction> filteredTransactions;
+        try
+        {
+            filteredTransactions = transactions.stream()
+                    .filter(transaction ->
+                            transaction.getPosted().isAfter(dateRange.getStartDate()) &&
+                                    transaction.getPosted().isBefore(dateRange.getEndDate()))
+                    .collect(Collectors.toList());
+
+        } catch(IllegalDateException e){
+            LOGGER.error("There was an error fetching transaction dates: ", e);
+            throw e;
+        }
+        LOGGER.info("Filtered Transactions: {}", filteredTransactions);
+        return filteredTransactions;
     }
 
     public UserBudgetCategory updateCategoryOnNewTransaction(final Transaction transaction, final UserBudgetCategory existingUserBudgetCategory)

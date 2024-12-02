@@ -9,10 +9,10 @@ import java.util.List;
 public class TransactionLink
 {
     private String category;
-    private Transaction transaction;
+    private String transactionId;
 
-    public TransactionLink(String category, Transaction transaction) {
+    public TransactionLink(String category, String transactionId) {
         this.category = category;
-        this.transaction = transaction;
+        this.transactionId = transactionId;
     }
 }

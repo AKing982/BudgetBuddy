@@ -1,9 +1,11 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleService;
 import com.app.budgetbuddy.workbench.converter.UserBudgetCategoryConverter;
 import io.jsonwebtoken.Header;
@@ -44,6 +46,9 @@ class BudgetCategoryBuilderTest {
 
     @Mock
     private BudgetCalculations budgetCalculator;
+
+    @Mock
+    private CategoryRuleEngine categoryRuleEngine;
 
     @Mock
     private UserBudgetCategoryConverter userBudgetCategoryConverter;
@@ -564,129 +569,202 @@ class BudgetCategoryBuilderTest {
         }
     }
 
-//    @Test
-//    void testLinkCategoryToTransactionsByDateRange_whenTransactionsListEmpty_thenReturnEmptyMap(){
-//        List<Transaction> emptyTransactions = new ArrayList<>();
-//        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
-//        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
-//        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
-//        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
-//        Long userId = 1L;
-//
-//        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(emptyTransactions, categories, dateRanges, userId);
-//        assertTrue(actual.isEmpty());
-//    }
-//
-//    @Test
-//    void testLinkCategoryToTransactionByDateRange_whenCategoriesListIsEmpty_thenReturnEmptyMap(){
-//        List<Transaction> transactions = new ArrayList<>();
-//        transactions.add(createGasTransaction());
-//
-//        List<String> categories = List.of();
-//        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
-//        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
-//        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
-//        Long userId = 1L;
-//
-//        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
-//        assertTrue(actual.isEmpty());
-//    }
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenTransactionsListIsEmpty_thenReturnEmptyList(){
+        List<Transaction> transactions = new ArrayList<>();
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        Long userId = 1L;
 
-//    @Test
-//    void testLinkCategoryToTransactionByDateRange_whenDateRangesIsEmpty_thenReturnEmptyMap(){
-//        List<Transaction> transactions = new ArrayList<>();
-//        transactions.add(createGasTransaction());
-//
-//        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
-//        List<DateRange> dateRanges = List.of();
-//        Long userId = 1L;
-//
-//        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
-//        assertTrue(actual.isEmpty());
-//    }
-//
-//    @Test
-//    void testLinkCategoryToTransactionsByDateRange_whenInvalidUserId(){
-//        List<Transaction> transactions = new ArrayList<>();
-//        transactions.add(createGasTransaction());
-//
-//        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
-//        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
-//        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
-//        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
-//        Long userId = -1L;
-//
-//        assertThrows(InvalidUserIDException.class, () -> {
-//            budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
-//        });
-//    }
-//
-//    @Test
-//    void testLinkCategoryToTransactionByDateRange_testTransactionsOutSideDateRange(){
-//        List<Transaction> transactions = new ArrayList<>();
-//        transactions.add(createTransactionExample(LocalDate.of(2025, 1, 24),
-//                List.of("Supermarkets And Groceries"), "19047000",
-//                "PIN Purchase WINCO #15", "WINCO FOODS", "WINCO FOODS", new BigDecimal("120")));
-//        transactions.add(createTransactionExample(LocalDate.of(2025, 5, 24),
-//                List.of("Gas Stations"), "2205000", "PIN Purchase MAVERIK", "MAVERIK", "MAVERIK", new BigDecimal("37.56")));
-//
-//        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
-//        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
-//        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
-//        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
-//        Long userId = 1L;
-//
-//
-//        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
-//        assertTrue(actual.isEmpty());
-//    }
-//
-//    @Test
-//    void testLinkCategoryToTransactionByDateRange_validInput(){
-//
-//        Transaction walmartTransaction = createTransactionExample(LocalDate.of(2024, 9, 1), List.of("Groceries"), "19047000", "Walmart Purchase", "Walmart", "Walmart", new BigDecimal("120"));
-//        Transaction wincoTransaction = createTransactionExample(LocalDate.of(2024, 9, 5), List.of("Groceries"), "19047000",  "PIN Purchase WINCO", "WINCO FOODS", "WINCO FOODS", new BigDecimal("35"));
-//        Transaction gasTransaction = createTransactionExample(LocalDate.of(2024, 9, 7), List.of("Gas"), "2205000", "PIN Purchase MAVERIK", "MAVERIK", "MAVERIK", new BigDecimal("37.56"));
-//
-//        List<Transaction> transactions = new ArrayList<>();
-//        transactions.add(walmartTransaction);
-//        transactions.add(wincoTransaction);
-//        transactions.add(gasTransaction);
-//
-//        List<String> categories = List.of("Utilities", "Gas", "Rent", "Groceries");
-//        DateRange week1DateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
-//        DateRange week2DateRange = new DateRange(LocalDate.of(2024, 9, 8), LocalDate.of(2024, 9, 15));
-//        List<DateRange> dateRanges = List.of(week1DateRange, week2DateRange);
-//        Long userId = 1L;
-//
-//        TransactionLink walmartGroceryCategoryLink = createTransactionLink(walmartTransaction, "Groceries");
-//        TransactionLink wincoGroceryCategoryLink = createTransactionLink(wincoTransaction, "Groceries");
-//
-//        TransactionLink maverikGasCategoryLink = createTransactionLink(gasTransaction, "Gas");
-//
-//        ArrayList<TransactionLink> groceriesList = new ArrayList<>();
-//        groceriesList.add(walmartGroceryCategoryLink);
-//        groceriesList.add(wincoGroceryCategoryLink);
-//
-//        ArrayList<TransactionLink> gasList = new ArrayList<>();
-//        gasList.add(maverikGasCategoryLink);
-//
-//        Map<String, ArrayList<TransactionLink>> expected = new HashMap<>();
-//        expected.put("Groceries", groceriesList);
-//        expected.put("Gas", gasList);
-//
-//        Map<String, ArrayList<TransactionLink>> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, categories, dateRanges, userId);
-//        assertFalse(actual.isEmpty());
-//        assertTrue(actual.containsKey("Groceries"));
-//        assertTrue(actual.containsKey("Gas"));
-//        assertTrue(actual.containsValue(groceriesList));
-//        assertTrue(actual.containsValue(gasList));
-//        assertEquals(1, actual.get("Groceries").size());
-//        assertEquals(1, actual.get("Gas").size());
-//    }
+        ArrayList<TransactionLink> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionByDateRange_whenDateRangeIsNull_thenReturnEmptyList(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createGasTransaction());
+        DateRange dateRange = null;
+        Long userId = 1L;
+
+        ArrayList<TransactionLink> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionByDateRange_whenNullStartDateInDateRange_thenThrowException(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createGasTransaction());
+
+        DateRange dateRange = new DateRange(null, LocalDate.of(2024, 9, 5));
+        Long userId = 1L;
+        assertThrows(IllegalDateException.class, () -> {
+            budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+        });
+    }
+
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenNullEndDateInDateRange_thenThrowException(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createGasTransaction());
+
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 9, 5), null);
+        Long userId = 1L;
+        assertThrows(IllegalDateException.class, () -> {
+            budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+        });
+    }
+
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenTransactionsAreAfterDateRange_thenReturnEmptyList(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createTransactionExample(LocalDate.of(2025, 1, 24),
+                List.of("Supermarkets And Groceries"), "19047000",
+                "PIN Purchase WINCO #15", "WINCO FOODS", "WINCO FOODS", new BigDecimal("120")));
+        transactions.add(createTransactionExample(LocalDate.of(2025, 5, 24),
+                List.of("Gas Stations"), "2205000", "PIN Purchase MAVERIK", "MAVERIK", "MAVERIK", new BigDecimal("37.56")));
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        Long userId = 1L;
+
+        ArrayList<TransactionLink> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenTransactionsAreBeforeDateRange_thenReturnEmptyList(){
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(createTransactionExample(LocalDate.of(2023, 1, 24),
+                List.of("Supermarkets And Groceries"), "19047000",
+                "PIN Purchase WINCO #15", "WINCO FOODS", "WINCO FOODS", new BigDecimal("120")));
+        transactions.add(createTransactionExample(LocalDate.of(2023, 5, 24),
+                List.of("Gas Stations"), "2205000", "PIN Purchase MAVERIK", "MAVERIK", "MAVERIK", new BigDecimal("37.56")));
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        Long userId = 1L;
+
+        ArrayList<TransactionLink> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenRecurringTransactionsWithinDateRange_thenReturnTransactionLinks(){
+        List<RecurringTransaction> recurringTransactions = new ArrayList<>();
+        RecurringTransaction affirmTransaction = createAffirmRecurringTransaction();
+        RecurringTransaction walmartTransaction = createWalmartRecurringTransaction();
+
+        recurringTransactions.add(affirmTransaction);
+        recurringTransactions.add(walmartTransaction);
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 10));
+        Long userId = 1L;
+
+        ArrayList<TransactionLink> expected = new ArrayList<>();
+        expected.add(createTransactionLink(affirmTransaction, "Subscriptions"));
+        expected.add(createTransactionLink(walmartTransaction, "Subscriptions"));
+
+        Map<String, List<String>> finalizedTransactionCategories = new HashMap<>();
+        finalizedTransactionCategories.put("Subscriptions", List.of(affirmTransaction.getTransactionId(), walmartTransaction.getTransactionId()));
+
+        when(categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(
+                anyList(),
+                eq(userId),
+                eq(dateRange))).thenReturn(finalizedTransactionCategories);
+
+        ArrayList<TransactionLink> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(recurringTransactions, dateRange, userId);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < actual.size(); i++){
+            assertEquals(expected.get(i).getCategory(), actual.get(i).getCategory());
+            assertEquals(expected.get(i).getTransactionId(), actual.get(i).getTransactionId());
+        }
+    }
+
+    @Test
+    void testLinkCategoryToTransactionsByDateRange_whenTransactionWithinDateRange_thenReturnTransactionLinks(){
+        List<Transaction> transactions = new ArrayList<>();
+        Transaction walmartTransaction = createWalmartTransaction();
+        Transaction wincoTransaction = createWincoTransaction();
+        transactions.add(walmartTransaction);
+        transactions.add(wincoTransaction);
+
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8));
+        Long userId = 1L;
+        ArrayList<TransactionLink> expected = new ArrayList<>();
+        expected.add(createTransactionLink(walmartTransaction, "Groceries"));
+        expected.add(createTransactionLink(wincoTransaction, "Groceries"));
+
+        Map<String, List<String>> finalizedTransactionCategories = new HashMap<>();
+        finalizedTransactionCategories.put("Groceries", List.of(wincoTransaction.getTransactionId(), walmartTransaction.getTransactionId()));
+
+        when(categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(
+                anyList(),
+                eq(userId),
+                eq(dateRange))).thenReturn(finalizedTransactionCategories);
+
+        ArrayList<TransactionLink> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < actual.size(); i++){
+            assertEquals(expected.get(i).getCategory(), actual.get(i).getCategory());
+            assertEquals(expected.get(i).getTransactionId(), actual.get(i).getTransactionId());
+        }
+    }
+
+    @Test
+    void testLinkToCategoryToTransactions_whenOverlappingDateRange_then
+
+
+    private RecurringTransaction createWalmartRecurringTransaction() {
+        return new RecurringTransaction(
+                "account-12345",                  // accountId
+                new BigDecimal("50.75"),          // amount
+                "USD",                            // isoCurrencyCode
+                List.of("Groceries"),             // categories
+                "cat-001",                        // categoryId
+                LocalDate.of(2024, 11, 1),        // date
+                "Walmart Purchase",               // description
+                "Walmart",                        // merchantName
+                "Walmart Grocery Purchase",       // name
+                false,                            // pending
+                "txn-12345",                      // transactionId
+                LocalDate.of(2024, 11, 1),        // authorizedDate
+                "https://example.com/logo.png",   // logoUrl
+                LocalDate.of(2024, 10, 2),        // posted
+                "stream-67890",                   // streamId
+                LocalDate.of(2024, 10, 1),        // firstDate
+                LocalDate.of(2025, 10, 1),        // lastDate
+                "WEEKLY",                         // frequency
+                new BigDecimal("60.00"),          // averageAmount
+                new BigDecimal("50.75"),          // lastAmount
+                true,                             // active
+                "Subscription"                    // type
+        );
+    }
+
+    private RecurringTransaction createWincoRecurringTransaction() {
+        return new RecurringTransaction(
+                "account-12345",                  // accountId
+                new BigDecimal("50.75"),          // amount
+                "USD",                            // isoCurrencyCode
+                List.of("Groceries"),             // categories
+                "cat-001",                        // categoryId
+                LocalDate.of(2024, 11, 5),        // date
+                "WINCO Purchase",                 // description
+                "WINCO",                          // merchantName
+                "WINCO Grocery Purchase",         // name
+                false,                            // pending
+                "txn-12345",                      // transactionId
+                LocalDate.of(2024, 11, 6),        // authorizedDate
+                "https://example.com/logo.png",   // logoUrl
+                LocalDate.of(2024, 10, 5),        // posted
+                "stream-54321",                   // streamId
+                LocalDate.of(2024, 9, 1),         // firstDate
+                LocalDate.of(2025, 9, 1),         // lastDate
+                "BIWEEKLY",                       // frequency
+                new BigDecimal("70.00"),          // averageAmount
+                new BigDecimal("50.75"),          // lastAmount
+                true,                             // active
+                "Subscription"                    // type
+        );
+    }
 
     private TransactionLink createTransactionLink(Transaction transaction, String category){
-        return new TransactionLink(category, transaction);
+        return new TransactionLink(category, transaction.getTransactionId());
     }
 
     private UserBudgetCategory createUserBudgetCategory(String categoryId, String categoryName, Double budgetedAmount, Double actualAmount, LocalDate startDate, LocalDate endDate, Long userId) {
@@ -820,6 +898,7 @@ class BudgetCategoryBuilderTest {
         );
     }
 
+
     private Transaction createGasTransaction() {
         return new Transaction(
                 "account-12345",               // accountId
@@ -836,6 +915,60 @@ class BudgetCategoryBuilderTest {
                 LocalDate.of(2024, 11, 4),     // authorizedDate
                 "https://example.com/logo.png", // logoUrl
                 LocalDate.of(2024, 11, 5)      // posted
+        );
+    }
+
+    private RecurringTransaction createAffirmRecurringTransaction() {
+        return new RecurringTransaction(
+                "account-12345",                  // accountId
+                new BigDecimal("50.75"),          // amount
+                "USD",                            // isoCurrencyCode
+                List.of("Payments"),              // categories
+                "cat-005",                        // categoryId
+                LocalDate.of(2024, 11, 5),        // date
+                "Affirm Purchase",                // description
+                "Affirm",                         // merchantName
+                "Affirm Payment",                 // name
+                false,                            // pending
+                "txn-12345",                      // transactionId
+                LocalDate.of(2024, 11, 4),        // authorizedDate
+                "https://example.com/logo.png",   // logoUrl
+                LocalDate.of(2024, 11, 5),        // posted
+                "stream-12345",                   // streamId
+                LocalDate.of(2024, 10, 1),        // firstDate
+                LocalDate.of(2024, 12, 1),        // lastDate
+                "MONTHLY",                        // frequency
+                new BigDecimal("50.75"),          // averageAmount
+                new BigDecimal("50.75"),          // lastAmount
+                true,                             // active
+                "Subscription"                    // type
+        );
+    }
+
+    private RecurringTransaction createRecurringTransactionExample(LocalDate posted, List<String> categories, String categoryId, String description, String merchant, String name, BigDecimal amount) {
+        return new RecurringTransaction(
+                "account-12345",                  // accountId
+                amount,                           // amount
+                "USD",                            // isoCurrencyCode
+                categories,                       // categories
+                categoryId,                       // categoryId
+                posted,                           // date
+                description,                      // description
+                merchant,                         // merchantName
+                name,                             // name
+                false,                            // pending
+                "txn-12345",                      // transactionId
+                posted,                           // authorizedDate
+                "https://example.com/logo.png",   // logoUrl
+                posted,                           // posted
+                "stream-12345",                   // streamId
+                LocalDate.of(2024, 1, 1),         // firstDate
+                LocalDate.of(2024, 12, 31),       // lastDate
+                "MONTHLY",                        // frequency
+                new BigDecimal("100.00"),         // averageAmount
+                amount,                           // lastAmount
+                true,                             // active
+                "Bill"                            // type
         );
     }
 

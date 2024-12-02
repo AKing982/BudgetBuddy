@@ -191,7 +191,7 @@ public class CategoryRuleEngine
                 .orElse(null);
     }
 
-    public Map<String, UserCategoryRule> getCategorizedTransactionsWithUserRules(List<Transaction> transactions, Long userId){
+    public Map<String, UserCategoryRule> getCategorizedTransactionsWithUserRules(final List<Transaction> transactions, final Long userId){
         if(transactions == null || transactions.isEmpty()){
             return Collections.emptyMap();
         }
@@ -216,7 +216,7 @@ public class CategoryRuleEngine
         return categorizedTransactionsUserRules;
     }
 
-    public Map<String, CategoryRule> getCategorizedRecurringTransactionsWithSystemRules(List<RecurringTransaction> transactions){
+    public Map<String, CategoryRule> getCategorizedRecurringTransactionsWithSystemRules(final List<RecurringTransaction> transactions){
         if(transactions == null || transactions.isEmpty()){
             return Collections.emptyMap();
         }
@@ -245,6 +245,50 @@ public class CategoryRuleEngine
         }
         return categorizedRecurringTransactionsUserRules;
     }
+
+    public Map<String, List<String>> finalizeUserTransactionCategoriesForDateRange(final List<? extends Transaction> transactions, final Long userId, final DateRange dateRange)
+    {
+        Map<String, List<String>> categorizedTransactions = new HashMap<>();
+
+        // Filter transactions within the date range
+        List<Transaction> filteredTransactions = filterTransactionsByDateRange(transactions, dateRange);
+
+        // Apply user-defined and system-defined rules
+        processCategorizedTransactions(
+                categorizedTransactions,
+                getCategorizedTransactionsWithUserRules(filteredTransactions, userId),
+                getCategorizedTransactionsWithSystemRules(filteredTransactions)
+        );
+
+        return categorizedTransactions;
+    }
+
+    private List<Transaction> filterTransactionsByDateRange(List<? extends Transaction> transactions, DateRange dateRange) {
+        return transactions.stream()
+                .filter(transaction -> dateRange.containsDate(transaction.getDate()))
+                .collect(Collectors.toList());
+    }
+
+    private List<RecurringTransaction> filterRecurringTransactionsByDateRange(List<RecurringTransaction> recurringTransactions, DateRange dateRange) {
+        return recurringTransactions.stream()
+                .filter(transaction -> dateRange.containsDate(transaction.getDate()))
+                .collect(Collectors.toList());
+    }
+
+    private void processCategorizedTransactions(
+            Map<String, List<String>> categorizedTransactions,
+            Map<String, ? extends CategoryRule> userCategorizedRules,
+            Map<String, ? extends CategoryRule> systemCategorizedRules
+    ) {
+        // Add user-defined categorized transactions
+        userCategorizedRules.forEach((transactionId, rule) ->
+                categorizedTransactions.computeIfAbsent(rule.getCategoryName(), key -> new ArrayList<>()).add(transactionId));
+
+        // Add system-defined categorized transactions, only if not already categorized
+        systemCategorizedRules.forEach((transactionId, rule) ->
+                categorizedTransactions.computeIfAbsent(rule.getCategoryName(), key -> new ArrayList<>()).add(transactionId));
+    }
+
 
     private void saveNewRules(final Map<String, UserCategoryRule> userCategorized,
                               final Map<String, CategoryRule> systemCategorized)
