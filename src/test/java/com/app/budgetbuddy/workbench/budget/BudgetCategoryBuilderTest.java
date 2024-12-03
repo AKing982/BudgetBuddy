@@ -706,7 +706,31 @@ class BudgetCategoryBuilderTest {
     }
 
     @Test
-    void testLinkToCategoryToTransactions_whenOverlappingDateRange_then
+    void testLinkToCategoryToTransactions_whenOverlappingDateRangeBeforeStartDateAndBeforeEndDate_thenReturnTransactionLink(){
+        List<Transaction> transactions = new ArrayList<>();
+        Transaction walmartTransaction = createTransactionExample(LocalDate.of(2024, 8, 30), List.of("Groceries", "Shops"), "19047000", "PIN Purchase WALMART", "WALMART", "WALMART", new BigDecimal("45"));
+        transactions.add(walmartTransaction);
+        DateRange dateRange = new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8));
+        Long userId = 1L;
+
+        Map<String, List<String>> finalizedTransactionCategories = new HashMap<>();
+        finalizedTransactionCategories.put("Groceries", List.of(walmartTransaction.getTransactionId()));
+        when(categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(anyList(), eq(userId), eq(dateRange)))
+                .thenReturn(finalizedTransactionCategories);
+
+        // Act
+        ArrayList<TransactionLink> actual = budgetCategoryBuilder.linkCategoryToTransactionsByDateRange(transactions, dateRange, userId);
+
+        // Assert
+        assertEquals(1, actual.size(), "Should return one transaction link for overlapping date.");
+        assertEquals("Groceries", actual.get(0).getCategory());
+        assertEquals(walmartTransaction.getTransactionId(), actual.get(0).getTransactionId());
+    }
+
+    @Test
+    void testLinkCategoryToTransactions_whenFinalizedTransactionCategory_CategoryIsNull_thenThrowException(){
+
+    }
 
 
     private RecurringTransaction createWalmartRecurringTransaction() {

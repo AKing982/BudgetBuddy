@@ -108,19 +108,11 @@ public class BudgetCategoryBuilder
 
     private List<Transaction> filterTransactionsByDateRange(final List<? extends Transaction> transactions, final DateRange dateRange)
     {
-        List<Transaction> filteredTransactions;
-        try
-        {
-            filteredTransactions = transactions.stream()
-                    .filter(transaction ->
-                            transaction.getPosted().isAfter(dateRange.getStartDate()) &&
-                                    transaction.getPosted().isBefore(dateRange.getEndDate()))
-                    .collect(Collectors.toList());
-
-        } catch(IllegalDateException e){
-            LOGGER.error("There was an error fetching transaction dates: ", e);
-            throw e;
-        }
+        List<Transaction> filteredTransactions = transactions.stream()
+                .filter(transaction ->
+                        transaction.getPosted().isAfter(dateRange.getStartDate()) &&
+                                transaction.getPosted().isBefore(dateRange.getEndDate()))
+                .collect(Collectors.toList());
         LOGGER.info("Filtered Transactions: {}", filteredTransactions);
         return filteredTransactions;
     }
