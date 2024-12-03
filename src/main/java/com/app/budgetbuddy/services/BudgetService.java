@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface BudgetService extends ServiceModel<BudgetEntity>
 {
+    Budget loadUserBudget(Long userId);
+
     BudgetEntity createAndSaveBudget(BudgetCreateRequest createRequest);
 
     List<BudgetEntity> getBudgetByUserId(Long id);
