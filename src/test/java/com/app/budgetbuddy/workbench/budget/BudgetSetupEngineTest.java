@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,9 +105,17 @@ class BudgetSetupEngineTest {
     }
 
     @Test
-    void testInitializeDefaultUserBudgetCategories_whenRecurring
+    void testCreateControlledSpendingCategories_whenCategoryQuestionnaireDataIsEmpty_thenReturnEmptyList(){
+        Budget budget = new Budget(1L, new BigDecimal("5000"), new BigDecimal("4500"), 1L, "Test Budget", "Monthly Budget", LocalDate.now(), LocalDate.now().plusMonths(1), LocalDateTime.now());
+        BudgetGoals budgetGoals = new BudgetGoals(1L, 1000, 200, 300, "Savings", "Monthly", "Active");
+        List<CategoryQuestionnaireData> categoryQuestionnaireData = new ArrayList<>();
 
+        List<ControlledBudgetCategory> actual = budgetSetupEngine.createControlledSpendingCategories(budget, categoryQuestionnaireData);
+        assertTrue(actual.isEmpty());
+    }
 
+    @Test
+    void testCreateControlledSpendingCategories_when
 
     @AfterEach
     void tearDown() {

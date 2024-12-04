@@ -47,7 +47,28 @@ public class BudgetServiceImpl implements BudgetService
 
     @Override
     public Budget loadUserBudget(Long userId) {
-        return null;
+        Optional<BudgetEntity> budgetEntityOptional = budgetRepository.findById(userId);
+        if (budgetEntityOptional.isEmpty()) {
+            throw new RuntimeException("Budget not found");
+        }
+        BudgetEntity budgetEntity = budgetEntityOptional.get();
+        return convertBudgetEntity(budgetEntity);
+    }
+
+    private Budget convertBudgetEntity(BudgetEntity budgetEntity) {
+        if(budgetEntity == null) {
+            return null;
+        }
+        Budget budget = new Budget();
+        budget.setId(budgetEntity.getId());
+        budget.setUserId(budgetEntity.getUser().getId());
+        budget.setActual(null);
+        budget.setBudgetAmount(budgetEntity.getBudgetAmount());
+        budget.setBudgetName(budgetEntity.getBudgetName());
+        budget.setBudgetDescription(budgetEntity.getBudgetDescription());
+        budget.setStartDate(budgetEntity.getStartDate());
+        budget.setEndDate(budgetEntity.getEndDate());
+        return budget;
     }
 
     @Override

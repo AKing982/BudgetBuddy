@@ -4,5 +4,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public record BudgetCategoryRequest(@JsonProperty("categories") List<BudgetCategory> categories) {
+public record BudgetCategoryRequest(@JsonProperty("categories") List<ControlledBudgetCategory> categories) {
 }

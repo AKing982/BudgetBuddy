@@ -1,6 +1,6 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.BudgetCategory;
+import com.app.budgetbuddy.domain.ControlledBudgetCategory;
 import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.repositories.BudgetCategoriesRepository;
@@ -47,7 +47,7 @@ public class BudgetCategoriesServiceImpl implements BudgetCategoriesService
     }
 
     @Override
-    public BudgetCategoriesEntity createAndSaveBudgetCategory(BudgetCategory budgetCategory) {
+    public BudgetCategoriesEntity createAndSaveBudgetCategory(ControlledBudgetCategory budgetCategory) {
        BudgetCategoriesEntity budgetCategoriesEntity = new BudgetCategoriesEntity();
        budgetCategoriesEntity.setCategoryName(budgetCategory.categoryName());
        budgetCategoriesEntity.setCurrentSpending(budgetCategory.currentSpending());

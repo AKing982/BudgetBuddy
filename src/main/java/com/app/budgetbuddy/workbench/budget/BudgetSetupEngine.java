@@ -3,15 +3,19 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetService;
+import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.support.AbstractLobCreatingPreparedStatementCallback;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,24 +28,36 @@ public class BudgetSetupEngine
 {
     private final UserService userService;
     private final BudgetService budgetService;
+    private final CategoryService categoryService;
     private final BudgetCalculations budgetCalculations;
     private final BudgetCategoryBuilder budgetCategoryBuilder;
-    private boolean isBudgetSetupCompleted;
 
     @Autowired
     public BudgetSetupEngine(UserService userService,
                              BudgetService budgetService,
+                             CategoryService categoryService,
                              BudgetCalculations budgetCalculator,
                              BudgetCategoryBuilder budgetCategoryBuilder){
         this.userService = userService;
         this.budgetService = budgetService;
+        this.categoryService = categoryService;
         this.budgetCalculations = budgetCalculator;
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
 
     private Budget loadUserBudget(Long userId)
     {
-        return null;
+        try
+        {
+            if(userId < 1L)
+            {
+                throw new InvalidUserIDException("Invalid UserID found: " + userId);
+            }
+            return budgetService.loadUserBudget(userId);
+        }catch(InvalidUserIDException e){
+            log.error("There was an error with the userId: ", e);
+            throw e;
+        }
     }
     
     public void setupBudgetPeriodData(Long userId, BudgetPeriod budgetPeriod)
@@ -54,25 +70,19 @@ public class BudgetSetupEngine
         return null;
     }
 
-    private Map<Long, SavingsGoal> loadUserSavingsGoal(Long userId)
-    {
-        return null;
-    }
-
-    public BudgetCategoriesEntity loadUserBudgetCategories(Long userId){
-        return null;
-    }
-
-    public Boolean userBudgetCategoryExists(final UserBudgetCategory userBudgetCategory){
-        return null;
-    }
-
-
     public List<TransactionLink> linkRecurringTransactionsToCategoryByDateRange(final List<RecurringTransaction> recurringTransactions, final DateRange dateRange){
         return null;
     }
 
     public List<TransactionLink> linkTransactionsToCategoryByDateRange(final List<Transaction> transactions, final DateRange dateRange){
+        return null;
+    }
+
+    /**
+     * Initializes the entire budget setup process
+     * @return
+     */
+    public Boolean budgetSetupInitializer(){
         return null;
     }
 
@@ -134,33 +144,74 @@ public class BudgetSetupEngine
 
     }
 
-    public void budgetInitializer(Budget budget, List<Category> categories, List<BudgetStats> budgetStats, BudgetPeriod budgetPeriod){
-
-    }
-
-    public List<UserBudgetCategoryEntity> createUserBudgetCategories(Budget budget, BudgetPeriod budgetPeriod)
+    public List<UserBudgetCategoryEntity> convertUserBudgetCategoriesToEntities(final List<UserBudgetCategory> userBudgetCategories)
     {
         return null;
     }
 
-    public Boolean checkIfBudgetCategoriesExist(){
-        return false;
-    }
 
     /**
      * Initializes the Budget Category's when the user creates a controlling spending plan
      * @param categories
      * @return
      */
-    public List<BudgetCategory> createInitialBudgetCategories(final Budget budget, final BudgetGoals budgetGoals, final List<Category> categories){
-        return List.of();
+    public List<ControlledBudgetCategory> createControlledSpendingCategories(final Budget budget, final BudgetGoals budgetGoals, final List<CategoryQuestionnaireData> categories){
+        List<ControlledBudgetCategory> controlledBudgetCategories = new ArrayList<>();
+        if(categories.isEmpty())
+        {
+            return controlledBudgetCategories;
+        }
+
+        BigDecimal budgetAmount = budget.getBudgetAmount();
+        // Fetch the budget goals
+        double targetAmount = budgetGoals.targetAmount();
+        double currentMonthlyAllocation = budgetGoals.monthlyAllocation();
+        double currentSavings = budgetGoals.currentSavings();
+        for(CategoryQuestionnaireData categoryQuestionnaireData : categories)
+        {
+            if(categoryQuestionnaireData != null)
+            {
+                try
+                {
+                    String categoryName = categoryQuestionnaireData.getCategoryName();
+                    double currentSpending = categoryQuestionnaireData.getCurrentSpending();
+                    double spendingLimit = categoryQuestionnaireData.getSpendingLimit();
+                    int priority = categoryQuestionnaireData.getPriority();
+                    Double categoryAllocatedAmount = budgetCalculations.calculateAllocatedAmount(budgetAmount, targetAmount, currentMonthlyAllocation, currentSpending, spendingLimit, currentSavings);
+                    ControlledBudgetCategory controlledBudgetCategory = new ControlledBudgetCategory(budget.getId(), categoryName, categoryAllocatedAmount, spendingLimit, currentSpending, false, true,  priority);
+                    controlledBudgetCategories.add(controlledBudgetCategory);
+
+                }catch(NumberFormatException e)
+                {
+                    log.error("There was an error calculating the category allocation amount for category: " + categoryQuestionnaireData.getCategoryName(), e);
+                    throw e;
+                }
+            }
+        }
+        return controlledBudgetCategories;
     }
 
-    public Category initializeIncomeCategory(List<RecurringTransactionDTO> recurringTransactions, Long userId, BudgetPeriod budgetPeriod){
-        return null;
+    public Category initializeIncomeCategory(final List<RecurringTransaction> recurringTransactions){
+        Category incomeCategory = null;
+        for(RecurringTransaction recurringTransaction : recurringTransactions){
+            String categoryId = recurringTransaction.getCategoryId();
+            if(!categoryId.isEmpty()){
+                CategoryEntity category = categoryService.findCategoryById(categoryId).get();
+                String categoryName = category.getName();
+                String categoryDescription = category.getDescription();
+                if(categoryName.equals("Payroll"))
+                {
+                    BigDecimal incomeAmount = BigDecimal.valueOf(Math.abs(recurringTransaction.getAverageAmount().intValue()));
+                    LocalDate firstIncomeDate = recurringTransaction.getFirstDate();
+                    LocalDate lastIncomeDate = recurringTransaction.getLastDate();
+                    incomeCategory = new Category(categoryId, categoryName, categoryDescription, incomeAmount, firstIncomeDate, lastIncomeDate, BigDecimal.ZERO, true, CategoryType.PAYMENT);
+                }
+            }
+        }
+        return incomeCategory;
     }
 
-    public Map<LocalDate, List<BudgetStats>> initializeUserBudgetStatistics(Long budgetId, Budget budget, BudgetPeriod budgetPeriod){
+    public Map<LocalDate, List<BudgetStats>> initializeUserBudgetStatistics(Budget budget, BudgetPeriod budgetPeriod){
         return null;
     }
 
@@ -172,7 +223,7 @@ public class BudgetSetupEngine
      * @param budgetPeriod
      * @return
      */
-    public TreeMap<Long, List<Category>> initializeUserCategories(List<Transaction> transactions, List<BudgetCategory> budgetCategories, Long userId, BudgetPeriod budgetPeriod){
+    public TreeMap<Long, List<Category>> initializeUserCategories(List<Transaction> transactions, List<ControlledBudgetCategory> budgetCategories, Long userId, BudgetPeriod budgetPeriod){
         return null;
     }
 

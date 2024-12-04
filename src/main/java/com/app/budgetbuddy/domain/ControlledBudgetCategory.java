@@ -1,6 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-public record BudgetCategory(Long budgetId,
+public record ControlledBudgetCategory(Long budgetId,
                              String categoryName,
                              Double allocatedAmount,
                              Double monthlySpendingLimit,

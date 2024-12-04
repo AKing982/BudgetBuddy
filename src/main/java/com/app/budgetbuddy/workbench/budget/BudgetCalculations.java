@@ -219,6 +219,20 @@ public class BudgetCalculations {
         return budgetMap;
     }
 
+    public BigDecimal calculateAverageSpendingPerDayOnBudget(final BigDecimal budgetedAmount, final BigDecimal )
+
+    public BigDecimal calculateRemainingAmountOnBudget(final BigDecimal budgetAmount, final BigDecimal totalSpentOnBudget, final BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+    public BigDecimal calculateTotalSpentOnBudgetForPeriod(List<UserBudgetCategory> userBudgetCategories, final Budget budget, final BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+    public BigDecimal calculateTotalBudgetForPeriod(final BudgetPeriod budgetPeriod, final Budget budget){
+        return null;
+    }
+
     private BigDecimal getCategoryBudget(BigDecimal categoryProportion, BigDecimal budgetAmount)
     {
         return categoryProportion.multiply(budgetAmount).setScale(2, RoundingMode.HALF_UP);
@@ -280,6 +294,35 @@ public class BudgetCalculations {
     public BigDecimal calculateNewBudgetedAmountFromRemainingAmount(Category category, Period period, LocalDate startDate, LocalDate endDate, BigDecimal remainingAmount)
     {
         return null;
+    }
+
+    //TODO: Test method implementation
+    public Double calculateAllocatedAmount(final BigDecimal budgetAmount, final double targetAmount, double currentMonthlyAllocation, double currentSpending, double spendingLimit, double totalSavings)
+    {
+        if (budgetAmount == null || budgetAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Budget amount must be greater than zero.");
+        }
+
+        if (spendingLimit <= 0) {
+            return 0.0; // No allocation if spending limit is zero or negative
+        }
+
+        // Calculate the base allocation proportionally
+        double budgetAmountDouble = budgetAmount.doubleValue();
+        double proportionateAllocation = (currentSpending / targetAmount) * budgetAmountDouble;
+
+        // Adjust allocation based on current monthly allocation and total savings
+        double savingsAdjustmentFactor = totalSavings > 0 ? 0.9 : 1.0; // Reduce allocation by 10% if savings exist
+        double adjustedAllocation = proportionateAllocation * savingsAdjustmentFactor;
+
+        // Cap the allocation at the spending limit
+        double finalAllocation = Math.min(adjustedAllocation, spendingLimit);
+
+        // Ensure the allocation does not exceed the remaining budget
+        double remainingBudget = budgetAmountDouble - currentMonthlyAllocation;
+        finalAllocation = Math.min(finalAllocation, remainingBudget);
+
+        return finalAllocation;
     }
 
     public BigDecimal calculateBudgetedAmountByPeriod(final BudgetPeriod budgetPeriod, final Budget budget)
@@ -485,7 +528,6 @@ public class BudgetCalculations {
         BigDecimal categoryBudgetAmountProportion = totalCategorySpending.divide(totalSpendingOnCategories, 4, RoundingMode.HALF_UP);
         System.out.println("Category Proportion: " + categoryBudgetAmountProportion);
         return categoryBudgetAmountProportion;
-//        return categorySpendingProportion.multiply(totalBudgetAmount).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
 

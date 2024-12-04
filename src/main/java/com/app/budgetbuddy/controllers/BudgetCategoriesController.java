@@ -1,7 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
-import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.domain.BudgetCategoryRequest;
+import com.app.budgetbuddy.domain.ControlledBudgetCategory;
 import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.services.BudgetCategoriesService;
 import org.slf4j.Logger;
@@ -28,7 +28,7 @@ public class BudgetCategoriesController
 
     @PostMapping("/")
     public ResponseEntity<?> createBudgetCategory(@RequestBody BudgetCategoryRequest budgetCategory){
-        List<BudgetCategory> budgetCategories = budgetCategory.categories();
+        List<ControlledBudgetCategory> budgetCategories = budgetCategory.categories();
         try
         {
             List<BudgetCategoriesEntity> budgetCategoriesEntities = createBudgetCategoryEntities(budgetCategories);
@@ -40,9 +40,9 @@ public class BudgetCategoriesController
         }
     }
 
-    private List<BudgetCategoriesEntity> createBudgetCategoryEntities(List<BudgetCategory> budgetCategories){
+    private List<BudgetCategoriesEntity> createBudgetCategoryEntities(List<ControlledBudgetCategory> budgetCategories){
         List<BudgetCategoriesEntity> budgetCategoriesEntities = new ArrayList<>();
-        for(BudgetCategory budgetCategory : budgetCategories){
+        for(ControlledBudgetCategory budgetCategory : budgetCategories){
             BudgetCategoriesEntity budgetCategoriesEntity = budgetCategoriesService.createAndSaveBudgetCategory(budgetCategory);
             budgetCategoriesEntities.add(budgetCategoriesEntity);
         }
