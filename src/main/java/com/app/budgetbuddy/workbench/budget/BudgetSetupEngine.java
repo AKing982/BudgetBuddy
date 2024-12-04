@@ -68,13 +68,12 @@ public class BudgetSetupEngine
     }
 
 
-
-    public void linkRecurringTransactionsToCategoryByDateRange(final List<RecurringTransaction> recurringTransactions, final DateRange dateRange){
-
+    public List<TransactionLink> linkRecurringTransactionsToCategoryByDateRange(final List<RecurringTransaction> recurringTransactions, final DateRange dateRange){
+        return null;
     }
 
-    public void linkTransactionsToCategoryByDateRange(final List<Transaction> transactions, final DateRange dateRange){
-
+    public List<TransactionLink> linkTransactionsToCategoryByDateRange(final List<Transaction> transactions, final DateRange dateRange){
+        return null;
     }
 
     /**
@@ -109,34 +108,16 @@ public class BudgetSetupEngine
             List<UserBudgetCategory> userBudgetCategoriesTransactions = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
             if(!userBudgetCategoriesTransactions.isEmpty())
             {
-                String budgetType = budget.getBudgetName();
-                if(budgetType.contains("Controlling Spending"))
-                {
+               userBudgetCategories.addAll(userBudgetCategoriesTransactions);
+            }
 
-                }
-                else
-                {
-
-                }
+            List<UserBudgetCategory> userBudgetCategoriesRecurringTransactions = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, recurringTransactions);
+            if(!userBudgetCategoriesRecurringTransactions.isEmpty())
+            {
+                userBudgetCategories.addAll(userBudgetCategoriesRecurringTransactions);
             }
         }
-
-        // Create the User BudgetCategories for the Transactions
-
-        // Create the User Budget Categories for the Recurring Transactions
-
-        // Is the user using a controlling spending plan? If so, does the user have existing User Budget Categories?
-        // If it does exist, then skip adding the User Budget Category
-
-        // Filter the recurring transactions on active recurring transactions
-
-        //
-
-        // 1. Using the Budget Period, build the Date Ranges for the category
-
-        // 2. Initialize the UserBudgetCategories through the Budget Category builder
-
-        return null;
+        return userBudgetCategories;
     }
 
     private void validateBudgetPeriodDates(LocalDate startDate, LocalDate endDate, Period period)
@@ -169,11 +150,9 @@ public class BudgetSetupEngine
     /**
      * Initializes the Budget Category's when the user creates a controlling spending plan
      * @param categories
-     * @param budgetPeriod
-     * @param userId
      * @return
      */
-    public List<BudgetCategory> createInitialBudgetCategories(List<Category> categories, BudgetPeriod budgetPeriod, Long userId){
+    public List<BudgetCategory> createInitialBudgetCategories(final Budget budget, final BudgetGoals budgetGoals, final List<Category> categories){
         return List.of();
     }
 
