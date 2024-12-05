@@ -12,6 +12,7 @@ import com.app.budgetbuddy.services.BudgetCategoriesService;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Component
+@Slf4j
 public class BudgetCalculations {
     private final BudgetService budgetService;
     private final BudgetGoalsService budgetGoalsService;
@@ -219,13 +221,54 @@ public class BudgetCalculations {
         return budgetMap;
     }
 
-    public BigDecimal calculateAverageSpendingPerDayOnBudget(final BigDecimal budgetedAmount, final BigDecimal )
+    public BigDecimal calculateAverageSpendingPerDayOnBudget(final BigDecimal budgetedAmount, final BigDecimal budgetActual, final BudgetPeriod budgetPeriod)
+    {
+       if(budgetedAmount == null || budgetActual == null || budgetPeriod == null)
+       {
+           return BigDecimal.ZERO;
+       }
+       try
+       {
+           LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+           LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+           if(startDate == null || endDate == null)
+           {
+               throw new IllegalDateException("Start date or End date cannot be null");
+           }
+           DateRange dateRange = new DateRange(startDate, endDate);
+           long numberOfDaysBetween = dateRange.getDaysInRange();
+           System.out.println("Number of Days Between: " + numberOfDaysBetween);
+           BigDecimal averageSpendingPerDay = budgetActual.divide(BigDecimal.valueOf(numberOfDaysBetween), 2, RoundingMode.HALF_UP);
+           if(averageSpendingPerDay.compareTo(BigDecimal.ZERO) != 0){
+               throw new ArithmeticException("Invalid calculation for average spending");
+           }
+           return averageSpendingPerDay;
+
+       }catch(IllegalDateException e)
+       {
+            log.error("There was an error with the budget period dates: ", e);
+            throw e;
+       }catch(ArithmeticException e){
+           log.error("There was an arithmetic error calculating the average spending: ", e);
+           throw e;
+       }
+    }
+
+    private boolean isValidNumeric(String value){
+        try
+        {
+            new BigDecimal(value);
+            return true;
+        }catch(NumberFormatException e){
+            return false;
+        }
+    }
 
     public BigDecimal calculateRemainingAmountOnBudget(final BigDecimal budgetAmount, final BigDecimal totalSpentOnBudget, final BudgetPeriod budgetPeriod){
         return null;
     }
 
-    public BigDecimal calculateTotalSpentOnBudgetForPeriod(List<UserBudgetCategory> userBudgetCategories, final Budget budget, final BudgetPeriod budgetPeriod){
+    public BigDecimal calculateTotalSpentOnBudgetForPeriod(final List<CategorySpending> categorySpending, final BigDecimal budgetAmount, final BudgetPeriod budgetPeriod){
         return null;
     }
 
@@ -233,7 +276,7 @@ public class BudgetCalculations {
         return null;
     }
 
-    private BigDecimal getCategoryBudget(BigDecimal categoryProportion, BigDecimal budgetAmount)
+    private BigDecimal getCategoryBudget(final BigDecimal categoryProportion, final BigDecimal budgetAmount)
     {
         return categoryProportion.multiply(budgetAmount).setScale(2, RoundingMode.HALF_UP);
     }

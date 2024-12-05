@@ -110,12 +110,10 @@ class BudgetSetupEngineTest {
         BudgetGoals budgetGoals = new BudgetGoals(1L, 1000, 200, 300, "Savings", "Monthly", "Active");
         List<CategoryQuestionnaireData> categoryQuestionnaireData = new ArrayList<>();
 
-        List<ControlledBudgetCategory> actual = budgetSetupEngine.createControlledSpendingCategories(budget, categoryQuestionnaireData);
+        List<ControlledBudgetCategory> actual = budgetSetupEngine.createControlledSpendingCategories(budget, budgetGoals, categoryQuestionnaireData);
         assertTrue(actual.isEmpty());
     }
 
-    @Test
-    void testCreateControlledSpendingCategories_when
 
     @AfterEach
     void tearDown() {

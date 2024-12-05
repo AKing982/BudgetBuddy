@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.*;
+import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
@@ -754,6 +755,88 @@ class BudgetCalculatorTest {
         assertEquals(expectedBudgetHealthTotal, actual);
     }
 
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenBudgetedAmountIsNull_thenReturnZero(){
+        BigDecimal totalSpending = new BigDecimal("120");
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
+
+        BigDecimal actual = budgetCalculator.calculateAverageSpendingPerDayOnBudget(null, totalSpending, budgetPeriod);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenBudgetActualIsNull_thenReturnZero(){
+        BigDecimal budgetedAmount = new BigDecimal("1530");
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
+
+        BigDecimal actual = budgetCalculator.calculateAverageSpendingPerDayOnBudget(budgetedAmount, null, budgetPeriod);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenBudgetPeriodIsNull_thenReturnZero(){
+        BigDecimal budgetedAmount = new BigDecimal("1250");
+        BigDecimal budgetActual = new BigDecimal("1020");
+        BudgetPeriod budgetPeriod = null;
+        BigDecimal actual = budgetCalculator.calculateAverageSpendingPerDayOnBudget(budgetedAmount, budgetActual, budgetPeriod);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenStartDateIsNull_thenThrowException(){
+        BigDecimal budgetedAmount = new BigDecimal("1250");
+        BigDecimal budgetActual = new BigDecimal("1020");
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, null, LocalDate.of(2024, 9,1));
+        assertThrows(IllegalDateException.class, () -> {
+            budgetCalculator.calculateAverageSpendingPerDayOnBudget(budgetedAmount, budgetActual, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenEndDateIsNull_thenThrowException(){
+        BigDecimal budgetedAmount = new BigDecimal("1250");
+        BigDecimal budgetActual = new BigDecimal("1020");
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), null);
+        assertThrows(IllegalDateException.class, () -> {
+            budgetCalculator.calculateAverageSpendingPerDayOnBudget(budgetedAmount, budgetActual, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenValidParameters_thenReturnAverageSpendingPerDay(){
+        BigDecimal budgetedAmount = new BigDecimal("3070");
+        BigDecimal budgetActual = new BigDecimal("1607");
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
+
+        BigDecimal expectedSpendingPerDay = new BigDecimal("160.70");
+        BigDecimal actualSpendingPerDay = budgetCalculator.calculateAverageSpendingPerDayOnBudget(budgetedAmount, budgetActual, budgetPeriod);
+        assertEquals(expectedSpendingPerDay, actualSpendingPerDay);
+    }
+
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenDaysInPeriodIsZero_thenThrowArithmeticException() {
+        // Arrange
+        BigDecimal budgetedAmount = new BigDecimal("1000");
+        BigDecimal budgetActual = new BigDecimal("500");
+
+        // BudgetPeriod where startDate equals endDate resulting in zero days period
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 1));
+
+        // Act & Assert
+        assertThrows(ArithmeticException.class, () -> {
+            budgetCalculator.calculateAverageSpendingPerDayOnBudget(budgetedAmount, budgetActual, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testCalculateAverageSpendingPerDayOnBudget_whenDaysInPeriodIsNegative_thenThrowArithmeticException() {
+        BigDecimal budgetedAmount = new BigDecimal("1000");
+        BigDecimal budgetActual = new BigDecimal("500");
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 10), LocalDate.of(2024, 9, 1));
+        assertThrows(ArithmeticException.class, () -> {
+            budgetCalculator.calculateAverageSpendingPerDayOnBudget(budgetedAmount, budgetActual, budgetPeriod);
+        });
+    }
 
 
     private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {
