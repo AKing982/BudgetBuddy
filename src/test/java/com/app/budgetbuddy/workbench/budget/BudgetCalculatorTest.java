@@ -838,6 +838,15 @@ class BudgetCalculatorTest {
         });
     }
 
+   @Test
+   void testCalculateTotalSpentOnBudgetForPeriod_whenCategorySpendingIsEmpty_thenReturnZero(){
+        List<CategorySpending> categorySpendings = new ArrayList<>();
+        BigDecimal budgetAmount = new BigDecimal("1604");
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
+        BigDecimal actual = budgetCalculator.calculateTotalSpentOnBudgetForPeriod(categorySpendings, budgetAmount, budgetPeriod);
+        assertEquals(0, actual.intValue());
+   }
+
 
     private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {
         // Create different BudgetPeriod instances

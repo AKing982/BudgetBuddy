@@ -264,11 +264,14 @@ public class BudgetCalculations {
         }
     }
 
-    public BigDecimal calculateRemainingAmountOnBudget(final BigDecimal budgetAmount, final BigDecimal totalSpentOnBudget, final BudgetPeriod budgetPeriod){
-        return null;
+    public BigDecimal calculateRemainingAmountOnBudget(final BigDecimal budgetAmount, final BigDecimal totalSpentOnBudget){
+        return budgetAmount.subtract(totalSpentOnBudget);
     }
 
     public BigDecimal calculateTotalSpentOnBudgetForPeriod(final List<CategorySpending> categorySpending, final BigDecimal budgetAmount, final BudgetPeriod budgetPeriod){
+        if(categorySpending.isEmpty()){
+            return BigDecimal.ZERO;
+        }
         return null;
     }
 
