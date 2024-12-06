@@ -1,17 +1,17 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
-import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
+import com.app.budgetbuddy.entities.ControlledSpendingCategoryEntity;
+import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetActualAmountException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
-import com.app.budgetbuddy.services.BudgetCategoriesService;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import com.app.budgetbuddy.services.ControlledSpendingCategoriesService;
+import com.app.budgetbuddy.services.TransactionCategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,20 +26,20 @@ import java.util.*;
 public class BudgetCalculations {
     private final BudgetService budgetService;
     private final BudgetGoalsService budgetGoalsService;
-    private final BudgetCategoriesService budgetCategoriesService;
-    private final UserBudgetCategoryService userBudgetCategoryService;
+    private final ControlledSpendingCategoriesService budgetCategoriesService;
+    private final TransactionCategoryService transactionCategoryService;
     private final BudgetValidator budgetValidator;
 
     @Autowired
     public BudgetCalculations(BudgetService budgetService,
                             BudgetGoalsService budgetGoalsService,
-                            BudgetCategoriesService budgetCategoriesService,
-                            UserBudgetCategoryService userBudgetCategoryService,
+                            ControlledSpendingCategoriesService budgetCategoriesService,
+                            TransactionCategoryService transactionCategoryService,
                             BudgetValidator budgetValidator) {
         this.budgetService = budgetService;
         this.budgetGoalsService = budgetGoalsService;
         this.budgetCategoriesService = budgetCategoriesService;
-        this.userBudgetCategoryService = userBudgetCategoryService;
+        this.transactionCategoryService = transactionCategoryService;
         this.budgetValidator = budgetValidator;
     }
 
@@ -49,10 +49,10 @@ public class BudgetCalculations {
         return budgetGoals.orElseThrow();
     }
 
-    private BigDecimal getTotalUserBudgetCategoryExpenses(final Set<UserBudgetCategoryEntity> categories)
+    private BigDecimal getTotalUserBudgetCategoryExpenses(final Set<TransactionCategoryEntity> categories)
     {
         BigDecimal totalExpenses = BigDecimal.ZERO;
-        for(UserBudgetCategoryEntity category : categories)
+        for(TransactionCategoryEntity category : categories)
         {
             double categorySpending = category.getActual();
             totalExpenses = totalExpenses.add(BigDecimal.valueOf(categorySpending));
@@ -65,11 +65,11 @@ public class BudgetCalculations {
         LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
         LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
         // Fetch User Budget Categories for the desired period
-        Set<UserBudgetCategoryEntity> userBudgetCategories = new HashSet<>(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(budget.getUserId(), startDate, endDate));
+        Set<TransactionCategoryEntity> userBudgetCategories = new HashSet<>(transactionCategoryService.getTransactionCategoriesByUserAndDateRange(budget.getUserId(), startDate, endDate));
         return calculateSavingsGoalProgress(budget, userBudgetCategories);
     }
 
-    public BigDecimal calculateSavingsGoalProgress(final Budget budget, final Set<UserBudgetCategoryEntity> spendingCategories)
+    public BigDecimal calculateSavingsGoalProgress(final Budget budget, final Set<TransactionCategoryEntity> spendingCategories)
     {
         if(budget == null || spendingCategories.isEmpty())
         {
@@ -149,13 +149,13 @@ public class BudgetCalculations {
             return BigDecimal.ZERO;
         }
 
-        List<UserBudgetCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
+        List<TransactionCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
         if(userBudgetCategories == null || userBudgetCategories.isEmpty())
         {
             return BigDecimal.ZERO;
         }
         BigDecimal totalExpenses = BigDecimal.ZERO;
-        for(UserBudgetCategoryEntity userBudgetCategory : userBudgetCategories)
+        for(TransactionCategoryEntity userBudgetCategory : userBudgetCategories)
         {
             Double totalSpentOnCategory = userBudgetCategory.getActual();
             totalExpenses = totalExpenses.add(new BigDecimal(totalSpentOnCategory));
@@ -186,11 +186,11 @@ public class BudgetCalculations {
         }
     }
 
-    private BigDecimal getTotalSpendingForAllUserBudgetCategories(final List<UserBudgetCategoryEntity> userBudgetCategories)
+    private BigDecimal getTotalSpendingForAllUserBudgetCategories(final List<TransactionCategoryEntity> userBudgetCategories)
     {
 
         BigDecimal totalSpending = BigDecimal.ZERO;
-        for(UserBudgetCategoryEntity userBudgetCategory : userBudgetCategories)
+        for(TransactionCategoryEntity userBudgetCategory : userBudgetCategories)
         {
             Double actualSpending = userBudgetCategory.getActual();
             totalSpending = totalSpending.add(new BigDecimal(actualSpending));
@@ -268,9 +268,56 @@ public class BudgetCalculations {
         return budgetAmount.subtract(totalSpentOnBudget);
     }
 
-    public BigDecimal calculateTotalSpentOnBudgetForPeriod(final List<CategorySpending> categorySpending, final BigDecimal budgetAmount, final BudgetPeriod budgetPeriod){
-        if(categorySpending.isEmpty()){
+    public BigDecimal calculateTotalSpentOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
+        if(budgetPeriod == null)
+        {
             return BigDecimal.ZERO;
+        }
+        try
+        {
+            if(budgetId < 1L){
+                throw new IllegalArgumentException("Budget id must be greater than 1");
+            }
+
+            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+            if(startDate == null || endDate == null){
+                throw new IllegalDateException("Start date or endDate cannot be null");
+            }
+            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
+            if(budgetEntityOptional.isEmpty()){
+                throw new RuntimeException("Budget with Budget Id: " + budgetId + " not found.");
+            }
+            BudgetEntity budget = budgetEntityOptional.get();
+            BigDecimal totalBudgetedAmount = budget.getBudgetAmount();
+            List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryService.getTransactionCategoriesByBudgetIdAndDateRange(budgetId, startDate, endDate);
+            if(transactionCategoryEntities.isEmpty()){
+                throw new RuntimeException("Transaction category entities not found for Budget Id: " + budgetId);
+            }
+            BigDecimal totalSpending = BigDecimal.ZERO;
+            for(TransactionCategoryEntity transactionCategoryEntity : transactionCategoryEntities)
+            {
+                if(transactionCategoryEntity != null)
+                {
+                    BigDecimal transactionCategorySpending = BigDecimal.valueOf(transactionCategoryEntity.getActual());
+                    totalSpending = totalSpending.add(transactionCategorySpending);
+                    if(totalSpending.compareTo(BigDecimal.ZERO) == totalBudgetedAmount)
+                    if(totalSpending.compareTo(BigDecimal.ZERO) != 0)
+                    {
+                        throw new ArithmeticException("There was an calculation error when calculating the total spending");
+                    }
+                }
+            }
+
+        }catch(IllegalDateException e){
+            log.error("There was an error with the budget period dates: ", e);
+            throw e;
+        }catch(IllegalArgumentException ex){
+            log.error("There was an error with the calculation parameters: ", ex);
+            throw ex;
+        }catch(ArithmeticException ex1){
+            log.error("There was an error calculating the total spending: ", ex1);
+            throw ex1;
         }
         return null;
     }
@@ -423,13 +470,13 @@ public class BudgetCalculations {
         return BigDecimal.ZERO;
     }
 
-    public TreeMap<DateRange, List<UserBudgetCategoryEntity>> loadCategoryBudgetsForPeriod(final Budget budget, final BudgetPeriod budgetPeriod)
+    public TreeMap<DateRange, List<TransactionCategoryEntity>> loadCategoryBudgetsForPeriod(final Budget budget, final BudgetPeriod budgetPeriod)
     {
         if(budget == null || budgetPeriod == null)
         {
             return new TreeMap<>();
         }
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> categoryToCategoryBudgetMap = new TreeMap<>();
+        TreeMap<DateRange, List<TransactionCategoryEntity>> categoryToCategoryBudgetMap = new TreeMap<>();
         LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
         LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
         validateStartDateAndEndDate(startDate, endDate);
@@ -438,13 +485,13 @@ public class BudgetCalculations {
         DateRange dateRange = createDateRange(startDate, endDate);
 
         // Create Categories for the specified period?
-        List<UserBudgetCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
+        List<TransactionCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
         if(userBudgetCategories == null)
         {
             return new TreeMap<>();
         }
 
-        List<UserBudgetCategoryEntity> userBudgetCategoryEntities = new ArrayList<>(userBudgetCategories);
+        List<TransactionCategoryEntity> userBudgetCategoryEntities = new ArrayList<>(userBudgetCategories);
         categoryToCategoryBudgetMap.put(dateRange, userBudgetCategoryEntities);
 
         return categoryToCategoryBudgetMap;
@@ -497,8 +544,8 @@ public class BudgetCalculations {
 
 
 
-    private BigDecimal getBudgetControlAmount(final Category category, final List<BudgetCategoriesEntity> budgetCategories) {
-        for (BudgetCategoriesEntity budgetCategoriesEntity : budgetCategories) {
+    private BigDecimal getBudgetControlAmount(final Category category, final List<ControlledSpendingCategoryEntity> budgetCategories) {
+        for (ControlledSpendingCategoryEntity budgetCategoriesEntity : budgetCategories) {
             if (budgetCategoriesEntity.getCategoryName().equalsIgnoreCase(category.getCategoryName())) {
                 return BigDecimal.valueOf(budgetCategoriesEntity.getAllocatedAmount());
             }
@@ -513,9 +560,9 @@ public class BudgetCalculations {
             throw new RuntimeException("BudgetPeriod and budget cannot be null");
         }
 
-        List<UserBudgetCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), budgetPeriod.startDate(), budgetPeriod.endDate());
+        List<TransactionCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), budgetPeriod.startDate(), budgetPeriod.endDate());
         BigDecimal totalSavedAmount = BigDecimal.ZERO;
-        for(UserBudgetCategoryEntity userBudgetCategoryEntity : userBudgetCategories)
+        for(TransactionCategoryEntity userBudgetCategoryEntity : userBudgetCategories)
         {
             Double categorySpending = userBudgetCategoryEntity.getActual();
             Double categoryBudgetedAmount = userBudgetCategoryEntity.getBudgetedAmount();
@@ -577,7 +624,7 @@ public class BudgetCalculations {
     }
 
 
-    private List<BudgetCategoriesEntity> getBudgetCategoriesByBudgetId(Long budgetId){
+    private List<ControlledSpendingCategoryEntity> getBudgetCategoriesByBudgetId(Long budgetId){
         return budgetCategoriesService.findByBudgetId(budgetId);
     }
 
@@ -586,16 +633,16 @@ public class BudgetCalculations {
         return budgetEntity.orElseThrow(() -> new IllegalArgumentException("Budget id " + budgetId + " not found"));
     }
 
-    private List<UserBudgetCategoryEntity> getUserBudgetCategoriesByUserId(Long userId){
-        List<UserBudgetCategoryEntity> userBudgetCategories = userBudgetCategoryService.getAllUserBudgetsByUser(userId);
+    private List<TransactionCategoryEntity> getUserBudgetCategoriesByUserId(Long userId){
+        List<TransactionCategoryEntity> userBudgetCategories = transactionCategoryService.getAllTransactionCategoriesByUser(userId);
         if(userBudgetCategories.isEmpty()){
             return List.of();
         }
         return userBudgetCategories;
     }
 
-    private List<UserBudgetCategoryEntity> getUserBudgetCategoriesByUserAndDates(Long userId, LocalDate startDate, LocalDate endDate){
-        List<UserBudgetCategoryEntity> userBudgetCategories = userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(userId, startDate, endDate);
+    private List<TransactionCategoryEntity> getUserBudgetCategoriesByUserAndDates(Long userId, LocalDate startDate, LocalDate endDate){
+        List<TransactionCategoryEntity> userBudgetCategories = transactionCategoryService.getTransactionCategoriesByUserAndDateRange(userId, startDate, endDate);
         if(userBudgetCategories.isEmpty()){
             return List.of();
         }

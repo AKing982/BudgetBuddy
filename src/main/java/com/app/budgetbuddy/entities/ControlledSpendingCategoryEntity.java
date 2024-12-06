@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
-public class BudgetCategoriesEntity
+public class ControlledSpendingCategoryEntity
 {
 
     @Id

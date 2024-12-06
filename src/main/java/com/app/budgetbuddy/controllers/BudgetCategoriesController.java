@@ -2,8 +2,8 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.BudgetCategoryRequest;
 import com.app.budgetbuddy.domain.ControlledBudgetCategory;
-import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
-import com.app.budgetbuddy.services.BudgetCategoriesService;
+import com.app.budgetbuddy.entities.ControlledSpendingCategoryEntity;
+import com.app.budgetbuddy.services.ControlledSpendingCategoriesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +18,11 @@ import java.util.List;
 @CrossOrigin(value="http://localhost:3000")
 public class BudgetCategoriesController
 {
-    private final BudgetCategoriesService budgetCategoriesService;
+    private final ControlledSpendingCategoriesService budgetCategoriesService;
     private final Logger LOGGER = LoggerFactory.getLogger(BudgetCategoriesController.class);
 
     @Autowired
-    public BudgetCategoriesController(BudgetCategoriesService budgetCategoriesService){
+    public BudgetCategoriesController(ControlledSpendingCategoriesService budgetCategoriesService){
         this.budgetCategoriesService = budgetCategoriesService;
     }
 
@@ -31,7 +31,7 @@ public class BudgetCategoriesController
         List<ControlledBudgetCategory> budgetCategories = budgetCategory.categories();
         try
         {
-            List<BudgetCategoriesEntity> budgetCategoriesEntities = createBudgetCategoryEntities(budgetCategories);
+            List<ControlledSpendingCategoryEntity> budgetCategoriesEntities = createBudgetCategoryEntities(budgetCategories);
             return ResponseEntity.ok(budgetCategoriesEntities);
 
         }catch(Exception e){
@@ -40,10 +40,10 @@ public class BudgetCategoriesController
         }
     }
 
-    private List<BudgetCategoriesEntity> createBudgetCategoryEntities(List<ControlledBudgetCategory> budgetCategories){
-        List<BudgetCategoriesEntity> budgetCategoriesEntities = new ArrayList<>();
+    private List<ControlledSpendingCategoryEntity> createBudgetCategoryEntities(List<ControlledBudgetCategory> budgetCategories){
+        List<ControlledSpendingCategoryEntity> budgetCategoriesEntities = new ArrayList<>();
         for(ControlledBudgetCategory budgetCategory : budgetCategories){
-            BudgetCategoriesEntity budgetCategoriesEntity = budgetCategoriesService.createAndSaveBudgetCategory(budgetCategory);
+            ControlledSpendingCategoryEntity budgetCategoriesEntity = budgetCategoriesService.createAndSaveBudgetCategory(budgetCategory);
             budgetCategoriesEntities.add(budgetCategoriesEntity);
         }
         return budgetCategoriesEntities;

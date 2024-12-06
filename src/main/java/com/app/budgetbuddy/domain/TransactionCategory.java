@@ -9,10 +9,10 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
-public class UserBudgetCategory
+public class TransactionCategory
 {
     private Long id;
-    private Long userId;
+    private Long budgetId;
     private String categoryId;
     private String categoryName;
     private Double budgetedAmount;

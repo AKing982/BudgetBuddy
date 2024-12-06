@@ -3,6 +3,7 @@ package com.app.budgetbuddy.domain;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Objects;
 
 @Getter
@@ -14,12 +15,20 @@ public class CategorySpending
     private String categoryId;
     private String categoryName;
     private BigDecimal actualSpending;
+    private LocalDate spendingDate;
 
     public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending)
     {
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.actualSpending = actualSpending;
+    }
+
+    public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending, LocalDate spendingDate) {
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.actualSpending = actualSpending;
+        this.spendingDate = spendingDate;
     }
 
     public CategorySpending(String categoryName, BigDecimal actualSpending)

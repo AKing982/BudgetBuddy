@@ -6,7 +6,7 @@ import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import com.app.budgetbuddy.services.TransactionCategoryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class BudgetCalculatorTest {
     private BudgetGoalsService budgetGoalsService;
 
     @Mock
-    private UserBudgetCategoryService  userBudgetCategoryService;
+    private TransactionCategoryService transactionCategoryService;
 
     @Mock
     private BudgetValidator budgetValidator;
@@ -52,11 +52,11 @@ class BudgetCalculatorTest {
 
     private Category testCategory4;
 
-    private UserBudgetCategoryEntity userBudgetCategory;
+    private TransactionCategoryEntity userBudgetCategory;
 
-    private UserBudgetCategoryEntity userBudgetCategory2;
+    private TransactionCategoryEntity userBudgetCategory2;
 
-    private UserBudgetCategoryEntity userBudgetCategory3;
+    private TransactionCategoryEntity userBudgetCategory3;
 
     private Budget testBudget;
 
@@ -95,7 +95,7 @@ class BudgetCalculatorTest {
         testCategory3.setActive(true);
         testCategory3.setCategoryType(CategoryType.RENT);
 
-        userBudgetCategory = new UserBudgetCategoryEntity();
+        userBudgetCategory = new TransactionCategoryEntity();
         userBudgetCategory.setBudgetedAmount(500.00);
         userBudgetCategory.setActual(340.00);
         userBudgetCategory.setStartDate(LocalDate.of(2024, 6, 1));
@@ -104,7 +104,7 @@ class BudgetCalculatorTest {
         userBudgetCategory.setCategory(createCategory("Groceries", "Groceries"));
         userBudgetCategory.setIsactive(true);
 
-        userBudgetCategory2 = new UserBudgetCategoryEntity();
+        userBudgetCategory2 = new TransactionCategoryEntity();
         userBudgetCategory2.setBudgetedAmount(150.00);
         userBudgetCategory2.setActual(67.00);
         userBudgetCategory2.setStartDate(LocalDate.of(2024, 6, 1));
@@ -113,7 +113,7 @@ class BudgetCalculatorTest {
         userBudgetCategory2.setIsactive(true);
         userBudgetCategory2.setCategory(createCategory("Subscriptions", "Subscriptions"));
 
-        userBudgetCategory3 = new UserBudgetCategoryEntity();
+        userBudgetCategory3 = new TransactionCategoryEntity();
         userBudgetCategory3.setBudgetedAmount(1200.00);
         userBudgetCategory3.setActual(1200.00);
         userBudgetCategory3.setStartDate(LocalDate.of(2024, 6, 1));
@@ -256,13 +256,13 @@ class BudgetCalculatorTest {
 
     @Test
     void testGetTotalSavedInUserBudgetCategoriesByPeriod_whenUserBudgetCategoryListIsEmpty_thenReturnZero(){
-        List<UserBudgetCategoryEntity> userBudgetCategories = new ArrayList<>();
+        List<TransactionCategoryEntity> userBudgetCategories = new ArrayList<>();
 
         LocalDate startDate = testBudgetPeriod.startDate();
         LocalDate endDate = testBudgetPeriod.endDate();
         Long userId = testBudget.getUserId();
 
-        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(userId, startDate, endDate)).thenReturn(userBudgetCategories);
+        Mockito.when(transactionCategoryService.getUserBudgetCategoriesByUserAndDateRange(userId, startDate, endDate)).thenReturn(userBudgetCategories);
 
         BigDecimal actual = budgetCalculator.getTotalSavedInUserBudgetCategoriesByPeriod(testBudgetPeriod, testBudget);
         assertEquals(0, actual.intValue());
@@ -271,16 +271,16 @@ class BudgetCalculatorTest {
     @Test
     void testGetTotalSavedInUserBudgetCategoriesByPeriod_ThenReturnTotalSaved(){
 
-        UserBudgetCategoryEntity groceryCategory = createUserBudgetCategory("Groceries", "Groceries",LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 410.00, 210.00);
-        UserBudgetCategoryEntity gasCategory = createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 78.00, 35.00);
-        List<UserBudgetCategoryEntity> userBudgetCategories = new ArrayList<>();
+        TransactionCategoryEntity groceryCategory = createUserBudgetCategory("Groceries", "Groceries",LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 410.00, 210.00);
+        TransactionCategoryEntity gasCategory = createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 78.00, 35.00);
+        List<TransactionCategoryEntity> userBudgetCategories = new ArrayList<>();
         userBudgetCategories.add(groceryCategory);
         userBudgetCategories.add(gasCategory);
 
         LocalDate startDate = testBudgetPeriod.startDate();
         LocalDate endDate = testBudgetPeriod.endDate();
         Long userId = testBudget.getUserId();
-        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(userId, startDate, endDate)).thenReturn(userBudgetCategories);
+        Mockito.when(transactionCategoryService.getUserBudgetCategoriesByUserAndDateRange(userId, startDate, endDate)).thenReturn(userBudgetCategories);
 
         BigDecimal expectedSavings = new BigDecimal("243");
         BigDecimal actualSavings = budgetCalculator.getTotalSavedInUserBudgetCategoriesByPeriod(testBudgetPeriod, testBudget);
@@ -289,9 +289,9 @@ class BudgetCalculatorTest {
 
     @ParameterizedTest
     @MethodSource("provideBudgetPeriodsAndBudgets")
-    void testGetTotalSavedInUserBudgetCategoriesByPeriodParam(BudgetPeriod budgetPeriod, Budget budget, List<UserBudgetCategoryEntity> userBudgetCategories, BigDecimal expectedSavings) {
+    void testGetTotalSavedInUserBudgetCategoriesByPeriodParam(BudgetPeriod budgetPeriod, Budget budget, List<TransactionCategoryEntity> userBudgetCategories, BigDecimal expectedSavings) {
         // Mock the behavior of the service method to return the supplied list of UserBudgetCategoryEntity
-        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(
+        Mockito.when(transactionCategoryService.getUserBudgetCategoriesByUserAndDateRange(
                         budget.getUserId(), budgetPeriod.startDate(), budgetPeriod.endDate()))
                 .thenReturn(userBudgetCategories);
 
@@ -471,16 +471,16 @@ class BudgetCalculatorTest {
 
     @Test
     void testLoadCategoryBudgetsForPeriod_whenBudgetIsNull_thenReturnEmptyTreeMap(){
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
+        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
 
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> actual = budgetCalculator.loadCategoryBudgetsForPeriod(null, testBudgetPeriod);
+        TreeMap<DateRange, List<TransactionCategoryEntity>> actual = budgetCalculator.loadCategoryBudgetsForPeriod(null, testBudgetPeriod);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
 
     @Test
     void testLoadCategoryBudgetsForPeriod_whenBudgetPeriodIsNull_thenReturnEmptyTreeMap(){
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, null);
+        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgetCategoryMap = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, null);
         assertNotNull(userBudgetCategoryMap);
         assertTrue(userBudgetCategoryMap.isEmpty());
     }
@@ -488,15 +488,15 @@ class BudgetCalculatorTest {
     @Test
     void testLoadCategoryBudgetsForPeriod_returnTreeMap(){
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
+        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
         DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
-        List<UserBudgetCategoryEntity> expectedUserBudgets = new ArrayList<>();
+        List<TransactionCategoryEntity> expectedUserBudgets = new ArrayList<>();
         expectedUserBudgets.add(createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024,10, 1), LocalDate.of(2024, 10, 7), 125.00, 100.00));
         expectedUserBudgets.add(createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7), 67.00, 35.00));
         userBudgetCategoryMap.put(dateRange, expectedUserBudgets);
 
-        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15))).thenReturn(expectedUserBudgets);
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
+        Mockito.when(transactionCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15))).thenReturn(expectedUserBudgets);
+        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
         assertEquals(userBudgetCategoryMap.size(), userBudgets.size());
         assertEquals(userBudgetCategoryMap.get(dateRange).size(), userBudgets.get(dateRange).size());
         for(int i = 0; i < expectedUserBudgets.size(); i++){
@@ -510,10 +510,10 @@ class BudgetCalculatorTest {
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
         DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
 
-        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15)))
+        Mockito.when(transactionCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15)))
                 .thenReturn(new ArrayList<>());
 
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
+        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
 
         assertNotNull(userBudgets);
         assertEquals(1, userBudgets.size());
@@ -535,13 +535,13 @@ class BudgetCalculatorTest {
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7));
         DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7));
 
-        List<UserBudgetCategoryEntity> expectedUserBudgets = new ArrayList<>();
+        List<TransactionCategoryEntity> expectedUserBudgets = new ArrayList<>();
         expectedUserBudgets.add(createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7), 125.00, 100.00));
 
-        Mockito.when(userBudgetCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7)))
+        Mockito.when(transactionCategoryService.getUserBudgetCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7)))
                 .thenReturn(expectedUserBudgets);
 
-        TreeMap<DateRange, List<UserBudgetCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
+        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
 
         assertEquals(1, userBudgets.size());
         assertEquals(expectedUserBudgets.size(), userBudgets.get(dateRange).size());
@@ -676,7 +676,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCalculateSavingsGoalProgress_WhenBudgetIsNull_thenReturnZero(){
-        Set<UserBudgetCategoryEntity> categories = new HashSet<>();
+        Set<TransactionCategoryEntity> categories = new HashSet<>();
         BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(null, categories);
         assertNotNull(actual);
         assertEquals(0, actual.intValue());
@@ -684,7 +684,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCalculateSavingsGoalProgress_whenSpendingCategoriesIsEmpty_ThenReturnZero(){
-        Set<UserBudgetCategoryEntity> categories = new HashSet<>();
+        Set<TransactionCategoryEntity> categories = new HashSet<>();
         BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(testBudget, categories);
         assertNotNull(actual);
         assertEquals(0, actual.intValue());
@@ -692,7 +692,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCalculateSavingsGoalProgress_thenReturnProgress(){
-        Set<UserBudgetCategoryEntity> categories = new HashSet<>();
+        Set<TransactionCategoryEntity> categories = new HashSet<>();
         categories.add(userBudgetCategory);
         categories.add(userBudgetCategory2);
         categories.add(userBudgetCategory3);
@@ -838,14 +838,56 @@ class BudgetCalculatorTest {
         });
     }
 
-   @Test
-   void testCalculateTotalSpentOnBudgetForPeriod_whenCategorySpendingIsEmpty_thenReturnZero(){
-        List<CategorySpending> categorySpendings = new ArrayList<>();
-        BigDecimal budgetAmount = new BigDecimal("1604");
+    @Test
+    void testCalculateTotalSpentOnBudgetForPeriod_whenBudgetIdInvalid_thenThrowIllegalArgumentException() {
+        final Long budgetId = -1L;
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
-        BigDecimal actual = budgetCalculator.calculateTotalSpentOnBudgetForPeriod(categorySpendings, budgetAmount, budgetPeriod);
+        assertThrows(IllegalArgumentException.class, () -> {
+            budgetCalculator.calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testCalculateTotalSpentOnBudgetForPeriod_whenBudgetPeriodIsNull_thenReturnZero(){
+        final Long budgetId = 1L;
+        BudgetPeriod budgetPeriod = null;
+        BigDecimal actual = budgetCalculator.calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
         assertEquals(0, actual.intValue());
-   }
+    }
+
+    @Test
+    void testCalculateTotalSpentOnBudgetForPeriod_whenStartDateIsNull_thenThrowDateException(){
+        final Long budgetId = 1L;
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, null, LocalDate.of(2024, 9, 10));
+        assertThrows(IllegalDateException.class, () -> {
+            budgetCalculator.calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testCalculateTotalSpentOnBudgetForPeriod_whenEndDateIsNull_thenThrowDateException(){
+        final Long budgetId = 1L;
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), null);
+        assertThrows(IllegalDateException.class, () -> {
+            budgetCalculator.calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testCalculateTotalSpentOnBudgetForPeriod_whenBothDatesAreNull_thenThrowDateException(){
+        final Long budgetId = 1L;
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, null, null);
+        assertThrows(IllegalDateException.class, () -> {
+            budgetCalculator.calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+        });
+    }
+
+    @Test
+    void testCalculateTotalSpentOnBudgetForPeriod_whenParametersValid_thenReturnTotalSpent(){
+        final Long budgetId = 1L;
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
+
+    }
 
 
     private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {
@@ -870,26 +912,26 @@ class BudgetCalculatorTest {
         budget2.setActual(new BigDecimal("8000.0"));
 
         // Create UserBudgetCategoryEntity lists for different periods
-        List<UserBudgetCategoryEntity> userBudgetCategoriesMonthly = List.of(
+        List<TransactionCategoryEntity> userBudgetCategoriesMonthly = List.of(
                 createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31), 300.00, 250.00),
                 createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31), 100.00, 80.00)
         );
 
-        List<UserBudgetCategoryEntity> userBudgetCategoriesYearly = List.of(
+        List<TransactionCategoryEntity> userBudgetCategoriesYearly = List.of(
                 createUserBudgetCategory("Rent", "Rent", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 12000.00, 11500.00),
                 createUserBudgetCategory("Utilities", "Utilities", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 1500.00, 1400.00)
         );
 
-        List<UserBudgetCategoryEntity> userBudgetCategoriesWeekly = List.of(
+        List<TransactionCategoryEntity> userBudgetCategoriesWeekly = List.of(
                 createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 200.00, 150.00),
                 createUserBudgetCategory("Transport", "Transport", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 50.00, 40.00)
         );
 
-        List<UserBudgetCategoryEntity> userBudgetCategoriesDaily = List.of(
+        List<TransactionCategoryEntity> userBudgetCategoriesDaily = List.of(
                 createUserBudgetCategory("Lunch", "Lunch", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 1), 15.00, 10.00)
         );
 
-        List<UserBudgetCategoryEntity> userBudgetCategoriesBiWeekly = List.of(
+        List<TransactionCategoryEntity> userBudgetCategoriesBiWeekly = List.of(
                 createUserBudgetCategory("Rent", "Rent", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14), 600.00, 500.00),
                 createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14), 200.00, 170.00)
         );
@@ -957,8 +999,8 @@ class BudgetCalculatorTest {
         return user;
     }
 
-    private static UserBudgetCategoryEntity createUserBudgetCategory(String categoryName, String categoryDescription, LocalDate startDate, LocalDate endDate, Double budgetAmount, Double actual){
-        UserBudgetCategoryEntity userBudgetCategory = new UserBudgetCategoryEntity();
+    private static TransactionCategoryEntity createUserBudgetCategory(String categoryName, String categoryDescription, LocalDate startDate, LocalDate endDate, Double budgetAmount, Double actual){
+        TransactionCategoryEntity userBudgetCategory = new TransactionCategoryEntity();
         userBudgetCategory.setCategory(createCategory(categoryName, categoryDescription));
         userBudgetCategory.setUser(createUser());
         userBudgetCategory.setBudgetedAmount(budgetAmount);

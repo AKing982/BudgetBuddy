@@ -3,9 +3,9 @@ package com.app.budgetbuddy.workbench.runner;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.services.BudgetGoalsService;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
 import com.app.budgetbuddy.workbench.budget.BudgetDebtService;
 import com.app.budgetbuddy.workbench.budget.BudgetPeriodQueries;
+import com.app.budgetbuddy.workbench.budget.TransactionCategoryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +15,12 @@ import java.util.List;
 @Service
 public class BudgetRunner
 {
-    private final BudgetCategoryBuilder budgetCategoryBuilder;
+    private final TransactionCategoryBuilder budgetCategoryBuilder;
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetGoalsService budgetGoalsService;
 
     @Autowired
-    public BudgetRunner(BudgetCategoryBuilder budgetCategoryBuilder,
+    public BudgetRunner(TransactionCategoryBuilder budgetCategoryBuilder,
                         BudgetPeriodQueries budgetPeriodQueries,
                         BudgetGoalsService budgetGoalsService){
         this.budgetCategoryBuilder = budgetCategoryBuilder;

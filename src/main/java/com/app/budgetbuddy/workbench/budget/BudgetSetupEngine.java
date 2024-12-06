@@ -1,10 +1,9 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
+import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetService;
@@ -30,14 +29,14 @@ public class BudgetSetupEngine
     private final BudgetService budgetService;
     private final CategoryService categoryService;
     private final BudgetCalculations budgetCalculations;
-    private final BudgetCategoryBuilder budgetCategoryBuilder;
+    private final TransactionCategoryBuilder budgetCategoryBuilder;
 
     @Autowired
     public BudgetSetupEngine(UserService userService,
                              BudgetService budgetService,
                              CategoryService categoryService,
                              BudgetCalculations budgetCalculator,
-                             BudgetCategoryBuilder budgetCategoryBuilder){
+                             TransactionCategoryBuilder budgetCategoryBuilder){
         this.userService = userService;
         this.budgetService = budgetService;
         this.categoryService = categoryService;
@@ -94,9 +93,9 @@ public class BudgetSetupEngine
      * @param budgetPeriod
      * @return
      */
-    public List<UserBudgetCategory> initializeDefaultUserBudgetCategories(final Long userId, final List<Transaction> transactions, final List<RecurringTransaction> recurringTransactions, final BudgetPeriod budgetPeriod)
+    public List<TransactionCategory> initializeDefaultUserBudgetCategories(final Long userId, final List<Transaction> transactions, final List<RecurringTransaction> recurringTransactions, final BudgetPeriod budgetPeriod)
     {
-        List<UserBudgetCategory> userBudgetCategories = new ArrayList<>();
+        List<TransactionCategory> userBudgetCategories = new ArrayList<>();
         if(transactions.isEmpty() || recurringTransactions.isEmpty() || budgetPeriod == null)
         {
             return userBudgetCategories;
@@ -115,13 +114,13 @@ public class BudgetSetupEngine
         }
         else
         {
-            List<UserBudgetCategory> userBudgetCategoriesTransactions = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
+            List<TransactionCategory> userBudgetCategoriesTransactions = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
             if(!userBudgetCategoriesTransactions.isEmpty())
             {
                userBudgetCategories.addAll(userBudgetCategoriesTransactions);
             }
 
-            List<UserBudgetCategory> userBudgetCategoriesRecurringTransactions = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, recurringTransactions);
+            List<TransactionCategory> userBudgetCategoriesRecurringTransactions = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, recurringTransactions);
             if(!userBudgetCategoriesRecurringTransactions.isEmpty())
             {
                 userBudgetCategories.addAll(userBudgetCategoriesRecurringTransactions);
@@ -144,7 +143,7 @@ public class BudgetSetupEngine
 
     }
 
-    public List<UserBudgetCategoryEntity> convertUserBudgetCategoriesToEntities(final List<UserBudgetCategory> userBudgetCategories)
+    public List<TransactionCategoryEntity> convertUserBudgetCategoriesToEntities(final List<TransactionCategory> userBudgetCategories)
     {
         return null;
     }

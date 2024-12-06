@@ -1,10 +1,10 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.ControlledBudgetCategory;
-import com.app.budgetbuddy.entities.BudgetCategoriesEntity;
 import com.app.budgetbuddy.entities.BudgetEntity;
-import com.app.budgetbuddy.repositories.BudgetCategoriesRepository;
+import com.app.budgetbuddy.entities.ControlledSpendingCategoryEntity;
 import com.app.budgetbuddy.repositories.BudgetRepository;
+import com.app.budgetbuddy.repositories.ControlledSpendingCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,41 +14,41 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class BudgetCategoriesServiceImpl implements BudgetCategoriesService
+public class ControlledSpendingCategoriesServiceImpl implements ControlledSpendingCategoriesService
 {
-    private final BudgetCategoriesRepository budgetCategoriesRepository;
+    private final ControlledSpendingCategoryRepository budgetCategoriesRepository;
     private final BudgetRepository budgetRepository;
 
     @Autowired
-    public BudgetCategoriesServiceImpl(BudgetCategoriesRepository budgetCategoriesRepository,
+    public ControlledSpendingCategoriesServiceImpl(ControlledSpendingCategoryRepository budgetCategoriesRepository,
                                        BudgetRepository budgetRepository){
         this.budgetCategoriesRepository = budgetCategoriesRepository;
         this.budgetRepository = budgetRepository;
     }
 
     @Override
-    public Collection<BudgetCategoriesEntity> findAll() {
+    public Collection<ControlledSpendingCategoryEntity> findAll() {
         return budgetCategoriesRepository.findAll();
     }
 
     @Override
-    public void save(BudgetCategoriesEntity budgetCategoriesEntity) {
+    public void save(ControlledSpendingCategoryEntity budgetCategoriesEntity) {
         budgetCategoriesRepository.save(budgetCategoriesEntity);
     }
 
     @Override
-    public void delete(BudgetCategoriesEntity budgetCategoriesEntity) {
+    public void delete(ControlledSpendingCategoryEntity budgetCategoriesEntity) {
         budgetCategoriesRepository.delete(budgetCategoriesEntity);
     }
 
     @Override
-    public Optional<BudgetCategoriesEntity> findById(Long id) {
+    public Optional<ControlledSpendingCategoryEntity> findById(Long id) {
         return budgetCategoriesRepository.findById(id);
     }
 
     @Override
-    public BudgetCategoriesEntity createAndSaveBudgetCategory(ControlledBudgetCategory budgetCategory) {
-       BudgetCategoriesEntity budgetCategoriesEntity = new BudgetCategoriesEntity();
+    public ControlledSpendingCategoryEntity createAndSaveBudgetCategory(ControlledBudgetCategory budgetCategory) {
+       ControlledSpendingCategoryEntity budgetCategoriesEntity = new ControlledSpendingCategoryEntity();
        budgetCategoriesEntity.setCategoryName(budgetCategory.categoryName());
        budgetCategoriesEntity.setCurrentSpending(budgetCategory.currentSpending());
        budgetCategoriesEntity.setIsActive(budgetCategory.isActive());
@@ -63,7 +63,7 @@ public class BudgetCategoriesServiceImpl implements BudgetCategoriesService
     }
 
     @Override
-    public List<BudgetCategoriesEntity> findByBudgetId(Long budgetId) {
+    public List<ControlledSpendingCategoryEntity> findByBudgetId(Long budgetId) {
         return budgetCategoriesRepository.findAllByBudgetId(budgetId);
     }
 

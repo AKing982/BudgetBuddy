@@ -8,20 +8,20 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="user_budget_categories")
+@Table(name="transactionCategories")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 @Setter
-public class UserBudgetCategoryEntity
+public class TransactionCategoryEntity
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="userid")
-    private UserEntity user;
+    @JoinColumn(name="budgetid")
+    private BudgetEntity budget;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="categoryid")

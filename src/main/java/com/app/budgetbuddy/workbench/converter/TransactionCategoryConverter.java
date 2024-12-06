@@ -1,26 +1,26 @@
 package com.app.budgetbuddy.workbench.converter;
 
-import com.app.budgetbuddy.domain.UserBudgetCategory;
+import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
+import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.services.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserBudgetCategoryConverter implements Converter<UserBudgetCategory, UserBudgetCategoryEntity>
+public class TransactionCategoryConverter implements Converter<TransactionCategory, TransactionCategoryEntity>
 {
     private final CategoryService categoryService;
 
     @Autowired
-    public UserBudgetCategoryConverter(CategoryService categoryService)
+    public TransactionCategoryConverter(CategoryService categoryService)
     {
         this.categoryService = categoryService;
     }
 
     @Override
-    public UserBudgetCategoryEntity convert(UserBudgetCategory userBudgetCategory) {
-        UserBudgetCategoryEntity userBudgetCategoryEntity = new UserBudgetCategoryEntity();
+    public TransactionCategoryEntity convert(TransactionCategory userBudgetCategory) {
+        TransactionCategoryEntity userBudgetCategoryEntity = new TransactionCategoryEntity();
         userBudgetCategoryEntity.setId(userBudgetCategory.getId());
         userBudgetCategoryEntity.setIsactive(true);
         userBudgetCategoryEntity.setBudgetedAmount(userBudgetCategory.getBudgetedAmount());

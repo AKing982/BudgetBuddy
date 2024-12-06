@@ -31,7 +31,7 @@ class BudgetSetupEngineTest {
     private BudgetService budgetService;
 
     @Mock
-    private BudgetCategoryBuilder budgetCategoryBuilder;
+    private TransactionCategoryBuilder budgetCategoryBuilder;
 
     @InjectMocks
     private BudgetSetupEngine budgetSetupEngine;
@@ -49,7 +49,7 @@ class BudgetSetupEngineTest {
         recurringTransactions.add(createAffirmRecurringTransaction());
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
 
-        List<UserBudgetCategory> actual = budgetSetupEngine.initializeDefaultUserBudgetCategories(userId, transactions, recurringTransactions, budgetPeriod);
+        List<TransactionCategory> actual = budgetSetupEngine.initializeDefaultUserBudgetCategories(userId, transactions, recurringTransactions, budgetPeriod);
         assertTrue(actual.isEmpty());
     }
 
@@ -61,7 +61,7 @@ class BudgetSetupEngineTest {
         transactions.add(createGasTransaction());
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10));
 
-        List<UserBudgetCategory> actual = budgetSetupEngine.initializeDefaultUserBudgetCategories(userId, transactions, recurringTransactions, budgetPeriod);
+        List<TransactionCategory> actual = budgetSetupEngine.initializeDefaultUserBudgetCategories(userId, transactions, recurringTransactions, budgetPeriod);
         assertTrue(actual.isEmpty());
     }
 
@@ -74,7 +74,7 @@ class BudgetSetupEngineTest {
         transactions.add(createGasTransaction());
         BudgetPeriod budgetPeriod = null;
 
-        List<UserBudgetCategory> actual = budgetSetupEngine.initializeDefaultUserBudgetCategories(userId, transactions, recurringTransactions, budgetPeriod);
+        List<TransactionCategory> actual = budgetSetupEngine.initializeDefaultUserBudgetCategories(userId, transactions, recurringTransactions, budgetPeriod);
         assertTrue(actual.isEmpty());
     }
 

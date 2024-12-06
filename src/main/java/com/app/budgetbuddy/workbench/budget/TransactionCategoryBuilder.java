@@ -1,17 +1,14 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.UserBudgetCategoryEntity;
+import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
-import com.app.budgetbuddy.exceptions.TransactionRuleException;
 import com.app.budgetbuddy.services.CategoryService;
-import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
-import com.app.budgetbuddy.workbench.converter.UserBudgetCategoryConverter;
+import com.app.budgetbuddy.workbench.converter.TransactionCategoryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,26 +20,26 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
-public class BudgetCategoryBuilder
+public class TransactionCategoryBuilder
 {
-    private UserBudgetCategoryService userBudgetCategoryService;
+    private TransactionCategoryService transactionCategoryService;
     private CategoryService categoryService;
     private BudgetCalculations budgetCalculator;
     private CategoryRuleEngine categoryRuleEngine;
-    private UserBudgetCategoryConverter userBudgetCategoryConverter;
-    private Logger LOGGER = LoggerFactory.getLogger(BudgetCategoryBuilder.class);
+    private TransactionCategoryConverter transactionCategoryConverter;
+    private Logger LOGGER = LoggerFactory.getLogger(TransactionCategoryBuilder.class);
 
     @Autowired
-    public BudgetCategoryBuilder(UserBudgetCategoryService userBudgetCategoryService,
+    public TransactionCategoryBuilder(TransactionCategoryService transactionCategoryService,
                                  CategoryService categoryService,
                                  BudgetCalculations budgetCalculator,
                                  CategoryRuleEngine categoryRuleEngine,
-                                 UserBudgetCategoryConverter userBudgetCategoryConverter)
+                                 TransactionCategoryConverter transactionCategoryConverter)
     {
-        this.userBudgetCategoryService = userBudgetCategoryService;
+        this.transactionCategoryService = transactionCategoryService;
         this.categoryService = categoryService;
         this.budgetCalculator = budgetCalculator;
-        this.userBudgetCategoryConverter = userBudgetCategoryConverter;
+        this.transactionCategoryConverter = transactionCategoryConverter;
         this.categoryRuleEngine = categoryRuleEngine;
     }
 
@@ -118,7 +115,7 @@ public class BudgetCategoryBuilder
         return filteredTransactions;
     }
 
-    public UserBudgetCategory updateCategoryOnNewTransaction(final Transaction transaction, final UserBudgetCategory existingUserBudgetCategory)
+    public TransactionCategory updateCategoryOnNewTransaction(final Transaction transaction, final TransactionCategory existingUserBudgetCategory)
     {
         List<String> transactionCategories = transaction.getCategories();
         String categoryId = transaction.getCategoryId();
@@ -157,26 +154,17 @@ public class BudgetCategoryBuilder
         return existingUserBudgetCategory;
     }
 
-    private void setUserBudgetCategoryOverSpendingAmount(Double overSpendingAmount, UserBudgetCategory existingUserBudgetCategory)
+    private void setUserBudgetCategoryOverSpendingAmount(Double overSpendingAmount, TransactionCategory existingUserBudgetCategory)
     {
         existingUserBudgetCategory.setOverSpendingAmount(overSpendingAmount);
         existingUserBudgetCategory.setOverSpent(true);
     }
 
-    private void setUserBudgetCategoryBudgetActual(Double actualAmount, UserBudgetCategory existingUserBudgetCategory)
+    private void setUserBudgetCategoryBudgetActual(Double actualAmount, TransactionCategory existingUserBudgetCategory)
     {
         existingUserBudgetCategory.setBudgetActual(actualAmount);
     }
 
-    public List<UserBudgetCategoryEntity> convertUserBudgetCategories(List<UserBudgetCategory> userBudgetCategories)
-    {
-        return null;
-    }
-
-    public boolean storeCategoriesInDatabase(Set<UserBudgetCategory> userBudgetCategories)
-    {
-        return false;
-    }
 
     private CategoryEntity getCategoryById(String categoryId)
     {
@@ -267,9 +255,9 @@ public class BudgetCategoryBuilder
     }
 
     // Maps the User
-    public List<UserBudgetCategory> initializeUserBudgetCategories(final Budget budget, final BudgetPeriod budgetPeriod, final List<? extends Transaction> transactions)
+    public List<TransactionCategory> initializeUserBudgetCategories(final Budget budget, final BudgetPeriod budgetPeriod, final List<? extends Transaction> transactions)
     {
-        List<UserBudgetCategory> userBudgetCategories = new ArrayList<>();
+        List<TransactionCategory> userBudgetCategories = new ArrayList<>();
         if(budget == null || budgetPeriod == null || transactions.isEmpty())
         {
             return userBudgetCategories;
@@ -298,13 +286,13 @@ public class BudgetCategoryBuilder
         return buildUserBudgetCategoryList(categoryToBudgetMap, categorySpendingList, categoryDateRanges, budget.getUserId());
     }
 
-    public List<UserBudgetCategory> buildUserBudgetCategoryList(final Map<String, BigDecimal> categoryBudget, final List<CategorySpending> categorySpendingList, final Map<String, List<DateRange>> categoryDateRanges, Long userId)
+    public List<TransactionCategory> buildUserBudgetCategoryList(final Map<String, BigDecimal> categoryBudget, final List<CategorySpending> categorySpendingList, final Map<String, List<DateRange>> categoryDateRanges, Long userId)
     {
-        List<UserBudgetCategory> userBudgetCategories = new ArrayList<>();
+        List<TransactionCategory> transactionCategories = new ArrayList<>();
         if(categoryBudget.isEmpty() || categorySpendingList.isEmpty() || categoryDateRanges.isEmpty())
         {
             LOGGER.warn("Found empty category parameters: " + categoryBudget + ", " + categorySpendingList + ", " + categoryDateRanges);
-            return userBudgetCategories;
+            return transactionCategories;
         }
         for(CategorySpending categorySpending : categorySpendingList)
         {
@@ -320,19 +308,19 @@ public class BudgetCategoryBuilder
                     List<DateRange> dateRanges = categoryDateRanges.get(category);
                     LOGGER.info("Date Ranges: " + dateRanges);
                     for(DateRange dateRange : dateRanges){
-                        UserBudgetCategory userBudgetCategory = createUserBudgetCategory(userId, Double.valueOf(categoryBudgetAmount.toString()), Double.valueOf(String.valueOf(categoryBudgetActual)),category, categorySpending.getCategoryId(), dateRange.getStartDate(), dateRange.getEndDate());
-                        userBudgetCategories.add(userBudgetCategory);
+                        TransactionCategory transactionCategory = createTransactionCategory(userId, Double.valueOf(categoryBudgetAmount.toString()), Double.valueOf(String.valueOf(categoryBudgetActual)),category, categorySpending.getCategoryId(), dateRange.getStartDate(), dateRange.getEndDate());
+                        transactionCategories.add(transactionCategory);
                     }
                 }
             }
         }
-        LOGGER.info("User Budget Categories: " + userBudgetCategories);
-        return userBudgetCategories;
+        LOGGER.info("User Budget Categories: " + transactionCategories);
+        return transactionCategories;
     }
 
-    private UserBudgetCategory createUserBudgetCategory(Long userId, Double budgetedAmount, Double budgetActual, String category, String categoryId, LocalDate startDate, LocalDate endDate){
-        UserBudgetCategory userBudgetCategory = new UserBudgetCategory();
-        userBudgetCategory.setUserId(userId);
+    private TransactionCategory createTransactionCategory(Long userId, Double budgetedAmount, Double budgetActual, String category, String categoryId, LocalDate startDate, LocalDate endDate){
+        TransactionCategory userBudgetCategory = new TransactionCategory();
+        userBudgetCategory.setBudgetId(userId);
         userBudgetCategory.setBudgetedAmount(Double.valueOf(budgetedAmount.toString()));
         userBudgetCategory.setIsActive(true);
         userBudgetCategory.setCategoryName(category);
@@ -481,7 +469,7 @@ public class BudgetCategoryBuilder
         }
     }
 
-    public List<UserBudgetCategoryEntity> detectAndUpdateNewTransactions()
+    public List<TransactionCategoryEntity> detectAndUpdateNewTransactions()
     {
         return null;
     }

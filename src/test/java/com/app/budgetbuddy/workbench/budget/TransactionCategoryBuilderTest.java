@@ -2,13 +2,11 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.CategoryService;
-import com.app.budgetbuddy.services.UserBudgetCategoryService;
+import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleService;
-import com.app.budgetbuddy.workbench.converter.UserBudgetCategoryConverter;
-import io.jsonwebtoken.Header;
+import com.app.budgetbuddy.workbench.converter.TransactionCategoryConverter;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,10 +31,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class BudgetCategoryBuilderTest {
+class TransactionCategoryBuilderTest {
 
     @Mock
-    private UserBudgetCategoryService userBudgetCategoryService;
+    private TransactionCategoryService userBudgetCategoryService;
 
     @Mock
     private CategoryRuleService categoryRuleService;
@@ -51,11 +49,11 @@ class BudgetCategoryBuilderTest {
     private CategoryRuleEngine categoryRuleEngine;
 
     @Mock
-    private UserBudgetCategoryConverter userBudgetCategoryConverter;
+    private TransactionCategoryConverter userBudgetCategoryConverter;
 
     @Spy
     @InjectMocks
-    private BudgetCategoryBuilder budgetCategoryBuilder;
+    private TransactionCategoryBuilder budgetCategoryBuilder;
 
     private BudgetPeriod testBudgetPeriod;
 
@@ -273,7 +271,7 @@ class BudgetCategoryBuilderTest {
     void testInitializeUserBudgetCategories_whenBudgetIsNull_thenReturnEmptyMap(){
        List<Transaction> transactions = new ArrayList<>();
        transactions.add(createWincoTransaction());
-       List<UserBudgetCategory> userBudgetCategories = budgetCategoryBuilder.initializeUserBudgetCategories(null, testBudgetPeriod, transactions);
+       List<TransactionCategory> userBudgetCategories = budgetCategoryBuilder.initializeUserBudgetCategories(null, testBudgetPeriod, transactions);
        assertNotNull(userBudgetCategories);
        assertTrue(userBudgetCategories.isEmpty());
     }
@@ -289,7 +287,7 @@ class BudgetCategoryBuilderTest {
         List<Transaction> transactions = new ArrayList<>();
         transactions.add(createWincoTransaction());
 
-        List<UserBudgetCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, null, transactions);
+        List<TransactionCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, null, transactions);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -303,7 +301,7 @@ class BudgetCategoryBuilderTest {
 
         List<Transaction> transactions = new ArrayList<>();
 
-        List<UserBudgetCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, testBudgetPeriod, transactions);
+        List<TransactionCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, testBudgetPeriod, transactions);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -374,7 +372,7 @@ class BudgetCategoryBuilderTest {
                 .thenReturn(mockCategoryToBudgetMap);
 
 
-        List<UserBudgetCategory> expectedBudgetCategories = new ArrayList<>();
+        List<TransactionCategory> expectedBudgetCategories = new ArrayList<>();
         expectedBudgetCategories.add(createUserBudgetCategory(
                 "19047000", "Supermarkets and Groceries", 200.0, 112.47,
                 LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 1L
@@ -412,11 +410,11 @@ class BudgetCategoryBuilderTest {
                 LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 27), 1L
         ));
 
-        List<UserBudgetCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
+        List<TransactionCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
         for(int i = 0; i < expectedBudgetCategories.size(); i++)
         {
-            UserBudgetCategory expected = expectedBudgetCategories.get(i);
-            UserBudgetCategory actualCategory = actual.get(i);
+            TransactionCategory expected = expectedBudgetCategories.get(i);
+            TransactionCategory actualCategory = actual.get(i);
 
             // Log category information before the assertions
             System.out.println("Comparing category: " + expected.getCategoryName());
@@ -499,7 +497,7 @@ class BudgetCategoryBuilderTest {
 
         Map<String, BigDecimal> categoryBudgets = new HashMap<>();
 
-        List<UserBudgetCategory> userBudgetCategories = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
+        List<TransactionCategory> userBudgetCategories = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
         assertNotNull(userBudgetCategories);
         assertTrue(userBudgetCategories.isEmpty());
     }
@@ -516,7 +514,7 @@ class BudgetCategoryBuilderTest {
         categoryBudgets.put("cat-001", new BigDecimal("50.75"));
         categoryBudgets.put("cat-003", new BigDecimal("50.75"));
 
-        List<UserBudgetCategory> actual = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
+        List<TransactionCategory> actual = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -533,7 +531,7 @@ class BudgetCategoryBuilderTest {
         categoryBudgets.put("cat-003", new BigDecimal("50.75"));
         Long userId = 1L;
 
-        List<UserBudgetCategory> actual = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
+        List<TransactionCategory> actual = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -553,11 +551,11 @@ class BudgetCategoryBuilderTest {
         categoryDateRanges.put("Groceries", List.of(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8))));
         categoryDateRanges.put("Gas", List.of(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8))));
 
-        List<UserBudgetCategory> expectedUserBudgetCategories = new ArrayList<>();
+        List<TransactionCategory> expectedUserBudgetCategories = new ArrayList<>();
         expectedUserBudgetCategories.add(createGroceriesCategory(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8)));
         expectedUserBudgetCategories.add(createGasBudgetCategory(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 67.00, 32.22));
 
-        List<UserBudgetCategory> actual = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
+        List<TransactionCategory> actual = budgetCategoryBuilder.buildUserBudgetCategoryList(categoryBudgets, categorySpendings, categoryDateRanges, userId);
         for(int i = 0; i < expectedUserBudgetCategories.size(); i++){
             assertEquals(expectedUserBudgetCategories.get(i).getCategoryName(), actual.get(i).getCategoryName());
             assertEquals(expectedUserBudgetCategories.get(i).getCategoryId(), actual.get(i).getCategoryId());
@@ -791,8 +789,8 @@ class BudgetCategoryBuilderTest {
         return new TransactionLink(category, transaction.getTransactionId());
     }
 
-    private UserBudgetCategory createUserBudgetCategory(String categoryId, String categoryName, Double budgetedAmount, Double actualAmount, LocalDate startDate, LocalDate endDate, Long userId) {
-        UserBudgetCategory category = new UserBudgetCategory();
+    private TransactionCategory createUserBudgetCategory(String categoryId, String categoryName, Double budgetedAmount, Double actualAmount, LocalDate startDate, LocalDate endDate, Long userId) {
+        TransactionCategory category = new TransactionCategory();
         category.setCategoryId(categoryId);
         category.setCategoryName(categoryName);
         category.setBudgetedAmount(budgetedAmount);
@@ -804,9 +802,9 @@ class BudgetCategoryBuilderTest {
         return category;
     }
 
-    private UserBudgetCategory createGasBudgetCategory(LocalDate startDate, LocalDate endDate, Double actual, Double budgetAmount)
+    private TransactionCategory createGasBudgetCategory(LocalDate startDate, LocalDate endDate, Double actual, Double budgetAmount)
     {
-        UserBudgetCategory gasBudgetCategory = new UserBudgetCategory();
+        TransactionCategory gasBudgetCategory = new TransactionCategory();
         gasBudgetCategory.setCategoryId("cat-003");
         gasBudgetCategory.setBudgetedAmount(budgetAmount);
         gasBudgetCategory.setCategoryName("Gas");
@@ -818,9 +816,9 @@ class BudgetCategoryBuilderTest {
         return gasBudgetCategory;
     }
 
-    private UserBudgetCategory createGroceriesCategory(LocalDate startDate, LocalDate endDate)
+    private TransactionCategory createGroceriesCategory(LocalDate startDate, LocalDate endDate)
     {
-        UserBudgetCategory groceriesCategory = new UserBudgetCategory();
+        TransactionCategory groceriesCategory = new TransactionCategory();
         groceriesCategory.setCategoryId("cat-001");
         groceriesCategory.setBudgetedAmount(450.00);
         groceriesCategory.setBudgetActual(120.00);
@@ -832,9 +830,9 @@ class BudgetCategoryBuilderTest {
         return groceriesCategory;
     }
 
-    private UserBudgetCategory createPaymentCategory(LocalDate startDate, LocalDate endDate)
+    private TransactionCategory createPaymentCategory(LocalDate startDate, LocalDate endDate)
     {
-        UserBudgetCategory paymentCategory = new UserBudgetCategory();
+        TransactionCategory paymentCategory = new TransactionCategory();
         paymentCategory.setCategoryId("cat-222");
         paymentCategory.setCategoryName("Payments");
         paymentCategory.setBudgetedAmount(149.00);
