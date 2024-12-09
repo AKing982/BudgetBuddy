@@ -7,6 +7,7 @@ import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.plaid.client.model.TransactionStream;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,8 @@ public interface RecurringTransactionService extends ServiceModel<RecurringTrans
     List<RecurringTransactionEntity> findByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     List<RecurringTransactionEntity> findByMerchantName(String merchantName);
     List<RecurringTransactionEntity> findByCategory(CategoryEntity category);
+
+    BigDecimal getTotalRecurringExpensesForPeriod(Long userId, LocalDate startDate, LocalDate endDate);
 
     List<RecurringTransaction> getRecurringTransactions(Long userId, LocalDate startDate, LocalDate endDate);
     List<RecurringTransactionEntity> createRecurringTransactions(final List<RecurringTransactionDTO> outflowing, final List<RecurringTransactionDTO> inflowing);

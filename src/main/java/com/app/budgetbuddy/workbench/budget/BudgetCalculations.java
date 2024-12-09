@@ -8,10 +8,7 @@ import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetActualAmountException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
-import com.app.budgetbuddy.services.BudgetGoalsService;
-import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.ControlledSpendingCategoriesService;
-import com.app.budgetbuddy.services.TransactionCategoryService;
+import com.app.budgetbuddy.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
@@ -26,6 +24,7 @@ import java.util.*;
 public class BudgetCalculations {
     private final BudgetService budgetService;
     private final BudgetGoalsService budgetGoalsService;
+    private final RecurringTransactionService recurringTransactionService;
     private final ControlledSpendingCategoriesService budgetCategoriesService;
     private final TransactionCategoryService transactionCategoryService;
     private final BudgetValidator budgetValidator;
@@ -33,11 +32,13 @@ public class BudgetCalculations {
     @Autowired
     public BudgetCalculations(BudgetService budgetService,
                             BudgetGoalsService budgetGoalsService,
+                            RecurringTransactionService recurringTransactionService,
                             ControlledSpendingCategoriesService budgetCategoriesService,
                             TransactionCategoryService transactionCategoryService,
                             BudgetValidator budgetValidator) {
         this.budgetService = budgetService;
         this.budgetGoalsService = budgetGoalsService;
+        this.recurringTransactionService = recurringTransactionService;
         this.budgetCategoriesService = budgetCategoriesService;
         this.transactionCategoryService = transactionCategoryService;
         this.budgetValidator = budgetValidator;
@@ -264,8 +265,35 @@ public class BudgetCalculations {
         }
     }
 
-    public BigDecimal calculateRemainingAmountOnBudget(final BigDecimal budgetAmount, final BigDecimal totalSpentOnBudget){
-        return budgetAmount.subtract(totalSpentOnBudget);
+    public BigDecimal calculateRemainingAmountOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
+        if(budgetPeriod == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        try
+        {
+            if(budgetId < 1L){
+                throw new RuntimeException("Budget id must be greater than 1");
+            }
+            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+            if(startDate == null || endDate == null)
+            {
+                throw new IllegalDateException("Start date or End date cannot be null");
+            }
+            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
+            if(budgetEntityOptional.isEmpty()){
+                throw new RuntimeException("Budget id " + budgetId + " does not exist");
+            }
+            BudgetEntity budgetEntity = budgetEntityOptional.get();
+            BigDecimal totalSpentOnBudgetForPeriod = calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+            BigDecimal totalBudgetedAmount = budgetEntity.getBudgetAmount();
+            return totalBudgetedAmount.subtract(totalSpentOnBudgetForPeriod);
+
+        }catch(IllegalDateException e){
+            log.error("There was an error with the budget period dates: ", e);
+            throw e;
+        }
     }
 
     public BigDecimal calculateTotalSpentOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
@@ -301,13 +329,21 @@ public class BudgetCalculations {
                 {
                     BigDecimal transactionCategorySpending = BigDecimal.valueOf(transactionCategoryEntity.getActual());
                     totalSpending = totalSpending.add(transactionCategorySpending);
-                    if(totalSpending.compareTo(BigDecimal.ZERO) == totalBudgetedAmount)
-                    if(totalSpending.compareTo(BigDecimal.ZERO) != 0)
+                    if(totalSpending.compareTo(totalBudgetedAmount) > 0)
+                    {
+                        BigDecimal overSpending = totalSpending.subtract(totalBudgetedAmount);
+                        log.warn("Overspending detected: {} over the budgeted amount.", overSpending);
+                        transactionCategoryEntity.setIsOverSpent(true);
+                        transactionCategoryEntity.setOverspendingAmount(Double.valueOf(overSpending.toString()));
+                    }
+                    log.info("Total Spending: " + totalSpending);
+                    if(totalSpending.compareTo(BigDecimal.ZERO) < 0)
                     {
                         throw new ArithmeticException("There was an calculation error when calculating the total spending");
                     }
                 }
             }
+            return totalSpending;
 
         }catch(IllegalDateException e){
             log.error("There was an error with the budget period dates: ", e);
@@ -319,11 +355,93 @@ public class BudgetCalculations {
             log.error("There was an error calculating the total spending: ", ex1);
             throw ex1;
         }
-        return null;
     }
 
-    public BigDecimal calculateTotalBudgetForPeriod(final BudgetPeriod budgetPeriod, final Budget budget){
-        return null;
+    private long getNumberOfDaysInBudget(LocalDate budgetStartDate, LocalDate budgetEndDate){
+        DateRange dateRange = new DateRange(budgetStartDate, budgetEndDate);
+        return dateRange.getDaysInRange() + 1;
+    }
+
+    private long getNumberOfDaysRemainingInBudget(LocalDate budgetStartDate, LocalDate budgetEndDate, LocalDate periodStart, LocalDate periodEnd){
+        // If period end date is after budget end date, use budget end date
+        LocalDate effectiveEndDate = periodEnd.isAfter(budgetEndDate) ? budgetEndDate : periodEnd;
+
+        // If period start is before budget start, use budget start
+        LocalDate effectiveStartDate = periodStart.isBefore(budgetStartDate) ? budgetStartDate : periodStart;
+
+        // Calculate days between effective dates
+        return ChronoUnit.DAYS.between(effectiveStartDate, budgetEndDate) + 1;
+    }
+
+    public BigDecimal calculateTotalBudgetForPeriod(final BudgetPeriod budgetPeriod, final Long budgetId)
+    {
+        if(budgetPeriod == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        try
+        {
+            if(budgetId < 1L){
+                throw new IllegalArgumentException("Budget id must be greater than 1");
+            }
+            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+            if(startDate == null || endDate == null){
+                throw new IllegalDateException("Start date or End date cannot be null");
+            }
+            DateRange dateRange = new DateRange(startDate, endDate);
+            long daysBetweenRange = dateRange.getDaysInRange();
+            log.info("Days between range: " + daysBetweenRange);
+            if(daysBetweenRange < 0){
+                throw new RuntimeException("Days between start and end date is invalid");
+            }
+            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
+            BudgetEntity budget = budgetEntityOptional.get();
+            LocalDate budgetStartDate = budget.getStartDate();
+            LocalDate budgetEndDate = budget.getEndDate();
+            long numberOfDaysInBudget = getNumberOfDaysInBudget(budgetStartDate, budgetEndDate);
+            log.info("Number of Days in Budget: " + numberOfDaysInBudget);
+            BigDecimal monthlyBudgetAmount = budget.getBudgetAmount();
+            BigDecimal dailyBudgetAmount = monthlyBudgetAmount.divide(new BigDecimal(numberOfDaysInBudget), 2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal totalBudgetForPeriod = dailyBudgetAmount.multiply(BigDecimal.valueOf(daysBetweenRange));
+            log.info("Total BudgetFor Period: " + totalBudgetForPeriod);
+            Long userId = budget.getUser().getId();
+            BigDecimal totalFixedExpensesForPeriod = recurringTransactionService.getTotalRecurringExpensesForPeriod(userId, startDate, endDate);
+            log.info("Total FixedExpenses for period: " + totalFixedExpensesForPeriod);
+            if(totalFixedExpensesForPeriod.compareTo(BigDecimal.ZERO) > 0)
+            {
+                // If only fixed expenses and no non fixed expenses
+                // Simply add the fixed expenses to the base budgeted amount
+                BigDecimal totalSpentOnBudget = calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+                if(totalSpentOnBudget.compareTo(BigDecimal.ZERO) == 0)
+                {
+                    totalBudgetForPeriod = totalBudgetForPeriod.add(totalFixedExpensesForPeriod);
+                    return totalBudgetForPeriod;
+                }
+                else
+                {
+                    // Adjust non-fixed expenses based on spent amount
+                    log.info("Total spent on budget: " + totalSpentOnBudget);
+                    BigDecimal remainingBudget = monthlyBudgetAmount.subtract(totalSpentOnBudget);
+                    log.info("RemainingBudget: " + remainingBudget);
+                    long daysLeft = getNumberOfDaysRemainingInBudget(budgetStartDate, budgetEndDate, startDate, endDate);
+                    log.info("Days Left: " + daysLeft);
+                    BigDecimal dailyAmount = remainingBudget.divide(BigDecimal.valueOf(daysLeft), 2, BigDecimal.ROUND_HALF_UP);
+                    log.info("Days between range: " + daysBetweenRange);
+                    BigDecimal baseBudgetForPeriod = dailyAmount.multiply(BigDecimal.valueOf(daysBetweenRange));
+                    totalBudgetForPeriod = baseBudgetForPeriod.add(totalFixedExpensesForPeriod);
+                }
+
+            }
+
+            return totalBudgetForPeriod;
+        }catch(IllegalDateException e){
+            log.error("There was an error with the budget period dates: ", e);
+            throw e;
+        }catch(IllegalArgumentException ex){
+            log.error("There was an error with the calculation parameters: ", ex);
+            throw ex;
+        }
     }
 
     private BigDecimal getCategoryBudget(final BigDecimal categoryProportion, final BigDecimal budgetAmount)

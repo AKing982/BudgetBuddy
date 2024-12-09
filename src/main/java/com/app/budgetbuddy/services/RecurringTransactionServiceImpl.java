@@ -12,6 +12,7 @@ import com.plaid.client.model.TransactionStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,6 +105,11 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     @Override
     public List<RecurringTransactionEntity> findByCategory(CategoryEntity category) {
         return recurringTransactionsRepository.findTransactionsByCategory(category);
+    }
+
+    @Override
+    public BigDecimal getTotalRecurringExpensesForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
+        return recurringTransactionsRepository.findTotalExpensesForDateRange(userId, startDate, endDate);
     }
 
     @Override

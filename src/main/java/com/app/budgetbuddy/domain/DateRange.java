@@ -166,7 +166,7 @@ public class DateRange implements Comparable<DateRange>
     }
 
     public long getDaysInRange(){
-        return ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        return ChronoUnit.DAYS.between(startDate, endDate);
     }
 
     public long getMonthsInRange(){

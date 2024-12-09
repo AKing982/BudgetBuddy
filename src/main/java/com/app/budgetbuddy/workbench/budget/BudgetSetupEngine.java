@@ -3,23 +3,23 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
+import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
+import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.support.AbstractLobCreatingPreparedStatementCallback;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -28,6 +28,7 @@ public class BudgetSetupEngine
     private final UserService userService;
     private final BudgetService budgetService;
     private final CategoryService categoryService;
+    private final RecurringTransactionsRepository recurringTransactionsRepository;
     private final BudgetCalculations budgetCalculations;
     private final TransactionCategoryBuilder budgetCategoryBuilder;
 
@@ -35,11 +36,13 @@ public class BudgetSetupEngine
     public BudgetSetupEngine(UserService userService,
                              BudgetService budgetService,
                              CategoryService categoryService,
+                             RecurringTransactionsRepository recurringTransactionsRepository,
                              BudgetCalculations budgetCalculator,
                              TransactionCategoryBuilder budgetCategoryBuilder){
         this.userService = userService;
         this.budgetService = budgetService;
         this.categoryService = categoryService;
+        this.recurringTransactionsRepository = recurringTransactionsRepository;
         this.budgetCalculations = budgetCalculator;
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
@@ -190,27 +193,25 @@ public class BudgetSetupEngine
         return controlledBudgetCategories;
     }
 
-    public Category initializeIncomeCategory(final List<RecurringTransaction> recurringTransactions){
-        Category incomeCategory = null;
-        for(RecurringTransaction recurringTransaction : recurringTransactions){
-            String categoryId = recurringTransaction.getCategoryId();
-            if(!categoryId.isEmpty()){
-                CategoryEntity category = categoryService.findCategoryById(categoryId).get();
-                String categoryName = category.getName();
-                String categoryDescription = category.getDescription();
-                if(categoryName.equals("Payroll"))
-                {
-                    BigDecimal incomeAmount = BigDecimal.valueOf(Math.abs(recurringTransaction.getAverageAmount().intValue()));
-                    LocalDate firstIncomeDate = recurringTransaction.getFirstDate();
-                    LocalDate lastIncomeDate = recurringTransaction.getLastDate();
-                    incomeCategory = new Category(categoryId, categoryName, categoryDescription, incomeAmount, firstIncomeDate, lastIncomeDate, BigDecimal.ZERO, true, CategoryType.PAYMENT);
-                }
-            }
+    public Category initializeIncomeCategory(final Long userId)
+    {
+        final String PAYROLL = "Payroll";
+        final String payrollCategory = "21009000";
+        try
+        {
+            List<RecurringTransactionEntity> recurringTransactionsWithIncome = recurringTransactionsRepository.findRecurringTransactionsWithIncome(payrollCategory, PAYROLL, userId);
+            RecurringTransactionEntity recurringTransaction = recurringTransactionsWithIncome.get(0);
+            return new Category(payrollCategory, PAYROLL, recurringTransaction.getDescription(), recurringTransaction.getAverageAmount(), recurringTransaction.getFirstDate(), recurringTransaction.getLastDate(), BigDecimal.ZERO, true, CategoryType.PAYMENT);
+        }catch(ArrayIndexOutOfBoundsException e){
+            log.error("There was an error initializing the income category for user {}: {}", userId, e.getMessage());
+            throw e;
         }
-        return incomeCategory;
     }
 
-    public Map<LocalDate, List<BudgetStats>> initializeUserBudgetStatistics(Budget budget, BudgetPeriod budgetPeriod){
+    public List<BudgetStats> initializeUserBudgetStatistics(final BigDecimal budgetAmount, final BigDecimal spentOnBudget, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final LocalDate periodStartDate, final LocalDate periodEndDate){
+        List<BudgetStats> userBudgetStatistics = new ArrayList<>();
+
+
         return null;
     }
 
@@ -222,7 +223,7 @@ public class BudgetSetupEngine
      * @param budgetPeriod
      * @return
      */
-    public TreeMap<Long, List<Category>> initializeUserCategories(List<Transaction> transactions, List<ControlledBudgetCategory> budgetCategories, Long userId, BudgetPeriod budgetPeriod){
+    public TreeMap<Long, List<Category>> initializeUserCategories(final List<Transaction> transactions, final List<ControlledBudgetCategory> budgetCategories, Long userId, BudgetPeriod budgetPeriod){
         return null;
     }
 

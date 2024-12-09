@@ -422,14 +422,12 @@ class TransactionCategoryBuilderTest {
             System.out.println("Expected Budgeted Amount: " + expected.getBudgetedAmount() + ", Actual Budgeted Amount: " + actualCategory.getBudgetedAmount());
             System.out.println("Expected Start Date: " + expected.getStartDate() + ", Actual Start Date: " + actualCategory.getStartDate());
             System.out.println("Expected End Date: " + expected.getEndDate() + ", Actual End Date: " + actualCategory.getEndDate());
-            System.out.println("Expected User ID: " + expected.getUserId() + ", Actual User ID: " + actualCategory.getUserId());
 
             // Perform assertions
             assertEquals(expected.getBudgetActual(), actualCategory.getBudgetActual(), "Budget actual does not match for category: " + expected.getCategoryName());
             assertEquals(expected.getBudgetedAmount(), actualCategory.getBudgetedAmount(), "Budgeted amount does not match for category: " + expected.getCategoryName());
             assertEquals(expected.getStartDate(), actualCategory.getStartDate(), "Start date does not match for category: " + expected.getCategoryName());
             assertEquals(expected.getEndDate(), actualCategory.getEndDate(), "End date does not match for category: " + expected.getCategoryName());
-            assertEquals(expected.getUserId(), actualCategory.getUserId(), "User ID does not match for category: " + expected.getCategoryName());
         }
 
     }
@@ -563,7 +561,6 @@ class TransactionCategoryBuilderTest {
             assertEquals(expectedUserBudgetCategories.get(i).getBudgetActual(), actual.get(i).getBudgetActual());
             assertEquals(expectedUserBudgetCategories.get(i).getStartDate(), actual.get(i).getStartDate());
             assertEquals(expectedUserBudgetCategories.get(i).getEndDate(), actual.get(i).getEndDate());
-            assertEquals(expectedUserBudgetCategories.get(i).getUserId(), actual.get(i).getUserId());
         }
     }
 
@@ -797,7 +794,6 @@ class TransactionCategoryBuilderTest {
         category.setBudgetActual(actualAmount);
         category.setStartDate(startDate);
         category.setEndDate(endDate);
-        category.setUserId(userId);
         category.setIsActive(true); // Assuming all categories are active for this test
         return category;
     }
@@ -812,7 +808,6 @@ class TransactionCategoryBuilderTest {
         gasBudgetCategory.setIsActive(true);
         gasBudgetCategory.setStartDate(startDate);
         gasBudgetCategory.setEndDate(endDate);
-        gasBudgetCategory.setUserId(1L);
         return gasBudgetCategory;
     }
 
@@ -826,7 +821,6 @@ class TransactionCategoryBuilderTest {
         groceriesCategory.setIsActive(true);
         groceriesCategory.setStartDate(startDate);
         groceriesCategory.setEndDate(endDate);
-        groceriesCategory.setUserId(1L);
         return groceriesCategory;
     }
 
@@ -839,7 +833,6 @@ class TransactionCategoryBuilderTest {
         paymentCategory.setBudgetActual(120.00);
         paymentCategory.setIsActive(true);
         paymentCategory.setStartDate(startDate);
-        paymentCategory.setUserId(1L);
         paymentCategory.setEndDate(endDate);
         return paymentCategory;
     }

@@ -6,6 +6,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name="transactionCategories")
@@ -18,6 +20,9 @@ public class TransactionCategoryEntity
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Set<TransactionsEntity> transactions = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="budgetid")
@@ -44,6 +49,12 @@ public class TransactionCategoryEntity
     @Column(name="endDate")
     private LocalDate endDate;
 
+    @Column(name="overspendingAmount")
+    private Double overspendingAmount;
+
+    @Column(name="isOverSpent")
+    private Boolean isOverSpent;
+
     @Column(name="createdat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;
@@ -51,4 +62,5 @@ public class TransactionCategoryEntity
     @Column(name="updatedat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime updatedat;
+
 }

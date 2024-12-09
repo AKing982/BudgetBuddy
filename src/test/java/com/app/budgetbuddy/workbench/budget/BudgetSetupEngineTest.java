@@ -113,7 +113,7 @@ class BudgetSetupEngineTest {
         List<ControlledBudgetCategory> actual = budgetSetupEngine.createControlledSpendingCategories(budget, budgetGoals, categoryQuestionnaireData);
         assertTrue(actual.isEmpty());
     }
-
+    
 
     @AfterEach
     void tearDown() {
