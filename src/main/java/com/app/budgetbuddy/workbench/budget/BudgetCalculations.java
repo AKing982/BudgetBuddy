@@ -24,23 +24,18 @@ import java.util.*;
 public class BudgetCalculations {
     private final BudgetService budgetService;
     private final BudgetGoalsService budgetGoalsService;
-    private final RecurringTransactionService recurringTransactionService;
     private final ControlledSpendingCategoriesService budgetCategoriesService;
-    private final TransactionCategoryService transactionCategoryService;
+
     private final BudgetValidator budgetValidator;
 
     @Autowired
     public BudgetCalculations(BudgetService budgetService,
                             BudgetGoalsService budgetGoalsService,
-                            RecurringTransactionService recurringTransactionService,
                             ControlledSpendingCategoriesService budgetCategoriesService,
-                            TransactionCategoryService transactionCategoryService,
                             BudgetValidator budgetValidator) {
         this.budgetService = budgetService;
         this.budgetGoalsService = budgetGoalsService;
-        this.recurringTransactionService = recurringTransactionService;
         this.budgetCategoriesService = budgetCategoriesService;
-        this.transactionCategoryService = transactionCategoryService;
         this.budgetValidator = budgetValidator;
     }
 
@@ -61,14 +56,14 @@ public class BudgetCalculations {
         return totalExpenses;
     }
 
-    public BigDecimal calculateSavingsGoalProgressForPeriod(BudgetPeriod budgetPeriod, Budget budget)
-    {
-        LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
-        LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
-        // Fetch User Budget Categories for the desired period
-        Set<TransactionCategoryEntity> userBudgetCategories = new HashSet<>(transactionCategoryService.getTransactionCategoriesByUserAndDateRange(budget.getUserId(), startDate, endDate));
-        return calculateSavingsGoalProgress(budget, userBudgetCategories);
-    }
+//    public BigDecimal calculateSavingsGoalProgressForPeriod(BudgetPeriod budgetPeriod, Budget budget)
+//    {
+//        LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+//        LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+//        // Fetch User Budget Categories for the desired period
+//        Set<TransactionCategoryEntity> userBudgetCategories = new HashSet<>(transactionCategoryService.getTransactionCategoriesByUserAndDateRange(budget.getUserId(), startDate, endDate));
+//        return calculateSavingsGoalProgress(budget, userBudgetCategories);
+//    }
 
     public BigDecimal calculateSavingsGoalProgress(final Budget budget, final Set<TransactionCategoryEntity> spendingCategories)
     {
@@ -265,50 +260,106 @@ public class BudgetCalculations {
         }
     }
 
-    public BigDecimal calculateRemainingAmountOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
-        if(budgetPeriod == null)
+    public BigDecimal calculateTotalFixedRecurringExpenses(final Budget budget, final DateRange dateRange, final List<RecurringTransaction> recurringTransactions)
+    {
+        if(budget == null || dateRange == null || recurringTransactions == null)
         {
             return BigDecimal.ZERO;
         }
+        BigDecimal totalFixedRecurringExpenses = BigDecimal.ZERO;
         try
         {
-            if(budgetId < 1L){
-                throw new RuntimeException("Budget id must be greater than 1");
+            Long budgetId = budget.getId();
+            if(budgetId == null || budgetId < 1L){
+                throw new IllegalArgumentException("Budget id cannot be null");
             }
-            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
-            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
-            if(startDate == null || endDate == null)
-            {
+            LocalDate startDate = dateRange.getStartDate();
+            LocalDate endDate = dateRange.getEndDate();
+            if(startDate == null || endDate == null){
                 throw new IllegalDateException("Start date or End date cannot be null");
             }
-            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
-            if(budgetEntityOptional.isEmpty()){
-                throw new RuntimeException("Budget id " + budgetId + " does not exist");
+            if(recurringTransactions.isEmpty())
+            {
+                return BigDecimal.ZERO;
             }
-            BudgetEntity budgetEntity = budgetEntityOptional.get();
-            BigDecimal totalSpentOnBudgetForPeriod = calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
-            BigDecimal totalBudgetedAmount = budgetEntity.getBudgetAmount();
-            return totalBudgetedAmount.subtract(totalSpentOnBudgetForPeriod);
+            else
+            {
+                for(RecurringTransaction recurringTransaction : recurringTransactions)
+                {
+                    if(recurringTransaction == null)
+                    {
+                        log.warn("Skipping null Recurring Transaction...");
+                        continue;
+                    }
+                    boolean isRecurringActive = recurringTransaction.getActive();
+                    // is the recurring transaction active and does it fall in the date range specified above
+                    boolean isWithinDateRange = !recurringTransaction.getLastDate().isBefore(startDate)
+                                    && !recurringTransaction.getFirstDate().isAfter(endDate);
+                    if(isRecurringActive && isWithinDateRange)
+                    {
+                        totalFixedRecurringExpenses = totalFixedRecurringExpenses.add(recurringTransaction.getAmount());
+                    }
+                }
+            }
+            return totalFixedRecurringExpenses;
 
         }catch(IllegalDateException e){
-            log.error("There was an error with the budget period dates: ", e);
+            log.error("There was an error with the budget date ranges: ", e);
             throw e;
+        }catch(IllegalArgumentException ex){
+            log.error("There was an error with the calculation parameters: ", ex);
+            throw ex;
         }
     }
 
-    public BigDecimal calculateTotalSpentOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
-        if(budgetPeriod == null)
+    public BigDecimal calculateRemainingBudgetForPeriod(BigDecimal totalBudgetedAmount, BigDecimal budgetActual, BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+//    public BigDecimal calculateRemainingAmountOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
+//        if(budgetPeriod == null)
+//        {
+//            return BigDecimal.ZERO;
+//        }
+//        try
+//        {
+//            if(budgetId < 1L){
+//                throw new RuntimeException("Budget id must be greater than 1");
+//            }
+//            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+//            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+//            if(startDate == null || endDate == null)
+//            {
+//                throw new IllegalDateException("Start date or End date cannot be null");
+//            }
+//            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
+//            if(budgetEntityOptional.isEmpty()){
+//                throw new RuntimeException("Budget id " + budgetId + " does not exist");
+//            }
+//            BudgetEntity budgetEntity = budgetEntityOptional.get();
+//            BigDecimal totalSpentOnBudgetForPeriod = calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+//            BigDecimal totalBudgetedAmount = budgetEntity.getBudgetAmount();
+//            return totalBudgetedAmount.subtract(totalSpentOnBudgetForPeriod);
+//
+//        }catch(IllegalDateException e){
+//            log.error("There was an error with the budget period dates: ", e);
+//            throw e;
+//        }
+//    }
+
+    public BigDecimal calculateTotalSpendingOnBudget(final DateRange budgetDateRange, final List<TransactionCategory> transactionCategories, final Budget budget){
+        if(budgetDateRange == null)
         {
             return BigDecimal.ZERO;
         }
         try
         {
+            Long budgetId = budget.getId();
             if(budgetId < 1L){
                 throw new IllegalArgumentException("Budget id must be greater than 1");
             }
-
-            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
-            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+            LocalDate startDate = budgetDateRange.getStartDate();
+            LocalDate endDate = budgetDateRange.getEndDate();
             if(startDate == null || endDate == null){
                 throw new IllegalDateException("Start date or endDate cannot be null");
             }
@@ -316,25 +367,23 @@ public class BudgetCalculations {
             if(budgetEntityOptional.isEmpty()){
                 throw new RuntimeException("Budget with Budget Id: " + budgetId + " not found.");
             }
-            BudgetEntity budget = budgetEntityOptional.get();
             BigDecimal totalBudgetedAmount = budget.getBudgetAmount();
-            List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryService.getTransactionCategoriesByBudgetIdAndDateRange(budgetId, startDate, endDate);
-            if(transactionCategoryEntities.isEmpty()){
+            if(transactionCategories.isEmpty()){
                 throw new RuntimeException("Transaction category entities not found for Budget Id: " + budgetId);
             }
             BigDecimal totalSpending = BigDecimal.ZERO;
-            for(TransactionCategoryEntity transactionCategoryEntity : transactionCategoryEntities)
+            for(TransactionCategory transactionCategory : transactionCategories)
             {
-                if(transactionCategoryEntity != null)
+                if(transactionCategory != null)
                 {
-                    BigDecimal transactionCategorySpending = BigDecimal.valueOf(transactionCategoryEntity.getActual());
+                    BigDecimal transactionCategorySpending = BigDecimal.valueOf(transactionCategory.getBudgetActual());
                     totalSpending = totalSpending.add(transactionCategorySpending);
                     if(totalSpending.compareTo(totalBudgetedAmount) > 0)
                     {
                         BigDecimal overSpending = totalSpending.subtract(totalBudgetedAmount);
                         log.warn("Overspending detected: {} over the budgeted amount.", overSpending);
-                        transactionCategoryEntity.setIsOverSpent(true);
-                        transactionCategoryEntity.setOverspendingAmount(Double.valueOf(overSpending.toString()));
+                        transactionCategory.setOverSpent(true);
+                        transactionCategory.setOverSpendingAmount(Double.valueOf(overSpending.toString()));
                     }
                     log.info("Total Spending: " + totalSpending);
                     if(totalSpending.compareTo(BigDecimal.ZERO) < 0)
@@ -357,6 +406,67 @@ public class BudgetCalculations {
         }
     }
 
+//    public BigDecimal calculateTotalSpentOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
+//        if(budgetPeriod == null)
+//        {
+//            return BigDecimal.ZERO;
+//        }
+//        try
+//        {
+//            if(budgetId < 1L){
+//                throw new IllegalArgumentException("Budget id must be greater than 1");
+//            }
+//
+//            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+//            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+//            if(startDate == null || endDate == null){
+//                throw new IllegalDateException("Start date or endDate cannot be null");
+//            }
+//            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
+//            if(budgetEntityOptional.isEmpty()){
+//                throw new RuntimeException("Budget with Budget Id: " + budgetId + " not found.");
+//            }
+//            BudgetEntity budget = budgetEntityOptional.get();
+//            BigDecimal totalBudgetedAmount = budget.getBudgetAmount();
+//            List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryService.getTransactionCategoriesByBudgetIdAndDateRange(budgetId, startDate, endDate);
+//            if(transactionCategoryEntities.isEmpty()){
+//                throw new RuntimeException("Transaction category entities not found for Budget Id: " + budgetId);
+//            }
+//            BigDecimal totalSpending = BigDecimal.ZERO;
+//            for(TransactionCategoryEntity transactionCategoryEntity : transactionCategoryEntities)
+//            {
+//                if(transactionCategoryEntity != null)
+//                {
+//                    BigDecimal transactionCategorySpending = BigDecimal.valueOf(transactionCategoryEntity.getActual());
+//                    totalSpending = totalSpending.add(transactionCategorySpending);
+//                    if(totalSpending.compareTo(totalBudgetedAmount) > 0)
+//                    {
+//                        BigDecimal overSpending = totalSpending.subtract(totalBudgetedAmount);
+//                        log.warn("Overspending detected: {} over the budgeted amount.", overSpending);
+//                        transactionCategoryEntity.setIsOverSpent(true);
+//                        transactionCategoryEntity.setOverspendingAmount(Double.valueOf(overSpending.toString()));
+//                    }
+//                    log.info("Total Spending: " + totalSpending);
+//                    if(totalSpending.compareTo(BigDecimal.ZERO) < 0)
+//                    {
+//                        throw new ArithmeticException("There was an calculation error when calculating the total spending");
+//                    }
+//                }
+//            }
+//            return totalSpending;
+//
+//        }catch(IllegalDateException e){
+//            log.error("There was an error with the budget period dates: ", e);
+//            throw e;
+//        }catch(IllegalArgumentException ex){
+//            log.error("There was an error with the calculation parameters: ", ex);
+//            throw ex;
+//        }catch(ArithmeticException ex1){
+//            log.error("There was an error calculating the total spending: ", ex1);
+//            throw ex1;
+//        }
+//    }
+
     private long getNumberOfDaysInBudget(LocalDate budgetStartDate, LocalDate budgetEndDate){
         DateRange dateRange = new DateRange(budgetStartDate, budgetEndDate);
         return dateRange.getDaysInRange() + 1;
@@ -373,30 +483,29 @@ public class BudgetCalculations {
         return ChronoUnit.DAYS.between(effectiveStartDate, budgetEndDate) + 1;
     }
 
-    public BigDecimal calculateTotalBudgetForPeriod(final BudgetPeriod budgetPeriod, final Long budgetId)
+    public BigDecimal calculateTotalBudgetAmount(final DateRange budgetDateRange, final Budget budget, final BigDecimal totalRecurringExpenses)
     {
-        if(budgetPeriod == null)
+        if(budgetDateRange == null)
         {
             return BigDecimal.ZERO;
         }
         try
         {
-            if(budgetId < 1L){
+            Long budgetId = budget.getId();
+            if(budgetId < 1L)
+            {
                 throw new IllegalArgumentException("Budget id must be greater than 1");
             }
-            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
-            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
-            if(startDate == null || endDate == null){
-                throw new IllegalDateException("Start date or End date cannot be null");
+            LocalDate startDate = budgetDateRange.getStartDate();
+            LocalDate endDate = budgetDateRange.getEndDate();
+            if(startDate == null || endDate == null) {
+                throw new IllegalDateException("Start date or endDate cannot be null");
             }
-            DateRange dateRange = new DateRange(startDate, endDate);
-            long daysBetweenRange = dateRange.getDaysInRange();
+            long daysBetweenRange = budgetDateRange.getDaysInRange();
             log.info("Days between range: " + daysBetweenRange);
             if(daysBetweenRange < 0){
                 throw new RuntimeException("Days between start and end date is invalid");
             }
-            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
-            BudgetEntity budget = budgetEntityOptional.get();
             LocalDate budgetStartDate = budget.getStartDate();
             LocalDate budgetEndDate = budget.getEndDate();
             long numberOfDaysInBudget = getNumberOfDaysInBudget(budgetStartDate, budgetEndDate);
@@ -405,17 +514,15 @@ public class BudgetCalculations {
             BigDecimal dailyBudgetAmount = monthlyBudgetAmount.divide(new BigDecimal(numberOfDaysInBudget), 2, BigDecimal.ROUND_HALF_UP);
             BigDecimal totalBudgetForPeriod = dailyBudgetAmount.multiply(BigDecimal.valueOf(daysBetweenRange));
             log.info("Total BudgetFor Period: " + totalBudgetForPeriod);
-            Long userId = budget.getUser().getId();
-            BigDecimal totalFixedExpensesForPeriod = recurringTransactionService.getTotalRecurringExpensesForPeriod(userId, startDate, endDate);
-            log.info("Total FixedExpenses for period: " + totalFixedExpensesForPeriod);
-            if(totalFixedExpensesForPeriod.compareTo(BigDecimal.ZERO) > 0)
+            Long userId = budget.getUserId();
+            if(totalRecurringExpenses != null && totalRecurringExpenses.compareTo(BigDecimal.ZERO) > 0)
             {
                 // If only fixed expenses and no non fixed expenses
                 // Simply add the fixed expenses to the base budgeted amount
-                BigDecimal totalSpentOnBudget = calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+                BigDecimal totalSpentOnBudget = calculateTotalSpendingOnBudget(budgetDateRange, budgetId, budgetPeriod);
                 if(totalSpentOnBudget.compareTo(BigDecimal.ZERO) == 0)
                 {
-                    totalBudgetForPeriod = totalBudgetForPeriod.add(totalFixedExpensesForPeriod);
+                    totalBudgetForPeriod = totalBudgetForPeriod.add(totalRecurringExpenses);
                     return totalBudgetForPeriod;
                 }
                 else
@@ -429,12 +536,12 @@ public class BudgetCalculations {
                     BigDecimal dailyAmount = remainingBudget.divide(BigDecimal.valueOf(daysLeft), 2, BigDecimal.ROUND_HALF_UP);
                     log.info("Days between range: " + daysBetweenRange);
                     BigDecimal baseBudgetForPeriod = dailyAmount.multiply(BigDecimal.valueOf(daysBetweenRange));
-                    totalBudgetForPeriod = baseBudgetForPeriod.add(totalFixedExpensesForPeriod);
+                    totalBudgetForPeriod = baseBudgetForPeriod.add(totalRecurringExpenses);
                 }
-
             }
-
+            log.info("Total Budget for Period: " + totalBudgetForPeriod);
             return totalBudgetForPeriod;
+
         }catch(IllegalDateException e){
             log.error("There was an error with the budget period dates: ", e);
             throw e;
@@ -443,6 +550,77 @@ public class BudgetCalculations {
             throw ex;
         }
     }
+
+//    public BigDecimal calculateTotalBudgetForPeriod(final BudgetPeriod budgetPeriod, final Long budgetId)
+//    {
+//        if(budgetPeriod == null)
+//        {
+//            return BigDecimal.ZERO;
+//        }
+//        try
+//        {
+//            if(budgetId < 1L){
+//                throw new IllegalArgumentException("Budget id must be greater than 1");
+//            }
+//            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
+//            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
+//            if(startDate == null || endDate == null){
+//                throw new IllegalDateException("Start date or End date cannot be null");
+//            }
+//            DateRange dateRange = new DateRange(startDate, endDate);
+//            long daysBetweenRange = dateRange.getDaysInRange();
+//            log.info("Days between range: " + daysBetweenRange);
+//            if(daysBetweenRange < 0){
+//                throw new RuntimeException("Days between start and end date is invalid");
+//            }
+//            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
+//            BudgetEntity budget = budgetEntityOptional.get();
+//            LocalDate budgetStartDate = budget.getStartDate();
+//            LocalDate budgetEndDate = budget.getEndDate();
+//            long numberOfDaysInBudget = getNumberOfDaysInBudget(budgetStartDate, budgetEndDate);
+//            log.info("Number of Days in Budget: " + numberOfDaysInBudget);
+//            BigDecimal monthlyBudgetAmount = budget.getBudgetAmount();
+//            BigDecimal dailyBudgetAmount = monthlyBudgetAmount.divide(new BigDecimal(numberOfDaysInBudget), 2, BigDecimal.ROUND_HALF_UP);
+//            BigDecimal totalBudgetForPeriod = dailyBudgetAmount.multiply(BigDecimal.valueOf(daysBetweenRange));
+//            log.info("Total BudgetFor Period: " + totalBudgetForPeriod);
+//            Long userId = budget.getUser().getId();
+//            BigDecimal totalFixedExpensesForPeriod = recurringTransactionService.getTotalRecurringExpensesForPeriod(userId, startDate, endDate);
+//            log.info("Total FixedExpenses for period: " + totalFixedExpensesForPeriod);
+//            if(totalFixedExpensesForPeriod.compareTo(BigDecimal.ZERO) > 0)
+//            {
+//                // If only fixed expenses and no non fixed expenses
+//                // Simply add the fixed expenses to the base budgeted amount
+//                BigDecimal totalSpentOnBudget = calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
+//                if(totalSpentOnBudget.compareTo(BigDecimal.ZERO) == 0)
+//                {
+//                    totalBudgetForPeriod = totalBudgetForPeriod.add(totalFixedExpensesForPeriod);
+//                    return totalBudgetForPeriod;
+//                }
+//                else
+//                {
+//                    // Adjust non-fixed expenses based on spent amount
+//                    log.info("Total spent on budget: " + totalSpentOnBudget);
+//                    BigDecimal remainingBudget = monthlyBudgetAmount.subtract(totalSpentOnBudget);
+//                    log.info("RemainingBudget: " + remainingBudget);
+//                    long daysLeft = getNumberOfDaysRemainingInBudget(budgetStartDate, budgetEndDate, startDate, endDate);
+//                    log.info("Days Left: " + daysLeft);
+//                    BigDecimal dailyAmount = remainingBudget.divide(BigDecimal.valueOf(daysLeft), 2, BigDecimal.ROUND_HALF_UP);
+//                    log.info("Days between range: " + daysBetweenRange);
+//                    BigDecimal baseBudgetForPeriod = dailyAmount.multiply(BigDecimal.valueOf(daysBetweenRange));
+//                    totalBudgetForPeriod = baseBudgetForPeriod.add(totalFixedExpensesForPeriod);
+//                }
+//
+//            }
+//            log.info("Total Budget for Period: " + totalBudgetForPeriod);
+//            return totalBudgetForPeriod;
+//        }catch(IllegalDateException e){
+//            log.error("There was an error with the budget period dates: ", e);
+//            throw e;
+//        }catch(IllegalArgumentException ex){
+//            log.error("There was an error with the calculation parameters: ", ex);
+//            throw ex;
+//        }
+//    }
 
     private BigDecimal getCategoryBudget(final BigDecimal categoryProportion, final BigDecimal budgetAmount)
     {
@@ -759,13 +937,6 @@ public class BudgetCalculations {
         return userBudgetCategories;
     }
 
-    private List<TransactionCategoryEntity> getUserBudgetCategoriesByUserAndDates(Long userId, LocalDate startDate, LocalDate endDate){
-        List<TransactionCategoryEntity> userBudgetCategories = transactionCategoryService.getTransactionCategoriesByUserAndDateRange(userId, startDate, endDate);
-        if(userBudgetCategories.isEmpty()){
-            return List.of();
-        }
-        return userBudgetCategories;
-    }
 
     public BigDecimal calculateRemainingAmount(BigDecimal actualSpent, BigDecimal budgetedAmount)
     {

@@ -1,11 +1,14 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.repositories.TransactionCategoryRepository;
+import com.app.budgetbuddy.workbench.converter.TransactionCategoryConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -14,11 +17,14 @@ import java.util.Optional;
 public class TransactionCategoryServiceImpl implements TransactionCategoryService
 {
     private final TransactionCategoryRepository transactionCategoryRepository;
+    private final TransactionCategoryConverter transactionCategoryConverter;
 
     @Autowired
-    public TransactionCategoryServiceImpl(TransactionCategoryRepository transactionCategoryRepository)
+    public TransactionCategoryServiceImpl(TransactionCategoryRepository transactionCategoryRepository,
+                                          TransactionCategoryConverter transactionCategoryConverter)
     {
         this.transactionCategoryRepository = transactionCategoryRepository;
+        this.transactionCategoryConverter = transactionCategoryConverter;
     }
 
     @Override
@@ -65,6 +71,28 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     @Override
     public List<TransactionCategoryEntity> getTransactionCategoriesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
         return List.of();
+    }
+
+    @Override
+    public List<TransactionCategory> getTransactionCategoryListByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate) {
+        List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryRepository.findByBudgetIdAndDateRange(budgetId, startDate, endDate);
+        List<TransactionCategory> transactionCategoryList = new ArrayList<>();
+        for(TransactionCategoryEntity transactionCategoryEntity : transactionCategoryEntities){
+            TransactionCategory transactionCategory = new TransactionCategory();
+            transactionCategory.setId(transactionCategoryEntity.getId());
+            transactionCategory.setCategoryId(transactionCategoryEntity.getCategory().getId());
+            transactionCategory.setBudgetId(transactionCategoryEntity.getBudget().getId());
+            transactionCategory.setCategoryName(transactionCategoryEntity.getCategory().getName());
+            transactionCategory.setBudgetedAmount(transactionCategoryEntity.getBudgetedAmount());
+            transactionCategory.setBudgetActual(transactionCategoryEntity.getActual());
+            transactionCategory.setEndDate(transactionCategoryEntity.getEndDate());
+            transactionCategory.setStartDate(transactionCategoryEntity.getStartDate());
+            transactionCategory.setIsActive(transactionCategoryEntity.getIsactive());
+            transactionCategory.setOverSpendingAmount(transactionCategoryEntity.getOverspendingAmount());
+            transactionCategory.setOverSpent(transactionCategoryEntity.getIsOverSpent());
+            transactionCategoryList.add(transactionCategory);
+        }
+        return transactionCategoryList;
     }
 
     @Override

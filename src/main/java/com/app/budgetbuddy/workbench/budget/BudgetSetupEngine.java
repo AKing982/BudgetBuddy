@@ -8,9 +8,7 @@ import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
-import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.CategoryService;
-import com.app.budgetbuddy.services.UserService;
+import com.app.budgetbuddy.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.support.AbstractLobCreatingPreparedStatementCallback;
@@ -28,7 +26,8 @@ public class BudgetSetupEngine
     private final UserService userService;
     private final BudgetService budgetService;
     private final CategoryService categoryService;
-    private final RecurringTransactionsRepository recurringTransactionsRepository;
+    private final RecurringTransactionService recurringTransactionService;
+    private final TransactionCategoryService transactionCategoryService;
     private final BudgetCalculations budgetCalculations;
     private final TransactionCategoryBuilder budgetCategoryBuilder;
 
@@ -36,13 +35,15 @@ public class BudgetSetupEngine
     public BudgetSetupEngine(UserService userService,
                              BudgetService budgetService,
                              CategoryService categoryService,
-                             RecurringTransactionsRepository recurringTransactionsRepository,
+                             RecurringTransactionService recurringTransactionService,
+                             TransactionCategoryService transactionCategoryService,
                              BudgetCalculations budgetCalculator,
                              TransactionCategoryBuilder budgetCategoryBuilder){
         this.userService = userService;
         this.budgetService = budgetService;
         this.categoryService = categoryService;
-        this.recurringTransactionsRepository = recurringTransactionsRepository;
+        this.recurringTransactionService = recurringTransactionService;
+        this.transactionCategoryService = transactionCategoryService;
         this.budgetCalculations = budgetCalculator;
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
@@ -199,7 +200,7 @@ public class BudgetSetupEngine
         final String payrollCategory = "21009000";
         try
         {
-            List<RecurringTransactionEntity> recurringTransactionsWithIncome = recurringTransactionsRepository.findRecurringTransactionsWithIncome(payrollCategory, PAYROLL, userId);
+            List<RecurringTransactionEntity> recurringTransactionsWithIncome = recurringTransactionService.findRecurringTransactionsWithIncome(payrollCategory, PAYROLL, userId);
             RecurringTransactionEntity recurringTransaction = recurringTransactionsWithIncome.get(0);
             return new Category(payrollCategory, PAYROLL, recurringTransaction.getDescription(), recurringTransaction.getAverageAmount(), recurringTransaction.getFirstDate(), recurringTransaction.getLastDate(), BigDecimal.ZERO, true, CategoryType.PAYMENT);
         }catch(ArrayIndexOutOfBoundsException e){
@@ -208,11 +209,40 @@ public class BudgetSetupEngine
         }
     }
 
-    public List<BudgetStats> initializeUserBudgetStatistics(final BigDecimal budgetAmount, final BigDecimal spentOnBudget, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final LocalDate periodStartDate, final LocalDate periodEndDate){
+    /**
+     * Initializes the budget statistics over several date ranges e.g. a Month
+     * This is to be used when creating budget statistics over past periods
+     * @param budget
+     * @param periodDateRange
+     * @return
+     */
+    public List<BudgetStats> initializeUserBudgetStatistics(final Budget budget, final List<DateRange> periodDateRange)
+    {
         List<BudgetStats> userBudgetStatistics = new ArrayList<>();
-
-
-        return null;
+        if(budget == null || periodDateRange == null)
+        {
+            return userBudgetStatistics;
+        }
+        BigDecimal budgetedAmount = budget.getBudgetAmount();
+        Long budgetId = budget.getId();
+        Long userId = budget.getUserId();
+        for(DateRange dateRange : periodDateRange)
+        {
+            LocalDate periodDateRangeStart = dateRange.getStartDate();
+            LocalDate periodDateRangeEnd = dateRange.getEndDate();
+            BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, periodDateRangeStart, periodDateRangeEnd);
+            List<RecurringTransaction> recurringTransactions = recurringTransactionService.getRecurringTransactions(userId, periodDateRangeStart, periodDateRangeEnd);
+            BigDecimal totalFixedRecurringExpenses = budgetCalculations.calculateTotalFixedRecurringExpenses(budget, dateRange, recurringTransactions);
+            BigDecimal totalBudgetedForPeriod = budgetCalculations.calculateTotalBudgetAmount(dateRange, budget, totalFixedRecurringExpenses);
+            List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budgetId, periodDateRangeStart, periodDateRangeEnd);
+            BigDecimal totalSpentForPeriod = budgetCalculations.calculateTotalSpendingOnBudget(dateRange, transactionCategories, budget);
+            log.info("Total Spent for Period: " + totalSpentForPeriod);
+            BigDecimal remainingBudgetForPeriod = totalBudgetedForPeriod.subtract(totalSpentForPeriod);
+            BigDecimal averageSpendingPerDay = budgetCalculations.calculateAverageSpendingPerDayOnBudget(totalBudgetedForPeriod, totalSpentForPeriod, budgetPeriod);
+            BudgetStats budgetStats = new BudgetStats(budgetId, budgetedAmount, totalSpentForPeriod, remainingBudgetForPeriod,remainingBudgetForPeriod, averageSpendingPerDay, dateRange);
+            userBudgetStatistics.add(budgetStats);
+        }
+        return userBudgetStatistics;
     }
 
     /**
