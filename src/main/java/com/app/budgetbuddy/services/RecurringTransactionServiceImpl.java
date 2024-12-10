@@ -5,10 +5,12 @@ import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.domain.RecurringTransactionType;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionStreamToEntityConverter;
 import com.plaid.client.model.TransactionStream;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class RecurringTransactionServiceImpl implements RecurringTransactionService
 {
     private final RecurringTransactionsRepository recurringTransactionsRepository;
@@ -110,6 +113,25 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     @Override
     public BigDecimal getTotalRecurringExpensesForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
         return recurringTransactionsRepository.findTotalExpensesForDateRange(userId, startDate, endDate);
+    }
+
+    @Override
+    public List<RecurringTransaction> findIncomeRecurringTransactionByCategoryAndUserId(String categoryName, String categoryId, Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionsRepository.findRecurringTransactionsWithIncome(categoryName, categoryName, userId);
+            List<RecurringTransaction> recurringTransactions = convertRecurringTransactionEntities(recurringTransactionEntities);
+            return recurringTransactions.stream()
+                    .filter(transaction ->
+                            !transaction.getLastDate().isBefore(startDate) &&
+                                    !transaction.getFirstDate().isAfter(endDate))
+                    .collect(Collectors.toList());
+
+        }catch(DataAccessException e){
+            log.error("There was an error accessing the recurring transactions: ",e);
+            return List.of();
+        }
     }
 
     @Override

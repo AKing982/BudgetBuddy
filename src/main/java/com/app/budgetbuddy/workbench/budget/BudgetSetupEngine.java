@@ -194,18 +194,173 @@ public class BudgetSetupEngine
         return controlledBudgetCategories;
     }
 
-    public Category initializeIncomeCategory(final Long userId)
+    public Category initializeIncomeCategory(final Long userId, final DateRange dateRange)
     {
         final String PAYROLL = "Payroll";
         final String payrollCategory = "21009000";
         try
         {
-            List<RecurringTransactionEntity> recurringTransactionsWithIncome = recurringTransactionService.findRecurringTransactionsWithIncome(payrollCategory, PAYROLL, userId);
-            RecurringTransactionEntity recurringTransaction = recurringTransactionsWithIncome.get(0);
+            LocalDate startDate = dateRange.getStartDate();
+            LocalDate endDate = dateRange.getEndDate();
+            List<RecurringTransaction> recurringTransactionsWithIncome = recurringTransactionService.findIncomeRecurringTransactionByCategoryAndUserId(PAYROLL, payrollCategory, userId, startDate, endDate);
+            RecurringTransaction recurringTransaction = recurringTransactionsWithIncome.get(0);
             return new Category(payrollCategory, PAYROLL, recurringTransaction.getDescription(), recurringTransaction.getAverageAmount(), recurringTransaction.getFirstDate(), recurringTransaction.getLastDate(), BigDecimal.ZERO, true, CategoryType.PAYMENT);
         }catch(ArrayIndexOutOfBoundsException e){
             log.error("There was an error initializing the income category for user {}: {}", userId, e.getMessage());
             throw e;
+        }
+    }
+
+    /**
+     * Creates a map of total spending for each date range period
+     * @param budget The budget to calculate totals for
+     * @param dateRanges The list of date ranges to calculate over
+     * @return Map of total spent amounts keyed by date range
+     */
+    public Map<DateRange, BigDecimal> createTotalSpentByPeriodMap(final Budget budget, final List<DateRange> dateRanges) {
+        if (budget == null || dateRanges == null || dateRanges.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<DateRange, BigDecimal> totalSpentByPeriod = new HashMap<>();
+
+        for (DateRange dateRange : dateRanges) {
+            List<TransactionCategory> transactionCategories = transactionCategoryService
+                    .getTransactionCategoryListByBudgetIdAndDateRange(
+                            budget.getId(),
+                            dateRange.getStartDate(),
+                            dateRange.getEndDate()
+                    );
+
+            BigDecimal totalSpent = budgetCalculations.calculateTotalSpendingOnBudget(
+                    dateRange,
+                    transactionCategories,
+                    budget
+            );
+
+            totalSpentByPeriod.put(dateRange, totalSpent);
+        }
+        return totalSpentByPeriod;
+    }
+
+    /**
+     * Creates a map of total budgeted amounts for each date range period
+     * @param budget The budget to calculate totals for
+     * @param dateRanges The list of date ranges to calculate over
+     * @return Map of total budgeted amounts keyed by date range
+     */
+    public Map<DateRange, BigDecimal> createTotalBudgetedByPeriodMap(final Budget budget, final List<DateRange> dateRanges) {
+        if (budget == null || dateRanges == null || dateRanges.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<DateRange, BigDecimal> totalBudgetedByPeriod = new HashMap<>();
+
+        for (DateRange dateRange : dateRanges) {
+            List<RecurringTransaction> recurringTransactions = recurringTransactionService
+                    .getRecurringTransactions(
+                            budget.getUserId(),
+                            dateRange.getStartDate(),
+                            dateRange.getEndDate()
+                    );
+
+            BigDecimal totalFixedRecurringExpenses = budgetCalculations
+                    .calculateTotalFixedRecurringExpenses(
+                            budget,
+                            dateRange,
+                            recurringTransactions
+                    );
+
+            BigDecimal totalSpent = budgetCalculations.calculateTotalSpendingOnBudget(
+                    dateRange,
+                    transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(
+                            budget.getId(),
+                            dateRange.getStartDate(),
+                            dateRange.getEndDate()
+                    ),
+                    budget
+            );
+
+            BigDecimal totalBudgeted = budgetCalculations.calculateTotalBudgetAmount(
+                    dateRange,
+                    budget,
+                    totalFixedRecurringExpenses,
+                    totalSpent
+            );
+
+            totalBudgetedByPeriod.put(dateRange, totalBudgeted);
+        }
+
+        return totalBudgetedByPeriod;
+    }
+
+    /**
+     * Creates a map of average daily spending for each date range period
+     * @param budget The budget to calculate averages for
+     * @param dateRanges The list of date ranges to calculate over
+     * @return Map of average daily spending amounts keyed by date range
+     */
+    public Map<DateRange, BigDecimal> createAverageSpendingPerDayMap(final Budget budget, final List<DateRange> dateRanges) {
+        if (budget == null || dateRanges == null || dateRanges.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<DateRange, BigDecimal> averageSpendingByPeriod = new HashMap<>();
+
+        // Get the total spent and budgeted maps first to avoid recalculating
+        Map<DateRange, BigDecimal> totalSpentMap = createTotalSpentByPeriodMap(budget, dateRanges);
+        Map<DateRange, BigDecimal> totalBudgetedMap = createTotalBudgetedByPeriodMap(budget, dateRanges);
+
+        for (DateRange dateRange : dateRanges) {
+            BudgetPeriod budgetPeriod = new BudgetPeriod(
+                    Period.MONTHLY,
+                    dateRange.getStartDate(),
+                    dateRange.getEndDate()
+            );
+
+            BigDecimal averageSpending = budgetCalculations.calculateAverageSpendingPerDayOnBudget(
+                    totalBudgetedMap.get(dateRange),
+                    totalSpentMap.get(dateRange),
+                    budgetPeriod
+            );
+
+            averageSpendingByPeriod.put(dateRange, averageSpending);
+        }
+
+        return averageSpendingByPeriod;
+    }
+
+    /**
+     * Orchestrates the creation of budget statistics by gathering all required calculations
+     * and initializing the budget statistics for each period
+     *
+     * @param budget The budget to analyze
+     * @param dateRanges The list of date ranges to calculate over
+     * @return List of BudgetStats for each date range period
+     */
+    public List<BudgetStats> createBudgetStatistics(final Budget budget, final List<DateRange> dateRanges)
+    {
+        if (budget == null || dateRanges == null || dateRanges.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            // Create all required maps
+            Map<DateRange, BigDecimal> totalSpentByPeriod = createTotalSpentByPeriodMap(budget, dateRanges);
+            Map<DateRange, BigDecimal> totalBudgetedByPeriod = createTotalBudgetedByPeriodMap(budget, dateRanges);
+            Map<DateRange, BigDecimal> averageSpendingPerDay = createAverageSpendingPerDayMap(budget, dateRanges);
+
+            // Initialize and return budget statistics using the calculated maps
+            return initializeUserBudgetStatistics(
+                    budget,
+                    dateRanges,
+                    totalSpentByPeriod,
+                    totalBudgetedByPeriod,
+                    averageSpendingPerDay
+            );
+        } catch (Exception e) {
+            log.error("Error creating budget statistics for budget ID: " + budget.getId(), e);
+            return Collections.emptyList();
         }
     }
 
@@ -216,7 +371,8 @@ public class BudgetSetupEngine
      * @param periodDateRange
      * @return
      */
-    public List<BudgetStats> initializeUserBudgetStatistics(final Budget budget, final List<DateRange> periodDateRange)
+    public List<BudgetStats> initializeUserBudgetStatistics(final Budget budget, final List<DateRange> periodDateRange, final Map<DateRange, BigDecimal> totalSpentByPeriod,
+                                                            final Map<DateRange, BigDecimal> totalBudgetedByPeriod, final Map<DateRange, BigDecimal> averageSpendingPerDay)
     {
         List<BudgetStats> userBudgetStatistics = new ArrayList<>();
         if(budget == null || periodDateRange == null)
@@ -225,21 +381,13 @@ public class BudgetSetupEngine
         }
         BigDecimal budgetedAmount = budget.getBudgetAmount();
         Long budgetId = budget.getId();
-        Long userId = budget.getUserId();
         for(DateRange dateRange : periodDateRange)
-        {
-            LocalDate periodDateRangeStart = dateRange.getStartDate();
-            LocalDate periodDateRangeEnd = dateRange.getEndDate();
-            BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, periodDateRangeStart, periodDateRangeEnd);
-            List<RecurringTransaction> recurringTransactions = recurringTransactionService.getRecurringTransactions(userId, periodDateRangeStart, periodDateRangeEnd);
-            BigDecimal totalFixedRecurringExpenses = budgetCalculations.calculateTotalFixedRecurringExpenses(budget, dateRange, recurringTransactions);
-            BigDecimal totalBudgetedForPeriod = budgetCalculations.calculateTotalBudgetAmount(dateRange, budget, totalFixedRecurringExpenses);
-            List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budgetId, periodDateRangeStart, periodDateRangeEnd);
-            BigDecimal totalSpentForPeriod = budgetCalculations.calculateTotalSpendingOnBudget(dateRange, transactionCategories, budget);
-            log.info("Total Spent for Period: " + totalSpentForPeriod);
+       {
+            BigDecimal totalSpentForPeriod = totalSpentByPeriod.get(dateRange);
+            BigDecimal totalBudgetedForPeriod = totalBudgetedByPeriod.get(dateRange);
+            BigDecimal averageSpendingForPeriod = averageSpendingPerDay.get(dateRange);
             BigDecimal remainingBudgetForPeriod = totalBudgetedForPeriod.subtract(totalSpentForPeriod);
-            BigDecimal averageSpendingPerDay = budgetCalculations.calculateAverageSpendingPerDayOnBudget(totalBudgetedForPeriod, totalSpentForPeriod, budgetPeriod);
-            BudgetStats budgetStats = new BudgetStats(budgetId, budgetedAmount, totalSpentForPeriod, remainingBudgetForPeriod,remainingBudgetForPeriod, averageSpendingPerDay, dateRange);
+            BudgetStats budgetStats = new BudgetStats(budgetId, budgetedAmount, totalSpentForPeriod, remainingBudgetForPeriod,remainingBudgetForPeriod, averageSpendingForPeriod, dateRange);
             userBudgetStatistics.add(budgetStats);
         }
         return userBudgetStatistics;
