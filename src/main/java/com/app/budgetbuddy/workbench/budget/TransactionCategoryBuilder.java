@@ -255,7 +255,7 @@ public class TransactionCategoryBuilder
     }
 
     // Maps the User
-    public List<TransactionCategory> initializeUserBudgetCategories(final Budget budget, final BudgetPeriod budgetPeriod, final List<? extends Transaction> transactions)
+    public List<TransactionCategory> initializeTransactionCategories(final Budget budget, final BudgetPeriod budgetPeriod, final List<? extends Transaction> transactions)
     {
         List<TransactionCategory> userBudgetCategories = new ArrayList<>();
         if(budget == null || budgetPeriod == null || transactions.isEmpty())

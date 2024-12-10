@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -154,6 +155,21 @@ class BudgetSetupEngineTest {
         assertTrue(result.isEmpty());
     }
 
+    @Test
+    void testCreateBudgetDateRanges_whenBudgetStartDateAndEndDateIsMonth_thenReturnDateRangesForMonth(){
+        Long budgetId = 1L;
+        LocalDate budgetStartDate = LocalDate.of(2024, 9, 1);
+        LocalDate budgetEndDate = LocalDate.of(2024, 9, 30);
+
+        List<DateRange> expectedDateRanges = new ArrayList<>();
+        expectedDateRanges.add(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8)));
+        expectedDateRanges.add(new DateRange(LocalDate.of(2024, 9, 9),  LocalDate.of(2024, 9, 16)));
+        expectedDateRanges.add(new DateRange(LocalDate.of(2024, 9, 17), LocalDate.of(2024, 9, 24)));
+        expectedDateRanges.add(new DateRange(LocalDate.of(2024, 9, 25), LocalDate.of(2024, 9, 30)));
+
+        List<DateRange> actual = budgetSetupEngine.createBudgetDateRanges(budgetStartDate, budgetEndDate);
+        assertTrue(actual.containsAll(expectedDateRanges));
+    }
 
 
     @Test
@@ -260,6 +276,294 @@ class BudgetSetupEngineTest {
         assertEquals(new BigDecimal("-50"), result.get(0).getRemaining());
     }
 
+    @Test
+    void testCreateRecurringTransactionCategories() {
+        // Setup test data
+        LocalDate startDate = LocalDate.of(2024, 1, 1);
+        LocalDate endDate = LocalDate.of(2024, 1, 31);
+
+        Budget budget = new Budget(1L, new BigDecimal("3000"), BigDecimal.ZERO, 1L,
+                "January Budget", "Test Budget", startDate, endDate, LocalDateTime.now());
+
+        List<DateRange> dateRanges = Arrays.asList(
+                new DateRange(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 7)),
+                new DateRange(LocalDate.of(2024, 1, 8), LocalDate.of(2024, 1, 14)),
+                new DateRange(LocalDate.of(2024, 1, 15), LocalDate.of(2024, 1, 21)),
+                new DateRange(LocalDate.of(2024, 1, 22), LocalDate.of(2024, 1, 31))
+        );
+
+        List<RecurringTransaction> recurringTransactions = Arrays.asList(
+                new RecurringTransaction(
+                        "acc1", new BigDecimal("1500.00"), "USD",
+                        List.of("HOUSING", "RENT"), "40000000",
+                        LocalDate.of(2024, 1, 1), "Monthly Rent",
+                        "ABC Properties", "Rent Payment", false, "r1",
+                        LocalDate.of(2024, 1, 1), "abc-logo.png",
+                        LocalDate.of(2024, 1, 1), "stream1",
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31),
+                        "MONTHLY", new BigDecimal("1500.00"),
+                        new BigDecimal("1500.00"), true, "RECURRING"
+                ),
+                new RecurringTransaction(
+                        "acc2", new BigDecimal("200.00"), "USD",
+                        List.of("UTILITIES", "ELECTRICITY"), "50000000",
+                        LocalDate.of(2024, 1, 15), "Monthly Utilities",
+                        "City Power", "Electricity Bill", false, "r2",
+                        LocalDate.of(2024, 1, 15), "citypower-logo.png",
+                        LocalDate.of(2024, 1, 15), "stream2",
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31),
+                        "MONTHLY", new BigDecimal("200.00"),
+                        new BigDecimal("200.00"), true, "RECURRING"
+                )
+        );
+
+        // Setup expected results for each date range
+        List<TransactionCategory> expectedCategoriesWeek1 = Arrays.asList(
+                new TransactionCategory(1L, budget.getId(), "40000000", "Rent", 1500.00, 1500.00, true,
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 7), 0.0, false)
+        );
+
+        List<TransactionCategory> expectedCategoriesWeek2 = Arrays.asList(
+                new TransactionCategory(2L, budget.getId(), "40000000", "Rent", 1500.00, 1500.00, true,
+                        LocalDate.of(2024, 1, 8), LocalDate.of(2024, 1, 14), 0.0, false)
+        );
+
+        List<TransactionCategory> expectedCategoriesWeek3 = Arrays.asList(
+                new TransactionCategory(3L, budget.getId(), "40000000", "Rent", 1500.00, 1500.00, true,
+                        LocalDate.of(2024, 1, 15), LocalDate.of(2024, 1, 21), 0.0, false),
+                new TransactionCategory(4L, budget.getId(), "50000000", "Utilities", 200.00, 200.00, true,
+                        LocalDate.of(2024, 1, 15), LocalDate.of(2024, 1, 21), 0.0, false)
+        );
+
+        List<TransactionCategory> expectedCategoriesWeek4 = Arrays.asList(
+                new TransactionCategory(5L, budget.getId(), "40000000", "Rent", 1500.00, 1500.00, true,
+                        LocalDate.of(2024, 1, 22), LocalDate.of(2024, 1, 31), 0.0, false)
+        );
+
+        // Mock behavior for each date range
+        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+                Mockito.eq(budget),
+                Mockito.eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(0).getStartDate(), dateRanges.get(0).getEndDate())),
+                Mockito.eq(recurringTransactions)
+        )).thenReturn(expectedCategoriesWeek1);
+
+        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+                Mockito.eq(budget),
+                Mockito.eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(1).getStartDate(), dateRanges.get(1).getEndDate())),
+                Mockito.eq(recurringTransactions)
+        )).thenReturn(expectedCategoriesWeek2);
+
+        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+                Mockito.eq(budget),
+                Mockito.eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(2).getStartDate(), dateRanges.get(2).getEndDate())),
+                Mockito.eq(recurringTransactions)
+        )).thenReturn(expectedCategoriesWeek3);
+
+        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+                Mockito.eq(budget),
+                Mockito.eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(3).getStartDate(), dateRanges.get(3).getEndDate())),
+                Mockito.eq(recurringTransactions)
+        )).thenReturn(expectedCategoriesWeek4);
+
+        // Execute method
+        List<TransactionCategory> result = budgetSetupEngine.createRecurringTransactionCategories(
+                recurringTransactions, budget, dateRanges
+        );
+
+        // Assertions
+        assertNotNull(result);
+        assertEquals(6, result.size()); // Total number of categories across all weeks
+
+        // Verify each category's components
+        List<TransactionCategory> allExpectedCategories = new ArrayList<>();
+        allExpectedCategories.addAll(expectedCategoriesWeek1);
+        allExpectedCategories.addAll(expectedCategoriesWeek2);
+        allExpectedCategories.addAll(expectedCategoriesWeek3);
+        allExpectedCategories.addAll(expectedCategoriesWeek4);
+
+        for (int i = 0; i < allExpectedCategories.size(); i++) {
+            TransactionCategory expected = allExpectedCategories.get(i);
+            TransactionCategory actual = result.get(i);
+
+            assertEquals(expected.getId(), actual.getId(),
+                    "Transaction category ID mismatch at index " + i);
+            assertEquals(expected.getBudgetId(), actual.getBudgetId(),
+                    "Budget ID mismatch at index " + i);
+            assertEquals(expected.getCategoryId(), actual.getCategoryId(),
+                    "Category ID mismatch at index " + i);
+            assertEquals(expected.getCategoryName(), actual.getCategoryName(),
+                    "Category name mismatch at index " + i);
+            assertEquals(expected.getBudgetedAmount(), actual.getBudgetedAmount(),
+                    "Budgeted amount mismatch at index " + i);
+            assertEquals(expected.getBudgetActual(), actual.getBudgetActual(),
+                    "Budget actual mismatch at index " + i);
+            assertEquals(expected.getIsActive(), actual.getIsActive(),
+                    "IsActive mismatch at index " + i);
+            assertEquals(expected.getStartDate(), actual.getStartDate(),
+                    "Start date mismatch at index " + i);
+            assertEquals(expected.getEndDate(), actual.getEndDate(),
+                    "End date mismatch at index " + i);
+            assertEquals(expected.getOverSpendingAmount(), actual.getOverSpendingAmount(),
+                    "Overspending amount mismatch at index " + i);
+            assertEquals(expected.isOverSpent(), actual.isOverSpent(),
+                    "IsOverspent mismatch at index " + i);
+        }
+
+        // Verify method was called for each date range
+        for (DateRange dateRange : dateRanges) {
+            Mockito.verify(budgetCategoryBuilder).initializeTransactionCategories(
+                    Mockito.eq(budget),
+                    Mockito.eq(new BudgetPeriod(Period.MONTHLY, dateRange.getStartDate(), dateRange.getEndDate())),
+                    Mockito.eq(recurringTransactions)
+            );
+        }
+    }
+
+
+    @Test
+    void testCreateTransactionCategories_whenDateRangesForMonthAndValidTransactions_thenReturnTransactionCategories() {
+        // Setup test data
+        LocalDate startDate = LocalDate.of(2024, 1, 1);
+        LocalDate endDate = LocalDate.of(2024, 1, 31);
+
+        Budget budget = new Budget(1L, new BigDecimal("3000"), BigDecimal.ZERO, 1L,
+                "January Budget", "Test Budget", startDate, endDate, LocalDateTime.now());
+
+        List<DateRange> dateRanges = Arrays.asList(
+                new DateRange(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 7)),
+                new DateRange(LocalDate.of(2024, 1, 8), LocalDate.of(2024, 1, 14)),
+                new DateRange(LocalDate.of(2024, 1, 15), LocalDate.of(2024, 1, 21)),
+                new DateRange(LocalDate.of(2024, 1, 22), LocalDate.of(2024, 1, 31))
+        );
+
+        List<Transaction> transactions = Arrays.asList(
+                new Transaction(
+                        "acc1", new BigDecimal("45.50"), "USD",
+                        List.of("TRANSPORTATION", "GAS"), "10000000",
+                        LocalDate.of(2024, 1, 5), "Shell Gas Station",
+                        "Shell", "Gas Purchase", false, "t1",
+                        LocalDate.of(2024, 1, 5), "shell-logo.png",
+                        LocalDate.of(2024, 1, 5)
+                ),
+                new Transaction(
+                        "acc1", new BigDecimal("125.75"), "USD",
+                        List.of("FOOD", "GROCERY"), "20000000",
+                        LocalDate.of(2024, 1, 10), "Whole Foods Market",
+                        "Whole Foods", "Groceries", false, "t2",
+                        LocalDate.of(2024, 1, 10), "wholefoods-logo.png",
+                        LocalDate.of(2024, 1, 10)
+                )
+        );
+
+        List<RecurringTransaction> recurringTransactions = Arrays.asList(
+                new RecurringTransaction(
+                        "acc1", new BigDecimal("1500.00"), "USD",
+                        List.of("HOUSING", "RENT"), "40000000",
+                        LocalDate.of(2024, 1, 1), "Monthly Rent",
+                        "ABC Properties", "Rent Payment", false, "r1",
+                        LocalDate.of(2024, 1, 1), "abc-logo.png",
+                        LocalDate.of(2024, 1, 1), "stream1",
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31),
+                        "MONTHLY", new BigDecimal("1500.00"),
+                        new BigDecimal("1500.00"), true, "RECURRING"
+                )
+        );
+
+        // Create expected categories for regular transactions
+        List<TransactionCategory> expectedRegularCategories = List.of(
+                new TransactionCategory(1L, budget.getId(), "10000000", "Gas", 50.00, 45.50, true,
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 7), 0.0, false),
+                new TransactionCategory(2L, budget.getId(), "20000000", "Groceries", 150.00, 125.75, true,
+                        LocalDate.of(2024, 1, 8), LocalDate.of(2024, 1, 14), 0.0, false)
+        );
+
+        // Create expected categories for recurring transactions
+        List<TransactionCategory> expectedRecurringCategories = List.of(
+                new TransactionCategory(3L, budget.getId(), "40000000", "Rent", 1500.00, 1500.00, true,
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31), 0.0, false)
+        );
+
+        // Mock behavior for createTransactionCategories and createRecurringTransactionCategories
+        Mockito.when(budgetSetupEngine.createTransactionCategories(transactions, budget, dateRanges))
+                .thenReturn(expectedRegularCategories);
+
+        Mockito.when(budgetSetupEngine.createRecurringTransactionCategories(recurringTransactions, budget, dateRanges))
+                .thenReturn(expectedRecurringCategories);
+
+        // Execute method
+        TreeMap<Long, List<TransactionCategory>> result = budgetSetupEngine
+                .createTransactionCategories(recurringTransactions, transactions, budget, dateRanges);
+
+        // Assertions
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.containsKey(budget.getUserId()));
+
+        List<TransactionCategory> resultCategories = result.get(budget.getUserId());
+        assertNotNull(resultCategories);
+        assertEquals(expectedRegularCategories.size(), resultCategories.size());
+
+        // Compare each component of each transaction category
+        for (int i = 0; i < expectedRegularCategories.size(); i++) {
+            TransactionCategory expected = expectedRegularCategories.get(i);
+            TransactionCategory actual = resultCategories.get(i);
+
+            assertEquals(expected.getId(), actual.getId(),
+                    "Transaction category ID mismatch at index " + i);
+            assertEquals(expected.getBudgetId(), actual.getBudgetId(),
+                    "Budget ID mismatch at index " + i);
+            assertEquals(expected.getCategoryId(), actual.getCategoryId(),
+                    "Category ID mismatch at index " + i);
+            assertEquals(expected.getCategoryName(), actual.getCategoryName(),
+                    "Category name mismatch at index " + i);
+            assertEquals(expected.getBudgetedAmount(), actual.getBudgetedAmount(),
+                    "Budgeted amount mismatch at index " + i);
+            assertEquals(expected.getBudgetActual(), actual.getBudgetActual(),
+                    "Budget actual mismatch at index " + i);
+            assertEquals(expected.getIsActive(), actual.getIsActive(),
+                    "IsActive mismatch at index " + i);
+            assertEquals(expected.getStartDate(), actual.getStartDate(),
+                    "Start date mismatch at index " + i);
+            assertEquals(expected.getEndDate(), actual.getEndDate(),
+                    "End date mismatch at index " + i);
+            assertEquals(expected.getOverSpendingAmount(), actual.getOverSpendingAmount(),
+                    "Overspending amount mismatch at index " + i);
+            assertEquals(expected.isOverSpent(), actual.isOverSpent(),
+                    "IsOverspent mismatch at index " + i);
+        }
+    }
+
+    // Helper methods to create test data
+    private List<Transaction> createTestTransactions() {
+        return Arrays.asList(
+                new Transaction(
+                        "acc1", new BigDecimal("45.50"), "USD",
+                        List.of("TRANSPORTATION", "GAS"), "10000000",
+                        LocalDate.of(2024, 1, 5), "Shell Gas Station",
+                        "Shell", "Gas Purchase", false, "t1",
+                        LocalDate.of(2024, 1, 5), "shell-logo.png",
+                        LocalDate.of(2024, 1, 5)
+                )
+
+        );
+    }
+
+
+    private List<RecurringTransaction> createTestRecurringTransactions() {
+        return Arrays.asList(
+                new RecurringTransaction(
+                        "acc1", new BigDecimal("1500.00"), "USD",
+                        List.of("HOUSING", "RENT"), "40000000",
+                        LocalDate.of(2024, 1, 1), "Monthly Rent",
+                        "ABC Properties", "Rent Payment", false, "r1",
+                        LocalDate.of(2024, 1, 1), "abc-logo.png",
+                        LocalDate.of(2024, 1, 1), "stream1",
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31),
+                        "MONTHLY", new BigDecimal("1500.00"),
+                        new BigDecimal("1500.00"), true, "RECURRING"
+                )
+        );
+    }
     @AfterEach
     void tearDown() {
     }

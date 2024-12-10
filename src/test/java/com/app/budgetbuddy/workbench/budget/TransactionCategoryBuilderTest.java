@@ -271,7 +271,7 @@ class TransactionCategoryBuilderTest {
     void testInitializeUserBudgetCategories_whenBudgetIsNull_thenReturnEmptyMap(){
        List<Transaction> transactions = new ArrayList<>();
        transactions.add(createWincoTransaction());
-       List<TransactionCategory> userBudgetCategories = budgetCategoryBuilder.initializeUserBudgetCategories(null, testBudgetPeriod, transactions);
+       List<TransactionCategory> userBudgetCategories = budgetCategoryBuilder.initializeTransactionCategories(null, testBudgetPeriod, transactions);
        assertNotNull(userBudgetCategories);
        assertTrue(userBudgetCategories.isEmpty());
     }
@@ -287,7 +287,7 @@ class TransactionCategoryBuilderTest {
         List<Transaction> transactions = new ArrayList<>();
         transactions.add(createWincoTransaction());
 
-        List<TransactionCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, null, transactions);
+        List<TransactionCategory> actual = budgetCategoryBuilder.initializeTransactionCategories(budget, null, transactions);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -301,7 +301,7 @@ class TransactionCategoryBuilderTest {
 
         List<Transaction> transactions = new ArrayList<>();
 
-        List<TransactionCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, testBudgetPeriod, transactions);
+        List<TransactionCategory> actual = budgetCategoryBuilder.initializeTransactionCategories(budget, testBudgetPeriod, transactions);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -410,7 +410,7 @@ class TransactionCategoryBuilderTest {
                 LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 27), 1L
         ));
 
-        List<TransactionCategory> actual = budgetCategoryBuilder.initializeUserBudgetCategories(budget, budgetPeriod, transactions);
+        List<TransactionCategory> actual = budgetCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, transactions);
         for(int i = 0; i < expectedBudgetCategories.size(); i++)
         {
             TransactionCategory expected = expectedBudgetCategories.get(i);
