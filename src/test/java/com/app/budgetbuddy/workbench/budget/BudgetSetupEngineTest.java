@@ -704,11 +704,11 @@ class BudgetSetupEngineTest {
 
     @Test
     void testInitializeBudgetSavingsCategories_whenParametersValid_thenReturnSavingsBudgetCategory(){
-        Budget augustBudget = new Budget(1L, new BigDecimal("3260"), BigDecimal.ZERO, 1L,
+        Budget augustBudget = new Budget(1L, new BigDecimal("3260.0"), BigDecimal.ZERO, 1L,
                 "Test Budget", "Description", LocalDate.of(2024, 8, 1),
                 LocalDate.of(2024, 8, 31), LocalDateTime.now());
 
-        Budget septemberBudget = new Budget(1L, new BigDecimal("3260"), BigDecimal.ZERO, 1L, "September Budget", "September Month Budget", LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30), LocalDateTime.now());
+        Budget septemberBudget = new Budget(1L, new BigDecimal("3260.0"), BigDecimal.ZERO, 1L, "September Budget", "September Month Budget", LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30), LocalDateTime.now());
         Map<DateRange, Budget> monthlyBudgets = new HashMap<>();
         monthlyBudgets.put(new DateRange(LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 31)), augustBudget);
         monthlyBudgets.put(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)), septemberBudget);
@@ -732,32 +732,29 @@ class BudgetSetupEngineTest {
         allCategories.addAll(septemberCategories);
         allCategories.addAll(augustCategories);
 
-        List<DateRange> dateRanges = Arrays.asList(
-                new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)),
-                new DateRange(LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 31))
-        );
+        List<DateRange> dateRanges = Arrays.asList(new DateRange(LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 31)), new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)));
 
         BudgetGoals budgetGoals = new BudgetGoals(1L, 1200.0, 250.0, 145.00, "Savings Plan", "MONTHLY", "Active");
 
         // Expected savings categories for each month
         List<BudgetCategory> expectedSavingsCategories = Arrays.asList(
-                // September savings (3260 budget - 171.25 total expenses = 3088.75 remaining)
-                new BudgetCategory(
-                        "Savings",
-                        new BigDecimal("250.00"), // Monthly savings goal from budgetGoals
-                        new BigDecimal("500"), // Actual savings (remaining budget)
-                        new BigDecimal("700"), // Difference between actual and goal
-                        dateRanges.get(0)  // September date range
-                ),
+
                 // August savings (3260 budget - 198.10 total expenses = 3061.90 remaining)
                 new BudgetCategory(
                         "Savings",
-                        new BigDecimal("250.00"), // Monthly savings goal
-                        new BigDecimal("250.00"), // Actual savings
-                        new BigDecimal("950"), // Difference between actual and goal
-                        dateRanges.get(1)  // August date range
-                         )
-        );
+                        new BigDecimal("250.0"), // Monthly savings goal
+                        new BigDecimal("250.0"), // Actual savings
+                        new BigDecimal("950.0"), // Difference between actual and goal
+                        dateRanges.get(0)),  // August date range)
+
+                // September savings (3260 budget - 171.25 total expenses = 3088.75 remaining)
+                new BudgetCategory(
+                        "Savings",
+                        new BigDecimal("250.0"), // Monthly savings goal from budgetGoals
+                        new BigDecimal("500.0"), // Actual savings (remaining budget)
+                        new BigDecimal("700.0"), // Difference between actual and goal
+                        dateRanges.get(1)  // September date range
+                ));
 
         List<BudgetCategory> result = budgetSetupEngine.initializeBudgetSavingsCategories(budgetGoals, allCategories, monthlyBudgets, dateRanges);
         assertNotNull(result);
@@ -777,6 +774,67 @@ class BudgetSetupEngineTest {
             assertEquals(expected.getDateRange(), actual.getDateRange(),
                     "Date range should match for month " + (i + 1));
         }
+    }
+
+    @Test
+    void testInitializeBudgetSavingsCategories_whenBudgetAmountIsZero_thenReturnEmptyList(){
+        Budget augustBudget = new Budget(1L, new BigDecimal("0"), BigDecimal.ZERO, 1L,
+                "Test Budget", "Description", LocalDate.of(2024, 8, 1),
+                LocalDate.of(2024, 8, 31), LocalDateTime.now());
+
+        Budget septemberBudget = new Budget(1L, new BigDecimal("3260.0"), BigDecimal.ZERO, 1L, "September Budget", "September Month Budget", LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30), LocalDateTime.now());
+
+        Map<DateRange, Budget> monthlyBudgets = new HashMap<>();
+        monthlyBudgets.put(new DateRange(LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 31)), augustBudget);
+        monthlyBudgets.put(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)), septemberBudget);
+
+        List<TransactionCategory> septemberCategories = Arrays.asList(
+                new TransactionCategory(1L, 1L, "10000000", "Gas", 50.00, 45.50, true,
+                        LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 0.0, false),
+                new TransactionCategory(2L, 1L, "20000000", "Groceries", 150.00, 125.75, true,
+                        LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22), 0.0, false)
+        );
+        BudgetGoals budgetGoals = new BudgetGoals(1L, 1200.0, 250.0, 145.00, "Savings Plan", "MONTHLY", "Active");
+
+        List<DateRange> dateRanges = Arrays.asList(new DateRange(LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 31)), new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)));
+        List<BudgetCategory> actual = budgetSetupEngine.initializeBudgetSavingsCategories(budgetGoals, septemberCategories, monthlyBudgets, dateRanges);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateTopBudgetExpenseCategories_whenTransactionCategoryListIsNull_thenReturnEmptyList(){
+        List<DateRange> dateRanges = Arrays.asList(new DateRange(LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 31)), new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)));
+        List<BudgetCategory> actual = budgetSetupEngine.createTopBudgetExpenseCategories(null, dateRanges);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateTopBudgetExpensesCategories_whenDateRangesIsNull_thenReturnEmptyList(){
+        List<TransactionCategory> septemberCategories = Arrays.asList(
+                new TransactionCategory(1L, 1L, "10000000", "Gas", 50.00, 45.50, true,
+                        LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 0.0, false),
+                new TransactionCategory(2L, 1L, "20000000", "Groceries", 150.00, 125.75, true,
+                        LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22), 0.0, false)
+        );
+        List<BudgetCategory> actual = budgetSetupEngine.createTopBudgetExpenseCategories(septemberCategories, null);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateTopBudgetExpenseCategories_whenValidParameters_thenReturnBudgetCategories(){
+        List<TransactionCategory> septemberCategories = Arrays.asList(
+                new TransactionCategory(1L, 1L, "10000000", "Gas", 50.00, 45.50, true,
+                        LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 8), 0.0, false),
+                new TransactionCategory(2L, 1L, "20000000", "Groceries", 150.00, 125.75, true,
+                        LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 22), 0.0, false)
+        );
+
 
     }
 
