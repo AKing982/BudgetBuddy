@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -421,39 +422,62 @@ public class BudgetSetupEngine
         return transactionCategoriesMap;
     }
 
+    private void validateDateRangeParameters(DateRange dateRange)
+    {
+        try
+        {
+            LocalDate startDate = dateRange.getStartDate();
+            LocalDate endDate = dateRange.getEndDate();
+            if(startDate == null || endDate == null){
+                throw new IllegalDateException("Start date or End date cannot be null");
+            }
+        }catch(IllegalDateException e){
+            throw e;
+        }
+    }
+
+    private boolean isTransactionInDateRange(TransactionCategory transaction, DateRange dateRange) {
+        LocalDate transactionStart = transaction.getStartDate();
+        LocalDate transactionEnd = transaction.getEndDate();
+
+        return !transactionStart.isAfter(dateRange.getEndDate()) &&
+                !transactionEnd.isBefore(dateRange.getStartDate());
+    }
 
     public List<BudgetCategory> initializeBudgetExpenseCategory(final Budget budget, final List<TransactionCategory> transactionCategories, final List<DateRange> dateRanges){
-        if(budget == null || transactionCategories == null || dateRanges == null){
-            return null;
+        if(budget == null || transactionCategories == null || dateRanges == null)
+        {
+            return Collections.emptyList();
         }
         List<BudgetCategory> budgetCategories = new ArrayList<>();
         for(DateRange dateRange : dateRanges)
         {
-            if(dateRange == null){
-                log.warn("Skipping null date range...");
+            if(dateRange == null)
+            {
+                log.warn("Skipping null date range....");
                 continue;
             }
-            LocalDate startDate = dateRange.getStartDate();
-            LocalDate endDate = dateRange.getEndDate();
+            validateDateRangeParameters(dateRange);
             int transactionIndex = 0;
-            BigDecimal totalExpenses = new BigDecimal(0);
+            BigDecimal totalExpenses = BigDecimal.ZERO;
             BigDecimal budgetedAmount = budget.getBudgetAmount();
             while(transactionIndex < transactionCategories.size())
             {
                 TransactionCategory transactionCategory = transactionCategories.get(transactionIndex);
-                if(transactionCategory != null)
+                if(transactionCategory == null)
                 {
-                    LocalDate transactionCategoryStartDate = transactionCategory.getStartDate();
-                    LocalDate transactionCategoryEndDate = transactionCategory.getEndDate();
-                    if(transactionCategoryStartDate.isAfter(startDate) && transactionCategoryEndDate.isBefore(endDate))
-                    {
-                        BigDecimal transactionCategoryExpense = BigDecimal.valueOf(transactionCategory.getBudgetActual());
-                        totalExpenses = totalExpenses.add(transactionCategoryExpense);
-                        String categoryName = transactionCategory.getCategoryName();
-                        BigDecimal remainingOnBudget = budgetedAmount.subtract(totalExpenses);
-                        BudgetCategory budgetCategory = new BudgetCategory(categoryName, budgetedAmount, totalExpenses, remainingOnBudget, dateRange);
-                        budgetCategories.add(budgetCategory);
-                    }
+                    transactionIndex++;
+                    continue;
+                }
+                log.info("Grabbed the transaction category");
+                if(isTransactionInDateRange(transactionCategory, dateRange)){
+                    log.info("Inside if statement after date check");
+                    BigDecimal transactionCategoryExpense = BigDecimal.valueOf(transactionCategory.getBudgetActual());
+                    totalExpenses = totalExpenses.add(transactionCategoryExpense);
+                    BigDecimal remainingOnBudget = budgetedAmount.subtract(totalExpenses);
+                    final String expenseCategory = "Expenses";
+                    BudgetCategory budgetCategory = new BudgetCategory(expenseCategory, budgetedAmount, totalExpenses, remainingOnBudget, dateRange);
+                    budgetCategories.add(budgetCategory);
                 }
                 transactionIndex++;
             }
@@ -461,69 +485,71 @@ public class BudgetSetupEngine
         return budgetCategories;
     }
 
-    private boolean isMonthlyAllocationPossible(final BigDecimal monthlyAllocation, final BigDecimal budgetedAmount, final BigDecimal totalSpending)
+    private boolean isMonthlyAllocationPossible(final BigDecimal monthlyAllocation, final BigDecimal budgetAmount, final BigDecimal totalSpending)
     {
-        // Check if budgeted amount can cover monthly allocation
-        if (budgetedAmount.compareTo(monthlyAllocation) >= 0)
-        {
-            // Calculate remaining amount after spending
-            BigDecimal remainingAmount = budgetedAmount.subtract(totalSpending);
-
-            // Check if remaining amount can cover monthly allocation
-            return remainingAmount.compareTo(BigDecimal.ZERO) >= 0
-                    && remainingAmount.compareTo(monthlyAllocation) >= 0;
+        if(monthlyAllocation == null || totalSpending == null || budgetAmount == null){
+            log.info("Returning false from null values");
+            return false;
         }
+        // Check if budgeted amount can cover monthly allocation
+        // First check if both budget amounts can cover monthly allocation
+        if (budgetAmount.compareTo(monthlyAllocation) >= 0) {
+
+            // Calculate remaining amount after spending for both budget and category
+            BigDecimal remainingBudgetAmount = budgetAmount.subtract(totalSpending);
+            if(remainingBudgetAmount.compareTo(monthlyAllocation) >= 0){
+                return true;
+            }
+        }
+        log.info("Returning false from monthly allocation not possible");
         return false;
     }
 
-    public List<BudgetCategory> initializeBudgetSavingsCategories(final BudgetGoals budgetGoals, final List<TransactionCategory> transactionCategories, final Budget budget, final List<DateRange> dateRanges)
+    public List<BudgetCategory> initializeBudgetSavingsCategories(final BudgetGoals budgetGoals, final List<TransactionCategory> transactionCategories, final Map<DateRange, Budget> budgets, final List<DateRange> dateRanges)
     {
-        if(transactionCategories == null || budget == null || dateRanges == null)
+        List<BudgetCategory> savingsBudgetCategory = new ArrayList<>();
+        if(budgetGoals == null || transactionCategories == null || budgets == null || dateRanges == null)
         {
-            return Collections.emptyList();
+            return savingsBudgetCategory;
         }
-        List<BudgetCategory> budgetSavingsCategories = new ArrayList<>();
-        BigDecimal targetSavingsGoal = BigDecimal.valueOf(budgetGoals.targetAmount());
+
+        BigDecimal targetSavingsAmount = BigDecimal.valueOf(budgetGoals.targetAmount());
         BigDecimal monthlyAllocation = BigDecimal.valueOf(budgetGoals.monthlyAllocation());
         for(DateRange dateRange : dateRanges)
         {
-            if(dateRange == null){
-                log.warn("Skipping null date range...");
-                continue;
-            }
-            LocalDate startDate = dateRange.getStartDate();
-            LocalDate endDate = dateRange.getEndDate();
             int transactionIndex = 0;
             BigDecimal totalSavings = new BigDecimal(0);
-            BigDecimal budgetedAmount = budget.getBudgetAmount();
             while(transactionIndex < transactionCategories.size())
             {
+                // Get the Budget with the correct date range
+                Budget budget = budgets.get(dateRange);
+                BigDecimal budgetAmount = budget.getBudgetAmount();
+                log.info("Budget amount for Date Range: {}, Budget Amount: {} ", dateRange.toString(), budgetAmount);
                 TransactionCategory transactionCategory = transactionCategories.get(transactionIndex);
-                if(transactionCategory != null)
+                if(isTransactionInDateRange(transactionCategory, dateRange))
                 {
-                    // How much was spent during the period
                     BigDecimal budgetedAmountForCategory = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
-                    BigDecimal categorySpend = BigDecimal.valueOf(transactionCategory.getBudgetActual());
-                    // How much is remaining during the period
-                    BigDecimal remainingOnBudget = budgetedAmountForCategory.subtract(categorySpend);
-                    // Can we allocate the monthlyAllocation during this period?
-                    if(isMonthlyAllocationPossible(monthlyAllocation, budgetedAmountForCategory, categorySpend))
+                    log.info("Budgeted Amount for category: " + budgetedAmountForCategory);
+                    BigDecimal totalSpentOnCategory = BigDecimal.valueOf(transactionCategory.getBudgetActual());
+                    log.info("Total spent on category: " + totalSpentOnCategory);
+                    BigDecimal remainingOnBudget = budgetAmount.subtract(totalSpentOnCategory);
+                    log.info("Remaining budget: " + remainingOnBudget);
+                    log.info("About to enter monthly allocation");
+                    if(isMonthlyAllocationPossible(monthlyAllocation, totalSpentOnCategory, budgetAmount))
                     {
-                        // Add the monthly allocation
+                        log.info("Entering Monthly allocation ");
                         totalSavings = totalSavings.add(monthlyAllocation);
-                        BigDecimal remainingSavings = targetSavingsGoal.subtract(totalSavings);
-                        BudgetCategory budgetCategory = new BudgetCategory("Savings", targetSavingsGoal, totalSavings, remainingSavings, dateRange);
-                        budgetSavingsCategories.add(budgetCategory);
-                    }
-                    else
-                    {
-                        continue;
+                        BigDecimal remainingSavings = targetSavingsAmount.subtract(totalSavings);
+                        BudgetCategory budgetCategory = new BudgetCategory("Savings", monthlyAllocation, totalSavings, remainingSavings, dateRange);
+                        log.info("Adding savings category");
+                        savingsBudgetCategory.add(budgetCategory);
                     }
                 }
                 transactionIndex++;
             }
+
         }
-        return budgetSavingsCategories;
+        return savingsBudgetCategory;
     }
 
     public List<BudgetCategory> createTopBudgetExpenseCategories(final List<TransactionCategory> transactionCategories, final List<DateRange> dateRanges)
@@ -532,9 +558,7 @@ public class BudgetSetupEngine
         {
             return Collections.emptyList();
         }
-
-        Map<String, BigDecimal> totalSpendingByCategory = new HashMap<>();
-        Map<String, BigDecimal> budgetedAmountByCategory = new HashMap<>();
+        List<BudgetCategory> budgetCategories = new ArrayList<>();
         for(DateRange dateRange : dateRanges)
         {
             int transactionIndex = 0;
@@ -544,16 +568,20 @@ public class BudgetSetupEngine
                 if(transactionCategory != null)
                 {
                     String categoryName = transactionCategory.getCategoryName();
-                    BigDecimal categorySpending = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
-                    totalSpendingByCategory.merge(categoryName, categorySpending, BigDecimal::add);
-                    budgetedAmountByCategory.putIfAbsent(categoryName, BigDecimal.valueOf(transactionCategory.getBudgetedAmount()));
+                    BigDecimal categoryBudget = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
+                    BigDecimal categorySpending = BigDecimal.valueOf(transactionCategory.getBudgetActual());
+                    BigDecimal remainingAmount = categoryBudget.subtract(categorySpending);
+                    BudgetCategory budgetCategory = new BudgetCategory(categoryName, categoryBudget, categorySpending, remainingAmount, dateRange);
+                    budgetCategories.add(budgetCategory);
                 }
                 transactionIndex++;
             }
         }
 
-
-        return null;
+        return budgetCategories.stream()
+                .sorted(Comparator.comparing(BudgetCategory::getActualAmount).reversed())
+                .limit(5)
+                .collect(Collectors.toList());
     }
 
     public Map<String, Category> loadBudgetPeriodCategories(final BudgetPeriod budgetPeriod, final Budget budget){
