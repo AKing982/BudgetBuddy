@@ -32,7 +32,7 @@ public class BudgetSetupEngine
     private final TransactionCategoryService transactionCategoryService;
     private final BudgetCalculations budgetCalculations;
     private final TransactionCategoryBuilder budgetCategoryBuilder;
-    private final TransactionLoaderService transactionLoaderService;
+    private final TransactionService transactionService;
 
     @Autowired
     public BudgetSetupEngine(UserService userService,
@@ -42,7 +42,7 @@ public class BudgetSetupEngine
                              TransactionCategoryService transactionCategoryService,
                              BudgetCalculations budgetCalculator,
                              TransactionCategoryBuilder budgetCategoryBuilder,
-                             TransactionLoaderService transactionLoaderService){
+                             TransactionService transactionService){
         this.userService = userService;
         this.budgetService = budgetService;
         this.categoryService = categoryService;
@@ -50,7 +50,7 @@ public class BudgetSetupEngine
         this.transactionCategoryService = transactionCategoryService;
         this.budgetCalculations = budgetCalculator;
         this.budgetCategoryBuilder = budgetCategoryBuilder;
-        this.transactionLoaderService = transactionLoaderService;
+        this.transactionService = transactionService;
     }
 
     private Budget loadUserBudget(Long userId)
@@ -552,7 +552,6 @@ public class BudgetSetupEngine
                 BigDecimal remainingSavings = targetSavingsAmount.subtract(totalSavings);
                 BudgetCategory budgetCategory = new BudgetCategory("Savings", monthlyAllocation, savingsForMonth, remainingSavings, dateRange);
                 log.info("Adding savings category: " + budgetCategory.toString());
-
                 savingsBudgetCategory.add(budgetCategory);
             }
 
@@ -593,39 +592,90 @@ public class BudgetSetupEngine
                 .collect(Collectors.toList());
     }
 
-    public BigDecimal getTotalTransactionSpending(final String transactionId, final LocalDate transactionDate){
-        if(transactionId.isEmpty() || transactionDate == null)
+    public List<Transaction> getTransactionsByDate(LocalDate date, Long userId)
+    {
+        List<Transaction> postedTransactionsByDate = new ArrayList<>();
+        if(date == null)
         {
-            return BigDecimal.ZERO;
+            return postedTransactionsByDate;
         }
-
+        return transactionService.getTransactionsByDate(date, userId);
     }
 
-    public List<BudgetCategory> loadDailyBudgetPeriodData(final LocalDate date, final List<TransactionCategory> transactionCategories)
+    public List<BudgetCategory> loadDailyBudgetPeriodData(final LocalDate date, final List<TransactionCategory> transactionCategories, final Budget budget)
     {
         List<BudgetCategory> budgetCategories = new ArrayList<>();
         if(date == null || transactionCategories == null)
         {
             return budgetCategories;
         }
+        Long userId = budget.getUserId();
         for(TransactionCategory transactionCategory : transactionCategories)
         {
             if(transactionCategory != null)
             {
                 LocalDate transactionCategoryStartDate = transactionCategory.getStartDate();
                 LocalDate transactionCategoryEndDate = transactionCategory.getEndDate();
+                log.info("Entering if loop with date boolean check");
                 if(date.isAfter(transactionCategoryStartDate) && date.isBefore(transactionCategoryEndDate))
                 {
+                    log.info("Entered if loop with date boolean check");
                     String categoryName = transactionCategory.getCategoryName();
                     BigDecimal categoryBudget = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
-                    List<Transaction> transactionsByPostedDate = transactionLoaderService.loadTransactionsByDate(date, )
+                    log.info("Grabbing Transactions with date: {} and userId: {}", date, userId);
+                    List<Transaction> transactionsByPostedDate = getTransactionsByDate(date, userId);
+                    log.info("Transaction List size: " + transactionsByPostedDate.size());
+                    BigDecimal totalSpendingForDay = BigDecimal.ZERO;
+                    int transactionIndex = 0;
+                    BigDecimal remainingOnBudgetForDay = BigDecimal.ZERO;
+                    while(transactionIndex < transactionsByPostedDate.size())
+                    {
+                        Transaction transaction = transactionsByPostedDate.get(transactionIndex);
+                        log.info("Transaction: " + transaction.toString());
+                        if(transaction.getCategories().stream()
+                                .anyMatch(cat -> cat.equalsIgnoreCase(categoryName)))
+                        {
+                            BigDecimal amount = transaction.getAmount();
+                            log.info("Transaction Amount: " + amount);
+                            totalSpendingForDay = totalSpendingForDay.add(amount);
+                            remainingOnBudgetForDay = categoryBudget.subtract(totalSpendingForDay);
+                            log.info("Total spending For Day: " + totalSpendingForDay);
+                        }
+                        transactionIndex++;
+                    }
+                    DateRange sameDate = new DateRange(date, date);
+                    BudgetCategory budgetCategory = new BudgetCategory(categoryName, categoryBudget, totalSpendingForDay, remainingOnBudgetForDay, sameDate);
+                    log.info("Budget Category: " + budgetCategory.toString());
+                    budgetCategories.add(budgetCategory);
                 }
             }
         }
-        return null;
+        return budgetCategories;
     }
 
-    public List<BudgetCategory> loadWeeklyBudgetPeriodData(final List<DateRange> dateRanges, final List<TransactionCategory> transactionCategories){
+    public List<BudgetCategory> loadWeeklyBudgetPeriodData(final List<DateRange> weekRanges, final List<TransactionCategory> transactionCategories)
+    {
+        List<BudgetCategory> budgetCategories = new ArrayList<>();
+        if(weekRanges == null || transactionCategories == null)
+        {
+            return budgetCategories;
+        }
+        for(DateRange weekRange : weekRanges)
+        {
+            LocalDate WeekStartDate = weekRange.getStartDate();
+            LocalDate WeekEndDate = weekRange.getEndDate();
+            int transactionIndex = 0;
+            while(transactionIndex < transactionCategories.size())
+            {
+                TransactionCategory transactionCategory = transactionCategories.get(transactionIndex);
+                if(transactionCategory != null)
+                {
+
+                }
+                transactionIndex++;
+            }
+        }
+
         return null;
     }
 
@@ -633,7 +683,7 @@ public class BudgetSetupEngine
         return null;
     }
 
-    public List<BudgetCategory> loadMonthlyBudgetPeriodData(List<DateRange> monthlyDateRanges, final List<TransactionCategory> transactionCategories){
+    public List<BudgetCategory> loadMonthlyBudgetPeriodData(final DateRange monthlyDateRange, final List<TransactionCategory> transactionCategories){
         return null;
     }
 
