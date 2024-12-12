@@ -80,6 +80,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted =:date GROUP BY t.posted, t.category, t.amount")
     List<Object[]> getDailySpendingBreakdown(@Param("date") LocalDate date);
 
+    @Query("SELECT t.id, t.amount, t.description, t.merchantName FROM TransactionsEntity t JOIN t.account a WHERE t.posted =:posted AND a.user.id =:uId")
+    List<TransactionsEntity> findTransactionsByPostedDate(@Param("posted") LocalDate posted, @Param("uId") Long userId);
+
     @Query("SELECT t.posted, t.category, SUM(t.amount) FROM TransactionsEntity t WHERE t.posted BETWEEN :startDate AND :endDate GROUP BY t.posted, t.category, t.amount")
     List<Object[]> getSpendingBreakdownOverDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 

@@ -53,4 +53,8 @@ public class TransactionDataLoaderImpl implements TransactionLoader {
         return transactionService.getTransactionsByAmountRange(minAmount, maxAmount);
     }
 
+    @Override
+    public List<Transaction> loadTransactionsByPosted(LocalDate date, Long userID) {
+        return transactionService.getTransactionsByDate(date, userID);
+    }
 }

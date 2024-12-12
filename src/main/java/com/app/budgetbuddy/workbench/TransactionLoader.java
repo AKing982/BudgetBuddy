@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface TransactionLoader extends TransactionDataLoaderBase<Transaction>
 {
-
+    List<Transaction> loadTransactionsByPosted(LocalDate date, Long userID);
 }

@@ -3,11 +3,11 @@ package com.app.budgetbuddy.domain;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
 public class TransactionCategory
 {
@@ -22,6 +22,34 @@ public class TransactionCategory
     private LocalDate endDate;
     private Double overSpendingAmount;
     private boolean isOverSpent;
+    private List<String> transactionIds;
 
+    public TransactionCategory(Long id, Long budgetId, String categoryId, String categoryName, Double budgetedAmount, Double budgetActual, Boolean isActive, LocalDate startDate, LocalDate endDate, Double overSpendingAmount, boolean isOverSpent) {
+        this.id = id;
+        this.budgetId = budgetId;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.budgetedAmount = budgetedAmount;
+        this.budgetActual = budgetActual;
+        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.overSpendingAmount = overSpendingAmount;
+        this.isOverSpent = isOverSpent;
+    }
 
+    public TransactionCategory(Long id, Long budgetId, String categoryId, String categoryName, Double budgetedAmount, Double budgetActual, Boolean isActive, LocalDate startDate, LocalDate endDate, Double overSpendingAmount, boolean isOverSpent, List<String> transactionIds) {
+        this.id = id;
+        this.budgetId = budgetId;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.budgetedAmount = budgetedAmount;
+        this.budgetActual = budgetActual;
+        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.overSpendingAmount = overSpendingAmount;
+        this.isOverSpent = isOverSpent;
+        this.transactionIds = transactionIds;
+    }
 }

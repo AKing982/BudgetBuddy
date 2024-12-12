@@ -7,6 +7,7 @@ import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import com.app.budgetbuddy.workbench.converter.TransactionEntityToModelConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionToEntityConverter;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +15,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import javax.xml.crypto.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
 @Service
+@Slf4j
 public class TransactionServiceImpl implements TransactionService
 {
     private final TransactionRepository transactionRepository;
@@ -283,6 +286,19 @@ public class TransactionServiceImpl implements TransactionService
             return convertedTransactions(transactions);
         }catch(DataAccessException e){
             LOGGER.error("There was an error fetching transactions from the database: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<Transaction> getTransactionsByDate(LocalDate date, Long userId)
+    {
+        try
+        {
+            List<TransactionsEntity> transactionsEntities = transactionRepository.findTransactionsByPostedDate(date, userId);
+            return convertedTransactions(transactionsEntities);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving transactions from the database: {}", e.getMessage());
             return List.of();
         }
     }
