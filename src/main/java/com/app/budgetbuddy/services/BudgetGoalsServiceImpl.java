@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.BudgetGoals;
 import com.app.budgetbuddy.domain.BudgetGoalsRequest;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
@@ -66,6 +67,24 @@ public class BudgetGoalsServiceImpl implements BudgetGoalsService
     @Override
     public Optional<BudgetGoalsEntity> findByBudgetId(Long budgetId) {
         return budgetGoalsRepository.findById(budgetId);
+    }
+
+    @Override
+    public BudgetGoals convertToBudgetGoals(BudgetGoalsEntity budgetGoalsEntity) {
+        return new BudgetGoals(
+                budgetGoalsEntity.getId(),
+                budgetGoalsEntity.getTargetAmount(),
+                budgetGoalsEntity.getMonthlyAllocation(),
+                budgetGoalsEntity.getCurrentSavings(),
+                budgetGoalsEntity.getGoalType(),
+                budgetGoalsEntity.getSavingsFrequency(),
+                budgetGoalsEntity.getStatus()
+        );
+    }
+
+    @Override
+    public Optional<BudgetGoalsEntity> findByUserId(Long userId) {
+        return budgetGoalsRepository.findByUserId(userId);
     }
 
     private BudgetEntity findBudgetById(Long budgetId){

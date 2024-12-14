@@ -13,4 +13,7 @@ public interface BudgetGoalsRepository extends JpaRepository<BudgetGoalsEntity, 
 {
     @Query("SELECT b FROM BudgetGoalsEntity b WHERE b.budget.id =:id")
     Optional<BudgetGoalsEntity> findByBudgetId(@Param("id") Long id);
+
+    @Query("SELECT b FROM BudgetGoalsEntity b WHERE b.budget.user.id =:id")
+    Optional<BudgetGoalsEntity> findByUserId(@Param("id") Long userId);
 }

@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BudgetSetupEngineTest {
@@ -52,6 +53,9 @@ class BudgetSetupEngineTest {
     private TransactionCategoryService transactionCategoryService;
 
     @Mock
+    private BudgetGoalsService budgetGoalsService;
+
+    @Mock
     private TransactionService transactionService;
 
     @InjectMocks
@@ -60,7 +64,7 @@ class BudgetSetupEngineTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
-        budgetSetupEngine = new BudgetSetupEngine(userService, budgetService, categoryService, recurringTransactionService, transactionCategoryService, budgetCalculations,budgetCategoryBuilder, transactionService);
+        budgetSetupEngine = new BudgetSetupEngine(userService, budgetService, budgetGoalsService, categoryService, recurringTransactionService, transactionCategoryService, budgetCalculations,budgetCategoryBuilder, transactionService);
     }
 
 
@@ -289,25 +293,25 @@ class BudgetSetupEngineTest {
         );
 
         // Mock behavior for each date range
-        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+        when(budgetCategoryBuilder.initializeTransactionCategories(
                 eq(budget),
                 eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(0).getStartDate(), dateRanges.get(0).getEndDate())),
                 eq(recurringTransactions)
         )).thenReturn(expectedCategoriesWeek1);
 
-        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+        when(budgetCategoryBuilder.initializeTransactionCategories(
                 eq(budget),
                 eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(1).getStartDate(), dateRanges.get(1).getEndDate())),
                 eq(recurringTransactions)
         )).thenReturn(expectedCategoriesWeek2);
 
-        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+        when(budgetCategoryBuilder.initializeTransactionCategories(
                 eq(budget),
                 eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(2).getStartDate(), dateRanges.get(2).getEndDate())),
                 eq(recurringTransactions)
         )).thenReturn(expectedCategoriesWeek3);
 
-        Mockito.when(budgetCategoryBuilder.initializeTransactionCategories(
+        when(budgetCategoryBuilder.initializeTransactionCategories(
                 eq(budget),
                 eq(new BudgetPeriod(Period.MONTHLY, dateRanges.get(3).getStartDate(), dateRanges.get(3).getEndDate())),
                 eq(recurringTransactions)
@@ -432,10 +436,10 @@ class BudgetSetupEngineTest {
         );
 
         // Mock behavior for createTransactionCategories and createRecurringTransactionCategories
-        Mockito.when(budgetSetupEngine.createTransactionCategories(transactions, budget, dateRanges))
+        when(budgetSetupEngine.createTransactionCategories(transactions, budget, dateRanges))
                 .thenReturn(expectedRegularCategories);
 
-        Mockito.when(budgetSetupEngine.createRecurringTransactionCategories(recurringTransactions, budget, dateRanges))
+        when(budgetSetupEngine.createRecurringTransactionCategories(recurringTransactions, budget, dateRanges))
                 .thenReturn(expectedRecurringCategories);
 
         // Execute method
@@ -1054,7 +1058,7 @@ class BudgetSetupEngineTest {
         );
 
         // Mock transactionService behavior for both categories
-        Mockito.when(transactionService.getTransactionsByDate(testDate, 1L))
+        when(transactionService.getTransactionsByDate(testDate, 1L))
                 .thenReturn(List.of(groceryTransaction, entertainmentTransaction));
 
         // Execute method
@@ -1131,6 +1135,11 @@ class BudgetSetupEngineTest {
     }
 
     @Test
+    void testLoadWeeklyBudgetPeriodData_whenNumberOfDateRangesIsGreaterThanFour_thenThrowException(){
+
+    }
+
+    @Test
     void testLoadWeeklyBudgetPeriodData_whenParametersValid_thenReturnWeeklyBudgetCategories(){
         List<DateRange> dateRanges = Arrays.asList(
                 new DateRange(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8)),
@@ -1139,56 +1148,59 @@ class BudgetSetupEngineTest {
                 new DateRange(LocalDate.of(2024, 1, 25), LocalDate.of(2024, 1, 31))
         );
         List<TransactionCategory> transactionCategories = Arrays.asList(
-                new TransactionCategory(2L, 1L, "20000000", "Groceries", 150.00, 125.75, true,
-                        LocalDate.of(2024, 1, 7), LocalDate.of(2024, 1, 16), 0.0, false),
-
-                // Category that shouldn't be included (different date)
+                new TransactionCategory(2L, 1L, "20000000", "Groceries", 150.00, 78.23, true,
+                        LocalDate.of(2024, 1, 8), LocalDate.of(2024, 1, 16), 0.0, false),
+                new TransactionCategory(4L, 1L,  "400000000", "Rent", 1907.0, 1907.0, true,
+                        LocalDate.of(2024, 1, 16), LocalDate.of(2024, 1, 31), 0.0, false),
+                new TransactionCategory(5L, 1L, "500000000", "Subscriptions", 90.0, 81.0, true,
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8), 0.0, false),
                 new TransactionCategory(3L, 1L, "30000000", "Entertainment", 75.0, 70.00, true,
                         LocalDate.of(2024, 1, 7), LocalDate.of(2024, 1, 16), 0.0, false),
-                new TransactionCategory(4L, 1L,  "400000000", "Rent", 1907.0, 707.00, true, LocalDate.of(2024, 1, 16), LocalDate.of(2024, 1, 24), 0.0, false),
-                new TransactionCategory(5L, 1L, "500000000", "Subscriptions", 122.2, 65.0, true, LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8), 0.0, false),
-                new TransactionCategory(6L, 1L, "600000000", "Rent", 1907.0, 1200.00, true, LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8), 0.0, false),
-                new TransactionCategory(7L, 1L, "700000000", "Groceries", 178.0, 154.0, true, LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8), 0.0, false),
-                new TransactionCategory(8L, 1L, "80000000", "Payments", 67.00, 23.21, true, LocalDate.of(2024, 1, 24), LocalDate.of(2024, 1, 31), 0.0, false)
+                new TransactionCategory(6L, 1L, "600000000", "Rent", 1907.0, 1200.00, true,
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8), 0.0, false),
+                new TransactionCategory(7L, 1L, "700000000", "Groceries", 165.0, 134.0, true,
+                        LocalDate.of(2024, 1, 16), LocalDate.of(2024, 1, 23), 0.0, false),
+                new TransactionCategory(8L, 1L, "80000000", "Payments", 67.00, 23.21, true,
+                        LocalDate.of(2024, 1, 24), LocalDate.of(2024, 1, 31), 0.0, false)
         );
 
         List<BudgetCategory> expectedBudgetCategories = List.of(
                 new BudgetCategory("Groceries",
-                        new BigDecimal("150.00"),
+                        new BigDecimal("150.0"),
                         new BigDecimal("78.23"),
-                        new BigDecimal("72.00"), new DateRange(LocalDate.of(2024, 1, 8), LocalDate.of(2024, 1, 15))),
+                        new BigDecimal("71.77"),
+                        new DateRange(LocalDate.of(2024, 1, 8), LocalDate.of(2024, 1, 16))),
                 new BudgetCategory("Rent",
-                        new BigDecimal("1907"),
-                        new BigDecimal("1907"),
-                        new BigDecimal("0"),
+                        new BigDecimal("1907.0"),
+                        new BigDecimal("1907.0"),
+                        new BigDecimal("0.0"),
                         new DateRange(LocalDate.of(2024, 1, 16), LocalDate.of(2024, 1, 31))),
                 new BudgetCategory("Subscriptions",
-                        new BigDecimal("90"),
-                        new BigDecimal("81"),
-                        new BigDecimal("9"),
+                        new BigDecimal("90.0"),
+                        new BigDecimal("81.0"),
+                        new BigDecimal("9.0"),
                         new DateRange(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8))),
-                new BudgetCategory("Groceries",
-                        new BigDecimal("165"),
-                        new BigDecimal("134"),
-                        new BigDecimal("31"),
-                        new DateRange(LocalDate.of(2024, 1, 16), LocalDate.of(2024, 1, 23))),
-                new BudgetCategory("Rent",
-                        new BigDecimal("1907"),
-                        new BigDecimal("1200"),
-                        new BigDecimal("707"),
-                        new DateRange(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8))),
-                new BudgetCategory("Payments",
-                        new BigDecimal("67"),
-                        new BigDecimal("23"),
-                        new BigDecimal("44"),
-                        new DateRange(LocalDate.of(2024, 1, 24), LocalDate.of(2024,1, 31))),
                 new BudgetCategory("Entertainment",
                         new BigDecimal("75.0"),
                         new BigDecimal("70.0"),
                         new BigDecimal("5.0"),
-                        new DateRange(LocalDate.of(2024, 1, 7), LocalDate.of(2024, 1, 16)))
+                        new DateRange(LocalDate.of(2024, 1, 7), LocalDate.of(2024, 1, 16))),
+                new BudgetCategory("Rent",
+                        new BigDecimal("1907.0"),
+                        new BigDecimal("1200.0"),
+                        new BigDecimal("707.0"),
+                        new DateRange(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 8))),
+                new BudgetCategory("Groceries",
+                        new BigDecimal("165.0"),
+                        new BigDecimal("134.0"),
+                        new BigDecimal("31.0"),
+                        new DateRange(LocalDate.of(2024, 1, 16), LocalDate.of(2024, 1, 23))),
+                new BudgetCategory("Payments",
+                        new BigDecimal("67.0"),
+                        new BigDecimal("23.21"),
+                        new BigDecimal("43.79"),
+                        new DateRange(LocalDate.of(2024, 1, 24), LocalDate.of(2024,1, 31)))
         );
-
         List<BudgetCategory> result = budgetSetupEngine.loadWeeklyBudgetPeriodData(dateRanges, transactionCategories);
         assertEquals(expectedBudgetCategories.size(), result.size());
         // Verify each category
@@ -1210,6 +1222,50 @@ class BudgetSetupEngineTest {
                     "End date mismatch for " + expected.getCategoryName());
         }
     }
+
+
+    @Test
+    void budgetSetupInitializer_Success() {
+        // Arrange
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.plusMonths(1);
+        Long validUserId = 1L;
+        Budget mockBudget = new Budget();
+        mockBudget.setId(1L);
+        mockBudget.setUserId(validUserId);
+        mockBudget.setBudgetAmount(new BigDecimal("1000.00"));
+        mockBudget.setStartDate(startDate);
+        mockBudget.setEndDate(endDate);
+
+        List<Transaction> mockTransactions = new ArrayList<>();
+        // Set transaction properties
+        mockTransactions.add(createGasTransaction());
+
+        List<RecurringTransaction> mockRecurringTransactions = new ArrayList<>();
+        mockRecurringTransactions.add(createAffirmRecurringTransaction());
+
+        when(budgetService.loadUserBudget(validUserId)).thenReturn(mockBudget);
+        when(transactionService.getConvertedPlaidTransactions(eq(validUserId), any(), any()))
+                .thenReturn(mockTransactions);
+        when(recurringTransactionService.getRecurringTransactions(eq(validUserId), any(), any()))
+                .thenReturn(mockRecurringTransactions);
+
+        TreeMap<Long, List<TransactionCategory>> mockTransactionCategoriesMap = new TreeMap<>();
+        List<TransactionCategory> transactionCategories = new ArrayList<>();
+        transactionCategories.add(new TransactionCategory());
+        mockTransactionCategoriesMap.put(validUserId, transactionCategories);
+
+        when(budgetSetupEngine.createTransactionCategories(
+                any(), any(), any(), any()
+        )).thenReturn(mockTransactionCategoriesMap);
+
+        // Act
+        Boolean result = budgetSetupEngine.budgetSetupInitializer(startDate, endDate, Period.MONTHLY, validUserId);
+
+        // Assert
+        assertTrue(result);
+    }
+
 
     // Helper methods to create test data
     private List<Transaction> createTestTransactions() {
