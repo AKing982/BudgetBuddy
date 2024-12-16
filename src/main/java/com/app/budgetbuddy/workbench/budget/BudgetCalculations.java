@@ -132,33 +132,6 @@ public class BudgetCalculations {
         return null;
     }
 
-//    public BigDecimal calculateTotalCategoryExpensesForPeriod(final Budget budget, final BudgetPeriod budgetPeriod)
-//    {
-//        if(budget == null || budgetPeriod == null)
-//        {
-//            return BigDecimal.ZERO;
-//        }
-//        LocalDate startDate = budgetPeriod.startDate();
-//        LocalDate endDate = budgetPeriod.endDate();
-//        if(startDate == null || endDate == null)
-//        {
-//            return BigDecimal.ZERO;
-//        }
-//
-//        List<TransactionCategoryEntity> userBudgetCategories = getUserBudgetCategoriesByUserAndDates(budget.getUserId(), startDate, endDate);
-//        if(userBudgetCategories == null || userBudgetCategories.isEmpty())
-//        {
-//            return BigDecimal.ZERO;
-//        }
-//        BigDecimal totalExpenses = BigDecimal.ZERO;
-//        for(TransactionCategoryEntity userBudgetCategory : userBudgetCategories)
-//        {
-//            Double totalSpentOnCategory = userBudgetCategory.getActual();
-//            totalExpenses = totalExpenses.add(new BigDecimal(totalSpentOnCategory));
-//        }
-//        return totalExpenses;
-//    }
-
     private LocalDate getStartDateFromBudgetPeriod(final BudgetPeriod budgetPeriod)
     {
         return budgetPeriod.startDate();
@@ -316,37 +289,6 @@ public class BudgetCalculations {
         return null;
     }
 
-//    public BigDecimal calculateRemainingAmountOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
-//        if(budgetPeriod == null)
-//        {
-//            return BigDecimal.ZERO;
-//        }
-//        try
-//        {
-//            if(budgetId < 1L){
-//                throw new RuntimeException("Budget id must be greater than 1");
-//            }
-//            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
-//            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
-//            if(startDate == null || endDate == null)
-//            {
-//                throw new IllegalDateException("Start date or End date cannot be null");
-//            }
-//            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
-//            if(budgetEntityOptional.isEmpty()){
-//                throw new RuntimeException("Budget id " + budgetId + " does not exist");
-//            }
-//            BudgetEntity budgetEntity = budgetEntityOptional.get();
-//            BigDecimal totalSpentOnBudgetForPeriod = calculateTotalSpentOnBudgetForPeriod(budgetId, budgetPeriod);
-//            BigDecimal totalBudgetedAmount = budgetEntity.getBudgetAmount();
-//            return totalBudgetedAmount.subtract(totalSpentOnBudgetForPeriod);
-//
-//        }catch(IllegalDateException e){
-//            log.error("There was an error with the budget period dates: ", e);
-//            throw e;
-//        }
-//    }
-
     public BigDecimal calculateTotalSpendingOnBudget(final DateRange budgetDateRange, final List<TransactionCategory> transactionCategories, final Budget budget){
         if(budgetDateRange == null)
         {
@@ -405,67 +347,6 @@ public class BudgetCalculations {
             throw ex1;
         }
     }
-
-//    public BigDecimal calculateTotalSpentOnBudgetForPeriod(final Long budgetId, final BudgetPeriod budgetPeriod){
-//        if(budgetPeriod == null)
-//        {
-//            return BigDecimal.ZERO;
-//        }
-//        try
-//        {
-//            if(budgetId < 1L){
-//                throw new IllegalArgumentException("Budget id must be greater than 1");
-//            }
-//
-//            LocalDate startDate = getStartDateFromBudgetPeriod(budgetPeriod);
-//            LocalDate endDate = getEndDateFromBudgetPeriod(budgetPeriod);
-//            if(startDate == null || endDate == null){
-//                throw new IllegalDateException("Start date or endDate cannot be null");
-//            }
-//            Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetId);
-//            if(budgetEntityOptional.isEmpty()){
-//                throw new RuntimeException("Budget with Budget Id: " + budgetId + " not found.");
-//            }
-//            BudgetEntity budget = budgetEntityOptional.get();
-//            BigDecimal totalBudgetedAmount = budget.getBudgetAmount();
-//            List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryService.getTransactionCategoriesByBudgetIdAndDateRange(budgetId, startDate, endDate);
-//            if(transactionCategoryEntities.isEmpty()){
-//                throw new RuntimeException("Transaction category entities not found for Budget Id: " + budgetId);
-//            }
-//            BigDecimal totalSpending = BigDecimal.ZERO;
-//            for(TransactionCategoryEntity transactionCategoryEntity : transactionCategoryEntities)
-//            {
-//                if(transactionCategoryEntity != null)
-//                {
-//                    BigDecimal transactionCategorySpending = BigDecimal.valueOf(transactionCategoryEntity.getActual());
-//                    totalSpending = totalSpending.add(transactionCategorySpending);
-//                    if(totalSpending.compareTo(totalBudgetedAmount) > 0)
-//                    {
-//                        BigDecimal overSpending = totalSpending.subtract(totalBudgetedAmount);
-//                        log.warn("Overspending detected: {} over the budgeted amount.", overSpending);
-//                        transactionCategoryEntity.setIsOverSpent(true);
-//                        transactionCategoryEntity.setOverspendingAmount(Double.valueOf(overSpending.toString()));
-//                    }
-//                    log.info("Total Spending: " + totalSpending);
-//                    if(totalSpending.compareTo(BigDecimal.ZERO) < 0)
-//                    {
-//                        throw new ArithmeticException("There was an calculation error when calculating the total spending");
-//                    }
-//                }
-//            }
-//            return totalSpending;
-//
-//        }catch(IllegalDateException e){
-//            log.error("There was an error with the budget period dates: ", e);
-//            throw e;
-//        }catch(IllegalArgumentException ex){
-//            log.error("There was an error with the calculation parameters: ", ex);
-//            throw ex;
-//        }catch(ArithmeticException ex1){
-//            log.error("There was an error calculating the total spending: ", ex1);
-//            throw ex1;
-//        }
-//    }
 
     private long getNumberOfDaysInBudget(LocalDate budgetStartDate, LocalDate budgetEndDate){
         DateRange dateRange = new DateRange(budgetStartDate, budgetEndDate);

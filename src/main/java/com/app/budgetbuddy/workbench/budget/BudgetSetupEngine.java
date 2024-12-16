@@ -151,6 +151,9 @@ public class BudgetSetupEngine
             );
             log.info("Transaction Categories Map: {}", transactionCategoriesMap.size());
 
+            // Save the Transaction Categories
+
+
             if (transactionCategoriesMap.isEmpty()) {
                 log.warn("No transaction categories created for user: {}", userID);
                 return false;
@@ -841,21 +844,36 @@ public class BudgetSetupEngine
         return biWeeklyBudgetCategories;
     }
 
-//    public List<BudgetCategory> loadBudgetPeriodData(final LocalDate singleDate, final Period period, final List<DateRange> dateRanges, final List<TransactionCategory> transactionCategories, final Budget budget){
-//        List<BudgetCategory> budgetCategories = new ArrayList<>();
-//
-//        switch(period)
-//        {
-//            case DAILY -> {
-//                return loadDailyBudgetPeriodData(singleDate, transactionCategories, budget);
-//            }
-//            case WEEKLY
-//                case BIWEEKLY -> {}
-//                case MONTHLY -> {}
-//        }
-//
-//        return null;
-//    }
+    public List<BudgetCategory> loadBudgetPeriodData(final Period period, final LocalDate startDate, final LocalDate endDate, final Budget budget)
+    {
+        List<BudgetCategory> budgetCategories = new ArrayList<>();
+
+        // Load the Transaction Categories
+        List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budget.getId(), startDate, endDate);
+        DateRange defaultDateRange = new DateRange(startDate, endDate);
+        switch(period){
+            case DAILY -> {
+                if(startDate.isEqual(endDate))
+                {
+                    return loadDailyBudgetPeriodData(startDate, transactionCategories, budget);
+                }
+            }
+            case WEEKLY -> {
+                List<DateRange> weeklyRanges = defaultDateRange.splitIntoWeeks();
+                return loadWeeklyBudgetPeriodData(weeklyRanges, transactionCategories);
+            }
+            case BIWEEKLY -> {
+                return loadBiWeeklyBudgetPeriodData(defaultDateRange.splitIntoBiWeeks(), transactionCategories);
+            }
+            case MONTHLY -> {
+                return loadMonthlyBudgetPeriodData(defaultDateRange, transactionCategories);
+            }
+            default -> {
+                throw new IllegalStateException("Unexpected value: " + period);
+            }
+        }
+        return budgetCategories;
+    }
 
     public List<BudgetCategory> loadMonthlyBudgetPeriodData(final DateRange monthlyDateRange, final List<TransactionCategory> transactionCategories){
         List<BudgetCategory> monthlyBudgetCategories = new ArrayList<>();

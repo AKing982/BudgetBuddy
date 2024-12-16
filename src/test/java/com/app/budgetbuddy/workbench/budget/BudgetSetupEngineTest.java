@@ -61,9 +61,55 @@ class BudgetSetupEngineTest {
     @InjectMocks
     private BudgetSetupEngine budgetSetupEngine;
 
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private Long validUserId;
+    private Budget mockBudget;
+    private List<Transaction> mockTransactions;
+    private List<RecurringTransaction> mockRecurringTransactions;
+    private List<DateRange> mockDateRanges;
+    private BudgetGoals mockBudgetGoals;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
+        startDate = LocalDate.now();
+        endDate = startDate.plusMonths(1);
+        validUserId = 1L;
+
+        // Initialize mock budget
+        mockBudget = new Budget();
+        mockBudget.setId(1L);
+        mockBudget.setUserId(validUserId);
+        mockBudget.setBudgetAmount(new BigDecimal("1000.00"));
+        mockBudget.setStartDate(startDate);
+        mockBudget.setEndDate(endDate);
+
+        // Initialize mock transactions
+        mockTransactions = new ArrayList<>();
+        // Set transaction properties
+        mockTransactions.add(createGasTransaction());
+
+        // Initialize mock recurring transactions
+        mockRecurringTransactions = new ArrayList<>();
+        // Set recurring transaction properties
+        mockRecurringTransactions.add(createAffirmRecurringTransaction());
+
+        // Initialize mock date ranges
+        mockDateRanges = new ArrayList<>();
+        DateRange dateRange = new DateRange(startDate, endDate);
+        mockDateRanges.add(dateRange);
+
+        // Initialize mock budget goals
+        mockBudgetGoals = new BudgetGoals(
+                1L,                    // budgetId
+                1000.0,               // targetAmount
+                100.0,                // monthlyAllocation
+                500.0,                // currentSavings
+                "SAVINGS",            // goalType
+                "MONTHLY",            // savingsFrequency
+                "ACTIVE"              // status
+        );
         budgetSetupEngine = new BudgetSetupEngine(userService, budgetService, budgetGoalsService, categoryService, recurringTransactionService, transactionCategoryService, budgetCalculations,budgetCategoryBuilder, transactionService);
     }
 
@@ -1227,27 +1273,10 @@ class BudgetSetupEngineTest {
     @Test
     void budgetSetupInitializer_Success() {
         // Arrange
-        LocalDate startDate = LocalDate.now();
-        LocalDate endDate = startDate.plusMonths(1);
-        Long validUserId = 1L;
-        Budget mockBudget = new Budget();
-        mockBudget.setId(1L);
-        mockBudget.setUserId(validUserId);
-        mockBudget.setBudgetAmount(new BigDecimal("1000.00"));
-        mockBudget.setStartDate(startDate);
-        mockBudget.setEndDate(endDate);
-
-        List<Transaction> mockTransactions = new ArrayList<>();
-        // Set transaction properties
-        mockTransactions.add(createGasTransaction());
-
-        List<RecurringTransaction> mockRecurringTransactions = new ArrayList<>();
-        mockRecurringTransactions.add(createAffirmRecurringTransaction());
-
-        when(budgetService.loadUserBudget(validUserId)).thenReturn(mockBudget);
-        when(transactionService.getConvertedPlaidTransactions(eq(validUserId), any(), any()))
+        when(budgetService.loadUserBudget(any(Long.class))).thenReturn(mockBudget);
+        when(transactionService.getConvertedPlaidTransactions(any(Long.class), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(mockTransactions);
-        when(recurringTransactionService.getRecurringTransactions(eq(validUserId), any(), any()))
+        when(recurringTransactionService.getRecurringTransactions(any(Long.class), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(mockRecurringTransactions);
 
         TreeMap<Long, List<TransactionCategory>> mockTransactionCategoriesMap = new TreeMap<>();
@@ -1256,7 +1285,10 @@ class BudgetSetupEngineTest {
         mockTransactionCategoriesMap.put(validUserId, transactionCategories);
 
         when(budgetSetupEngine.createTransactionCategories(
-                any(), any(), any(), any()
+                any(List.class),
+                any(List.class),
+                any(Budget.class),
+                any(List.class)
         )).thenReturn(mockTransactionCategoriesMap);
 
         // Act
@@ -1265,6 +1297,7 @@ class BudgetSetupEngineTest {
         // Assert
         assertTrue(result);
     }
+
 
 
     // Helper methods to create test data

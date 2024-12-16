@@ -6,11 +6,13 @@ import com.app.budgetbuddy.services.BudgetService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -88,6 +90,13 @@ public class BudgetController
             LOGGER.error("There was an error while getting the budget", e);
             return ResponseEntity.internalServerError().body(null);
         }
+    }
+
+    @GetMapping("/budget-data/{userId}")
+    public ResponseEntity<?> fetchBudgetDataForUser(@PathVariable Long userId,
+                                                    @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                    @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate){
+        return null;
     }
 
 }
