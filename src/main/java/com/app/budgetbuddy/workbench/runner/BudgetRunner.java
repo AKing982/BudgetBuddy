@@ -27,6 +27,11 @@ public class BudgetRunner
         this.budgetQueriesService = budgetQueriesService;
     }
 
+    public void executeBudgetRun()
+    {
+
+    }
+
     public List<DateRange> getCalculatedDateRanges(LocalDate startDate, LocalDate endDate, Period period){
         return null;
     }
@@ -70,6 +75,8 @@ public class BudgetRunner
         return null;
     }
 
+    public static void main(String[] args){
 
+    }
 
 }

@@ -13,6 +13,7 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class BudgetPeriodParams
 {
+    private String category;
     private BigDecimal budgeted;
     private BigDecimal actual;
     private BigDecimal remaining;
@@ -21,14 +22,35 @@ public class BudgetPeriodParams
     private double spendingPercentage;
     private BudgetStatus budgetStatus;
 
-    public BudgetPeriodParams(BigDecimal budgeted, BigDecimal actual, BigDecimal remaining, DateRange dateRange, boolean isOverBudget, double spendingPercentage, BudgetStatus budgetStatus) {
+    public BudgetPeriodParams(String category, BigDecimal budgeted, BigDecimal actual, DateRange dateRange, BudgetStatus budgetStatus) {
+        this.category = category;
         this.budgeted = budgeted;
         this.actual = actual;
-        this.remaining = remaining;
+        this.remaining = getRemainingCalculation(budgeted, actual);
         this.dateRange = dateRange;
-        this.isOverBudget = isOverBudget;
-        this.spendingPercentage = spendingPercentage;
+        this.isOverBudget = isOverBudget(budgeted, actual);
+        this.spendingPercentage = calculateSpendingPercentage(budgeted, actual);
         this.budgetStatus = budgetStatus;
+    }
+
+    private boolean isOverBudget(BigDecimal budgeted, BigDecimal actual) {
+        return budgeted.compareTo(actual) > 0;
+    }
+
+    private BigDecimal getRemainingCalculation(final BigDecimal budgeted, BigDecimal actual)
+    {
+        BigDecimal remainingAmount = budgeted.subtract(actual);
+        if(remainingAmount.compareTo(BigDecimal.ZERO) <= 0){
+            return BigDecimal.ZERO;
+        }
+        return remainingAmount;
+    }
+
+    private double calculateSpendingPercentage(BigDecimal budgeted, BigDecimal actual)
+    {
+        double budgetedAsDouble = budgeted.doubleValue();
+        double actualAsDouble = actual.doubleValue();
+        return actualAsDouble / budgetedAsDouble;
     }
 
     @Override

@@ -16,7 +16,7 @@ public interface BudgetQueriesService
 
     List<BudgetCategory> getExpensesBudgetCategories(final Long budgetId, final LocalDate startDate, final LocalDate endDate);
 
-    BigDecimal getTotalBudgeted(final Long budgetId, final LocalDate startDate, final LocalDate endDate);
+    BigDecimal getTotalBudgeted(final Long budgetId, final Long userId, final LocalDate startDate, final LocalDate endDate);
 
     BigDecimal getRemainingOnBudget(final Long budgetId, final LocalDate startDate, final LocalDate endDate);
 
