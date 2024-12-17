@@ -7,6 +7,7 @@ import com.app.budgetbuddy.workbench.budget.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -26,7 +27,15 @@ public class BudgetRunner
         this.budgetQueriesService = budgetQueriesService;
     }
 
-    public BudgetPeriodParams getBudgetPeriodData(final LocalDate startDate, final LocalDate endDate, final Long userId, final Period period)
+    public List<DateRange> getCalculatedDateRanges(LocalDate startDate, LocalDate endDate, Period period){
+        return null;
+    }
+
+    public BigDecimal calculateBudgetHealthScore(Budget budget, LocalDate startDate, LocalDate endDate){
+        return null;
+    }
+
+    public List<BudgetPeriodParams> getBudgetPeriodData(final LocalDate startDate, final LocalDate endDate, final Long userId, final Period period)
     {
         return null;
     }
@@ -35,5 +44,32 @@ public class BudgetRunner
     {
         return null;
     }
+
+    public List<BudgetCategory> loadTopExpenseCategories(final Budget budget, final LocalDate startDate, final LocalDate endDate, final Period period){
+        return null;
+    }
+
+    public List<BudgetCategory> loadExpenseCategory(final Budget budget, final LocalDate startDate, final LocalDate endDate, final Period period){
+        return null;
+    }
+
+    public List<BudgetCategory> loadSavingsCategory(final Budget budget, final LocalDate startDate, final LocalDate endDate, final Period period){
+        return null;
+    }
+
+    public List<BudgetCategory> loadIncomeCategory(final BigDecimal incomeAmount, final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){
+        return null;
+
+    }
+
+    public List<TransactionCategory> createNewTransactionCategories(List<Transaction> transactions, List<RecurringTransaction> recurringTransactions, Budget budget, BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+    public List<TransactionCategory> updateTransactionCategories(final List<TransactionCategory> existingTransactionCategories, final List<Transaction> transactions, final Budget budget, final BudgetPeriod budgetPeriod){
+        return null;
+    }
+
+
 
 }
