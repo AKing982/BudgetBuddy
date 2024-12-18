@@ -9,20 +9,18 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class BudgetRunner
 {
-    private final TransactionCategoryBuilder budgetCategoryBuilder;
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetQueriesService budgetQueriesService;
 
     @Autowired
-    public BudgetRunner(TransactionCategoryBuilder budgetCategoryBuilder,
-                        BudgetPeriodQueries budgetPeriodQueries,
+    public BudgetRunner(BudgetPeriodQueries budgetPeriodQueries,
                         BudgetQueriesService budgetQueriesService){
-        this.budgetCategoryBuilder = budgetCategoryBuilder;
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.budgetQueriesService = budgetQueriesService;
     }
@@ -32,17 +30,51 @@ public class BudgetRunner
 
     }
 
-    public List<DateRange> getCalculatedDateRanges(LocalDate startDate, LocalDate endDate, Period period){
-        return null;
-    }
-
     public BigDecimal calculateBudgetHealthScore(Budget budget, LocalDate startDate, LocalDate endDate){
         return null;
     }
 
-    public List<BudgetPeriodCategory> getBudgetPeriodData(final LocalDate startDate, final LocalDate endDate, final Long userId, final Period period)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategories(final BudgetPeriod budgetPeriod, final Budget monthlyBudget)
     {
-        return null;
+        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
+        if(budgetPeriod == null){
+            return budgetPeriodCategories;
+        }
+        Period period = budgetPeriod.period();
+        LocalDate budgetPeriodStartDate = budgetPeriod.startDate();
+        LocalDate budgetPeriodEndDate = budgetPeriod.endDate();
+        DateRange budgetDateRange = new DateRange(budgetPeriodStartDate, budgetPeriodEndDate);
+        switch(period)
+        {
+            case MONTHLY -> {
+                List<BudgetPeriodCategory> monthlyBudgetPeriodCategories = budgetPeriodQueries.getMonthlyBudgetPeriodCategories(budgetDateRange, monthlyBudget);
+                budgetPeriodCategories.addAll(monthlyBudgetPeriodCategories);
+                break;
+            }
+            case WEEKLY -> {
+                List<DateRange> weeksDateRange = budgetDateRange.splitIntoWeeks();
+                List<BudgetPeriodCategory> weeklyBudgetPeriodCategories = budgetPeriodQueries.getWeeklyBudgetPeriodCategories(weeksDateRange, monthlyBudget);
+                budgetPeriodCategories.addAll(weeklyBudgetPeriodCategories);
+                break;
+            }
+            case BIWEEKLY -> {
+                List<DateRange> weeksDateRange = budgetDateRange.splitIntoBiWeeks();
+                List<BudgetPeriodCategory> biweeklyBudgetPeriodCategories = budgetPeriodQueries.getBiWeeklyBudgetPeriodCategories(weeksDateRange, monthlyBudget);
+                budgetPeriodCategories.addAll(biweeklyBudgetPeriodCategories);
+                break;
+            }
+            case DAILY -> {
+                if(budgetPeriodStartDate.equals(budgetPeriodEndDate)){
+                    List<BudgetPeriodCategory> dailyBudgetPeriodCategories = budgetPeriodQueries.getDailyBudgetPeriodQuery(budgetPeriodStartDate, monthlyBudget);
+                    budgetPeriodCategories.addAll(dailyBudgetPeriodCategories);
+                }
+                break;
+            }
+            default -> {
+                throw new RuntimeException("Invalid Period selected: " + period);
+            }
+        }
+        return budgetPeriodCategories;
     }
 
     public List<BudgetStats> loadBudgetStatisticsForUser(final LocalDate startDate, final LocalDate endDate, final Long userId)
@@ -64,16 +96,12 @@ public class BudgetRunner
 
     public List<BudgetCategory> loadIncomeCategory(final BigDecimal incomeAmount, final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){
         return null;
+    }
+
+    public void runTransactionCategoriesForUser(Long userId, LocalDate startDate, LocalDate endDate){
 
     }
 
-    public List<TransactionCategory> createNewTransactionCategories(List<Transaction> transactions, List<RecurringTransaction> recurringTransactions, Budget budget, BudgetPeriod budgetPeriod){
-        return null;
-    }
-
-    public List<TransactionCategory> updateTransactionCategories(final List<TransactionCategory> existingTransactionCategories, final List<Transaction> transactions, final Budget budget, final BudgetPeriod budgetPeriod){
-        return null;
-    }
 
     public static void main(String[] args){
 
