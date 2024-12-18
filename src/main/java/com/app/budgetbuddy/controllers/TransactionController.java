@@ -162,6 +162,11 @@ public class TransactionController {
         }
     }
 
+    @PostMapping("/transaction-runner")
+    public ResponseEntity<?> runTransactionRunner(@RequestBody TransactionBaseRequest transactionBaseRequest) {
+        return null;
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTransaction(@PathVariable Long id, @RequestBody TransactionDTO transaction) {
         return null;

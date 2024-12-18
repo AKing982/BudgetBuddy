@@ -11,7 +11,7 @@ import java.util.Objects;
 @Getter
 @Setter(AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class BudgetPeriodParams
+public class BudgetPeriodCategory
 {
     private String category;
     private BigDecimal budgeted;
@@ -22,7 +22,7 @@ public class BudgetPeriodParams
     private double spendingPercentage;
     private BudgetStatus budgetStatus;
 
-    public BudgetPeriodParams(String category, BigDecimal budgeted, BigDecimal actual, DateRange dateRange, BudgetStatus budgetStatus) {
+    public BudgetPeriodCategory(String category, BigDecimal budgeted, BigDecimal actual, DateRange dateRange, BudgetStatus budgetStatus) {
         this.category = category;
         this.budgeted = budgeted;
         this.actual = actual;
@@ -34,10 +34,10 @@ public class BudgetPeriodParams
     }
 
     private boolean isOverBudget(BigDecimal budgeted, BigDecimal actual) {
-        return budgeted.compareTo(actual) > 0;
+        return actual.compareTo(budgeted) > 0;
     }
 
-    private BigDecimal getRemainingCalculation(final BigDecimal budgeted, BigDecimal actual)
+    private BigDecimal getRemainingCalculation(final BigDecimal budgeted, final BigDecimal actual)
     {
         BigDecimal remainingAmount = budgeted.subtract(actual);
         if(remainingAmount.compareTo(BigDecimal.ZERO) <= 0){
@@ -57,7 +57,7 @@ public class BudgetPeriodParams
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        BudgetPeriodParams that = (BudgetPeriodParams) o;
+        BudgetPeriodCategory that = (BudgetPeriodCategory) o;
         return isOverBudget == that.isOverBudget && Double.compare(spendingPercentage, that.spendingPercentage) == 0 && Objects.equals(budgeted, that.budgeted) && Objects.equals(actual, that.actual) && Objects.equals(remaining, that.remaining) && Objects.equals(dateRange, that.dateRange) && budgetStatus == that.budgetStatus;
     }
 

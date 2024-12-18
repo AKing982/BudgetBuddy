@@ -40,7 +40,7 @@ public class BudgetRunner
         return null;
     }
 
-    public List<BudgetPeriodParams> getBudgetPeriodData(final LocalDate startDate, final LocalDate endDate, final Long userId, final Period period)
+    public List<BudgetPeriodCategory> getBudgetPeriodData(final LocalDate startDate, final LocalDate endDate, final Long userId, final Period period)
     {
         return null;
     }
