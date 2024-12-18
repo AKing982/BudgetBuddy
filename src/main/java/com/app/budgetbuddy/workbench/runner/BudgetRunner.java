@@ -4,15 +4,19 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.workbench.budget.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Service
+@Slf4j
 public class BudgetRunner
 {
     private final BudgetPeriodQueries budgetPeriodQueries;
@@ -37,77 +41,104 @@ public class BudgetRunner
         return null;
     }
 
-    public List<BudgetPeriodCategory> getBudgetPeriodCategories(final BudgetPeriod budgetPeriod, final Budget monthlyBudget)
+
+    public List<BudgetPeriodCategory> getWeeklyBudgetPeriodCategories(final WeeklyBudgetPeriod weeklyBudgetPeriod, final Budget budget){
+        if(weeklyBudgetPeriod == null || budget == null){
+            return Collections.emptyList();
+        }
+        List<DateRange> weeklyRanges = weeklyBudgetPeriod.getWeeklyDateRange();
+        List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getWeeklyBudgetPeriodCategories(weeklyRanges, budget);
+        return new ArrayList<>(budgetPeriodCategories);
+    }
+
+    public List<BudgetPeriodCategory> getBiWeeklyBudgetPeriodCategories(final BiWeeklyBudgetPeriod budgetPeriod, final Budget budget){
+        if(budgetPeriod == null || budget == null){
+            return Collections.emptyList();
+        }
+        List<DateRange> biweeks = budgetPeriod.getBiWeeklyRanges();
+        List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getBiWeeklyBudgetPeriodCategories(biweeks, budget);
+        return new ArrayList<>(budgetPeriodCategories);
+    }
+
+    public List<BudgetPeriodCategory> getDailyBudgetPeriodCategories(final DailyBudgetPeriod dailyBudgetPeriod, final Budget budget)
+    {
+        if(dailyBudgetPeriod == null || budget == null){
+            return Collections.emptyList();
+        }
+        LocalDate date = dailyBudgetPeriod.getStartDate();
+        List<BudgetPeriodCategory> dailyBudgetPeriodQuery = budgetPeriodQueries.getDailyBudgetPeriodQuery(date, budget);
+        return new ArrayList<>(dailyBudgetPeriodQuery);
+    }
+
+    public List<BudgetPeriodCategory> getMonthlyBudgetPeriodCategories(final MonthlyBudgetPeriod budgetPeriod, final Budget monthlyBudget)
     {
         List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
         if(budgetPeriod == null){
             return budgetPeriodCategories;
         }
-        Period period = budgetPeriod.period();
-        LocalDate budgetPeriodStartDate = budgetPeriod.startDate();
-        LocalDate budgetPeriodEndDate = budgetPeriod.endDate();
-        DateRange budgetDateRange = new DateRange(budgetPeriodStartDate, budgetPeriodEndDate);
-        switch(period)
-        {
-            case MONTHLY -> {
-                List<BudgetPeriodCategory> monthlyBudgetPeriodCategories = budgetPeriodQueries.getMonthlyBudgetPeriodCategories(budgetDateRange, monthlyBudget);
-                budgetPeriodCategories.addAll(monthlyBudgetPeriodCategories);
-                break;
-            }
-            case WEEKLY -> {
-                List<DateRange> weeksDateRange = budgetDateRange.splitIntoWeeks();
-                List<BudgetPeriodCategory> weeklyBudgetPeriodCategories = budgetPeriodQueries.getWeeklyBudgetPeriodCategories(weeksDateRange, monthlyBudget);
-                budgetPeriodCategories.addAll(weeklyBudgetPeriodCategories);
-                break;
-            }
-            case BIWEEKLY -> {
-                List<DateRange> weeksDateRange = budgetDateRange.splitIntoBiWeeks();
-                List<BudgetPeriodCategory> biweeklyBudgetPeriodCategories = budgetPeriodQueries.getBiWeeklyBudgetPeriodCategories(weeksDateRange, monthlyBudget);
-                budgetPeriodCategories.addAll(biweeklyBudgetPeriodCategories);
-                break;
-            }
-            case DAILY -> {
-                if(budgetPeriodStartDate.equals(budgetPeriodEndDate)){
-                    List<BudgetPeriodCategory> dailyBudgetPeriodCategories = budgetPeriodQueries.getDailyBudgetPeriodQuery(budgetPeriodStartDate, monthlyBudget);
-                    budgetPeriodCategories.addAll(dailyBudgetPeriodCategories);
-                }
-                break;
-            }
-            default -> {
-                throw new RuntimeException("Invalid Period selected: " + period);
-            }
-        }
+        DateRange monthRange = budgetPeriod.getMonthRange();
+        List<BudgetPeriodCategory> monthlyBudgetPeriodCategories = budgetPeriodQueries.getMonthlyBudgetPeriodCategories(monthRange, monthlyBudget);
+        budgetPeriodCategories.addAll(monthlyBudgetPeriodCategories);
         return budgetPeriodCategories;
     }
 
-    public List<BudgetStats> loadBudgetStatisticsForUser(final LocalDate startDate, final LocalDate endDate, Budget budget)
+    public BudgetStats loadMonthlyBudgetStatistics(final DateRange monthRange, final Budget budget)
     {
-        List<BudgetStats> budgetStats = new ArrayList<>();
-        // 1. What is the total budgeted for this period?
-        BigDecimal totalBudgetedForPeriod = budgetQueriesService.getTotalBudgeted(budget.getId(), budget.getUserId(), startDate, endDate);
+        if(monthRange == null || budget == null){
+            throw new IllegalArgumentException("Month and budget are required");
+        }
 
-        // 2. What is the total spent on budget for this period?
-        BigDecimal totalSpentOnBudget = budgetQueriesService.getTotalSpentOnBudget(budget.getId(), startDate, endDate);
+        try
+        {
+            // 1. Get total budgeted for the month
+            BigDecimal totalBudgeted = budgetQueriesService.getTotalBudgeted(
+                    budget.getId(),
+                    budget.getUserId(),
+                    monthRange.getStartDate(),
+                    monthRange.getEndDate()
+            );
 
-        // 3. What is the remaining amount on the budget for this period?
-        BigDecimal remainingAmount = totalBudgetedForPeriod.subtract(totalSpentOnBudget);
+            // 2. Get total spent in the month
+            BigDecimal totalSpent = budgetQueriesService.getTotalSpentOnBudget(
+                    budget.getId(),
+                    monthRange.getStartDate(),
+                    monthRange.getEndDate()
+            );
 
-        // 4. How much was saved during this period?
-        BigDecimal totalSaved = totalBudgetedForPeriod.subtract(remainingAmount);
+            // 3. Calculate remaining amount
+            BigDecimal remaining = totalBudgeted.subtract(totalSpent);
 
-        // 5. What is the average spending per day?
-        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
-        BigDecimal averageSpendingPerDay = budgetCalculations.calculateAverageSpendingPerDayOnBudget(totalBudgetedForPeriod, totalSpentOnBudget, budgetPeriod);
+            // 4. Calculate savings
+            BigDecimal totalSaved = totalBudgeted.subtract(remaining);
 
-        // 6. Create the date range
-        DateRange budgetDateRange = new DateRange(startDate, endDate);
+            // 5. Calculate daily average
+            BudgetPeriod budgetPeriod = new BudgetPeriod(
+                    Period.MONTHLY,
+                    monthRange.getStartDate(),
+                    monthRange.getEndDate()
+            );
+            BigDecimal averageDaily = budgetCalculations.calculateAverageSpendingPerDayOnBudget(
+                    totalBudgeted,
+                    totalSpent,
+                    budgetPeriod
+            );
 
-        // 7. Build the budget stats
+            // 6. Return stats for this month
+            return new BudgetStats(
+                    budget.getId(),
+                    totalBudgeted,
+                    totalSpent,
+                    remaining,
+                    totalSaved,
+                    averageDaily,
+                    monthRange
+            );
 
-        // 8. Add to the list
-
-        // 9. Return the budget stats list.
-        return null;
+        }catch(IllegalArgumentException e){
+            log.error("Error calculating monthly budget statistics for budget: {} and month range: {}",
+                    budget.getId(), monthRange, e);
+            throw e;
+        }
     }
 
     public List<BudgetCategory> loadTopExpenseCategories(final Budget budget, final LocalDate startDate, final LocalDate endDate, final Period period){
@@ -125,11 +156,6 @@ public class BudgetRunner
     public List<BudgetCategory> loadIncomeCategory(final BigDecimal incomeAmount, final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){
         return null;
     }
-
-    public void runTransactionCategoriesForUser(Long userId, LocalDate startDate, LocalDate endDate){
-
-    }
-
 
     public static void main(String[] args){
 
