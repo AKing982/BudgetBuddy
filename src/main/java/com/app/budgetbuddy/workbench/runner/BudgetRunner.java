@@ -17,12 +17,15 @@ public class BudgetRunner
 {
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetQueriesService budgetQueriesService;
+    private final BudgetCalculations budgetCalculations;
 
     @Autowired
     public BudgetRunner(BudgetPeriodQueries budgetPeriodQueries,
-                        BudgetQueriesService budgetQueriesService){
+                        BudgetQueriesService budgetQueriesService,
+                        BudgetCalculations budgetCalculations){
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.budgetQueriesService = budgetQueriesService;
+        this.budgetCalculations = budgetCalculations;
     }
 
     public void executeBudgetRun()
@@ -77,8 +80,33 @@ public class BudgetRunner
         return budgetPeriodCategories;
     }
 
-    public List<BudgetStats> loadBudgetStatisticsForUser(final LocalDate startDate, final LocalDate endDate, final Long userId)
+    public List<BudgetStats> loadBudgetStatisticsForUser(final LocalDate startDate, final LocalDate endDate, Budget budget)
     {
+        List<BudgetStats> budgetStats = new ArrayList<>();
+        // 1. What is the total budgeted for this period?
+        BigDecimal totalBudgetedForPeriod = budgetQueriesService.getTotalBudgeted(budget.getId(), budget.getUserId(), startDate, endDate);
+
+        // 2. What is the total spent on budget for this period?
+        BigDecimal totalSpentOnBudget = budgetQueriesService.getTotalSpentOnBudget(budget.getId(), startDate, endDate);
+
+        // 3. What is the remaining amount on the budget for this period?
+        BigDecimal remainingAmount = totalBudgetedForPeriod.subtract(totalSpentOnBudget);
+
+        // 4. How much was saved during this period?
+        BigDecimal totalSaved = totalBudgetedForPeriod.subtract(remainingAmount);
+
+        // 5. What is the average spending per day?
+        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
+        BigDecimal averageSpendingPerDay = budgetCalculations.calculateAverageSpendingPerDayOnBudget(totalBudgetedForPeriod, totalSpentOnBudget, budgetPeriod);
+
+        // 6. Create the date range
+        DateRange budgetDateRange = new DateRange(startDate, endDate);
+
+        // 7. Build the budget stats
+
+        // 8. Add to the list
+
+        // 9. Return the budget stats list.
         return null;
     }
 

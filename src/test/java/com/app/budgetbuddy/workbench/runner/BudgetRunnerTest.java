@@ -434,7 +434,7 @@ class BudgetRunnerTest {
                 .thenReturn(mockBudgetStatsResults(expectedBudgetStats));
 
         // Act
-        List<BudgetStats> actualBudgetStats = budgetRunner.loadBudgetStatisticsForUser(startDate, endDate, userId);
+        List<BudgetStats> actualBudgetStats = budgetRunner.loadBudgetStatisticsForUser(startDate, endDate, testBudget);
 
         // Assert
         assertNotNull(actualBudgetStats);
