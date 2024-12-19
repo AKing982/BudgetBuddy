@@ -1,9 +1,14 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidDataException;
+import com.app.budgetbuddy.repositories.AccountRepository;
+import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import com.app.budgetbuddy.workbench.converter.TransactionEntityToModelConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionToEntityConverter;
@@ -25,15 +30,21 @@ import java.util.*;
 public class TransactionServiceImpl implements TransactionService
 {
     private final TransactionRepository transactionRepository;
+    private final AccountRepository accountRepository;
+    private final CategoryRepository categoryRepository;
     private final TransactionToEntityConverter transactionToEntityConverter;
     private final TransactionEntityToModelConverter transactionEntityToModelConverter;
     private final Logger LOGGER = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
     @Autowired
     public TransactionServiceImpl(TransactionRepository transactionRepository,
+                                  AccountRepository accountRepository,
+                                  CategoryRepository categoryRepository,
                                   TransactionToEntityConverter transactionToEntityConverter,
                                   TransactionEntityToModelConverter transactionEntityToModelConverter){
         this.transactionRepository = transactionRepository;
+        this.accountRepository = accountRepository;
+        this.categoryRepository = categoryRepository;
         this.transactionToEntityConverter = transactionToEntityConverter;
         this.transactionEntityToModelConverter = transactionEntityToModelConverter;
     }
@@ -119,6 +130,16 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public List<TransactionsEntity> convertPlaidTransactionsToEntities(List<PlaidTransaction> plaidTransactions) {
+        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
+        for(PlaidTransaction transaction : plaidTransactions){
+            TransactionsEntity transactionsEntity = convertPlaidTransactionToEntity(transaction);
+            transactionsEntities.add(transactionsEntity);
+        }
+        return transactionsEntities;
+    }
+
+    @Override
     public List<TransactionsEntity> createAndSaveTransactions(List<Transaction> transactions) {
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         for(Transaction transaction : transactions){
@@ -127,6 +148,31 @@ public class TransactionServiceImpl implements TransactionService
             transactionsEntities.add(transactionsEntity);
         }
         return transactionsEntities;
+    }
+
+    @Override
+    public List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions) {
+        List<Transaction> transactions = new ArrayList<>();
+        for(com.plaid.client.model.Transaction plaidTransaction : plaidTransactions){
+            Transaction transaction1 = new Transaction(
+                    plaidTransaction.getAccountId(),
+                    BigDecimal.valueOf(plaidTransaction.getAmount()),
+                    plaidTransaction.getIsoCurrencyCode(),
+                    plaidTransaction.getCategory(),
+                    plaidTransaction.getCategoryId(),
+                    plaidTransaction.getDate(),
+                    plaidTransaction.getOriginalDescription(),
+                    plaidTransaction.getMerchantName(),
+                    plaidTransaction.getName(),
+                    plaidTransaction.getPending(),
+                    plaidTransaction.getTransactionId(),
+                    plaidTransaction.getAuthorizedDate(),
+                    plaidTransaction.getLogoUrl(),
+                    plaidTransaction.getDate()
+            );
+            transactions.add(transaction1);
+        }
+        return transactions;
     }
 
     @Override
@@ -214,8 +260,41 @@ public class TransactionServiceImpl implements TransactionService
             throw new NullPointerException("TransactionId is null");
         }
         return Optional.empty();
+    }
 
-        
+
+
+    private TransactionsEntity convertPlaidTransactionToEntity(PlaidTransaction plaidTransaction){
+        TransactionsEntity transactionsEntity = new TransactionsEntity();
+        transactionsEntity.setId(plaidTransaction.getTransactionId());
+        transactionsEntity.setAmount(plaidTransaction.getAmount());
+        transactionsEntity.setPending(plaidTransaction.getPending());
+        transactionsEntity.setAuthorizedDate(plaidTransaction.getAuthorizedDate());
+        transactionsEntity.setDescription(plaidTransaction.getDescription());
+        transactionsEntity.setAccount(fetchAccountById(plaidTransaction.getAccountId()));
+        transactionsEntity.setPosted(plaidTransaction.getDate());
+        transactionsEntity.setCategory(fetchCategoryById(plaidTransaction.getCategoryId()));
+        transactionsEntity.setLogoUrl(plaidTransaction.getLogo());
+        transactionsEntity.setIsoCurrencyCode(plaidTransaction.getIsoCurrencyCode());
+        transactionsEntity.setMerchantName(plaidTransaction.getMerchantName());
+        transactionsEntity.setId(plaidTransaction.getTransactionId());
+        return transactionsEntity;
+    }
+
+    private CategoryEntity fetchCategoryById(String categoryId){
+        if(categoryId.isEmpty()){
+            throw new IllegalArgumentException("categoryId is empty");
+        }
+        Optional<CategoryEntity> categoryEntityOptional = categoryRepository.findByCategoryId(categoryId);
+        return categoryEntityOptional.orElseThrow(() -> new IllegalArgumentException("Category not found"));
+    }
+
+    private AccountEntity fetchAccountById(String accountId){
+        if(accountId.isEmpty()){
+            throw new IllegalArgumentException("accountId is empty");
+        }
+        Optional<AccountEntity> accountEntityOptional = accountRepository.findByAccountId(accountId);
+        return accountEntityOptional.orElseThrow(() -> new IllegalArgumentException("Account not found"));
     }
 
     @Override

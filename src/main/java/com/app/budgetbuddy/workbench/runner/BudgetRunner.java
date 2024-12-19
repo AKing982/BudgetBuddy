@@ -34,7 +34,7 @@ public class BudgetRunner
         this.budgetCalculations = budgetCalculations;
     }
 
-    public void executeBudgetRun()
+    public void executeBudget(Long userId)
     {
 
     }

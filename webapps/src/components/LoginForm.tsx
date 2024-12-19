@@ -23,6 +23,7 @@ import loginService from "../services/LoginService";
 import RecurringTransactionService from "../services/RecurringTransactionService";
 import {be} from "date-fns/locale";
 import BudgetService from "../services/BudgetService";
+import TransactionRunnerService from "../services/TransactionRunnerService";
 
 
 interface LoginFormData {
@@ -92,6 +93,7 @@ const LoginForm: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const plaidLinkRef = useRef<PlaidLinkRef>(null);
     const budgetService = BudgetService.getInstance();
+    const transactionRunnerService = TransactionRunnerService.getInstance();
 
     const navigate = useNavigate();
 
@@ -149,6 +151,13 @@ const LoginForm: React.FC = () => {
                         console.error('Plaid Link reference is not available');
                     }
                 }else{
+                    try {
+                        const transactionRunner = TransactionRunnerService.getInstance();
+                        await transactionRunner.syncTransactions(userId);
+                        console.log('Transaction sync completed');
+                    } catch (error) {
+                        console.error('Error syncing transactions:', error);
+                    }
                     navigate('/dashboard')
                 }
             }
@@ -231,6 +240,14 @@ const LoginForm: React.FC = () => {
 
                 const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
                 console.log('Saved Recurring Transactions: ', savedRecurringTransactions);
+                try
+                {
+
+                    await transactionRunnerService.syncTransactions(userId);
+                    console.log('Initial Transaction Sync completed.');
+                }catch(error){
+                    console.error('Error syncing transactions: ', error);
+                }
 
             }, 6000);
 

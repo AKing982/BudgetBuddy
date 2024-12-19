@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 
@@ -16,8 +17,10 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Collection<TransactionsEntity> getTransactionsByAmountGreaterThan(BigDecimal amount);
     Collection<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount);
 
+    List<TransactionsEntity> convertPlaidTransactionsToEntities(List<PlaidTransaction> plaidTransactions);
     List<TransactionsEntity> createAndSaveTransactions(List<Transaction> transactions);
 
+    List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions);
 
     Optional<TransactionsEntity> getTransactionById(String id);
     Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId);

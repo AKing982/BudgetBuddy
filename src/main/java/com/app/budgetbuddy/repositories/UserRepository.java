@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,6 +23,9 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.username LIKE :user")
     Long findIdByUsername(@Param("user") String username);
+
+    @Query("SELECT u.id FROM UserEntity u WHERE u.id > 0")
+    List<Long> findAllIds();
 
     @Query("SELECT max(u.id) FROM UserEntity u")
     Long findMaxId();

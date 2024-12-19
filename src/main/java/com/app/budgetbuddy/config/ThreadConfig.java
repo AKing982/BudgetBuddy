@@ -35,13 +35,13 @@ public class ThreadConfig
         return threadPoolTaskExecutor;
     }
 
-    @PreDestroy
-    public void shutdownTaskExecutor() {
-        if (threadPoolTaskExecutor() != null) {
-            log.info("Shutting down Task Executor...");
-            threadPoolTaskExecutor().shutdown();
-        }
-    }
+//    @PreDestroy
+//    public void shutdownTaskExecutor() {
+//        if (threadPoolTaskExecutor() != null) {
+//            log.info("Shutting down Task Executor...");
+//            threadPoolTaskExecutor().shutdown();
+//        }
+//    }
 
     @Bean
     public ScheduledExecutorService scheduledExecutorService(){

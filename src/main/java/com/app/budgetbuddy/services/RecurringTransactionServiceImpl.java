@@ -3,9 +3,12 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.domain.RecurringTransactionType;
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.repositories.AccountRepository;
+import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionStreamToEntityConverter;
@@ -27,16 +30,76 @@ import java.util.stream.Collectors;
 public class RecurringTransactionServiceImpl implements RecurringTransactionService
 {
     private final RecurringTransactionsRepository recurringTransactionsRepository;
+    private final AccountRepository accountRepository;
+    private final CategoryRepository categoryRepository;
     private final RecurringTransactionConverter recurringTransactionConverter;
     private final TransactionStreamToEntityConverter transactionStreamToEntityConverter;
 
     @Autowired
     public RecurringTransactionServiceImpl(RecurringTransactionsRepository recurringTransactionsRepository,
+                                           AccountRepository accountRepository,
+                                           CategoryRepository categoryRepository,
                                            RecurringTransactionConverter recurringTransactionConverter,
                                            TransactionStreamToEntityConverter transactionStreamToEntityConverter){
         this.recurringTransactionsRepository = recurringTransactionsRepository;
+        this.accountRepository = accountRepository;
+        this.categoryRepository = categoryRepository;
         this.recurringTransactionConverter = recurringTransactionConverter;
         this.transactionStreamToEntityConverter = transactionStreamToEntityConverter;
+    }
+
+    private AccountEntity getAccountEntityFromId(String id){
+        if(id == null) return null;
+        Optional<AccountEntity> accountEntityOptional = accountRepository.findByAccountId(id);
+        return accountEntityOptional.orElse(null);
+    }
+
+    private CategoryEntity getCategoryEntityFromId(String id){
+        if(id == null) return null;
+        Optional<CategoryEntity> categoryEntityOptional = categoryRepository.findByCategoryId(id);
+        return categoryEntityOptional.orElse(null);
+    }
+
+    public List<RecurringTransactionEntity> createAndSaveRecurringTransactions(List<RecurringTransaction> recurringTransactions){
+        List<RecurringTransactionEntity> recurringTransactionEntities = new ArrayList<>();
+
+        for (RecurringTransaction recurringTransaction : recurringTransactions) {
+            RecurringTransactionEntity entity = new RecurringTransactionEntity();
+
+            // Set basic fields
+            entity.setStreamId(recurringTransaction.getStreamId());
+            entity.setDescription(recurringTransaction.getDescription());
+            entity.setMerchantName(recurringTransaction.getMerchantName());
+            entity.setFirstDate(recurringTransaction.getFirstDate());
+            entity.setLastDate(recurringTransaction.getLastDate());
+            entity.setFrequency(recurringTransaction.getFrequency());
+            entity.setAverageAmount(recurringTransaction.getAverageAmount());
+            entity.setLastAmount(recurringTransaction.getLastAmount());
+            entity.setActive(recurringTransaction.getActive());
+            entity.setType(recurringTransaction.getType());
+
+            // Set relationships
+            if (recurringTransaction.getAccountId() != null) {
+                AccountEntity account = getAccountEntityFromId(recurringTransaction.getAccountId());
+                entity.setAccount(account);
+            }
+
+            if (recurringTransaction.getCategoryId() != null) {
+                CategoryEntity category = getCategoryEntityFromId(recurringTransaction.getCategoryId());;
+                entity.setCategory(category);
+            }
+
+            // Save the entity
+            try {
+                RecurringTransactionEntity savedEntity = recurringTransactionsRepository.save(entity);
+                recurringTransactionEntities.add(savedEntity);
+            } catch (Exception e) {
+                log.error("Error saving recurring transaction with streamId: {}",
+                        recurringTransaction.getStreamId(), e);
+            }
+        }
+
+        return recurringTransactionEntities;
     }
 
     public List<RecurringTransactionEntity> createRecurringTransactionEntitiesFromStream(List<TransactionStream> outflow, List<TransactionStream> inflow, Long userId){
@@ -110,6 +173,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         return recurringTransactionsRepository.findTransactionsByCategory(category);
     }
 
+
     @Override
     public BigDecimal getTotalRecurringExpensesForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
         return recurringTransactionsRepository.findTotalExpensesForDateRange(userId, startDate, endDate);
@@ -140,7 +204,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         return convertRecurringTransactionEntities(recurringTransactionEntities);
     }
 
-    private List<RecurringTransaction> convertRecurringTransactionEntities(List<RecurringTransactionEntity> recurringTransactionEntities){
+    public List<RecurringTransaction> convertRecurringTransactionEntities(List<RecurringTransactionEntity> recurringTransactionEntities){
         List<RecurringTransaction> recurringTransactions = new ArrayList<>();
         for (RecurringTransactionEntity recurringTransactionEntity : recurringTransactionEntities) {
             String categoryName = null;
