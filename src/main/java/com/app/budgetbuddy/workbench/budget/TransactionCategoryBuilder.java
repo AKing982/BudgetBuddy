@@ -272,7 +272,7 @@ public class TransactionCategoryBuilder
         {
             LocalDate budgetStartDate = budget.getStartDate();
             LocalDate budgetEndDate = budget.getEndDate();
-            Period period = budgetPeriod.period();
+            Period period = budgetPeriod.getPeriod();
             categoryDateRanges = createCategoryPeriods(category, budgetStartDate, budgetEndDate, period, transactions);
         }
 

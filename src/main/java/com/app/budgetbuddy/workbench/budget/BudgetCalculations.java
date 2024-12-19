@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.ControlledSpendingCategoryEntity;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetActualAmountException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 @Component
@@ -125,17 +127,17 @@ public class BudgetCalculations {
 
     private LocalDate getStartDateFromBudgetPeriod(final BudgetPeriod budgetPeriod)
     {
-        return budgetPeriod.startDate();
+        return budgetPeriod.getStartDate();
     }
 
     private LocalDate getEndDateFromBudgetPeriod(final BudgetPeriod budgetPeriod)
     {
-        return budgetPeriod.endDate();
+        return budgetPeriod.getEndDate();
     }
 
     private Period getPeriodFromBudgetPeriod(final BudgetPeriod budgetPeriod)
     {
-        return budgetPeriod.period();
+        return budgetPeriod.getPeriod();
     }
 
     private void validateStartDateAndEndDate(final LocalDate startDate, final LocalDate endDate)
@@ -280,9 +282,14 @@ public class BudgetCalculations {
         return null;
     }
 
-    public BigDecimal calculateTotalSavedInBudget(final Budget budget, final BigDecimal monthlyAllocation, final MonthlyBudgetPeriod budgetPeriod)
+    private BudgetGoalsEntity getBudgetGoalsByBudgetId(Long budgetId){
+        Optional<BudgetGoalsEntity> budgetGoalsEntityOptional = budgetGoalsService.findById(budgetId);
+        return budgetGoalsEntityOptional.orElseThrow();
+    }
+
+    public BigDecimal calculateTotalSavedInBudget(final Budget budget, final BigDecimal totalSpentOnBudget, final DateRange monthRange)
     {
-        if(budget == null || monthlyAllocation == null || budgetPeriod == null)
+        if(budget == null)
         {
             return BigDecimal.ZERO;
         }
@@ -291,7 +298,36 @@ public class BudgetCalculations {
             throw new IllegalArgumentException("Budget id cannot be null");
         }
 
-        return null;
+        if(monthRange == null)
+        {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal budgetAmount = budget.getBudgetAmount();
+        BudgetGoalsEntity bgEntity = getBudgetGoalsByBudgetId(budgetId);
+        double savingsTargetAmount = bgEntity.getTargetAmount();
+        double monthlyAllocation = bgEntity.getMonthlyAllocation();
+        if(monthlyAllocation == 0)
+        {
+            int monthsToTarget = calculateMonthsToTarget(monthRange.getStartDate());
+            if (monthsToTarget > 0) {
+                monthlyAllocation = savingsTargetAmount / monthsToTarget;
+            }
+        }
+
+        if(budgetAmount.compareTo(totalSpentOnBudget) > 0)
+        {
+            BigDecimal actualSavings = budgetAmount.subtract(totalSpentOnBudget);
+            BigDecimal monthlyAllocationBD = BigDecimal.valueOf(monthlyAllocation);
+
+            return actualSavings.min(monthlyAllocationBD);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private int calculateMonthsToTarget(LocalDate startDate) {
+        LocalDate endOfYear = startDate.with(TemporalAdjusters.lastDayOfYear());
+        return (int) ChronoUnit.MONTHS.between(startDate, endOfYear) + 1;
     }
 
     public BigDecimal calculateTotalSpendingOnBudget(final DateRange budgetDateRange, final List<TransactionCategory> transactionCategories, final Budget budget){

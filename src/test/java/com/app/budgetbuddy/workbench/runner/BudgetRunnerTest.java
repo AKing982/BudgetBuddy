@@ -96,6 +96,8 @@ class BudgetRunnerTest {
                 any(BudgetPeriod.class)
         )).thenReturn(new BigDecimal("80.65"));
 
+        when(budgetCalculations.calculateTotalSavedInBudget(testBudget, new BigDecimal("2500.00"), monthRange)).thenReturn(new BigDecimal("300.00"));
+
         // Act
         BudgetStats actualBudgetStats = budgetRunner.loadMonthlyBudgetStatistics(monthRange, testBudget);
 
