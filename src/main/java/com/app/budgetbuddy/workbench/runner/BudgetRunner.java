@@ -56,6 +56,7 @@ public class BudgetRunner
             try
             {
                 BudgetRunnerResult result = processBudget(userBudget, startDate, endDate);
+                log.info("Processed BudgetRunnerResult {}", result.toString());
                 budgetRunnerResults.add(result);
             }catch(Exception e){
                 log.error("Error processing budget {} for user {}",userBudget.getId(), userId, e);
@@ -147,9 +148,9 @@ public class BudgetRunner
                 .endDate(endDate)
                 .processDate(LocalDate.now())
                 .processedAt(LocalDateTime.now())
-                .budgetAmount(budget.getBudgetAmount())
-                .actualBudgetAmount(budget.getActual())
-                .remainingBudgetAmount(budget.getBudgetAmount().subtract(budget.getActual()))
+                .budgetAmount(getBudgetAmountOrZero(budget))
+                .actualBudgetAmount(getActualOrZero(budget))
+                .remainingBudgetAmount(calculateRemainingAmount(budget))
                 .healthScore(healthScore)
                 .budgetStats(monthlyStats)
                 .budgetPeriodCategories(periodCategories)
@@ -161,6 +162,22 @@ public class BudgetRunner
         // Calculate flags and return
         result.calculateFlags();
         return result;
+    }
+
+    // Or better yet, create a utility method in your Budget class or a utility class:
+    public static BigDecimal getActualOrZero(Budget budget) {
+        return budget.getActual() != null ? budget.getActual() : BigDecimal.ZERO;
+    }
+
+    public static BigDecimal getBudgetAmountOrZero(Budget budget) {
+        return budget.getBudgetAmount() != null ? budget.getBudgetAmount() : BigDecimal.ZERO;
+    }
+
+
+    private BigDecimal calculateRemainingAmount(Budget budget) {
+        BigDecimal budgetAmount = budget.getBudgetAmount() != null ? budget.getBudgetAmount() : BigDecimal.ZERO;
+        BigDecimal actualAmount = budget.getActual() != null ? budget.getActual() : BigDecimal.ZERO;
+        return budgetAmount.subtract(actualAmount);
     }
 
     private Period determineBudgetPeriod(LocalDate startDate, LocalDate endDate) {
@@ -280,6 +297,7 @@ public class BudgetRunner
                     monthRange.getStartDate(),
                     monthRange.getEndDate()
             );
+            log.info("Total Budgeted: {}", totalBudgeted);
 
             // 2. Get total spent in the month
             BigDecimal totalSpent = budgetQueriesService.getTotalSpentOnBudget(
@@ -287,12 +305,14 @@ public class BudgetRunner
                     monthRange.getStartDate(),
                     monthRange.getEndDate()
             );
+            log.info("Total Spent: {}", totalSpent);
 
             // 3. Calculate remaining amount
             BigDecimal remaining = totalBudgeted.subtract(totalSpent);
 
             // 4. Calculate savings
             BigDecimal totalSaved = budgetCalculations.calculateTotalSavedInBudget(budget, totalSpent, monthRange);
+            log.info("Total Saved: {}", totalSaved);
 
             // 5. Calculate daily average
             BudgetPeriod budgetPeriod = new BudgetPeriod(
@@ -307,15 +327,17 @@ public class BudgetRunner
             );
 
             // 6. Return stats for this month
-            return new BudgetStats(
-                    budget.getId(),
+            log.info("Average Daily: " + averageDaily);
+            BudgetStats budgetStats = new BudgetStats(budget.getId(),
                     totalBudgeted,
                     totalSpent,
                     remaining,
                     totalSaved,
                     averageDaily,
-                    monthRange
-            );
+                    monthRange);
+            log.info("Budget Stats for month:{} ", budgetStats.toString());
+
+            return budgetStats;
 
         }catch(IllegalArgumentException e){
             log.error("Error calculating monthly budget statistics for budget: {} and month range: {}",
@@ -334,7 +356,9 @@ public class BudgetRunner
             if (budgetId == null || budgetId < 1L) {
                 throw new IllegalArgumentException("Invalid budget ID");
             }
-            return budgetQueriesService.getTopExpenseBudgetCategories(budgetId, startDate, endDate);
+            List<BudgetCategory> budgetCategories = budgetQueriesService.getTopExpenseBudgetCategories(budgetId, startDate, endDate);
+            log.info("Top Expense Categories: {}", budgetCategories.size());
+            return budgetCategories;
         } catch(IllegalArgumentException e) {
             log.error("Invalid budget provided: ", e);
             return Collections.emptyList();

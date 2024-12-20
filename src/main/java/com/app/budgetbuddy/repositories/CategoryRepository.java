@@ -27,6 +27,21 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long>
     @Query("SELECT c FROM CategoryEntity c WHERE c.description =:descr OR c.name =:name")
     Optional<CategoryEntity> findByDescriptionOrCategoryName(@Param("descr") String descr, @Param("name") String name);
 
-    @Query("SELECT DISTINCT c.id FROM CategoryEntity c WHERE c.name =:name")
-    List<String> findCategoryIdByName(@Param("name") String name);
+    @Query("""
+    SELECT c.id 
+    FROM CategoryEntity c 
+    WHERE (
+        (c.name IS NOT NULL AND (c.name = :name OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))))
+        OR 
+        (c.name IS NULL AND c.description IS NOT NULL AND LOWER(c.description) LIKE LOWER(CONCAT('%', :name, '%')))
+    )
+    AND c.isActive = true
+    ORDER BY 
+        CASE WHEN c.name = :name THEN 0
+             WHEN c.name LIKE :name THEN 1
+             ELSE 2 
+        END
+    LIMIT 1
+    """)
+    Optional<String> findCategoryIdByName(@Param("name") String name);
 }

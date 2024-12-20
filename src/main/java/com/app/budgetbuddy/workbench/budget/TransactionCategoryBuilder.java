@@ -176,13 +176,8 @@ public class TransactionCategoryBuilder
         return category.orElseThrow(() -> new CategoryNotFoundException(categoryId));
     }
 
-    public List<String> fetchCategoryIdByName(String categoryName)
+    public Optional<String> fetchCategoryIdByName(String categoryName)
     {
-        List<String> categoryList = new ArrayList<>();
-        if(categoryName.isEmpty())
-        {
-            return categoryList;
-        }
         return categoryService.getCategoryIdByName(categoryName);
     }
 
@@ -224,23 +219,40 @@ public class TransactionCategoryBuilder
         {
             return categorySpendingList;
         }
-        for (String category : categories)
+        try
         {
-            BigDecimal categorySpending = BigDecimal.ZERO;
-            List<String> categoryList = fetchCategoryIdByName(category);
-            String categoryId = categoryList.get(0);// Reset for each category
-            for (Transaction transaction : transactions)
+            for (String category : categories)
             {
-                if (transaction.getCategories() != null && transaction.getCategories().contains(category))
+                Optional<String> categoryOptional = fetchCategoryIdByName(category);
+                if(categoryOptional.isEmpty())
                 {
-                    categorySpending = categorySpending.add(transaction.getAmount());
+                    LOGGER.warn("No category ID found for category: {}", category);
+                    continue;
                 }
+                // Calculate category spending using streams
+                BigDecimal categorySpending = transactions.stream()
+                        .filter(transaction ->
+                                transaction != null &&
+                                        transaction.getCategories() != null &&
+                                        transaction.getCategories().contains(category) &&
+                                        transaction.getAmount() != null)
+                        .map(Transaction::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                // Add one CategorySpending object for each category
+                categorySpendingList.add(new CategorySpending(categoryOptional.get(), category, categorySpending));
+                LOGGER.debug("Added spending for category {}: {}", category, categorySpending);
             }
-            // Add one CategorySpending object for each category
-            categorySpendingList.add(new CategorySpending(categoryId, category, categorySpending));
+
+            LOGGER.info("Successfully created spending list for {} categories",
+                    categorySpendingList.size());
+            return categorySpendingList;
+        }catch(RuntimeException ex){
+            LOGGER.error("Error creating category spending list: ", ex);
+            throw new RuntimeException("Failed to create category spending list");
         }
-        LOGGER.info("Category Spending: " + categorySpendingList);
-        return categorySpendingList;
+
+
     }
 
     public BigDecimal getSpendingOnAllCategories(final List<CategorySpending> categorySpendingList)
@@ -286,6 +298,7 @@ public class TransactionCategoryBuilder
         return buildUserBudgetCategoryList(categoryToBudgetMap, categorySpendingList, categoryDateRanges, budget.getUserId());
     }
 
+    //TODO: Re
     public List<TransactionCategory> buildUserBudgetCategoryList(final Map<String, BigDecimal> categoryBudget, final List<CategorySpending> categorySpendingList, final Map<String, List<DateRange>> categoryDateRanges, Long userId)
     {
         List<TransactionCategory> transactionCategories = new ArrayList<>();
@@ -343,6 +356,7 @@ public class TransactionCategoryBuilder
 //        return new TransactionLink(category, transaction);
     }
 
+    //TODO: Retest this method
     public Map<String, List<DateRange>> createCategoryPeriods(final String categoryName, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final Period period, final List<? extends Transaction> transactions)
     {
         Map<String, List<DateRange>> categoryPeriods = new HashMap<>();
@@ -378,6 +392,7 @@ public class TransactionCategoryBuilder
                 .toList();
     }
 
+    //TODO: Make this method public and retest method
     private List<DateRange> buildDateRanges(final LocalDate budgetStart, final LocalDate budgetEnd, final Period period, final List<? extends Transaction> filteredTransactions){
         List<DateRange> dateRanges = new ArrayList<>();
         LocalDate currentStart = budgetStart;

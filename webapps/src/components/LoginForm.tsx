@@ -24,6 +24,7 @@ import RecurringTransactionService from "../services/RecurringTransactionService
 import {be} from "date-fns/locale";
 import BudgetService from "../services/BudgetService";
 import TransactionRunnerService from "../services/TransactionRunnerService";
+import TransactionCategoryRunnerService from "../services/TransactionCategoryRunnerService";
 
 
 interface LoginFormData {
@@ -92,8 +93,10 @@ const LoginForm: React.FC = () => {
     const [linkToken, setLinkToken] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const plaidLinkRef = useRef<PlaidLinkRef>(null);
+    const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const budgetService = BudgetService.getInstance();
     const transactionRunnerService = TransactionRunnerService.getInstance();
+    const transactionCategoryRunnerService = TransactionCategoryRunnerService.getInstance();
 
     const navigate = useNavigate();
 
@@ -152,9 +155,16 @@ const LoginForm: React.FC = () => {
                     }
                 }else{
                     try {
-                        const transactionRunner = TransactionRunnerService.getInstance();
-                        await transactionRunner.syncTransactions(userId);
+
+                        await transactionRunnerService.syncTransactions(userId);
                         console.log('Transaction sync completed');
+
+                        const result = await transactionCategoryRunnerService.processCurrentMonthTransactionCategories(userId);
+                        if(!result.success){
+                            console.error('Error Processing transaction categories: ', result.error);
+                        }else{
+                            console.log('Transaction Categories already processed for user: ', userId);
+                        }
                     } catch (error) {
                         console.error('Error syncing transactions:', error);
                     }
@@ -214,6 +224,8 @@ const LoginForm: React.FC = () => {
     }
 
     const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
+        if(isProcessing) return;
+        setIsProcessing(true);
         try
         {
             const plaidService = PlaidService.getInstance();
@@ -227,34 +239,87 @@ const LoginForm: React.FC = () => {
 
             const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
 
-            setTimeout(async() => {
-                const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
-                console.log('Linked Accounts: ', linkedAccounts);
-                const previousMonth = new Date().getMonth() - 1;
-                const currentYear = new Date().getFullYear();
-                const beginningPreviousMonth = new Date(currentYear, previousMonth, 1).toISOString().split('T')[0];
-                const startDate = (new Date().getMonth() - 1);
-                const endDate = new Date().toISOString().split('T')[0];
-                const savedTransactions = await plaidService.fetchAndSaveTransactions(beginningPreviousMonth, endDate, userId);
-                console.log('Saved Transactions: ', savedTransactions);
+            // setTimeout(async() => {
+            //     const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
+            //     console.log('Linked Accounts: ', linkedAccounts);
+            //     const previousMonth = new Date().getMonth() - 1;
+            //     const currentYear = new Date().getFullYear();
+            //     const beginningPreviousMonth = new Date(currentYear, previousMonth, 1).toISOString().split('T')[0];
+            //     const startDate = (new Date().getMonth() - 1);
+            //     const endDate = new Date().toISOString().split('T')[0];
+            //     const savedTransactions = await plaidService.fetchAndSaveTransactions(beginningPreviousMonth, endDate, userId);
+            //     console.log('Saved Transactions: ', savedTransactions);
+            //
+            //     const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
+            //     console.log('Saved Recurring Transactions: ', savedRecurringTransactions);
+            //     try
+            //     {
+            //
+            //         await transactionRunnerService.syncTransactions(userId);
+            //         console.log('Initial Transaction Sync completed.');
+            //     }catch(error){
+            //         console.error('Error syncing transactions: ', error);
+            //     }
+            //
+            // }, 6000);
+            // Use Promise instead of setTimeout
+            await new Promise<void>(async (resolve) => {
+                try {
+                    // Link accounts
+                    const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
+                    console.log('Linked Accounts:', linkedAccounts);
+                    if (!linkedAccounts) {
+                        throw new Error('Failed to link accounts');
+                    }
 
-                const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
-                console.log('Saved Recurring Transactions: ', savedRecurringTransactions);
-                try
-                {
+                    // Save transactions
+                    const previousMonth = new Date().getMonth() - 1;
+                    const currentYear = new Date().getFullYear();
+                    const beginningPreviousMonth = new Date(currentYear, previousMonth, 1)
+                        .toISOString().split('T')[0];
+                    const endDate = new Date().toISOString().split('T')[0];
 
+                    const savedTransactions = await plaidService.fetchAndSaveTransactions(
+                        beginningPreviousMonth,
+                        endDate,
+                        userId
+                    );
+                    if (!savedTransactions) {
+                        throw new Error('Failed to save transactions');
+                    }
+                    console.log('Saved Transactions:', savedTransactions);
+
+                    // Save recurring transactions
+                    const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
+                    if (!savedRecurringTransactions) {
+                        throw new Error('Failed to save recurring transactions');
+                    }
+                    console.log('Saved Recurring Transactions:', savedRecurringTransactions);
+
+                    // Sync everything
                     await transactionRunnerService.syncTransactions(userId);
-                    console.log('Initial Transaction Sync completed.');
-                }catch(error){
-                    console.error('Error syncing transactions: ', error);
-                }
+                    console.log('Initial Transaction Sync completed');
 
-            }, 6000);
+                    // Process categories
+                    const processingResult = await transactionCategoryRunnerService
+                        .processCurrentMonthTransactionCategories(userId);
+                    if (!processingResult.success) {
+                        throw new Error(`Failed to process categories: ${processingResult.error}`);
+                    }
+
+                    resolve();
+                } catch (error) {
+                    console.error('Error during Plaid setup:', error);
+                    throw error;
+                }
+            });
 
             navigate('/dashboard');
         }catch(error)
         {
             console.error('Error exchanging public token: ', error);
+        }finally{
+            setIsProcessing(false);
         }
         console.log('Plaid Connection Successful', publicToken, metadata)
 

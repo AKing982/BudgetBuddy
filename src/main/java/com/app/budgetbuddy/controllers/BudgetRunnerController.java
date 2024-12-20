@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/budgetRunner")
+@RequestMapping(value="/api/budgetRunner")
 @CrossOrigin(origins="http://localhost:3000")
 @Slf4j
 public class BudgetRunnerController

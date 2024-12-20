@@ -96,7 +96,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                         WHERE c.name LIKE '%Payroll%' AND r.user.id = :userId
                         AND r.active = true AND r.firstDate <= :endDate
                         AND r.lastDate >= :startDate
-                        GROUP BY c.name, b.monthlyIncome, r.firstDate, r.firstDate
+                        GROUP BY c.name, b.monthlyIncome, r.lastAmount, r.firstDate, r.lastDate
                 """;
         try
         {

@@ -1,4 +1,5 @@
 import axios, {AxiosInstance} from "axios";
+import {apiUrl} from "../config/api";
 
 export interface BudgetRunnerResult {
     budgetId: number;
@@ -32,7 +33,7 @@ class BudgetRunnerService {
 
     constructor(){
         BudgetRunnerService.axios = axios.create({
-            baseURL: 'http://localhost:8080/api/budgetRunner/',
+            baseURL: 'http://localhost:8080/api/budgetRunner',
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -108,7 +109,7 @@ class BudgetRunnerService {
             const formattedStartDate = this.formatDate(startDate);
             const formattedEndDate = this.formatDate(endDate);
 
-            const response = await BudgetRunnerService.axios.get<BudgetRunnerResult[]>('/period', {
+            const response = await BudgetRunnerService.axios.get<BudgetRunnerResult[]>('/period', {  // Remove trailing slash
                 params: {
                     userId,
                     startDate: formattedStartDate,

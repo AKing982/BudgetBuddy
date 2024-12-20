@@ -20,10 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -361,9 +358,9 @@ class TransactionCategoryBuilderTest {
                 new DateRange(LocalDate.of(2024, 9, 15), LocalDate.of(2024, 9, 27))  // Covers transactions on Sept 15, 27
         ));
 
-        when(categoryService.getCategoryIdByName("Supermarkets and Groceries")).thenReturn(List.of("19047000"));
-        when(categoryService.getCategoryIdByName("Gas Stations")).thenReturn(List.of("19047000"));
-        when(categoryService.getCategoryIdByName("Subscription")).thenReturn(List.of("18061000"));
+        when(categoryService.getCategoryIdByName("Supermarkets and Groceries")).thenReturn(Optional.of("19047000"));
+        when(categoryService.getCategoryIdByName("Gas Stations")).thenReturn(Optional.of("19047000"));
+        when(categoryService.getCategoryIdByName("Subscription")).thenReturn(Optional.of("18061000"));
 
         doReturn(categoryPeriods).when(budgetCategoryBuilder)
                 .createCategoryPeriods(anyString(), any(LocalDate.class), any(LocalDate.class), any(Period.class), anyList());
@@ -466,9 +463,9 @@ class TransactionCategoryBuilderTest {
 
         List<CategorySpending> expectedCategorySpending = new ArrayList<>();
 
-        Mockito.when(categoryService.getCategoryIdByName("Payments")).thenReturn(List.of("cat-005"));
-        Mockito.when(categoryService.getCategoryIdByName("Gas")).thenReturn(List.of("cat-003"));
-        Mockito.when(categoryService.getCategoryIdByName("Groceries")).thenReturn(List.of("cat-001"));
+        Mockito.when(categoryService.getCategoryIdByName("Payments")).thenReturn(Optional.of("cat-005"));
+        Mockito.when(categoryService.getCategoryIdByName("Gas")).thenReturn(Optional.of("cat-003"));
+        Mockito.when(categoryService.getCategoryIdByName("Groceries")).thenReturn(Optional.of("cat-001"));
 
         expectedCategorySpending.add(new CategorySpending("cat-001","Groceries", new BigDecimal("50.75")));
         expectedCategorySpending.add(new CategorySpending("cat-003", "Gas", new BigDecimal("50.75")));

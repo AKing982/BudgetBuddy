@@ -13,7 +13,7 @@ public interface CategoryService extends ServiceModel<CategoryEntity>
 
     Optional<CategoryEntity> getCategoryByNameOrDescription(String description, String name);
 
-    List<String> getCategoryIdByName(String categoryName);
+    Optional<String> getCategoryIdByName(String categoryName);
 
 
 }
