@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.budget.BudgetCalculations;
 import com.app.budgetbuddy.workbench.budget.BudgetPeriodQueries;
 import com.app.budgetbuddy.workbench.budget.BudgetQueriesService;
@@ -40,6 +41,9 @@ class BudgetRunnerTest {
     @Mock
     private BudgetCalculations budgetCalculations;
 
+    @Mock
+    private BudgetService budgetService;
+
     @InjectMocks
     private BudgetRunner budgetRunner;
 
@@ -55,7 +59,7 @@ class BudgetRunnerTest {
         testBudget.setBudgetName("Savings Budget");
         testBudget.setStartDate(LocalDate.of(2024, 10, 1));
         testBudget.setEndDate(LocalDate.of(2024, 10, 31));
-        budgetRunner = new BudgetRunner(budgetPeriodQueries, budgetQueriesService, budgetCalculations);
+        budgetRunner = new BudgetRunner(budgetPeriodQueries, budgetQueriesService, budgetCalculations, budgetService);
     }
 
 

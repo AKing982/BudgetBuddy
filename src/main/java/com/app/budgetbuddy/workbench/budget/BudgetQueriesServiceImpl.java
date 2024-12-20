@@ -101,6 +101,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
         try
         {
             List<Object[]> results = entityManager.createQuery(incomeQuery, Object[].class)
+                    .setParameter("userId", userId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .getResultList();

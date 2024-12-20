@@ -26,7 +26,7 @@ public class BudgetScheduleRunner
 
     }
 
-    public void runOnUserLogin(Long userId){
+    public void runBudget(Long userId, LocalDate startDate, LocalDate endDate){
 
     }
 

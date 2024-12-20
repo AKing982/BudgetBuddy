@@ -2,7 +2,6 @@ package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.TransactionScheduleJob;
 import com.app.budgetbuddy.repositories.UserRepository;
-import com.app.budgetbuddy.workbench.TransactionRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -76,11 +75,24 @@ public class TransactionScheduleRunner
                 LocalDate startDate = today.withDayOfMonth(1);
                 LocalDate endDate = today.withDayOfMonth(today.lengthOfMonth());
 
-                transactionRunner.syncUserTransactions(userId, startDate, endDate);
+                // Check if we already have latest transactions
+                if (!transactionRunner.checkTransactionsExistInDateRange(startDate, endDate, userId)) {
+                    log.info("Syncing transactions for user {} from {} to {}", userId, startDate, endDate);
+                    transactionRunner.syncUserTransactions(userId, startDate, endDate);
+                } else {
+                    log.info("Transactions already exist for date range {} to {}", startDate, endDate);
+                }
 
-                transactionRunner.syncRecurringTransactions(userId, startDate, endDate);
+                // Check if we need to sync recurring transactions
+                if (!transactionRunner.checkRecurringTransactionsExistInDateRange(startDate, endDate, userId)) {
+                    log.info("Syncing recurring transactions for user {} from {} to {}", userId, startDate, endDate);
+                    transactionRunner.syncRecurringTransactions(userId, startDate, endDate);
+                } else {
+                    log.info("Recurring transactions already exist for date range {} to {}", startDate, endDate);
+                }
 
                 log.info("Login sync completed for user: {}", userId);
+
 
             } catch (Exception e) {
                 log.error("Error during login sync for user {}: ", userId, e);

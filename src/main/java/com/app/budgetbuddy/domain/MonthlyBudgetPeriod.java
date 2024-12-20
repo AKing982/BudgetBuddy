@@ -9,7 +9,7 @@ public class MonthlyBudgetPeriod extends BudgetPeriod
 {
     private DateRange monthRange;
 
-    protected MonthlyBudgetPeriod(LocalDate startDate, LocalDate endDate) {
+    public MonthlyBudgetPeriod(LocalDate startDate, LocalDate endDate) {
         super(Period.MONTHLY, startDate, endDate);
         this.monthRange = new DateRange(startDate, endDate);
     }

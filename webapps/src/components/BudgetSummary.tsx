@@ -1,29 +1,52 @@
-import { Box, Typography, CircularProgress, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
+import {Box, Typography, CircularProgress, List, ListItem, ListItemText, ListItemIcon, Skeleton} from '@mui/material';
 import { Add, Remove } from '@mui/icons-material';
-import React from "react";
+import React, {useMemo} from "react";
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import {BudgetRunnerResult} from "../services/BudgetRunnerService";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface BudgetSummaryProps {
-    totalBudget: number;
-    leftToSpend: number;
-    currentSpend: number;
-    daysLeft: number;
+    isLoading: boolean;
+    data: BudgetRunnerResult[];
 }
 
-const BudgetSummary: React.FC<BudgetSummaryProps> = ({totalBudget,
-                                                     leftToSpend,
-                                                     currentSpend,
-                                                     daysLeft}) => {
-    const spendPercentage = (currentSpend / totalBudget) * 100;
+const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, data}) => {
+    const summaryData = useMemo(() => {
+        if (!data?.length) {
+            return {
+                totalBudget: 0,
+                currentSpend: 0,
+                leftToSpend: 0,
+                daysLeft: 0,
+                spendPercentage: 0
+            };
+        }
+
+        const totalBudget = data.reduce((sum, budget) => sum + budget.budgetAmount, 0);
+        const currentSpend = data.reduce((sum, budget) => sum + budget.actualAmount, 0);
+        const leftToSpend = totalBudget - currentSpend;
+
+        // Calculate days left in the current month
+        const today = new Date();
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const daysLeft = Math.max(0, lastDayOfMonth.getDate() - today.getDate());
+
+        return {
+            totalBudget,
+            currentSpend,
+            leftToSpend,
+            daysLeft,
+            spendPercentage: (currentSpend / totalBudget) * 100
+        };
+    }, [data]);
 
     const chartData = {
         labels: ['Spent', 'Remaining'],
         datasets: [
             {
-                data: [currentSpend, leftToSpend],
+                data: [summaryData.currentSpend, summaryData.leftToSpend],
                 backgroundColor: ['#FF6384', '#36A2EB'],
                 hoverBackgroundColor: ['#FF6384', '#36A2EB'],
             },
@@ -45,7 +68,10 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({totalBudget,
                             label += ': ';
                         }
                         if (context.parsed !== null) {
-                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed);
+                            label += new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: 'USD'
+                            }).format(context.parsed);
                         }
                         return label;
                     }
@@ -53,6 +79,42 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({totalBudget,
             }
         },
     };
+
+    if (isLoading) {
+        return (
+            <Box>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                    Budget Statistics
+                </Typography>
+                <Box sx={{ bgcolor: 'background.paper', borderRadius: 2, boxShadow: 1, p: 3 }}>
+                    <Skeleton variant="circular" width={200} height={200} sx={{ mx: 'auto', mb: 2 }} />
+                    <Skeleton variant="text" width="60%" sx={{ mx: 'auto' }} />
+                    <Skeleton variant="rectangular" height={60} sx={{ mx: 'auto', mt: 2 }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+                        <Skeleton variant="rectangular" width={80} height={40} />
+                        <Skeleton variant="rectangular" width={80} height={40} />
+                        <Skeleton variant="rectangular" width={80} height={40} />
+                    </Box>
+                </Box>
+            </Box>
+        );
+    }
+
+    if (!summaryData.totalBudget) {
+        return (
+            <Box>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', fontSize: '0.875rem' }}>
+                    Budget Statistics
+                </Typography>
+                <Box sx={{ bgcolor: 'background.paper', borderRadius: 2, boxShadow: 1, p: 3 }}>
+                    <Typography variant="body1" textAlign="center">
+                        No budget data available
+                    </Typography>
+                </Box>
+            </Box>
+        );
+    }
+
 
     return (
         <Box>
@@ -72,23 +134,36 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({totalBudget,
                     Left to Spend
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" textAlign="center">
-                    ${leftToSpend.toFixed(2)}
+                    ${summaryData.leftToSpend.toFixed(2)}
                 </Typography>
                 <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
-                    That's ${(leftToSpend / daysLeft).toFixed(2)}/day for the next {daysLeft} days.
+                    That's ${(summaryData.leftToSpend / summaryData.daysLeft).toFixed(2)}/day
+                    for the next {summaryData.daysLeft} days.
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                     <Box>
-                        <Typography variant="body2" color="text.secondary">Total Budget</Typography>
-                        <Typography variant="body1" fontWeight="bold">${totalBudget.toFixed(2)}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Total Budget
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                            ${summaryData.totalBudget.toFixed(2)}
+                        </Typography>
                     </Box>
                     <Box>
-                        <Typography variant="body2" color="text.secondary">Spent</Typography>
-                        <Typography variant="body1" fontWeight="bold">${currentSpend.toFixed(2)}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Spent
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                            ${summaryData.currentSpend.toFixed(2)}
+                        </Typography>
                     </Box>
                     <Box>
-                        <Typography variant="body2" color="text.secondary">Remaining</Typography>
-                        <Typography variant="body1" fontWeight="bold" color="primary">${leftToSpend.toFixed(2)}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Remaining
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold" color="primary">
+                            ${summaryData.leftToSpend.toFixed(2)}
+                        </Typography>
                     </Box>
                 </Box>
             </Box>

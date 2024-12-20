@@ -1010,7 +1010,6 @@ class BudgetCalculatorTest {
     private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {
         // Create different BudgetPeriod instances
         BudgetPeriod monthlyPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31));
-        BudgetPeriod yearlyPeriod = new BudgetPeriod(Period.YEARLY, LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31));
         BudgetPeriod weeklyPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7));
         BudgetPeriod dailyPeriod = new BudgetPeriod(Period.DAILY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 1));
         BudgetPeriod biWeeklyPeriod = new BudgetPeriod(Period.BIWEEKLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14));
@@ -1056,7 +1055,6 @@ class BudgetCalculatorTest {
         // Create a stream of arguments to supply data to the parameterized test
         return Stream.of(
                 Arguments.of(monthlyPeriod, budget1, userBudgetCategoriesMonthly, new BigDecimal("70.00")),
-                Arguments.of(yearlyPeriod, budget2, userBudgetCategoriesYearly, new BigDecimal("600.00")),
                 Arguments.of(weeklyPeriod, budget1, userBudgetCategoriesWeekly, new BigDecimal("60.00")),
                 Arguments.of(dailyPeriod, budget1, userBudgetCategoriesDaily, new BigDecimal("5.00")),
                 Arguments.of(biWeeklyPeriod, budget1, userBudgetCategoriesBiWeekly, new BigDecimal("130.00"))

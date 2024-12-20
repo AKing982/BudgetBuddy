@@ -7,7 +7,7 @@ import java.time.LocalDate;
 @Getter
 public class DailyBudgetPeriod extends BudgetPeriod
 {
-    protected DailyBudgetPeriod(LocalDate date) {
+    public DailyBudgetPeriod(LocalDate date) {
         super(Period.DAILY, date, date);
     }
 

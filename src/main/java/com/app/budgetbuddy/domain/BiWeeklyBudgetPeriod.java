@@ -8,7 +8,7 @@ public class BiWeeklyBudgetPeriod extends BudgetPeriod
 {
     private List<DateRange> biWeeklyRanges;
 
-    protected BiWeeklyBudgetPeriod(LocalDate startDate, LocalDate endDate) {
+    public BiWeeklyBudgetPeriod(LocalDate startDate, LocalDate endDate) {
         super(Period.BIWEEKLY, startDate, endDate);
         this.biWeeklyRanges = getBiWeeklyRanges();
     }

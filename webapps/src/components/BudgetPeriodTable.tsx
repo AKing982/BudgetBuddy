@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useMemo, useState} from "react";
 import {format, addDays, addWeeks, addMonths, startOfMonth, endOfMonth} from 'date-fns';
 import {
     Paper,
@@ -12,12 +12,13 @@ import {
     Button,
     ButtonGroup,
     Box,
-    TextField
+    TextField, Skeleton
 } from '@mui/material';
 import {styled} from "@mui/material/styles";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import {BudgetRunnerResult} from "../services/BudgetRunnerService";
 
 
 
@@ -25,6 +26,11 @@ interface BudgetCategory {
     name: string;
     monthlyBudget: number;
     monthlyActual: number;
+}
+
+interface BudgetPeriodTableProps {
+    isLoading: boolean;
+    data: BudgetRunnerResult[];
 }
 
 
@@ -56,7 +62,7 @@ const CustomButton = styled(Button)(({ theme }) => ({
     },
 }));
 
-const BudgetPeriodTable: React.FC = () => {
+const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) => {
     const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>('Monthly');
     const [startDate, setStartDate] = useState(new Date());
     const [isClicked, setIsClicked] = useState(false);
@@ -67,6 +73,7 @@ const BudgetPeriodTable: React.FC = () => {
         // Add your logic here for what should happen when the button is clicked
         setTimeout(() => setIsClicked(false), 300); // Reset after 300ms for visual feedback
     };
+
 
     const getEndDate = () => {
         switch(budgetPeriod){
@@ -85,6 +92,46 @@ const BudgetPeriodTable: React.FC = () => {
 
     const formatDateRange = (start: Date, end: Date) => {
         return `${format(start, 'MM/dd/yy')} - ${format(end, 'MM/dd/yy')}`;
+    };
+
+
+    const processedData = useMemo(() => {
+        if (!data?.length) return [];
+
+        const allCategories = data.flatMap(budget =>
+            budget.periodCategories?.map(category => ({
+                name: category.name,
+                budgetedAmount: category.budgetedAmount || 0,
+                actualAmount: category.amount || 0,
+                remaining: (category.budgetedAmount || 0) - (category.amount || 0)
+            })) || []
+        );
+
+        // Group by category name and sum amounts
+        return Object.values(
+            allCategories.reduce((acc, curr) => {
+                if (!acc[curr.name]) {
+                    acc[curr.name] = { ...curr };
+                } else {
+                    acc[curr.name].budgetedAmount += curr.budgetedAmount;
+                    acc[curr.name].actualAmount += curr.actualAmount;
+                    acc[curr.name].remaining += curr.remaining;
+                }
+                return acc;
+            }, {} as Record<string, any>)
+        );
+    }, [data]);
+
+    const calculatePeriodData = (start: Date, end: Date) => {
+        const days = (end.getTime() - start.getTime()) / (1000 * 3600 * 24) + 1;
+        const multiplier = days / 30;
+
+        return processedData.map(category => ({
+            name: category.name,
+            budgeted: category.budgetedAmount * multiplier,
+            actual: category.actualAmount * multiplier,
+            remaining: category.remaining * multiplier
+        }));
     };
 
     const maroonColor = '#800000'; // You can adjust this to match your exact maroon shade
@@ -145,88 +192,20 @@ const BudgetPeriodTable: React.FC = () => {
         }
     };
 
-    const calculatePeriodData = (start: Date, end: Date) => {
-        const days = (end.getTime() - start.getTime()) / (1000 * 3600 * 24) + 1;
-        const multiplier = days / 30; // Assuming 30 days in a month for simplicity
-
-        return dummyData.map(category => ({
-            name: category.name,
-            budgeted: category.monthlyBudget * multiplier,
-            actual: category.monthlyActual * multiplier,
-            remaining: (category.monthlyBudget - category.monthlyActual) * multiplier
-        }));
-    };
-
-    const renderTableHeader = () => (
-        <TableHead>
-            <TableRow sx={{backgroundColor: 'background.paper'}}>
-                <TableCell sx={{
-                    fontWeight: 'bold',
-                    color: maroonColor,
-                    fontSize: '0.95rem'
-                }}>Category</TableCell>
-                <TableCell align="right" sx={{
-                    fontWeight: 'bold',
-                    color: maroonColor,
-                    fontSize: '0.95rem'
-                }}>Budgeted</TableCell>
-                <TableCell align="right" sx={{
-                    fontWeight: 'bold',
-                    color: maroonColor,
-                    fontSize: '0.95rem'
-                }}>Actual</TableCell>
-                <TableCell align="right" sx={{
-                    fontWeight: 'bold',
-                    color: maroonColor,
-                    fontSize: '0.95rem'
-                }}>Remaining</TableCell>
-            </TableRow>
-        </TableHead>
-    );
-
-    const renderTableBody = () => {
-        const dateRanges = getDateRanges();
+    if (isLoading) {
         return (
-            <TableBody>
-                {dateRanges.map(([start, end], index) => {
-                    const periodData = calculatePeriodData(start, end);
-                    return (
-                        <React.Fragment key={index}>
-                            <TableRow>
-                                <TableCell colSpan={4} sx={{
-                                    fontWeight: 'bold',
-                                    color: maroonColor,
-                                    fontSize: '1rem',
-                                    backgroundColor: 'rgba(128, 0, 0, 0.1)'
-                                }}>
-                                    {budgetPeriod === 'Daily' ? format(start, 'MMMM d, yyyy') : formatDateRange(start, end)}
-                                </TableCell>
-                            </TableRow>
-                            {periodData.map((row) => (
-                                <TableRow key={`${index}-${row.name}`}>
-                                    <TableCell component="th" scope="row">
-                                        {row.name}
-                                    </TableCell>
-                                    <TableCell align="right">${row.budgeted.toFixed(2)}</TableCell>
-                                    <TableCell align="right">${row.actual.toFixed(2)}</TableCell>
-                                    <TableCell
-                                        align="right"
-                                        sx={{
-                                            color: row.remaining >= 0 ? 'green' : 'red',
-                                            fontWeight: 'bold'
-                                        }}
-                                    >
-                                        ${Math.abs(row.remaining).toFixed(2)}
-                                        {row.remaining >= 0 ? ' under' : ' over'}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </React.Fragment>
-                    );
-                })}
-            </TableBody>
+            <Box>
+                <Typography variant="h5" component="h2" gutterBottom>
+                    Budget Period Overview
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                    <Skeleton variant="rectangular" height={40} sx={{ mb: 2 }} />
+                </Box>
+                <Skeleton variant="rectangular" height={400} />
+            </Box>
         );
-    };
+    }
+
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -269,233 +248,83 @@ const BudgetPeriodTable: React.FC = () => {
                     transition: 'box-shadow 0.3s ease-in-out',
                     '&:hover': {
                         boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-                    },
-                    mb: 4
+                    }
                 }}>
                     <Table>
-                        {renderTableHeader()}
-                        {renderTableBody()}
+                        <TableHead>
+                            <TableRow sx={{backgroundColor: 'background.paper'}}>
+                                <TableCell sx={{
+                                    fontWeight: 'bold',
+                                    color: maroonColor,
+                                    fontSize: '0.95rem'
+                                }}>Category</TableCell>
+                                <TableCell align="right" sx={{
+                                    fontWeight: 'bold',
+                                    color: maroonColor,
+                                    fontSize: '0.95rem'
+                                }}>Budgeted</TableCell>
+                                <TableCell align="right" sx={{
+                                    fontWeight: 'bold',
+                                    color: maroonColor,
+                                    fontSize: '0.95rem'
+                                }}>Actual</TableCell>
+                                <TableCell align="right" sx={{
+                                    fontWeight: 'bold',
+                                    color: maroonColor,
+                                    fontSize: '0.95rem'
+                                }}>Remaining</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {getDateRanges().map(([start, end], index) => {
+                                const periodData = calculatePeriodData(start, end);
+                                return (
+                                    <React.Fragment key={index}>
+                                        <TableRow>
+                                            <TableCell colSpan={4} sx={{
+                                                fontWeight: 'bold',
+                                                color: maroonColor,
+                                                fontSize: '1rem',
+                                                backgroundColor: 'rgba(128, 0, 0, 0.1)'
+                                            }}>
+                                                {budgetPeriod === 'Daily'
+                                                    ? format(start, 'MMMM d, yyyy')
+                                                    : `${format(start, 'MM/dd/yy')} - ${format(end, 'MM/dd/yy')}`}
+                                            </TableCell>
+                                        </TableRow>
+                                        {periodData.map((row) => (
+                                            <TableRow key={`${index}-${row.name}`}>
+                                                <TableCell component="th" scope="row">
+                                                    {row.name}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    ${row.budgeted.toFixed(2)}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    ${row.actual.toFixed(2)}
+                                                </TableCell>
+                                                <TableCell
+                                                    align="right"
+                                                    sx={{
+                                                        color: row.remaining >= 0 ? 'green' : 'red',
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                >
+                                                    ${Math.abs(row.remaining).toFixed(2)}
+                                                    {row.remaining >= 0 ? ' under' : ' over'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </TableBody>
                     </Table>
                 </TableContainer>
             </Box>
         </LocalizationProvider>
     );
 
-    // return (
-    //     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    //         <Box>
-    //             <Typography variant="h5" component="h2" gutterBottom sx={{
-    //                 fontWeight: 'bold',
-    //                 mb: 2,
-    //                 textAlign: 'left',
-    //                 fontSize: '1rem',
-    //                 color: 'text.primary'
-    //             }}>
-    //                 Budget Overview
-    //             </Typography>
-    //
-    //             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-    //                 <StyledButtonGroup variant="outlined" aria-label="budget period toggle">
-    //                     {['Daily', 'Weekly', 'BiWeekly', 'Monthly'].map((period) => (
-    //                         <StyledButton
-    //                             key={period}
-    //                             onClick={() => setBudgetPeriod(period as BudgetPeriod)}
-    //                             variant={budgetPeriod === period ? 'contained' : 'outlined'}
-    //                         >
-    //                             {period}
-    //                         </StyledButton>
-    //                     ))}
-    //                 </StyledButtonGroup>
-    //
-    //                 <DatePicker
-    //                     label="Select Date"
-    //                     value={selectedDate}
-    //                     onChange={(newValue: React.SetStateAction<Date | null>) => setSelectedDate(newValue)}
-    //                 />
-    //             </Box>
-    //
-    //             {getDateRanges().map(([start, end], index) => {
-    //                 const periodData = calculatePeriodData(start, end);
-    //                 return (
-    //                     <TableContainer key={index} component={Paper} sx={{
-    //                         boxShadow: 3,
-    //                         borderRadius: 4,
-    //                         overflow: 'hidden',
-    //                         transition: 'box-shadow 0.3s ease-in-out',
-    //                         '&:hover': {
-    //                             boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-    //                         },
-    //                         mb: 4
-    //                     }}>
-    //                         <Table>
-    //                             <TableHead>
-    //                                 <TableRow sx={{backgroundColor: 'background.paper'}}>
-    //                                     <TableCell colSpan={4} sx={{
-    //                                         fontWeight: 'bold',
-    //                                         color: maroonColor,
-    //                                         fontSize: '1rem'
-    //                                     }}>
-    //                                         {budgetPeriod === 'Daily' ? format(start, 'MMMM d, yyyy') : formatDateRange(start, end)}
-    //                                     </TableCell>
-    //                                 </TableRow>
-    //                                 <TableRow sx={{backgroundColor: 'background.paper'}}>
-    //                                     <TableCell sx={{
-    //                                         fontWeight: 'bold',
-    //                                         color: maroonColor,
-    //                                         fontSize: '0.95rem'
-    //                                     }}>Category</TableCell>
-    //                                     <TableCell align="right" sx={{
-    //                                         fontWeight: 'bold',
-    //                                         color: maroonColor,
-    //                                         fontSize: '0.95rem'
-    //                                     }}>Budgeted</TableCell>
-    //                                     <TableCell align="right" sx={{
-    //                                         fontWeight: 'bold',
-    //                                         color: maroonColor,
-    //                                         fontSize: '0.95rem'
-    //                                     }}>Actual</TableCell>
-    //                                     <TableCell align="right" sx={{
-    //                                         fontWeight: 'bold',
-    //                                         color: maroonColor,
-    //                                         fontSize: '0.95rem'
-    //                                     }}>Remaining</TableCell>
-    //                                 </TableRow>
-    //                             </TableHead>
-    //                             <TableBody>
-    //                                 {periodData.map((row) => (
-    //                                     <TableRow key={row.name}>
-    //                                         <TableCell component="th" scope="row">
-    //                                             {row.name}
-    //                                         </TableCell>
-    //                                         <TableCell align="right">${row.budgeted.toFixed(2)}</TableCell>
-    //                                         <TableCell align="right">${row.actual.toFixed(2)}</TableCell>
-    //                                         <TableCell
-    //                                             align="right"
-    //                                             sx={{
-    //                                                 color: row.remaining >= 0 ? 'green' : 'red',
-    //                                                 fontWeight: 'bold'
-    //                                             }}
-    //                                         >
-    //                                             ${Math.abs(row.remaining).toFixed(2)}
-    //                                             {row.remaining >= 0 ? ' under' : ' over'}
-    //                                         </TableCell>
-    //                                     </TableRow>
-    //                                 ))}
-    //                             </TableBody>
-    //                         </Table>
-    //                     </TableContainer>
-    //                 );
-    //             })}
-    //         </Box>
-    //     </LocalizationProvider>
-    // );
-    // return (
-    //     <Box>
-    //         <Typography variant="h5" component="h2" gutterBottom sx={{
-    //             fontWeight: 'bold',
-    //             mb:2,
-    //             textAlign: 'left',
-    //             fontSize: '0.875rem',
-    //             color: 'text.secondary'}}>
-    //             Budget for {formatDateRange()}
-    //         </Typography>
-    //
-    //         <Box sx={{ mb: 2 }}>
-    //             <StyledButtonGroup variant="outlined" aria-label="budget period toggle">
-    //                 {['Daily', 'Weekly', 'Biweekly', 'Monthly'].map((period) => (
-    //                     <StyledButton
-    //                         key={period}
-    //                         onClick={() => setBudgetPeriod(period as BudgetPeriod)}
-    //                         variant={budgetPeriod === period ? 'contained' : 'outlined'}
-    //                     >
-    //                         {period}
-    //                     </StyledButton>
-    //                 ))}
-    //             </StyledButtonGroup>
-    //         </Box>
-    //
-    //         <TableContainer component={Paper} sx={{
-    //             boxShadow: 3,
-    //             borderRadius: 4,
-    //             overflow: 'hidden',
-    //             transition: 'box-shadow 0.3s ease-in-out',
-    //             '&:hover': {
-    //                 boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-    //             }
-    //         }}>
-    //             <Table>
-    //                 <TableHead>
-    //                     <TableRow  sx={{backgroundColor: 'background.paper'}}>
-    //                         <TableCell sx={{
-    //                             fontWeight: 'bold',
-    //                             color: maroonColor,
-    //                             fontSize: '0.95rem'
-    //                         }}>Name</TableCell>
-    //                         <TableCell align="right" sx={{
-    //                             fontWeight: 'bold',
-    //                             color: maroonColor,
-    //                             fontSize: '0.95rem'
-    //                         }}>Budgeted</TableCell>
-    //                         <TableCell align="right"sx={{
-    //                             fontWeight: 'bold',
-    //                             color: maroonColor,
-    //                             fontSize: '0.95rem'
-    //                         }}>Actual</TableCell>
-    //                         <TableCell align="right"sx={{
-    //                             fontWeight: 'bold',
-    //                             color: maroonColor,
-    //                             fontSize: '0.95rem'
-    //                         }}>Remaining</TableCell>
-    //                     </TableRow>
-    //                 </TableHead>
-    //                 <TableBody>
-    //                     {dummyData.map((row) => (
-    //                         <TableRow key={row.name}>
-    //                             <TableCell component="th" scope="row">
-    //                                 {row.name}
-    //                             </TableCell>
-    //                             <TableCell align="right">${row.budgeted.toFixed(2)}</TableCell>
-    //                             <TableCell align="right">${row.actual.toFixed(2)}</TableCell>
-    //                             <TableCell
-    //                                 align="right"
-    //                                 sx={{
-    //                                     color: row.remaining >= 0 ? 'green' : 'red',
-    //                                     fontWeight: 'bold'
-    //                                 }}
-    //                             >
-    //                                 ${Math.abs(row.remaining).toFixed(2)}
-    //                                 {row.remaining >= 0 ? ' under' : ' over'}
-    //                             </TableCell>
-    //                         </TableRow>
-    //                     ))}
-    //                     <TableRow>
-    //                         <TableCell colSpan={4} align="center" sx={{ borderBottom: 'none', pt: 2, pb: 2 }}>
-    //                             <Button
-    //                                 variant="contained"
-    //                                 color="primary"
-    //                                 onClick={handleClick}
-    //                                 sx={{
-    //                                     textTransform: 'none',
-    //                                     fontWeight: 600,
-    //                                     borderRadius: '8px',
-    //                                     transition: 'all 0.3s ease',
-    //                                     backgroundColor: isClicked ? 'white' : '#800000', // Maroon color
-    //                                     color: isClicked ? '#800000' : 'white',
-    //                                     border: isClicked ? '1px solid #800000' : 'none',
-    //                                     '&:hover': {
-    //                                         backgroundColor: isClicked ? 'white' : '#600000', // Darker maroon on hover
-    //                                     },
-    //                                 }}
-    //                             >
-    //                                 Add Budget
-    //                             </Button>
-    //                         </TableCell>
-    //                     </TableRow>
-    //                 </TableBody>
-    //             </Table>
-    //         </TableContainer>
-    //     </Box>
-    // );
 }
 
 export default BudgetPeriodTable;

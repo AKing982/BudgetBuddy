@@ -15,7 +15,7 @@ public class TransactionEntityToModelConverter implements Converter<Transactions
 {
     @Override
     public Transaction convert(TransactionsEntity transactionsEntity) {
-        log.info("Converting TransactionsEntity to Transaction: {}", transactionsEntity.toString());
+//        log.info("Converting TransactionsEntity to Transaction: {}", transactionsEntity.toString());
         String categoryName = (transactionsEntity.getCategory() == null)
                 ? ""
                 : (transactionsEntity.getCategory().getName() != null
@@ -23,8 +23,8 @@ public class TransactionEntityToModelConverter implements Converter<Transactions
                 : (transactionsEntity.getCategory().getDescription() != null
                 ? transactionsEntity.getCategory().getDescription()
                 : ""));
-        log.info("Category Name: {}", categoryName);
-        log.info("Transaction Description: {}", transactionsEntity.getDescription());
+//        log.info("Category Name: {}", categoryName);
+//        log.info("Transaction Description: {}", transactionsEntity.getDescription());
         List<String> categories = categoryName.equals("Unknown") ? List.of() : List.of(categoryName);
 
         try {

@@ -6,6 +6,4 @@ public enum Period
     WEEKLY,
     MONTHLY,
     BIWEEKLY,
-    YEARLY,
-    QUARTERLY
 }

@@ -125,7 +125,6 @@ public class TransactionController {
         }
         Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
         if(categoryEntity.isPresent()){
-            LOGGER.info("Found Category with categoryId: {}", categoryId);
             return categoryEntity.get().getId();
         }
         LOGGER.info("Returning CategoryId: {}", categoryId);

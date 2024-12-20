@@ -1,13 +1,10 @@
-package com.app.budgetbuddy.workbench;
+package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.BudgetBuddyApplication;
-import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.RecurringTransaction;
-import com.app.budgetbuddy.domain.RecurringTransactionDTO;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
-import com.app.budgetbuddy.services.PlaidTransactionService;
 import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
@@ -18,12 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;

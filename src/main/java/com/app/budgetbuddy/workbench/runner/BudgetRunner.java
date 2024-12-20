@@ -1,9 +1,11 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.BudgetGoalsService;
+import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.budget.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,20 +28,155 @@ public class BudgetRunner
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetQueriesService budgetQueriesService;
     private final BudgetCalculations budgetCalculations;
+    private final BudgetService budgetService;
 
     @Autowired
     public BudgetRunner(BudgetPeriodQueries budgetPeriodQueries,
                         BudgetQueriesService budgetQueriesService,
-                        BudgetCalculations budgetCalculations){
+                        BudgetCalculations budgetCalculations,
+                        BudgetService budgetService){
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.budgetQueriesService = budgetQueriesService;
         this.budgetCalculations = budgetCalculations;
+        this.budgetService = budgetService;
     }
 
-    public void executeBudget(Long userId)
-    {
 
+    public List<BudgetRunnerResult> runBudgetProcess(final Long userId, final LocalDate startDate, final LocalDate endDate){
+        log.info("Starting monthly budget process for user {} between {} and {}", userId, startDate, endDate);
+        try
+        {
+            Budget userBudget = budgetService.loadUserBudget(userId);
+            if(userBudget == null){
+                log.info("No budget found for user {}", userId);
+                return Collections.emptyList();
+            }
+
+            List<BudgetRunnerResult> budgetRunnerResults = new ArrayList<>();
+            try
+            {
+                BudgetRunnerResult result = processBudget(userBudget, startDate, endDate);
+                budgetRunnerResults.add(result);
+            }catch(Exception e){
+                log.error("Error processing budget {} for user {}",userBudget.getId(), userId, e);
+
+            }
+            return budgetRunnerResults;
+
+        }catch(Exception e){
+            log.error("Error running monthly budget process for user {}: ", userId, e);
+            throw e;
+        }
     }
+
+
+    private List<BudgetPeriodCategory> loadPeriodCategories(Budget budget, Period period) {
+        LocalDate startDate = budget.getStartDate();
+        LocalDate endDate = budget.getEndDate();
+
+        return switch (period) {
+            case DAILY -> {
+                DailyBudgetPeriod dailyPeriod = new DailyBudgetPeriod(startDate);
+                yield getDailyBudgetPeriodCategories(dailyPeriod, budget);
+            }
+            case WEEKLY -> {
+                WeeklyBudgetPeriod weeklyPeriod = new WeeklyBudgetPeriod(startDate, endDate);
+                yield getWeeklyBudgetPeriodCategories(weeklyPeriod, budget);
+            }
+            case BIWEEKLY -> {
+                BiWeeklyBudgetPeriod biWeeklyPeriod = new BiWeeklyBudgetPeriod(startDate, endDate);
+                yield getBiWeeklyBudgetPeriodCategories(biWeeklyPeriod, budget);
+            }
+            case MONTHLY -> {
+                MonthlyBudgetPeriod monthlyPeriod = new MonthlyBudgetPeriod(startDate, endDate);
+                yield getMonthlyBudgetPeriodCategories(monthlyPeriod, budget);
+            }
+        };
+    }
+
+    private BudgetRunnerResult processBudget(Budget budget, LocalDate startDate, LocalDate endDate) {
+        // Create date range for the month
+        DateRange monthRange = new DateRange(startDate, endDate);
+
+        // Calculate budget health score
+        BigDecimal healthScore = calculateBudgetHealthScore(
+                budget,
+                startDate,
+                endDate
+        );
+
+        // Load monthly statistics
+        BudgetStats monthlyStats = loadMonthlyBudgetStatistics(
+                monthRange,
+                budget
+        );
+
+        // Get top expense categories
+        List<BudgetCategory> topExpenses = loadTopExpenseCategories(
+                budget,
+                startDate,
+                endDate
+        );
+
+        // Calculate budget period and load period categories
+        Period budgetPeriod = determineBudgetPeriod(startDate, endDate);
+        List<BudgetPeriodCategory> periodCategories = loadPeriodCategories(budget, budgetPeriod);
+
+        // Load special categories
+        List<BudgetCategory> savingsCategories = loadSavingsCategory(
+                budget.getId(),
+                startDate,
+                endDate,
+                budgetPeriod
+        );
+
+        List<BudgetCategory> incomeCategories = loadIncomeCategory(
+                budget.getBudgetAmount(),
+                budget.getId(),
+                startDate,
+                endDate
+        );
+
+        // Build the result
+        BudgetRunnerResult result = BudgetRunnerResult.builder()
+                .budgetId(budget.getId())
+                .userId(budget.getUserId())
+                .budgetName(budget.getBudgetName())
+                .budgetDescription(budget.getBudgetDescription())
+                .startDate(startDate)
+                .endDate(endDate)
+                .processDate(LocalDate.now())
+                .processedAt(LocalDateTime.now())
+                .budgetAmount(budget.getBudgetAmount())
+                .actualBudgetAmount(budget.getActual())
+                .remainingBudgetAmount(budget.getBudgetAmount().subtract(budget.getActual()))
+                .healthScore(healthScore)
+                .budgetStats(monthlyStats)
+                .budgetPeriodCategories(periodCategories)
+                .topExpenseCategories(topExpenses)
+                .savingsCategories(savingsCategories)
+                .incomeCategories(incomeCategories)
+                .build();
+
+        // Calculate flags and return
+        result.calculateFlags();
+        return result;
+    }
+
+    private Period determineBudgetPeriod(LocalDate startDate, LocalDate endDate) {
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+
+        if (daysBetween <= 1) {
+            return Period.DAILY;
+        } else if (daysBetween <= 7) {
+            return Period.WEEKLY;
+        } else if (daysBetween <= 14) {
+            return Period.BIWEEKLY;
+        } else {
+            return Period.MONTHLY;
+        }
+    }
+
 
     public BigDecimal calculateBudgetHealthScore(Budget budget, LocalDate startDate, LocalDate endDate){
         if (budget == null || startDate == null || endDate == null) {

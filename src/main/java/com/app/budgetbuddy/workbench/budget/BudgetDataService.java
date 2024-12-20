@@ -3,7 +3,6 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.domain.BudgetPeriodCategory;
 import com.app.budgetbuddy.domain.BudgetStats;
-import com.app.budgetbuddy.workbench.TransactionRunner;
 import com.app.budgetbuddy.workbench.runner.BudgetScheduleRunner;
 import com.app.budgetbuddy.workbench.runner.TransactionCategoryRunner;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,21 +16,11 @@ import java.util.List;
 public class BudgetDataService
 {
     private BudgetScheduleRunner budgetScheduleRunner;
-    private TransactionRunner transactionRunner;
-    private TransactionCategoryRunner transactionCategoryRunner;
 
     @Autowired
-    public BudgetDataService(BudgetScheduleRunner budgetScheduleRunner,
-                             TransactionRunner transactionRunner,
-                             TransactionCategoryRunner transactionCategoryRunner)
+    public BudgetDataService(BudgetScheduleRunner budgetScheduleRunner)
     {
         this.budgetScheduleRunner = budgetScheduleRunner;
-        this.transactionRunner = transactionRunner;
-        this.transactionCategoryRunner = transactionCategoryRunner;
-    }
-
-    public void refreshTransactions(Long userId, LocalDate startDate, LocalDate endDate){
-
     }
 
     public void createTransactionCategories(final Long userId, LocalDate startDate, LocalDate endDate)

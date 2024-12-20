@@ -61,7 +61,6 @@ public class CategoryServiceImpl implements CategoryService
     @Override
     @Transactional
     public Optional<CategoryEntity> findCategoryById(String categoryId) {
-        log.info("CategoryId:" + categoryId);
         return categoryRepository.findByCategoryId(categoryId);
     }
 

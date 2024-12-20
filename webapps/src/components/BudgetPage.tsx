@@ -1,7 +1,7 @@
 import { format, addMonths, subMonths } from 'date-fns';
 import {Box, Typography, Paper, IconButton, Grid, Button, Select, MenuItem} from '@mui/material';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import React, {useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import Sidebar from './Sidebar';
 import BudgetOverview from './BudgetOverview';
 import TopExpenseCategory from './TopExpenseCategory';
@@ -10,11 +10,16 @@ import BudgetSummary from "./BudgetSummary";
 import BudgetProgressSummary from "./BudgetProgressSummary";
 import {Add} from "@mui/icons-material";
 import AddBudgetDialog from "./AddBudgetDialog";
+import BudgetRunnerService, {BudgetRunnerResult} from "../services/BudgetRunnerService";
 
 const BudgetPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [budgetType, setBudgetType] = useState('50/30/20');
-    const [isAddBudgetDialogOpen, setIsAddBudgetDialogOpen] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const budgetRunnerService = BudgetRunnerService.getInstance();
+    const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
+    const userId = Number(sessionStorage.getItem('userId'));
 
     const handlePreviousMonth = () => {
         setCurrentMonth(prevMonth => subMonths(prevMonth, 1));
@@ -24,12 +29,71 @@ const BudgetPage: React.FC = () => {
         setCurrentMonth(prevMonth => addMonths(prevMonth, 1));
     };
 
-    const summaryData = {
-        totalBudget: 2260.60,
-        leftToSpend: 1278.47,
-        currentSpend: 982.13,
-        daysLeft: 5
+    const fetchBudgetData = async (date: Date) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            // Get first and last day of the month
+            const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
+            const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+
+
+            const results = await budgetRunnerService.getBudgetsByDateRange(
+                userId,
+                startDate,
+                endDate
+            );
+
+            setBudgetData(results);
+        } catch (err) {
+            setError('Failed to fetch budget data. Please try again later.');
+            console.error('Error fetching budget data:', err);
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    useEffect(() => {
+        fetchBudgetData(currentMonth);
+    }, [currentMonth, userId]);
+
+    // Calculate summary data from budgetData
+    const summaryData = React.useMemo(() => {
+        if (!budgetData.length) return {
+            totalBudget: 0,
+            leftToSpend: 0,
+            currentSpend: 0,
+            daysLeft: 0
+        };
+
+        const totalBudget = budgetData.reduce((sum, budget) => sum + budget.budgetAmount, 0);
+        const currentSpend = budgetData.reduce((sum, budget) => sum + budget.actualAmount, 0);
+        const leftToSpend = totalBudget - currentSpend;
+
+        // Calculate days left in the month
+        const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        const daysLeft = Math.max(0, lastDayOfMonth.getDate() - new Date().getDate());
+
+        return {
+            totalBudget,
+            leftToSpend,
+            currentSpend,
+            daysLeft
+        };
+    }, [budgetData, currentMonth]);
+
+    const categoriesData = React.useMemo(() => {
+        if (!budgetData.length) return [];
+        return budgetData.flatMap(budget => budget.topExpenseCategories);
+    }, [budgetData]);
+
+    const periodData = React.useMemo(() => {
+        if (!budgetData.length) return [];
+        return budgetData.flatMap(budget => budget.periodCategories);
+    }, [budgetData]);
+
 
     const handleBudgetTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
         setBudgetType(event.target.value as string);
@@ -39,6 +103,14 @@ const BudgetPage: React.FC = () => {
         // Implement the logic to add a new budget
         console.log('Add new budget');
     };
+
+    const topExpenseCategories = useMemo(() => {
+        if (!budgetData.length) return [];
+
+        // Flatten all expense categories from all budgets
+        return budgetData.flatMap(budget => budget.topExpenseCategories || []);
+    }, [budgetData]);
+
 
     return (
         <Box sx={{ p: 3, maxWidth: 937, margin: 'auto' }}>
@@ -52,58 +124,44 @@ const BudgetPage: React.FC = () => {
                         startIcon={<ChevronLeft />}
                         onClick={handlePreviousMonth}
                         sx={{ mr: 1 }}
+                        disabled={isLoading}
                     >
                         {format(subMonths(currentMonth, 1), 'MMM. yyyy')}
                     </Button>
                     <Button
                         endIcon={<ChevronRight />}
                         onClick={handleNextMonth}
+                        disabled={isLoading}
                     >
                         {format(addMonths(currentMonth, 1), 'MMM. yyyy')}
                     </Button>
-                    {/*<Button*/}
-                    {/*    variant="contained"*/}
-                    {/*    color="primary"*/}
-                    {/*    startIcon={<Add />}*/}
-                    {/*    onClick={() => setIsAddBudgetDialogOpen(true)}*/}
-                    {/*    sx={{*/}
-                    {/*        backgroundColor: '#800000',*/}
-                    {/*        color: 'white',*/}
-                    {/*        '&:hover': {*/}
-                    {/*            backgroundColor: '#600000',*/}
-                    {/*        },*/}
-                    {/*    }}*/}
-                    {/*>*/}
-                    {/*    Add Budget*/}
-                    {/*</Button>*/}
-                    {/*<AddBudgetDialog*/}
-                    {/*    open={isAddBudgetDialogOpen}*/}
-                    {/*    onClose={() => setIsAddBudgetDialogOpen(false)}*/}
-                    {/*    onAddBudget={handleAddBudget}/>*/}
                 </Box>
             </Box>
+            {error && (
+                <Box sx={{ mb: 2, p: 2, bgcolor: 'error.light', color: 'error.contrastText', borderRadius: 1 }}>
+                    {error}
+                </Box>
+            )}
 
             <Grid container spacing={4}>
                 <Grid item xs={12} md={8}>
                     <Box sx={{ mb: 4 }}>
-                        <BudgetOverview />
+                        <BudgetOverview isLoading={isLoading} data={budgetData}/>
                     </Box>
 
                     <Box sx={{ mb: 4 }}>
-                        <TopExpenseCategory />
+                        <TopExpenseCategory isLoading={isLoading} categories={topExpenseCategories}/>
                     </Box>
 
                     <Box>
-                        <BudgetPeriodTable />
+                        <BudgetPeriodTable isLoading={isLoading} data={budgetData} />
                     </Box>
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <Box sx={{mb: 4}}>
                         <BudgetSummary
-                            totalBudget={2260.60}
-                            leftToSpend={1278.47}
-                            currentSpend={982.13}
-                            daysLeft={5}
+                           isLoading={isLoading}
+                           data={budgetData}
                         />
                     </Box>
                    <Box>

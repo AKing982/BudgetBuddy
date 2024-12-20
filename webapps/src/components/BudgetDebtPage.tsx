@@ -8,9 +8,12 @@ import BudgetSummary from "./BudgetSummary";
 import DebtOverview from './DebtOverview';
 import DebtPaymentProgress from './DebtPaymentProgress';
 import Sidebar from "./Sidebar";
+import {BudgetRunnerResult} from "../services/BudgetRunnerService";
 
 const BudgetDebtPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
 
     const handlePreviousMonth = () => {
         setCurrentMonth(prevMonth => subMonths(prevMonth, 1));
@@ -55,7 +58,7 @@ const BudgetDebtPage: React.FC = () => {
             <Grid container spacing={4}>
                 <Grid item xs={12} md={8}>
                     <Box sx={{ mb: 4 }}>
-                        <BudgetOverview />
+                        <BudgetOverview isLoading={isLoading} data={budgetData}/>
                     </Box>
 
                     <Box sx={{ mb: 4 }}>
@@ -63,16 +66,14 @@ const BudgetDebtPage: React.FC = () => {
                     </Box>
 
                     <Box>
-                        <BudgetPeriodTable />
+                        <BudgetPeriodTable isLoading={isLoading} data={budgetData}/>
                     </Box>
                 </Grid>
                 <Grid item xs={12} md={4}>
                     <Box sx={{mb: 4}}>
                         <BudgetSummary
-                            totalBudget={summaryData.totalBudget}
-                            leftToSpend={summaryData.leftToSpend}
-                            currentSpend={summaryData.currentSpend}
-                            daysLeft={summaryData.daysLeft}
+                            isLoading={isLoading}
+                            data={budgetData}
                         />
                     </Box>
                     <Box>

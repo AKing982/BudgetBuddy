@@ -1,5 +1,16 @@
-import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Box} from "@mui/material";
-import React from "react";
+import {
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
+    Box,
+    Skeleton
+} from "@mui/material";
+import React, {useMemo} from "react";
 
 const dummyData = [
     { name: 'Housing', budgeted: 1500, actual: 1450, remaining: 50 },
@@ -9,9 +20,43 @@ const dummyData = [
     { name: 'Entertainment', budgeted: 150, actual: 200, remaining: -50 },
 ];
 
-const TopExpenseCategory: React.FC = () => {
+interface TopExpenseCategoryProps {
+    isLoading: boolean;
+    categories: Array<{
+        name: string;
+        amount: number;
+        budgetedAmount: number;
+    }>;
+}
+
+const TopExpenseCategory: React.FC<TopExpenseCategoryProps> = ({isLoading, categories}) => {
 
     const maroonColor = '#800000';
+    const processedCategories = useMemo(() => {
+        if (!categories?.length) return [];
+
+        return categories
+            .map(category => ({
+                name: category.name,
+                budgeted: category.budgetedAmount || 0,
+                actual: category.amount || 0,
+                remaining: (category.budgetedAmount || 0) - (category.amount || 0)
+            }))
+            .sort((a, b) => b.actual - a.actual) // Sort by actual spending
+            .slice(0, 5); // Get top 5
+    }, [categories]);
+
+    if (isLoading) {
+        return (
+            <Box>
+                <Typography variant="h5" component="h2" gutterBottom>
+                    Top Expense Categories
+                </Typography>
+                <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
+            </Box>
+        );
+    }
+
     return (
         <Box>
             <Typography variant="h5" component="h2" gutterBottom sx={{
@@ -57,25 +102,37 @@ const TopExpenseCategory: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {dummyData.map((row) => (
-                            <TableRow key={row.name}>
-                                <TableCell component="th" scope="row">
-                                    {row.name}
-                                </TableCell>
-                                <TableCell align="right">${row.budgeted.toFixed(2)}</TableCell>
-                                <TableCell align="right">${row.actual.toFixed(2)}</TableCell>
-                                <TableCell
-                                    align="right"
-                                    sx={{
-                                        color: row.remaining >= 0 ? 'green' : 'red',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    ${Math.abs(row.remaining).toFixed(2)}
-                                    {row.remaining >= 0 ? ' under' : ' over'}
+                        {processedCategories.length > 0 ? (
+                            processedCategories.map((row) => (
+                                <TableRow key={row.name}>
+                                    <TableCell component="th" scope="row">
+                                        {row.name}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        ${row.budgeted.toFixed(2)}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        ${row.actual.toFixed(2)}
+                                    </TableCell>
+                                    <TableCell
+                                        align="right"
+                                        sx={{
+                                            color: row.remaining >= 0 ? 'green' : 'red',
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
+                                        ${Math.abs(row.remaining).toFixed(2)}
+                                        {row.remaining >= 0 ? ' under' : ' over'}
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} align="center">
+                                    No expense categories found
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>

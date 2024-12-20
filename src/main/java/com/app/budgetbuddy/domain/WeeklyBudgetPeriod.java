@@ -13,7 +13,7 @@ public class WeeklyBudgetPeriod extends BudgetPeriod
 {
     private List<DateRange> weeklyDateRange;
 
-    protected WeeklyBudgetPeriod(LocalDate startDate, LocalDate endDate)
+    public WeeklyBudgetPeriod(LocalDate startDate, LocalDate endDate)
     {
         super(Period.WEEKLY, startDate, endDate);
         this.weeklyDateRange = getWeeklyDateRanges();
