@@ -12,6 +12,22 @@ import {Add} from "@mui/icons-material";
 import AddBudgetDialog from "./AddBudgetDialog";
 import BudgetRunnerService, {BudgetRunnerResult} from "../services/BudgetRunnerService";
 
+export interface BudgetStats {
+    averageSpendingPerDay: number;
+    budgetId: number;
+    dateRange: {
+        startDate: number[];
+        endDate: number[];
+        weeksInRange: number;
+        biWeeksInRange: number;
+        daysInRange: number;
+    };
+    remaining: number;
+    totalBudget: number;
+    totalSaved: number;
+    totalSpent: number;
+}
+
 const BudgetPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [budgetType, setBudgetType] = useState('50/30/20');
@@ -54,34 +70,80 @@ const BudgetPage: React.FC = () => {
         }
     };
 
+
+
     useEffect(() => {
         fetchBudgetData(currentMonth);
     }, [currentMonth, userId]);
 
     // Calculate summary data from budgetData
-    const summaryData = React.useMemo(() => {
-        if (!budgetData.length) return {
-            totalBudget: 0,
-            leftToSpend: 0,
-            currentSpend: 0,
-            daysLeft: 0
-        };
+    const budgetStats = useMemo(() => {
+        if (!budgetData.length) {
+            return {
+                averageSpendingPerDay: 0,
+                budgetId: 0,
+                dateRange: {
+                    startDate: [],
+                    endDate: [],
+                    weeksInRange: 0,
+                    biWeeksInRange: 0,
+                    daysInRange: 0
+                },
+                remaining: 0,
+                totalBudget: 0,
+                totalSaved: 0,
+                totalSpent: 0
+            };
+        }
 
+        // Aggregate data from all budgets
         const totalBudget = budgetData.reduce((sum, budget) => sum + budget.budgetAmount, 0);
-        const currentSpend = budgetData.reduce((sum, budget) => sum + budget.actualAmount, 0);
-        const leftToSpend = totalBudget - currentSpend;
+        console.log('Total Budget: ', totalBudget);
+        const totalSpent = budgetData.reduce((sum, budget) => {
+            const periodSpent = budget.budgetPeriodCategories?.reduce((catSum, cat) =>
+                catSum + (cat.actual || 0), 0) || 0;
+            console.log('Period spent for budget:', periodSpent);
+            return sum + periodSpent;
+        }, 0);
 
-        // Calculate days left in the month
-        const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-        const daysLeft = Math.max(0, lastDayOfMonth.getDate() - new Date().getDate());
+        console.log('Total Spent: ', totalSpent);
+        const totalSaved = budgetData.reduce((sum, budget) => {
+            const savingsAmount = budget.budgetPeriodCategories?.reduce((catSum, cat) => {
+                // Only count positive savings amounts
+                const amount = cat.category?.toLowerCase().includes('saving') ? (cat.actual || 0) : 0;
+                return catSum + amount;
+            }, 0) || 0;
+            console.log('Savings amount for budget:', savingsAmount);
+            return sum + savingsAmount;
+        }, 0);
+
+        const remaining = totalBudget - totalSpent - totalSaved;
+        console.log('Total remaining: ', remaining);
+
+        // Calculate date range from the first budget
+        const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        const daysInRange = endDate.getDate();
+        const weeksInRange = Math.ceil(daysInRange / 7);
+        const biWeeksInRange = Math.ceil(daysInRange / 14);
 
         return {
+            averageSpendingPerDay: totalSpent / daysInRange,
+            budgetId: budgetData[0]?.budgetId || 0,
+            dateRange: {
+                startDate: [startDate.getFullYear(), startDate.getMonth(), startDate.getDate()],
+                endDate: [endDate.getFullYear(), endDate.getMonth(), endDate.getDate()],
+                weeksInRange,
+                biWeeksInRange,
+                daysInRange
+            },
+            remaining,
             totalBudget,
-            leftToSpend,
-            currentSpend,
-            daysLeft
+            totalSaved,
+            totalSpent
         };
     }, [budgetData, currentMonth]);
+
 
     const categoriesData = React.useMemo(() => {
         if (!budgetData.length) return [];
@@ -90,7 +152,7 @@ const BudgetPage: React.FC = () => {
 
     const periodData = React.useMemo(() => {
         if (!budgetData.length) return [];
-        return budgetData.flatMap(budget => budget.periodCategories);
+        return budgetData.flatMap(budget => budget.budgetPeriodCategories);
     }, [budgetData]);
 
 
@@ -162,7 +224,7 @@ const BudgetPage: React.FC = () => {
                     <Box sx={{mb: 4}}>
                         <BudgetSummary
                            isLoading={isLoading}
-                           data={budgetData}
+                           budgetStats={budgetStats}
                         />
                     </Box>
                    <Box>

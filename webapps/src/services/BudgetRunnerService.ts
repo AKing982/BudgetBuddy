@@ -20,8 +20,9 @@ export interface BudgetRunnerResult {
     isOverBudget: boolean;
     needsAttention: boolean;
     periodStats: any;
-    periodCategories: any[];
+    budgetPeriodCategories: any[];
     topExpenseCategories: any[];
+    expenseCategories: any[];
     savingsCategories: any[];
     incomeCategories: any[];
 }

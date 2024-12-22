@@ -99,13 +99,15 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         if (!data?.length) return [];
 
         const allCategories = data.flatMap(budget =>
-            budget.periodCategories?.map(category => ({
-                name: category.name,
-                budgetedAmount: category.budgetedAmount || 0,
-                actualAmount: category.amount || 0,
-                remaining: (category.budgetedAmount || 0) - (category.amount || 0)
+            budget.budgetPeriodCategories?.map(category => ({
+                name: category.category,
+                budgetedAmount: category.budgeted || 0,
+                actualAmount: category.actual || 0,
+                remaining: category.remaining
             })) || []
         );
+
+        console.log('All Categories: ', allCategories);
 
         // Group by category name and sum amounts
         return Object.values(

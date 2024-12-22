@@ -43,11 +43,11 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) => {
                 sum + (cat.remainingAmount || 0), 0);
 
             // Get expense totals from topExpenseCategories
-            const expenseBudgeted = budget.topExpenseCategories.reduce((sum, cat) =>
+            const expenseBudgeted = budget.expenseCategories.reduce((sum, cat) =>
                 sum + (cat.budgetedAmount || 0), 0);
-            const expenseActual = budget.topExpenseCategories.reduce((sum, cat) =>
+            const expenseActual = budget.expenseCategories.reduce((sum, cat) =>
                 sum + (cat.actualAmount || 0), 0);
-            const expenseRemaining = budget.topExpenseCategories.reduce((sum, cat) =>
+            const expenseRemaining = budget.expenseCategories.reduce((sum, cat) =>
                 sum + (cat.remainingAmount || 0), 0);
 
             // Get savings from savingsCategories
