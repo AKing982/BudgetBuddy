@@ -130,6 +130,11 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public List<String> findTransactionIdsByIds(List<String> transactionIds) {
+        return transactionRepository.findTransactionIdsByIds(transactionIds);
+    }
+
+    @Override
     public List<TransactionsEntity> convertPlaidTransactionsToEntities(List<PlaidTransaction> plaidTransactions) {
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         for(PlaidTransaction transaction : plaidTransactions){
@@ -148,6 +153,11 @@ public class TransactionServiceImpl implements TransactionService
             transactionsEntities.add(transactionsEntity);
         }
         return transactionsEntities;
+    }
+
+    @Override
+    public void saveAll(List<Transaction> transactions) {
+        createAndSaveTransactions(transactions);
     }
 
     @Override

@@ -28,16 +28,25 @@ public class RecurringTransactionConverter implements Converter<RecurringTransac
         RecurringTransactionEntity recurringTransactionEntity = new RecurringTransactionEntity();
         recurringTransactionEntity.setFrequency(recurringTransactionDTO.frequency());
         recurringTransactionEntity.setDescription(recurringTransactionDTO.description());
-        if(recurringTransactionDTO.firstDate() != null){
-            recurringTransactionEntity.setFirstDate(LocalDate.parse(recurringTransactionDTO.firstDate()));
-        }
-        if(recurringTransactionDTO.lastDate() != null){
-            recurringTransactionEntity.setLastDate(LocalDate.parse(recurringTransactionDTO.lastDate()));
-        }
+
+        // Handle firstDate - set to current date if null
+        LocalDate firstDate = recurringTransactionDTO.firstDate() != null
+                ? LocalDate.parse(recurringTransactionDTO.firstDate())
+                : LocalDate.now();
+        recurringTransactionEntity.setFirstDate(firstDate);
+
+        // Handle lastDate - set to firstDate if null
+        LocalDate lastDate = recurringTransactionDTO.lastDate() != null
+                ? LocalDate.parse(recurringTransactionDTO.lastDate())
+                : firstDate;
+        recurringTransactionEntity.setLastDate(lastDate);
+
         recurringTransactionEntity.setLastAmount(recurringTransactionDTO.lastAmount().amount());
-        if(recurringTransactionDTO.type() != null){
-            recurringTransactionEntity.setType(recurringTransactionDTO.type());
-        }
+        recurringTransactionEntity.setType(
+                recurringTransactionDTO.type() != null
+                        ? recurringTransactionDTO.type()
+                        : "UNSPECIFIED"
+        );
         recurringTransactionEntity.setStreamId(recurringTransactionDTO.streamId());
         recurringTransactionEntity.setAverageAmount(recurringTransactionDTO.averageAmount().amount());
         recurringTransactionEntity.setActive(recurringTransactionDTO.active());
@@ -45,6 +54,7 @@ public class RecurringTransactionConverter implements Converter<RecurringTransac
         recurringTransactionEntity.setMerchantName(recurringTransactionDTO.merchantName());
         recurringTransactionEntity.setAccount(AccountEntity.builder().id(recurringTransactionDTO.accountId()).build());
         recurringTransactionEntity.setUser(UserEntity.builder().id(recurringTransactionDTO.userId()).build());
+
         return recurringTransactionEntity;
     }
 

@@ -76,12 +76,14 @@ public class TransactionScheduleRunner
                 LocalDate endDate = today.withDayOfMonth(today.lengthOfMonth());
 
                 // Check if we already have latest transactions
-                if (!transactionRunner.checkTransactionsExistInDateRange(startDate, endDate, userId)) {
-                    log.info("Syncing transactions for user {} from {} to {}", userId, startDate, endDate);
-                    transactionRunner.syncUserTransactions(userId, startDate, endDate);
-                } else {
-                    log.info("Transactions already exist for date range {} to {}", startDate, endDate);
-                }
+//                if (!transactionRunner.checkTransactionsExistInDateRange(startDate, endDate, userId)) {
+//                    log.info("Syncing transactions for user {} from {} to {}", userId, startDate, endDate);
+//                    transactionRunner.syncUserTransactions(userId, startDate, endDate);
+//                } else {
+//                    log.info("Transactions already exist for date range {} to {}", startDate, endDate);
+//                }
+
+                transactionRunner.syncUserTransactions(userId, startDate, endDate);
 
                 // Check if we need to sync recurring transactions
                 if (!transactionRunner.checkRecurringTransactionsExistInDateRange(startDate, endDate, userId)) {

@@ -119,6 +119,14 @@ public class BudgetRunner
                 endDate
         );
 
+        List<BudgetCategory> expenseCategories = loadExpenseCategory(
+                budget.getId(),
+                startDate,
+                endDate,
+                determineBudgetPeriod(startDate, endDate)
+        );
+
+
         // Calculate budget period and load period categories
         Period budgetPeriod = determineBudgetPeriod(startDate, endDate);
         List<BudgetPeriodCategory> periodCategories = loadPeriodCategories(budget, budgetPeriod);
@@ -154,6 +162,7 @@ public class BudgetRunner
                 .healthScore(healthScore)
                 .budgetStats(monthlyStats)
                 .budgetPeriodCategories(periodCategories)
+                .expenseCategories(expenseCategories)
                 .topExpenseCategories(topExpenses)
                 .savingsCategories(savingsCategories)
                 .incomeCategories(incomeCategories)
@@ -376,7 +385,7 @@ public class BudgetRunner
         if(budgetId == null || startDate == null || endDate == null){
             return Collections.emptyList();
         }
-        return budgetQueriesService.getTopExpenseBudgetCategories(budgetId, startDate, endDate);
+        return budgetQueriesService.getExpensesBudgetCategories(budgetId, startDate, endDate);
     }
 
     public List<BudgetCategory> loadSavingsCategory(final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){

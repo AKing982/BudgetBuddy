@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.workbench.runner;
 
-import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.RecurringTransactionService;
-import com.app.budgetbuddy.services.TransactionCategoryService;
-import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.budget.TransactionCategoryBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +24,9 @@ class TransactionCategoryRunnerTest {
     private BudgetService budgetService;
 
     @Mock
+    private CategoryService categoryService;
+
+    @Mock
     private TransactionCategoryService transactionCategoryService;
 
     @Mock
@@ -37,7 +37,7 @@ class TransactionCategoryRunnerTest {
 
     @BeforeEach
     void setUp() {
-        transactionCategoryRunner = new TransactionCategoryRunner(transactionCategoryService, transactionCategoryBuilder, transactionService, budgetService, recurringTransactionService);
+        transactionCategoryRunner = new TransactionCategoryRunner(transactionCategoryService, transactionCategoryBuilder, transactionService, budgetService,categoryService, recurringTransactionService);
 
     }
 

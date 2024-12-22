@@ -106,108 +106,108 @@ public class BudgetSetupEngine
     }
 
 
-    /**
-     * Initializes the entire budget setup process
-     * @return
-     */
-    public Boolean budgetSetupInitializer(final LocalDate startDate, final LocalDate endDate, final Period period, final Long userID){
-
-        try {
-            // Input validation
-            if (startDate == null || endDate == null || period == null || userID == null || userID < 1L) {
-                log.error("Invalid input parameters provided for budget setup");
-                return false;
-            }
-
-            // 1. Create the Date Ranges based on period
-            List<DateRange> dateRanges = createDateRanges(startDate, endDate, period);
-            if (dateRanges.isEmpty()) {
-                log.error("Failed to create date ranges for budget setup");
-                return false;
-            }
-
-            // 2. Load Transactions for user
-            List<Transaction> transactions = transactionService.getConvertedPlaidTransactions(userID, startDate, endDate);
-
-            // 3. Load Recurring Transactions for user
-            List<RecurringTransaction> recurringTransactions = recurringTransactionService.getRecurringTransactions(userID, startDate, endDate);
-
-            // 4. Load or create user's budget
-            Budget budget = loadUserBudget(userID);
-            if (budget == null) {
-                log.error("Failed to load budget for user: {}", userID);
-                return false;
-            }
-
-            // 5. Load budget goals for user
-            BudgetGoals budgetGoals = loadUserBudgetGoals(userID);
-
-            // 6. Initialize transaction categories
-            TreeMap<Long, List<TransactionCategory>> transactionCategoriesMap = createTransactionCategories(
-                    recurringTransactions,
-                    transactions,
-                    budget,
-                    dateRanges
-            );
-            log.info("Transaction Categories Map: {}", transactionCategoriesMap.size());
-
-            // Save the Transaction Categories
-
-
-            if (transactionCategoriesMap.isEmpty()) {
-                log.warn("No transaction categories created for user: {}", userID);
-                return false;
-            }
-
-            // 7. Create budget statistics
-            List<BudgetStats> budgetStats = createBudgetStatistics(budget);
-            for(BudgetStats budgetStat : budgetStats){
-                log.info("Budget stats: {}", budgetStat.toString());
-            }
-
-            // 8. Create budget expense categories
-            List<TransactionCategory> allTransactionCategories = transactionCategoriesMap.get(userID);
-            if (allTransactionCategories != null) {
-                List<BudgetCategory> expenseCategories = initializeBudgetExpenseCategory(
-                        budget,
-                        allTransactionCategories,
-                        dateRanges
-                );
-
-                // 9. Create budget savings categories if budget goals exist
-                if (budgetGoals != null) {
-                    Map<DateRange, Budget> budgetMap = new HashMap<>();
-                    for (DateRange range : dateRanges) {
-                        budgetMap.put(range, budget);
-                    }
-
-                    List<BudgetCategory> savingsCategories = initializeBudgetSavingsCategories(
-                            budgetGoals,
-                            allTransactionCategories,
-                            budgetMap,
-                            dateRanges
-                    );
-
-                    // 10. Create top expense categories
-                    List<BudgetCategory> topExpenseCategories = createTopBudgetExpenseCategories(
-                            allTransactionCategories,
-                            dateRanges
-                    );
-
-                    // If we've made it here, all initialization steps completed successfully
-                    log.info("Successfully completed budget setup for user: {}", userID);
-                    return true;
-                }
-            }
-
-            log.warn("Budget setup completed with warnings for user: {}", userID);
-            return false;
-
-        } catch (Exception e) {
-            log.error("Error during budget setup initialization for user: " + userID, e);
-            return false;
-        }
-    }
+//    /**
+//     * Initializes the entire budget setup process
+//     * @return
+//     */
+//    public Boolean budgetSetupInitializer(final LocalDate startDate, final LocalDate endDate, final Period period, final Long userID){
+//
+//        try {
+//            // Input validation
+//            if (startDate == null || endDate == null || period == null || userID == null || userID < 1L) {
+//                log.error("Invalid input parameters provided for budget setup");
+//                return false;
+//            }
+//
+//            // 1. Create the Date Ranges based on period
+//            List<DateRange> dateRanges = createDateRanges(startDate, endDate, period);
+//            if (dateRanges.isEmpty()) {
+//                log.error("Failed to create date ranges for budget setup");
+//                return false;
+//            }
+//
+//            // 2. Load Transactions for user
+//            List<Transaction> transactions = transactionService.getConvertedPlaidTransactions(userID, startDate, endDate);
+//
+//            // 3. Load Recurring Transactions for user
+//            List<RecurringTransaction> recurringTransactions = recurringTransactionService.getRecurringTransactions(userID, startDate, endDate);
+//
+//            // 4. Load or create user's budget
+//            Budget budget = loadUserBudget(userID);
+//            if (budget == null) {
+//                log.error("Failed to load budget for user: {}", userID);
+//                return false;
+//            }
+//
+//            // 5. Load budget goals for user
+//            BudgetGoals budgetGoals = loadUserBudgetGoals(userID);
+//
+//            // 6. Initialize transaction categories
+//            TreeMap<Long, List<TransactionCategory>> transactionCategoriesMap = createTransactionCategories(
+//                    recurringTransactions,
+//                    transactions,
+//                    budget,
+//                    dateRanges
+//            );
+//            log.info("Transaction Categories Map: {}", transactionCategoriesMap.size());
+//
+//            // Save the Transaction Categories
+//
+//
+//            if (transactionCategoriesMap.isEmpty()) {
+//                log.warn("No transaction categories created for user: {}", userID);
+//                return false;
+//            }
+//
+//            // 7. Create budget statistics
+//            List<BudgetStats> budgetStats = createBudgetStatistics(budget);
+//            for(BudgetStats budgetStat : budgetStats){
+//                log.info("Budget stats: {}", budgetStat.toString());
+//            }
+//
+//            // 8. Create budget expense categories
+//            List<TransactionCategory> allTransactionCategories = transactionCategoriesMap.get(userID);
+//            if (allTransactionCategories != null) {
+//                List<BudgetCategory> expenseCategories = initializeBudgetExpenseCategory(
+//                        budget,
+//                        allTransactionCategories,
+//                        dateRanges
+//                );
+//
+//                // 9. Create budget savings categories if budget goals exist
+//                if (budgetGoals != null) {
+//                    Map<DateRange, Budget> budgetMap = new HashMap<>();
+//                    for (DateRange range : dateRanges) {
+//                        budgetMap.put(range, budget);
+//                    }
+//
+//                    List<BudgetCategory> savingsCategories = initializeBudgetSavingsCategories(
+//                            budgetGoals,
+//                            allTransactionCategories,
+//                            budgetMap,
+//                            dateRanges
+//                    );
+//
+//                    // 10. Create top expense categories
+//                    List<BudgetCategory> topExpenseCategories = createTopBudgetExpenseCategories(
+//                            allTransactionCategories,
+//                            dateRanges
+//                    );
+//
+//                    // If we've made it here, all initialization steps completed successfully
+//                    log.info("Successfully completed budget setup for user: {}", userID);
+//                    return true;
+//                }
+//            }
+//
+//            log.warn("Budget setup completed with warnings for user: {}", userID);
+//            return false;
+//
+//        } catch (Exception e) {
+//            log.error("Error during budget setup initialization for user: " + userID, e);
+//            return false;
+//        }
+//    }
 
 
     public List<TransactionCategoryEntity> convertUserBudgetCategoriesToEntities(final List<TransactionCategory> userBudgetCategories)
@@ -469,64 +469,64 @@ public class BudgetSetupEngine
         return userBudgetStatistics;
     }
 
-    public List<TransactionCategory> createTransactionCategories(final List<Transaction> transactions, final Budget budget, final List<DateRange> dateRanges) {
-        if (transactions == null || budget == null || dateRanges == null)
-        {
-            return Collections.emptyList();
-        }
-        List<TransactionCategory> transactionCategories = new ArrayList<>();
-        for(DateRange dateRange : dateRanges)
-        {
-            if(dateRange == null){
-                log.warn("Skipping null date range...");
-                continue;
-            }
-            LocalDate startDate = dateRange.getStartDate();
-            LocalDate endDate = dateRange.getEndDate();
-            BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
-            List<TransactionCategory> transactionCategoriesList = budgetCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, transactions);
-            transactionCategories.addAll(transactionCategoriesList);
-        }
-        return transactionCategories;
-    }
+//    public List<TransactionCategory> createTransactionCategories(final List<Transaction> transactions, final Budget budget, final List<DateRange> dateRanges) {
+//        if (transactions == null || budget == null || dateRanges == null)
+//        {
+//            return Collections.emptyList();
+//        }
+//        List<TransactionCategory> transactionCategories = new ArrayList<>();
+//        for(DateRange dateRange : dateRanges)
+//        {
+//            if(dateRange == null){
+//                log.warn("Skipping null date range...");
+//                continue;
+//            }
+//            LocalDate startDate = dateRange.getStartDate();
+//            LocalDate endDate = dateRange.getEndDate();
+//            BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
+////            List<TransactionCategory> transactionCategoriesList = budgetCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, transactions);
+//            transactionCategories.addAll(transactionCategoriesList);
+//        }
+//        return transactionCategories;
+//    }
 
-    public List<TransactionCategory> createRecurringTransactionCategories(final List<RecurringTransaction> recurringTransactions, final Budget budget, final List<DateRange> dateRanges) {
-        if (recurringTransactions == null || budget == null || dateRanges == null){
-            return Collections.emptyList();
-        }
-        List<TransactionCategory> transactionCategories = new ArrayList<>();
-        for(DateRange dateRange : dateRanges)
-        {
-            if(dateRange == null){
-                continue;
-            }
-            LocalDate startDate = dateRange.getStartDate();
-            LocalDate endDate = dateRange.getEndDate();
-            BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
-            List<TransactionCategory> transactionCategoryList = budgetCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, recurringTransactions);
-            transactionCategories.addAll(transactionCategoryList);
-        }
-        return transactionCategories;
-    }
+//    public List<TransactionCategory> createRecurringTransactionCategories(final List<RecurringTransaction> recurringTransactions, final Budget budget, final List<DateRange> dateRanges) {
+//        if (recurringTransactions == null || budget == null || dateRanges == null){
+//            return Collections.emptyList();
+//        }
+//        List<TransactionCategory> transactionCategories = new ArrayList<>();
+//        for(DateRange dateRange : dateRanges)
+//        {
+//            if(dateRange == null){
+//                continue;
+//            }
+//            LocalDate startDate = dateRange.getStartDate();
+//            LocalDate endDate = dateRange.getEndDate();
+//            BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
+//            List<TransactionCategory> transactionCategoryList = budgetCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, recurringTransactions);
+//            transactionCategories.addAll(transactionCategoryList);
+//        }
+//        return transactionCategories;
+//    }
 
-    /**
-     * Initializes the Transaction Category's for a particular user
-     * @param transactions
-     * @return
-     */
-    public TreeMap<Long, List<TransactionCategory>> createTransactionCategories(final List<RecurringTransaction> recurringTransactions, final List<Transaction> transactions, final Budget budget, final List<DateRange> budgetDateRanges){
-        TreeMap<Long, List<TransactionCategory>> transactionCategoriesMap = new TreeMap<>();
-        if(recurringTransactions == null || transactions == null || budget == null || budgetDateRanges == null)
-        {
-            return new TreeMap<>();
-        }
-        Long userId = budget.getUserId();
-        List<TransactionCategory> transactionCategoryList = createTransactionCategories(transactions, budget, budgetDateRanges);
-        List<TransactionCategory> recurringTransactionCategories = createRecurringTransactionCategories(recurringTransactions, budget, budgetDateRanges);
-        transactionCategoriesMap.putIfAbsent(userId, transactionCategoryList);
-        transactionCategoriesMap.putIfAbsent(userId, recurringTransactionCategories);
-        return transactionCategoriesMap;
-    }
+//    /**
+//     * Initializes the Transaction Category's for a particular user
+//     * @param transactions
+//     * @return
+//     */
+//    public TreeMap<Long, List<TransactionCategory>> createTransactionCategories(final List<RecurringTransaction> recurringTransactions, final List<Transaction> transactions, final Budget budget, final List<DateRange> budgetDateRanges){
+//        TreeMap<Long, List<TransactionCategory>> transactionCategoriesMap = new TreeMap<>();
+//        if(recurringTransactions == null || transactions == null || budget == null || budgetDateRanges == null)
+//        {
+//            return new TreeMap<>();
+//        }
+//        Long userId = budget.getUserId();
+//        List<TransactionCategory> transactionCategoryList = createTransactionCategories(transactions, budget, budgetDateRanges);
+//        List<TransactionCategory> recurringTransactionCategories = createRecurringTransactionCategories(recurringTransactions, budget, budgetDateRanges);
+//        transactionCategoriesMap.putIfAbsent(userId, transactionCategoryList);
+//        transactionCategoriesMap.putIfAbsent(userId, recurringTransactionCategories);
+//        return transactionCategoriesMap;
+//    }
 
     private void validateDateRangeParameters(DateRange dateRange)
     {

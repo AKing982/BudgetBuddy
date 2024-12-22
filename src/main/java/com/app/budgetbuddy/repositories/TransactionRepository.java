@@ -23,6 +23,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t WHERE t.amount BETWEEN :startAmount AND :endAmount")
     List<TransactionsEntity> findByAmountBetween(@Param("startAmount") BigDecimal startAmount, @Param("endAmount") BigDecimal endAmount);
 
+    @Query("SELECT t.id FROM TransactionsEntity t WHERE t.id IN :transactionIds")
+    List<String> findTransactionIdsByIds(@Param("transactionIds") List<String> transactionIds);
+
     @Query("SELECT t FROM TransactionsEntity t WHERE t.amount =:amount")
     List<TransactionsEntity> findByAmount(@Param("amount") BigDecimal amount);
 

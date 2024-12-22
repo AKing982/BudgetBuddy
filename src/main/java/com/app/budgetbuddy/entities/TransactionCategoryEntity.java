@@ -21,8 +21,13 @@ public class TransactionCategoryEntity
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    private Set<TransactionsEntity> transactions = new HashSet<>();
+    @ElementCollection
+    @CollectionTable(
+            name = "transactioncategories_transactions",
+            joinColumns = @JoinColumn(name = "transactioncategory_id")
+    )
+    @Column(name = "transaction_id")
+    private Set<String> transactions = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="budgetid")

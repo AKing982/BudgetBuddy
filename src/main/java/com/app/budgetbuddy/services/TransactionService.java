@@ -17,8 +17,12 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Collection<TransactionsEntity> getTransactionsByAmountGreaterThan(BigDecimal amount);
     Collection<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount);
 
+    List<String> findTransactionIdsByIds(List<String> transactionIds);
+
     List<TransactionsEntity> convertPlaidTransactionsToEntities(List<PlaidTransaction> plaidTransactions);
     List<TransactionsEntity> createAndSaveTransactions(List<Transaction> transactions);
+
+    void saveAll(List<Transaction> transactions);
 
     List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions);
 

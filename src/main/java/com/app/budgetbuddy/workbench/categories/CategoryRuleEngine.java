@@ -50,11 +50,11 @@ public class CategoryRuleEngine
     }
 
     public static List<Transaction> loadTransactions(){
-        return transactionLoader.loadTransactionsByDateRange(1L, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30));
+        return transactionLoader.loadTransactionsByDateRange(1L, LocalDate.of(2024, 11, 1), LocalDate.of(2024, 12, 21));
     }
 
     public static List<RecurringTransaction> loadRecurringTransactions(){
-        return recurringTransactionLoader.loadTransactionsByDateRange(1L, LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30));
+        return recurringTransactionLoader.loadTransactionsByDateRange(1L, LocalDate.of(2024, 11, 1), LocalDate.of(2024, 12, 30));
     }
 
     public Boolean processTransactionsForUser(List<Transaction> transactions, List<RecurringTransaction> recurringTransactions, Long userId){

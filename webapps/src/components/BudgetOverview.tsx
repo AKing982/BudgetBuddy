@@ -20,11 +20,7 @@ interface BudgetOverviewProps {
 
 
 const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) => {
-    // const [budgetData, setBudgetData] = useState({
-    //     income: {budgeted: 3285, actual: 2836, remaining: 2136},
-    //     expenses: {budgeted: 3023, actual: 1200, remaining: 1823},
-    //     savings: {budgeted: 1000, actual: 150, remaining: 850}
-    // });
+
 
     const budgetData = useMemo(() => {
         if (!data.length) {
@@ -35,32 +31,48 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) => {
             };
         }
 
+
         // Aggregate data from all budgets
         return data.reduce((acc, budget) => {
-            // Get income categories
-            const incomeTotal = budget.incomeCategories.reduce((sum, cat) => sum + cat.amount, 0);
+            // Get income from incomeCategories
+            const incomeBudgeted = budget.incomeCategories.reduce((sum, cat) =>
+                sum + (cat.budgetedAmount || 0), 0);
+            const incomeActual = budget.incomeCategories.reduce((sum, cat) =>
+                sum + (cat.actualAmount || 0), 0);
+            const incomeRemaining = budget.incomeCategories.reduce((sum, cat) =>
+                sum + (cat.remainingAmount || 0), 0);
 
-            // Get expense categories
-            const expenseTotal = budget.topExpenseCategories.reduce((sum, cat) => sum + cat.amount, 0);
+            // Get expense totals from topExpenseCategories
+            const expenseBudgeted = budget.topExpenseCategories.reduce((sum, cat) =>
+                sum + (cat.budgetedAmount || 0), 0);
+            const expenseActual = budget.topExpenseCategories.reduce((sum, cat) =>
+                sum + (cat.actualAmount || 0), 0);
+            const expenseRemaining = budget.topExpenseCategories.reduce((sum, cat) =>
+                sum + (cat.remainingAmount || 0), 0);
 
-            // Get savings categories
-            const savingsTotal = budget.savingsCategories.reduce((sum, cat) => sum + cat.amount, 0);
+            // Get savings from savingsCategories
+            const savingsBudgeted = budget.savingsCategories.reduce((sum, cat) =>
+                sum + (cat.budgetedAmount || 0), 0);
+            const savingsActual = budget.savingsCategories.reduce((sum, cat) =>
+                sum + (cat.actualAmount || 0), 0);
+            const savingsRemaining = budget.savingsCategories.reduce((sum, cat) =>
+                sum + (cat.remainingAmount || 0), 0);
 
             return {
                 income: {
-                    budgeted: acc.income.budgeted + incomeTotal,
-                    actual: acc.income.actual + (budget.actualAmount || 0),
-                    remaining: acc.income.remaining + (incomeTotal - (budget.actualAmount || 0))
+                    budgeted: acc.income.budgeted + incomeBudgeted,
+                    actual: acc.income.actual + incomeActual,
+                    remaining: acc.income.remaining + incomeRemaining
                 },
                 expenses: {
-                    budgeted: acc.expenses.budgeted + expenseTotal,
-                    actual: acc.expenses.actual + (budget.actualAmount || 0),
-                    remaining: acc.expenses.remaining + (expenseTotal - (budget.actualAmount || 0))
+                    budgeted: acc.expenses.budgeted + expenseBudgeted,
+                    actual: acc.expenses.actual + expenseActual,
+                    remaining: acc.expenses.remaining + expenseRemaining
                 },
                 savings: {
-                    budgeted: acc.savings.budgeted + savingsTotal,
-                    actual: acc.savings.actual + (budget.savingsAmount || 0),
-                    remaining: acc.savings.remaining + (savingsTotal - (budget.savingsAmount || 0))
+                    budgeted: acc.savings.budgeted + savingsBudgeted,
+                    actual: acc.savings.actual + savingsActual,
+                    remaining: acc.savings.remaining + savingsRemaining
                 }
             };
         }, {

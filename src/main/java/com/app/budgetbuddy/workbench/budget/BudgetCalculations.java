@@ -200,11 +200,8 @@ public class BudgetCalculations {
            DateRange dateRange = new DateRange(startDate, endDate);
            long numberOfDaysBetween = dateRange.getDaysInRange();
            System.out.println("Number of Days Between: " + numberOfDaysBetween);
-           BigDecimal averageSpendingPerDay = budgetActual.divide(BigDecimal.valueOf(numberOfDaysBetween), 2, RoundingMode.HALF_UP);
-           if(averageSpendingPerDay.compareTo(BigDecimal.ZERO) != 0){
-               throw new ArithmeticException("Invalid calculation for average spending");
-           }
-           return averageSpendingPerDay;
+
+           return budgetActual.divide(BigDecimal.valueOf(numberOfDaysBetween), 2, RoundingMode.HALF_UP);
 
        }catch(IllegalDateException e)
        {

@@ -40,6 +40,7 @@ public class BudgetRunnerResult
 
     private List<BudgetPeriodCategory> budgetPeriodCategories;
     private List<BudgetCategory> topExpenseCategories;
+    private List<BudgetCategory> expenseCategories;
     private List<BudgetCategory> savingsCategories;
     private List<BudgetCategory> incomeCategories;
 

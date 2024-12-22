@@ -44,9 +44,15 @@ public class TransactionRunner {
         if(startDate == null || endDate == null || userId == null){
             return false;
         }
-        List<Transaction> transactions = transactionService.getConvertedPlaidTransactions(userId, startDate, endDate);
-        return !transactions.isEmpty();
+        // Get transactions from Plaid
+        List<Transaction> plaidTransactions = transactionService.getConvertedPlaidTransactions(userId, startDate, endDate);
+
+        // Return true if we now have transactions for this period
+        return !plaidTransactions.isEmpty();
     }
+
+    public void syncAndValidateTransactions(LocalDate startDate, LocalDate endDate, Long userId){}
+
 
     public Boolean checkRecurringTransactionsExistInDateRange(LocalDate startDate, LocalDate endDate, Long userId){
         if(startDate == null || endDate == null || userId == null){
@@ -96,20 +102,35 @@ public class TransactionRunner {
             return;
         }
         try {
-            Boolean transactionsExistForDateRange = checkTransactionsExistInDateRange(startDate, endDate, userId);
-            if (transactionsExistForDateRange) {
-                return;
-            }
 
             List<Transaction> transactionsFromPlaid = fetchPlaidTransactionsByUserDate(userId, startDate, endDate);
             if (transactionsFromPlaid.isEmpty()) {
                 log.error("Unable to fetch transactions - Plaid link may need to be updated for user: {}", userId);
-                // Here you might want to:
-                // 1. Mark the user's Plaid link as requiring update
-                // 2. Send notification to user
-                // 3. Queue for retry after link update
-
                 return;
+            }
+
+            // Get transaction IDs from Plaid transactions
+            List<String> plaidTransactionIds = transactionsFromPlaid.stream()
+                    .map(Transaction::getTransactionId)
+                    .collect(Collectors.toList());
+
+            // Check which transactions already exist in database
+            List<String> existingTransactionIds = transactionService.findTransactionIdsByIds(plaidTransactionIds);
+
+            // Filter out transactions that don't exist in database
+            List<Transaction> transactionsToSave = transactionsFromPlaid.stream()
+                    .filter(transaction -> !existingTransactionIds.contains(transaction.getTransactionId()))
+                    .collect(Collectors.toList());
+            transactionsToSave.forEach(transaction -> {
+                log.info("Transaction: {}", transaction.toString());
+            });
+
+            // Only save if we have new transactions
+            if (!transactionsToSave.isEmpty()) {
+                log.info("Saving {} new transactions to database", transactionsToSave.size());
+                saveTransactionBatch(transactionsToSave);
+            } else {
+                log.info("No new transactions to save for user: {}", userId);
             }
 
             saveTransactionBatch(transactionsFromPlaid);

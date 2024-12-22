@@ -89,7 +89,12 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
             transactionCategory.setStartDate(transactionCategoryEntity.getStartDate());
             transactionCategory.setIsActive(transactionCategoryEntity.getIsactive());
             transactionCategory.setOverSpendingAmount(transactionCategoryEntity.getOverspendingAmount());
-            transactionCategory.setOverSpent(transactionCategoryEntity.getIsOverSpent());
+            // Fix the isOverSpent handling
+            transactionCategory.setOverSpent(
+                    transactionCategoryEntity.getIsOverSpent() != null ?
+                            transactionCategoryEntity.getIsOverSpent() :
+                            false
+            );
             transactionCategoryList.add(transactionCategory);
         }
         return transactionCategoryList;

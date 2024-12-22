@@ -61,8 +61,8 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
             return results.stream()
                     .map(row -> {
                         String categoryName = (String) row[0];
-                        BigDecimal budgeted = (BigDecimal) row[1];
-                        BigDecimal actual = (BigDecimal) row[2];
+                        BigDecimal budgeted = toBigDecimal( row[1]);
+                        BigDecimal actual = toBigDecimal( row[2]);
                         LocalDate categoryStartDate = (LocalDate) row[3];
                         LocalDate categoryEndDate = (LocalDate) row[4];
 
@@ -80,6 +80,20 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
             log.error("There was an error retrieving the top expense categories for budget: " + budgetId);
             return Collections.emptyList();
         }
+    }
+
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
+        if (value instanceof Double) {
+            return BigDecimal.valueOf((Double) value);
+        }
+        return new BigDecimal(value.toString());
     }
 
     @Override
@@ -156,9 +170,9 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
 
             return results.stream()
                     .map(row -> {
-                        BigDecimal budgeted = (BigDecimal) row[0];
-                        BigDecimal actual = (BigDecimal) row[1];
-                        BigDecimal remaining = (BigDecimal) row[2];
+                        BigDecimal budgeted = toBigDecimal(row[0]);
+                        BigDecimal actual = toBigDecimal(row[1]);
+                        BigDecimal remaining = toBigDecimal(row[2]);
                         LocalDate categoryStartDate = ((java.time.LocalDate) row[3]);
                         LocalDate categoryEndDate = ((java.time.LocalDate) row[4]);
 
@@ -203,11 +217,11 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
 
             return results.stream()
                     .map(row -> {
-                        BigDecimal budgeted = (BigDecimal) row[0];
-                        BigDecimal actual = (BigDecimal) row[1];
-                        BigDecimal remaining = (BigDecimal) row[2];
-                        LocalDate categoryStartDate = ((Date) row[3]).toLocalDate();
-                        LocalDate categoryEndDate = ((Date) row[4]).toLocalDate();
+                        BigDecimal budgeted = toBigDecimal(row[0]);
+                        BigDecimal actual = toBigDecimal(row[1]);
+                        BigDecimal remaining = toBigDecimal(row[2]);
+                        LocalDate categoryStartDate = (LocalDate) row[3];
+                        LocalDate categoryEndDate = (LocalDate) row[4];
 
                         return new BudgetCategory(
                                 "Expenses",
@@ -284,7 +298,14 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                     .setParameter("budgetId", budgetId)
                     .getSingleResult();
 
-            return result != null ? (BigDecimal) result : BigDecimal.ZERO;
+            if (result == null) {
+                return BigDecimal.ZERO;
+            }
+
+            return result instanceof BigDecimal ?
+                    (BigDecimal) result :
+                    BigDecimal.valueOf((Double) result);
+
 
         } catch(DataAccessException e) {
             log.error("Error retrieving total spent amount for budget: " + budgetId, e);

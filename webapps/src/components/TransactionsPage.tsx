@@ -75,7 +75,7 @@ const TransactionsPage: React.FC = () => {
             const merchantName = transaction.merchantName?.toLowerCase() ?? '';
             const amount = transaction.amount?.toString() ?? '';
             const date = formatDate(transaction.posted) ?? '';
-            const authorizedDate = transaction.authorizedDate.toString() ?? '';
+            const authorizedDate = transaction.authorizedDate ? transaction.authorizedDate.toString() : '';
             return name.includes(searchTermLowerCase) ||
                 category.includes(searchTermLowerCase) ||
                 merchantName.includes(searchTermLowerCase) ||

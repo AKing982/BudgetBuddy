@@ -85,36 +85,59 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         return false;
     }
 
-    public TransactionRule categorizeTransactionByUserRules(final Transaction transaction, final Long userId){
-        if(transaction == null){
+    public TransactionRule categorizeTransactionByUserRules(final Transaction transaction, final Long userId) {
+        if (transaction == null) {
             throw new IllegalArgumentException("Transaction cannot be null");
         }
 
-        if(userId < 1){
+        if (userId < 1) {
             throw new InvalidUserIDException("User ID is invalid: " + userId);
         }
 
         // 1. Load the user Category Rules
         loadUserCategoryRules(userId);
+        if (userCategoryRules == null) {
+            userCategoryRules = new ArrayList<>();
+        }
+
 
         // 2. Iterate through the user Category Rules
         int priority = determinePriority(transaction, userCategoryRules);
         log.info("Priority: " + priority);
-        TransactionRule transactionRule = createTransactionRuleWithPatterns(transaction, "Uncategorized","", priority);
-        for(UserCategoryRule userCategoryRule : userCategoryRules){
-            if(!userCategoryRule.getUserId().equals(userId) || !userCategoryRule.isActive()){
+        TransactionRule transactionRule = createTransactionRuleWithPatterns(transaction, "Uncategorized", "", priority);
+        if (!userCategoryRules.isEmpty()) {
+            for (UserCategoryRule userCategoryRule : userCategoryRules) {
+                if (!userCategoryRule.getUserId().equals(userId) || !userCategoryRule.isActive()) {
                     continue;
-            }
-            if(matchesRule(transactionRule, userCategoryRule) && userCategoryRule.getPriority() == priority){
-                log.info("Rule Matches");
-                String matchByText = userCategoryRule.getMatchByText();
-                TransactionRule matchedRule = createTransactionRuleWithPatterns(transaction, userCategoryRule.getCategoryName(), matchByText, priority);
-                addMatchedTransactionRule(matchedRule.getMatchedCategory(), transactionRule);
-                return matchedRule;
+                }
+                if (matchesRule(transactionRule, userCategoryRule) && userCategoryRule.getPriority() == priority) {
+                    log.info("Rule Matches");
+                    String matchByText = userCategoryRule.getMatchByText();
+                    TransactionRule matchedRule = createTransactionRuleWithPatterns(transaction, userCategoryRule.getCategoryName(), matchByText, priority);
+                    addMatchedTransactionRule(matchedRule.getMatchedCategory(), transactionRule);
+                    return matchedRule;
+                }
             }
         }
+
+        TransactionRule plaidTransactionRule = createTransactionRuleFromPlaidCategory(transaction);
         addUnmatchedTransactions(transactionRule);
-        return transactionRule;
+        return plaidTransactionRule;
+    }
+
+    private TransactionRule createTransactionRuleFromPlaidCategory(Transaction transaction) {
+        String categoryName = !transaction.getCategories().isEmpty() ?
+                transaction.getCategories().get(0) :
+                "Uncategorized";
+
+        return TransactionRule.builder()
+                .transactionId(transaction.getTransactionId())
+                .descriptionPattern(transaction.getDescription())
+                .merchantPattern(transaction.getMerchantName())
+                .priority(1) // Default priority for Plaid categories
+                .categories(transaction.getCategories())
+                .matchedCategory(categoryName)
+                .build();
     }
 
     private TransactionRule createTransactionRuleWithPatterns(Transaction transaction, String category, String userMatchByText, int priority) {

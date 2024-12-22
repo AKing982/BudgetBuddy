@@ -65,6 +65,12 @@ public class CategoryServiceImpl implements CategoryService
     }
 
     @Override
+    public Optional<CategoryEntity> findCategoryByName(String categoryName) {
+        List<CategoryEntity> categoryEntities = categoryRepository.findByName(categoryName);
+        return categoryEntities.stream().findFirst();
+    }
+
+    @Override
     public Optional<CategoryEntity> getCategoryByNameOrDescription(String description, String name) {
         return categoryRepository.findByDescriptionOrCategoryName(description, name);
     }

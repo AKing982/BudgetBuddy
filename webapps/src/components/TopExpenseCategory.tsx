@@ -23,27 +23,32 @@ const dummyData = [
 interface TopExpenseCategoryProps {
     isLoading: boolean;
     categories: Array<{
-        name: string;
-        amount: number;
+        categoryName: string;
+        actualAmount: number;    // Changed from amount
         budgetedAmount: number;
+        remainingAmount: number; // Added this
+        dateRange?: any;        // Optional, since it's not used in the component
     }>;
 }
-
 const TopExpenseCategory: React.FC<TopExpenseCategoryProps> = ({isLoading, categories}) => {
 
     const maroonColor = '#800000';
     const processedCategories = useMemo(() => {
         if (!categories?.length) return [];
+        console.log('Categories: ', categories);
 
-        return categories
+        const mappedCategories = categories
             .map(category => ({
-                name: category.name,
+                name: category.categoryName,
                 budgeted: category.budgetedAmount || 0,
-                actual: category.amount || 0,
-                remaining: (category.budgetedAmount || 0) - (category.amount || 0)
+                actual: category.actualAmount || 0,    // Changed from amount
+                remaining: category.remainingAmount || 0
             }))
-            .sort((a, b) => b.actual - a.actual) // Sort by actual spending
-            .slice(0, 5); // Get top 5
+            .sort((a, b) => b.actual - a.actual)
+            .slice(0, 5);
+
+        console.log('First Five Categories: ', mappedCategories);
+        return mappedCategories;
     }, [categories]);
 
     if (isLoading) {

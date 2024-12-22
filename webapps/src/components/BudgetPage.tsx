@@ -38,8 +38,6 @@ const BudgetPage: React.FC = () => {
             const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
             const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-
-
             const results = await budgetRunnerService.getBudgetsByDateRange(
                 userId,
                 startDate,
@@ -47,6 +45,7 @@ const BudgetPage: React.FC = () => {
             );
 
             setBudgetData(results);
+            console.log('Budget Data: ', results);
         } catch (err) {
             setError('Failed to fetch budget data. Please try again later.');
             console.error('Error fetching budget data:', err);
@@ -107,8 +106,10 @@ const BudgetPage: React.FC = () => {
     const topExpenseCategories = useMemo(() => {
         if (!budgetData.length) return [];
 
+        const categories = budgetData.flatMap(budget => budget.topExpenseCategories || []);
+        console.log('Top Expense Categories: ', categories);
         // Flatten all expense categories from all budgets
-        return budgetData.flatMap(budget => budget.topExpenseCategories || []);
+        return categories;
     }, [budgetData]);
 
 
