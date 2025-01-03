@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name="budgetPeriod")
+@Table(name="budgetPeriods")
 @Getter
 @Setter
 public class BudgetPeriodEntity
