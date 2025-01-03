@@ -21,7 +21,7 @@ public class RecurringTransactionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="rId")
+    @Column(name="rid")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -67,5 +67,5 @@ public class RecurringTransactionEntity {
     private String type;
 
     @OneToMany(mappedBy = "recurringTransaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<RecurringTransactionsLink> recurringTransactionsLinks = new HashSet<>();
+    private Set<RecurringTransactionsLink> transactionsLinks = new HashSet<>();
 }

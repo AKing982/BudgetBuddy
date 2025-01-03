@@ -3,8 +3,13 @@ package com.app.budgetbuddy.workbench.runner;
 import com.app.budgetbuddy.BudgetBuddyApplication;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionType;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.exceptions.DataConversionException;
+import com.app.budgetbuddy.exceptions.PlaidApiException;
+import com.app.budgetbuddy.exceptions.TransactionRunnerException;
 import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
@@ -19,13 +24,15 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class TransactionRunner {
+public class TransactionRunner
+{
     private final PlaidTransactionManager plaidTransactionManager;
     private final TransactionService transactionService;
     private final RecurringTransactionService recurringTransactionService;
@@ -51,9 +58,6 @@ public class TransactionRunner {
         return !plaidTransactions.isEmpty();
     }
 
-    public void syncAndValidateTransactions(LocalDate startDate, LocalDate endDate, Long userId){}
-
-
     public Boolean checkRecurringTransactionsExistInDateRange(LocalDate startDate, LocalDate endDate, Long userId){
         if(startDate == null || endDate == null || userId == null){
             return false;
@@ -69,95 +73,159 @@ public class TransactionRunner {
         try
         {
             List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionService.createAndSaveRecurringTransactions(recurringTransactions);
-            if(recurringTransactionEntities == null || recurringTransactionEntities.isEmpty()){
-                return false;
-            }
-            return true;
+            return !recurringTransactionEntities.isEmpty();
+
         }catch(RuntimeException e){
             log.error("There was a problem saving the recurring transaction batch.", e);
             return false;
         }
     }
 
-    public Boolean saveTransactionBatch(final List<Transaction> plaidTransactions){
-        if(plaidTransactions == null){
+    private List<TransactionsEntity> getConvertedTransactionEntityList(final List<Transaction> transactions)
+    {
+        if(transactions == null || transactions.isEmpty()){
+            return Collections.emptyList();
+        }
+        try
+        {
+            return transactionService.createAndSaveTransactions(transactions);
+
+        }catch(DataAccessException e){
+            log.error("There was an error creating and saving the transactions: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public Boolean saveTransactionBatch(final List<Transaction> plaidTransactions)
+    {
+        if(plaidTransactions == null || plaidTransactions.isEmpty())
+        {
             return false;
         }
         try
         {
-            List<TransactionsEntity> transactionsEntities = transactionService.createAndSaveTransactions(plaidTransactions);
-            if(transactionsEntities.isEmpty()){
-                return false;
-            }
-            return true;
-        }catch(RuntimeException e){
-            log.error("There was a problem saving the transactions batch", e);
+            return !getConvertedTransactionEntityList(plaidTransactions).isEmpty();
+        }catch(RuntimeException ex)
+        {
+            log.error("There was an error creating and saving the transactions: ", ex);
             return false;
         }
     }
 
-    public void syncUserTransactions(Long userId, LocalDate startDate, LocalDate endDate)
-    {
-        if(userId == null || startDate == null || endDate == null) {
-            return;
-        }
-        try {
+    private List<String> filterPlaidTransactionIds(final List<? extends Transaction> transactions){
+        return transactions.stream()
+                .map(Transaction::getTransactionId)
+                .collect(Collectors.toList());
+    }
 
+    private List<String> getExistingTransactionIds(final List<String> plaidTransactionIds, final String type)
+    {
+        if(plaidTransactionIds == null){
+            return Collections.emptyList();
+        }
+        return switch (type) {
+            case "TRANSACTION" -> transactionService.findTransactionIdsByIds(plaidTransactionIds);
+            case "RECURRING_TRANSACTION" ->
+                    recurringTransactionService.findRecurringTransactionIds(plaidTransactionIds);
+            default -> throw new IllegalArgumentException("Unsupported transaction type: " + type);
+        };
+    }
+
+
+    public boolean syncUserTransactions(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        if(userId == null || startDate == null || endDate == null)
+        {
+            return false;
+        }
+        try
+        {
             List<Transaction> transactionsFromPlaid = fetchPlaidTransactionsByUserDate(userId, startDate, endDate);
-            if (transactionsFromPlaid.isEmpty()) {
-                log.error("Unable to fetch transactions - Plaid link may need to be updated for user: {}", userId);
-                return;
+            if(transactionsFromPlaid == null || transactionsFromPlaid.isEmpty())
+            {
+                log.error("Unable to fetch Transactions - Plaid link may need to be updated for user: {}", userId);
+                return false;
             }
 
             // Get transaction IDs from Plaid transactions
-            List<String> plaidTransactionIds = transactionsFromPlaid.stream()
-                    .map(Transaction::getTransactionId)
-                    .collect(Collectors.toList());
+            List<String> plaidTransactionIds = filterPlaidTransactionIds(transactionsFromPlaid);
 
             // Check which transactions already exist in database
-            List<String> existingTransactionIds = transactionService.findTransactionIdsByIds(plaidTransactionIds);
+            List<String> existingTransactionIds = getExistingTransactionIds(plaidTransactionIds, "TRANSACTION");
 
             // Filter out transactions that don't exist in database
             List<Transaction> transactionsToSave = transactionsFromPlaid.stream()
                     .filter(transaction -> !existingTransactionIds.contains(transaction.getTransactionId()))
                     .collect(Collectors.toList());
-            transactionsToSave.forEach(transaction -> {
-                log.info("Transaction: {}", transaction.toString());
-            });
 
-            // Only save if we have new transactions
-            if (!transactionsToSave.isEmpty()) {
-                log.info("Saving {} new transactions to database", transactionsToSave.size());
-                saveTransactionBatch(transactionsToSave);
-            } else {
-                log.info("No new transactions to save for user: {}", userId);
+            if(transactionsToSave.isEmpty())
+            {
+                log.info("No New Transactions to save for user: {}", userId);
+                return false;
             }
-
-            saveTransactionBatch(transactionsFromPlaid);
-
-        } catch (Exception e) {
-            log.error("Error syncing transactions for user: {}", userId, e);
+            return saveTransactionBatch(transactionsToSave);
+        }catch(TransactionRunnerException ex)
+        {
+            log.error("There was an error saving the transactions: ", ex);
+            return false;
         }
     }
 
-    public List<RecurringTransaction> fetchRecurringPlaidTransactions(final Long userId, final LocalDate startDate, final LocalDate endDate){
-        if(startDate == null || endDate == null || userId == null){
+    private List<TransactionStream> getTransactionOutflowStream(TransactionsRecurringGetResponse recurringGetResponse)
+    {
+        return recurringGetResponse.getOutflowStreams();
+    }
+
+    private List<TransactionStream> getTransactionInflowStream(TransactionsRecurringGetResponse recurringGetResponse)
+    {
+        return recurringGetResponse.getInflowStreams();
+    }
+
+    private List<RecurringTransaction> getConvertedRecurringTransactions(final TransactionsRecurringGetResponse recurringGetResponse, final Long userId)
+    {
+        List<TransactionStream> outflowingStream = getTransactionOutflowStream(recurringGetResponse);
+        if(outflowingStream == null || outflowingStream.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        List<TransactionStream> inflowingStream = getTransactionInflowStream(recurringGetResponse);
+        if(inflowingStream == null || inflowingStream.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionService.createRecurringTransactionEntitiesFromStream(outflowingStream, inflowingStream, userId);
+            return recurringTransactionService.convertRecurringTransactionEntities(recurringTransactionEntities);
+        }catch(DataConversionException e)
+        {
+            log.error("There was an error retrieving the converted transactions for user {}: ", userId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<RecurringTransaction> filterRecurringTransactionsByDateRange(LocalDate startDate, LocalDate endDate, List<RecurringTransaction> recurringTransactions){
+        return recurringTransactions.stream()
+                .filter(rt -> isTransactionInDateRange(rt, startDate, endDate))
+                .collect(Collectors.toList());
+    }
+
+    public List<RecurringTransaction> fetchRecurringPlaidTransactions(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        if(startDate == null || endDate == null || userId == null)
+        {
             return Collections.emptyList();
         }
         try
         {
             TransactionsRecurringGetResponse recurringGetResponse = plaidTransactionManager.getRecurringTransactionsForUser(userId);
-            List<TransactionStream> outflowingStream = recurringGetResponse.getOutflowStreams();
-            List<TransactionStream> inflowingStream = recurringGetResponse.getInflowStreams();
-            List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionService.createRecurringTransactionEntitiesFromStream(outflowingStream, inflowingStream, userId);
-            List<RecurringTransaction> recurringTransactions = recurringTransactionService.convertRecurringTransactionEntities(recurringTransactionEntities);
+            List<RecurringTransaction> recurringTransactions = getConvertedRecurringTransactions(recurringGetResponse, userId);
 
             // Filter transactions that fall within date range
-            return recurringTransactions.stream()
-                    .filter(rt -> isTransactionInDateRange(rt, startDate, endDate))
-                    .collect(Collectors.toList());
+            return filterRecurringTransactionsByDateRange(startDate, endDate, recurringTransactions);
 
-        }catch(IOException e){
+        }catch(IOException e)
+        {
             log.error("Error fetching Plaid Recurring Transactions for user {} between {} and {}", userId, startDate, endDate, e);
             return Collections.emptyList();
         }
@@ -171,44 +239,64 @@ public class TransactionRunner {
                 !rtEndDate.isBefore(startDate);
     }
 
-
-    public List<Transaction> fetchPlaidTransactionsByUserDate(Long userId, LocalDate startDate, LocalDate endDate){
-        if(startDate == null || endDate == null || userId == null){
+    public List<Transaction> fetchPlaidTransactionsByUserDate(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        if(startDate == null || endDate == null || userId == null)
+        {
             return Collections.emptyList();
         }
         try
         {
-            TransactionsGetResponse response = plaidTransactionManager.getTransactionsForUser(
-                    userId, startDate, endDate);
-
-            if (response == null) {
+            TransactionsGetResponse response = plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate);
+            if(response == null)
+            {
                 log.error("Null response from Plaid for user: {} - link may need update", userId);
                 return Collections.emptyList();
             }
-
             return transactionService.convertPlaidTransactions(response.getTransactions());
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
             log.error("Error fetching Plaid transactions for user {} between {} and {}: ",
                     userId, startDate, endDate, e);
             return Collections.emptyList();
         }
     }
 
-    public void syncRecurringTransactions(Long userId, LocalDate startDate, LocalDate endDate){
-        if(startDate == null || endDate == null || userId == null){
-            return;
-        }
-        Boolean recurringTransactionsExistForDateRange = checkRecurringTransactionsExistInDateRange(startDate, endDate, userId);
-        if(recurringTransactionsExistForDateRange)
+    public boolean syncRecurringTransactions(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        if(userId == null || startDate == null || endDate == null)
         {
-            return;
+            return false;
         }
-        else
+        try
         {
-            List<RecurringTransaction> recurringTransactions = fetchRecurringPlaidTransactions(userId, startDate, endDate);
+            List<RecurringTransaction> recurringTransactionsFromPlaid = fetchRecurringPlaidTransactions(userId, startDate, endDate);
+            if(recurringTransactionsFromPlaid == null || recurringTransactionsFromPlaid.isEmpty())
+            {
+                log.warn("Unable to fetch Plaid Recurring Transactions - Plaid link may need update");
+                return false;
+            }
+            List<String> recurringTransactionIds = filterPlaidTransactionIds(recurringTransactionsFromPlaid);
+            recurringTransactionIds.forEach((transactionId) -> {
+                log.info("Recurring TransactionId: " + transactionId);
+            });
+            List<String> existingRecurringTransactionIds = getExistingTransactionIds(recurringTransactionIds, "RECURRING_TRANSACTION");
+            // Filter out transactions that don't exist in database
+            List<RecurringTransaction> transactionsToSave = recurringTransactionsFromPlaid.stream()
+                    .filter(transaction -> !existingRecurringTransactionIds.contains(transaction.getTransactionId()))
+                    .collect(Collectors.toList());
 
+            if(transactionsToSave.isEmpty())
+            {
+                log.info("No New Transactions to save for user: {}", userId);
+                return false;
+            }
+            return saveRecurringTransactionBatch(transactionsToSave);
+
+        }catch(RuntimeException ex){
+            log.error("There was an error syncing the recurring transactions: ", ex);
+            return false;
         }
-
     }
 
     public static void main(String[] args) {

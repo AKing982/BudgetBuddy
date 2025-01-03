@@ -29,6 +29,7 @@ public interface RecurringTransactionService extends ServiceModel<RecurringTrans
     List<RecurringTransactionEntity> findByMerchantName(String merchantName);
     List<RecurringTransactionEntity> findByCategory(CategoryEntity category);
 
+    List<String> findRecurringTransactionIds(List<String> plaidRecurringTransactionIds);
     List<RecurringTransactionEntity> createAndSaveRecurringTransactions(List<RecurringTransaction> recurringTransactions);
     List<RecurringTransaction> convertRecurringTransactionEntities(List<RecurringTransactionEntity> recurringTransactionEntities);
 

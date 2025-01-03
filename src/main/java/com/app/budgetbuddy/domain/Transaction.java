@@ -15,29 +15,30 @@ import java.util.List;
 
 @Getter
 @ToString
+@Setter
 public class Transaction {
-    private final String accountId;
-    private final BigDecimal amount;
-    private final String isoCurrencyCode;
-    private final List<String> categories;
-    private final String categoryId;
+    private String accountId;
+    private BigDecimal amount;
+    private String isoCurrencyCode;
+    private List<String> categories;
+    private String categoryId;
 
     @JsonDeserialize(using = LocalDateDeserializer.class)
-    private final LocalDate date;
+    private LocalDate date;
 
-    private final String description;
-    private final String merchantName;
-    private final String name;
-    private final Boolean pending;
-    private final String transactionId;
-
-    @JsonDeserialize(using = LocalDateDeserializer.class)
-    private final LocalDate authorizedDate;
-
-    private final String logoUrl;
+    private String description;
+    private String merchantName;
+    private String name;
+    private Boolean pending;
+    private String transactionId;
 
     @JsonDeserialize(using = LocalDateDeserializer.class)
-    private final LocalDate posted;
+    private LocalDate authorizedDate;
+
+    private String logoUrl;
+
+    @JsonDeserialize(using = LocalDateDeserializer.class)
+    private LocalDate posted;
 
     public Transaction(
             @JsonProperty("accountId") String accountId,
@@ -68,5 +69,8 @@ public class Transaction {
         this.authorizedDate = authorizedDate;
         this.logoUrl = logoUrl;
         this.posted = posted;
+    }
+
+    public Transaction(){
     }
 }

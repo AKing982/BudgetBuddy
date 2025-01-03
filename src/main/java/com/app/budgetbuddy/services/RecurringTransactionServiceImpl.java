@@ -19,10 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -91,8 +88,21 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
 
             // Save the entity
             try {
-                RecurringTransactionEntity savedEntity = recurringTransactionsRepository.save(entity);
-                recurringTransactionEntities.add(savedEntity);
+                // Check if the recurring transaction exists in the database,
+                // if it does, then skip saving the recurring transaction
+                String streamId = entity.getStreamId();
+                Long rId = entity.getId();
+                RecurringTransactionEntity existingRecurringTransaction = recurringTransactionsRepository.findById(rId).orElse(null);
+                if(!existingRecurringTransaction.getStreamId().equals(streamId))
+                {
+                    RecurringTransactionEntity savedEntity = recurringTransactionsRepository.save(entity);
+                    recurringTransactionEntities.add(savedEntity);
+                }
+                else
+                {
+                    log.warn("Recurring Transaction with StreamId: {} already exists", streamId);
+                }
+
             } catch (Exception e) {
                 log.error("Error saving recurring transaction with streamId: {}",
                         recurringTransaction.getStreamId(), e);
@@ -171,6 +181,20 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     @Override
     public List<RecurringTransactionEntity> findByCategory(CategoryEntity category) {
         return recurringTransactionsRepository.findTransactionsByCategory(category);
+    }
+
+    @Override
+    public List<String> findRecurringTransactionIds(final List<String> plaidRecurringTransactionIds) {
+        if(plaidRecurringTransactionIds.isEmpty()){
+            return Collections.emptyList();
+        }
+        try
+        {
+            return recurringTransactionsRepository.findRecurringTransactionIds(plaidRecurringTransactionIds);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching existing recurring transaction ids from the database.", e);
+            return List.of();
+        }
     }
 
 
