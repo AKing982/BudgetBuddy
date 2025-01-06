@@ -48,13 +48,14 @@ public class TransactionCategoryRunner
      * Processes and synchronizes all transaction categories for a user within a given date range.
      * This includes both regular and recurring transactions.
      */
+    //TODO: Unit test this method and change output to boolean
     public void processTransactionCategories(Long userId, LocalDate startDate, LocalDate endDate) {
         log.info("Starting transaction category processing for user {} between {} and {}",
                 userId, startDate, endDate);
 
         try {
             // 1. Get active budgets for the date range
-            Budget activeBudget = budgetService.loadUserBudget(userId);
+            Budget activeBudget = budgetService.loadUserBudgetForPeriod(userId, startDate, endDate);
 
             // Process each budget
             log.info("Process budget for startDate: {} endDate: {}", startDate, endDate);
@@ -67,6 +68,7 @@ public class TransactionCategoryRunner
         }
     }
 
+    //TODO: Unit test this method and break it down into smaller methods
     private void processBudgetTransactionCategories(Budget budget,
                                                     LocalDate startDate,
                                                     LocalDate endDate) {
@@ -136,8 +138,7 @@ public class TransactionCategoryRunner
         }
     }
 
-
-
+    // TODO: Unit test this method
     public Boolean checkIfTransactionCategoryExists(TransactionCategory transactionCategory){
         if (transactionCategory == null || transactionCategory.getBudgetId() == null) {
             return false;
@@ -194,6 +195,7 @@ public class TransactionCategoryRunner
         }
     }
 
+    //TODO: Unit test this method
     public List<TransactionCategory> createNewRecurringTransactionCategories(final List<RecurringTransaction> recurringTransactions, final Budget budget, final LocalDate startDate, final LocalDate endDate){
         if (recurringTransactions == null || recurringTransactions.isEmpty() || budget == null) {
             log.warn("Invalid parameters for creating recurring transaction categories");
@@ -236,6 +238,7 @@ public class TransactionCategoryRunner
                 !transactionEndDate.isAfter(budgetEndDate);
     }
 
+    //TODO: Unit test this method
     public List<TransactionCategory> createNewTransactionCategories(final List<Transaction> transactions, Budget budget, LocalDate startDate, LocalDate endDate)
     {
         if (transactions == null || budget == null) {
@@ -304,6 +307,7 @@ public class TransactionCategoryRunner
                 .collect(Collectors.toList());
     }
 
+    // TODO: Unit test this method
     public List<TransactionCategory> updateTransactionCategories(final List<TransactionCategory> existingTransactionCategories, final List<Transaction> transactions, final Budget budget, final BudgetPeriod budgetPeriod){
         if (existingTransactionCategories == null || transactions == null || budget == null) {
             log.warn("Invalid parameters for updating transaction categories");
@@ -326,7 +330,7 @@ public class TransactionCategoryRunner
                     .collect(Collectors.toList());
 
             // 3. Create CategoryPeriods
-            List<CategoryPeriod> categoryPeriods = transactionCategoryBuilder.createCategoryPeriods(
+            Set<CategoryPeriod> categoryPeriods = transactionCategoryBuilder.createCategoryPeriods(
                     budget.getId(),
                     budget.getStartDate(),
                     budget.getEndDate(),

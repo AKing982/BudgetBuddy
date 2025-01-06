@@ -5,17 +5,21 @@ import com.app.budgetbuddy.domain.BudgetCreateRequest;
 import com.app.budgetbuddy.domain.User;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class BudgetServiceImpl implements BudgetService
 {
     private final BudgetRepository budgetRepository;
@@ -53,6 +57,18 @@ public class BudgetServiceImpl implements BudgetService
         }
         BudgetEntity budgetEntity = budgetEntityOptional.get();
         return convertBudgetEntity(budgetEntity);
+    }
+
+    @Override
+    public Budget loadUserBudgetForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
+        try
+        {
+            Optional<BudgetEntity> budgetEntityOptional = budgetRepository.findBudgetByUserAndPeriod(userId, startDate, endDate);
+            return budgetEntityOptional.map(this::convertBudgetEntity).orElseThrow(() -> new RuntimeException("Budget not found"));
+        }catch(DataAccessException e){
+            log.error("There was an error loading budget for period: {} - {}, {}", startDate, endDate, e.getMessage());
+            return null;
+        }
     }
 
     private Budget convertBudgetEntity(BudgetEntity budgetEntity) {

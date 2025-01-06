@@ -70,6 +70,8 @@ public class BudgetRunner
         }
     }
 
+    // TODO: Create a method that creates a new budget for a new period
+
 
     private List<BudgetPeriodCategory> loadPeriodCategories(Budget budget, Period period) {
         LocalDate startDate = budget.getStartDate();
@@ -392,6 +394,10 @@ public class BudgetRunner
         if(budgetId == null || startDate == null || endDate == null){
             return Collections.emptyList();
         }
+        List<BudgetCategory> savingsBudgetCategory = budgetQueriesService.getSavingsBudgetCategory(budgetId, startDate, endDate);
+        savingsBudgetCategory.forEach(budgetCategory -> {
+            log.info("Saving category: {}", budgetCategory);
+        });
         return budgetQueriesService.getSavingsBudgetCategory(budgetId, startDate, endDate);
     }
 
@@ -400,10 +406,6 @@ public class BudgetRunner
             return Collections.emptyList();
         }
         return budgetQueriesService.getIncomeBudgetCategory(budgetId, startDate, endDate);
-    }
-
-    public static void main(String[] args){
-
     }
 
 }

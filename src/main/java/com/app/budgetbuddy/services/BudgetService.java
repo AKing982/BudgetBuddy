@@ -5,12 +5,15 @@ import com.app.budgetbuddy.domain.BudgetCreateRequest;
 import com.app.budgetbuddy.entities.BudgetEntity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 public interface BudgetService extends ServiceModel<BudgetEntity>
 {
     Budget loadUserBudget(Long userId);
+
+    Budget loadUserBudgetForPeriod(Long userId, LocalDate startDate, LocalDate endDate);
 
     BudgetEntity createAndSaveBudget(BudgetCreateRequest createRequest);
 

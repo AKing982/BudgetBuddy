@@ -3,6 +3,7 @@ package com.app.budgetbuddy.domain;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ import java.util.Objects;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Component
+@ToString
 public class BudgetStats
 {
     private Long budgetId;
