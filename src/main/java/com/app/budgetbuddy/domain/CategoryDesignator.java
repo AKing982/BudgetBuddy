@@ -15,10 +15,10 @@ public class CategoryDesignator
    private String categoryId;
    private String categoryName;
    private List<Transaction> transactions;
-   private List<RecurringTransaction> recurringTransactions;
 
    public CategoryDesignator(String categoryId, String categoryName) {
       this.categoryId = categoryId;
       this.categoryName = categoryName;
+      this.transactions = new ArrayList<>();
    }
 }

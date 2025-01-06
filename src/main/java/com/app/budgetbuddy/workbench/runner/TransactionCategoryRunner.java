@@ -330,7 +330,7 @@ public class TransactionCategoryRunner
                     .collect(Collectors.toList());
 
             // 3. Create CategoryPeriods
-            Set<CategoryPeriod> categoryPeriods = transactionCategoryBuilder.createCategoryPeriods(
+            List<CategoryPeriod> categoryPeriods = transactionCategoryBuilder.createCategoryPeriods(
                     budget.getId(),
                     budget.getStartDate(),
                     budget.getEndDate(),

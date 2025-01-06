@@ -275,7 +275,38 @@ public class BudgetCalculations {
         }
     }
 
-    public BigDecimal calculateRemainingBudgetForPeriod(BigDecimal totalBudgetedAmount, BigDecimal budgetActual, BudgetPeriod budgetPeriod){
+    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategorySpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final Budget budget)
+    {
+        if(categorySpendingData == null || categoryDateRanges == null || budget == null)
+        {
+            return Collections.emptyList();
+        }
+        List<BudgetPeriodAmount> budgetPeriodAmounts = new ArrayList<>();
+        BigDecimal totalBudgetAmount = budget.getBudgetAmount();
+
+        // Calculate category's portion based on spending ratio
+        BigDecimal categorySpendingRatio = categorySpendingData.getActualSpending()
+                .divide(totalSpendingOnCategories, 2, RoundingMode.HALF_UP);
+        BigDecimal categoryTotalBudget = totalBudgetAmount.multiply(categorySpendingRatio);
+
+        // Calculate per period amount based on days in period
+        DateRange budgetDateRange = new DateRange(budget.getStartDate(), budget.getEndDate());
+        long totalDays = budgetDateRange.getDaysInRange();
+
+        for(DateRange dateRange : categoryDateRanges) {
+            int periodDays = (int) dateRange.getDaysInRange();
+            BigDecimal periodRatio = BigDecimal.valueOf(periodDays)
+                    .divide(BigDecimal.valueOf(totalDays), 2, RoundingMode.HALF_UP);
+            BigDecimal periodAmount = categoryTotalBudget.multiply(periodRatio).divide(new BigDecimal("2"), 2, RoundingMode.CEILING);
+            log.info("Budget Period Amount: " + periodAmount);
+            budgetPeriodAmounts.add(new BudgetPeriodAmount(dateRange, periodAmount.doubleValue()));
+        }
+
+        return budgetPeriodAmounts;
+    }
+
+    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategorySpending categorySpending, final List<DateRange> categoryDateRanges, final Budget budget)
+    {
         return null;
     }
 
