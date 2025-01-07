@@ -881,6 +881,47 @@ class BudgetCalculatorTest {
         }
     }
 
+    @Test
+    void testCalculateActualAmountForCategoryDateRange_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
+        CategorySpending grocerySpending = new CategorySpending("Groceries", new BigDecimal("350.00"));
+        BigDecimal totalSpendingOnCategories = new BigDecimal("1789");
+
+        Budget budget = new Budget();
+        budget.setActual(new BigDecimal("1789"));
+        budget.setBudgetAmount(new BigDecimal("3260"));
+        budget.setStartDate(LocalDate.of(2024, 11, 1));
+        budget.setEndDate(LocalDate.of(2024, 11, 30));
+
+        List<DateRange> groceryDateRanges = List.of(
+                new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)),
+                new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)),
+                new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)),
+                new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30))
+        );
+
+        List<BudgetPeriodAmount> expectedBudgetPeriodAmounts = List.of(
+                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 96.45),
+                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)), 112.00),
+                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)), 87.05),
+                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30)), 101.23)
+        );
+
+        List<BudgetPeriodAmount> actual = budgetCalculator.calculateActualAmountForCategoryDateRange(grocerySpending, totalSpendingOnCategories, groceryDateRanges, budget);
+        assertEquals(expectedBudgetPeriodAmounts.size(), actual.size());
+        for(int i = 0; i < expectedBudgetPeriodAmounts.size(); i++){
+            BudgetPeriodAmount expected = expectedBudgetPeriodAmounts.get(i);
+            BudgetPeriodAmount actualAmount = actual.get(i);
+
+            assertEquals(expected.getDateRange(), actualAmount.getDateRange(),
+                    String.format("Week %d date range mismatch", i + 1));
+            assertEquals(expected.getAmount(), actualAmount.getAmount(),
+                    String.format("Week %d amount mismatch. Expected %.2f, got %.2f",
+                            i + 1, expected.getAmount(), actualAmount.getAmount()));
+        }
+
+
+    }
+
 //    @Test
 //    void testCalculateTotalSpentOnBudgetForPeriod_whenBudgetIdInvalid_thenThrowIllegalArgumentException() {
 //        final Long budgetId = -1L;
