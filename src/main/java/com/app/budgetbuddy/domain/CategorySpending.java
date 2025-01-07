@@ -16,6 +16,7 @@ public class CategorySpending
     private String categoryName;
     private BigDecimal actualSpending;
     private LocalDate spendingDate;
+    private DateRange dateRange;
 
     public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending)
     {
@@ -24,11 +25,24 @@ public class CategorySpending
         this.actualSpending = actualSpending;
     }
 
+    public CategorySpending(String categoryName, BigDecimal actualSpending, DateRange dateRange) {
+        this.categoryName = categoryName;
+        this.actualSpending = actualSpending;
+        this.dateRange = dateRange;
+    }
+
     public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending, LocalDate spendingDate) {
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.actualSpending = actualSpending;
         this.spendingDate = spendingDate;
+    }
+
+    public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending, DateRange dateRange) {
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.actualSpending = actualSpending;
+        this.dateRange = dateRange;
     }
 
     public CategorySpending(String categoryName, BigDecimal actualSpending)

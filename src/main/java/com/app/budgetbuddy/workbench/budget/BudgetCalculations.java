@@ -86,6 +86,12 @@ public class BudgetCalculations {
         return BigDecimal.ZERO;
     }
 
+    public BigDecimal getTotalSpendingOnAllCategories(List<CategorySpending> categorySpendingList) {
+        return categorySpendingList.stream()
+                .map(CategorySpending::getActualSpending)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     public BigDecimal calculateTotalBudgetHealth(final BigDecimal budgetAmount, final BigDecimal budgetActual, BigDecimal savingsGoalProgress)
     {
         if(budgetAmount == null || budgetActual == null || savingsGoalProgress == null)
@@ -305,9 +311,33 @@ public class BudgetCalculations {
         return budgetPeriodAmounts;
     }
 
-    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategorySpending categorySpending, final List<DateRange> categoryDateRanges, final Budget budget)
+    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategorySpending categorySpending, final CategoryDesignator categoryDesignator, final List<DateRange> categoryDateRanges, final Budget budget)
     {
-        return null;
+        if(categorySpending == null || categoryDateRanges == null || budget == null)
+        {
+            return Collections.emptyList();
+        }
+        List<BudgetPeriodAmount> budgetPeriodAmounts = new ArrayList<>();
+        BigDecimal totalCategorySpending = categorySpending.getActualSpending();
+        DateRange categoryMonthRange = categorySpending.getDateRange();
+        List<Transaction> transactions = categoryDesignator.getTransactions();
+        for(DateRange categoryDateRange : categoryDateRanges)
+        {
+            BigDecimal totalSpendingForRange = getTotalTransactionSpendingForCategoryDateRange(transactions, categoryDateRange, categoryDesignator);
+            budgetPeriodAmounts.add(new BudgetPeriodAmount(categoryDateRange, totalSpendingForRange.doubleValue()));
+        }
+        return budgetPeriodAmounts;
+    }
+
+    private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions, final DateRange categoryDateRange, final CategoryDesignator categoryDesignator)
+    {
+        return transactions.stream()
+                .filter(transaction -> transaction.getDate() != null &&
+                        transaction.getDate().isAfter(categoryDateRange.getStartDate().minusDays(1)) &&
+                        transaction.getDate().isBefore(categoryDateRange.getEndDate().plusDays(1)) &&
+                        categoryDesignator.getCategoryId().equals(transaction.getCategoryId()))
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private BudgetGoalsEntity getBudgetGoalsByBudgetId(Long budgetId){

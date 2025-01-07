@@ -141,8 +141,7 @@ class TransactionCategoryRunnerTest {
 
         List<TransactionCategory> expected = List.of(
                 new TransactionCategory(1L, 1L, "cat123", "Food",
-                        200.0, 100.0, true, startDate, endDate, 0.0, false,
-                        List.of("tx123"))
+                        200.0, 100.0, true, startDate, endDate, 0.0, false)
         );
 
         when(categoryService.findCategoryByName("Groceries")).thenReturn(Optional.of(createCategory("Groceries")));

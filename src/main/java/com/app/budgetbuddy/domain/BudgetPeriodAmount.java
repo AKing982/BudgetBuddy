@@ -1,12 +1,12 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
+@ToString
 public class BudgetPeriodAmount
 {
     private DateRange dateRange;

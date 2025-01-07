@@ -883,8 +883,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCalculateActualAmountForCategoryDateRange_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
-        CategorySpending grocerySpending = new CategorySpending("Groceries", new BigDecimal("350.00"));
-        BigDecimal totalSpendingOnCategories = new BigDecimal("1789");
+        CategorySpending grocerySpending = new CategorySpending("Groceries", new BigDecimal("396.45"), new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 30)));
 
         Budget budget = new Budget();
         budget.setActual(new BigDecimal("1789"));
@@ -899,6 +898,26 @@ class BudgetCalculatorTest {
                 new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30))
         );
 
+        List<Transaction> transactions = List.of(
+                new Transaction(null, new BigDecimal("50.00"), null, List.of("Groceries"), "Groceries",
+                        LocalDate.of(2024, 11, 5), null, null, null, false, "t1", null, null, null),
+                new Transaction(null, new BigDecimal("46.45"), null, List.of("Groceries"), "Groceries",
+                        LocalDate.of(2024, 11, 6), null, null, null, false, "t2", null, null, null),
+                new Transaction(null, new BigDecimal("62.00"), null, List.of("Groceries"), "Groceries",
+                        LocalDate.of(2024, 11, 9), null, null, null, false, "t3", null, null, null),
+                new Transaction(null, new BigDecimal("50.00"), null, List.of("Groceries"), "Groceries",
+                        LocalDate.of(2024, 11, 12), null, null, null, false, "t4", null, null, null),
+                new Transaction(null, new BigDecimal("87.05"), null, List.of("Groceries"), "Groceries",
+                        LocalDate.of(2024, 11, 16), null, null, null, false, "t5", null, null, null),
+                new Transaction(null, new BigDecimal("101.23"), null, List.of("Groceries"), "Groceries",
+                        LocalDate.of(2024, 11, 25), null, null, null, false, "t6", null, null, null),
+                new Transaction(null, new BigDecimal("30.00"), null, List.of("Utilities"), "Utilities",
+                        LocalDate.of(2024, 11, 15), null, null, null, false, "t7", null, null, null)
+        );
+
+        CategoryDesignator categoryDesignator = new CategoryDesignator("Groceries", "Groceries");
+        categoryDesignator.setTransactions(transactions);
+
         List<BudgetPeriodAmount> expectedBudgetPeriodAmounts = List.of(
                 new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 96.45),
                 new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)), 112.00),
@@ -906,7 +925,8 @@ class BudgetCalculatorTest {
                 new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30)), 101.23)
         );
 
-        List<BudgetPeriodAmount> actual = budgetCalculator.calculateActualAmountForCategoryDateRange(grocerySpending, totalSpendingOnCategories, groceryDateRanges, budget);
+        List<BudgetPeriodAmount> actual = budgetCalculator.calculateActualAmountForCategoryDateRange(
+                grocerySpending, categoryDesignator, groceryDateRanges, budget);
         assertEquals(expectedBudgetPeriodAmounts.size(), actual.size());
         for(int i = 0; i < expectedBudgetPeriodAmounts.size(); i++){
             BudgetPeriodAmount expected = expectedBudgetPeriodAmounts.get(i);
@@ -918,8 +938,6 @@ class BudgetCalculatorTest {
                     String.format("Week %d amount mismatch. Expected %.2f, got %.2f",
                             i + 1, expected.getAmount(), actualAmount.getAmount()));
         }
-
-
     }
 
 //    @Test

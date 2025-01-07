@@ -314,39 +314,40 @@ public class TransactionCategoryRunner
             return new ArrayList<>();
         }
 
-        try {
-            // 1. Group transactions by category
-            Map<String, List<Transaction>> transactionsByCategory = transactions.stream()
-                    .filter(t -> t.getCategories() != null && !t.getCategories().isEmpty())
-                    .collect(Collectors.groupingBy(t -> t.getCategories().get(0)));
-
-            // 2. Create CategoryDesignators
-            List<CategoryDesignator> categoryDesignators = transactionsByCategory.entrySet().stream()
-                    .map(entry -> {
-                        CategoryDesignator designator = new CategoryDesignator(entry.getKey(), entry.getKey());
-                        designator.setTransactions(entry.getValue());
-                        return designator;
-                    })
-                    .collect(Collectors.toList());
-
-            // 3. Create CategoryPeriods
-            List<CategoryPeriod> categoryPeriods = transactionCategoryBuilder.createCategoryPeriods(
-                    budget.getId(),
-                    budget.getStartDate(),
-                    budget.getEndDate(),
-                    budgetPeriod.getPeriod(),
-                    categoryDesignators
-            );
-
-            // 4. Update existing transaction categories with new information
-            return transactionCategoryBuilder.updateTransactionCategories(
-                    categoryPeriods,
-                    existingTransactionCategories
-            );
-        } catch (Exception e) {
-            log.error("Error updating transaction categories: ", e);
-            throw e;
-        }
+//        try {
+//            // 1. Group transactions by category
+//            Map<String, List<Transaction>> transactionsByCategory = transactions.stream()
+//                    .filter(t -> t.getCategories() != null && !t.getCategories().isEmpty())
+//                    .collect(Collectors.groupingBy(t -> t.getCategories().get(0)));
+//
+//            // 2. Create CategoryDesignators
+//            List<CategoryDesignator> categoryDesignators = transactionsByCategory.entrySet().stream()
+//                    .map(entry -> {
+//                        CategoryDesignator designator = new CategoryDesignator(entry.getKey(), entry.getKey());
+//                        designator.setTransactions(entry.getValue());
+//                        return designator;
+//                    })
+//                    .collect(Collectors.toList());
+//
+//            // 3. Create CategoryPeriods
+//            List<CategoryPeriod> categoryPeriods = transactionCategoryBuilder.createCategoryPeriods(
+//                    budget.getId(),
+//                    budget.getStartDate(),
+//                    budget.getEndDate(),
+//                    budgetPeriod.getPeriod(),
+//                    categoryDesignators
+//            );
+//
+//            // 4. Update existing transaction categories with new information
+//            return transactionCategoryBuilder.updateTransactionCategories(
+//                    categoryPeriods,
+//                    existingTransactionCategories
+//            );
+//        } catch (Exception e) {
+//            log.error("Error updating transaction categories: ", e);
+//            throw e;
+//        }
+        return null;
     }
 
     private BudgetEntity getBudgetEntityById(Long id){
@@ -393,11 +394,11 @@ public class TransactionCategoryRunner
                         "Could not find budget with ID: " + transactionCategory.getBudgetId()));
         entity.setBudget(budgetEntity);
         // Set required transaction ID - use first transaction ID if available
-        if (transactionCategory.getTransactionIds() != null && !transactionCategory.getTransactionIds().isEmpty()) {
-            entity.setTransactions(Set.of(transactionCategory.getTransactionIds().get(0)));
-        }else{
-            throw new RuntimeException("No transaction IDs specified");
-        }
+//        if (transactionCategory.getTransactionIds() != null && !transactionCategory.getTransactionIds().isEmpty()) {
+//            entity.setTransactions(Set.of(transactionCategory.getTransactionIds().get(0)));
+//        }else{
+//            throw new RuntimeException("No transaction IDs specified");
+//        }
 
         // Set other fields as needed
         return entity;

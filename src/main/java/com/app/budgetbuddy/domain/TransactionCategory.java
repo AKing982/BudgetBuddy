@@ -22,7 +22,7 @@ public class TransactionCategory
     private LocalDate endDate;
     private Double overSpendingAmount;
     private boolean isOverSpent;
-    private List<String> transactionIds;
+    private List<Transaction> transactions;
 
     public TransactionCategory(Long id, Long budgetId, String categoryId, String categoryName, Double budgetedAmount, Double budgetActual, Boolean isActive, LocalDate startDate, LocalDate endDate, Double overSpendingAmount, boolean isOverSpent) {
         this.id = id;
@@ -38,18 +38,5 @@ public class TransactionCategory
         this.isOverSpent = isOverSpent;
     }
 
-    public TransactionCategory(Long id, Long budgetId, String categoryId, String categoryName, Double budgetedAmount, Double budgetActual, Boolean isActive, LocalDate startDate, LocalDate endDate, Double overSpendingAmount, boolean isOverSpent, List<String> transactionIds) {
-        this.id = id;
-        this.budgetId = budgetId;
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-        this.budgetedAmount = budgetedAmount;
-        this.budgetActual = budgetActual;
-        this.isActive = isActive;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.overSpendingAmount = overSpendingAmount;
-        this.isOverSpent = isOverSpent;
-        this.transactionIds = transactionIds;
-    }
+
 }

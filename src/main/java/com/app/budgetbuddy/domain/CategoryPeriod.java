@@ -2,6 +2,7 @@ package com.app.budgetbuddy.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
@@ -12,11 +13,20 @@ import java.util.*;
 @AllArgsConstructor
 public class CategoryPeriod
 {
+    private String categoryId;
     private String category;
     private List<Transaction> transactions;
     private CategoryPeriodCriteria categoryPeriodCriteria;
     private Long budgetId;
     private Boolean isActive;
+
+    public CategoryPeriod(String categoryId, String category, List<DateRange> dateRanges, Boolean isActive) {
+        this.categoryId = categoryId;
+        this.category = category;
+        this.categoryPeriodCriteria = new CategoryPeriodCriteria();
+        this.categoryPeriodCriteria.setCategoryDateRanges(dateRanges);
+        this.isActive = isActive;
+    }
 
     public CategoryPeriod(String category, List<DateRange> dateRange){
         this.category = category;
