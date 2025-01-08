@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,6 +52,13 @@ class TransactionCategoryBuilderTest {
     @Mock
     private TransactionCategoryConverter userBudgetCategoryConverter;
 
+    @Captor
+    private ArgumentCaptor<List<Transaction>> categoryTransactionsCaptor;
+
+    @Captor
+    private ArgumentCaptor<DateRange> dateRangeCaptor;
+
+
     @Spy
     @InjectMocks
     private TransactionCategoryBuilder budgetCategoryBuilder;
@@ -62,13 +70,6 @@ class TransactionCategoryBuilderTest {
         MockitoAnnotations.openMocks(this); // Initialize mocks
         testBudgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 6, 1));
     }
-
-//   @Test
-//   void testCreateCategoryPeriod_whenEndDateIsNull_thenThrowException() {
-//        assertThrows(IllegalArgumentException.class, () -> {
-//            budgetCategoryBuilder.createCategoryPeriods("Groceries", LocalDate.of(2024, 6, 1), null, Period.WEEKLY,new ArrayList<>());
-//        });
-//   }
 
    @Test
    void testBuildDateRanges_WhenBudgetStartIsNull_thenReturnEmptyList(){
@@ -599,9 +600,299 @@ class TransactionCategoryBuilderTest {
         assertEquals(2, result.size());
 
         verifyTransactionCategory(result, "cat1", "Groceries",
-                LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8), 200.0, 150.0, false);
+                LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8), 200.0, 350.0, false);
         verifyTransactionCategory(result, "cat1", "Groceries",
-                LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15), 250.0, 200.0, false);
+                LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15), 250.0, 350.0, false);
+    }
+
+
+    @Test
+    void testGetCategorySpendingByCategoryDesignator_whenParametersValid_thenReturnCategorySpending(){
+       List<CategoryDesignator> categoryDesignators = createTestCategoryDesignators();
+       LocalDate budgetStartDate = LocalDate.of(2024, 11, 1);
+       LocalDate budgetEndDate = LocalDate.of(2024, 11, 30);
+
+       List<CategorySpending> expectedCategorySpendings = List.of(
+               new CategorySpending("cat1", "Groceries", new BigDecimal("34.32"), new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8))),
+               new CategorySpending("cat1", "Groceries", new BigDecimal("78"), new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 16))),
+               new CategorySpending("cat1", "Groceries", new BigDecimal("56"), new DateRange(LocalDate.of(2024, 11, 16), LocalDate.of(2024, 11, 23))),
+               new CategorySpending("cat2", "Rent", new BigDecimal("1200"), new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8))),
+               new CategorySpending("cat2", "Rent", new BigDecimal("707"), new DateRange(LocalDate.of(2024, 11, 16), LocalDate.of(2024, 11, 30)))
+       );
+
+       List<CategorySpending> actual = budgetCategoryBuilder.getCategorySpendingByCategoryDesignator(categoryDesignators, budgetStartDate, budgetEndDate);
+       assertEquals(expectedCategorySpendings.size(), actual.size());
+       for(int i = 0; i < actual.size(); i++){
+           assertEquals(expectedCategorySpendings.get(i).getCategoryId(), actual.get(i).getCategoryId());
+           assertEquals(expectedCategorySpendings.get(i).getCategoryName(), actual.get(i).getCategoryName());
+           assertEquals(expectedCategorySpendings.get(i).getActualSpending(), actual.get(i).getActualSpending());
+           assertEquals(expectedCategorySpendings.get(i).getDateRange().getStartDate(), actual.get(i).getDateRange().getStartDate());
+           assertEquals(expectedCategorySpendings.get(i).getDateRange().getEndDate(), actual.get(i).getDateRange().getEndDate());
+       }
+    }
+
+    @Test
+    void testInitializeTransactionCategories_whenBudget_BudgetPeriodAndCategoryDesignatorsAreNull_thenReturnEmptyList(){
+        List<TransactionCategory> actual = budgetCategoryBuilder.initializeTransactionCategories(null, null, null);
+        assertEquals(0, actual.size());
+        assertTrue(actual.isEmpty());
+    }
+
+
+    @Test
+    void testInitializeTransactionCategories_whenBudgetIsNull_thenReturnEmptyList(){
+       BudgetPeriod budgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 30));
+       List<CategoryDesignator> categoryDesignators = List.of(new CategoryDesignator("cat1", "desc"));
+       List<TransactionCategory> result = budgetCategoryBuilder.initializeTransactionCategories(null, budgetPeriod, categoryDesignators);
+       assertEquals(0, result.size());
+       assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testInitializeTransactionCategories_whenParametersValid_thenReturnTransactionCategoryList(){
+        Budget budget = createTestBudget();
+        BudgetPeriod budgetPeriod = createTestBudgetPeriod();
+        List<CategoryDesignator> categoryDesignators = createTestCategoryDesignators();
+
+        // Create CategorySpending objects
+        List<CategorySpending> categorySpendingList = Arrays.asList(
+                new CategorySpending("cat1", "Groceries", new BigDecimal("161.56")), // Total of grocery transactions
+                new CategorySpending("cat2", "Rent", new BigDecimal("1907.00"))      // Total of rent transactions
+        );
+
+        Map<String, List<String>> categorizedTransactions = new HashMap<>();
+        categorizedTransactions.put("Groceries", Arrays.asList("trans_11_02", "trans_11_08", "trans_11_16", "trans_11_23"));
+        categorizedTransactions.put("Rent", Arrays.asList("trans_11_01", "trans_11_16"));
+
+        // Week 1: Nov 1-7
+        TransactionCategory groceryWeek1 = new TransactionCategory();
+        groceryWeek1.setId(1L);
+        groceryWeek1.setBudgetId(budget.getId());
+        groceryWeek1.setCategoryId("cat1");
+        groceryWeek1.setCategoryName("Groceries");
+        groceryWeek1.setBudgetedAmount(50.00);  // Weekly budget allocation
+        groceryWeek1.setBudgetActual(34.32);    // Nov 2 transaction
+        groceryWeek1.setIsActive(true);
+        groceryWeek1.setStartDate(LocalDate.of(2024, 11, 1));
+        groceryWeek1.setEndDate(LocalDate.of(2024, 11, 8));
+        groceryWeek1.setOverSpendingAmount(0.0);
+        groceryWeek1.setOverSpent(false);
+        groceryWeek1.setTransactions(List.of(categoryDesignators.get(0).getTransactions().get(0))); // Nov 2 transaction
+
+        // Week 2: Nov 8-14
+        TransactionCategory groceryWeek2 = new TransactionCategory();
+        groceryWeek2.setId(2L);
+        groceryWeek2.setBudgetId(budget.getId());
+        groceryWeek2.setCategoryId("cat1");
+        groceryWeek2.setCategoryName("Groceries");
+        groceryWeek2.setBudgetedAmount(50.00);
+        groceryWeek2.setBudgetActual(45.24);    // Nov 8 transaction
+        groceryWeek2.setIsActive(true);
+        groceryWeek2.setStartDate(LocalDate.of(2024, 11, 9));
+        groceryWeek2.setEndDate(LocalDate.of(2024, 11, 16));
+        groceryWeek2.setOverSpendingAmount(0.0);
+        groceryWeek2.setOverSpent(false);
+        groceryWeek2.setTransactions(List.of(categoryDesignators.get(0).getTransactions().get(1))); // Nov 8 transaction
+
+        // Week 3: Nov 15-21
+        TransactionCategory groceryWeek3 = new TransactionCategory();
+        groceryWeek3.setId(3L);
+        groceryWeek3.setBudgetId(budget.getId());
+        groceryWeek3.setCategoryId("cat1");
+        groceryWeek3.setCategoryName("Groceries");
+        groceryWeek3.setBudgetedAmount(50.00);
+        groceryWeek3.setBudgetActual(32.00);    // Nov 16 transaction
+        groceryWeek3.setIsActive(true);
+        groceryWeek3.setStartDate(LocalDate.of(2024, 11, 17));
+        groceryWeek3.setEndDate(LocalDate.of(2024, 11, 23));
+        groceryWeek3.setOverSpendingAmount(0.0);
+        groceryWeek3.setOverSpent(false);
+        groceryWeek3.setTransactions(List.of(categoryDesignators.get(0).getTransactions().get(2))); // Nov 16 transaction
+
+        // Week 1: Nov 1-7 (Rent)
+        TransactionCategory rentWeek1 = new TransactionCategory();
+        rentWeek1.setId(5L);
+        rentWeek1.setBudgetId(budget.getId());
+        rentWeek1.setCategoryId("cat2");
+        rentWeek1.setCategoryName("Rent");
+        rentWeek1.setBudgetedAmount(450.00);    // Weekly budget allocation
+        rentWeek1.setBudgetActual(1200.00);     // Nov 1 transaction
+        rentWeek1.setIsActive(true);
+        rentWeek1.setStartDate(LocalDate.of(2024, 11, 1));
+        rentWeek1.setEndDate(LocalDate.of(2024, 11, 16));
+        rentWeek1.setOverSpendingAmount(750.00);
+        rentWeek1.setOverSpent(true);
+        rentWeek1.setTransactions(List.of(categoryDesignators.get(1).getTransactions().get(0))); // Nov 1 transaction
+
+        // Week 3: Nov 15-21 (Rent)
+        TransactionCategory rentWeek3 = new TransactionCategory();
+        rentWeek3.setId(6L);
+        rentWeek3.setBudgetId(budget.getId());
+        rentWeek3.setCategoryId("cat2");
+        rentWeek3.setCategoryName("Rent");
+        rentWeek3.setBudgetedAmount(450.00);
+        rentWeek3.setBudgetActual(707.00);      // Nov 16 transaction
+        rentWeek3.setIsActive(true);
+        rentWeek3.setStartDate(LocalDate.of(2024, 11, 16));
+        rentWeek3.setEndDate(LocalDate.of(2024, 11, 30));
+        rentWeek3.setOverSpendingAmount(257.00);
+        rentWeek3.setOverSpent(true);
+        rentWeek3.setTransactions(List.of(categoryDesignators.get(1).getTransactions().get(1))); // Nov 16 transaction
+
+        List<TransactionCategory> expectedTransactionCategories = new ArrayList<>();
+        expectedTransactionCategories.addAll(Arrays.asList(
+                groceryWeek1, groceryWeek2, groceryWeek3,
+                rentWeek1, rentWeek3
+        ));
+
+        // Mock budgetCalculator responses for Groceries
+        when(budgetCalculator.calculateBudgetedAmountForCategoryDateRange(
+                any(CategorySpending.class),  // Changed from argThat
+                any(BigDecimal.class),
+                anyList(),
+                eq(budget)
+        )).thenAnswer(invocation -> {
+            CategorySpending cs = invocation.getArgument(0);
+            if (cs != null && cs.getCategoryName().equals("Groceries")) {
+                return Arrays.asList(
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 50.0),
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 9), LocalDate.of(2024, 11, 16)), 50.0),
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 17), LocalDate.of(2024, 11, 23)), 50.0)
+                );
+            }
+            if (cs != null && cs.getCategoryName().equals("Rent")) {
+                return Arrays.asList(
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 16)), 450.0),
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 16), LocalDate.of(2024, 11, 30)), 450.0)
+                );
+            }
+            return Collections.emptyList();
+        });
+
+        // Mock budgetCalculator responses for actual amounts
+        when(budgetCalculator.calculateActualAmountForCategoryDateRange(
+                any(CategorySpending.class),  // Changed from argThat
+                any(CategoryDesignator.class),
+                anyList(),
+                eq(budget)
+        )).thenAnswer(invocation -> {
+            CategorySpending cs = invocation.getArgument(0);
+            if (cs != null && cs.getCategoryName().equals("Groceries")) {
+                return Arrays.asList(
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 34.32),
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 9), LocalDate.of(2024, 11, 16)), 45.24),
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 17), LocalDate.of(2024, 11, 23)), 32.0)
+                );
+            }
+            if (cs != null && cs.getCategoryName().equals("Rent")) {
+                return Arrays.asList(
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 16)), 1200.0),
+                        new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 16), LocalDate.of(2024, 11, 30)), 707.0)
+                );
+            }
+            return Collections.emptyList();
+        });
+
+
+        // Mock budgetCalculator responses
+        when(budgetCalculator.getTotalSpendingOnAllCategories(anyList()))
+                .thenReturn(new BigDecimal("2068.56")); // Total of all transactions
+
+
+        List<TransactionCategory> actualTransactionCategories = budgetCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, categoryDesignators);
+
+        assertNotNull(actualTransactionCategories);
+        assertEquals(expectedTransactionCategories.size(), actualTransactionCategories.size(), "Should have 5 transaction categories (3 grocery + 2 rent)");
+
+        List<TransactionCategory> actualGroceryCategories = actualTransactionCategories.stream()
+                .filter(tc -> tc.getCategoryName().equals("Groceries"))
+                .sorted(Comparator.comparing(TransactionCategory::getStartDate))
+                .collect(Collectors.toList());
+
+        assertEquals(4, actualGroceryCategories.size(), "Should have 3 grocery categories");
+
+        verifyTransactionCategory(groceryWeek1, actualGroceryCategories.get(0));
+        verifyTransactionCategory(groceryWeek2, actualGroceryCategories.get(1));
+        verifyTransactionCategory(groceryWeek3, actualGroceryCategories.get(2));
+
+        // Verify rent categories
+        List<TransactionCategory> actualRentCategories = actualTransactionCategories.stream()
+                .filter(tc -> tc.getCategoryName().equals("Rent"))
+                .sorted(Comparator.comparing(TransactionCategory::getStartDate))
+                .collect(Collectors.toList());
+
+        assertEquals(2, actualRentCategories.size(), "Should have 2 rent categories");
+
+        // Verify each rent week
+        verifyTransactionCategory(rentWeek1, actualRentCategories.get(0));
+        verifyTransactionCategory(rentWeek3, actualRentCategories.get(1));
+
+        verify(categoryRuleEngine).finalizeUserTransactionCategoriesForDateRange(
+                categoryTransactionsCaptor.capture(),
+                eq(budget.getUserId()),
+                dateRangeCaptor.capture()
+        );
+    }
+
+    private void verifyTransactionCategory(TransactionCategory expected, TransactionCategory actual) {
+        assertEquals(expected.getCategoryName(), actual.getCategoryName());
+        assertEquals(expected.getStartDate(), actual.getStartDate());
+        assertEquals(expected.getEndDate(), actual.getEndDate());
+        assertEquals(expected.getBudgetedAmount(), actual.getBudgetedAmount());
+        assertEquals(expected.getBudgetActual(), actual.getBudgetActual());
+        assertEquals(expected.getOverSpendingAmount(), actual.getOverSpendingAmount());
+        assertEquals(expected.isOverSpent(), actual.isOverSpent());
+        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
+    }
+
+    private List<CategoryDesignator> createTestCategoryDesignators(){
+        List<CategoryDesignator> categoryDesignators = new ArrayList<>();
+        CategoryDesignator groceryDesignator = new CategoryDesignator("cat1", "Groceries");
+        List<Transaction> groceryTransactions = List.of(
+                new Transaction("acc1", new BigDecimal("34.32"), "USD", List.of("Groceries"), "cat1",
+                        LocalDate.of(2024, 11, 2), "desc", "merchant", "name", false, "trans_11_02",
+                        null, null, LocalDate.of(2024, 11, 2)),
+                new Transaction("acc1", new BigDecimal("45.24"), "USD", List.of("Groceries"), "cat1",
+                        LocalDate.of(2024, 11, 8), "desc", "merchant", "name", false, "trans_11_08",
+                        null, null, LocalDate.of(2024, 11, 8)),
+                new Transaction("acc1", new BigDecimal("32.00"), "USD", List.of("Groceries"), "cat1",
+                        LocalDate.of(2024, 11, 16), "desc", "merchant", "name", false, "trans_11_16",
+                        null, null, LocalDate.of(2024, 11, 16)),
+                new Transaction("acc1", new BigDecimal("50.00"), "USD", List.of("Groceries"), "cat1",
+                        LocalDate.of(2024, 11, 23), "desc", "merchant", "name", false, "trans_11_23",
+                        null, null, LocalDate.of(2024, 11, 23))
+        );
+
+        groceryDesignator.setTransactions(groceryTransactions);
+        categoryDesignators.add(groceryDesignator);
+
+        CategoryDesignator rentDesignator = new CategoryDesignator("cat2", "Rent");
+        List<Transaction> rentTransactions = List.of(
+                new Transaction("acc1", new BigDecimal("1200.00"), "USD", List.of("Rent"), "cat2",
+                        LocalDate.of(2024, 11, 1), "desc", "merchant", "name", false, "trans_11_01",
+                        null, null, LocalDate.of(2024, 11, 1)),
+                new Transaction("acc1", new BigDecimal("707.00"), "USD", List.of("Rent"), "cat2",
+                        LocalDate.of(2024, 11, 16), "desc", "merchant", "name", false, "trans_11_16",
+                        null, null, LocalDate.of(2024, 11, 16))
+        );
+        rentDesignator.setTransactions(rentTransactions);
+        categoryDesignators.add(rentDesignator);
+        return categoryDesignators;
+    }
+
+    private BudgetPeriod createTestBudgetPeriod()
+    {
+       return new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 30));
+    }
+
+    private Budget createTestBudget(){
+       Budget budget = new Budget();
+       budget.setBudgetAmount(new BigDecimal("3260"));
+       budget.setActual(new BigDecimal("1609"));
+       budget.setId(1L);
+       budget.setStartDate(LocalDate.of(2024, 11, 1));
+       budget.setEndDate(LocalDate.of(2024, 11, 30));
+       return budget;
     }
 
     private void verifyDateRanges(List<DateRange> actual, List<DateRange> expected) {

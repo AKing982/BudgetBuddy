@@ -31,12 +31,6 @@ public class CategorySpending
         this.dateRange = dateRange;
     }
 
-    public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending, LocalDate spendingDate) {
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-        this.actualSpending = actualSpending;
-        this.spendingDate = spendingDate;
-    }
 
     public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending, DateRange dateRange) {
         this.categoryId = categoryId;
