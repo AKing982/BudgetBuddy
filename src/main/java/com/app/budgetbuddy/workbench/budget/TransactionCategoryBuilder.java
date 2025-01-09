@@ -4,6 +4,8 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
+import com.app.budgetbuddy.exceptions.CategoryPeriodCriteriaException;
+import com.app.budgetbuddy.exceptions.DateRangeException;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.TransactionCategoryService;
@@ -30,7 +32,6 @@ public class TransactionCategoryBuilder
     private TransactionCategoryService transactionCategoryService;
     private CategoryService categoryService;
     private BudgetCalculations budgetCalculator;
-    private CategoryRuleEngine categoryRuleEngine;
     private TransactionCategoryConverter transactionCategoryConverter;
     private Logger LOGGER = LoggerFactory.getLogger(TransactionCategoryBuilder.class);
 
@@ -38,14 +39,12 @@ public class TransactionCategoryBuilder
     public TransactionCategoryBuilder(TransactionCategoryService transactionCategoryService,
                                  CategoryService categoryService,
                                  BudgetCalculations budgetCalculator,
-                                 CategoryRuleEngine categoryRuleEngine,
                                  TransactionCategoryConverter transactionCategoryConverter)
     {
         this.transactionCategoryService = transactionCategoryService;
         this.categoryService = categoryService;
         this.budgetCalculator = budgetCalculator;
         this.transactionCategoryConverter = transactionCategoryConverter;
-        this.categoryRuleEngine = categoryRuleEngine;
     }
 
     /**
@@ -187,7 +186,6 @@ public class TransactionCategoryBuilder
         return newCategory;
     }
 
-    // Maps the User
     public List<TransactionCategory> initializeTransactionCategories(final Budget budget, final BudgetPeriod budgetPeriod, final List<CategoryDesignator> categoryDesignators)
     {
         if(budget == null || budgetPeriod == null || categoryDesignators == null || categoryDesignators.isEmpty()){
@@ -285,27 +283,84 @@ public class TransactionCategoryBuilder
         Set<TransactionCategory> transactionCategories = new HashSet<>();
         for(CategoryPeriod categoryPeriod : categoryPeriods)
         {
-            List<DateRange> categoryDateRanges = categoryPeriod.getCategoryPeriodCriteria().getCategoryDateRanges();
-            List<Transaction> transactions = categoryPeriod.getTransactions();
-            int dateRangeIndex = 0;
-            while(dateRangeIndex < categoryDateRanges.size())
+            if(categoryPeriod == null)
             {
-
-                DateRange dateRange = categoryDateRanges.get(dateRangeIndex);
-                Double budgetedAmount = categoryPeriod.getCategoryPeriodCriteria().getBudgetAmount(dateRange);
-                Double budgetActualAmount = categoryPeriod.getCategoryPeriodCriteria().getActualAmount(dateRange);
-                log.info("Budget Amount: {}, Actual: {}", budgetedAmount, budgetActualAmount);
-                String categoryName = categoryPeriod.getCategory();
-                String categoryId = categoryPeriod.getCategoryId();
-                Double budgetOverSpendingAmount = getBudgetOverSpending(budgetActualAmount, budgetedAmount);
-                boolean isOverSpentOnBudget = isBudgetOverSpending(budgetOverSpendingAmount);
-                TransactionCategory transactionCategory = createTransactionCategory(categoryId, categoryName, dateRange, transactions, budgetActualAmount, budgetedAmount, budgetOverSpendingAmount, isOverSpentOnBudget);
-                transactionCategories.add(transactionCategory);
-                dateRangeIndex++;
+                continue;
             }
-        }
+            try
+            {
+                CategoryPeriodCriteria categoryPeriodCriteria = categoryPeriod.getCategoryPeriodCriteria();
+                if(categoryPeriodCriteria == null)
+                {
+                    throw new CategoryPeriodCriteriaException("Category Period Criteria was found null");
+                }
+                List<DateRange> categoryDateRanges = categoryPeriodCriteria.getCategoryDateRanges().stream()
+                        .filter(dateRange -> categoryPeriod.getCategoryPeriodCriteria().getBudgetAmount(dateRange) != null &&
+                                categoryPeriod.getCategoryPeriodCriteria().getActualAmount(dateRange) != null)
+                        .toList();
+                validateCategoryPeriodCriteria(categoryPeriodCriteria);
+                List<Transaction> transactions = categoryPeriod.getTransactions();
+                if(transactions.isEmpty())
+                {
+                    return Collections.emptyList();
+                }
+                else
+                {
+                    int dateRangeIndex = 0;
+                    while(dateRangeIndex < categoryDateRanges.size())
+                    {
+                        DateRange dateRange = categoryDateRanges.get(dateRangeIndex);
+                        validateDateRange(dateRange);
+                        Double budgetedAmount = categoryPeriod.getCategoryPeriodCriteria().getBudgetAmount(dateRange);
+                        Double budgetActualAmount = categoryPeriod.getCategoryPeriodCriteria().getActualAmount(dateRange);
+                        log.info("Budget Amount: {}, Actual: {}", budgetedAmount, budgetActualAmount);
+                        String categoryName = categoryPeriod.getCategory();
+                        String categoryId = categoryPeriod.getCategoryId();
+                        Double budgetOverSpendingAmount = getBudgetOverSpending(budgetActualAmount, budgetedAmount);
+                        boolean isOverSpentOnBudget = isBudgetOverSpending(budgetOverSpendingAmount);
+                        TransactionCategory transactionCategory = createTransactionCategory(categoryId, categoryName, dateRange, transactions, budgetActualAmount, budgetedAmount, budgetOverSpendingAmount, isOverSpentOnBudget);
+                        transactionCategories.add(transactionCategory);
+                        dateRangeIndex++;
+                    }
+                }
+            }catch(CategoryPeriodCriteriaException e){
+                log.error("Category Period Criteria Exception: {}", e.getMessage());
+                throw e;
+            }
 
+        }
         return new ArrayList<>(transactionCategories);
+    }
+
+
+    private void validateDateRange(final DateRange dateRange)
+    {
+        try
+        {
+            if(dateRange.getStartDate() == null)
+            {
+                throw new DateRangeException("Date Range StartDate was null");
+            }
+            else if(dateRange.getEndDate() == null)
+            {
+                throw new DateRangeException("Date Range EndDate was null");
+            }
+        }catch(DateRangeException e){
+            log.error("There was an error with the date range: {}, {}", dateRange.toString(), e.getMessage());
+            throw e;
+        }
+    }
+
+    private void validateCategoryPeriodCriteria(final CategoryPeriodCriteria categoryPeriodCriteria)
+    {
+        if(categoryPeriodCriteria.getBudgetAmounts().isEmpty())
+        {
+            throw new CategoryPeriodCriteriaException("No Budget Period Amounts found for Category Period Criteria: " + categoryPeriodCriteria.toString());
+        }
+        else if(categoryPeriodCriteria.getActualAmounts().isEmpty())
+        {
+            throw new CategoryPeriodCriteriaException("No Budget Period Actual Amounts found for Category Period Criteria: " + categoryPeriodCriteria.toString());
+        }
     }
 
 
@@ -347,30 +402,72 @@ public class TransactionCategoryBuilder
             List<Transaction> transactions = categoryDesignator.getTransactions().stream()
                     .sorted(Comparator.comparing(Transaction::getPosted))
                     .collect(Collectors.toList());
+            // Build the Budget Date Ranges
+            List<DateRange> budgetDateRanges = buildBudgetDateRanges(budgetStartDate, budgetEndDate, period);
+            // Determine the Category Period Date Ranges
+            int categorySpendingIndex = 0;
+            while(categorySpendingIndex < categorySpendingData.size()) {
+                CategorySpending categorySpending = categorySpendingData.get(categorySpendingIndex);
+                if(categorySpending.getCategoryId().equals(categoryId) &&
+                        categorySpending.getCategoryName().equals(categoryDesignator.getCategoryName())) {
+                    List<DateRange> categoryPeriodDateRanges = buildCategoryPeriodDateRanges(budgetDateRanges, List.of(categorySpending));
+                    BigDecimal totalSpendingOnAllCategories = budgetCalculator.getTotalSpendingOnAllCategories(categorySpendingData);
+                    LOGGER.info("Total Spending on All Categories: {}", totalSpendingOnAllCategories);
+                    LOGGER.info("Category Spending: {}", categorySpending.toString());
+                    categoryPeriodDateRanges.forEach(transactionDateRange -> {
+                        LOGGER.info("Transaction Date Range: {}", transactionDateRange.toString());
+                    });
+                    List<BudgetPeriodAmount> categoryBudgetedAmounts = budgetCalculator.calculateBudgetedAmountForCategoryDateRange(
+                            categorySpending, totalSpendingOnAllCategories, categoryPeriodDateRanges, budget);
+                    List<BudgetPeriodAmount> actualSpentOnCategories = budgetCalculator.calculateActualAmountForCategoryDateRange(
+                            categorySpending, categoryDesignator, categoryPeriodDateRanges, budget);
 
-            List<DateRange> transactionDateRanges = buildTransactionDateRanges(transactions, budgetStartDate, budgetEndDate, period);
-            CategorySpending categorySpending = categorySpendingData.stream()
-                    .filter(spending -> spending.getCategoryId().equals(categoryId) && spending.getCategoryName().equals(categoryDesignator.getCategoryName()))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Category does not exist"));
-            BigDecimal totalSpendingOnAllCategories = budgetCalculator.getTotalSpendingOnAllCategories(categorySpendingData);
-            LOGGER.info("Total Spending on All Categories: {}", totalSpendingOnAllCategories);
-            LOGGER.info("Category Spending: {}", categorySpending.toString());
-            transactionDateRanges.forEach(transactionDateRange -> {
-                LOGGER.info("Transaction Date Range: {}", transactionDateRange.toString());
-            });
-            List<BudgetPeriodAmount> categoryBudgetedAmounts = budgetCalculator.calculateBudgetedAmountForCategoryDateRange(categorySpending, totalSpendingOnAllCategories, transactionDateRanges, budget);
-            List<BudgetPeriodAmount> actualSpentOnCategories = budgetCalculator.calculateActualAmountForCategoryDateRange(categorySpending, categoryDesignator, transactionDateRanges, budget);
-            categoryPeriods.addAll(createCategoryPeriodsForDateRanges(
-                    transactions,
-                    transactionDateRanges,
-                    categoryBudgetedAmounts,
-                    actualSpentOnCategories,
-                    budget,
-                    category
-            ));
+                    // Add this block
+                    CategoryPeriodCriteria categoryPeriodCriteria = new CategoryPeriodCriteria();
+                    categoryPeriodCriteria.setCategoryDateRanges(categoryPeriodDateRanges);
+                    categoryPeriodCriteria.setBudgetAmounts(categoryBudgetedAmounts);
+                    categoryPeriodCriteria.setActualAmounts(actualSpentOnCategories);
+
+                    CategoryPeriod categoryPeriod = new CategoryPeriod(
+                            categoryId,
+                            category,
+                            transactions,
+                            categoryPeriodCriteria,
+                            budget.getId(),
+                            true
+                    );
+                    categoryPeriods.add(categoryPeriod);
+                }
+                categorySpendingIndex++;
+            }
         }
         return categoryPeriods;
+    }
+
+    public List<DateRange> buildCategoryPeriodDateRanges(final List<DateRange> budgetDateRanges, final List<CategorySpending> categorySpendingList)
+    {
+        if(budgetDateRanges.isEmpty() || categorySpendingList.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        Set<DateRange> uniqueCategoryDateRanges = new HashSet<>();
+        for(DateRange budgetWeek : budgetDateRanges)
+        {
+            int categorySpendingIndex = 0;
+            while(categorySpendingIndex < categorySpendingList.size()) {
+                CategorySpending categorySpending = categorySpendingList.get(categorySpendingIndex);
+                DateRange spendingRange = categorySpending.getDateRange();
+                if(budgetWeek.getStartDate().equals(spendingRange.getStartDate())) {
+                    uniqueCategoryDateRanges.add(budgetWeek);
+                }
+                categorySpendingIndex++;
+            }
+        }
+        uniqueCategoryDateRanges.forEach(dateRange -> {
+            LOGGER.info("Category Date Range: {}", dateRange.toString());
+        });
+
+        return new ArrayList<>(uniqueCategoryDateRanges);
     }
 
     private List<CategoryPeriod> createCategoryPeriodsForDateRanges(
@@ -417,14 +514,6 @@ public class TransactionCategoryBuilder
         return periods;
     }
 
-    private double getActualTransactionAmountSum(final List<Transaction> transactions, final DateRange dateRange)
-    {
-        return transactions.stream()
-                .filter(t -> isTransactionInDateRange(t, dateRange))
-                .mapToDouble(t -> t.getAmount().doubleValue())
-                .sum();
-    }
-
     /**
      * Builds the Budget Date Ranges based on period selection: Monthly, Weekly, BiWeekly, Daily.
      * @param budgetStart
@@ -464,38 +553,6 @@ public class TransactionCategoryBuilder
         }
 
         return dateRanges;
-    }
-
-    private DateRange determineTransactionPeriod(
-            LocalDate transactionDate, LocalDate budgetStartDate,
-            LocalDate budgetEndDate, Period period) {
-
-        LocalDate periodStart = transactionDate;
-        LocalDate periodEnd;
-
-        // Adjust based on period type (WEEKLY, MONTHLY, etc.)
-        switch (period) {
-            case WEEKLY:
-                periodStart = transactionDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-                periodEnd = periodStart.plusWeeks(1);
-                break;
-            case MONTHLY:
-                periodStart = transactionDate.withDayOfMonth(1);
-                periodEnd = periodStart.plusMonths(1);
-                break;
-            default:
-                periodEnd = periodStart.plusWeeks(1); // Default to weekly
-        }
-
-        // Ensure period stays within budget bounds
-        if (periodStart.isBefore(budgetStartDate)) {
-            periodStart = budgetStartDate;
-        }
-        if (periodEnd.isAfter(budgetEndDate)) {
-            periodEnd = budgetEndDate;
-        }
-
-        return new DateRange(periodStart, periodEnd);
     }
 
     private List<DateRange> buildTransactionDateRanges(List<? extends Transaction> transactions, LocalDate budgetStartDate, LocalDate budgetEndDate, Period period)
@@ -544,22 +601,4 @@ public class TransactionCategoryBuilder
         return !transactionDate.isBefore(dateRange.getStartDate()) &&
                 !transactionDate.isAfter(dateRange.getEndDate());
     }
-
-    private LocalDate incrementCurrentStartByPeriod(LocalDate currentStart, Period period)
-    {
-        switch(period)
-        {
-            case WEEKLY:
-                return currentStart.plusDays(7);
-            case BIWEEKLY:
-                return currentStart.plusDays(14);
-            case MONTHLY:
-                return currentStart.withDayOfMonth(currentStart.lengthOfMonth());
-            case DAILY:
-                return currentStart.plusDays(1);
-            default:
-                throw new IllegalArgumentException("Invalid Period: " + period);
-        }
-    }
-
 }
