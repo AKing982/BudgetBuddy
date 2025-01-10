@@ -10,7 +10,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
-public class CategorySpending
+public class CategoryPeriodSpending
 {
     private String categoryId;
     private String categoryName;
@@ -18,28 +18,28 @@ public class CategorySpending
     private LocalDate spendingDate;
     private DateRange dateRange;
 
-    public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending)
+    public CategoryPeriodSpending(String categoryId, String categoryName, BigDecimal actualSpending)
     {
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.actualSpending = actualSpending;
     }
 
-    public CategorySpending(String categoryName, BigDecimal actualSpending, DateRange dateRange) {
+    public CategoryPeriodSpending(String categoryName, BigDecimal actualSpending, DateRange dateRange) {
         this.categoryName = categoryName;
         this.actualSpending = actualSpending;
         this.dateRange = dateRange;
     }
 
 
-    public CategorySpending(String categoryId, String categoryName, BigDecimal actualSpending, DateRange dateRange) {
+    public CategoryPeriodSpending(String categoryId, String categoryName, BigDecimal actualSpending, DateRange dateRange) {
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.actualSpending = actualSpending;
         this.dateRange = dateRange;
     }
 
-    public CategorySpending(String categoryName, BigDecimal actualSpending)
+    public CategoryPeriodSpending(String categoryName, BigDecimal actualSpending)
     {
         this.categoryName = categoryName;
         this.actualSpending = actualSpending;
@@ -49,7 +49,7 @@ public class CategorySpending
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CategorySpending that = (CategorySpending) o;
+        CategoryPeriodSpending that = (CategoryPeriodSpending) o;
         return Objects.equals(categoryName, that.categoryName) && Objects.equals(actualSpending, that.actualSpending);
     }
 

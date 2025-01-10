@@ -86,9 +86,9 @@ public class BudgetCalculations {
         return BigDecimal.ZERO;
     }
 
-    public BigDecimal getTotalSpendingOnAllCategories(List<CategorySpending> categorySpendingList) {
+    public BigDecimal getTotalSpendingOnAllCategories(List<CategoryPeriodSpending> categorySpendingList) {
         return categorySpendingList.stream()
-                .map(CategorySpending::getActualSpending)
+                .map(CategoryPeriodSpending::getActualSpending)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
@@ -166,7 +166,7 @@ public class BudgetCalculations {
         return totalSpending;
     }
 
-    public Map<String, BigDecimal> createCategoryToBudgetMap(final List<CategorySpending> categorySpendingList, final Budget budget, final BigDecimal totalSpendingOnCategories, final BudgetPeriod budgetPeriod)
+    public Map<String, BigDecimal> createCategoryToBudgetMap(final List<CategoryPeriodSpending> categorySpendingList, final Budget budget, final BigDecimal totalSpendingOnCategories, final BudgetPeriod budgetPeriod)
     {
         Map<String, BigDecimal> budgetMap = new HashMap<>();
         if(budgetPeriod == null || categorySpendingList.isEmpty() || (totalSpendingOnCategories.compareTo(BigDecimal.ZERO) == 0 ||
@@ -174,7 +174,7 @@ public class BudgetCalculations {
         {
             return budgetMap;
         }
-        for(CategorySpending categorySpending : categorySpendingList)
+        for(CategoryPeriodSpending categorySpending : categorySpendingList)
         {
             if(categorySpending == null)
             {
@@ -281,7 +281,7 @@ public class BudgetCalculations {
         }
     }
 
-    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategorySpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final Budget budget)
+    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategoryPeriodSpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final Budget budget)
     {
         if(categorySpendingData == null || categoryDateRanges == null || budget == null)
         {
@@ -311,7 +311,7 @@ public class BudgetCalculations {
         return budgetPeriodAmounts;
     }
 
-    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategorySpending categorySpending, final CategoryDesignator categoryDesignator, final List<DateRange> categoryDateRanges, final Budget budget)
+    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategoryPeriodSpending categorySpending, final CategoryTransactions categoryDesignator, final List<DateRange> categoryDateRanges, final Budget budget)
     {
         if(categorySpending == null || categoryDateRanges == null || budget == null)
         {
@@ -329,7 +329,7 @@ public class BudgetCalculations {
         return budgetPeriodAmounts;
     }
 
-    private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions, final DateRange categoryDateRange, final CategoryDesignator categoryDesignator)
+    private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions, final DateRange categoryDateRange, final CategoryTransactions categoryDesignator)
     {
         return transactions.stream()
                 .filter(transaction -> transaction.getDate() != null &&

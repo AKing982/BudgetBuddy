@@ -560,7 +560,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenBudgetPeriodIsNull_thenReturnEmptyMap(){
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("890"), null);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
@@ -569,7 +569,7 @@ class BudgetCalculatorTest {
     @Test
     void testCreateCategoryBudgetMap_thenReturnMap(){
         Map<String, BigDecimal> categoryToBudgetMap = new HashMap<>();
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
         categorySpendings.add(createCategorySpending("Gas", new BigDecimal("67")));
         categoryToBudgetMap.put("Groceries", new BigDecimal("536.02"));
@@ -593,7 +593,7 @@ class BudgetCalculatorTest {
     @Test
     void testCreateCategoryBudgetMap_whenCategorySpendingHasNullEntry_thenSkipAndReturnMap(){
         Map<String, BigDecimal> categoryToBudgetMap = new HashMap<>();
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
         categorySpendings.add(null);
         categoryToBudgetMap.put("Groceries", new BigDecimal("536.02"));
@@ -615,7 +615,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenCategorySpendingListIsEmpty_thenReturnEmptyMap(){
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
 
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("890"), testBudgetPeriod);
         assertNotNull(actual);
@@ -624,7 +624,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenBudgetIsNull_thenReturnEmptyMap() {
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, null, new BigDecimal("890"), testBudgetPeriod);
         assertNotNull(actual);
@@ -633,7 +633,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenTotalSpendingOnAllCategoriesIsZero_thenReturnEmptyMap() {
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, BigDecimal.ZERO, testBudgetPeriod);
         assertNotNull(actual);
@@ -642,7 +642,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenTotalSpendingOnAllCategoriesIsNegative_thenReturnEmptyMap() {
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("517.60")));
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("-890"), testBudgetPeriod);
         assertNotNull(actual);
@@ -651,7 +651,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenDuplicateCategoryNames_thenReturnLatestOrCumulativeAmount() {
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("100")));
         categorySpendings.add(createCategorySpending("Groceries", new BigDecimal("200")));
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("300"), testBudgetPeriod);
@@ -662,7 +662,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenCategoryNameIsNull_thenSkipAndReturnMap() {
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending(null, new BigDecimal("200")));
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("200"), testBudgetPeriod);
         assertNotNull(actual);
@@ -671,7 +671,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCreateCategoryBudgetMap_whenActualSpendingIsNull_thenSkipAndReturnMap() {
-        List<CategorySpending> categorySpendings = new ArrayList<>();
+        List<CategoryPeriodSpending> categorySpendings = new ArrayList<>();
         categorySpendings.add(createCategorySpending("Groceries", null));
         Map<String, BigDecimal> actual = budgetCalculator.createCategoryToBudgetMap(categorySpendings, testBudget, new BigDecimal("200"), testBudgetPeriod);
         assertNotNull(actual);
@@ -844,7 +844,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCalculateBudgetedAmountForCategory_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
-        CategorySpending grocerySpending = new CategorySpending("Groceries", new BigDecimal("350.00"));
+        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("350.00"));
         BigDecimal totalSpendingOnCategories = new BigDecimal("1789");
 
         Budget budget = new Budget();
@@ -883,7 +883,7 @@ class BudgetCalculatorTest {
 
     @Test
     void testCalculateActualAmountForCategoryDateRange_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
-        CategorySpending grocerySpending = new CategorySpending("Groceries", new BigDecimal("396.45"), new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 30)));
+        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("396.45"), new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 30)));
 
         Budget budget = new Budget();
         budget.setActual(new BigDecimal("1789"));
@@ -915,8 +915,8 @@ class BudgetCalculatorTest {
                         LocalDate.of(2024, 11, 15), null, null, null, false, "t7", null, null, null)
         );
 
-        CategoryDesignator categoryDesignator = new CategoryDesignator("Groceries", "Groceries");
-        categoryDesignator.setTransactions(transactions);
+        CategoryTransactions categoryTransactions = new CategoryTransactions("Groceries", "Groceries");
+        categoryTransactions.setTransactions(transactions);
 
         List<BudgetPeriodAmount> expectedBudgetPeriodAmounts = List.of(
                 new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 96.45),
@@ -926,7 +926,7 @@ class BudgetCalculatorTest {
         );
 
         List<BudgetPeriodAmount> actual = budgetCalculator.calculateActualAmountForCategoryDateRange(
-                grocerySpending, categoryDesignator, groceryDateRanges, budget);
+                grocerySpending, categoryTransactions, groceryDateRanges, budget);
         assertEquals(expectedBudgetPeriodAmounts.size(), actual.size());
         for(int i = 0; i < expectedBudgetPeriodAmounts.size(); i++){
             BudgetPeriodAmount expected = expectedBudgetPeriodAmounts.get(i);
@@ -1195,9 +1195,9 @@ class BudgetCalculatorTest {
         return category;
     }
 
-    private CategorySpending createCategorySpending(String category, BigDecimal spending)
+    private CategoryPeriodSpending createCategorySpending(String category, BigDecimal spending)
     {
-        CategorySpending categorySpending = new CategorySpending();
+        CategoryPeriodSpending categorySpending = new CategoryPeriodSpending();
         categorySpending.setActualSpending(spending);
         categorySpending.setCategoryName(category);
         return categorySpending;

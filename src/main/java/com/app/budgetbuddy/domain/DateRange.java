@@ -84,13 +84,19 @@ public class DateRange implements Comparable<DateRange>
         LocalDate current = startDate;
         while (current.isBefore(endDate) || current.isEqual(endDate))
         {
-            LocalDate nextDate = current.plusWeeks(1); // End date should be inclusive
-            // If next date would go beyond endDate, use endDate instead
-            if (nextDate.isAfter(endDate)) {
-                nextDate = endDate;
+            // Calculate the end date for the current week
+            LocalDate rangeEnd = current.plusDays(6); // End of the week is 6 days after current
+
+            // If rangeEnd exceeds endDate, clamp it to endDate
+            if (rangeEnd.isAfter(endDate)) {
+                rangeEnd = endDate;
             }
-            dateRanges.add(new DateRange(current, nextDate));
-            current = nextDate.plusDays(1); // Start of next period
+
+            // Add the weekly range to the list
+            dateRanges.add(new DateRange(current, rangeEnd));
+
+            // Move current to the next day after the current range
+            current = rangeEnd.plusDays(1);
         }
         return dateRanges;
     }
@@ -99,8 +105,21 @@ public class DateRange implements Comparable<DateRange>
         List<DateRange> dateRanges = new ArrayList<>();
         LocalDate current = startDate;
         while(!current.isAfter(endDate)){
-            dateRanges.add(new DateRange(current, current));
-            current = current.plusWeeks(2);
+            // Calculate the end date for the bi-weekly period
+            LocalDate rangeEnd = current.plusWeeks(2).minusDays(1);
+
+            // Ensure the rangeEnd does not exceed endDate
+            if (rangeEnd.isAfter(endDate)) {
+                rangeEnd = endDate;
+            }
+
+            // Add the bi-weekly range to the list
+            DateRange biWeek = new DateRange(current, rangeEnd);
+            System.out.println("Bi Week: " + biWeek.toString());
+            dateRanges.add(biWeek);
+
+            // Move to the next period
+            current = rangeEnd.plusDays(1);
         }
         return dateRanges;
     }

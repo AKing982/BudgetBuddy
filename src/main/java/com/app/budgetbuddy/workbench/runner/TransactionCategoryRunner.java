@@ -216,16 +216,16 @@ public class TransactionCategoryRunner
                 log.info("Creating recurring transaction categories: {}", transaction.toString());
             });
 
-            List<CategoryDesignator> categoryDesignators = createCategoryDesignators(transactionsByCategory);
+            List<CategoryTransactions> categoryTransactions = createCategoryTransactions(transactionsByCategory);
 
-            categoryDesignators.forEach((categoryDesignator -> {
-                log.info("Category Designator: {}", categoryDesignator.toString());
+            categoryTransactions.forEach((categoryTransactions1 -> {
+                log.info("Category Designator: {}", categoryTransactions1.toString());
             }) );
 
             return transactionCategoryBuilder.initializeTransactionCategories(
                     budget,
                     budgetPeriod,
-                    categoryDesignators
+                    categoryTransactions
             );
         } catch (Exception e) {
             log.error("Error creating recurring transaction categories: ", e);
@@ -270,7 +270,7 @@ public class TransactionCategoryRunner
                     log.info("Creating transaction categories: {}", transaction.toString());
                 });
 
-                List<CategoryDesignator> categoryDesignators = createCategoryDesignators(transactionsByCategory);
+                List<CategoryTransactions> categoryDesignators = createCategoryTransactions(transactionsByCategory);
                 categoryDesignators.forEach((categoryDesignator) -> {
                     log.info("Category Designator for new Transactions: {}", categoryDesignator.toString());
                 });
@@ -286,12 +286,12 @@ public class TransactionCategoryRunner
         }
     }
 
-    private List<TransactionCategory> buildTransactionCategories(Budget budget, BudgetPeriod budgetPeriod, List<CategoryDesignator> categoryDesignators)
+    private List<TransactionCategory> buildTransactionCategories(Budget budget, BudgetPeriod budgetPeriod, List<CategoryTransactions> categoryTransactions)
     {
-        return transactionCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, categoryDesignators);
+        return transactionCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, categoryTransactions);
     }
 
-    private List<CategoryDesignator> createCategoryDesignators(final Map<String, List<Transaction>> transactionsByCategory){
+    private List<CategoryTransactions> createCategoryTransactions(final Map<String, List<Transaction>> transactionsByCategory){
         return transactionsByCategory.entrySet().stream()
                 .map(entry -> {
                     String categoryName = entry.getKey();
@@ -300,9 +300,9 @@ public class TransactionCategoryRunner
                             .orElseThrow(() -> new IllegalStateException("Category not found: " + categoryName));
                     String categoryId = category.getId();
                     log.info("Category Id: {} for category {}", categoryId, categoryName);
-                    CategoryDesignator designator = new CategoryDesignator(categoryId, category.getName());
-                    designator.setTransactions(entry.getValue());
-                    return designator;
+                    CategoryTransactions categoryTransaction = new CategoryTransactions(categoryId, category.getName());
+                    categoryTransaction.setTransactions(entry.getValue());
+                    return categoryTransaction;
                 })
                 .collect(Collectors.toList());
     }
