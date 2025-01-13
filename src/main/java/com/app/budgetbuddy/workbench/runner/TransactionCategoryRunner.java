@@ -1,13 +1,12 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.entities.BudgetEntity;
-import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.TransactionCategoryEntity;
+import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.BudgetPeriodException;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.budget.TransactionCategoryBuilder;
+import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,7 @@ public class TransactionCategoryRunner
     private final RecurringTransactionService recurringTransactionService;
     private final BudgetService budgetService;
     private final CategoryService categoryService;
+    private final CategoryRuleEngine categoryRuleEngine;
     private final TransactionCategoryService transactionCategoryService;
     private final TransactionCategoryBuilder transactionCategoryBuilder;
 
@@ -34,6 +34,7 @@ public class TransactionCategoryRunner
                                      TransactionService transactionService,
                                      BudgetService budgetService,
                                      CategoryService categoryService,
+                                     CategoryRuleEngine categoryRuleEngine,
                                      RecurringTransactionService recurringTransactionService)
     {
         this.transactionCategoryService = transactionCategoryService;
@@ -41,6 +42,7 @@ public class TransactionCategoryRunner
         this.transactionService = transactionService;
         this.budgetService = budgetService;
         this.categoryService = categoryService;
+        this.categoryRuleEngine = categoryRuleEngine;
         this.recurringTransactionService = recurringTransactionService;
     }
 
@@ -204,29 +206,15 @@ public class TransactionCategoryRunner
 
         try {
             BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
-
             // Convert recurring transactions to regular transactions
             List<Transaction> transactions = convertRecurringToRegularTransactions(recurringTransactions);
-
-            // Then convert to CategoryDesignators
-            Map<String, List<Transaction>> transactionsByCategory = transactions.stream()
-                    .filter(t -> t.getCategories() != null && !t.getCategories().isEmpty())
-                    .collect(Collectors.groupingBy(t -> t.getCategories().get(0)));
-            transactionsByCategory.forEach((transaction, index) -> {
-                log.info("Creating recurring transaction categories: {}", transaction.toString());
-            });
-
-            List<CategoryTransactions> categoryTransactions = createCategoryTransactions(transactionsByCategory);
-
+            DateRange dateRange = new DateRange(startDate, endDate);
+            Map<String, List<String>> categorizedRecurringTransactions = categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(recurringTransactions, budget.getUserId(), dateRange);
+            List<CategoryTransactions> categoryTransactions = buildCategoryTransactionsList(categorizedRecurringTransactions);
             categoryTransactions.forEach((categoryTransactions1 -> {
                 log.info("Category Designator: {}", categoryTransactions1.toString());
             }) );
-
-            return transactionCategoryBuilder.initializeTransactionCategories(
-                    budget,
-                    budgetPeriod,
-                    categoryTransactions
-            );
+            return buildTransactionCategories(budget, budgetPeriod, categoryTransactions);
         } catch (Exception e) {
             log.error("Error creating recurring transaction categories: ", e);
             throw e;
@@ -261,21 +249,16 @@ public class TransactionCategoryRunner
             else
             {
                 BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, startDate, endDate);
-
                 // Convert transactions to CategoryDesignators
-                Map<String, List<Transaction>> transactionsByCategory = transactions.stream()
-                        .filter(t -> t.getCategories() != null && !t.getCategories().isEmpty())
-                        .collect(Collectors.groupingBy(t -> t.getCategories().get(0)));
-                transactionsByCategory.forEach((transaction, index) -> {
-                    log.info("Creating transaction categories: {}", transaction.toString());
-                });
-
-                List<CategoryTransactions> categoryDesignators = createCategoryTransactions(transactionsByCategory);
-                categoryDesignators.forEach((categoryDesignator) -> {
+                Long userId = budget.getUserId();
+                DateRange dateRange = new DateRange(startDate, endDate);
+                Map<String, List<String>> categorizedTransactions = categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(transactions, userId, dateRange);
+                // Use the map to obtain the Transactions from the Transaction ids
+                List<CategoryTransactions> categoryTransactions = buildCategoryTransactionsList(categorizedTransactions);
+                categoryTransactions.forEach((categoryDesignator) -> {
                     log.info("Category Designator for new Transactions: {}", categoryDesignator.toString());
                 });
-
-                return buildTransactionCategories(budget, budgetPeriod, categoryDesignators);
+                return buildTransactionCategories(budget, budgetPeriod, categoryTransactions);
             }
         }catch(IllegalDateException e){
             log.error("Unable to create transaction categories due to illegal date: ", e);
@@ -286,25 +269,34 @@ public class TransactionCategoryRunner
         }
     }
 
+    private List<CategoryTransactions> buildCategoryTransactionsList(final Map<String, List<String>> transactionIdsByCategoryMap)
+    {
+        List<CategoryTransactions> categoryTransactionsList = new ArrayList<>();
+        List<Transaction> transactions = new ArrayList<>();
+        for(Map.Entry<String, List<String>> entry : transactionIdsByCategoryMap.entrySet())
+        {
+            String categoryName = entry.getKey();
+            List<String> transactionIds = entry.getValue();
+            for(String transactionId : transactionIds)
+            {
+                Transaction transaction = transactionService.findTransactionById(transactionId);
+                transactions.add(transaction);
+            }
+            CategoryTransactions categoryTransactions = new CategoryTransactions(categoryName, transactions);
+            categoryTransactionsList.add(categoryTransactions);
+        }
+        return categoryTransactionsList;
+    }
+
     private List<TransactionCategory> buildTransactionCategories(Budget budget, BudgetPeriod budgetPeriod, List<CategoryTransactions> categoryTransactions)
     {
         return transactionCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, categoryTransactions);
     }
 
-    private List<CategoryTransactions> createCategoryTransactions(final Map<String, List<Transaction>> transactionsByCategory){
-        return transactionsByCategory.entrySet().stream()
-                .map(entry -> {
-                    String categoryName = entry.getKey();
-                    // Fetch the category name using the categoryId through your category service/repository
-                    CategoryEntity category = categoryService.findCategoryByName(categoryName)
-                            .orElseThrow(() -> new IllegalStateException("Category not found: " + categoryName));
-                    String categoryId = category.getId();
-                    log.info("Category Id: {} for category {}", categoryId, categoryName);
-                    CategoryTransactions categoryTransaction = new CategoryTransactions(categoryId, category.getName());
-                    categoryTransaction.setTransactions(entry.getValue());
-                    return categoryTransaction;
-                })
-                .collect(Collectors.toList());
+    private boolean transactionExists(String transactionId)
+    {
+        Optional<TransactionsEntity> transactionsEntity = transactionService.getTransactionById(transactionId);
+        return transactionsEntity.isPresent();
     }
 
     // TODO: Unit test this method
@@ -314,40 +306,33 @@ public class TransactionCategoryRunner
             return new ArrayList<>();
         }
 
-//        try {
-//            // 1. Group transactions by category
-//            Map<String, List<Transaction>> transactionsByCategory = transactions.stream()
-//                    .filter(t -> t.getCategories() != null && !t.getCategories().isEmpty())
-//                    .collect(Collectors.groupingBy(t -> t.getCategories().get(0)));
-//
-//            // 2. Create CategoryDesignators
-//            List<CategoryDesignator> categoryDesignators = transactionsByCategory.entrySet().stream()
-//                    .map(entry -> {
-//                        CategoryDesignator designator = new CategoryDesignator(entry.getKey(), entry.getKey());
-//                        designator.setTransactions(entry.getValue());
-//                        return designator;
-//                    })
-//                    .collect(Collectors.toList());
-//
-//            // 3. Create CategoryPeriods
-//            List<CategoryPeriod> categoryPeriods = transactionCategoryBuilder.createCategoryPeriods(
-//                    budget.getId(),
-//                    budget.getStartDate(),
-//                    budget.getEndDate(),
-//                    budgetPeriod.getPeriod(),
-//                    categoryDesignators
-//            );
-//
-//            // 4. Update existing transaction categories with new information
-//            return transactionCategoryBuilder.updateTransactionCategories(
-//                    categoryPeriods,
-//                    existingTransactionCategories
-//            );
-//        } catch (Exception e) {
-//            log.error("Error updating transaction categories: ", e);
-//            throw e;
-//        }
-        return null;
+        Set<TransactionCategory> uniqueTransactionCategories = new HashSet<>();
+        uniqueTransactionCategories.addAll(existingTransactionCategories);
+        try {
+            for(TransactionCategory transactionCategory : existingTransactionCategories)
+            {
+                final LocalDate transactionCategoryStartDate = transactionCategory.getStartDate();
+                final LocalDate transactionCategoryEndDate = transactionCategory.getEndDate();
+                for(Transaction transaction : transactions)
+                {
+                    String transactionId = transaction.getTransactionId();
+                    LocalDate transactionPostedDate = transaction.getPosted();
+                    // Does the Transaction Id exist in the database?
+                    if(!transactionExists(transactionId) && transactionPostedDate.isAfter(transactionCategoryStartDate) && transactionPostedDate.isAfter(transactionCategoryEndDate))
+                    {
+                        //  Build the Category Periods
+                        LocalDate startDate = budgetPeriod.getStartDate();
+                        LocalDate endDate = budgetPeriod.getEndDate();
+                        List<TransactionCategory> newTransactionCategories = createNewTransactionCategories(transactions, budget, startDate, endDate);
+                        uniqueTransactionCategories.addAll(newTransactionCategories);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error updating transaction categories: ", e);
+            throw e;
+        }
+        return new ArrayList<>(uniqueTransactionCategories);
     }
 
     private BudgetEntity getBudgetEntityById(Long id){

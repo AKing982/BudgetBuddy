@@ -447,6 +447,7 @@ class TransactionCategoryBuilderTest {
         assertEquals(isOverspent, matchingCategory.isOverSpent(), "Overspent flag mismatch");
     }
 
+
     @Test
     void testUpdateTransactionCategories_whenCategoryPeriodsInSamePeriodAsExistingTransactionCategories_thenReturnTransactionCategories() {
         // Create date ranges that match existing transaction categories
@@ -458,8 +459,8 @@ class TransactionCategoryBuilderTest {
         groceriesCategoryPeriod.setCategoryBudgetActualAmountForDateRange(dateRange, 85.0);
         groceriesCategoryPeriod.setCategoryTransactions(Arrays.asList(
                 new Transaction("acc1", new BigDecimal("85.00"), "USD", Arrays.asList("Groceries"), "cat1",
-                        LocalDate.of(2024, 11, 3), "desc", "merchant", "name", false, "grocery_trans_3",
-                        null, null, LocalDate.of(2024, 11, 3))
+                        LocalDate.of(2024, 11, 4), "desc", "merchant", "name", false, "grocery_trans_3",
+                        null, null, LocalDate.of(2024, 11, 4))
         ));
 
         CategoryBudget rentCategoryPeriod = new CategoryBudget("Rent", List.of(dateRange),createTestBudget() , true);
@@ -467,8 +468,8 @@ class TransactionCategoryBuilderTest {
         rentCategoryPeriod.setCategoryBudgetActualAmountForDateRange(dateRange, 800.0);
         rentCategoryPeriod.setCategoryTransactions(Arrays.asList(
                 new Transaction("acc1", new BigDecimal("800.00"), "USD", Arrays.asList("Rent"), "cat2",
-                        LocalDate.of(2024, 11, 2), "desc", "merchant", "name", false, "rent_trans_2",
-                        null, null, LocalDate.of(2024, 11, 2))
+                        LocalDate.of(2024, 11, 5), "desc", "merchant", "name", false, "rent_trans_2",
+                        null, null, LocalDate.of(2024, 11, 5))
         ));
 
         List<CategoryBudget> categoryPeriods = List.of(groceriesCategoryPeriod, rentCategoryPeriod);

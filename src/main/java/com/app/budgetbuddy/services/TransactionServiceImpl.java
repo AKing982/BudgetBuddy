@@ -202,7 +202,13 @@ public class TransactionServiceImpl implements TransactionService
 
     @Override
     public Optional<TransactionsEntity> getTransactionById(String id) {
-        return transactionRepository.findTransactionByTransactionId(id);
+        try
+        {
+            return transactionRepository.findTransactionByTransactionId(id);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching transaction by id: {}", id);
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -389,6 +395,26 @@ public class TransactionServiceImpl implements TransactionService
         }catch(DataAccessException e){
             log.error("There was an error retrieving transactions from the database: {}", e.getMessage());
             return List.of();
+        }
+    }
+
+    @Override
+    public Transaction findTransactionById(String transactionId) {
+        try
+        {
+            Optional<TransactionsEntity> transactionsEntity = transactionRepository.findTransactionByTransactionId(transactionId);
+            if(transactionsEntity.isEmpty())
+            {
+                throw new IllegalArgumentException("Transaction not found");
+            }
+            else
+            {
+                TransactionsEntity transactionsEntity1 = transactionsEntity.get();
+                return transactionEntityToModelConverter.convert(transactionsEntity.get());
+            }
+        }catch(DataAccessException e){
+            LOGGER.error("There was an error retrieving transaction from the database: {}", e.getMessage());
+            throw e;
         }
     }
 
