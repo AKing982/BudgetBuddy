@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode
+@Deprecated
 public class CategoryPeriodCriteria
 {
     private List<DateRange> categoryDateRanges;

@@ -104,11 +104,6 @@ public class TransactionScheduleRunner
         }
     }
 
-    public boolean syncWeeklyTransactions(Long userId)
-    {
-        return false;
-    }
-
     /**
      * Synchronizes transaction data for the last month on login
      * @param userId

@@ -220,17 +220,27 @@ class TransactionCategoryRunnerTest {
     }
 
     @Test
-    void testUpdateTransactionCategories_whenNewTransactionsDontOverlapExistingTransactionCategories_thenReturnTransactionCategories(){
-
+    void testUpdateTransactionCategories_whenNewTransactionsOverlapExistingTransactionCategories_thenReturnTransactionCategories() {
+        // Create transactions that fall within existing category period (8/1 - 8/8)
         List<Transaction> transactions = List.of(
                 new Transaction("acc1", new BigDecimal("50.23"), "USD", List.of("Groceries"), "cat1",
-                        LocalDate.of(2024, 8, 12), "desc", "merchant", "name", false, "trans_11_02",
-                        null, null, LocalDate.of(2024, 8, 15)),
+                        LocalDate.of(2024, 8, 3), "desc", "merchant", "name", false, "trans_08_03",
+                        null, null, LocalDate.of(2024, 8, 3)),
                 new Transaction("acc1", new BigDecimal("23.23"), "USD", List.of("Groceries"), "cat1",
-                        LocalDate.of(2024, 8, 8), "desc", "merchant", "name", false, "trans_11_08",
-                        null, null, LocalDate.of(2024, 8, 16)));
+                        LocalDate.of(2024, 8, 6), "desc", "merchant", "name", false, "trans_08_06",
+                        null, null, LocalDate.of(2024, 8, 6)));
 
         BudgetPeriod budgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 30));
+
+        Budget budget = new Budget();
+        budget.setId(1L);
+        budget.setActual(new BigDecimal("1200"));
+        budget.setBudgetAmount(new BigDecimal("3070"));
+        budget.setUserId(1L);
+        budget.setStartDate(LocalDate.of(2024, 8, 1));
+        budget.setEndDate(LocalDate.of(2024, 8, 30));
+        budget.setBudgetName("Savings Budget Plan");
+        budget.setBudgetDescription("Savings Budget Plan for Savings Account");
 
         List<TransactionCategory> existingTransactionCategories = new ArrayList<>();
         TransactionCategory existingGroceryTransactionCategory = new TransactionCategory();
@@ -248,29 +258,92 @@ class TransactionCategoryRunnerTest {
         existingGroceryTransactionCategory.setOverSpendingAmount(0.0);
         existingTransactionCategories.add(existingGroceryTransactionCategory);
 
+        // Expected result
         List<TransactionCategory> expectedTransactionCategories = new ArrayList<>();
-        TransactionCategory groceryTransactionCategory = new TransactionCategory();
-        groceryTransactionCategory.setId(1L);
-        groceryTransactionCategory.setOverSpent(false);
-        groceryTransactionCategory.setTransactions(transactions);
-        groceryTransactionCategory.setCategoryId("cat1");
-        groceryTransactionCategory.setIsActive(true);
-        groceryTransactionCategory.setCategoryName("Groceries");
-        groceryTransactionCategory.setBudgetId(1L);
-        groceryTransactionCategory.setBudgetActual(79.56);
-        groceryTransactionCategory.setBudgetedAmount(120.0);
-        groceryTransactionCategory.setStartDate(LocalDate.of(2024, 8, 9));
-        groceryTransactionCategory.setEndDate(LocalDate.of(2024, 8, 16));
-        groceryTransactionCategory.setOverSpendingAmount(0.0);
-        expectedTransactionCategories.add(existingGroceryTransactionCategory);
-        expectedTransactionCategories.add(groceryTransactionCategory);
+        TransactionCategory updatedGroceryTransactionCategory = new TransactionCategory();
+        updatedGroceryTransactionCategory.setId(1L);
+        updatedGroceryTransactionCategory.setOverSpent(false);
+        List<Transaction> allTransactions = new ArrayList<>();
+        allTransactions.addAll(transactions);
+        updatedGroceryTransactionCategory.setTransactions(allTransactions);
+        updatedGroceryTransactionCategory.setCategoryId("cat1");
+        updatedGroceryTransactionCategory.setIsActive(true);
+        updatedGroceryTransactionCategory.setCategoryName("Groceries");
+        updatedGroceryTransactionCategory.setBudgetId(1L);
+        updatedGroceryTransactionCategory.setBudgetActual(79.56);
+        updatedGroceryTransactionCategory.setBudgetedAmount(120.0);
+        updatedGroceryTransactionCategory.setStartDate(LocalDate.of(2024, 8, 1));
+        updatedGroceryTransactionCategory.setEndDate(LocalDate.of(2024, 8, 8));
+        updatedGroceryTransactionCategory.setOverSpendingAmount(0.0);
+        expectedTransactionCategories.add(updatedGroceryTransactionCategory);
 
-        when(transactionService.getTransactionById("trans1")).thenReturn(Optional.of())
+        // Mock categoryRuleEngine
+        DateRange expectedDateRange = new DateRange(budgetPeriod.getStartDate(), budgetPeriod.getEndDate());
+        Map<String, List<String>> categorizedTransactions = new HashMap<>();
+        categorizedTransactions.put("Groceries", List.of("trans_08_03", "trans_08_06"));
+        when(categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(transactions, budget.getUserId(), expectedDateRange))
+                .thenReturn(categorizedTransactions);
 
-        List<TransactionCategory> actual = transactionCategoryRunner.updateTransactionCategories(existingTransactionCategories, transactions, testBudget, budgetPeriod);
+        // Mock category spending creation
+        List<DateRange> expectedDateRanges = List.of(
+                new DateRange(LocalDate.of(2024, 8, 1), LocalDate.of(2024, 8, 8)),
+                new DateRange(LocalDate.of(2024, 8, 9), LocalDate.of(2024, 8, 16)),
+                new DateRange(LocalDate.of(2024, 8, 17), LocalDate.of(2024, 8, 24)),
+                new DateRange(LocalDate.of(2024, 8, 25), LocalDate.of(2024, 8, 30))
+        );
+
+        List<CategoryTransactions> categoryTransactionsList = List.of(
+                new CategoryTransactions("Groceries", transactions)
+        );
+
+        List<CategoryPeriodSpending> categoryPeriodSpendings = List.of(
+                new CategoryPeriodSpending("cat1", "Groceries",
+                        new BigDecimal("73.46"), expectedDateRanges.get(0)),
+                new CategoryPeriodSpending("cat1", "Groceries",
+                        BigDecimal.ZERO, expectedDateRanges.get(1)),
+                new CategoryPeriodSpending("cat1", "Groceries",
+                        BigDecimal.ZERO, expectedDateRanges.get(2)),
+                new CategoryPeriodSpending("cat1", "Groceries",
+                        BigDecimal.ZERO, expectedDateRanges.get(3))
+        );
+
+        List<CategoryBudget> expectedCategoryBudgets = List.of(
+                CategoryBudget.buildCategoryBudget(
+                        "cat1",
+                        "Groceries",
+                        transactions,
+                        List.of(new BudgetPeriodAmount(expectedDateRanges.get(0), 120.0)),
+                        List.of(new BudgetPeriodAmount(expectedDateRanges.get(0), 79.56)),
+                        expectedDateRanges,
+                        budget,
+                        true
+                )
+        );
+
+        // Mock transactionCategoryBuilder
+        when(transactionCategoryBuilder.updateTransactionCategories(
+                any(List.class), eq(existingTransactionCategories)))
+                .thenReturn(expectedTransactionCategories);
+
+        // Execute test
+        List<TransactionCategory> actual = transactionCategoryRunner.updateTransactionCategories(
+                existingTransactionCategories,
+                transactions,
+                budget,
+                budgetPeriod
+        );
+
+        // Verify results
         assertNotNull(actual);
         assertEquals(expectedTransactionCategories.size(), actual.size());
-        for(int i = 0; i < actual.size(); i++){
+
+        // Verify the builder was called with correct parameters
+        verify(transactionCategoryBuilder).updateTransactionCategories(
+                any(List.class), eq(existingTransactionCategories)
+        );
+
+        // Verify category details
+        for(int i = 0; i < actual.size(); i++) {
             assertEquals(expectedTransactionCategories.get(i).getTransactions().size(), actual.get(i).getTransactions().size());
             assertEquals(expectedTransactionCategories.get(i).getCategoryId(), actual.get(i).getCategoryId());
             assertEquals(expectedTransactionCategories.get(i).getIsActive(), actual.get(i).getIsActive());
@@ -288,17 +361,22 @@ class TransactionCategoryRunnerTest {
     private List<Transaction> createGroceryTransactions(){
         return List.of(
                 new Transaction("acc1", new BigDecimal("34.32"), "USD", List.of("Groceries"), "cat1",
-                        LocalDate.of(2024, 8, 2), "desc", "merchant", "name", false, "trans_11_02",
+                        LocalDate.of(2024, 8, 2), "desc", "merchant", "name", false, "trans_08_02",
                         null, null, LocalDate.of(2024, 8, 2)),
                 new Transaction("acc1", new BigDecimal("45.24"), "USD", List.of("Groceries"), "cat1",
-                        LocalDate.of(2024, 8, 8), "desc", "merchant", "name", false, "trans_11_08",
+                        LocalDate.of(2024, 8, 8), "desc", "merchant", "name", false, "trans_08_08",
                         null, null, LocalDate.of(2024, 8, 8))
         );
     }
 
-    private TransactionsEntity createTransactionEntity(){
+    private TransactionsEntity createTransactionEntity(LocalDate posted){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setPosted();
+        transactionsEntity.setPosted(posted);
+        transactionsEntity.setId("trans1");
+        transactionsEntity.setAmount(new BigDecimal("34.32"));
+        transactionsEntity.setDescription("desc");
+        transactionsEntity.setAuthorizedDate(posted);
+        return transactionsEntity;
     }
 
     private CategoryEntity createCategory(String name){
