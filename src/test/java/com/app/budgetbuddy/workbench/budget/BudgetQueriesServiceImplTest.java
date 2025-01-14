@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
+import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.repositories.BudgetRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -76,15 +77,14 @@ class BudgetQueriesServiceImplTest {
         when(typedQuery.getResultList()).thenReturn(mockResults);
 
         // Act
-        List<BudgetCategory> result = budgetQueriesService.getTopExpenseBudgetCategories(budgetId, startDate, endDate);
+        List<Category> result = budgetQueriesService.getTopExpenseBudgetCategories(budgetId, startDate, endDate);
 
         // Assert
         assertFalse(result.isEmpty());
-        BudgetCategory category = result.get(0);
+        Category category = result.get(0);
         assertEquals("Groceries", category.getCategoryName());
         assertEquals(new BigDecimal("500.00"), category.getBudgetedAmount());
-        assertEquals(new BigDecimal("450.00"), category.getActualAmount());
-        assertEquals(new BigDecimal("50.00"), category.getRemainingAmount());
+        assertEquals(new BigDecimal("450.00"), category.getActual());
     }
 
     @Test
@@ -104,14 +104,14 @@ class BudgetQueriesServiceImplTest {
         when(typedQuery.getResultList()).thenReturn(mockResults);
 
         // Act
-        List<BudgetCategory> result = budgetQueriesService.getIncomeBudgetCategory(userId, startDate, endDate);
+        List<Category> result = budgetQueriesService.getIncomeBudgetCategory(userId, startDate, endDate);
 
         // Assert
         assertFalse(result.isEmpty());
-        BudgetCategory category = result.get(0);
+        Category category = result.get(0);
         assertEquals("Payroll", category.getCategoryName());
         assertEquals(new BigDecimal("5000.00"), category.getBudgetedAmount());
-        assertEquals(new BigDecimal("5000.00"), category.getActualAmount());
+        assertEquals(new BigDecimal("5000.00"), category.getActual());
     }
 
     @Test
@@ -131,14 +131,14 @@ class BudgetQueriesServiceImplTest {
         when(typedQuery.getResultList()).thenReturn(mockResults);
 
         // Act
-        List<BudgetCategory> result = budgetQueriesService.getSavingsBudgetCategory(budgetId, startDate, endDate);
+        List<Category> result = budgetQueriesService.getSavingsBudgetCategory(budgetId, startDate, endDate);
 
         // Assert
         assertFalse(result.isEmpty());
-        BudgetCategory category = result.get(0);
+        Category category = result.get(0);
         assertEquals("Savings", category.getCategoryName());
         assertEquals(new BigDecimal("1000.00"), category.getBudgetedAmount());
-        assertEquals(new BigDecimal("800.00"), category.getActualAmount());
+        assertEquals(new BigDecimal("800.00"), category.getActual());
     }
 
     @Test

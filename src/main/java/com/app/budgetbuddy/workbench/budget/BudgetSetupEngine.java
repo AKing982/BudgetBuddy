@@ -312,7 +312,7 @@ public class BudgetSetupEngine
      * @param dateRanges The list of date ranges to calculate over
      * @return Map of total budgeted amounts keyed by date range
      */
-    public Map<DateRange, BigDecimal> createTotalBudgetedByPeriodMap(final Budget budget, final List<DateRange> dateRanges) {
+    public Map<DateRange, BigDecimal> createTotalBudgetedByPeriodMap(final Budget budget, final BudgetSchedule budgetSchedule, final List<DateRange> dateRanges) {
         if (budget == null || dateRanges == null || dateRanges.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -347,6 +347,7 @@ public class BudgetSetupEngine
             BigDecimal totalBudgeted = budgetCalculations.calculateTotalBudgetAmount(
                     dateRange,
                     budget,
+                    budgetSchedule,
                     totalFixedRecurringExpenses,
                     totalSpent
             );
@@ -363,7 +364,7 @@ public class BudgetSetupEngine
      * @param dateRanges The list of date ranges to calculate over
      * @return Map of average daily spending amounts keyed by date range
      */
-    public Map<DateRange, BigDecimal> createAverageSpendingPerDayMap(final Budget budget, final List<DateRange> dateRanges) {
+    public Map<DateRange, BigDecimal> createAverageSpendingPerDayMap(final Budget budget, final BudgetSchedule budgetSchedule, final List<DateRange> dateRanges) {
         if (budget == null || dateRanges == null || dateRanges.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -372,7 +373,7 @@ public class BudgetSetupEngine
 
         // Get the total spent and budgeted maps first to avoid recalculating
         Map<DateRange, BigDecimal> totalSpentMap = createTotalSpentByPeriodMap(budget, dateRanges);
-        Map<DateRange, BigDecimal> totalBudgetedMap = createTotalBudgetedByPeriodMap(budget, dateRanges);
+        Map<DateRange, BigDecimal> totalBudgetedMap = createTotalBudgetedByPeriodMap(budget, budgetSchedule, dateRanges);
 
         for (DateRange dateRange : dateRanges) {
             BudgetPeriod budgetPeriod = new BudgetPeriod(
@@ -410,7 +411,7 @@ public class BudgetSetupEngine
      * @param budget The budget to analyze
      * @return List of BudgetStats for each date range period
      */
-    public List<BudgetStats> createBudgetStatistics(final Budget budget)
+    public List<BudgetStats> createBudgetStatistics(final Budget budget, final BudgetSchedule budgetSchedule)
     {
         if (budget == null) {
             return Collections.emptyList();
@@ -418,13 +419,13 @@ public class BudgetSetupEngine
 
         try {
             Long budgetId = budget.getId();
-            LocalDate budgetStartDate = budget.getStartDate();
-            LocalDate budgetEndDate = budget.getEndDate();
+            LocalDate budgetStartDate = budgetSchedule.getStartDate();
+            LocalDate budgetEndDate = budgetSchedule.getEndDate();
             List<DateRange> budgetDateRanges = createBudgetDateRanges(budgetStartDate, budgetEndDate);
             // Create all required maps
             Map<DateRange, BigDecimal> totalSpentByPeriod = createTotalSpentByPeriodMap(budget, budgetDateRanges);
-            Map<DateRange, BigDecimal> totalBudgetedByPeriod = createTotalBudgetedByPeriodMap(budget, budgetDateRanges);
-            Map<DateRange, BigDecimal> averageSpendingPerDay = createAverageSpendingPerDayMap(budget, budgetDateRanges);
+            Map<DateRange, BigDecimal> totalBudgetedByPeriod = createTotalBudgetedByPeriodMap(budget, budgetSchedule, budgetDateRanges);
+            Map<DateRange, BigDecimal> averageSpendingPerDay = createAverageSpendingPerDayMap(budget, budgetSchedule, budgetDateRanges);
 
             // Initialize and return budget statistics using the calculated maps
             return initializeUserBudgetStatistics(

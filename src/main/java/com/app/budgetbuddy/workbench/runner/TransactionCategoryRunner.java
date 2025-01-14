@@ -23,6 +23,7 @@ public class TransactionCategoryRunner
     private final TransactionService transactionService;
     private final RecurringTransactionService recurringTransactionService;
     private final BudgetService budgetService;
+    private final BudgetScheduleService budgetScheduleService;
     private final CategoryService categoryService;
     private final CategoryRuleEngine categoryRuleEngine;
     private final TransactionCategoryService transactionCategoryService;
@@ -33,6 +34,7 @@ public class TransactionCategoryRunner
                                      TransactionCategoryBuilder transactionCategoryBuilder,
                                      TransactionService transactionService,
                                      BudgetService budgetService,
+                                     BudgetScheduleService budgetScheduleService,
                                      CategoryService categoryService,
                                      CategoryRuleEngine categoryRuleEngine,
                                      RecurringTransactionService recurringTransactionService)
@@ -41,9 +43,30 @@ public class TransactionCategoryRunner
         this.transactionCategoryBuilder = transactionCategoryBuilder;
         this.transactionService = transactionService;
         this.budgetService = budgetService;
+        this.budgetScheduleService = budgetScheduleService;
         this.categoryService = categoryService;
         this.categoryRuleEngine = categoryRuleEngine;
         this.recurringTransactionService = recurringTransactionService;
+    }
+
+    private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate)
+    {
+        List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
+        Optional<BudgetSchedule> budgetScheduleOptional = Optional.empty();
+        for(BudgetSchedule budgetSchedule : budgetSchedules)
+        {
+            if(budgetSchedule != null)
+            {
+                LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
+                LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();
+                if(startDate.isAfter(budgetScheduleStartDate) && endDate.isBefore(budgetScheduleEndDate))
+                {
+                    budgetScheduleOptional = Optional.of(budgetSchedule);
+                    break;
+                }
+            }
+        }
+        return budgetScheduleOptional;
     }
 
     /**
@@ -51,17 +74,24 @@ public class TransactionCategoryRunner
      * This includes both regular and recurring transactions.
      */
     //TODO: Unit test this method and change output to boolean
-    public void processTransactionCategories(Long userId, LocalDate startDate, LocalDate endDate) {
+    public void processTransactionCategories(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         log.info("Starting transaction category processing for user {} between {} and {}",
                 userId, startDate, endDate);
 
-        try {
+        try
+        {
             // 1. Get active budgets for the date range
             Budget activeBudget = budgetService.loadUserBudgetForPeriod(userId, startDate, endDate);
-
+            Optional<BudgetSchedule> budgetScheduleOptional = getBudgetScheduleParam(activeBudget, startDate, endDate);
+            if(budgetScheduleOptional.isEmpty())
+            {
+                return;
+            }
+            BudgetSchedule budgetSchedule = budgetScheduleOptional.get();
             // Process each budget
             log.info("Process budget for startDate: {} endDate: {}", startDate, endDate);
-            processBudgetTransactionCategories(activeBudget, startDate, endDate);
+            processBudgetTransactionCategories(activeBudget, budgetSchedule, startDate, endDate);
 
         } catch (Exception e) {
             log.error("Error processing transaction categories for user {}: ", userId, e);
@@ -72,6 +102,7 @@ public class TransactionCategoryRunner
 
     //TODO: Unit test this method and break it down into smaller methods
     private void processBudgetTransactionCategories(Budget budget,
+                                                    BudgetSchedule budgetSchedule,
                                                     LocalDate startDate,
                                                     LocalDate endDate) {
 
@@ -109,17 +140,17 @@ public class TransactionCategoryRunner
 
             // 5. Process regular transactions (using validated transactions)
             List<TransactionCategory> newRegularCategories =
-                    createNewTransactionCategories(validTransactions, budget, startDate, endDate);
+                    createNewTransactionCategories(validTransactions, budget, budgetSchedule, startDate, endDate);
 
             // 6. Process recurring transactions
             List<TransactionCategory> newRecurringCategories =
                     createNewRecurringTransactionCategories(
-                            recurringTransactions, budget, startDate, endDate);
+                            recurringTransactions, budget, budgetSchedule, startDate, endDate);
 
             // 7. Update existing categories with new transaction data (using validated transactions)
             List<TransactionCategory> updatedExistingCategories =
                     updateTransactionCategories(
-                            existingCategories, validTransactions, budget, budgetPeriod);
+                            existingCategories, validTransactions, budget, budgetSchedule, budgetPeriod);
 
             // 8. Merge all categories (existing and new)
             Set<TransactionCategory> allCategories = new HashSet<>();
@@ -198,7 +229,7 @@ public class TransactionCategoryRunner
     }
 
     //TODO: Unit test this method
-    public List<TransactionCategory> createNewRecurringTransactionCategories(final List<RecurringTransaction> recurringTransactions, final Budget budget, final LocalDate startDate, final LocalDate endDate){
+    public List<TransactionCategory> createNewRecurringTransactionCategories(final List<RecurringTransaction> recurringTransactions, final Budget budget, BudgetSchedule budgetSchedule, final LocalDate startDate, final LocalDate endDate){
         if (recurringTransactions == null || recurringTransactions.isEmpty() || budget == null) {
             log.warn("Invalid parameters for creating recurring transaction categories");
             return new ArrayList<>();
@@ -214,7 +245,7 @@ public class TransactionCategoryRunner
             categoryTransactions.forEach((categoryTransactions1 -> {
                 log.info("Category Designator: {}", categoryTransactions1.toString());
             }) );
-            return buildTransactionCategories(budget, budgetPeriod, categoryTransactions);
+            return buildTransactionCategories(budget, budgetSchedule, budgetPeriod, categoryTransactions);
         } catch (Exception e) {
             log.error("Error creating recurring transaction categories: ", e);
             throw e;
@@ -227,7 +258,7 @@ public class TransactionCategoryRunner
     }
 
     //TODO: Unit test this method
-    public List<TransactionCategory> createNewTransactionCategories(final List<Transaction> transactions, Budget budget, LocalDate startDate, LocalDate endDate)
+    public List<TransactionCategory> createNewTransactionCategories(final List<Transaction> transactions, Budget budget, BudgetSchedule budgetSchedule, LocalDate startDate, LocalDate endDate)
     {
         if (transactions == null || budget == null) {
             log.warn("Invalid parameters for creating transaction categories");
@@ -239,8 +270,8 @@ public class TransactionCategoryRunner
             {
                 throw new IllegalDateException("Illegal Start Date or EndDate: " + startDate + " " + endDate);
             }
-            LocalDate budgetStartDate = budget.getStartDate();
-            LocalDate budgetEndDate = budget.getEndDate();
+            LocalDate budgetStartDate = budgetSchedule.getStartDate();
+            LocalDate budgetEndDate = budgetSchedule.getEndDate();
             if(!validateTransactionDatesMeetsBudgetPeriod(budgetStartDate, budgetEndDate, startDate, endDate))
             {
                 log.info("Transaction Dates: {} and {} don't meet the budget period dates: {} and {}", startDate, endDate, budgetStartDate, budgetEndDate);
@@ -258,7 +289,7 @@ public class TransactionCategoryRunner
                 categoryTransactions.forEach((categoryDesignator) -> {
                     log.info("Category Designator for new Transactions: {}", categoryDesignator.toString());
                 });
-                List<TransactionCategory> transactionCategories = buildTransactionCategories(budget, budgetPeriod, categoryTransactions);
+                List<TransactionCategory> transactionCategories = buildTransactionCategories(budget, budgetSchedule, budgetPeriod, categoryTransactions);
                 transactionCategories.forEach(transactionCategory -> {
                     log.info("Transaction Category: {}", transactionCategory.toString());
                 });
@@ -292,9 +323,9 @@ public class TransactionCategoryRunner
         return categoryTransactionsList;
     }
 
-    private List<TransactionCategory> buildTransactionCategories(Budget budget, BudgetPeriod budgetPeriod, List<CategoryTransactions> categoryTransactions)
+    private List<TransactionCategory> buildTransactionCategories(final Budget budget, final BudgetSchedule budgetSchedule, final BudgetPeriod budgetPeriod, List<CategoryTransactions> categoryTransactions)
     {
-        return transactionCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, categoryTransactions);
+        return transactionCategoryBuilder.initializeTransactionCategories(budget, budgetPeriod, budgetSchedule, categoryTransactions);
     }
 
     private boolean transactionExists(String transactionId)
@@ -319,7 +350,7 @@ public class TransactionCategoryRunner
         }
     }
 
-    private List<CategoryBudget> createCategoryBudgetList(Budget budget, LocalDate budgetStartDate, LocalDate budgetEndDate, Period period, List<CategoryPeriodSpending> categoryPeriodSpendings, List<CategoryTransactions> categoryTransactions)
+    private List<CategoryBudget> createCategoryBudgetList(final Budget budget, final BudgetSchedule budgetSchedule, LocalDate budgetStartDate, LocalDate budgetEndDate, List<CategoryPeriodSpending> categoryPeriodSpendings, List<CategoryTransactions> categoryTransactions)
     {
         if(categoryTransactions == null || categoryTransactions.isEmpty())
         {
@@ -327,7 +358,7 @@ public class TransactionCategoryRunner
         }
         try
         {
-            return transactionCategoryBuilder.createCategoryBudgets(budget, budgetStartDate, budgetEndDate, period, categoryPeriodSpendings, categoryTransactions);
+            return transactionCategoryBuilder.createCategoryBudgets(budget, budgetSchedule, budgetStartDate, budgetEndDate, categoryPeriodSpendings, categoryTransactions);
         }catch(Exception e){
             log.error("There was an error building the category budget list: ", e);
             return Collections.emptyList();
@@ -350,7 +381,7 @@ public class TransactionCategoryRunner
     }
 
     // TODO: Unit test this method
-    public List<TransactionCategory> updateTransactionCategories(final List<TransactionCategory> existingTransactionCategories, final List<Transaction> transactions, final Budget budget, final BudgetPeriod budgetPeriod){
+    public List<TransactionCategory> updateTransactionCategories(final List<TransactionCategory> existingTransactionCategories, final List<Transaction> transactions, final Budget budget, final BudgetSchedule budgetSchedule, final BudgetPeriod budgetPeriod){
         if (existingTransactionCategories == null || transactions == null || budget == null) {
             log.warn("Invalid parameters for updating transaction categories");
             return new ArrayList<>();
@@ -359,15 +390,15 @@ public class TransactionCategoryRunner
         {
             // Categorize the new transactions
             Long userId = budget.getUserId();
-            LocalDate budgetStartDate = budget.getStartDate();
-            LocalDate budgetEndDate = budget.getEndDate();
+            LocalDate budgetStartDate = budgetSchedule.getStartDate();
+            LocalDate budgetEndDate = budgetSchedule.getEndDate();
             Period period = budgetPeriod.getPeriod();
-            List<DateRange> budgetDateRanges = createBudgetDateRanges(budget.getStartDate(), budget.getEndDate(), budgetPeriod.getPeriod());
+            List<DateRange> budgetDateRanges = createBudgetDateRanges(budgetStartDate, budgetEndDate, budgetPeriod.getPeriod());
             DateRange dateRange = new DateRange(budgetPeriod.getStartDate(), budgetPeriod.getEndDate());
             Map<String, List<String>> categorizedTransactions = categoryRuleEngine.finalizeUserTransactionCategoriesForDateRange(transactions, userId, dateRange);
             List<CategoryTransactions> categoryTransactionsList = buildCategoryTransactionsList(categorizedTransactions);
             List<CategoryPeriodSpending> categoryPeriodSpendings = createCategoryPeriodSpendingList(categoryTransactionsList, budgetDateRanges);
-            List<CategoryBudget> categoryBudgets = createCategoryBudgetList(budget, budgetStartDate, budgetEndDate, period, categoryPeriodSpendings, categoryTransactionsList);
+            List<CategoryBudget> categoryBudgets = createCategoryBudgetList(budget, budgetSchedule, budgetStartDate, budgetEndDate, categoryPeriodSpendings, categoryTransactionsList);
             return transactionCategoryBuilder.updateTransactionCategories(categoryBudgets, existingTransactionCategories);
 
         } catch (Exception e) {

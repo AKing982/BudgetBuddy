@@ -23,6 +23,8 @@ public class BudgetStats
     private BigDecimal totalSaved;
     private BigDecimal averageSpendingPerDay;
     private DateRange dateRange;
+    private BigDecimal healthScore;
+    private BigDecimal monthlyProjection;
 
     public BudgetStats(Long budgetId, BigDecimal totalBudget, BigDecimal totalSpent, BigDecimal remaining, BigDecimal totalSaved, BigDecimal averageSpendingPerDay, DateRange dateRange){
         this.budgetId = budgetId;

@@ -51,8 +51,13 @@ public class BudgetEntity {
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime lastUpdatedDate;
 
-    @OneToOne(mappedBy="budget")
-    private BudgetScheduleEntity budgetSchedule;
+    @ManyToMany
+    @JoinTable(
+            name = "budget_schedule_mapping",
+            joinColumns = @JoinColumn(name = "budgetId"),
+            inverseJoinColumns = @JoinColumn(name = "scheduleId")
+    )
+    private Set<BudgetScheduleEntity> budgetSchedules = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name="budgets")

@@ -281,7 +281,7 @@ public class BudgetCalculations {
         }
     }
 
-    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategoryPeriodSpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final Budget budget)
+    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategoryPeriodSpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final Budget budget, final BudgetSchedule budgetSchedule)
     {
         if(categorySpendingData == null || categoryDateRanges == null || budget == null)
         {
@@ -296,7 +296,7 @@ public class BudgetCalculations {
         BigDecimal categoryTotalBudget = totalBudgetAmount.multiply(categorySpendingRatio);
 
         // Calculate per period amount based on days in period
-        DateRange budgetDateRange = new DateRange(budget.getStartDate(), budget.getEndDate());
+        DateRange budgetDateRange = new DateRange(budgetSchedule.getStartDate(), budgetSchedule.getEndDate());
         long totalDays = budgetDateRange.getDaysInRange();
 
         for(DateRange dateRange : categoryDateRanges) {
@@ -463,7 +463,7 @@ public class BudgetCalculations {
         return ChronoUnit.DAYS.between(effectiveStartDate, budgetEndDate) + 1;
     }
 
-    public BigDecimal calculateTotalBudgetAmount(final DateRange budgetDateRange, final Budget budget, final BigDecimal totalRecurringExpenses, final BigDecimal totalSpentOnBudget)
+    public BigDecimal calculateTotalBudgetAmount(final DateRange budgetDateRange, final Budget budget, final BudgetSchedule budgetSchedule, final BigDecimal totalRecurringExpenses, final BigDecimal totalSpentOnBudget)
     {
         log.info("Calculating Total Budget for DateRange: " + budgetDateRange.toString() + " And Budget: " + budget.toString() + " With Total Recurring Expenses: " + totalRecurringExpenses);
         if(budgetDateRange == null)
@@ -487,8 +487,8 @@ public class BudgetCalculations {
             if(daysBetweenRange < 0){
                 throw new RuntimeException("Days between start and end date is invalid");
             }
-            LocalDate budgetStartDate = budget.getStartDate();
-            LocalDate budgetEndDate = budget.getEndDate();
+            LocalDate budgetStartDate = budgetSchedule.getStartDate();
+            LocalDate budgetEndDate = budgetSchedule.getEndDate();
             long numberOfDaysInBudget = getNumberOfDaysInBudget(budgetStartDate, budgetEndDate);
             log.info("Number of Days in Budget: " + numberOfDaysInBudget);
             BigDecimal monthlyBudgetAmount = budget.getBudgetAmount();

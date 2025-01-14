@@ -2,6 +2,7 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.Budget;
 import com.app.budgetbuddy.domain.BudgetCreateRequest;
+import com.app.budgetbuddy.domain.BudgetSchedule;
 import com.app.budgetbuddy.entities.BudgetEntity;
 
 import java.math.BigDecimal;

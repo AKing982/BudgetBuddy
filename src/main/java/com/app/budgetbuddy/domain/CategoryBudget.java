@@ -14,11 +14,20 @@ public class CategoryBudget
     private String categoryId;
     private String category;
     private Budget budget;
+    private BudgetSchedule budgetSchedule;
     private List<Transaction> categoryTransactions;
     private List<DateRange> categoryDateRanges;
     private List<BudgetPeriodAmount> budgetedAmounts;
     private List<BudgetPeriodAmount> actualAmounts;
     private boolean active;
+
+    public CategoryBudget(String categoryId, Budget budget, BudgetSchedule budgetSchedule, List<DateRange> categoryDateRanges, boolean active) {
+        this.categoryId = categoryId;
+        this.budget = budget;
+        this.budgetSchedule = budgetSchedule;
+        this.categoryDateRanges = categoryDateRanges;
+        this.active = active;
+    }
 
     public CategoryBudget(String categoryId, String category, List<DateRange> dateRanges, Boolean isActive) {
         this.categoryId = categoryId;

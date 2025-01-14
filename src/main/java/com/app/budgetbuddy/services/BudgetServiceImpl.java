@@ -1,9 +1,8 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.Budget;
-import com.app.budgetbuddy.domain.BudgetCreateRequest;
-import com.app.budgetbuddy.domain.User;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
+import com.app.budgetbuddy.entities.BudgetScheduleEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetRepository;
@@ -14,9 +13,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -63,7 +60,7 @@ public class BudgetServiceImpl implements BudgetService
     public Budget loadUserBudgetForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
         try
         {
-            Optional<BudgetEntity> budgetEntityOptional = budgetRepository.findBudgetByUserAndPeriod(userId, startDate, endDate);
+            Optional<BudgetEntity> budgetEntityOptional = budgetRepository.findBudgetByUserIdAndDates(startDate, endDate, userId);
             return budgetEntityOptional.map(this::convertBudgetEntity).orElseThrow(() -> new RuntimeException("Budget not found"));
         }catch(DataAccessException e){
             log.error("There was an error loading budget for period: {} - {}, {}", startDate, endDate, e.getMessage());
@@ -82,9 +79,34 @@ public class BudgetServiceImpl implements BudgetService
         budget.setBudgetAmount(budgetEntity.getBudgetAmount());
         budget.setBudgetName(budgetEntity.getBudgetName());
         budget.setBudgetDescription(budgetEntity.getBudgetDescription());
-//        budget.setStartDate(budgetEntity.getStartDate());
-//        budget.setEndDate(budgetEntity.getEndDate());
+        budget.setBudgetSchedules(convertBudgetScheduleEntities(budgetEntity.getBudgetSchedules()));
         return budget;
+    }
+
+    private List<BudgetSchedule> convertBudgetScheduleEntities(Set<BudgetScheduleEntity> budgetScheduleEntitySet)
+    {
+        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
+        try
+        {
+            for(BudgetScheduleEntity budgetSchedule : budgetScheduleEntitySet)
+            {
+                BudgetSchedule budgetSchedule1 = BudgetSchedule.builder()
+                        .budgetId(budgetSchedule.getBudget().getId())
+                        .endDate(budgetSchedule.getEndDate())
+                        .startDate(budgetSchedule.getStartDate())
+                        .period(budgetSchedule.getPeriodType())
+                        .scheduleRange(new DateRange(budgetSchedule.getStartDate(), budgetSchedule.getEndDate()))
+                        .totalPeriods(budgetSchedule.getTotalPeriodsInRange())
+                        .status(budgetSchedule.getStatus().name())
+                        .build();
+                budgetSchedules.add(budgetSchedule1);
+            }
+
+        }catch(Exception e){
+            log.error("There was an error converting the Budget Schedule Entities: ", e);
+            return Collections.emptyList();
+        }
+        return budgetSchedules;
     }
 
     @Override
@@ -94,8 +116,6 @@ public class BudgetServiceImpl implements BudgetService
         budgetEntity.setBudgetAmount(createRequest.budgetAmount());
         budgetEntity.setBudgetDescription(createRequest.budgetDescription());
         budgetEntity.setBudgetName(createRequest.budgetName());
-//        budgetEntity.setEndDate(createRequest.endDate());
-//        budgetEntity.setStartDate(createRequest.startDate());
         budgetEntity.setCreatedDate(LocalDateTime.now());
         budgetEntity.setMonthlyIncome(createRequest.monthlyIncome());
         budgetEntity.setLastUpdatedDate(null);
@@ -121,4 +141,5 @@ public class BudgetServiceImpl implements BudgetService
     public Optional<BudgetEntity> updateBudget(Long id, BudgetCreateRequest updateRequest) {
         return Optional.empty();
     }
+
 }

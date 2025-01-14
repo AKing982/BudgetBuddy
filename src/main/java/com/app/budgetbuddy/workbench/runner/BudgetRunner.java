@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.BudgetGoalsService;
+import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.budget.*;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +17,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -28,55 +26,72 @@ public class BudgetRunner
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetQueriesService budgetQueriesService;
     private final BudgetCalculations budgetCalculations;
+    private final BudgetScheduleService budgetScheduleService;
     private final BudgetService budgetService;
 
     @Autowired
     public BudgetRunner(BudgetPeriodQueries budgetPeriodQueries,
                         BudgetQueriesService budgetQueriesService,
                         BudgetCalculations budgetCalculations,
+                        BudgetScheduleService budgetScheduleService,
                         BudgetService budgetService){
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.budgetQueriesService = budgetQueriesService;
         this.budgetCalculations = budgetCalculations;
+        this.budgetScheduleService = budgetScheduleService;
         this.budgetService = budgetService;
     }
 
+    private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate)
+    {
+        List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
+        Optional<BudgetSchedule> budgetScheduleOptional = Optional.empty();
+        for(BudgetSchedule budgetSchedule : budgetSchedules)
+        {
+            if(budgetSchedule != null)
+            {
+                LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
+                LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();
+                if(startDate.isAfter(budgetScheduleStartDate) && endDate.isBefore(budgetScheduleEndDate))
+                {
+                    budgetScheduleOptional = Optional.of(budgetSchedule);
+                    break;
+                }
+            }
+        }
+        return budgetScheduleOptional;
+    }
 
     public List<BudgetRunnerResult> runBudgetProcess(final Long userId, final LocalDate startDate, final LocalDate endDate){
         log.info("Starting monthly budget process for user {} between {} and {}", userId, startDate, endDate);
+        Budget userBudget = budgetService.loadUserBudgetForPeriod(userId, startDate, endDate);
         try
         {
-            Budget userBudget = budgetService.loadUserBudget(userId);
-            if(userBudget == null){
-                log.info("No budget found for user {}", userId);
+            Optional<BudgetSchedule> budgetScheduleOptional = getBudgetScheduleParam(userBudget, startDate, endDate);
+            if(budgetScheduleOptional.isEmpty())
+            {
                 return Collections.emptyList();
             }
-
+            BudgetSchedule budgetSchedule = budgetScheduleOptional.get();
             List<BudgetRunnerResult> budgetRunnerResults = new ArrayList<>();
-            try
-            {
-                BudgetRunnerResult result = processBudget(userBudget, startDate, endDate);
-                log.info("Processed BudgetRunnerResult {}", result.toString());
-                budgetRunnerResults.add(result);
-            }catch(Exception e){
-                log.error("Error processing budget {} for user {}",userBudget.getId(), userId, e);
-
-            }
+            BudgetRunnerResult budgetRunnerResult = processBudget(userBudget, budgetSchedule, startDate, endDate);
+            budgetRunnerResults.add(budgetRunnerResult);
             return budgetRunnerResults;
 
         }catch(Exception e){
-            log.error("Error running monthly budget process for user {}: ", userId, e);
-            throw e;
+            log.error("There was an error running budget process for user {} between {} and {}", userId, startDate, endDate);
+            return Collections.emptyList();
         }
     }
 
     // TODO: Create a method that creates a new budget for a new period
 
 
-    private List<BudgetPeriodCategory> loadPeriodCategories(Budget budget, Period period) {
-        LocalDate startDate = budget.getStartDate();
-        LocalDate endDate = budget.getEndDate();
+    private List<BudgetPeriodCategory> loadPeriodCategories(final Budget budget, final BudgetSchedule budgetSchedule) {
+        LocalDate startDate = budgetSchedule.getStartDate();
+        LocalDate endDate = budgetSchedule.getEndDate();
 
+        Period period = budgetSchedule.getPeriod();
         return switch (period) {
             case DAILY -> {
                 DailyBudgetPeriod dailyPeriod = new DailyBudgetPeriod(startDate);
@@ -97,7 +112,7 @@ public class BudgetRunner
         };
     }
 
-    private BudgetRunnerResult processBudget(Budget budget, LocalDate startDate, LocalDate endDate) {
+    private BudgetRunnerResult processBudget(Budget budget, BudgetSchedule budgetSchedule, LocalDate startDate, LocalDate endDate) {
         // Create date range for the month
         DateRange monthRange = new DateRange(startDate, endDate);
 
@@ -115,64 +130,53 @@ public class BudgetRunner
         );
 
         // Get top expense categories
-        List<BudgetCategory> topExpenses = loadTopExpenseCategories(
+        List<Category> topExpenses = loadTopExpenseCategories(
                 budget,
                 startDate,
                 endDate
         );
 
-        List<BudgetCategory> expenseCategories = loadExpenseCategory(
+        List<Category> expenseCategories = loadExpenseCategory(
                 budget.getId(),
                 startDate,
                 endDate,
                 determineBudgetPeriod(startDate, endDate)
         );
 
-
         // Calculate budget period and load period categories
         Period budgetPeriod = determineBudgetPeriod(startDate, endDate);
-        List<BudgetPeriodCategory> periodCategories = loadPeriodCategories(budget, budgetPeriod);
+        List<BudgetPeriodCategory> periodCategories = loadPeriodCategories(budget, budgetSchedule);
 
         // Load special categories
-        List<BudgetCategory> savingsCategories = loadSavingsCategory(
+        List<Category> savingsCategories = loadSavingsCategory(
                 budget.getId(),
                 startDate,
                 endDate,
                 budgetPeriod
         );
 
-        List<BudgetCategory> incomeCategories = loadIncomeCategory(
+        List<Category> incomeCategories = loadIncomeCategory(
                 budget.getBudgetAmount(),
                 budget.getId(),
                 startDate,
                 endDate
         );
 
-        // Build the result
-        BudgetRunnerResult result = BudgetRunnerResult.builder()
-                .budgetId(budget.getId())
-                .userId(budget.getUserId())
-                .budgetName(budget.getBudgetName())
-                .budgetDescription(budget.getBudgetDescription())
-                .startDate(startDate)
-                .endDate(endDate)
-                .processDate(LocalDate.now())
-                .processedAt(LocalDateTime.now())
-                .budgetAmount(getBudgetAmountOrZero(budget))
-                .actualBudgetAmount(getActualOrZero(budget))
-                .remainingBudgetAmount(calculateRemainingAmount(budget))
-                .healthScore(healthScore)
-                .budgetStats(monthlyStats)
-                .budgetPeriodCategories(periodCategories)
-                .expenseCategories(expenseCategories)
-                .topExpenseCategories(topExpenses)
-                .savingsCategories(savingsCategories)
-                .incomeCategories(incomeCategories)
-                .build();
+        BudgetCategoryStats budgetCategoryStats = new BudgetCategoryStats(
+                periodCategories,
+                topExpenses,
+                expenseCategories,
+                savingsCategories,
+                incomeCategories
+        );
 
-        // Calculate flags and return
-        result.calculateFlags();
-        return result;
+        // Build the result
+        return BudgetRunnerResult.builder()
+                .budget(budget)
+                .budgetSchedule(budgetSchedule)
+                .budgetStats(monthlyStats)
+                .budgetCategoryStats(budgetCategoryStats)
+                .build();
     }
 
     // Or better yet, create a utility method in your Budget class or a utility class:
@@ -357,7 +361,7 @@ public class BudgetRunner
         }
     }
 
-    public List<BudgetCategory> loadTopExpenseCategories(final Budget budget, final LocalDate startDate, final LocalDate endDate){
+    public List<Category> loadTopExpenseCategories(final Budget budget, final LocalDate startDate, final LocalDate endDate){
         if(budget == null || startDate == null || endDate == null){
             return Collections.emptyList();
         }
@@ -367,7 +371,7 @@ public class BudgetRunner
             if (budgetId == null || budgetId < 1L) {
                 throw new IllegalArgumentException("Invalid budget ID");
             }
-            List<BudgetCategory> budgetCategories = budgetQueriesService.getTopExpenseBudgetCategories(budgetId, startDate, endDate);
+            List<Category> budgetCategories = budgetQueriesService.getTopExpenseBudgetCategories(budgetId, startDate, endDate);
             log.info("Top Expense Categories: {}", budgetCategories.size());
             return budgetCategories;
         } catch(IllegalArgumentException e) {
@@ -383,25 +387,25 @@ public class BudgetRunner
         }
     }
 
-    public List<BudgetCategory> loadExpenseCategory(final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){
+    public List<Category> loadExpenseCategory(final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){
         if(budgetId == null || startDate == null || endDate == null){
             return Collections.emptyList();
         }
         return budgetQueriesService.getExpensesBudgetCategories(budgetId, startDate, endDate);
     }
 
-    public List<BudgetCategory> loadSavingsCategory(final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){
+    public List<Category> loadSavingsCategory(final Long budgetId, final LocalDate startDate, final LocalDate endDate, final Period period){
         if(budgetId == null || startDate == null || endDate == null){
             return Collections.emptyList();
         }
-        List<BudgetCategory> savingsBudgetCategory = budgetQueriesService.getSavingsBudgetCategory(budgetId, startDate, endDate);
+        List<Category> savingsBudgetCategory = budgetQueriesService.getSavingsBudgetCategory(budgetId, startDate, endDate);
         savingsBudgetCategory.forEach(budgetCategory -> {
             log.info("Saving category: {}", budgetCategory);
         });
         return budgetQueriesService.getSavingsBudgetCategory(budgetId, startDate, endDate);
     }
 
-    public List<BudgetCategory> loadIncomeCategory(final BigDecimal incomeAmount, final Long budgetId, final LocalDate startDate, final LocalDate endDate){
+    public List<Category> loadIncomeCategory(final BigDecimal incomeAmount, final Long budgetId, final LocalDate startDate, final LocalDate endDate){
         if(budgetId == null || startDate == null || endDate == null){
             return Collections.emptyList();
         }

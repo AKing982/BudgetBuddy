@@ -19,44 +19,23 @@ import java.util.Map;
 @AllArgsConstructor
 public class BudgetRunnerResult
 {
-    private Long budgetId;
-    private Long userId;
-    private String budgetName;
-    private String budgetDescription;
-
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private LocalDate processDate;
-    private LocalDateTime processedAt;
-
-    private BigDecimal budgetAmount;
-    private BigDecimal actualBudgetAmount;
-    private BigDecimal remainingBudgetAmount;
-
-    private BigDecimal healthScore;
-    private BigDecimal dailyAverage;
-    private BigDecimal monthlyProjection;
-    private BigDecimal savingsAmount;
-
-    private List<BudgetPeriodCategory> budgetPeriodCategories;
-    private List<BudgetCategory> topExpenseCategories;
-    private List<BudgetCategory> expenseCategories;
-    private List<BudgetCategory> savingsCategories;
-    private List<BudgetCategory> incomeCategories;
-
+    private Budget budget;
+    private BudgetSchedule budgetSchedule;
     private BudgetStats budgetStats;
-
+    private BudgetCategoryStats budgetCategoryStats;
     private boolean isOverBudget;
 
     // Utility methods
     public boolean isWithinBudget() {
-        return actualBudgetAmount.compareTo(budgetAmount) <= 0;
+        return budget.getActual().compareTo(budget.getBudgetAmount()) <= 0;
     }
 
     public BigDecimal getSpendingPercentage() {
+        BigDecimal budgetAmount = budget.getBudgetAmount();
         if (budgetAmount.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
+        BigDecimal actualBudgetAmount = budget.getActual();
         return actualBudgetAmount
                 .divide(budgetAmount, 4, RoundingMode.HALF_UP)
                 .multiply(new BigDecimal("100"));
@@ -66,18 +45,15 @@ public class BudgetRunnerResult
         return new BigDecimal("100").subtract(getSpendingPercentage());
     }
 
-    public void calculateFlags() {
-        this.isOverBudget = actualBudgetAmount.compareTo(budgetAmount) > 0;
-    }
 
     @JsonProperty("processingSummary")
     public Map<String, Object> getProcessingSummary() {
         return Map.of(
-                "budgetId", budgetId,
-                "processDate", processDate,
-                "healthScore", healthScore,
+                "budgetId", budget.getId(),
+                "processDate", LocalDateTime.now(),
+                "healthScore", budgetStats.getHealthScore(),
                 "isOverBudget", isOverBudget,
-                "remainingAmount", remainingBudgetAmount,
+                "remainingAmount", budget.getBudgetAmount().subtract(budget.getActual()),
                 "spendingPercentage", getSpendingPercentage()
         );
     }

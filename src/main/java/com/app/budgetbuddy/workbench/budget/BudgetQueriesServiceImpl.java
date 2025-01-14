@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
+import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetRepository;
@@ -32,7 +33,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
     }
 
     @Override
-    public List<BudgetCategory> getTopExpenseBudgetCategories(Long budgetId, LocalDate startDate, LocalDate endDate) {
+    public List<Category> getTopExpenseBudgetCategories(Long budgetId, LocalDate startDate, LocalDate endDate) {
         final String jpql = """
                    SELECT c.name,
                    SUM(tc.budgetedAmount) as totalBudgetedAmount,
@@ -66,13 +67,15 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                         LocalDate categoryStartDate = (LocalDate) row[3];
                         LocalDate categoryEndDate = (LocalDate) row[4];
 
-                        return new BudgetCategory(
-                                categoryName,
-                                budgeted,
-                                actual,
-                                budgeted.subtract(actual),
-                                new DateRange(categoryStartDate, categoryEndDate)
-                        );
+                        return Category.builder()
+                                .categoryName(categoryName)
+                                .budgetedAmount(budgeted)
+                                .actual(actual)
+                                .categoryStartDate(categoryStartDate)
+                                .categoryEndDate(categoryEndDate)
+                                .isActive(true)
+                                .dateRange(new DateRange(categoryStartDate, categoryEndDate))
+                                .build();
                     })
                     .collect(Collectors.toList());
 
@@ -81,6 +84,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
             return Collections.emptyList();
         }
     }
+
 
 
     private BigDecimal toBigDecimal(Object value) {
@@ -97,7 +101,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
     }
 
     @Override
-    public List<BudgetCategory> getIncomeBudgetCategory(Long userId, LocalDate startDate, LocalDate endDate) {
+    public List<Category> getIncomeBudgetCategory(Long userId, LocalDate startDate, LocalDate endDate) {
         final String incomeQuery = """
                         SELECT c.name as incomeCategory,
                             b.monthlyIncome as incomeBudgeted,
@@ -128,12 +132,12 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                         LocalDate firstDate = ((java.time.LocalDate) row[3]);
                         LocalDate lastDate = ((java.time.LocalDate) row[4]);
 
-                        return new BudgetCategory(
+                        return buildCategory(
                                 categoryName,
                                 budgeted.abs(),
                                 actual.abs(),
-                                budgeted.subtract(actual).abs(),
-                                new DateRange(firstDate, lastDate)
+                                firstDate,
+                                lastDate
                         );
                     })
                     .collect(Collectors.toList());
@@ -144,8 +148,19 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
         }
     }
 
+    private Category buildCategory(String categoryName, BigDecimal budgetedAmount, BigDecimal actualSpending, LocalDate categoryStartDate, LocalDate categoryEndDate) {
+        return Category.builder()
+                .categoryName(categoryName)
+                .budgetedAmount(budgetedAmount)
+                .actual(actualSpending)
+                .categoryStartDate(categoryStartDate)
+                .categoryEndDate(categoryEndDate)
+                .dateRange(new DateRange(categoryStartDate, categoryEndDate))
+                .build();
+    }
+
     @Override
-    public List<BudgetCategory> getSavingsBudgetCategory(Long budgetId, LocalDate startDate, LocalDate endDate) {
+    public List<Category> getSavingsBudgetCategory(Long budgetId, LocalDate startDate, LocalDate endDate) {
         final String savingsQuery = """
            SELECT bg.targetAmount as budgetedSavings,
                   SUM(tc.budgetedAmount - tc.actual) as actualSavings,
@@ -176,12 +191,12 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                         LocalDate categoryStartDate = ((java.time.LocalDate) row[3]);
                         LocalDate categoryEndDate = ((java.time.LocalDate) row[4]);
 
-                        return new BudgetCategory(
+                        return buildCategory(
                                 "Savings",
                                 budgeted,
                                 actual,
-                                remaining,
-                                new DateRange(categoryStartDate, categoryEndDate)
+                                categoryStartDate,
+                                categoryEndDate
                         );
                     })
                     .collect(Collectors.toList());
@@ -193,7 +208,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
     }
 
     @Override
-    public List<BudgetCategory> getExpensesBudgetCategories(Long budgetId, LocalDate startDate, LocalDate endDate) {
+    public List<Category> getExpensesBudgetCategories(Long budgetId, LocalDate startDate, LocalDate endDate) {
         final String expensesQuery = """
            SELECT b.budgetAmount as budgetedAmount,
                   SUM(tc.actual) as actualSpent,
@@ -223,12 +238,12 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                         LocalDate categoryStartDate = (LocalDate) row[3];
                         LocalDate categoryEndDate = (LocalDate) row[4];
 
-                        return new BudgetCategory(
+                        return buildCategory(
                                 "Expenses",
                                 budgeted,
                                 actual,
-                                remaining,
-                                new DateRange(categoryStartDate, categoryEndDate)
+                                categoryStartDate,
+                                categoryEndDate
                         );
                     })
                     .collect(Collectors.toList());
@@ -261,7 +276,8 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                                     SELECT SUM(b.budgetAmount - tc.actual) as remainingBudget
                                     FROM TransactionCategoryEntity tc
                                     INNER JOIN BudgetEntity b ON tc.budget.id = b.id
-                                    WHERE b.startDate =:startDate AND tc.endDate =:endDate
+                                    INNER JOIN BudgetScheduleEntity bs ON tc.budget.id = bs.budget.id
+                                    WHERE bs.startDate =:startDate AND tc.endDate =:endDate
                                      AND b.id =:budgetId AND b.user.id =:userId
                                      GROUP BY b.budgetAmount, tc.startDate, tc.endDate
                 """;
@@ -286,8 +302,9 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
            SELECT SUM(tc.actual) as totalSpent 
            FROM TransactionCategoryEntity tc
            INNER JOIN BudgetEntity b ON tc.budget.id = b.id
-           WHERE b.startDate = :startDate 
-           AND b.endDate = :endDate
+           INNER JOIN BudgetScheduleEntity bs ON tc.budget.id = bs.id
+           WHERE bs.startDate = :startDate 
+           AND bs.endDate = :endDate
            AND b.id = :budgetId
            """;
 

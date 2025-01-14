@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.Budget;
 import com.app.budgetbuddy.workbench.runner.TransactionCategoryRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,17 +20,18 @@ public class TransactionCategoryRunnerController
     private final TransactionCategoryRunner transactionCategoryRunner;
 
     @Autowired
-    public TransactionCategoryRunnerController(TransactionCategoryRunner transactionCategoryRunner){
+    public TransactionCategoryRunnerController(TransactionCategoryRunner transactionCategoryRunner)
+    {
         this.transactionCategoryRunner = transactionCategoryRunner;
     }
 
     @PostMapping("/process")
-    public ResponseEntity<String> processTransactionCategories(
-            @RequestParam Long userId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    public ResponseEntity<String> processTransactionCategories(@RequestParam Long userId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                               @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate)
+    {
 
-        try {
+        try
+        {
             log.info("Starting transaction category processing for user {} between {} and {}",
                     userId, startDate, endDate);
 

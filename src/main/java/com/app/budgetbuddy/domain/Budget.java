@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
@@ -21,4 +23,5 @@ public class Budget
     private String budgetName;
     private String budgetDescription;
     private LocalDateTime createdDate;
+    private List<BudgetSchedule> budgetSchedules = new ArrayList<>();
 }

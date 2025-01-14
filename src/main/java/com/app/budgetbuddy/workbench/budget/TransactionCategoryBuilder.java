@@ -191,7 +191,7 @@ public class TransactionCategoryBuilder
         return newCategory;
     }
 
-    public List<TransactionCategory> initializeTransactionCategories(final Budget budget, final BudgetPeriod budgetPeriod, final List<CategoryTransactions> categoryDesignators)
+    public List<TransactionCategory> initializeTransactionCategories(final Budget budget, final BudgetPeriod budgetPeriod, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryDesignators)
     {
         if(budget == null || budgetPeriod == null || categoryDesignators == null || categoryDesignators.isEmpty()){
             return Collections.emptyList();
@@ -201,8 +201,8 @@ public class TransactionCategoryBuilder
             LOGGER.info("Category Designator: " + categoryDesignator.toString());
         }));
 
-        LocalDate budgetStartDate = budget.getStartDate();
-        LocalDate budgetEndDate = budget.getEndDate();
+        LocalDate budgetStartDate = budgetSchedule.getStartDate();
+        LocalDate budgetEndDate = budgetSchedule.getEndDate();
         DateRange budgetDateRange = new DateRange(budgetStartDate, budgetEndDate);
         List<DateRange> budgetWeeks = budgetDateRange.splitIntoWeeks();
         // 3. Create CategoryPeriods with properly categorized transactions
@@ -212,9 +212,9 @@ public class TransactionCategoryBuilder
         });
         List<CategoryBudget> categoryBudgets = createCategoryBudgets(
                 budget,
-                budget.getStartDate(),
-                budget.getEndDate(),
-                budgetPeriod.getPeriod(),
+                budgetSchedule,
+                budgetStartDate,
+                budgetEndDate,
                 categorySpendingList,
                 categoryDesignators
         );
@@ -355,7 +355,7 @@ public class TransactionCategoryBuilder
 
 
     //TODO: Retest this method
-    public List<CategoryBudget> createCategoryBudgets(final Budget budget, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final Period period, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final List<CategoryTransactions> categoryTransactionsList)
+    public List<CategoryBudget> createCategoryBudgets(final Budget budget, final BudgetSchedule budgetSchedule, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final List<CategoryTransactions> categoryTransactionsList)
     {
         if(budgetStartDate == null || budgetEndDate == null)
         {
@@ -371,6 +371,7 @@ public class TransactionCategoryBuilder
                     .sorted(Comparator.comparing(Transaction::getPosted))
                     .collect(Collectors.toList());
             // Build the Budget Date Ranges
+            Period period = budgetSchedule.getPeriod();
             List<DateRange> budgetDateRanges = buildBudgetDateRanges(budgetStartDate, budgetEndDate, period);
             // Determine the Category Period Date Ranges
             int categorySpendingIndex = 0;
@@ -386,7 +387,7 @@ public class TransactionCategoryBuilder
                         LOGGER.info("Transaction Date Range: {}", transactionDateRange.toString());
                     });
                     List<BudgetPeriodAmount> categoryBudgetedAmounts = budgetCalculator.calculateBudgetedAmountForCategoryDateRange(
-                            categorySpending, totalSpendingOnAllCategories, categoryPeriodDateRanges, budget);
+                            categorySpending, totalSpendingOnAllCategories, categoryPeriodDateRanges, budget, budgetSchedule);
                     List<BudgetPeriodAmount> actualSpentOnCategories = budgetCalculator.calculateActualAmountForCategoryDateRange(
                             categorySpending, categoryTransaction, categoryPeriodDateRanges, budget);
 
