@@ -20,7 +20,5 @@ public class Budget
     private Long userId;
     private String budgetName;
     private String budgetDescription;
-    private LocalDate startDate;
-    private LocalDate endDate;
     private LocalDateTime createdDate;
 }

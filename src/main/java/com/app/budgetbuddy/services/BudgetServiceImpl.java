@@ -82,8 +82,8 @@ public class BudgetServiceImpl implements BudgetService
         budget.setBudgetAmount(budgetEntity.getBudgetAmount());
         budget.setBudgetName(budgetEntity.getBudgetName());
         budget.setBudgetDescription(budgetEntity.getBudgetDescription());
-        budget.setStartDate(budgetEntity.getStartDate());
-        budget.setEndDate(budgetEntity.getEndDate());
+//        budget.setStartDate(budgetEntity.getStartDate());
+//        budget.setEndDate(budgetEntity.getEndDate());
         return budget;
     }
 
@@ -94,8 +94,8 @@ public class BudgetServiceImpl implements BudgetService
         budgetEntity.setBudgetAmount(createRequest.budgetAmount());
         budgetEntity.setBudgetDescription(createRequest.budgetDescription());
         budgetEntity.setBudgetName(createRequest.budgetName());
-        budgetEntity.setEndDate(createRequest.endDate());
-        budgetEntity.setStartDate(createRequest.startDate());
+//        budgetEntity.setEndDate(createRequest.endDate());
+//        budgetEntity.setStartDate(createRequest.startDate());
         budgetEntity.setCreatedDate(LocalDateTime.now());
         budgetEntity.setMonthlyIncome(createRequest.monthlyIncome());
         budgetEntity.setLastUpdatedDate(null);

@@ -43,12 +43,6 @@ public class BudgetEntity {
     @Column(name="monthlyIncome")
     private BigDecimal monthlyIncome;
 
-    @Column(name="startDate")
-    private LocalDate startDate;
-
-    @Column(name="endDate")
-    private LocalDate endDate;
-
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name="createdDate")
     private LocalDateTime createdDate;
@@ -56,6 +50,9 @@ public class BudgetEntity {
     @Column(name="lastUpdatedDate")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime lastUpdatedDate;
+
+    @OneToOne(mappedBy="budget")
+    private BudgetScheduleEntity budgetSchedule;
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name="budgets")
