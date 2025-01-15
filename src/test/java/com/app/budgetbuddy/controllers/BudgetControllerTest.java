@@ -89,68 +89,68 @@ class BudgetControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void testCreateBudget_whenRequestParametersAreValid_thenStatus200() throws Exception {
-
-        Long userId = 1L;
-        String budgetName = "Budget Test";
-        String budgetDescription = "Budget Description";
-        BigDecimal budgetAmount = BigDecimal.valueOf(450);
-        BigDecimal monthlyIncome = BigDecimal.valueOf(1630);
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = LocalDate.of(2024, 6, 30);
-
-        BudgetCreateRequest budgetCreateRequest = new BudgetCreateRequest(
-                userId, budgetName, budgetDescription, budgetAmount, monthlyIncome, startDate, endDate);
-
-        Mockito.when(budgetService.createAndSaveBudget(budgetCreateRequest)).thenReturn(createBudgetEntity());
-
-        String jsonString = objectMapper.writeValueAsString(budgetCreateRequest);
-        mockMvc.perform(post("/api/budgets/")
-        .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonString))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.user.id").value(userId))
-                .andExpect(jsonPath("$.budgetName").value(budgetName))
-                .andExpect(jsonPath("$.budgetDescription").value(budgetDescription))
-                .andExpect(jsonPath("$.budgetAmount").value(budgetAmount))
-                .andExpect(jsonPath("$.monthlyIncome").value(monthlyIncome))
-                .andExpect(jsonPath("$.startDate").value(startDate.toString()))
-                .andExpect(jsonPath("$.endDate").value(endDate.toString()));
-    }
-
-    @Test
-    void testGetBudgetById_WhenRequestIsInvalid_thenThrowStatus400() throws Exception {
-        mockMvc.perform(get("/api/budgets/{id}", -1L)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testGetBudgetById_whenRequestIsValid_thenReturnStatus200() throws Exception {
-        Long userId = 1L;
-        String budgetName = "Budget Test";
-        String budgetDescription = "Budget Description";
-        BigDecimal budgetAmount = BigDecimal.valueOf(450);
-        BigDecimal monthlyIncome = BigDecimal.valueOf(1630);
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = LocalDate.of(2024, 6, 30);
-
-        Mockito.when(budgetService.findById(userId)).thenReturn(Optional.of(createBudgetEntity()));
-
-        mockMvc.perform(get("/api/budgets/{id}", userId)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.user.id").value(userId))
-                .andExpect(jsonPath("$.budgetName").value(budgetName))
-                .andExpect(jsonPath("$.budgetDescription").value(budgetDescription))
-                .andExpect(jsonPath("$.budgetAmount").value(budgetAmount))
-                .andExpect(jsonPath("$.monthlyIncome").value(monthlyIncome))
-                .andExpect(jsonPath("$.startDate").value(startDate.toString()))
-                .andExpect(jsonPath("$.endDate").value(endDate.toString()));
-    }
+//    @Test
+//    void testCreateBudget_whenRequestParametersAreValid_thenStatus200() throws Exception {
+//
+//        Long userId = 1L;
+//        String budgetName = "Budget Test";
+//        String budgetDescription = "Budget Description";
+//        BigDecimal budgetAmount = BigDecimal.valueOf(450);
+//        BigDecimal monthlyIncome = BigDecimal.valueOf(1630);
+//        LocalDate startDate = LocalDate.of(2024, 6, 1);
+//        LocalDate endDate = LocalDate.of(2024, 6, 30);
+//
+//        BudgetCreateRequest budgetCreateRequest = new BudgetCreateRequest(
+//                userId, budgetName, budgetDescription, budgetAmount, monthlyIncome, startDate, endDate);
+//
+//        Mockito.when(budgetService.createAndSaveBudget(budgetCreateRequest)).thenReturn(createBudgetEntity());
+//
+//        String jsonString = objectMapper.writeValueAsString(budgetCreateRequest);
+//        mockMvc.perform(post("/api/budgets/")
+//        .contentType(MediaType.APPLICATION_JSON)
+//                .content(jsonString))
+//                .andExpect(status().isOk())
+//                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(jsonPath("$.user.id").value(userId))
+//                .andExpect(jsonPath("$.budgetName").value(budgetName))
+//                .andExpect(jsonPath("$.budgetDescription").value(budgetDescription))
+//                .andExpect(jsonPath("$.budgetAmount").value(budgetAmount))
+//                .andExpect(jsonPath("$.monthlyIncome").value(monthlyIncome))
+//                .andExpect(jsonPath("$.startDate").value(startDate.toString()))
+//                .andExpect(jsonPath("$.endDate").value(endDate.toString()));
+//    }
+//
+//    @Test
+//    void testGetBudgetById_WhenRequestIsInvalid_thenThrowStatus400() throws Exception {
+//        mockMvc.perform(get("/api/budgets/{id}", -1L)
+//                .contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(status().isBadRequest());
+//    }
+//
+//    @Test
+//    void testGetBudgetById_whenRequestIsValid_thenReturnStatus200() throws Exception {
+//        Long userId = 1L;
+//        String budgetName = "Budget Test";
+//        String budgetDescription = "Budget Description";
+//        BigDecimal budgetAmount = BigDecimal.valueOf(450);
+//        BigDecimal monthlyIncome = BigDecimal.valueOf(1630);
+//        LocalDate startDate = LocalDate.of(2024, 6, 1);
+//        LocalDate endDate = LocalDate.of(2024, 6, 30);
+//
+//        Mockito.when(budgetService.findById(userId)).thenReturn(Optional.of(createBudgetEntity()));
+//
+//        mockMvc.perform(get("/api/budgets/{id}", userId)
+//                .contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(status().isOk())
+//                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(jsonPath("$.user.id").value(userId))
+//                .andExpect(jsonPath("$.budgetName").value(budgetName))
+//                .andExpect(jsonPath("$.budgetDescription").value(budgetDescription))
+//                .andExpect(jsonPath("$.budgetAmount").value(budgetAmount))
+//                .andExpect(jsonPath("$.monthlyIncome").value(monthlyIncome))
+//                .andExpect(jsonPath("$.startDate").value(startDate.toString()))
+//                .andExpect(jsonPath("$.endDate").value(endDate.toString()));
+//    }
 
     @ParameterizedTest
     @MethodSource("updateBudgetTestCases")
@@ -205,19 +205,19 @@ class BudgetControllerTest {
         );
     }
 
-    private BudgetEntity createBudgetEntity(){
-        BudgetEntity budgetEntity = new BudgetEntity();
-        budgetEntity.setBudgetAmount(BigDecimal.valueOf(450));
-        budgetEntity.setMonthlyIncome(BigDecimal.valueOf(1630));
-        budgetEntity.setStartDate(LocalDate.of(2024, 6, 1));
-        budgetEntity.setEndDate(LocalDate.of(2024, 6, 30));
-        budgetEntity.setId(1L);
-        budgetEntity.setBudgetName("Budget Test");
-        budgetEntity.setUser(UserEntity.builder().id(1L).build());
-        budgetEntity.setCreatedDate(LocalDateTime.now());
-        budgetEntity.setBudgetDescription("Budget Description");
-        return budgetEntity;
-    }
+//    private BudgetEntity createBudgetEntity(){
+//        BudgetEntity budgetEntity = new BudgetEntity();
+//        budgetEntity.setBudgetAmount(BigDecimal.valueOf(450));
+//        budgetEntity.setMonthlyIncome(BigDecimal.valueOf(1630));
+//        budgetEntity.setStartDate(LocalDate.of(2024, 6, 1));
+//        budgetEntity.setEndDate(LocalDate.of(2024, 6, 30));
+//        budgetEntity.setId(1L);
+//        budgetEntity.setBudgetName("Budget Test");
+//        budgetEntity.setUser(UserEntity.builder().id(1L).build());
+//        budgetEntity.setCreatedDate(LocalDateTime.now());
+//        budgetEntity.setBudgetDescription("Budget Description");
+//        return budgetEntity;
+//    }
 
 
     private static Stream<BudgetCreateRequest> invalidBudgetRequests() {

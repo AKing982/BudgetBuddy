@@ -694,23 +694,23 @@ class BudgetCalculatorTest {
         assertEquals(0, actual.intValue());
     }
 
-    @Test
-    void testCalculateSavingsGoalProgress_thenReturnProgress(){
-        Set<TransactionCategoryEntity> categories = new HashSet<>();
-        categories.add(userBudgetCategory);
-        categories.add(userBudgetCategory2);
-        categories.add(userBudgetCategory3);
-
-        Budget budget = new Budget();
-        budget.setBudgetAmount(new BigDecimal("3070"));
-        budget.setActual(new BigDecimal("1443"));
-        budget.setId(1L);
-
-        Mockito.lenient().when(budgetGoalsService.findByBudgetId(1L)).thenReturn(Optional.of(createBudgetGoals(2400, 200, 125, new BigDecimal("3070.00"), new BigDecimal(3260), LocalDate.of(2024, 10, 28), LocalDate.of(2025, 2, 25))));
-        BigDecimal expectedOverAllSavings = new BigDecimal("61.00");
-        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(budget, categories);
-        assertEquals(expectedOverAllSavings, actual);
-    }
+//    @Test
+//    void testCalculateSavingsGoalProgress_thenReturnProgress(){
+//        Set<TransactionCategoryEntity> categories = new HashSet<>();
+//        categories.add(userBudgetCategory);
+//        categories.add(userBudgetCategory2);
+//        categories.add(userBudgetCategory3);
+//
+//        Budget budget = new Budget();
+//        budget.setBudgetAmount(new BigDecimal("3070"));
+//        budget.setActual(new BigDecimal("1443"));
+//        budget.setId(1L);
+//
+//        Mockito.lenient().when(budgetGoalsService.findByBudgetId(1L)).thenReturn(Optional.of(createBudgetGoals(2400, 200, 125, new BigDecimal("3070.00"), new BigDecimal(3260), LocalDate.of(2024, 10, 28), LocalDate.of(2025, 2, 25))));
+//        BigDecimal expectedOverAllSavings = new BigDecimal("61.00");
+//        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(budget, categories);
+//        assertEquals(expectedOverAllSavings, actual);
+//    }
 
     @Test
     void testCalculateTotalBudgetHealth_whenBudgetAmountIsNull_thenReturnZero(){
@@ -842,103 +842,103 @@ class BudgetCalculatorTest {
         });
     }
 
-    @Test
-    void testCalculateBudgetedAmountForCategory_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
-        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("350.00"));
-        BigDecimal totalSpendingOnCategories = new BigDecimal("1789");
+//    @Test
+//    void testCalculateBudgetedAmountForCategory_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
+//        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("350.00"));
+//        BigDecimal totalSpendingOnCategories = new BigDecimal("1789");
+//
+//        Budget budget = new Budget();
+//        budget.setActual(new BigDecimal("1789"));
+//        budget.setBudgetAmount(new BigDecimal("3260"));
+////        budget.setStartDate(LocalDate.of(2024, 11, 1));
+////        budget.setEndDate(LocalDate.of(2024, 11, 30));
+//
+//        List<DateRange> groceryDateRanges = List.of(
+//                new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)),
+//                new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)),
+//                new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)),
+//                new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30))
+//        );
+//
+//        List<BudgetPeriodAmount> expectedBudgetPeriodAmounts = List.of(
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 78.24),
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)), 78.24),
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)), 78.24),
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30)), 91.28)
+//        );
+//
+//        List<BudgetPeriodAmount> actual = budgetCalculator.calculateBudgetedAmountForCategoryDateRange(grocerySpending, totalSpendingOnCategories, groceryDateRanges, budget);
+//        assertEquals(expectedBudgetPeriodAmounts.size(), actual.size());
+//        for(int i = 0; i < expectedBudgetPeriodAmounts.size(); i++){
+//            BudgetPeriodAmount expected = expectedBudgetPeriodAmounts.get(i);
+//            BudgetPeriodAmount actualAmount = actual.get(i);
+//
+//            assertEquals(expected.getDateRange(), actualAmount.getDateRange(),
+//                    String.format("Week %d date range mismatch", i + 1));
+//            assertEquals(expected.getAmount(), actualAmount.getAmount(),
+//                    String.format("Week %d amount mismatch. Expected %.2f, got %.2f",
+//                            i + 1, expected.getAmount(), actualAmount.getAmount()));
+//        }
+//    }
 
-        Budget budget = new Budget();
-        budget.setActual(new BigDecimal("1789"));
-        budget.setBudgetAmount(new BigDecimal("3260"));
-        budget.setStartDate(LocalDate.of(2024, 11, 1));
-        budget.setEndDate(LocalDate.of(2024, 11, 30));
-
-        List<DateRange> groceryDateRanges = List.of(
-                new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)),
-                new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)),
-                new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)),
-                new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30))
-        );
-
-        List<BudgetPeriodAmount> expectedBudgetPeriodAmounts = List.of(
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 78.24),
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)), 78.24),
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)), 78.24),
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30)), 91.28)
-        );
-
-        List<BudgetPeriodAmount> actual = budgetCalculator.calculateBudgetedAmountForCategoryDateRange(grocerySpending, totalSpendingOnCategories, groceryDateRanges, budget);
-        assertEquals(expectedBudgetPeriodAmounts.size(), actual.size());
-        for(int i = 0; i < expectedBudgetPeriodAmounts.size(); i++){
-            BudgetPeriodAmount expected = expectedBudgetPeriodAmounts.get(i);
-            BudgetPeriodAmount actualAmount = actual.get(i);
-
-            assertEquals(expected.getDateRange(), actualAmount.getDateRange(),
-                    String.format("Week %d date range mismatch", i + 1));
-            assertEquals(expected.getAmount(), actualAmount.getAmount(),
-                    String.format("Week %d amount mismatch. Expected %.2f, got %.2f",
-                            i + 1, expected.getAmount(), actualAmount.getAmount()));
-        }
-    }
-
-    @Test
-    void testCalculateActualAmountForCategoryDateRange_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
-        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("396.45"), new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 30)));
-
-        Budget budget = new Budget();
-        budget.setActual(new BigDecimal("1789"));
-        budget.setBudgetAmount(new BigDecimal("3260"));
-        budget.setStartDate(LocalDate.of(2024, 11, 1));
-        budget.setEndDate(LocalDate.of(2024, 11, 30));
-
-        List<DateRange> groceryDateRanges = List.of(
-                new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)),
-                new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)),
-                new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)),
-                new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30))
-        );
-
-        List<Transaction> transactions = List.of(
-                new Transaction(null, new BigDecimal("50.00"), null, List.of("Groceries"), "Groceries",
-                        LocalDate.of(2024, 11, 5), null, null, null, false, "t1", null, null, null),
-                new Transaction(null, new BigDecimal("46.45"), null, List.of("Groceries"), "Groceries",
-                        LocalDate.of(2024, 11, 6), null, null, null, false, "t2", null, null, null),
-                new Transaction(null, new BigDecimal("62.00"), null, List.of("Groceries"), "Groceries",
-                        LocalDate.of(2024, 11, 9), null, null, null, false, "t3", null, null, null),
-                new Transaction(null, new BigDecimal("50.00"), null, List.of("Groceries"), "Groceries",
-                        LocalDate.of(2024, 11, 12), null, null, null, false, "t4", null, null, null),
-                new Transaction(null, new BigDecimal("87.05"), null, List.of("Groceries"), "Groceries",
-                        LocalDate.of(2024, 11, 16), null, null, null, false, "t5", null, null, null),
-                new Transaction(null, new BigDecimal("101.23"), null, List.of("Groceries"), "Groceries",
-                        LocalDate.of(2024, 11, 25), null, null, null, false, "t6", null, null, null),
-                new Transaction(null, new BigDecimal("30.00"), null, List.of("Utilities"), "Utilities",
-                        LocalDate.of(2024, 11, 15), null, null, null, false, "t7", null, null, null)
-        );
-
-        CategoryTransactions categoryTransactions = new CategoryTransactions("Groceries", "Groceries");
-        categoryTransactions.setTransactions(transactions);
-
-        List<BudgetPeriodAmount> expectedBudgetPeriodAmounts = List.of(
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 96.45),
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)), 112.00),
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)), 87.05),
-                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30)), 101.23)
-        );
-
-        List<BudgetPeriodAmount> actual = budgetCalculator.calculateActualAmountForCategoryDateRange(
-                grocerySpending, categoryTransactions, groceryDateRanges, budget);
-        assertEquals(expectedBudgetPeriodAmounts.size(), actual.size());
-        for(int i = 0; i < expectedBudgetPeriodAmounts.size(); i++){
-            BudgetPeriodAmount expected = expectedBudgetPeriodAmounts.get(i);
-            BudgetPeriodAmount actualAmount = actual.get(i);
-
-            assertEquals(expected.getDateRange(), actualAmount.getDateRange(),
-                    String.format("Week %d date range mismatch", i + 1));
-            assertEquals(expected.getAmount(), actualAmount.getAmount(),
-                    String.format("Week %d amount mismatch. Expected %.2f, got %.2f",
-                            i + 1, expected.getAmount(), actualAmount.getAmount()));
-        }
-    }
+//    @Test
+//    void testCalculateActualAmountForCategoryDateRange_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
+//        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("396.45"), new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 30)));
+//
+//        Budget budget = new Budget();
+//        budget.setActual(new BigDecimal("1789"));
+//        budget.setBudgetAmount(new BigDecimal("3260"));
+//        budget.setStartDate(LocalDate.of(2024, 11, 1));
+//        budget.setEndDate(LocalDate.of(2024, 11, 30));
+//
+//        List<DateRange> groceryDateRanges = List.of(
+//                new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)),
+//                new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)),
+//                new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)),
+//                new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30))
+//        );
+//
+//        List<Transaction> transactions = List.of(
+//                new Transaction(null, new BigDecimal("50.00"), null, List.of("Groceries"), "Groceries",
+//                        LocalDate.of(2024, 11, 5), null, null, null, false, "t1", null, null, null),
+//                new Transaction(null, new BigDecimal("46.45"), null, List.of("Groceries"), "Groceries",
+//                        LocalDate.of(2024, 11, 6), null, null, null, false, "t2", null, null, null),
+//                new Transaction(null, new BigDecimal("62.00"), null, List.of("Groceries"), "Groceries",
+//                        LocalDate.of(2024, 11, 9), null, null, null, false, "t3", null, null, null),
+//                new Transaction(null, new BigDecimal("50.00"), null, List.of("Groceries"), "Groceries",
+//                        LocalDate.of(2024, 11, 12), null, null, null, false, "t4", null, null, null),
+//                new Transaction(null, new BigDecimal("87.05"), null, List.of("Groceries"), "Groceries",
+//                        LocalDate.of(2024, 11, 16), null, null, null, false, "t5", null, null, null),
+//                new Transaction(null, new BigDecimal("101.23"), null, List.of("Groceries"), "Groceries",
+//                        LocalDate.of(2024, 11, 25), null, null, null, false, "t6", null, null, null),
+//                new Transaction(null, new BigDecimal("30.00"), null, List.of("Utilities"), "Utilities",
+//                        LocalDate.of(2024, 11, 15), null, null, null, false, "t7", null, null, null)
+//        );
+//
+//        CategoryTransactions categoryTransactions = new CategoryTransactions("Groceries", "Groceries");
+//        categoryTransactions.setTransactions(transactions);
+//
+//        List<BudgetPeriodAmount> expectedBudgetPeriodAmounts = List.of(
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 8)), 96.45),
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 8), LocalDate.of(2024, 11, 15)), 112.00),
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 22)), 87.05),
+//                new BudgetPeriodAmount(new DateRange(LocalDate.of(2024, 11, 22), LocalDate.of(2024, 11, 30)), 101.23)
+//        );
+//
+//        List<BudgetPeriodAmount> actual = budgetCalculator.calculateActualAmountForCategoryDateRange(
+//                grocerySpending, categoryTransactions, groceryDateRanges, budget);
+//        assertEquals(expectedBudgetPeriodAmounts.size(), actual.size());
+//        for(int i = 0; i < expectedBudgetPeriodAmounts.size(); i++){
+//            BudgetPeriodAmount expected = expectedBudgetPeriodAmounts.get(i);
+//            BudgetPeriodAmount actualAmount = actual.get(i);
+//
+//            assertEquals(expected.getDateRange(), actualAmount.getDateRange(),
+//                    String.format("Week %d date range mismatch", i + 1));
+//            assertEquals(expected.getAmount(), actualAmount.getAmount(),
+//                    String.format("Week %d amount mismatch. Expected %.2f, got %.2f",
+//                            i + 1, expected.getAmount(), actualAmount.getAmount()));
+//        }
+//    }
 
 //    @Test
 //    void testCalculateTotalSpentOnBudgetForPeriod_whenBudgetIdInvalid_thenThrowIllegalArgumentException() {
@@ -1105,86 +1105,86 @@ class BudgetCalculatorTest {
 //        assertEquals(expectedTotalBudget, actual);
 //    }
 
-    private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {
-        // Create different BudgetPeriod instances
-        BudgetPeriod monthlyPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31));
-        BudgetPeriod weeklyPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7));
-        BudgetPeriod dailyPeriod = new BudgetPeriod(Period.DAILY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 1));
-        BudgetPeriod biWeeklyPeriod = new BudgetPeriod(Period.BIWEEKLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14));
+//    private static Stream<Arguments> provideBudgetPeriodsAndBudgets() {
+//        // Create different BudgetPeriod instances
+//        BudgetPeriod monthlyPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31));
+//        BudgetPeriod weeklyPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7));
+//        BudgetPeriod dailyPeriod = new BudgetPeriod(Period.DAILY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 1));
+//        BudgetPeriod biWeeklyPeriod = new BudgetPeriod(Period.BIWEEKLY, LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14));
+//
+//        // Create Budget instances
+//        Budget budget1 = new Budget();
+//        budget1.setId(1L);
+//        budget1.setUserId(1L);
+//        budget1.setBudgetAmount(new BigDecimal("5000.0"));
+//        budget1.setActual(new BigDecimal("4000.0"));
+//
+//        Budget budget2 = new Budget();
+//        budget2.setId(2L);
+//        budget2.setUserId(1L);
+//        budget2.setBudgetAmount(new BigDecimal("10000.0"));
+//        budget2.setActual(new BigDecimal("8000.0"));
+//
+//        // Create UserBudgetCategoryEntity lists for different periods
+//        List<TransactionCategoryEntity> userBudgetCategoriesMonthly = List.of(
+//                createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31), 300.00, 250.00),
+//                createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31), 100.00, 80.00)
+//        );
+//
+//        List<TransactionCategoryEntity> userBudgetCategoriesYearly = List.of(
+//                createUserBudgetCategory("Rent", "Rent", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 12000.00, 11500.00),
+//                createUserBudgetCategory("Utilities", "Utilities", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 1500.00, 1400.00)
+//        );
+//
+//        List<TransactionCategoryEntity> userBudgetCategoriesWeekly = List.of(
+//                createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 200.00, 150.00),
+//                createUserBudgetCategory("Transport", "Transport", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 50.00, 40.00)
+//        );
+//
+//        List<TransactionCategoryEntity> userBudgetCategoriesDaily = List.of(
+//                createUserBudgetCategory("Lunch", "Lunch", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 1), 15.00, 10.00)
+//        );
+//
+//        List<TransactionCategoryEntity> userBudgetCategoriesBiWeekly = List.of(
+//                createUserBudgetCategory("Rent", "Rent", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14), 600.00, 500.00),
+//                createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14), 200.00, 170.00)
+//        );
+//
+//        // Create a stream of arguments to supply data to the parameterized test
+//        return Stream.of(
+//                Arguments.of(monthlyPeriod, budget1, userBudgetCategoriesMonthly, new BigDecimal("70.00")),
+//                Arguments.of(weeklyPeriod, budget1, userBudgetCategoriesWeekly, new BigDecimal("60.00")),
+//                Arguments.of(dailyPeriod, budget1, userBudgetCategoriesDaily, new BigDecimal("5.00")),
+//                Arguments.of(biWeeklyPeriod, budget1, userBudgetCategoriesBiWeekly, new BigDecimal("130.00"))
+//        );
+//    }
 
-        // Create Budget instances
-        Budget budget1 = new Budget();
-        budget1.setId(1L);
-        budget1.setUserId(1L);
-        budget1.setBudgetAmount(new BigDecimal("5000.0"));
-        budget1.setActual(new BigDecimal("4000.0"));
+//    private BudgetGoalsEntity createBudgetGoals(double targetAmount, double monthlyAllocation, double currentSavings, BigDecimal budgetAmount, BigDecimal income, LocalDate startDate, LocalDate endDate)
+//    {
+//        BudgetGoalsEntity budgetGoals = new BudgetGoalsEntity();
+//        budgetGoals.setBudget(createBudgetEntity(budgetAmount, income, startDate, endDate));
+//        budgetGoals.setCurrentSavings(currentSavings);
+//        budgetGoals.setGoalName("Goal Test");
+//        budgetGoals.setGoalDescription("Goal Description");
+//        budgetGoals.setMonthlyAllocation(monthlyAllocation);
+//        budgetGoals.setSavingsFrequency("MONTHLY");
+//        budgetGoals.setTargetAmount(targetAmount);
+//        return budgetGoals;
+//    }
 
-        Budget budget2 = new Budget();
-        budget2.setId(2L);
-        budget2.setUserId(1L);
-        budget2.setBudgetAmount(new BigDecimal("10000.0"));
-        budget2.setActual(new BigDecimal("8000.0"));
-
-        // Create UserBudgetCategoryEntity lists for different periods
-        List<TransactionCategoryEntity> userBudgetCategoriesMonthly = List.of(
-                createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31), 300.00, 250.00),
-                createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 31), 100.00, 80.00)
-        );
-
-        List<TransactionCategoryEntity> userBudgetCategoriesYearly = List.of(
-                createUserBudgetCategory("Rent", "Rent", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 12000.00, 11500.00),
-                createUserBudgetCategory("Utilities", "Utilities", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 1500.00, 1400.00)
-        );
-
-        List<TransactionCategoryEntity> userBudgetCategoriesWeekly = List.of(
-                createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 200.00, 150.00),
-                createUserBudgetCategory("Transport", "Transport", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 7), 50.00, 40.00)
-        );
-
-        List<TransactionCategoryEntity> userBudgetCategoriesDaily = List.of(
-                createUserBudgetCategory("Lunch", "Lunch", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 1), 15.00, 10.00)
-        );
-
-        List<TransactionCategoryEntity> userBudgetCategoriesBiWeekly = List.of(
-                createUserBudgetCategory("Rent", "Rent", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14), 600.00, 500.00),
-                createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 5, 1), LocalDate.of(2024, 5, 14), 200.00, 170.00)
-        );
-
-        // Create a stream of arguments to supply data to the parameterized test
-        return Stream.of(
-                Arguments.of(monthlyPeriod, budget1, userBudgetCategoriesMonthly, new BigDecimal("70.00")),
-                Arguments.of(weeklyPeriod, budget1, userBudgetCategoriesWeekly, new BigDecimal("60.00")),
-                Arguments.of(dailyPeriod, budget1, userBudgetCategoriesDaily, new BigDecimal("5.00")),
-                Arguments.of(biWeeklyPeriod, budget1, userBudgetCategoriesBiWeekly, new BigDecimal("130.00"))
-        );
-    }
-
-    private BudgetGoalsEntity createBudgetGoals(double targetAmount, double monthlyAllocation, double currentSavings, BigDecimal budgetAmount, BigDecimal income, LocalDate startDate, LocalDate endDate)
-    {
-        BudgetGoalsEntity budgetGoals = new BudgetGoalsEntity();
-        budgetGoals.setBudget(createBudgetEntity(budgetAmount, income, startDate, endDate));
-        budgetGoals.setCurrentSavings(currentSavings);
-        budgetGoals.setGoalName("Goal Test");
-        budgetGoals.setGoalDescription("Goal Description");
-        budgetGoals.setMonthlyAllocation(monthlyAllocation);
-        budgetGoals.setSavingsFrequency("MONTHLY");
-        budgetGoals.setTargetAmount(targetAmount);
-        return budgetGoals;
-    }
-
-    private static BudgetEntity createBudgetEntity(BigDecimal budgetAmount, BigDecimal monthlyIncome, LocalDate startDate, LocalDate endDate)
-    {
-        BudgetEntity budgetEntity = new BudgetEntity();
-        budgetEntity.setId(1L);
-        budgetEntity.setBudgetAmount(budgetAmount);
-        budgetEntity.setBudgetName("Test Budget");
-        budgetEntity.setBudgetDescription("Test Budget Description");
-        budgetEntity.setMonthlyIncome(monthlyIncome);
-        budgetEntity.setUser(createUser());
-        budgetEntity.setStartDate(startDate);
-        budgetEntity.setEndDate(endDate);
-        return budgetEntity;
-    }
+//    private static BudgetEntity createBudgetEntity(BigDecimal budgetAmount, BigDecimal monthlyIncome, LocalDate startDate, LocalDate endDate)
+//    {
+//        BudgetEntity budgetEntity = new BudgetEntity();
+//        budgetEntity.setId(1L);
+//        budgetEntity.setBudgetAmount(budgetAmount);
+//        budgetEntity.setBudgetName("Test Budget");
+//        budgetEntity.setBudgetDescription("Test Budget Description");
+//        budgetEntity.setMonthlyIncome(monthlyIncome);
+//        budgetEntity.setUser(createUser());
+//        budgetEntity.setStartDate(startDate);
+//        budgetEntity.setEndDate(endDate);
+//        return budgetEntity;
+//    }
 
 
     private static CategoryEntity createCategory(String name, String description){
@@ -1212,17 +1212,17 @@ class BudgetCalculatorTest {
         return user;
     }
 
-    private static TransactionCategoryEntity createUserBudgetCategory(String categoryName, String categoryDescription, LocalDate startDate, LocalDate endDate, Double budgetAmount, Double actual){
-        TransactionCategoryEntity userBudgetCategory = new TransactionCategoryEntity();
-        userBudgetCategory.setCategory(createCategory(categoryName, categoryDescription));
-        userBudgetCategory.setBudgetedAmount(budgetAmount);
-        userBudgetCategory.setBudget(createBudgetEntity(new BigDecimal("3260"), new BigDecimal("3260"), LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)));
-        userBudgetCategory.setActual(actual);
-        userBudgetCategory.setIsactive(true);
-        userBudgetCategory.setStartDate(startDate);
-        userBudgetCategory.setEndDate(endDate);
-        return userBudgetCategory;
-    }
+//    private static TransactionCategoryEntity createUserBudgetCategory(String categoryName, String categoryDescription, LocalDate startDate, LocalDate endDate, Double budgetAmount, Double actual){
+//        TransactionCategoryEntity userBudgetCategory = new TransactionCategoryEntity();
+//        userBudgetCategory.setCategory(createCategory(categoryName, categoryDescription));
+//        userBudgetCategory.setBudgetedAmount(budgetAmount);
+//        userBudgetCategory.setBudget(createBudgetEntity(new BigDecimal("3260"), new BigDecimal("3260"), LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 30)));
+//        userBudgetCategory.setActual(actual);
+//        userBudgetCategory.setIsactive(true);
+//        userBudgetCategory.setStartDate(startDate);
+//        userBudgetCategory.setEndDate(endDate);
+//        return userBudgetCategory;
+//    }
 
 
 

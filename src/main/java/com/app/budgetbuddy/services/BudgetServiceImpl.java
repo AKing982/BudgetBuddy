@@ -83,6 +83,18 @@ public class BudgetServiceImpl implements BudgetService
         return budget;
     }
 
+    private Budget convertBudget(BudgetEntity budgetEntity)
+    {
+        Budget budget = new Budget();
+        budget.setId(budgetEntity.getId());
+        budget.setBudgetName(budgetEntity.getBudgetName());
+        budget.setBudgetDescription(budgetEntity.getBudgetDescription());
+        budget.setUserId(budgetEntity.getUser().getId());
+        budget.setBudgetAmount(budgetEntity.getBudgetAmount());
+        budget.setActual(budgetEntity.getBudgetActualAmount());
+        return budget;
+    }
+
     private List<BudgetSchedule> convertBudgetScheduleEntities(Set<BudgetScheduleEntity> budgetScheduleEntitySet)
     {
         List<BudgetSchedule> budgetSchedules = new ArrayList<>();
@@ -90,8 +102,9 @@ public class BudgetServiceImpl implements BudgetService
         {
             for(BudgetScheduleEntity budgetSchedule : budgetScheduleEntitySet)
             {
+                BudgetEntity budgetEntity = budgetSchedule.getBudget();
                 BudgetSchedule budgetSchedule1 = BudgetSchedule.builder()
-                        .budgetId(budgetSchedule.getBudget().getId())
+                        .budgetId(budgetEntity.getId())
                         .endDate(budgetSchedule.getEndDate())
                         .startDate(budgetSchedule.getStartDate())
                         .period(budgetSchedule.getPeriodType())

@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.BudgetSchedule;
-import com.app.budgetbuddy.domain.DateRange;
-import com.app.budgetbuddy.domain.PeriodType;
-import com.app.budgetbuddy.domain.ScheduleStatus;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetScheduleEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
@@ -25,11 +22,14 @@ import java.util.Optional;
 public class BudgetScheduleServiceImpl implements BudgetScheduleService
 {
     private final BudgetScheduleRepository budgetScheduleRepository;
+    private final BudgetService budgetService;
 
     @Autowired
-    public BudgetScheduleServiceImpl(BudgetScheduleRepository budgetScheduleRepository)
+    public BudgetScheduleServiceImpl(BudgetScheduleRepository budgetScheduleRepository,
+                                     BudgetService budgetService)
     {
         this.budgetScheduleRepository = budgetScheduleRepository;
+        this.budgetService = budgetService;
     }
 
     @Override
@@ -166,8 +166,9 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
 
     private BudgetSchedule convertBudgetScheduleEntity(BudgetScheduleEntity budgetScheduleEntity)
     {
+        BudgetEntity budgetEntity = budgetScheduleEntity.getBudget();
         return BudgetSchedule.builder()
-                .budgetId(budgetScheduleEntity.getBudget().getId())
+                .budgetId(budgetEntity.getId())
                 .endDate(budgetScheduleEntity.getEndDate())
                 .startDate(budgetScheduleEntity.getStartDate())
                 .scheduleRange(new DateRange(budgetScheduleEntity.getStartDate(), budgetScheduleEntity.getEndDate()))
@@ -176,5 +177,16 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
                 .totalPeriods(budgetScheduleEntity.getTotalPeriodsInRange())
                 .createdDate(LocalDateTime.now())
                 .build();
+    }
+
+    private Budget convertBudgetEntity(BudgetEntity budgetEntity){
+        Budget budget = new Budget();
+        budget.setId(budgetEntity.getId());
+        budget.setBudgetName(budgetEntity.getBudgetName());
+        budget.setBudgetDescription(budgetEntity.getBudgetDescription());
+        budget.setUserId(budgetEntity.getUser().getId());
+        budget.setBudgetAmount(budgetEntity.getBudgetAmount());
+        budget.setActual(budgetEntity.getBudgetActualAmount());
+        return budget;
     }
 }

@@ -51,8 +51,8 @@ class BudgetPeriodQueriesTest {
         testBudget.setBudgetAmount(new BigDecimal("3260"));
         testBudget.setBudgetDescription("Savings Budget");
         testBudget.setBudgetName("Savings Budget");
-        testBudget.setStartDate(LocalDate.of(2024, 10, 1));
-        testBudget.setEndDate(LocalDate.of(2024, 10, 31));
+//        testBudget.setStartDate(LocalDate.of(2024, 10, 1));
+//        testBudget.setEndDate(LocalDate.of(2024, 10, 31));
         budgetPeriodQueries = new BudgetPeriodQueries(entityManager);
     }
 

@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,6 +19,7 @@ public class BudgetSchedule
     private LocalDate startDate;
     private LocalDate endDate;
     private DateRange scheduleRange;
+    private List<DateRange> budgetDateRanges;
     private Period period;
     private int totalPeriods;
     private String status;
@@ -31,7 +33,15 @@ public class BudgetSchedule
         this.scheduleRange = new DateRange(startDate, endDate);
         this.totalPeriods = totalPeriods;
         this.status = status;
+        this.budgetDateRanges = new ArrayList<>();
+        this.initializeBudgetDateRanges();
         this.createdDate = LocalDateTime.now();
+    }
+
+    public void initializeBudgetDateRanges()
+    {
+        DateRange dateRange = this.scheduleRange;
+        this.budgetDateRanges = dateRange.splitIntoWeeks();
     }
 
     @Override

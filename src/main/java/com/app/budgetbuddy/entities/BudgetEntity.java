@@ -40,6 +40,9 @@ public class BudgetEntity {
     @Column(name="totalBudgetAmount")
     private BigDecimal budgetAmount;
 
+    @Column(name="budgetActualAmount")
+    private BigDecimal budgetActualAmount;
+
     @Column(name="monthlyIncome")
     private BigDecimal monthlyIncome;
 
