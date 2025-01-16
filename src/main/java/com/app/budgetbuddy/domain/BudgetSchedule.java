@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.domain;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder
+@Slf4j
 public class BudgetSchedule
 {
     private Long budgetScheduleId;
@@ -25,23 +27,31 @@ public class BudgetSchedule
     private String status;
     private LocalDateTime createdDate;
 
-    public BudgetSchedule(Long budgetScheduleId, Long budgetId, LocalDate startDate, LocalDate endDate, int totalPeriods, String status){
+    public BudgetSchedule(Long budgetScheduleId, Long budgetId, LocalDate startDate, LocalDate endDate, Period period, int totalPeriods, String status){
         this.budgetScheduleId = budgetScheduleId;
         this.budgetId = budgetId;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.period = period;
         this.scheduleRange = new DateRange(startDate, endDate);
         this.totalPeriods = totalPeriods;
-        this.status = status;
         this.budgetDateRanges = new ArrayList<>();
-        this.initializeBudgetDateRanges();
+        this.status = status;
         this.createdDate = LocalDateTime.now();
     }
 
     public void initializeBudgetDateRanges()
     {
-        DateRange dateRange = this.scheduleRange;
-        this.budgetDateRanges = dateRange.splitIntoWeeks();
+        DateRange scheduleRange = getScheduleRange();
+        this.budgetDateRanges = new ArrayList<>();
+        if(scheduleRange != null)
+        {
+            log.info("Schedule Range: {}", scheduleRange.toString());
+            List<DateRange> budgetDateRanges = getScheduleRange().splitIntoWeeks();
+            log.info("Budget DateRanges: {}", budgetDateRanges.toString());
+            this.budgetDateRanges.addAll(budgetDateRanges);
+            log.info("Budget DateRanges Size: {}", budgetDateRanges.size());
+        }
     }
 
     @Override

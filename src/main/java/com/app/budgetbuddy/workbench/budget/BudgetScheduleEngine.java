@@ -35,6 +35,21 @@ public class BudgetScheduleEngine
         this.budgetService = budgetService;
         this.budgetScheduleService = budgetScheduleService;
     }
+
+    private BudgetSchedule createBudgetSchedule(Long budgetId, LocalDate startDate, LocalDate endDate)
+    {
+        BudgetSchedule budgetSchedule = BudgetSchedule.builder()
+                .budgetId(budgetId)
+                .startDate(startDate)
+                .endDate(endDate)
+                .period(Period.MONTHLY)
+                .totalPeriods(4)
+                .scheduleRange(new DateRange(startDate, endDate))
+                .status("Active")
+                .build();
+        budgetSchedule.initializeBudgetDateRanges();
+        return budgetSchedule;
+    }
     /**
      * This method will build a budget schedule for a particular month
      *
@@ -55,28 +70,19 @@ public class BudgetScheduleEngine
         {
             return Optional.of(budgetSchedules.get(0));
         }
-        else if(budgetSchedules.size() > 1)
+        else if(budgetSchedules.isEmpty())
         {
-            Set<BudgetSchedule> foundBudgetSchedules = new HashSet<>();
+            // Create a new budget schedule for the month and return
+            BudgetSchedule budgetSchedule = createBudgetSchedule(userId, startDate, endDate);
+            budgetScheduleOptional = Optional.of(budgetSchedule);
+        }
+        else
+        {
+            // IF the Budget Schedules list has multiple budget schedules
+            // Iterate through to find the budget schedule that matches the start date and end date
             for(BudgetSchedule budgetSchedule : budgetSchedules)
             {
-                LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
-                log.info("Budget schedule start date: {}", budgetScheduleStartDate);
-                LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();
-                log.info("Budget schedule end date: {}", budgetScheduleEndDate);
 
-                // CASE 1: The BudgetSchedule Start Date is equal to the start date and Budget Schedule End date is equal to the end date
-                if(startDate.isEqual(budgetScheduleStartDate) || endDate.isEqual(budgetScheduleEndDate))
-                {
-                    log.info("Found Budget Schedule: " + budgetSchedule.toString());
-                    foundBudgetSchedules.add(budgetSchedule);
-                    break;
-                }
-                //CASE 2: The startDate is between the BudgetSchedule start date and BudgetSchedule end date
-            }
-            if(foundBudgetSchedules.size() == 1)
-            {
-                budgetScheduleOptional = Optional.of(foundBudgetSchedules.iterator().next());
             }
         }
         return budgetScheduleOptional;
