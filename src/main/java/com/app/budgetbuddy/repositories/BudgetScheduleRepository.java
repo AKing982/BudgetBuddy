@@ -1,13 +1,16 @@
 package com.app.budgetbuddy.repositories;
 
 
+import com.app.budgetbuddy.domain.Period;
 import com.app.budgetbuddy.domain.PeriodType;
 import com.app.budgetbuddy.domain.ScheduleStatus;
 import com.app.budgetbuddy.entities.BudgetScheduleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,4 +39,18 @@ public interface BudgetScheduleRepository extends JpaRepository<BudgetScheduleEn
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE BudgetScheduleEntity e SET e.startDate = :startDate, e.endDate = :endDate, " +
+            "e.scheduleRange = :scheduleRange, e.totalPeriodsInRange = :totalPeriodsInRange, " +
+            "e.periodType = :periodType, e.status = :status " +
+            "WHERE e.id = :id")
+    void updateBudgetSchedule(@Param("id") Long id,
+                              @Param("startDate") LocalDate startDate,
+                              @Param("endDate") LocalDate endDate,
+                              @Param("scheduleRange") String scheduleRange,
+                              @Param("totalPeriodsInRange") Integer totalPeriodsInRange,
+                              @Param("periodType") Period periodType,
+                              @Param("status") ScheduleStatus status);
 }

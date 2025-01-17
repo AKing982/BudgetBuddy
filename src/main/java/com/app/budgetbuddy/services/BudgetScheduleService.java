@@ -25,6 +25,12 @@ public interface BudgetScheduleService extends ServiceModel<BudgetScheduleEntity
 
     List<BudgetScheduleEntity> findSchedulesInDateRange(LocalDate startDate, LocalDate endDate);
 
+    Optional<BudgetSchedule> findBudgetScheduleById(Long budgetScheduleId);
+
+    void updateBudgetSchedule(BudgetSchedule budgetSchedule);
+
+    void saveBudgetSchedule(BudgetSchedule budgetSchedule);
+
     BudgetScheduleEntity createSchedule(
             BudgetEntity budget,
             LocalDate startDate,

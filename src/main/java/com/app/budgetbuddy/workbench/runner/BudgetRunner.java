@@ -109,6 +109,10 @@ public class BudgetRunner
                 MonthlyBudgetPeriod monthlyPeriod = new MonthlyBudgetPeriod(startDate, endDate);
                 yield getMonthlyBudgetPeriodCategories(monthlyPeriod, budget);
             }
+            case QUARTERLY -> null;
+            case SEMIANNUAL -> null;
+            case BIMONTHLY -> null;
+            case ANNUAL -> null;
         };
     }
 

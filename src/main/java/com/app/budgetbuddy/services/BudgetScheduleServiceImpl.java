@@ -119,6 +119,91 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
     }
 
     @Override
+    public Optional<BudgetSchedule> findBudgetScheduleById(Long budgetScheduleId)
+    {
+        try
+        {
+            Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = budgetScheduleRepository.findById(budgetScheduleId);
+            if(budgetScheduleEntityOptional.isEmpty())
+            {
+                return Optional.empty();
+            }
+            BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
+            return Optional.of(convertBudgetScheduleEntity(budgetScheduleEntity));
+        }catch(DataAccessException e){
+            log.error("There was a problem finding the budget schedule", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public void updateBudgetSchedule(BudgetSchedule budgetSchedule)
+    {
+        if(budgetSchedule == null)
+        {
+            return;
+        }
+        try
+        {
+            Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = buildBudgetScheduleEntity(budgetSchedule);
+            if(budgetScheduleEntityOptional.isEmpty())
+            {
+                throw new RuntimeException("Budget Schedule with id: " + budgetScheduleEntityOptional.get().getId() + " not found");
+            }
+            BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
+            Long budgetScheduleId = budgetScheduleEntity.getId();
+            LocalDate startDate = budgetScheduleEntity.getStartDate();
+            LocalDate endDate = budgetScheduleEntity.getEndDate();
+            String scheduleRange = budgetScheduleEntity.getScheduleRange();
+            int totalPeriods = budgetScheduleEntity.getTotalPeriodsInRange();
+            Period period = budgetScheduleEntity.getPeriodType();
+            ScheduleStatus status = budgetScheduleEntity.getStatus();
+            budgetScheduleRepository.updateBudgetSchedule(budgetScheduleId, startDate, endDate, scheduleRange, totalPeriods, period, status);
+
+        }catch(DataAccessException e){
+            log.error("There was a problem updating the budget schedule", e);
+            return;
+        }
+    }
+
+    @Override
+    public void saveBudgetSchedule(BudgetSchedule budgetSchedule)
+    {
+         try
+         {
+             Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = buildBudgetScheduleEntity(budgetSchedule);
+             if(budgetScheduleEntityOptional.isEmpty())
+             {
+                 throw new DataAccessException("Budget Schedule with id: " + budgetScheduleEntityOptional.get().getId() + " not found");
+             }
+             BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
+             budgetScheduleRepository.save(budgetScheduleEntity);
+         }catch(DataAccessException e){
+             log.error("There was a problem saving the budget schedule", e);
+         }
+    }
+
+    private Optional<BudgetScheduleEntity> buildBudgetScheduleEntity(final BudgetSchedule budgetSchedule)
+    {
+
+        Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetSchedule.getBudgetId());
+        if(budgetEntityOptional.isEmpty())
+        {
+            return Optional.empty();
+        }
+        BudgetEntity budgetEntity = budgetEntityOptional.get();
+        BudgetScheduleEntity budgetScheduleEntity = new BudgetScheduleEntity();
+        budgetScheduleEntity.setScheduleRange(budgetSchedule.getScheduleRange().toString());
+        budgetScheduleEntity.setEndDate(budgetSchedule.getEndDate());
+        budgetScheduleEntity.setStartDate(budgetSchedule.getStartDate());
+        budgetScheduleEntity.setPeriodType(budgetSchedule.getPeriod());
+        budgetScheduleEntity.setStatus(ScheduleStatus.valueOf(budgetSchedule.getStatus()));
+        budgetScheduleEntity.setTotalPeriodsInRange(budgetSchedule.getTotalPeriods());
+        budgetScheduleEntity.setBudget(budgetEntity);
+        return Optional.of(budgetScheduleEntity);
+    }
+
+    @Override
     public BudgetScheduleEntity createSchedule(BudgetEntity budget, LocalDate startDate, LocalDate endDate, String scheduleRange, Integer totalPeriodsInRange, PeriodType periodType) {
         return null;
     }
