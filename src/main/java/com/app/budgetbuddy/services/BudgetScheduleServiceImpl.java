@@ -12,10 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -199,7 +196,7 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
         budgetScheduleEntity.setPeriodType(budgetSchedule.getPeriod());
         budgetScheduleEntity.setStatus(ScheduleStatus.valueOf(budgetSchedule.getStatus()));
         budgetScheduleEntity.setTotalPeriodsInRange(budgetSchedule.getTotalPeriods());
-        budgetScheduleEntity.setBudget(budgetEntity);
+        budgetScheduleEntity.setBudgets(Set.of(budgetEntity));
         return Optional.of(budgetScheduleEntity);
     }
 

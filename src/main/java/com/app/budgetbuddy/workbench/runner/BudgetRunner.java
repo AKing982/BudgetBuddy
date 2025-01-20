@@ -27,6 +27,7 @@ public class BudgetRunner
     private final BudgetQueriesService budgetQueriesService;
     private final BudgetCalculations budgetCalculations;
     private final BudgetScheduleService budgetScheduleService;
+    private final BudgetScheduleEngine budgetScheduleEngine;
     private final BudgetService budgetService;
 
     @Autowired
@@ -34,11 +35,13 @@ public class BudgetRunner
                         BudgetQueriesService budgetQueriesService,
                         BudgetCalculations budgetCalculations,
                         BudgetScheduleService budgetScheduleService,
+                        BudgetScheduleEngine budgetScheduleEngine,
                         BudgetService budgetService){
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.budgetQueriesService = budgetQueriesService;
         this.budgetCalculations = budgetCalculations;
         this.budgetScheduleService = budgetScheduleService;
+        this.budgetScheduleEngine = budgetScheduleEngine;
         this.budgetService = budgetService;
     }
 
@@ -64,7 +67,17 @@ public class BudgetRunner
 
     public List<BudgetRunnerResult> runBudgetProcess(final Long userId, final LocalDate startDate, final LocalDate endDate){
         log.info("Starting monthly budget process for user {} between {} and {}", userId, startDate, endDate);
+
+        // Check if budget exists for this period
         Budget userBudget = budgetService.loadUserBudgetForPeriod(userId, startDate, endDate);
+
+        // if no budget found, then create a budget for this period
+        if(userBudget == null)
+        {
+            
+        }
+
+        // Also create the budget schedule for this period
         try
         {
             Optional<BudgetSchedule> budgetScheduleOptional = getBudgetScheduleParam(userBudget, startDate, endDate);
@@ -84,68 +97,86 @@ public class BudgetRunner
         }
     }
 
+    public List<BudgetPeriodCategory> loadDailyPeriodCategories(final Budget budget, final BudgetSchedule budgetSchedule, final LocalDate targetDate)
+    {
+        return null;
+    }
+
+    private Optional<WeeklyBudgetSchedule> buildWeeklyBudgetSchedule(final BudgetSchedule budgetSchedule)
+    {
+        if (budgetSchedule == null) {
+            throw new IllegalArgumentException("BudgetSchedule cannot be null");
+        }
+
+        WeeklyBudgetSchedule weeklyBudgetSchedule = new WeeklyBudgetSchedule(
+                budgetSchedule.getBudgetScheduleId(),  // ID of the schedule
+                budgetSchedule.getBudgetId(),          // Associated budget ID
+                budgetSchedule.getStartDate(),         // Start date of the schedule
+                budgetSchedule.getEndDate(),           // End date of the schedule
+                budgetSchedule.getPeriod(),            // Period (should be WEEKLY for this method)
+                budgetSchedule.getTotalPeriods(),      // Total periods
+                budgetSchedule.getStatus()             // Current status of the schedule
+        );
+
+        // Set any additional fields or initialize weekly ranges
+        weeklyBudgetSchedule.initializeWeeklyDateRanges();
+
+        return Optional.of(weeklyBudgetSchedule);
+    }
+
+    private Optional<BiWeeklyBudgetSchedule> buildBiWeeklyBudgetSchedule(final BudgetSchedule budgetSchedule)
+    {
+        if (budgetSchedule == null) {
+            throw new IllegalArgumentException("BudgetSchedule cannot be null");
+        }
+        BiWeeklyBudgetSchedule biweeklyBudgetSchedule = new BiWeeklyBudgetSchedule(
+                budgetSchedule.getBudgetScheduleId(),
+                budgetSchedule.getBudgetId(),
+                budgetSchedule.getStartDate(),
+                budgetSchedule.getEndDate(),
+                budgetSchedule.getPeriod(),
+                budgetSchedule.getTotalPeriods(),
+                budgetSchedule.getStatus()
+        );
+        biweeklyBudgetSchedule.initializeBiWeeklyBudgetSchedule();
+        return Optional.of(biweeklyBudgetSchedule);
+    }
+
     // TODO: Create a method that creates a new budget for a new period
-
-
-    private List<BudgetPeriodCategory> loadPeriodCategories(final Budget budget, final BudgetSchedule budgetSchedule) {
-        LocalDate startDate = budgetSchedule.getStartDate();
-        LocalDate endDate = budgetSchedule.getEndDate();
-
+    public List<BudgetPeriodCategory> loadPeriodCategories(final Budget budget, final BudgetSchedule budgetSchedule)
+    {
+        List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
         Period period = budgetSchedule.getPeriod();
         return switch (period) {
-            case DAILY -> {
-                DailyBudgetPeriod dailyPeriod = new DailyBudgetPeriod(startDate);
-                yield getDailyBudgetPeriodCategories(dailyPeriod, budget);
-            }
             case WEEKLY -> {
-                WeeklyBudgetPeriod weeklyPeriod = new WeeklyBudgetPeriod(startDate, endDate);
-                yield getWeeklyBudgetPeriodCategories(weeklyPeriod, budget);
+                Optional<WeeklyBudgetSchedule> weeklyBudgetScheduleOptional = buildWeeklyBudgetSchedule(budgetSchedule);
+                WeeklyBudgetSchedule weeklyBudgetSchedule = weeklyBudgetScheduleOptional.get();
+                yield getWeeklyBudgetPeriodCategories(budget, weeklyBudgetSchedule);
             }
             case BIWEEKLY -> {
-                BiWeeklyBudgetPeriod biWeeklyPeriod = new BiWeeklyBudgetPeriod(startDate, endDate);
-                yield getBiWeeklyBudgetPeriodCategories(biWeeklyPeriod, budget);
+                Optional<BiWeeklyBudgetSchedule> biweeklyBudgetScheduleOptional = buildBiWeeklyBudgetSchedule(budgetSchedule);
+                BiWeeklyBudgetSchedule biweeklyBudgetSchedule = biweeklyBudgetScheduleOptional.get();
+                yield getBiWeeklyBudgetPeriodCategories(budget, biweeklyBudgetSchedule);
             }
-            case MONTHLY -> {
-                MonthlyBudgetPeriod monthlyPeriod = new MonthlyBudgetPeriod(startDate, endDate);
-                yield getMonthlyBudgetPeriodCategories(monthlyPeriod, budget);
-            }
-            case QUARTERLY -> null;
-            case SEMIANNUAL -> null;
-            case BIMONTHLY -> null;
-            case ANNUAL -> null;
+            case MONTHLY -> getMonthlyBudgetPeriodCategories(budget, budgetSchedule);
+            case DAILY, QUARTERLY, ANNUAL, SEMIANNUAL, BIMONTHLY -> Collections.emptyList();
         };
     }
 
-    private BudgetRunnerResult processBudget(Budget budget, BudgetSchedule budgetSchedule, LocalDate startDate, LocalDate endDate) {
+    public BudgetRunnerResult processBudget(Budget budget, BudgetSchedule budgetSchedule, LocalDate startDate, LocalDate endDate) {
         // Create date range for the month
         DateRange monthRange = new DateRange(startDate, endDate);
 
         // Calculate budget health score
-        BigDecimal healthScore = calculateBudgetHealthScore(
-                budget,
-                startDate,
-                endDate
-        );
+        BigDecimal healthScore = calculateBudgetHealthScore(budget, startDate, endDate);
 
         // Load monthly statistics
-        BudgetStats monthlyStats = loadMonthlyBudgetStatistics(
-                monthRange,
-                budget
-        );
+        BudgetStats monthlyStats = loadMonthlyBudgetStatistics(monthRange, budget, healthScore);
 
         // Get top expense categories
-        List<Category> topExpenses = loadTopExpenseCategories(
-                budget,
-                startDate,
-                endDate
-        );
+        List<Category> topExpenses = loadTopExpenseCategories(budget, startDate, endDate);
 
-        List<Category> expenseCategories = loadExpenseCategory(
-                budget.getId(),
-                startDate,
-                endDate,
-                determineBudgetPeriod(startDate, endDate)
-        );
+        List<Category> expenseCategories = loadExpenseCategory(budget.getId(), startDate, endDate, determineBudgetPeriod(startDate, endDate));
 
         // Calculate budget period and load period categories
         Period budgetPeriod = determineBudgetPeriod(startDate, endDate);
@@ -214,12 +245,14 @@ public class BudgetRunner
     }
 
 
-    public BigDecimal calculateBudgetHealthScore(Budget budget, LocalDate startDate, LocalDate endDate){
-        if (budget == null || startDate == null || endDate == null) {
+    public BigDecimal calculateBudgetHealthScore(Budget budget, LocalDate startDate, LocalDate endDate)
+    {
+        if(budget == null || startDate == null || endDate == null)
+        {
             return BigDecimal.ZERO;
         }
-
-        try {
+        try
+        {
             // Get total budgeted amount
             BigDecimal totalBudgeted = budgetQueriesService.getTotalBudgeted(
                     budget.getId(),
@@ -261,52 +294,89 @@ public class BudgetRunner
     }
 
 
-    public List<BudgetPeriodCategory> getWeeklyBudgetPeriodCategories(final WeeklyBudgetPeriod weeklyBudgetPeriod, final Budget budget){
-        if(weeklyBudgetPeriod == null || budget == null){
+    public List<BudgetPeriodCategory> getWeeklyBudgetPeriodCategories(final Budget budget, final WeeklyBudgetSchedule weeklyBudgetSchedule){
+        if(budget == null || weeklyBudgetSchedule == null){
             return Collections.emptyList();
         }
-        List<DateRange> weeklyRanges = weeklyBudgetPeriod.getWeeklyDateRange();
-        List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getWeeklyBudgetPeriodCategories(weeklyRanges, budget);
-        return new ArrayList<>(budgetPeriodCategories);
-    }
-
-    public List<BudgetPeriodCategory> getBiWeeklyBudgetPeriodCategories(final BiWeeklyBudgetPeriod budgetPeriod, final Budget budget){
-        if(budgetPeriod == null || budget == null){
+        List<DateRange> weeklyRanges = weeklyBudgetSchedule.getWeeklyDateRanges();
+        if(weeklyRanges == null || weeklyRanges.isEmpty())
+        {
             return Collections.emptyList();
         }
-        List<DateRange> biweeks = budgetPeriod.getBiWeeklyRanges();
-        List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getBiWeeklyBudgetPeriodCategories(biweeks, budget);
-        return new ArrayList<>(budgetPeriodCategories);
-    }
+        try
+        {
+            List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getWeeklyBudgetPeriodCategories(weeklyRanges, budget);
+            return new ArrayList<>(budgetPeriodCategories);
 
-    public List<BudgetPeriodCategory> getDailyBudgetPeriodCategories(final DailyBudgetPeriod dailyBudgetPeriod, final Budget budget)
-    {
-        if(dailyBudgetPeriod == null || budget == null){
+        }catch(Exception e)
+        {
+            log.error("Error getting weekly budget period categories: ", e);
             return Collections.emptyList();
         }
-        LocalDate date = dailyBudgetPeriod.getStartDate();
-        List<BudgetPeriodCategory> dailyBudgetPeriodQuery = budgetPeriodQueries.getDailyBudgetPeriodQuery(date, budget);
-        return new ArrayList<>(dailyBudgetPeriodQuery);
     }
 
-    public List<BudgetPeriodCategory> getMonthlyBudgetPeriodCategories(final MonthlyBudgetPeriod budgetPeriod, final Budget monthlyBudget)
+    public List<BudgetPeriodCategory> getBiWeeklyBudgetPeriodCategories(final Budget budget, final BiWeeklyBudgetSchedule biweeklyBudgetSchedule)
     {
-        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
-        if(budgetPeriod == null){
-            return budgetPeriodCategories;
+        if(biweeklyBudgetSchedule == null || budget == null)
+        {
+            return Collections.emptyList();
         }
-        DateRange monthRange = budgetPeriod.getMonthRange();
-        List<BudgetPeriodCategory> monthlyBudgetPeriodCategories = budgetPeriodQueries.getMonthlyBudgetPeriodCategories(monthRange, monthlyBudget);
-        budgetPeriodCategories.addAll(monthlyBudgetPeriodCategories);
-        return budgetPeriodCategories;
+        try
+        {
+            List<DateRange> biweeklyDateRanges = biweeklyBudgetSchedule.getBiweeklyDateRanges();
+            if(biweeklyDateRanges == null || biweeklyDateRanges.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getBiWeeklyBudgetPeriodCategories(biweeklyDateRanges, budget);
+            return new ArrayList<>(budgetPeriodCategories);
+
+        }catch(Exception e)
+        {
+            log.error("There was an error getting Bi-weekly budget period categories: ", e);
+            return Collections.emptyList();
+        }
     }
 
-    public BudgetStats loadMonthlyBudgetStatistics(final DateRange monthRange, final Budget budget)
+    public List<BudgetPeriodCategory> getDailyBudgetPeriodCategories(final Budget budget, final LocalDate date)
     {
-        if(monthRange == null || budget == null){
-            throw new IllegalArgumentException("Month and budget are required");
+        if(date == null || budget == null)
+        {
+            return Collections.emptyList();
         }
+        try
+        {
+            List<BudgetPeriodCategory> dailyBudgetPeriodQuery = budgetPeriodQueries.getDailyBudgetPeriodQuery(date, budget);
+            return new ArrayList<>(dailyBudgetPeriodQuery);
 
+        }catch(Exception e)
+        {
+            log.error("There was an error getting Daily-budget period categories: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<BudgetPeriodCategory> getMonthlyBudgetPeriodCategories(final Budget monthlyBudget, final BudgetSchedule budgetSchedule)
+    {
+        if(budgetSchedule == null || monthlyBudget == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            DateRange monthRange = budgetSchedule.getScheduleRange();
+            List<BudgetPeriodCategory> monthlyBudgetPeriodCategories = budgetPeriodQueries.getMonthlyBudgetPeriodCategories(monthRange, monthlyBudget);
+            return new ArrayList<>(monthlyBudgetPeriodCategories);
+
+        }catch(Exception e)
+        {
+            log.error("There was an error getting Monthly budget period categories: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public BudgetStats loadMonthlyBudgetStatistics(final DateRange monthRange, final Budget budget, BigDecimal budgetHealthScore)
+    {
         try
         {
             // 1. Get total budgeted for the month
@@ -352,6 +422,7 @@ public class BudgetRunner
                     totalSpent,
                     remaining,
                     totalSaved,
+                    budgetHealthScore,
                     averageDaily,
                     monthRange);
             log.info("Budget Stats for month:{} ", budgetStats.toString());

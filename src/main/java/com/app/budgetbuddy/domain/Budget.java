@@ -22,6 +22,8 @@ public class Budget
     private Long userId;
     private String budgetName;
     private String budgetDescription;
+    private Integer budgetYear;
+    private LocalDate budgetMonth;
     private LocalDateTime createdDate;
     private List<BudgetSchedule> budgetSchedules = new ArrayList<>();
 }

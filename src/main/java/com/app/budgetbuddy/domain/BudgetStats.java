@@ -26,12 +26,23 @@ public class BudgetStats
     private BigDecimal healthScore;
     private BigDecimal monthlyProjection;
 
-    public BudgetStats(Long budgetId, BigDecimal totalBudget, BigDecimal totalSpent, BigDecimal remaining, BigDecimal totalSaved, BigDecimal averageSpendingPerDay, DateRange dateRange){
+    public BudgetStats(Long budgetId, BigDecimal totalBudget, BigDecimal totalSpent, BigDecimal remaining, BigDecimal totalSaved, BigDecimal averageSpendingPerDay, DateRange dateRange) {
         this.budgetId = budgetId;
         this.totalBudget = totalBudget;
         this.totalSpent = totalSpent;
         this.remaining = remaining;
         this.totalSaved = totalSaved;
+        this.averageSpendingPerDay = averageSpendingPerDay;
+        this.dateRange = dateRange;
+    }
+
+    public BudgetStats(Long budgetId, BigDecimal totalBudget, BigDecimal totalSpent, BigDecimal remaining, BigDecimal totalSaved, BigDecimal averageSpendingPerDay, BigDecimal budgetHealthScore, DateRange dateRange){
+        this.budgetId = budgetId;
+        this.totalBudget = totalBudget;
+        this.totalSpent = totalSpent;
+        this.remaining = remaining;
+        this.totalSaved = totalSaved;
+        this.healthScore = budgetHealthScore;
         this.averageSpendingPerDay = averageSpendingPerDay;
         this.dateRange = dateRange;
     }

@@ -22,7 +22,7 @@ public class BudgetScheduleEntity
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="budgetId")
     private BudgetEntity budget;
 

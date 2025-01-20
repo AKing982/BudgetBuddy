@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -45,6 +46,12 @@ public class BudgetEntity {
 
     @Column(name="monthlyIncome")
     private BigDecimal monthlyIncome;
+
+    @Column(name="budgetYear")
+    private Integer budgetYear;
+
+    @Column(name="budgetMonth")
+    private LocalDate budgetMonth;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name="createdDate")
