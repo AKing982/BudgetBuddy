@@ -45,6 +45,26 @@ public class BudgetRunner
         this.budgetService = budgetService;
     }
 
+    public Optional<Budget> createBudgetAndScheduleForPeriod(Long userId, LocalDate startMonth, LocalDate endMonth)
+    {
+        return null;
+    }
+
+    public List<BudgetSchedule> createBudgetSchedulesForNthMonthPeriod(final Long userId, final int numberOfMonths, final LocalDate startMonth, final Period period, final boolean isFutureMonths)
+    {
+        return null;
+    }
+
+    public Map<Long, List<BudgetSchedule>> groupBudgetSchedulesByBudgetId(final Budget budget, final List<BudgetSchedule> budgetSchedules)
+    {
+        return null;
+    }
+
+    public void addNewBudgetSchedulesPair(final Map<Long, List<BudgetSchedule>> budgetSchedulesMap)
+    {
+
+    }
+
     private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate)
     {
         List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
