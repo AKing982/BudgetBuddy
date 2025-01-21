@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
@@ -45,22 +46,68 @@ public class BudgetRunner
         this.budgetService = budgetService;
     }
 
-    public Optional<Budget> createBudgetAndScheduleForPeriod(Long userId, LocalDate startMonth, LocalDate endMonth)
+    /**
+     * Creates both Budget and Budget Schedules for the designated period and user
+     * @param userId
+     * @param startMonth
+     * @param endMonth
+     * @return
+     */
+    public Optional<Budget> createBudgetAndScheduleForPeriod(final Long userId, final LocalDate startMonth, final LocalDate endMonth)
     {
+        if(startMonth == null || endMonth == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            if(userId < 1L)
+            {
+                throw new InvalidUserIDException("Invalid user ID Found: " + userId);
+            }
+            Budget budget = budgetService.loadUserBudgetForPeriod(userId, startMonth, endMonth);
+            if(budget == null)
+            {
+                // If no budget is found, then create a new budget
+                //
+            }
+
+
+        }catch(InvalidUserIDException e){
+            log.error("There was an error due to an invalid userId: ", e);
+            return Optional.empty();
+        }
+
         return null;
     }
 
+    /**
+     * Creates Budget Schedules for a certain period of months ahead
+     * starting from a designated start month
+     * @param userId
+     * @param numberOfMonths
+     * @param startMonth
+     * @param period
+     * @param isFutureMonths
+     * @return
+     */
     public List<BudgetSchedule> createBudgetSchedulesForNthMonthPeriod(final Long userId, final int numberOfMonths, final LocalDate startMonth, final Period period, final boolean isFutureMonths)
     {
         return null;
     }
 
+    /**
+     *
+     * @param budget
+     * @param budgetSchedules
+     * @return
+     */
     public Map<Long, List<BudgetSchedule>> groupBudgetSchedulesByBudgetId(final Budget budget, final List<BudgetSchedule> budgetSchedules)
     {
         return null;
     }
 
-    public void addNewBudgetSchedulesPair(final Map<Long, List<BudgetSchedule>> budgetSchedulesMap)
+    public void setBudgetSchedulesToBudget(final Map<Long, List<BudgetSchedule>> budgetSchedulesMap)
     {
 
     }

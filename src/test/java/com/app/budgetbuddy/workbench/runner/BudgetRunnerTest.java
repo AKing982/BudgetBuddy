@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.budget.BudgetCalculations;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -417,6 +419,67 @@ class BudgetRunnerTest {
                 any(BigDecimal.class),
                 any(BudgetPeriod.class)
         );
+    }
+
+    @Test
+    void testCreateBudgetAndScheduleForPeriod_whenStartMonthIsNull_thenReturnEmptyOptional(){
+        Long userId = 1L;
+        LocalDate endMonth = LocalDate.of(2025, 1, 31);
+        Optional<Budget> actual = budgetRunner.createBudgetAndScheduleForPeriod(userId, null, endMonth);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateBudgetAndScheduleForPeriod_whenEndMonthIsNull_thenReturnEmptyOptional(){
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2025, 1, 31);
+        Optional<Budget> actual = budgetRunner.createBudgetAndScheduleForPeriod(userId, startDate, null);
+    }
+
+    @Test
+    void testCreateBudgetAndScheduleForPeriod_whenUserIdNegative_thenThrowException(){
+        Long userId = -1L;
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate endDate = LocalDate.of(2025, 1, 31);
+        Optional<Budget> actual = budgetRunner.createBudgetAndScheduleForPeriod(userId, startDate, endDate);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateBudgetAndScheduleForPeriod_whenJanuary_AndNoBudgetFound_thenReturnCreateBudget(){
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
+        LocalDate endDate = LocalDate.of(2025, 1, 31);
+
+        Budget budget = new Budget();
+        budget.setId(1L);
+        budget.setBudgetAmount(new BigDecimal("5000.0"));
+        budget.setBudgetMonth(LocalDate.of(2025, 1, 1));
+        budget.setBudgetYear(2025);
+        budget.setBudgetName("Test Budget");
+        budget.setBudgetDescription("Test Budget Description");
+        budget.setUserId(1L);
+
+        BudgetSchedule januarySchedule = new BudgetSchedule();
+        januarySchedule.setScheduleRange(new DateRange(startDate, endDate));
+        januarySchedule.setStartDate(startDate);
+        januarySchedule.setEndDate(endDate);
+        januarySchedule.setTotalPeriods(4);
+        januarySchedule.setStatus("Active");
+        januarySchedule.setPeriod(Period.MONTHLY);
+        januarySchedule.initializeBudgetDateRanges();
+        budget.setBudgetSchedules(List.of(januarySchedule));
+
+        Optional<Budget> expectedBudgetOptional = Optional.of(budget);
+
+        Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(null);
+
+        Optional<Budget> actual = budgetRunner.createBudgetAndScheduleForPeriod(userId, startDate, endDate);
+        assertNotNull(actual);
+        assertEquals(expectedBudgetOptional, actual);
+        assertEquals(expectedBudgetOptional.get().getBudgetSchedules().size(), actual.get().getBudgetSchedules().size());
+        assertEquals(expectedBudgetOptional.get().getBudgetName(), actual.get().getBudgetName());
     }
 
 
