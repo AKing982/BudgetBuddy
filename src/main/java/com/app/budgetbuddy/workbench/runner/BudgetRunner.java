@@ -81,36 +81,6 @@ public class BudgetRunner
         return null;
     }
 
-    /**
-     * Creates Budget Schedules for a certain period of months ahead
-     * starting from a designated start month
-     * @param userId
-     * @param numberOfMonths
-     * @param startMonth
-     * @param period
-     * @param isFutureMonths
-     * @return
-     */
-    public List<BudgetSchedule> createBudgetSchedulesForNthMonthPeriod(final Long userId, final int numberOfMonths, final LocalDate startMonth, final Period period, final boolean isFutureMonths)
-    {
-        return null;
-    }
-
-    /**
-     *
-     * @param budget
-     * @param budgetSchedules
-     * @return
-     */
-    public Map<Long, List<BudgetSchedule>> groupBudgetSchedulesByBudgetId(final Budget budget, final List<BudgetSchedule> budgetSchedules)
-    {
-        return null;
-    }
-
-    public void setBudgetSchedulesToBudget(final Map<Long, List<BudgetSchedule>> budgetSchedulesMap)
-    {
-
-    }
 
     private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate)
     {
