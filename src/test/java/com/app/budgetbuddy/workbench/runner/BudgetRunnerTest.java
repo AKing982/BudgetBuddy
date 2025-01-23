@@ -454,7 +454,7 @@ class BudgetRunnerTest {
         Budget budget = new Budget();
         budget.setId(1L);
         budget.setBudgetAmount(new BigDecimal("5000.0"));
-        budget.setBudgetMonth(LocalDate.of(2025, 1, 1));
+        budget.setBudgetStartDate(LocalDate.of(2025, 1, 1));
         budget.setBudgetYear(2025);
         budget.setBudgetName("Test Budget");
         budget.setBudgetDescription("Test Budget Description");

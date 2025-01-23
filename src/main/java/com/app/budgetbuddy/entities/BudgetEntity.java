@@ -50,8 +50,22 @@ public class BudgetEntity {
     @Column(name="budgetYear")
     private Integer budgetYear;
 
-    @Column(name="budgetMonth")
-    private LocalDate budgetMonth;
+    @Column(name="budgetStartDate")
+    @NotNull
+    private LocalDate budgetStartDate;
+
+    @Column(name="currentSavingsAmount")
+    @NotNull
+    private BigDecimal currentSavingsAmount;
+
+    @Column(name="actualAllocationAmount")
+    private BigDecimal actualAllocationAmount;
+
+    @Column(name="savingsProgress")
+    private BigDecimal savingsProgress;
+
+    @Column(name="totalMonthsToSave")
+    private Integer totalMonthsToSave;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name="createdDate")

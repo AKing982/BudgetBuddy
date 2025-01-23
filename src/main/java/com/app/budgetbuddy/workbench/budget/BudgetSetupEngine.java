@@ -230,9 +230,9 @@ public class BudgetSetupEngine
 
         BigDecimal budgetAmount = budget.getBudgetAmount();
         // Fetch the budget goals
-        double targetAmount = budgetGoals.targetAmount();
-        double currentMonthlyAllocation = budgetGoals.monthlyAllocation();
-        double currentSavings = budgetGoals.currentSavings();
+        double targetAmount = budgetGoals.getTargetAmount();
+        double currentMonthlyAllocation = budgetGoals.getMonthlyAllocation();
+        double currentSavings = budgetGoals.getCurrentSavings();
         for(CategoryQuestionnaireData categoryQuestionnaireData : categories)
         {
             if(categoryQuestionnaireData != null)
@@ -624,8 +624,8 @@ public class BudgetSetupEngine
             return savingsBudgetCategory;
         }
 
-        BigDecimal targetSavingsAmount = BigDecimal.valueOf(budgetGoals.targetAmount());
-        BigDecimal monthlyAllocation = BigDecimal.valueOf(budgetGoals.monthlyAllocation());
+        BigDecimal targetSavingsAmount = BigDecimal.valueOf(budgetGoals.getTargetAmount());
+        BigDecimal monthlyAllocation = BigDecimal.valueOf(budgetGoals.getMonthlyAllocation());
         BigDecimal totalSavings = new BigDecimal(0);
         for(DateRange dateRange : dateRanges)
         {

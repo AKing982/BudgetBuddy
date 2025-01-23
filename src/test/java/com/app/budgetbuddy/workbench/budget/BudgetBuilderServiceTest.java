@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -103,7 +104,52 @@ class BudgetBuilderServiceTest
     @Test
     void testBuildBudgetFromRegistration_whenValidBudgetRegistration_thenReturnBudget()
     {
+        Budget budget = new Budget();
+        budget.setId(1L);
+        budget.setBudgetName("New Car Fund");
+        budget.setActual(new BigDecimal("500.00"));        // Amount already saved or spent
+        budget.setBudgetAmount(new BigDecimal("3000.00")); // Total planned budget
+        budget.setBudgetYear(2025);
+        budget.setUserId(1L);
+        budget.setBudgetMode(BudgetMode.SAVINGS_PLAN);
+        budget.setBudgetPeriod(Period.MONTHLY);
+        budget.setBudgetStartDate(LocalDate.of(2025, 1, 1));
 
+        // Create a monthly budget schedule for January
+        BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
+        januaryBudgetSchedule.setPeriod(Period.MONTHLY);
+        januaryBudgetSchedule.setBudgetId(1L);
+        januaryBudgetSchedule.setStatus("Active");
+        januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
+        januaryBudgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
+        januaryBudgetSchedule.setScheduleRange(new DateRange(
+                LocalDate.of(2025, 1, 1),
+                LocalDate.of(2025, 1, 31)
+        ));
+        januaryBudgetSchedule.setTotalPeriods(4); // e.g., planning for 4 months of savings
+        januaryBudgetSchedule.initializeBudgetDateRanges();
+
+        // Create a SavingsGoal object with realistic values
+        SavingsGoal savingsGoal = new SavingsGoal();
+        savingsGoal.setMonthlyAllocation(new BigDecimal("250.00"));       // Amount to save each month
+        savingsGoal.setActualAllocationAmount(new BigDecimal("200.00"));  // Amount actually saved so far
+        savingsGoal.setSavingsProgress(new BigDecimal("80.00"));          // Could be % or total saved
+        savingsGoal.setSavingsTargetAmount(new BigDecimal("1000.00"));    // Final savings goal
+        savingsGoal.setSavingsGoalReached(false);
+        savingsGoal.setSavingsStartDate(LocalDate.of(2025, 1, 1));
+        savingsGoal.setTotalMonthsToSave(4); // E.g., saving over 4 months
+        savingsGoal.setSavingsEndDate(LocalDate.of(2025, 4, 30));
+
+        // Attach the schedule(s) and savings goal to the budget
+        budget.setBudgetSchedules(List.of(januaryBudgetSchedule));
+        budget.setSavingsGoal(savingsGoal);
+
+        // Set your expected and actual results
+        Optional<Budget> expected = Optional.of(budget);
+        Optional<Budget> actual = budgetBuilderService.buildBudgetFromRegistration(testBudgetRegistration);
+
+        // Verify the result
+        assertEquals(expected, actual);
     }
 
 

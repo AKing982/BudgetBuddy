@@ -2,18 +2,17 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
+import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
+import com.app.budgetbuddy.services.ControlledSpendingCategoriesService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -52,7 +51,6 @@ public class BudgetBuilderService
                 throw new BudgetBuildException("Found Missing Budget Registration parameters");
             }
 
-
         }catch(BudgetBuildException e)
         {
             log.error("There was an error building the budget from the registration: ", e);
@@ -68,6 +66,26 @@ public class BudgetBuilderService
             return Optional.empty();
         }
         validateBudgetRegistration(budgetRegistration);
+        BigDecimal totalIncomeAmount = budgetRegistration.getTotalIncomeAmount();
+        int totalMonths = budgetRegistration.getNumberOfMonths();
+        int totalBudgetsNeeded = budgetRegistration.getTotalBudgetsNeeded();
+        BudgetMode budgetMode = budgetRegistration.getBudgetMode();
+        Period budgetPeriod = budgetRegistration.getBudgetPeriod();
+        Set<DateRange> budgetDateRanges = budgetRegistration.getBudgetDateRanges();
+        String budgetName = budgetRegistration.getBudgetName();
+        Long userId = budgetRegistration.getUserId();
+        BudgetGoals budgetGoals = budgetRegistration.getBudgetGoals();
+        if(budgetPeriod == Period.MONTHLY && budgetMode == BudgetMode.SAVINGS_PLAN)
+        {
+            // Calculate the Budget Amount
+
+            // Calculate the Savings Goal data
+
+            // Create a Savings Goal data object
+
+            //
+        }
+        // Depending on the period and budget mode and the budget goals, we need to calculate the budget amount
 
         return null;
     }

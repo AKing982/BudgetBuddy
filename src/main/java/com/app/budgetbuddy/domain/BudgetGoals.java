@@ -1,4 +1,19 @@
 package com.app.budgetbuddy.domain;
 
-public record BudgetGoals(Long budgetId, double targetAmount, double monthlyAllocation, double currentSavings, String goalType, String savingsFrequency, String status) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
+public class BudgetGoals
+{
+    private Long budgetId;
+    private double targetAmount;
+    private double monthlyAllocation;
+    private double currentSavings;
+    private String goalType;
+    private String savingsFrequency;
+    private String status;
+
 }
+
