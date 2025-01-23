@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.workbench.budget;
 
-import com.app.budgetbuddy.domain.Budget;
-import com.app.budgetbuddy.domain.BudgetGoals;
-import com.app.budgetbuddy.domain.BudgetRegistration;
-import com.app.budgetbuddy.domain.Period;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
@@ -19,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,6 +30,9 @@ class BudgetBuilderServiceTest
     @Mock
     private BudgetScheduleEngine budgetScheduleEngine;
 
+    @Mock
+    private BudgetCalculations budgetCalculations;
+
     @InjectMocks
     private BudgetBuilderService budgetBuilderService;
 
@@ -41,13 +42,13 @@ class BudgetBuilderServiceTest
 
     @BeforeEach
     void setUp() {
-        budgetBuilderService = new BudgetBuilderService(budgetService, budgetScheduleEngine);
+        budgetBuilderService = new BudgetBuilderService(budgetService, budgetScheduleEngine, budgetCalculations);
 
         // Fully populated BudgetRegistration, including BudgetGoals
         testBudgetRegistration = new BudgetRegistration();
         testBudgetRegistration.setUserId(1L);
         testBudgetRegistration.setBudgetName("Test Budget");
-        testBudgetRegistration.setBudgetType("MONTHLY");
+        testBudgetRegistration.setBudgetMode(BudgetMode.SAVINGS_PLAN);
         testBudgetRegistration.setBudgetPeriod(Period.MONTHLY);
 
         // Here’s where you add your BudgetGoals record:
@@ -65,29 +66,23 @@ class BudgetBuilderServiceTest
                 "ACTIVE"    // status
         );
         testBudgetRegistration.setBudgetGoals(goals);
-
-        testBudgetRegistration.setBudgetStartDate(LocalDate.of(2025, 1, 1));
-        testBudgetRegistration.setBudgetEndDate(LocalDate.of(2025, 1, 31));
-        testBudgetRegistration.setBudgetedAmount(BigDecimal.valueOf(1000));
+        testBudgetRegistration.setBudgetDateRanges(Set.of(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025,1 ,31)),
+                new DateRange(LocalDate.of(2025, 2, 1), LocalDate.of(2025,2, 28))));
         testBudgetRegistration.setTotalIncomeAmount(BigDecimal.valueOf(2000));
         testBudgetRegistration.setNumberOfMonths(1);
         testBudgetRegistration.setTotalBudgetsNeeded(1);
-        testBudgetRegistration.setBudgetExists(false);
 
         // BudgetRegistration with missing parameters, including missing BudgetGoals
         budgetRegistrationMissingParams = new BudgetRegistration();
         budgetRegistrationMissingParams.setUserId(null);
         budgetRegistrationMissingParams.setBudgetName("");
-        budgetRegistrationMissingParams.setBudgetType(null);
+        budgetRegistrationMissingParams.setBudgetMode(null);
         budgetRegistrationMissingParams.setBudgetPeriod(Period.MONTHLY);
         budgetRegistrationMissingParams.setBudgetGoals(null); // For missing goals
-        budgetRegistrationMissingParams.setBudgetStartDate(LocalDate.of(2025, 1, 1));
-        budgetRegistrationMissingParams.setBudgetEndDate(LocalDate.of(2025, 1, 31));
-        budgetRegistrationMissingParams.setBudgetedAmount(new BigDecimal("2050"));
+        budgetRegistrationMissingParams.setBudgetDateRanges(null);
         budgetRegistrationMissingParams.setTotalIncomeAmount(null);
         budgetRegistrationMissingParams.setNumberOfMonths(3);
         budgetRegistrationMissingParams.setTotalBudgetsNeeded(0);
-        budgetRegistrationMissingParams.setBudgetExists(false);
     }
 
     @Test
@@ -103,6 +98,12 @@ class BudgetBuilderServiceTest
         assertThrows(BudgetBuildException.class, () -> {
             budgetBuilderService.buildBudgetFromRegistration(budgetRegistrationMissingParams);
         });
+    }
+
+    @Test
+    void testBuildBudgetFromRegistration_whenValidBudgetRegistration_thenReturnBudget()
+    {
+
     }
 
 

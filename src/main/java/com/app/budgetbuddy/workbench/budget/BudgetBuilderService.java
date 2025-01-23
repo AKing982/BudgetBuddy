@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -20,31 +21,40 @@ public class BudgetBuilderService
 {
     private final BudgetService budgetService;
     private final BudgetScheduleEngine budgetScheduleEngine;
+    private final BudgetCalculations budgetCalculations;
 
     @Autowired
     public BudgetBuilderService(BudgetService budgetService,
-                                BudgetScheduleEngine budgetScheduleEngine)
+                                BudgetScheduleEngine budgetScheduleEngine,
+                                BudgetCalculations budgetCalculations)
     {
         this.budgetService = budgetService;
         this.budgetScheduleEngine = budgetScheduleEngine;
+        this.budgetCalculations = budgetCalculations;
     }
 
-    private void validateBudgetRegistration(BudgetRegistration budgetRegistration)
+    private void validateBudgetRegistration(final BudgetRegistration budgetRegistration)
     {
         try
         {
             Long userId = budgetRegistration.getUserId();
             String budgetName = budgetRegistration.getBudgetName();
-            String budgetType = budgetRegistration.getBudgetType();
+            BudgetMode budgetType = budgetRegistration.getBudgetMode();
             Period budgetPeriod = budgetRegistration.getBudgetPeriod();
             BudgetGoals budgetGoals = budgetRegistration.getBudgetGoals();
-            LocalDate budgetStartDate = budgetRegistration.getBudgetStartDate();
-            LocalDate budgetEndDate = budgetRegistration.getBudgetEndDate();
-            BigDecimal budgetedAmount = budgetRegistration.getBudgetedAmount();
+            Set<DateRange> budgetDateRanges = budgetRegistration.getBudgetDateRanges();
             BigDecimal totalIncomeAmount = budgetRegistration.getTotalIncomeAmount();
             int totalMonths = budgetRegistration.getNumberOfMonths();
+            int totalBudgetsNeeded = budgetRegistration.getTotalBudgetsNeeded();
+            if(userId == null || budgetName == null || budgetType == null || budgetPeriod == null ||
+                    budgetGoals == null || budgetDateRanges == null || totalIncomeAmount == null || totalMonths <= 0 || totalBudgetsNeeded <= 0)
+            {
+                throw new BudgetBuildException("Found Missing Budget Registration parameters");
+            }
 
-        }catch(BudgetBuildException e){
+
+        }catch(BudgetBuildException e)
+        {
             log.error("There was an error building the budget from the registration: ", e);
             log.warn("There was an error with the BudgetRegistration: {}", budgetRegistration.toString());
             throw e;
@@ -57,6 +67,7 @@ public class BudgetBuilderService
         {
             return Optional.empty();
         }
+        validateBudgetRegistration(budgetRegistration);
 
         return null;
     }
