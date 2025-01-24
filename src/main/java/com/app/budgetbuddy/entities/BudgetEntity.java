@@ -1,5 +1,8 @@
 package com.app.budgetbuddy.entities;
 
+import com.app.budgetbuddy.domain.BudgetMode;
+import com.app.budgetbuddy.domain.BudgetPeriod;
+import com.app.budgetbuddy.domain.Period;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +47,14 @@ public class BudgetEntity {
     @Column(name="budgetActualAmount")
     private BigDecimal budgetActualAmount;
 
+    @Column(name="budgetMode")
+    @Enumerated(EnumType.STRING)
+    private BudgetMode budgetMode;
+
+    @Column(name="budgetPeriod")
+    @Enumerated(EnumType.STRING)
+    private Period budgetPeriod;
+
     @Column(name="monthlyIncome")
     private BigDecimal monthlyIncome;
 
@@ -53,10 +64,6 @@ public class BudgetEntity {
     @Column(name="budgetStartDate")
     @NotNull
     private LocalDate budgetStartDate;
-
-    @Column(name="currentSavingsAmount")
-    @NotNull
-    private BigDecimal currentSavingsAmount;
 
     @Column(name="actualAllocationAmount")
     private BigDecimal actualAllocationAmount;

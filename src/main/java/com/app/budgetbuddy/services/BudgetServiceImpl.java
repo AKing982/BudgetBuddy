@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -22,7 +23,8 @@ public class BudgetServiceImpl implements BudgetService
     private final BudgetRepository budgetRepository;
 
     @Autowired
-    public BudgetServiceImpl(BudgetRepository budgetRepository){
+    public BudgetServiceImpl(BudgetRepository budgetRepository)
+    {
         this.budgetRepository = budgetRepository;
     }
 
@@ -68,19 +70,60 @@ public class BudgetServiceImpl implements BudgetService
         }
     }
 
-    private Budget convertBudgetEntity(BudgetEntity budgetEntity) {
+    private Budget convertBudgetEntity(BudgetEntity budgetEntity)
+    {
         if(budgetEntity == null) {
             return null;
         }
         Budget budget = new Budget();
         budget.setId(budgetEntity.getId());
         budget.setUserId(budgetEntity.getUser().getId());
-        budget.setActual(null);
+        budget.setActual(budgetEntity.getBudgetActualAmount());
+        budget.setBudgetMode(budgetEntity.getBudgetMode());
+        budget.setSavingsAmountAllocated(budgetEntity.getActualAllocationAmount());
+        budget.setSavingsProgress(budgetEntity.getSavingsProgress());
+        budget.setBudgetStartDate(budgetEntity.getBudgetStartDate());
+        budget.setBudgetYear(budgetEntity.getBudgetYear());
+        budget.setBudgetPeriod(budgetEntity.getBudgetPeriod());
         budget.setBudgetAmount(budgetEntity.getBudgetAmount());
+        budget.setTotalMonthsToSave(budgetEntity.getTotalMonthsToSave());
         budget.setBudgetName(budgetEntity.getBudgetName());
         budget.setBudgetDescription(budgetEntity.getBudgetDescription());
         budget.setBudgetSchedules(convertBudgetScheduleEntities(budgetEntity.getBudgetSchedules()));
         return budget;
+    }
+
+    private Optional<BudgetEntity> createBudgetEntity(final Budget budget)
+    {
+        try
+        {
+            BudgetEntity budgetEntity = new BudgetEntity();
+            budgetEntity.setId(budget.getId());
+            budgetEntity.setBudgetPeriod(budget.getBudgetPeriod());
+            budgetEntity.setBudgetAmount(budget.getBudgetAmount());
+            budgetEntity.setBudgetStartDate(budget.getBudgetStartDate());
+            budgetEntity.setBudgetYear(budget.getBudgetYear());
+            budgetEntity.setBudgetMode(budget.getBudgetMode());
+            budgetEntity.setBudgetActualAmount(budget.getActual());
+            budgetEntity.setSavingsProgress(budget.getSavingsProgress());
+            budgetEntity.setBudgetName(budget.getBudgetName());
+            budgetEntity.setBudgetDescription(budget.getBudgetDescription());
+
+            List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
+            if(budgetSchedules.isEmpty())
+            {
+                log.warn("Budget with Id: {} found with no budget schedules", budget.getId());
+                budgetEntity.setBudgetSchedules(Set.of());
+            }
+            List<BudgetScheduleEntity> budgetScheduleEntities = convertBudgetSchedulesToEntity(budgetSchedules);
+            Set<BudgetScheduleEntity> budgetScheduleEntitySet = new HashSet<>(budgetScheduleEntities);
+            budgetEntity.setBudgetSchedules(budgetScheduleEntitySet);
+            return Optional.of(budgetEntity);
+        }catch(Exception e){
+            log.error("There was an error creating the budget entity: ", e);
+            return Optional.empty();
+        }
+
     }
 
     private Budget convertBudget(BudgetEntity budgetEntity)
@@ -93,6 +136,58 @@ public class BudgetServiceImpl implements BudgetService
         budget.setBudgetAmount(budgetEntity.getBudgetAmount());
         budget.setActual(budgetEntity.getBudgetActualAmount());
         return budget;
+    }
+
+    private List<BudgetScheduleEntity> convertBudgetSchedulesToEntity(List<BudgetSchedule> budgetSchedules)
+    {
+        if(budgetSchedules.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        List<BudgetScheduleEntity> entities = new ArrayList<>();
+        for (BudgetSchedule schedule : budgetSchedules)
+        {
+            BudgetScheduleEntity entity = new BudgetScheduleEntity();
+            Long budgetId = schedule.getBudgetId();
+            Optional<BudgetEntity> budgetEntity = findById(budgetId);
+            BudgetEntity budget = budgetEntity.get();
+            // Map basic fields
+            entity.setId(schedule.getBudgetScheduleId());
+            entity.setBudget(budget);  // if you need to associate it with a parent budget
+            entity.setStartDate(schedule.getStartDate());
+            entity.setEndDate(schedule.getEndDate());
+
+            // Convert DateRange -> String
+            if (schedule.getScheduleRange() != null) {
+                entity.setScheduleRange(schedule.getScheduleRange().toString());
+            }
+
+            // totalPeriods -> totalPeriodsInRange
+            entity.setTotalPeriodsInRange(schedule.getTotalPeriods());
+
+            // period -> periodType
+            entity.setPeriodType(schedule.getPeriod());
+
+            /*
+             * If your BudgetSchedule.status is just a String,
+             * and your BudgetScheduleEntity expects an Enum (ScheduleStatus),
+             * you need some logic to convert, e.g.:
+             */
+            if (schedule.getStatus() != null) {
+                try {
+                    entity.setStatus(ScheduleStatus.valueOf(schedule.getStatus().toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    // Fallback or handle invalid enum string (optional)
+                    entity.setStatus(ScheduleStatus.ACTIVE);
+                }
+            }
+
+            // If you need a two-way relationship:
+            // parentBudget.getBudgetSchedules().add(entity);
+
+            entities.add(entity);
+        }
+        return entities;
     }
 
     private List<BudgetSchedule> convertBudgetScheduleEntities(Set<BudgetScheduleEntity> budgetScheduleEntitySet)
@@ -148,6 +243,27 @@ public class BudgetServiceImpl implements BudgetService
     @Override
     public BigDecimal calculateRemainingBudget(Long budgetId) {
         return null;
+    }
+
+    @Override
+    public void saveBudget(Budget budget)
+    {
+        if(budget == null)
+        {
+            return;
+        }
+        try
+        {
+            Optional<BudgetEntity> convertedBudget = createBudgetEntity(budget);
+            if(convertedBudget.isEmpty())
+            {
+                return;
+            }
+            BudgetEntity budgetEntity = convertedBudget.get();
+            budgetRepository.save(budgetEntity);
+        }catch(DataAccessException e){
+            log.error("There was an error saving the budget to the database: ", e);
+        }
     }
 
     @Override

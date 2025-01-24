@@ -340,9 +340,51 @@ public class BudgetCalculations {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private BudgetGoalsEntity getBudgetGoalsByBudgetId(Long budgetId){
+    private BudgetGoalsEntity getBudgetGoalsByBudgetId(Long budgetId)
+    {
         Optional<BudgetGoalsEntity> budgetGoalsEntityOptional = budgetGoalsService.findById(budgetId);
         return budgetGoalsEntityOptional.orElseThrow();
+    }
+
+    public BigDecimal calculateActualMonthlyAllocation(final double monthlyAllocation, final double targetAmount, final double currentSavings, final BigDecimal totalIncomeAmount, int totalMonthsToSave)
+    {
+        if(monthlyAllocation <= 0 || targetAmount <= 0 || currentSavings <= 0 || totalIncomeAmount.compareTo(BigDecimal.ZERO) <= 0 || totalMonthsToSave <= 0)
+        {
+            return BigDecimal.ZERO;
+        }
+        try
+        {
+            double targetAmountDifference = targetAmount - currentSavings;
+            BigDecimal monthlyAllocationNeeded;
+            if(targetAmountDifference < 0)
+            {
+                log.warn("Current Savings Exceeds Target Amount: " + targetAmountDifference);
+                return BigDecimal.ZERO;
+            }
+            else
+            {
+
+                BigDecimal estimatedTotalMonths = BigDecimal.valueOf(totalMonthsToSave);
+                BigDecimal userMonthlyAllocation = BigDecimal.valueOf(monthlyAllocation);
+                BigDecimal userCurrentSavings = BigDecimal.valueOf(currentSavings);
+                BigDecimal allocated = userCurrentSavings.add(userMonthlyAllocation).multiply(estimatedTotalMonths);
+                BigDecimal targetAmountConverted = BigDecimal.valueOf(targetAmount);
+                if(allocated.compareTo(targetAmountConverted) <= 0)
+                {
+                    log.warn("Total Estimated Months is insufficient to save the target amount: " + targetAmountConverted);
+                    return BigDecimal.ZERO;
+                }
+                else
+                {
+                    monthlyAllocationNeeded = allocated;
+                }
+            }
+            return monthlyAllocationNeeded;
+        }catch(Exception e)
+        {
+            log.error("There was an error calculating the actual monthly allocation for savings: ", e);
+            return BigDecimal.ZERO;
+        }
     }
 
     public BigDecimal calculateTotalSavedInBudget(final Budget budget, final BigDecimal totalSpentOnBudget, final DateRange monthRange)

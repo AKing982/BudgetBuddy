@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
+import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
 import lombok.extern.slf4j.Slf4j;
@@ -11,15 +12,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 @Slf4j
@@ -130,19 +135,14 @@ class BudgetBuilderServiceTest
         januaryBudgetSchedule.initializeBudgetDateRanges();
 
         // Create a SavingsGoal object with realistic values
-        SavingsGoal savingsGoal = new SavingsGoal();
-        savingsGoal.setMonthlyAllocation(new BigDecimal("250.00"));       // Amount to save each month
-        savingsGoal.setActualAllocationAmount(new BigDecimal("200.00"));  // Amount actually saved so far
-        savingsGoal.setSavingsProgress(new BigDecimal("80.00"));          // Could be % or total saved
-        savingsGoal.setSavingsTargetAmount(new BigDecimal("1000.00"));    // Final savings goal
-        savingsGoal.setSavingsGoalReached(false);
-        savingsGoal.setSavingsStartDate(LocalDate.of(2025, 1, 1));
-        savingsGoal.setTotalMonthsToSave(4); // E.g., saving over 4 months
-        savingsGoal.setSavingsEndDate(LocalDate.of(2025, 4, 30));
+        // Instead of a separate SavingsGoal, use the new fields on Budget
+        budget.setSavingsAmountAllocated(new BigDecimal("200.00")); // e.g., amount actually allocated so far
+        budget.setSavingsProgress(new BigDecimal("80.00"));         // could be percentage or total saved
+        budget.setTotalMonthsToSave(4);                             // e.g., saving over 4 months
+
 
         // Attach the schedule(s) and savings goal to the budget
         budget.setBudgetSchedules(List.of(januaryBudgetSchedule));
-        budget.setSavingsGoal(savingsGoal);
 
         // Set your expected and actual results
         Optional<Budget> expected = Optional.of(budget);
@@ -152,7 +152,61 @@ class BudgetBuilderServiceTest
         assertEquals(expected, actual);
     }
 
+    @Test
+    void testCreateBudgetSchedules_whenMonthEndNull_thenReturnEmptyBudgetSchedules()
+    {
+        List<BudgetSchedule> actual = budgetBuilderService.createBudgetSchedules(LocalDate.of(2025, 1, 1), null, 1L, Period.MONTHLY);
+        assertTrue(actual.isEmpty());
+    }
 
+    @Test
+    void testCreateBudgetSchedules_whenUserIdInvalid_thenThrowException(){
+        List<BudgetSchedule> actual = budgetBuilderService.createBudgetSchedules(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31), -1L, Period.MONTHLY);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateBudgetSchedules_whenJanuaryBudgetAndMonthlyPeriod_thenReturnBudgetSchedules(){
+        List<DateRange> januaryDateRanges = new ArrayList<>();
+        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)));
+        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1,8), LocalDate.of(2025, 1, 14)));
+        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21)));
+        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)));
+        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31)));
+
+        Long userId = 1L;
+        Period period = Period.MONTHLY;
+
+        LocalDate monthStart = LocalDate.of(2025, 1, 1);
+        LocalDate monthEnd = LocalDate.of(2025, 1, 31);
+
+        BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
+        januaryBudgetSchedule.setPeriod(period);
+        januaryBudgetSchedule.setBudgetId(1L);
+        januaryBudgetSchedule.setStatus("Active");
+        januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
+        januaryBudgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
+        januaryBudgetSchedule.setScheduleRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
+        januaryBudgetSchedule.setTotalPeriods(5);
+        januaryBudgetSchedule.initializeBudgetDateRanges();
+
+        Mockito.when(budgetScheduleEngine.createMonthBudgetSchedule(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(Optional.of(januaryBudgetSchedule));
+
+        List<BudgetSchedule> expected = List.of(januaryBudgetSchedule);
+        List<BudgetSchedule> actual = budgetBuilderService.createBudgetSchedules(monthStart, monthEnd, userId, period);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < actual.size(); i++){
+            assertEquals(expected.get(i).getBudgetDateRanges().size(), actual.get(i).getBudgetDateRanges().size());
+            assertEquals(expected.get(i).getBudgetId(), actual.get(i).getBudgetId());
+            assertEquals(expected.get(i).getScheduleRange().getStartDate(), actual.get(i).getScheduleRange().getStartDate());
+            assertEquals(expected.get(i).getScheduleRange().getEndDate(), actual.get(i).getScheduleRange().getEndDate());
+            assertEquals(expected.get(i).getTotalPeriods(), actual.get(i).getTotalPeriods());
+            assertEquals(expected.get(i).getPeriod(), actual.get(i).getPeriod());
+            assertEquals(expected.get(i).getStatus(), actual.get(i).getStatus());
+        }
+    }
 
 
     @AfterEach

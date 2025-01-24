@@ -7,12 +7,12 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Deprecated
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Builder
 public class SavingsGoal
 {
-    private BigDecimal currentSavingsAmount;
-    private BigDecimal monthlyAllocation;
     private BigDecimal actualAllocationAmount;
     private BigDecimal savingsProgress;
     private BigDecimal savingsTargetAmount;

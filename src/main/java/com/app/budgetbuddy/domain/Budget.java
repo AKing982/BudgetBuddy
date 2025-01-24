@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -16,6 +13,7 @@ import java.util.Set;
 @Data
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@Builder
 public class Budget
 {
     private Long id;
@@ -28,7 +26,9 @@ public class Budget
     private LocalDate budgetStartDate;
     private Period budgetPeriod;
     private BudgetMode budgetMode;
-    private SavingsGoal savingsGoal;
+    private BigDecimal savingsAmountAllocated;
+    private BigDecimal savingsProgress;
+    private int totalMonthsToSave;
     private LocalDateTime createdDate;
     private List<ControlledBudgetCategory> controlledBudgetCategories = new ArrayList<>();
     private List<BudgetSchedule> budgetSchedules = new ArrayList<>();
