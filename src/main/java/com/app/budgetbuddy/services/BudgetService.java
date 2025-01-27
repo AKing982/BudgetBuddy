@@ -24,7 +24,7 @@ public interface BudgetService extends ServiceModel<BudgetEntity>
 
     BigDecimal calculateRemainingBudget(Long budgetId);
 
-    void saveBudget(Budget budget);
+    Optional<BudgetEntity> saveBudget(Budget budget);
 
     Optional<BudgetEntity> updateBudget(Long id, BudgetCreateRequest updateRequest);
 

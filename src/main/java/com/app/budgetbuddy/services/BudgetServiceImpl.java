@@ -246,23 +246,25 @@ public class BudgetServiceImpl implements BudgetService
     }
 
     @Override
-    public void saveBudget(Budget budget)
+    public Optional<BudgetEntity> saveBudget(Budget budget)
     {
         if(budget == null)
         {
-            return;
+            return Optional.empty();
         }
         try
         {
             Optional<BudgetEntity> convertedBudget = createBudgetEntity(budget);
             if(convertedBudget.isEmpty())
             {
-                return;
+                return Optional.empty();
             }
-            BudgetEntity budgetEntity = convertedBudget.get();
-            budgetRepository.save(budgetEntity);
+            BudgetEntity convertedEntity = convertedBudget.get();
+            BudgetEntity createdBudgetEntity = budgetRepository.save(convertedEntity);
+            return Optional.of(createdBudgetEntity);
         }catch(DataAccessException e){
             log.error("There was an error saving the budget to the database: ", e);
+            return Optional.empty();
         }
     }
 

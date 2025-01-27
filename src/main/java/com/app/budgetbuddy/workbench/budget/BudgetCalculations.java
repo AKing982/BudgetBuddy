@@ -58,6 +58,27 @@ public class BudgetCalculations {
         return totalExpenses;
     }
 
+    public BigDecimal calculateSavingsProgress(final BigDecimal actualMonthlyAllocated, final BigDecimal currentlySaved, final BigDecimal targetAmount)
+    {
+        // If no target is set or target is zero, we can’t compute a percentage
+        if (targetAmount == null || targetAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        // total savings so far
+        BigDecimal totalSavings = currentlySaved.add(actualMonthlyAllocated);
+
+        // compute ratio
+        BigDecimal ratio = totalSavings
+                .divide(targetAmount, 4, RoundingMode.HALF_UP);  // up to 4 decimal places
+
+        // express as a percentage
+        BigDecimal progressPercent = ratio.multiply(BigDecimal.valueOf(100));
+
+        // Optionally, you can scale the result to 2 decimals
+        return progressPercent.setScale(2, RoundingMode.HALF_UP);
+    }
+
     public BigDecimal calculateSavingsGoalProgress(final Budget budget, final Set<TransactionCategoryEntity> spendingCategories)
     {
         if(budget == null || spendingCategories.isEmpty())

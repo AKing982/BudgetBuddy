@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -15,21 +16,26 @@ public class BudgetRegistration
 {
     private Long userId;
     private String budgetName;
+    private String budgetDescription;
     private Period budgetPeriod;
     private BudgetMode budgetMode;
     private BudgetGoals budgetGoals;
+    private int budgetYear;
+    private LocalDate budgetStartDate;
     private Set<DateRange> budgetDateRanges = new HashSet<>();
     private BigDecimal totalIncomeAmount;
     private int numberOfMonths;
     private int totalBudgetsNeeded;
     private Set<ControlledBudgetCategory> controlledBudgetCategorySet = new HashSet<>();
 
-    public BudgetRegistration(Long userId, String budgetName, Period budgetPeriod, BudgetMode budgetMode, BudgetGoals budgetGoals, Set<DateRange> budgetDateRanges, BigDecimal totalIncomeAmount, int numberOfMonths, int totalBudgetsNeeded, Set<ControlledBudgetCategory> controlledBudgetCategorySet) {
+    public BudgetRegistration(Long userId, String budgetName, String budgetDescription, Period budgetPeriod, BudgetMode budgetMode, BudgetGoals budgetGoals, int budgetYear, Set<DateRange> budgetDateRanges, BigDecimal totalIncomeAmount, int numberOfMonths, int totalBudgetsNeeded, Set<ControlledBudgetCategory> controlledBudgetCategorySet) {
         this.userId = userId;
         this.budgetName = budgetName;
+        this.budgetDescription = budgetDescription;
         this.budgetPeriod = budgetPeriod;
         this.budgetMode = budgetMode;
         this.budgetGoals = budgetGoals;
+        this.budgetYear = budgetYear;
         this.budgetDateRanges = budgetDateRanges;
         this.totalIncomeAmount = totalIncomeAmount;
         this.numberOfMonths = numberOfMonths;
