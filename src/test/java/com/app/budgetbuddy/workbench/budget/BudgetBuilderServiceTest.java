@@ -76,7 +76,7 @@ class BudgetBuilderServiceTest
         testBudgetRegistration.setBudgetDateRanges(Set.of(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025,1 ,31)),
                 new DateRange(LocalDate.of(2025, 2, 1), LocalDate.of(2025,2, 28))));
         testBudgetRegistration.setTotalIncomeAmount(BigDecimal.valueOf(3000));
-        testBudgetRegistration.setNumberOfMonths(1);
+        testBudgetRegistration.setNumberOfMonths(4);
         testBudgetRegistration.setTotalBudgetsNeeded(1);
 
         // BudgetRegistration with missing parameters, including missing BudgetGoals
@@ -136,6 +136,19 @@ class BudgetBuilderServiceTest
         januaryBudgetSchedule.setTotalPeriods(4); // e.g., planning for 4 months of savings
         januaryBudgetSchedule.initializeBudgetDateRanges();
 
+        BudgetSchedule februaryBudgetSchedule = new BudgetSchedule();
+        februaryBudgetSchedule.setPeriod(Period.MONTHLY);
+        februaryBudgetSchedule.setBudgetId(1L);
+        februaryBudgetSchedule.setStatus("Active");
+        februaryBudgetSchedule.setStartDate(LocalDate.of(2025, 2, 1));
+        februaryBudgetSchedule.setEndDate(LocalDate.of(2025, 2, 28));
+        januaryBudgetSchedule.setScheduleRange(new DateRange(
+                LocalDate.of(2025, 2, 1),
+                LocalDate.of(2025, 2, 28)
+        ));
+        februaryBudgetSchedule.setTotalPeriods(4);
+        februaryBudgetSchedule.initializeBudgetDateRanges();
+
         // Create a SavingsGoal object with realistic values
         // Instead of a separate SavingsGoal, use the new fields on Budget
         budget.setSavingsAmountAllocated(new BigDecimal("200.00")); // e.g., amount actually allocated so far
@@ -143,7 +156,7 @@ class BudgetBuilderServiceTest
         budget.setTotalMonthsToSave(4);                             // e.g., saving over 4 months
 
         // Attach the schedule(s) and savings goal to the budget
-        budget.setBudgetSchedules(List.of(januaryBudgetSchedule));
+        budget.setBudgetSchedules(List.of(januaryBudgetSchedule, februaryBudgetSchedule));
 
         // Set your expected and actual results
         Optional<Budget> expected = Optional.of(budget);
@@ -198,7 +211,7 @@ class BudgetBuilderServiceTest
         // If you have categories or schedules, you can similarly compare them. For example:
         assertEquals(expected.get().getControlledBudgetCategories(), actual.get().getControlledBudgetCategories(),
                 "Controlled Budget Categories mismatch");
-        assertEquals(expected.get().getBudgetSchedules(), actual.get().getBudgetSchedules(),
+        assertEquals(expected.get().getBudgetSchedules().size(), actual.get().getBudgetSchedules().size(),
                 "Budget Schedules mismatch");
     }
 

@@ -157,12 +157,6 @@ public class BudgetBuilderService
                 .build();
     }
 
-
-    public Optional<Budget> updateExistingBudget(final Budget budget, final Long existingBudgetId)
-    {
-        return null;
-    }
-
     public List<DateRange> getBudgetStartAndEndDateCriteria(final Map<BudgetMonth, List<DateRange>> budgetMonthListMap)
     {
         if(budgetMonthListMap == null || budgetMonthListMap.isEmpty())
@@ -230,15 +224,6 @@ public class BudgetBuilderService
         return monthlyBudgetStartAndEndDates;
     }
 
-    public void assignBudgetSchedulesToBudget(final List<BudgetSchedule> budgetSchedules, final Budget budget)
-    {
-        if(budgetSchedules == null || budget == null)
-        {
-            return;
-        }
-        budget.setBudgetSchedules(budgetSchedules);
-    }
-
     public List<BudgetSchedule> createBudgetSchedules(final LocalDate monthStart, final LocalDate monthEnd, final Long userId, final Period period)
     {
         if(monthStart == null || monthEnd == null)
@@ -265,28 +250,6 @@ public class BudgetBuilderService
         }catch(InvalidUserIDException e){
             log.error("There was an error creating the budget schedules with the invalid userId: ", e);
             return Collections.emptyList();
-        }
-    }
-
-    public void assignBudgetsListToBudgetSchedules(final List<Budget> budgets, final List<BudgetSchedule> budgetSchedules)
-    {
-        if(budgets == null || budgetSchedules == null)
-        {
-            return;
-        }
-        List<BudgetSchedule> matchingBudgetSchedules = new ArrayList<>();
-        for(Budget budget : budgets)
-        {
-            Long budgetId = budget.getId();
-            for(BudgetSchedule budgetSchedule : budgetSchedules)
-            {
-                Long budgetIdFromSchedule = budgetSchedule.getBudgetId();
-                if(budgetId.equals(budgetIdFromSchedule))
-                {
-                    matchingBudgetSchedules.add(budgetSchedule);
-                }
-            }
-            assignBudgetSchedulesToBudget(matchingBudgetSchedules, budget);
         }
     }
 
