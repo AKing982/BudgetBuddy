@@ -27,22 +27,19 @@ public class BudgetRunner
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetQueriesService budgetQueriesService;
     private final BudgetCalculations budgetCalculations;
-    private final BudgetScheduleService budgetScheduleService;
-    private final BudgetScheduleEngine budgetScheduleEngine;
+    private final BudgetBuilderService budgetBuilderService;
     private final BudgetService budgetService;
 
     @Autowired
     public BudgetRunner(BudgetPeriodQueries budgetPeriodQueries,
                         BudgetQueriesService budgetQueriesService,
                         BudgetCalculations budgetCalculations,
-                        BudgetScheduleService budgetScheduleService,
-                        BudgetScheduleEngine budgetScheduleEngine,
+                        BudgetBuilderService budgetBuilderService,
                         BudgetService budgetService){
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.budgetQueriesService = budgetQueriesService;
         this.budgetCalculations = budgetCalculations;
-        this.budgetScheduleService = budgetScheduleService;
-        this.budgetScheduleEngine = budgetScheduleEngine;
+        this.budgetBuilderService = budgetBuilderService;
         this.budgetService = budgetService;
     }
 
@@ -69,7 +66,6 @@ public class BudgetRunner
             if(budget == null)
             {
                 // If no budget is found, then create a new budget
-                //
             }
 
 
@@ -281,6 +277,37 @@ public class BudgetRunner
         }
     }
 
+    private BigDecimal getTotalSpentOnBudget(Long budgetId, LocalDate startDate, LocalDate endDate)
+    {
+        if(budgetId == null || startDate == null || endDate == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        try
+        {
+            return budgetQueriesService.getTotalSpentOnBudget(budgetId, startDate, endDate);
+
+        }catch(Exception e){
+            log.error("There was an error fetching the total spent on the budget: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private BigDecimal getTotalBudgeted(Long budgetId, Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        if(budgetId == null || userId == null || startDate == null || endDate == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        try
+        {
+            return budgetQueriesService.getTotalBudgeted(budgetId, userId, startDate, endDate);
+
+        }catch(Exception e){
+            log.error("There was an error getting the total budgeted amount: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
 
     public BigDecimal calculateBudgetHealthScore(Budget budget, LocalDate startDate, LocalDate endDate)
     {
@@ -291,7 +318,7 @@ public class BudgetRunner
         try
         {
             // Get total budgeted amount
-            BigDecimal totalBudgeted = budgetQueriesService.getTotalBudgeted(
+            BigDecimal totalBudgeted = getTotalBudgeted(
                     budget.getId(),
                     budget.getUserId(),
                     startDate,
@@ -299,7 +326,7 @@ public class BudgetRunner
             );
 
             // Get total spent amount
-            BigDecimal totalSpent = budgetQueriesService.getTotalSpentOnBudget(
+            BigDecimal totalSpent = getTotalSpentOnBudget(
                     budget.getId(),
                     startDate,
                     endDate
@@ -331,7 +358,8 @@ public class BudgetRunner
     }
 
 
-    public List<BudgetPeriodCategory> getWeeklyBudgetPeriodCategories(final Budget budget, final WeeklyBudgetSchedule weeklyBudgetSchedule){
+    public List<BudgetPeriodCategory> getWeeklyBudgetPeriodCategories(final Budget budget, final WeeklyBudgetSchedule weeklyBudgetSchedule)
+    {
         if(budget == null || weeklyBudgetSchedule == null){
             return Collections.emptyList();
         }
@@ -412,12 +440,12 @@ public class BudgetRunner
         }
     }
 
-    public BudgetStats loadMonthlyBudgetStatistics(final DateRange monthRange, final Budget budget, BigDecimal budgetHealthScore)
+    public BudgetStats loadMonthlyBudgetStatistics(final DateRange monthRange, final Budget budget, final BigDecimal budgetHealthScore)
     {
         try
         {
             // 1. Get total budgeted for the month
-            BigDecimal totalBudgeted = budgetQueriesService.getTotalBudgeted(
+            BigDecimal totalBudgeted = getTotalBudgeted(
                     budget.getId(),
                     budget.getUserId(),
                     monthRange.getStartDate(),
@@ -426,7 +454,7 @@ public class BudgetRunner
             log.info("Total Budgeted: {}", totalBudgeted);
 
             // 2. Get total spent in the month
-            BigDecimal totalSpent = budgetQueriesService.getTotalSpentOnBudget(
+            BigDecimal totalSpent = getTotalSpentOnBudget(
                     budget.getId(),
                     monthRange.getStartDate(),
                     monthRange.getEndDate()
@@ -473,11 +501,12 @@ public class BudgetRunner
         }
     }
 
-    public List<Category> loadTopExpenseCategories(final Budget budget, final LocalDate startDate, final LocalDate endDate){
-        if(budget == null || startDate == null || endDate == null){
+    public List<Category> loadTopExpenseCategories(final Budget budget, final LocalDate startDate, final LocalDate endDate)
+    {
+        if(budget == null || startDate == null || endDate == null)
+        {
             return Collections.emptyList();
         }
-
         try {
             Long budgetId = budget.getId();
             if (budgetId == null || budgetId < 1L) {

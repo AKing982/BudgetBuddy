@@ -4,10 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.workbench.budget.BudgetCalculations;
-import com.app.budgetbuddy.workbench.budget.BudgetPeriodQueries;
-import com.app.budgetbuddy.workbench.budget.BudgetQueriesService;
-import com.app.budgetbuddy.workbench.budget.BudgetScheduleEngine;
+import com.app.budgetbuddy.workbench.budget.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
@@ -45,14 +42,12 @@ class BudgetRunnerTest {
     @Mock
     private BudgetCalculations budgetCalculations;
 
-    @Mock
-    private BudgetScheduleService budgetScheduleService;
 
     @Mock
     private BudgetService budgetService;
 
     @Mock
-    private BudgetScheduleEngine budgetScheduleEngine;
+    private BudgetBuilderService budgetBuilderService;
 
     @InjectMocks
     private BudgetRunner budgetRunner;
@@ -67,7 +62,7 @@ class BudgetRunnerTest {
         testBudget.setBudgetAmount(new BigDecimal("3260"));
         testBudget.setBudgetDescription("Savings Budget");
         testBudget.setBudgetName("Savings Budget");
-        budgetRunner = new BudgetRunner(budgetPeriodQueries, budgetQueriesService, budgetCalculations, budgetScheduleService, budgetScheduleEngine, budgetService);
+        budgetRunner = new BudgetRunner(budgetPeriodQueries, budgetQueriesService, budgetCalculations,budgetBuilderService, budgetService);
     }
 
 

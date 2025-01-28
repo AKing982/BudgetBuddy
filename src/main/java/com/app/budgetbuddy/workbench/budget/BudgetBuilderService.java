@@ -80,6 +80,23 @@ public class BudgetBuilderService
         return budgetSchedules;
     }
 
+    public Optional<Budget> createMonthBudget(final Long userId, final LocalDate monthStart, final LocalDate monthEnd)
+    {
+        if(userId == null || monthStart == null || monthEnd == null)
+        {
+            return Optional.empty();
+        }
+
+        // Case 1: Does Budget data exist for this period?
+        // Check the database for the budget
+        // If no budget record exists, then proceed to Case 2
+
+        // Case 2: Budget data doesn't exist for this period?
+        // If no budget is found in Case 1, then 
+
+        return null;
+    }
+
     public Optional<Budget> buildBudgetFromRegistration(final BudgetRegistration budgetRegistration)
     {
         if(budgetRegistration == null)
