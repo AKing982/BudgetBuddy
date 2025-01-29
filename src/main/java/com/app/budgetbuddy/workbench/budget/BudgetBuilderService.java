@@ -80,19 +80,31 @@ public class BudgetBuilderService
         return budgetSchedules;
     }
 
-    public Optional<Budget> createMonthBudget(final Long userId, final LocalDate monthStart, final LocalDate monthEnd)
+    public Optional<Budget> createNewMonthBudget(final List<Budget> pastBudgets, final Long userId, final LocalDate startMonth, final LocalDate endMonth, final BigDecimal totalIncome, final MonthlyBudgetGoals monthlyBudgetGoals)
     {
-        if(userId == null || monthStart == null || monthEnd == null)
+        if(pastBudgets == null || monthlyBudgetGoals == null || userId == null || startMonth == null || endMonth == null || totalIncome == null)
         {
             return Optional.empty();
         }
+        // Make sure the MonthlyBudgetGoals matches the month period we are querying for
+        int monthlyBudgetGoalMonth = monthlyBudgetGoals.getMonth().getYearMonth().getMonthValue();
+        int monthStartInt = startMonth.getMonth().getValue();
+        if(monthlyBudgetGoalMonth != monthStartInt)
+        {
+            log.warn("Monthly Budget Goal Month doesn't match month start: monthlyBudgetGoalMonth={}, monthStart={}", monthlyBudgetGoalMonth, monthStartInt);
+            return Optional.empty();
+        }
 
-        // Case 1: Does Budget data exist for this period?
+        for(Budget pastBudget : pastBudgets)
+        {
+
+        }
+
         // Check the database for the budget
         // If no budget record exists, then proceed to Case 2
 
         // Case 2: Budget data doesn't exist for this period?
-        // If no budget is found in Case 1, then 
+        // If no budget is found in Case 1, then
 
         return null;
     }

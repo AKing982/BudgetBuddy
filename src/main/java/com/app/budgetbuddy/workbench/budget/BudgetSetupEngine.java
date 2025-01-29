@@ -552,12 +552,12 @@ public class BudgetSetupEngine
                 !transactionEnd.isBefore(dateRange.getStartDate());
     }
 
-    public List<BudgetCategory> initializeBudgetExpenseCategory(final Budget budget, final List<TransactionCategory> transactionCategories, final List<DateRange> dateRanges){
+    public List<Category> initializeBudgetExpenseCategory(final Budget budget, final List<TransactionCategory> transactionCategories, final List<DateRange> dateRanges){
         if(budget == null || transactionCategories == null || dateRanges == null)
         {
             return Collections.emptyList();
         }
-        List<BudgetCategory> budgetCategories = new ArrayList<>();
+        List<Category> budgetCategories = new ArrayList<>();
         for(DateRange dateRange : dateRanges)
         {
             if(dateRange == null)
@@ -616,9 +616,9 @@ public class BudgetSetupEngine
         return false;
     }
 
-    public List<BudgetCategory> initializeBudgetSavingsCategories(final BudgetGoals budgetGoals, final List<TransactionCategory> transactionCategories, final Map<DateRange, Budget> budgets, final List<DateRange> dateRanges)
+    public List<Category> initializeBudgetSavingsCategories(final BudgetGoals budgetGoals, final List<TransactionCategory> transactionCategories, final Map<DateRange, Budget> budgets, final List<DateRange> dateRanges)
     {
-        List<BudgetCategory> savingsBudgetCategory = new ArrayList<>();
+        List<Category> savingsBudgetCategory = new ArrayList<>();
         if(budgetGoals == null || transactionCategories == null || budgets == null || dateRanges == null)
         {
             return savingsBudgetCategory;
@@ -682,9 +682,9 @@ public class BudgetSetupEngine
         return savingsBudgetCategory;
     }
 
-    public List<BudgetCategory> createTopBudgetExpenseCategories(final List<TransactionCategory> transactionCategories, final List<DateRange> dateRanges)
+    public List<Category> createTopBudgetExpenseCategories(final List<TransactionCategory> transactionCategories, final List<DateRange> dateRanges)
     {
-        List<BudgetCategory> topBudgetExpenseCategories = new ArrayList<>();
+        List<Category> topBudgetExpenseCategories = new ArrayList<>();
         if(transactionCategories == null || dateRanges == null)
         {
             return topBudgetExpenseCategories;
@@ -702,7 +702,7 @@ public class BudgetSetupEngine
                     BigDecimal categoryBudget = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
                     BigDecimal categorySpending = BigDecimal.valueOf(transactionCategory.getBudgetActual());
                     BigDecimal remainingAmount = categoryBudget.subtract(categorySpending);
-                    BudgetCategory budgetCategory = new BudgetCategory(categoryName, categoryBudget, categorySpending, remainingAmount, dateRange);
+                    Category budgetCategory = new Category(categoryName, categoryBudget, categorySpending, remainingAmount, dateRange);
                     topBudgetExpenseCategories.add(budgetCategory);
                 }
                 transactionIndex++;
@@ -725,9 +725,9 @@ public class BudgetSetupEngine
         return transactionService.getTransactionsByDate(date, userId);
     }
 
-    public List<BudgetCategory> loadDailyBudgetPeriodData(final LocalDate date, final List<TransactionCategory> transactionCategories, final Budget budget)
+    public List<Category> loadDailyBudgetPeriodData(final LocalDate date, final List<TransactionCategory> transactionCategories, final Budget budget)
     {
-        List<BudgetCategory> budgetCategories = new ArrayList<>();
+        List<Category> budgetCategories = new ArrayList<>();
         if(date == null || transactionCategories == null)
         {
             return budgetCategories;
@@ -767,7 +767,7 @@ public class BudgetSetupEngine
                         transactionIndex++;
                     }
                     DateRange sameDate = new DateRange(date, date);
-                    BudgetCategory budgetCategory = new BudgetCategory(categoryName, categoryBudget, totalSpendingForDay, remainingOnBudgetForDay, sameDate);
+                    Category budgetCategory = new Category(categoryName, categoryBudget, totalSpendingForDay, remainingOnBudgetForDay, sameDate);
                     log.info("Budget Category: " + budgetCategory.toString());
                     budgetCategories.add(budgetCategory);
                 }
@@ -776,9 +776,9 @@ public class BudgetSetupEngine
         return budgetCategories;
     }
 
-    public List<BudgetCategory> loadWeeklyBudgetPeriodData(final List<DateRange> weekRanges, final List<TransactionCategory> transactionCategories)
+    public List<Category> loadWeeklyBudgetPeriodData(final List<DateRange> weekRanges, final List<TransactionCategory> transactionCategories)
     {
-        List<BudgetCategory> budgetCategories = new ArrayList<>();
+        List<Category> budgetCategories = new ArrayList<>();
         if(weekRanges == null || transactionCategories == null)
         {
             return budgetCategories;
@@ -797,7 +797,7 @@ public class BudgetSetupEngine
                         BigDecimal categoryBudgetedAmount = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
                         BigDecimal categoryActualAmount = BigDecimal.valueOf(transactionCategory.getBudgetActual());
                         BigDecimal remainingAmount = categoryBudgetedAmount.subtract(categoryActualAmount);
-                        BudgetCategory budgetCategory = new BudgetCategory(
+                        Category budgetCategory = new Category(
                                 categoryName,
                                 categoryBudgetedAmount,
                                 categoryActualAmount,
@@ -812,8 +812,8 @@ public class BudgetSetupEngine
         return budgetCategories;
     }
 
-    public List<BudgetCategory> loadBiWeeklyBudgetPeriodData(final List<DateRange> dateRanges, final List<TransactionCategory> transactionCategories){
-        List<BudgetCategory> biWeeklyBudgetCategories = new ArrayList<>();
+    public List<Category> loadBiWeeklyBudgetPeriodData(final List<DateRange> dateRanges, final List<TransactionCategory> transactionCategories){
+        List<Category> biWeeklyBudgetCategories = new ArrayList<>();
         if(dateRanges == null || transactionCategories == null || dateRanges.size() != 2)
         {
             return biWeeklyBudgetCategories;
@@ -835,7 +835,7 @@ public class BudgetSetupEngine
                         BigDecimal categoryBudgetedAmount = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
                         BigDecimal categoryActualAmount = BigDecimal.valueOf(transactionCategory.getBudgetActual());
                         BigDecimal remainingAmount = categoryBudgetedAmount.subtract(categoryActualAmount);
-                        BudgetCategory budgetCategory = new BudgetCategory(categoryName, categoryBudgetedAmount, categoryActualAmount, remainingAmount, new DateRange(biWeekStartDate, biWeekEndDate));
+                        Category budgetCategory = new Category(categoryName, categoryBudgetedAmount, categoryActualAmount, remainingAmount, new DateRange(biWeekStartDate, biWeekEndDate));
                         log.info("Budget Category: " + budgetCategory.toString());
                         biWeeklyBudgetCategories.add(budgetCategory);
                     }
@@ -845,9 +845,9 @@ public class BudgetSetupEngine
         return biWeeklyBudgetCategories;
     }
 
-    public List<BudgetCategory> loadBudgetPeriodData(final Period period, final LocalDate startDate, final LocalDate endDate, final Budget budget)
+    public List<Category> loadBudgetPeriodData(final Period period, final LocalDate startDate, final LocalDate endDate, final Budget budget)
     {
-        List<BudgetCategory> budgetCategories = new ArrayList<>();
+        List<Category> budgetCategories = new ArrayList<>();
 
         // Load the Transaction Categories
         List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budget.getId(), startDate, endDate);
@@ -876,8 +876,8 @@ public class BudgetSetupEngine
         return budgetCategories;
     }
 
-    public List<BudgetCategory> loadMonthlyBudgetPeriodData(final DateRange monthlyDateRange, final List<TransactionCategory> transactionCategories){
-        List<BudgetCategory> monthlyBudgetCategories = new ArrayList<>();
+    public List<Category> loadMonthlyBudgetPeriodData(final DateRange monthlyDateRange, final List<TransactionCategory> transactionCategories){
+        List<Category> monthlyBudgetCategories = new ArrayList<>();
         if(monthlyDateRange == null || transactionCategories == null) {
             return monthlyBudgetCategories;
         }
@@ -895,7 +895,7 @@ public class BudgetSetupEngine
                     BigDecimal categoryBudgetedAmount = BigDecimal.valueOf(transactionCategory.getBudgetedAmount());
                     BigDecimal categoryActualAmount = BigDecimal.valueOf(transactionCategory.getBudgetActual());
                     BigDecimal remainingAmount = categoryBudgetedAmount.subtract(categoryActualAmount);
-                    BudgetCategory budgetCategory = new BudgetCategory(
+                    Category budgetCategory = new Category(
                             categoryName,
                             categoryBudgetedAmount,
                             categoryActualAmount,
