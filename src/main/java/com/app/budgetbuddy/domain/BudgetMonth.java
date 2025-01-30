@@ -11,6 +11,11 @@ public class BudgetMonth
 {
     private YearMonth yearMonth;
 
+    public BudgetMonth(int year, int month)
+    {
+        this.yearMonth = YearMonth.of(year, month);
+    }
+
     public BudgetMonth(YearMonth yearMonth)
     {
         this.yearMonth = yearMonth;

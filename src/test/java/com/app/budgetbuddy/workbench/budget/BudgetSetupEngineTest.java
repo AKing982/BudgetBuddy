@@ -531,18 +531,18 @@ class BudgetSetupEngineTest {
 //        }
 //    }
 
-    @Test
-    void testInitializeBudgetExpenseCategory_whenBudgetIsNull_thenReturnEmptyList(){
-        // Create expected categories for regular transactions
-        List<TransactionCategory> expectedRegularCategories = List.of(
-                new TransactionCategory(1L, 1L, "10000000", "Gas", 50.00, 45.50, true,
-                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 7), 0.0, false));
-
-        List<DateRange> dateRanges = List.of(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10)));
-        List<BudgetCategory> budgetCategories = budgetSetupEngine.initializeBudgetExpenseCategory(null, expectedRegularCategories, dateRanges);
-        assertNotNull(budgetCategories);
-        assertTrue(budgetCategories.isEmpty());
-    }
+//    @Test
+//    void testInitializeBudgetExpenseCategory_whenBudgetIsNull_thenReturnEmptyList(){
+//        // Create expected categories for regular transactions
+//        List<TransactionCategory> expectedRegularCategories = List.of(
+//                new TransactionCategory(1L, 1L, "10000000", "Gas", 50.00, 45.50, true,
+//                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 7), 0.0, false));
+//
+//        List<DateRange> dateRanges = List.of(new DateRange(LocalDate.of(2024, 9, 1), LocalDate.of(2024, 9, 10)));
+//        List<BudgetCategory> budgetCategories = budgetSetupEngine.initializeBudgetExpenseCategory(null, expectedRegularCategories, dateRanges);
+//        assertNotNull(budgetCategories);
+//        assertTrue(budgetCategories.isEmpty());
+//    }
 
 //    @Test
 //    void testInitializeBudgetExpenseCategory_whenTransactionCategoryListIsNull_thenReturnEmptyList(){

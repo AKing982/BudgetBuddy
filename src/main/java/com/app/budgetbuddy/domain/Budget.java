@@ -22,14 +22,13 @@ public class Budget
     private Long userId;
     private String budgetName;
     private String budgetDescription;
-    private Integer budgetYear;
-    private LocalDate budgetStartDate;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private Period budgetPeriod;
     private BudgetMode budgetMode;
     private BigDecimal savingsAmountAllocated;
     private BigDecimal savingsProgress;
     private int totalMonthsToSave;
     private LocalDateTime createdDate;
-    private List<ControlledBudgetCategory> controlledBudgetCategories = new ArrayList<>();
-    private List<BudgetSchedule> budgetSchedules = new ArrayList<>();
+    private List<SubBudget> subBudgets = new ArrayList<>();
 }

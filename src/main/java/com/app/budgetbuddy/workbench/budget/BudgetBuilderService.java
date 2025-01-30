@@ -80,7 +80,7 @@ public class BudgetBuilderService
         return budgetSchedules;
     }
 
-    public Optional<Budget> createNewMonthBudget(final List<Budget> pastBudgets, final Long userId, final LocalDate startMonth, final LocalDate endMonth, final BigDecimal totalIncome, final MonthlyBudgetGoals monthlyBudgetGoals)
+    public Optional<SubBudget> createNewMonthBudget(final List<SubBudget> pastBudgets, final Long userId, final LocalDate startMonth, final LocalDate endMonth, final BigDecimal totalIncome, final MonthlyBudgetGoals monthlyBudgetGoals)
     {
         if(pastBudgets == null || monthlyBudgetGoals == null || userId == null || startMonth == null || endMonth == null || totalIncome == null)
         {
@@ -93,11 +93,6 @@ public class BudgetBuilderService
         {
             log.warn("Monthly Budget Goal Month doesn't match month start: monthlyBudgetGoalMonth={}, monthStart={}", monthlyBudgetGoalMonth, monthStartInt);
             return Optional.empty();
-        }
-
-        for(Budget pastBudget : pastBudgets)
-        {
-
         }
 
         // Check the database for the budget

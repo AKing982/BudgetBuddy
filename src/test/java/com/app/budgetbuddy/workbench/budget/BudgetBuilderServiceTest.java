@@ -581,6 +581,7 @@ class BudgetBuilderServiceTest
         Long userId = 1L;
         LocalDate monthStart = LocalDate.of(2025, 1, 1);
         LocalDate monthEnd = LocalDate.of(2025, 1, 31);
+        BigDecimal totalIncome = new BigDecimal("3260");
 
         Budget expectedBudget = new Budget();
         expectedBudget.setUserId(userId);
@@ -608,11 +609,18 @@ class BudgetBuilderServiceTest
         januaryBudgetSchedule.initializeBudgetDateRanges();
         expectedBudget.setBudgetSchedules(List.of(januaryBudgetSchedule));
 
-
         MonthlyBudgetGoals januaryBudgetGoals = new MonthlyBudgetGoals();
+        januaryBudgetGoals.setMonth(new BudgetMonth(2025, 1));
+        januaryBudgetGoals.setUserId(1L);
+        januaryBudgetGoals.setMonthlyStatus("Active");
+        januaryBudgetGoals.setMonthlySavingsTarget(250);
+        januaryBudgetGoals.setMonthlyContributed(150);
+        januaryBudgetGoals.setRemainingAmount(100);
+
+        List<Budget> pastBudgets = new ArrayList<>();
 
         Optional<Budget> expectedBudgetOptional = Optional.of(expectedBudget);
-        Optional<Budget> actual = budgetBuilderService.createNewMonthBudget(preBudgetInfo, );
+        Optional<Budget> actual = budgetBuilderService.createNewMonthBudget(pastBudgets, userId, monthStart, monthEnd, totalIncome, januaryBudgetGoals);
         assertNotNull(actual);
         assertTrue(actual.isPresent());
         assertEquals(expectedBudgetOptional.get(), actual.get());
