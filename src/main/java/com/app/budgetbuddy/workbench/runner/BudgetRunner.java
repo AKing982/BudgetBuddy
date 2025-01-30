@@ -22,8 +22,7 @@ import java.util.*;
 
 @Service
 @Slf4j
-public class BudgetRunner
-{
+public class BudgetRunner {
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetQueriesService budgetQueriesService;
     private final BudgetCalculations budgetCalculations;
@@ -35,7 +34,7 @@ public class BudgetRunner
                         BudgetQueriesService budgetQueriesService,
                         BudgetCalculations budgetCalculations,
                         BudgetBuilderService budgetBuilderService,
-                        BudgetService budgetService){
+                        BudgetService budgetService) {
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.budgetQueriesService = budgetQueriesService;
         this.budgetCalculations = budgetCalculations;
@@ -45,31 +44,27 @@ public class BudgetRunner
 
     /**
      * Creates both Budget and Budget Schedules for the designated period and user
+     *
      * @param userId
      * @param startMonth
      * @param endMonth
      * @return
      */
-    public Optional<Budget> createBudgetAndScheduleForPeriod(final Long userId, final LocalDate startMonth, final LocalDate endMonth)
-    {
-        if(startMonth == null || endMonth == null)
-        {
+    public Optional<Budget> createBudgetAndScheduleForPeriod(final Long userId, final LocalDate startMonth, final LocalDate endMonth) {
+        if (startMonth == null || endMonth == null) {
             return Optional.empty();
         }
-        try
-        {
-            if(userId < 1L)
-            {
+        try {
+            if (userId < 1L) {
                 throw new InvalidUserIDException("Invalid user ID Found: " + userId);
             }
             Budget budget = budgetService.loadUserBudgetForPeriod(userId, startMonth, endMonth);
-            if(budget == null)
-            {
+            if (budget == null) {
                 // If no budget is found, then create a new budget
             }
 
 
-        }catch(InvalidUserIDException e){
+        } catch (InvalidUserIDException e) {
             log.error("There was an error due to an invalid userId: ", e);
             return Optional.empty();
         }
@@ -78,24 +73,44 @@ public class BudgetRunner
     }
 
 
-    private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate)
-    {
-        List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
+    private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate) {
+        List<SubBudget> subBudgets = budget.getSubBudgets();
         Optional<BudgetSchedule> budgetScheduleOptional = Optional.empty();
-        for(BudgetSchedule budgetSchedule : budgetSchedules)
-        {
-            if(budgetSchedule != null)
-            {
+        for (SubBudget subBudget : subBudgets) {
+            List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+            for (BudgetSchedule budgetSchedule : budgetSchedules) {
                 LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
                 LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();
-                if(startDate.isAfter(budgetScheduleStartDate) && endDate.isBefore(budgetScheduleEndDate))
-                {
+                if (startDate.isAfter(budgetScheduleStartDate) && endDate.isBefore(budgetScheduleEndDate)) {
                     budgetScheduleOptional = Optional.of(budgetSchedule);
                     break;
                 }
             }
         }
         return budgetScheduleOptional;
+    }
+
+    private List<BudgetSchedule> fetchBudgetSchedulesBySubBudgets(final Budget budget, final LocalDate startDate, final LocalDate endDate)
+    {
+        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
+        List<SubBudget> subBudgets = budget.getSubBudgets();
+        if(!subBudgets.isEmpty())
+        {
+            for(SubBudget subBudget : subBudgets)
+            {
+                List<BudgetSchedule> budgetSchedulesForSubBudget = subBudget.getBudgetSchedule();
+                for(BudgetSchedule budgetSchedule : budgetSchedulesForSubBudget)
+                {
+                    LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
+                    LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();
+                    if(startDate.isAfter(budgetScheduleStartDate) && endDate.isBefore(budgetScheduleEndDate))
+                    {
+                        budgetSchedules.add(budgetSchedule);
+                    }
+                }
+            }
+        }
+        return budgetSchedules;
     }
 
     public List<BudgetRunnerResult> runBudgetProcess(final Long userId, final LocalDate startDate, final LocalDate endDate){
@@ -178,7 +193,9 @@ public class BudgetRunner
     // TODO: Create a method that creates a new budget for a new period
     public List<BudgetPeriodCategory> loadPeriodCategories(final Budget budget, final BudgetSchedule budgetSchedule)
     {
-        List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
+        LocalDate startDate = budgetSchedule.getStartDate();
+        LocalDate endDate = budgetSchedule.getEndDate();
+        List<BudgetSchedule> budgetSchedules = fetchBudgetSchedulesBySubBudgets(budget, startDate, endDate);
         Period period = budgetSchedule.getPeriod();
         return switch (period) {
             case WEEKLY -> {

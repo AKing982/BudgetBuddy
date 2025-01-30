@@ -22,6 +22,7 @@ public class BudgetRegistration
     private BudgetGoals budgetGoals;
     private int budgetYear;
     private LocalDate budgetStartDate;
+    private LocalDate budgetEndDate;
     private Set<DateRange> budgetDateRanges = new HashSet<>();
     private BigDecimal totalIncomeAmount;
     private int numberOfMonths;

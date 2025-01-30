@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +22,7 @@ public class BudgetSchedule
     private LocalDate startDate;
     private LocalDate endDate;
     private DateRange scheduleRange;
-    private List<DateRange> budgetDateRanges;
+    private List<BudgetScheduleRange> budgetScheduleRanges;
     private Period period;
     private int totalPeriods;
     private String status;
@@ -35,7 +36,7 @@ public class BudgetSchedule
         this.period = period;
         this.scheduleRange = new DateRange(startDate, endDate);
         this.totalPeriods = totalPeriods;
-        this.budgetDateRanges = new ArrayList<>();
+        this.budgetScheduleRanges = new ArrayList<>();
         this.status = status;
         this.createdDate = LocalDateTime.now();
     }
@@ -43,14 +44,30 @@ public class BudgetSchedule
     public void initializeBudgetDateRanges()
     {
         DateRange scheduleRange = getScheduleRange();
-        this.budgetDateRanges = new ArrayList<>();
+        this.budgetScheduleRanges = new ArrayList<>();
         if(scheduleRange != null)
         {
             log.info("Schedule Range: {}", scheduleRange.toString());
             List<DateRange> budgetDateRanges = getScheduleRange().splitIntoWeeks();
-            log.info("Budget DateRanges: {}", budgetDateRanges.toString());
-            this.budgetDateRanges.addAll(budgetDateRanges);
-            log.info("Budget DateRanges Size: {}", budgetDateRanges.size());
+            for(DateRange weekRange : budgetDateRanges) {
+                BudgetScheduleRange range = BudgetScheduleRange.builder()
+                        .budgetScheduleId(this.budgetScheduleId)
+                        .startRange(weekRange.getStartDate())
+                        .endRange(weekRange.getEndDate())
+                        .daysInRange((int) ChronoUnit.DAYS.between(
+                                weekRange.getStartDate(),
+                                weekRange.getEndDate().plusDays(1)))
+                        .budgetDateRange(weekRange) // if you want to store the original DateRange
+                        .rangeType("WEEKLY")        // or derive from your `Period`
+                        // .budgetedAmount(...)      // set if you have a known budget amount for each range
+                        // .spentOnRange(...)        // maybe default to 0
+                        .build();
+
+                this.budgetScheduleRanges.add(range);
+            }
+
+            this.totalPeriods = this.budgetScheduleRanges.size();
+            log.info("Initialized {} schedule ranges (weekly) for schedule ID {}", totalPeriods, budgetScheduleId);
         }
     }
 

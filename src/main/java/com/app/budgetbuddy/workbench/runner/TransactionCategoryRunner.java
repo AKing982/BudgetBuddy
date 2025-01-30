@@ -49,13 +49,16 @@ public class TransactionCategoryRunner
         this.recurringTransactionService = recurringTransactionService;
     }
 
+
+
     private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate)
     {
-        List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
+        List<SubBudget> subBudgets = budget.getSubBudgets();
         Optional<BudgetSchedule> budgetScheduleOptional = Optional.empty();
-        for(BudgetSchedule budgetSchedule : budgetSchedules)
+        for(SubBudget subBudget : subBudgets)
         {
-            if(budgetSchedule != null)
+            List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+            for(BudgetSchedule budgetSchedule : budgetSchedules)
             {
                 LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
                 LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();

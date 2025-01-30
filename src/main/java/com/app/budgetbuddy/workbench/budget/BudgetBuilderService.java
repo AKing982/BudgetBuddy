@@ -2,22 +2,16 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
-import com.app.budgetbuddy.entities.BudgetScheduleEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
-import com.app.budgetbuddy.exceptions.DateRangeException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
-import com.app.budgetbuddy.services.BudgetGoalsService;
-import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.ControlledSpendingCategoriesService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.Month;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -67,42 +61,6 @@ public class BudgetBuilderService
         }
     }
 
-    private List<BudgetSchedule> getBudgetSchedulesByBudgetStartAndEndDates(final List<DateRange> budgetDateRanges, final Long userId, final Period period)
-    {
-        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
-        for(DateRange dateRange : budgetDateRanges)
-        {
-            LocalDate budgetStartDate = dateRange.getStartDate();
-            LocalDate budgetEndDate = dateRange.getEndDate();
-            List<BudgetSchedule> newSchedules = createBudgetSchedules(budgetStartDate, budgetEndDate, userId, period);
-            budgetSchedules.addAll(newSchedules);
-        }
-        return budgetSchedules;
-    }
-
-    public Optional<SubBudget> createNewMonthBudget(final List<SubBudget> pastBudgets, final Long userId, final LocalDate startMonth, final LocalDate endMonth, final BigDecimal totalIncome, final MonthlyBudgetGoals monthlyBudgetGoals)
-    {
-        if(pastBudgets == null || monthlyBudgetGoals == null || userId == null || startMonth == null || endMonth == null || totalIncome == null)
-        {
-            return Optional.empty();
-        }
-        // Make sure the MonthlyBudgetGoals matches the month period we are querying for
-        int monthlyBudgetGoalMonth = monthlyBudgetGoals.getMonth().getYearMonth().getMonthValue();
-        int monthStartInt = startMonth.getMonth().getValue();
-        if(monthlyBudgetGoalMonth != monthStartInt)
-        {
-            log.warn("Monthly Budget Goal Month doesn't match month start: monthlyBudgetGoalMonth={}, monthStart={}", monthlyBudgetGoalMonth, monthStartInt);
-            return Optional.empty();
-        }
-
-        // Check the database for the budget
-        // If no budget record exists, then proceed to Case 2
-
-        // Case 2: Budget data doesn't exist for this period?
-        // If no budget is found in Case 1, then
-
-        return null;
-    }
 
     public Optional<Budget> buildBudgetFromRegistration(final BudgetRegistration budgetRegistration)
     {
@@ -145,9 +103,9 @@ public class BudgetBuilderService
             // Next create the Budget Schedules
             Map<BudgetMonth, List<DateRange>> monthlyBudgetDateRanges = createMonthlyBudgetDateRanges(budgetDateRanges);
             List<DateRange> budgetStartAndEndDateRanges = getBudgetStartAndEndDateCriteria(monthlyBudgetDateRanges);
-            List<BudgetSchedule> budgetSchedules = getBudgetSchedulesByBudgetStartAndEndDates(budgetStartAndEndDateRanges, userId, budgetPeriod);
-            saveBudgetSchedules(budgetSchedules);
-            Budget budget = createBudget(budgetYear, actualMonthlyAllocation, totalMonths, userId, budgetSchedules, budgetDescription, budgetPeriod, budgetMode, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate);
+//            List<BudgetSchedule> budgetSchedules = getBudgetSchedulesByBudgetStartAndEndDates(budgetStartAndEndDateRanges, userId, budgetPeriod);
+//            saveBudgetSchedules(budgetSchedules);
+            Budget budget = createBudget(budgetYear, actualMonthlyAllocation, totalMonths, userId, budgetDescription, budgetPeriod, budgetMode, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate);
             Optional<BudgetEntity> savedBudget = saveBudget(budget);
             if(savedBudget.isEmpty())
             {
@@ -162,22 +120,19 @@ public class BudgetBuilderService
         return Optional.empty();
     }
 
-    private Budget createBudget(int budgetYear, BigDecimal actualMonthlyAllocation, int totalMonths, Long userId, List<BudgetSchedule> budgetSchedules, String budgetDescription,  Period budgetPeriod, BudgetMode budgetMode, String budgetName, BigDecimal savingsProgress, BigDecimal remainingOnBudgetAfterAllocation, LocalDate budgetStartDate) {
+    private Budget createBudget(int budgetYear, BigDecimal actualMonthlyAllocation, int totalMonths, Long userId, String budgetDescription,  Period budgetPeriod, BudgetMode budgetMode, String budgetName, BigDecimal savingsProgress, BigDecimal remainingOnBudgetAfterAllocation, LocalDate budgetStartDate) {
         return Budget.builder()
-                .budgetYear(budgetYear)
-                .controlledBudgetCategories(new ArrayList<>())
                 .savingsAmountAllocated(actualMonthlyAllocation)
                 .savingsProgress(savingsProgress)
                 .totalMonthsToSave(totalMonths)
                 .userId(userId)
-                .budgetSchedules(budgetSchedules)
                 .budgetDescription(budgetDescription)
                 .budgetPeriod(budgetPeriod)
                 .budgetMode(budgetMode)
                 .budgetName(budgetName)
+                .startDate(budgetStartDate)
                 .budgetAmount(remainingOnBudgetAfterAllocation)
                 .actual(BigDecimal.ZERO)
-                .budgetStartDate(budgetStartDate)
                 .build();
     }
 
@@ -248,50 +203,7 @@ public class BudgetBuilderService
         return monthlyBudgetStartAndEndDates;
     }
 
-    public List<BudgetSchedule> createBudgetSchedules(final LocalDate monthStart, final LocalDate monthEnd, final Long userId, final Period period)
-    {
-        if(monthStart == null || monthEnd == null)
-        {
-            return Collections.emptyList();
-        }
-        List<BudgetSchedule> newBudgetSchedules = new ArrayList<>();
-        try
-        {
-            if(userId < 1)
-            {
-                throw new InvalidUserIDException("Invalid UserId has been encountered: " + userId);
-            }
-            if(period == Period.MONTHLY)
-            {
-                Optional<BudgetSchedule> budgetScheduleOptional = budgetScheduleEngine.createMonthBudgetSchedule(userId, monthStart, monthEnd);
-                if(budgetScheduleOptional.isPresent())
-                {
-                    BudgetSchedule monthBudgetSchedule = budgetScheduleOptional.get();
-                    newBudgetSchedules.add(monthBudgetSchedule);
-                }
-            }
-           return newBudgetSchedules;
-        }catch(InvalidUserIDException e){
-            log.error("There was an error creating the budget schedules with the invalid userId: ", e);
-            return Collections.emptyList();
-        }
-    }
 
-    public void saveBudgetSchedules(final List<BudgetSchedule> budgetSchedules)
-    {
-        if(budgetSchedules == null)
-        {
-            return;
-        }
-        try
-        {
-            budgetScheduleEngine.saveOrUpdateBudgetSchedules(budgetSchedules, false);
-
-        }catch(DataAccessException e)
-        {
-            log.error("There was an error saving the budget schedules to the database: ", e);
-        }
-    }
 
     public Optional<BudgetEntity> saveBudget(Budget budget)
     {

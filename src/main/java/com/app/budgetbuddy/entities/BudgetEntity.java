@@ -58,12 +58,13 @@ public class BudgetEntity {
     @Column(name="monthlyIncome")
     private BigDecimal monthlyIncome;
 
-    @Column(name="budgetYear")
-    private Integer budgetYear;
-
     @Column(name="budgetStartDate")
     @NotNull
     private LocalDate budgetStartDate;
+
+    @Column(name="budgetEndDate")
+    @NotNull
+    private LocalDate budgetEndDate;
 
     @Column(name="actualAllocationAmount")
     private BigDecimal actualAllocationAmount;
@@ -84,11 +85,11 @@ public class BudgetEntity {
 
     @ManyToMany
     @JoinTable(
-            name = "budget_schedule_mapping",
+            name = "subBudget_mapping",
             joinColumns = @JoinColumn(name = "budgetId"),
             inverseJoinColumns = @JoinColumn(name = "scheduleId")
     )
-    private Set<BudgetScheduleEntity> budgetSchedules = new HashSet<>();
+    private Set<SubBudgetEntity> subBudgetEntities = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name="budgets")

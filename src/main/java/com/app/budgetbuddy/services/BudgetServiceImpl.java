@@ -82,14 +82,14 @@ public class BudgetServiceImpl implements BudgetService
         budget.setBudgetMode(budgetEntity.getBudgetMode());
         budget.setSavingsAmountAllocated(budgetEntity.getActualAllocationAmount());
         budget.setSavingsProgress(budgetEntity.getSavingsProgress());
-        budget.setBudgetStartDate(budgetEntity.getBudgetStartDate());
-        budget.setBudgetYear(budgetEntity.getBudgetYear());
+        budget.setStartDate(budgetEntity.getBudgetStartDate());
+        budget.setEndDate(budgetEntity.getBudgetEndDate());
         budget.setBudgetPeriod(budgetEntity.getBudgetPeriod());
         budget.setBudgetAmount(budgetEntity.getBudgetAmount());
         budget.setTotalMonthsToSave(budgetEntity.getTotalMonthsToSave());
         budget.setBudgetName(budgetEntity.getBudgetName());
         budget.setBudgetDescription(budgetEntity.getBudgetDescription());
-        budget.setBudgetSchedules(convertBudgetScheduleEntities(budgetEntity.getBudgetSchedules()));
+//        budget.setSubBudgets(convertBudgetScheduleEntities(budgetEntity.getBudgetSchedules()));
         return budget;
     }
 
@@ -101,24 +101,24 @@ public class BudgetServiceImpl implements BudgetService
             budgetEntity.setId(budget.getId());
             budgetEntity.setBudgetPeriod(budget.getBudgetPeriod());
             budgetEntity.setBudgetAmount(budget.getBudgetAmount());
-            budgetEntity.setBudgetStartDate(budget.getBudgetStartDate());
-            budgetEntity.setBudgetYear(budget.getBudgetYear());
+            budgetEntity.setBudgetStartDate(budget.getStartDate());
             budgetEntity.setBudgetMode(budget.getBudgetMode());
             budgetEntity.setBudgetActualAmount(budget.getActual());
             budgetEntity.setSavingsProgress(budget.getSavingsProgress());
             budgetEntity.setBudgetName(budget.getBudgetName());
             budgetEntity.setBudgetDescription(budget.getBudgetDescription());
-
-            List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
-            if(budgetSchedules.isEmpty())
-            {
-                log.warn("Budget with Id: {} found with no budget schedules", budget.getId());
-                budgetEntity.setBudgetSchedules(Set.of());
-            }
-            List<BudgetScheduleEntity> budgetScheduleEntities = convertBudgetSchedulesToEntity(budgetSchedules);
-            Set<BudgetScheduleEntity> budgetScheduleEntitySet = new HashSet<>(budgetScheduleEntities);
-            budgetEntity.setBudgetSchedules(budgetScheduleEntitySet);
-            return Optional.of(budgetEntity);
+//
+//            List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
+//            if(budgetSchedules.isEmpty())
+//            {
+//                log.warn("Budget with Id: {} found with no budget schedules", budget.getId());
+//                budgetEntity.setBudgetSchedules(Set.of());
+//            }
+//            List<BudgetScheduleEntity> budgetScheduleEntities = convertBudgetSchedulesToEntity(budgetSchedules);
+//            Set<BudgetScheduleEntity> budgetScheduleEntitySet = new HashSet<>(budgetScheduleEntities);
+//            budgetEntity.setSubBudgetEntities(budgetScheduleEntitySet);
+//            return Optional.of(budgetEntity);
+            return null;
         }catch(Exception e){
             log.error("There was an error creating the budget entity: ", e);
             return Optional.empty();

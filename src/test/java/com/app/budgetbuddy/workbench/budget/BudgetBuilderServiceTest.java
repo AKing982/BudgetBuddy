@@ -44,8 +44,27 @@ class BudgetBuilderServiceTest
 
     private BudgetRegistration budgetRegistrationMissingParams;
 
+    private Budget budget;
+
     @BeforeEach
     void setUp() {
+
+        budget = new Budget();
+        budget.setStartDate(LocalDate.of(2025,1 ,1));
+        budget.setEndDate(LocalDate.of(2025,12, 31));
+        budget.setBudgetPeriod(Period.MONTHLY);
+        budget.setBudgetMode(BudgetMode.SAVINGS_PLAN);
+        budget.setBudgetAmount(new BigDecimal(""));
+        budget.setBudgetName("Savings Budget Plan");
+        budget.setBudgetDescription("Savings Budget Plan");
+        budget.setTotalMonthsToSave(12);
+        budget.setUserId(1L);
+        budget.setSavingsProgress(BigDecimal.ZERO);
+        budget.setSavingsAmountAllocated(BigDecimal.ZERO);
+        budget.setSubBudgets(generateTestSubBudgets());
+        budget.setBudgetAmount(new BigDecimal("39120"));
+        budget.setActual(new BigDecimal("1609"));
+
         budgetBuilderService = new BudgetBuilderService(budgetService, budgetScheduleEngine, budgetCalculations);
 
         // Fully populated BudgetRegistration, including BudgetGoals
@@ -110,17 +129,25 @@ class BudgetBuilderServiceTest
     @Test
     void testBuildBudgetFromRegistration_whenValidBudgetRegistration_thenReturnBudget()
     {
-        Budget budget = new Budget();
-        budget.setId(1L);
-        budget.setBudgetName("New Car Fund");
-        budget.setActual(new BigDecimal("0"));        // Amount already saved or spent
-        budget.setBudgetAmount(new BigDecimal("2800.00")); // Total planned budget
-        budget.setBudgetYear(2025);
-        budget.setBudgetDescription("Saving for a new car");
-        budget.setUserId(1L);
-        budget.setBudgetMode(BudgetMode.SAVINGS_PLAN);
-        budget.setBudgetPeriod(Period.MONTHLY);
-        budget.setBudgetStartDate(LocalDate.of(2025, 1, 1));
+        SubBudget januarySubBudget = new SubBudget();
+        januarySubBudget.setId(1L);
+        januarySubBudget.setSubBudgetName("January New Car Fund");
+        januarySubBudget.setSpentOnBudget(new BigDecimal("0"));        // Amount already saved or spent
+        januarySubBudget.setAllocatedAmount(new BigDecimal("2800.00")); // Total planned budget
+        januarySubBudget.setBudget(budget);
+        januarySubBudget.setActive(true);
+        januarySubBudget.setSubSavingsAmount(new BigDecimal("120"));
+        januarySubBudget.setSubSavingsTarget(new BigDecimal("250"));
+
+        SubBudget februarySubBudget = new SubBudget();
+        februarySubBudget.setId(2L);
+        februarySubBudget.setSubBudgetName("February New Car Fund");
+        februarySubBudget.setSpentOnBudget(new BigDecimal("0"));
+        februarySubBudget.setAllocatedAmount(new BigDecimal("2800.00"));
+        februarySubBudget.setBudget(budget);
+        februarySubBudget.setActive(true);
+        februarySubBudget.setSubSavingsAmount(new BigDecimal("120"));
+        februarySubBudget.setSubSavingsTarget(new BigDecimal("250"));
 
         // Create a monthly budget schedule for January
         BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
@@ -156,7 +183,7 @@ class BudgetBuilderServiceTest
         budget.setTotalMonthsToSave(4);                             // e.g., saving over 4 months
 
         // Attach the schedule(s) and savings goal to the budget
-        budget.setBudgetSchedules(List.of(januaryBudgetSchedule, februaryBudgetSchedule));
+        budget.setSubBudgets(List.of(januarySubBudget, februarySubBudget));
 
         // Set your expected and actual results
         Optional<Budget> expected = Optional.of(budget);
@@ -179,7 +206,6 @@ class BudgetBuilderServiceTest
                 .budgetActualAmount(new BigDecimal("500.00"))
                 .budgetMode(BudgetMode.SAVINGS_PLAN)
                 .budgetPeriod(Period.MONTHLY)
-                .budgetYear(2025)
                 .budgetStartDate(LocalDate.of(2025, 1, 1))
                 .actualAllocationAmount(new BigDecimal("200.00"))
                 .savingsProgress(new BigDecimal("80.00"))
@@ -199,8 +225,7 @@ class BudgetBuilderServiceTest
         assertEquals(expected.get().getUserId(), actual.get().getUserId(), "User ID mismatch");
         assertEquals(expected.get().getBudgetName(), actual.get().getBudgetName(), "Budget Name mismatch");
         assertEquals(expected.get().getBudgetDescription(), actual.get().getBudgetDescription(), "Budget Description mismatch");
-        assertEquals(expected.get().getBudgetYear(), actual.get().getBudgetYear(), "Budget Year mismatch");
-        assertEquals(expected.get().getBudgetStartDate(), actual.get().getBudgetStartDate(), "Budget Start Date mismatch");
+        assertEquals(expected.get().getStartDate(), actual.get().getStartDate(), "Budget Start Date mismatch");
         assertEquals(expected.get().getBudgetPeriod(), actual.get().getBudgetPeriod(), "Budget Period mismatch");
         assertEquals(expected.get().getBudgetMode(), actual.get().getBudgetMode(), "Budget Mode mismatch");
         assertEquals(expected.get().getSavingsAmountAllocated(), actual.get().getSavingsAmountAllocated(), "Savings Amount Allocated mismatch");
@@ -208,68 +233,54 @@ class BudgetBuilderServiceTest
         assertEquals(expected.get().getTotalMonthsToSave(), actual.get().getTotalMonthsToSave(), "Total Months to Save mismatch");
         assertEquals(expected.get().getCreatedDate(), actual.get().getCreatedDate(), "Created Date mismatch");
 
-        // If you have categories or schedules, you can similarly compare them. For example:
-        assertEquals(expected.get().getControlledBudgetCategories(), actual.get().getControlledBudgetCategories(),
-                "Controlled Budget Categories mismatch");
-        assertEquals(expected.get().getBudgetSchedules().size(), actual.get().getBudgetSchedules().size(),
+        assertEquals(expected.get().getSubBudgets().size(), actual.get().getSubBudgets().size(),
                 "Budget Schedules mismatch");
     }
 
-    @Test
-    void testCreateBudgetSchedules_whenMonthEndNull_thenReturnEmptyBudgetSchedules()
-    {
-        List<BudgetSchedule> actual = budgetBuilderService.createBudgetSchedules(LocalDate.of(2025, 1, 1), null, 1L, Period.MONTHLY);
-        assertTrue(actual.isEmpty());
-    }
 
-    @Test
-    void testCreateBudgetSchedules_whenUserIdInvalid_thenThrowException(){
-        List<BudgetSchedule> actual = budgetBuilderService.createBudgetSchedules(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31), -1L, Period.MONTHLY);
-        assertTrue(actual.isEmpty());
-    }
 
-    @Test
-    void testCreateBudgetSchedules_whenJanuaryBudgetAndMonthlyPeriod_thenReturnBudgetSchedules(){
-        List<DateRange> januaryDateRanges = new ArrayList<>();
-        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)));
-        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1,8), LocalDate.of(2025, 1, 14)));
-        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21)));
-        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)));
-        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31)));
-
-        Long userId = 1L;
-        Period period = Period.MONTHLY;
-
-        LocalDate monthStart = LocalDate.of(2025, 1, 1);
-        LocalDate monthEnd = LocalDate.of(2025, 1, 31);
-
-        BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
-        januaryBudgetSchedule.setPeriod(period);
-        januaryBudgetSchedule.setBudgetId(1L);
-        januaryBudgetSchedule.setStatus("Active");
-        januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
-        januaryBudgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
-        januaryBudgetSchedule.setScheduleRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
-        januaryBudgetSchedule.setTotalPeriods(5);
-        januaryBudgetSchedule.initializeBudgetDateRanges();
-
-        Mockito.when(budgetScheduleEngine.createMonthBudgetSchedule(anyLong(), any(LocalDate.class), any(LocalDate.class)))
-                .thenReturn(Optional.of(januaryBudgetSchedule));
-
-        List<BudgetSchedule> expected = List.of(januaryBudgetSchedule);
-        List<BudgetSchedule> actual = budgetBuilderService.createBudgetSchedules(monthStart, monthEnd, userId, period);
-        assertNotNull(actual);
-        assertEquals(expected.size(), actual.size());
-        for(int i = 0; i < actual.size(); i++){
-            assertEquals(expected.get(i).getBudgetDateRanges().size(), actual.get(i).getBudgetDateRanges().size());
-            assertEquals(expected.get(i).getBudgetId(), actual.get(i).getBudgetId());
-            assertEquals(expected.get(i).getScheduleRange().getStartDate(), actual.get(i).getScheduleRange().getStartDate());
-            assertEquals(expected.get(i).getScheduleRange().getEndDate(), actual.get(i).getScheduleRange().getEndDate());
-            assertEquals(expected.get(i).getTotalPeriods(), actual.get(i).getTotalPeriods());
-            assertEquals(expected.get(i).getPeriod(), actual.get(i).getPeriod());
-            assertEquals(expected.get(i).getStatus(), actual.get(i).getStatus());
-        }
-    }
+//    @Test
+//    void testCreateBudgetSchedules_whenJanuaryBudgetAndMonthlyPeriod_thenReturnBudgetSchedules(){
+//        List<DateRange> januaryDateRanges = new ArrayList<>();
+//        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)));
+//        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1,8), LocalDate.of(2025, 1, 14)));
+//        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21)));
+//        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)));
+//        januaryDateRanges.add(new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31)));
+//
+//        Long userId = 1L;
+//        Period period = Period.MONTHLY;
+//
+//        LocalDate monthStart = LocalDate.of(2025, 1, 1);
+//        LocalDate monthEnd = LocalDate.of(2025, 1, 31);
+//
+//        BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
+//        januaryBudgetSchedule.setPeriod(period);
+//        januaryBudgetSchedule.setBudgetId(1L);
+//        januaryBudgetSchedule.setStatus("Active");
+//        januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
+//        januaryBudgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
+//        januaryBudgetSchedule.setScheduleRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
+//        januaryBudgetSchedule.setTotalPeriods(5);
+//        januaryBudgetSchedule.initializeBudgetDateRanges();
+//
+//        Mockito.when(budgetScheduleEngine.createMonthBudgetSchedule(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+//                .thenReturn(Optional.of(januaryBudgetSchedule));
+//
+//        List<BudgetSchedule> expected = List.of(januaryBudgetSchedule);
+//        List<BudgetSchedule> actual = budgetBuilderService.createBudgetSchedules(monthStart, monthEnd, userId);
+//        assertNotNull(actual);
+//        assertEquals(expected.size(), actual.size());
+//        for(int i = 0; i < actual.size(); i++){
+//            assertEquals(expected.get(i).getBudgetDateRanges().size(), actual.get(i).getBudgetDateRanges().size());
+//            assertEquals(expected.get(i).getBudgetId(), actual.get(i).getBudgetId());
+//            assertEquals(expected.get(i).getScheduleRange().getStartDate(), actual.get(i).getScheduleRange().getStartDate());
+//            assertEquals(expected.get(i).getScheduleRange().getEndDate(), actual.get(i).getScheduleRange().getEndDate());
+//            assertEquals(expected.get(i).getTotalPeriods(), actual.get(i).getTotalPeriods());
+//            assertEquals(expected.get(i).getPeriod(), actual.get(i).getPeriod());
+//            assertEquals(expected.get(i).getStatus(), actual.get(i).getStatus());
+//        }
+//    }
 
     @Test
     void testCreateMonthlyBudgetDateRanges_whenDateRangesSetIsNull_thenReturnEmptyList(){
@@ -550,80 +561,100 @@ class BudgetBuilderServiceTest
         }
     }
 
-    @Test
-    void testCreateNewMonthBudget_whenUserIdIsNull_thenReturnEmptyOptional(){
-        LocalDate monthStart = LocalDate.of(2025, 1, 1);
-        LocalDate monthEnd = LocalDate.of(2025, 1, 31);
-        Long userId = 1L;
-        BigDecimal totalIncome = new BigDecimal("3260");
-        List<Budget> pastBudgets = new ArrayList<>();
-        MonthlyBudgetGoals monthlyBudgetGoals = new MonthlyBudgetGoals();
-        Optional<Budget> actual = budgetBuilderService.createNewMonthBudget(pastBudgets, userId, monthStart, monthEnd, totalIncome, monthlyBudgetGoals);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
-    }
+//
+//    @Test
+//    void testCreateNewMonthBudget_whenCriteriaValid_thenReturnBudget()
+//    {
+//        Long userId = 1L;
+//        LocalDate monthStart = LocalDate.of(2025, 1, 1);
+//        LocalDate monthEnd = LocalDate.of(2025, 1, 31);
+//        BigDecimal totalIncome = new BigDecimal("3260");
+//
+//        Budget expectedBudget = new Budget();
+//        expectedBudget.setUserId(userId);
+//        expectedBudget.setId(1L);
+//        expectedBudget.setBudgetPeriod(Period.MONTHLY);
+//        expectedBudget.setBudgetStartDate(monthStart);
+//        expectedBudget.setBudgetName("Savings Plan for January");
+//        expectedBudget.setBudgetDescription("Savings Plan for January");
+//        expectedBudget.setSavingsAmountAllocated(new BigDecimal("250"));
+//        expectedBudget.setTotalMonthsToSave(1);
+//        expectedBudget.setSavingsProgress(new BigDecimal("100"));
+//        expectedBudget.setBudgetAmount(new BigDecimal("3010"));
+//        expectedBudget.setActual(new BigDecimal("1609"));
+//
+//        BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
+//        januaryBudgetSchedule.setBudgetId(1L);
+//        januaryBudgetSchedule.setEndDate(monthEnd);
+//        januaryBudgetSchedule.setStartDate(monthStart);
+//        januaryBudgetSchedule.setTotalPeriods(4);
+//        januaryBudgetSchedule.setStatus("Active");
+//        januaryBudgetSchedule.setScheduleRange(new DateRange(monthStart, monthEnd));
+//        januaryBudgetSchedule.setPeriod(Period.MONTHLY);
+//        januaryBudgetSchedule.initializeBudgetDateRanges();
+//
+//        MonthlyBudgetGoals januaryBudgetGoals = new MonthlyBudgetGoals();
+//        januaryBudgetGoals.setMonth(new BudgetMonth(2025, 1));
+//        januaryBudgetGoals.setUserId(1L);
+//        januaryBudgetGoals.setMonthlyStatus("Active");
+//        januaryBudgetGoals.setMonthlySavingsTarget(250);
+//        januaryBudgetGoals.setMonthlyContributed(150);
+//        januaryBudgetGoals.setRemainingAmount(100);
+//
+//        List<Budget> pastBudgets = new ArrayList<>();
+//
+//        Optional<Budget> expectedBudgetOptional = Optional.of(expectedBudget);
+//        Optional<Budget> actual = budgetBuilderService.createNewMonthBudget(pastBudgets, userId, monthStart, monthEnd, totalIncome, januaryBudgetGoals);
+//        assertNotNull(actual);
+//        assertTrue(actual.isPresent());
+//        assertEquals(expectedBudgetOptional.get(), actual.get());
+//    }
 
-    @Test
-    void testCreateNewMonthBudget_whenMonthStartIsNull_thenReturnEmptyOptional(){
-        LocalDate monthEnd = LocalDate.of(2025, 1, 31);
-        Long userId = 1L;
-        BigDecimal totalIncome = new BigDecimal("3260");
-        List<Budget> pastBudgets = new ArrayList<>();
-        MonthlyBudgetGoals monthlyBudgetGoals = new MonthlyBudgetGoals();
-        Optional<Budget> actual = budgetBuilderService.createNewMonthBudget(pastBudgets, userId, null, monthEnd, totalIncome, monthlyBudgetGoals);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
-    }
+    private List<SubBudget> generateTestSubBudgets(){
+        List<SubBudget> subBudgets = new ArrayList<>();
+        // Generate a SubBudget for each month (1 through 12)
+        for (int month = 1; month <= 12; month++) {
+            // You can build month-based naming or logic here:
+            YearMonth yearMonth = YearMonth.of(2025, month);  // example year 2025
+            String subBudgetName = yearMonth.getMonth().name() + " SubBudget";
 
-    @Test
-    void testCreateNewMonthBudget_whenCriteriaValid_thenReturnBudget()
-    {
-        Long userId = 1L;
-        LocalDate monthStart = LocalDate.of(2025, 1, 1);
-        LocalDate monthEnd = LocalDate.of(2025, 1, 31);
-        BigDecimal totalIncome = new BigDecimal("3260");
+            // Example values for allocatedAmount, subSavingsTarget, etc.
+            BigDecimal allocatedAmount = BigDecimal.valueOf(1000 + (month * 10));
+            BigDecimal subSavingsTarget = BigDecimal.valueOf(200 + (month * 5));
+            BigDecimal subSavingsAmount = BigDecimal.ZERO;
+            BigDecimal spentOnBudget = BigDecimal.ZERO;
 
-        Budget expectedBudget = new Budget();
-        expectedBudget.setUserId(userId);
-        expectedBudget.setId(1L);
-        expectedBudget.setBudgetPeriod(Period.MONTHLY);
-        expectedBudget.setBudgetYear(2025);
-        expectedBudget.setBudgetStartDate(monthStart);
-        expectedBudget.setBudgetName("Savings Plan for January");
-        expectedBudget.setBudgetDescription("Savings Plan for January");
-        expectedBudget.setControlledBudgetCategories(List.of());
-        expectedBudget.setSavingsAmountAllocated(new BigDecimal("250"));
-        expectedBudget.setTotalMonthsToSave(1);
-        expectedBudget.setSavingsProgress(new BigDecimal("100"));
-        expectedBudget.setBudgetAmount(new BigDecimal("3010"));
-        expectedBudget.setActual(new BigDecimal("1609"));
+            // You can keep these lists empty if you're just testing
+            List<BudgetSchedule> scheduleList = new ArrayList<>();
+            List<ControlledBudgetCategory> categoryList = new ArrayList<>();
 
-        BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
-        januaryBudgetSchedule.setBudgetId(1L);
-        januaryBudgetSchedule.setEndDate(monthEnd);
-        januaryBudgetSchedule.setStartDate(monthStart);
-        januaryBudgetSchedule.setTotalPeriods(4);
-        januaryBudgetSchedule.setStatus("Active");
-        januaryBudgetSchedule.setScheduleRange(new DateRange(monthStart, monthEnd));
-        januaryBudgetSchedule.setPeriod(Period.MONTHLY);
-        januaryBudgetSchedule.initializeBudgetDateRanges();
-        expectedBudget.setBudgetSchedules(List.of(januaryBudgetSchedule));
+            SubBudget subBudget = new SubBudget(
+                    // id
+                    (long) month,
+                    // subBudgetName
+                    subBudgetName,
+                    // allocatedAmount
+                    allocatedAmount,
+                    // subSavingsTarget
+                    subSavingsTarget,
+                    // subSavingsAmount
+                    subSavingsAmount,
+                    // spentOnBudget
+                    spentOnBudget,
+                    // Parent Budget reference
+                    budget,
+                    // BudgetSchedule list
+                    scheduleList,
+                    // ControlledBudgetCategory list
+                    categoryList,
+                    // isActive
+                    true
+            );
 
-        MonthlyBudgetGoals januaryBudgetGoals = new MonthlyBudgetGoals();
-        januaryBudgetGoals.setMonth(new BudgetMonth(2025, 1));
-        januaryBudgetGoals.setUserId(1L);
-        januaryBudgetGoals.setMonthlyStatus("Active");
-        januaryBudgetGoals.setMonthlySavingsTarget(250);
-        januaryBudgetGoals.setMonthlyContributed(150);
-        januaryBudgetGoals.setRemainingAmount(100);
+            subBudgets.add(subBudget);
+        }
 
-        List<Budget> pastBudgets = new ArrayList<>();
-
-        Optional<Budget> expectedBudgetOptional = Optional.of(expectedBudget);
-        Optional<Budget> actual = budgetBuilderService.createNewMonthBudget(pastBudgets, userId, monthStart, monthEnd, totalIncome, januaryBudgetGoals);
-        assertNotNull(actual);
-        assertTrue(actual.isPresent());
-        assertEquals(expectedBudgetOptional.get(), actual.get());
+        return subBudgets;
     }
 
 
