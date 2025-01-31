@@ -47,8 +47,6 @@ public class CategoryEntity
     @OneToMany(mappedBy="category")
     private List<TransactionsEntity> transactions;
 
-    @OneToMany(mappedBy="category")
-    private Set<UserCategoryEntity> userCategories = new HashSet<>();
 
     public CategoryEntity(String categoryId, String name, String description) {
         this.id = categoryId;

@@ -11,8 +11,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -78,16 +80,15 @@ public class BudgetScheduleEngine
      * This method will build a budget schedule for a particular month
      *
      */
-    public Optional<BudgetSchedule> createMonthBudgetSchedule(final Long userId, final LocalDate budgetStartDate, LocalDate budgetEndDate, final BudgetMonth budgetMonth)
+    public Optional<BudgetSchedule> createMonthSubBudgetSchedule(final Long userId, final LocalDate monthStart, final LocalDate monthEnd, final BigDecimal subBudgetSavingsTarget, final BigDecimal spentOnBudget, final BigDecimal subSavingsAmount)
     {
-        if(userId == null || budgetStartDate == null || budgetEndDate == null || budgetMonth == null)
+        if(userId == null || monthStart == null || monthEnd == null)
         {
             return Optional.empty();
         }
         // Does the user have a budget?
-        Budget budget = budgetService.loadUserBudget(userId);
         // Find the sub budget that matches the userId and the startDate and endDate
-//        Budget userBudget = budgetService.loadUserBudgetForPeriod(userId, startDate, endDate);
+
 //        Long budgetId = userBudget.getId();
 
         // If the user has a budget, then check for any subBudgets and obtain the budget schedules

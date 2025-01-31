@@ -193,9 +193,9 @@ class BudgetBuilderServiceTest
 
         Mockito.when(budgetCalculations.calculateSavingsProgress(any(BigDecimal.class), any(BigDecimal.class), any(BigDecimal.class)))
                 .thenReturn(new BigDecimal("80.00"));
-
-        Mockito.when(budgetScheduleEngine.createMonthBudgetSchedule(anyLong(), any(LocalDate.class), any(LocalDate.class)))
-                .thenReturn(Optional.of(januaryBudgetSchedule));
+//
+//        Mockito.when(budgetScheduleEngine.createMonthBudgetSchedule(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+//                .thenReturn(Optional.of(januaryBudgetSchedule));
 
         // Build a mock BudgetEntity with the same data as the expected Budget
         BudgetEntity savedEntity = BudgetEntity.builder()
@@ -628,6 +628,9 @@ class BudgetBuilderServiceTest
             List<BudgetSchedule> scheduleList = new ArrayList<>();
             List<ControlledBudgetCategory> categoryList = new ArrayList<>();
 
+            LocalDate startMonth = YearMonth.now().atDay(1);
+            LocalDate endMonth = YearMonth.now().atEndOfMonth();
+
             SubBudget subBudget = new SubBudget(
                     // id
                     (long) month,
@@ -643,6 +646,8 @@ class BudgetBuilderServiceTest
                     spentOnBudget,
                     // Parent Budget reference
                     budget,
+                    startMonth,
+                    endMonth,
                     // BudgetSchedule list
                     scheduleList,
                     // ControlledBudgetCategory list

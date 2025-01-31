@@ -106,7 +106,7 @@ public class SubBudgetBuilderService
             }
             if(period == Period.MONTHLY)
             {
-                Optional<BudgetSchedule> budgetScheduleOptional = budgetScheduleEngine.createMonthBudgetSchedule(userId, monthStart, monthEnd);
+                Optional<BudgetSchedule> budgetScheduleOptional = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, monthStart, monthEnd);
                 if(budgetScheduleOptional.isPresent())
                 {
                     BudgetSchedule monthBudgetSchedule = budgetScheduleOptional.get();

@@ -25,8 +25,9 @@ public class BiWeeklyBudgetSchedule extends BudgetSchedule
     }
 
     public void initializeBiWeeklyBudgetSchedule() {
-        List<DateRange> budgetDateRanges = getBudgetDateRanges();
+        List<BudgetScheduleRange> budgetDateRanges = getBudgetScheduleRanges();
         this.biweeklyDateRanges = budgetDateRanges.stream()
+                .map(BudgetScheduleRange::getBudgetDateRange)
                 .map(DateRange::splitIntoBiWeeks)
                 .flatMap(List::stream)
                 .collect(Collectors.toList());

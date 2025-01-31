@@ -16,14 +16,14 @@ public class DailyBudgetSchedule extends BudgetSchedule
 
     public DailyBudgetSchedule(Long budgetScheduleId, Long budgetId, LocalDate startDate, LocalDate endDate, Period period, int totalPeriods, String status, List<LocalDate> dailyDates) {
         super(budgetScheduleId, budgetId, startDate, endDate, period, totalPeriods, status);
-        this.initializeDailyDates();
+
     }
 
-   public void initializeDailyDates(){
-        List<DateRange> budgetDateRanges = getBudgetDateRanges();
-        this.dailyDates = budgetDateRanges.stream()
-                .map(DateRange::splitIntoDays)
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
-   }
+//   public void initializeDailyDates(){
+//        List<DateRange> budgetDateRanges = getBudgetScheduleRanges();
+//        this.dailyDates = budgetDateRanges.stream()
+//                .map(DateRange::splitIntoDays)
+//                .flatMap(List::stream)
+//                .collect(Collectors.toList());
+//   }
 }

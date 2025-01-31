@@ -8,10 +8,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
@@ -25,7 +22,7 @@ public class WeeklyBudgetSchedule extends BudgetSchedule
     public WeeklyBudgetSchedule(Long budgetScheduleId, Long budgetId, LocalDate startDate, LocalDate endDate, Period period, int totalPeriods, String status)
     {
         super(budgetScheduleId, budgetId, startDate, endDate, period, totalPeriods, status);
-        this.initializeWeeklyDateRanges();
+//        this.initializeWeeklyDateRanges();
     }
 
     @Override
@@ -35,10 +32,12 @@ public class WeeklyBudgetSchedule extends BudgetSchedule
     }
 
     public void initializeWeeklyDateRanges(){
-        List<DateRange> budgetDateRanges = getBudgetDateRanges();
-        this.weeklyDateRanges = budgetDateRanges.stream()
-                .map(DateRange::splitIntoWeeks)
-                .flatMap(List::stream)
+        List<BudgetScheduleRange> budgetScheduleRanges = getBudgetScheduleRanges();
+        this.weeklyDateRanges = budgetScheduleRanges.stream()
+                .map(BudgetScheduleRange::getBudgetDateRange)        // get the DateRange field
+                .filter(Objects::nonNull)                            // guard against null
+                .map(DateRange::splitIntoWeeks)                      // split each DateRange into a list of weekly sub-ranges
+                .flatMap(List::stream)                               // flatten all lists into one stream
                 .collect(Collectors.toList());
     }
 }

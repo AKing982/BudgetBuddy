@@ -54,9 +54,6 @@ public class BudgetSchedule
                         .budgetScheduleId(this.budgetScheduleId)
                         .startRange(weekRange.getStartDate())
                         .endRange(weekRange.getEndDate())
-                        .daysInRange((int) ChronoUnit.DAYS.between(
-                                weekRange.getStartDate(),
-                                weekRange.getEndDate().plusDays(1)))
                         .budgetDateRange(weekRange) // if you want to store the original DateRange
                         .rangeType("WEEKLY")        // or derive from your `Period`
                         // .budgetedAmount(...)      // set if you have a known budget amount for each range

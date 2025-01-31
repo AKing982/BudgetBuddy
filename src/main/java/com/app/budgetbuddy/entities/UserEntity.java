@@ -41,19 +41,6 @@ public class UserEntity {
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;
 
-    @OneToMany(mappedBy="user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<UserCategoryEntity> userCategories = new HashSet<>();
 
-    public void addCategory(CategoryEntity category) {
-        UserCategoryEntity userCategoryEntity = new UserCategoryEntity();
-        userCategoryEntity.setCategory(category);
-        userCategoryEntity.setUser(this);
-        userCategoryEntity.setCreatedat(LocalDateTime.now());
-        userCategories.add(userCategoryEntity);
-    }
-
-    public void removeCategory(CategoryEntity category) {
-        userCategories.removeIf(uc -> uc.getCategory().equals(category));
-    }
 
 }

@@ -76,6 +76,9 @@ class BudgetScheduleEngineTest {
             List<BudgetSchedule> scheduleList = new ArrayList<>();
             List<ControlledBudgetCategory> categoryList = new ArrayList<>();
 
+            LocalDate startDate = yearMonth.atDay(1);
+            LocalDate endDate = yearMonth.atEndOfMonth();
+
             SubBudget subBudget = new SubBudget(
                     // id
                     (long) month,
@@ -91,6 +94,8 @@ class BudgetScheduleEngineTest {
                     spentOnBudget,
                     // Parent Budget reference
                     budget,
+                    startDate,
+                    endDate,
                     // BudgetSchedule list
                     scheduleList,
                     // ControlledBudgetCategory list
@@ -106,34 +111,32 @@ class BudgetScheduleEngineTest {
     }
 
     @Test
-    void testCreateMonthlyBudgetSchedule_whenBudgetIsNull_thenReturnEmptyOptional() {
+    void testCreateMonthSubBudgetSchedule_whenBudgetIsNull_thenReturnEmptyOptional() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate endDate = LocalDate.of(2025, 12, 31);
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(null, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(null, startDate, endDate);
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testCreateMonthlyBudgetSchedule_whenStartDateIsNull_thenReturnEmptyOptional() {
+    void testCreateMonthSubBudgetSchedule_whenStartDateIsNull_thenReturnEmptyOptional() {
         LocalDate endDate = LocalDate.of(2025, 1, 1);
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(1L, null, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(1L, null, endDate);
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testCreateMonthlyBudgetSchedule_whenEndDateIsNull_thenReturnEmptyOptional() {
+    void testCreateMonthSubBudgetSchedule_whenEndDateIsNull_thenReturnEmptyOptional() {
         LocalDate startDate = LocalDate.of(2025, 1, 1);
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(1L, startDate, null);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(1L, startDate, null);
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testCreateMonthlyBudgetSchedule_whenJanuaryBudgetStartDateBeginningOfMonthAndEndDateLastDayOfMonth_thenReturnBudgetSchedule(){
+    void testCreateMonthSubBudgetSchedule_whenJanuaryBudgetStartDateBeginningOfMonthAndEndDateLastDayOfMonth_thenReturnBudgetSchedule(){
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate endDate = LocalDate.of(2025, 1, 31);
         Long userId = 1L;
-
-
 
         BudgetSchedule budgetSchedule = new BudgetSchedule();
         budgetSchedule.setStartDate(startDate);
@@ -145,12 +148,49 @@ class BudgetScheduleEngineTest {
         budgetSchedule.setTotalPeriods(4);
         budgetSchedule.initializeBudgetDateRanges();
 
+        BudgetScheduleRange budgetScheduleRange1 = new BudgetScheduleRange();
+        budgetScheduleRange1.setSingleDate(false);
+        budgetScheduleRange1.setStartRange(LocalDate.of(2025, 1, 1));
+        budgetScheduleRange1.setEndRange(LocalDate.of(2025, 1, 7));
+        budgetScheduleRange1.setBudgetedAmount(new BigDecimal("140"));
+        budgetScheduleRange1.setSpentOnRange(new BigDecimal("95"));
+        budgetScheduleRange1.setRangeType("Week");
+        budgetScheduleRange1.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 1),  LocalDate.of(2025, 1, 7)));
+
+        BudgetScheduleRange budgetScheduleRange2 = new BudgetScheduleRange();
+        budgetScheduleRange2.setSingleDate(false);
+        budgetScheduleRange2.setStartRange(LocalDate.of(2025, 1, 8));
+        budgetScheduleRange2.setEndRange(LocalDate.of(2025, 1, 14));
+        budgetScheduleRange2.setBudgetedAmount(new BigDecimal("140"));
+        budgetScheduleRange2.setSpentOnRange(new BigDecimal("95"));
+        budgetScheduleRange2.setRangeType("Week");
+        budgetScheduleRange2.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 7),  LocalDate.of(2025, 1, 14)));
+
+        BudgetScheduleRange budgetScheduleRange3 = new BudgetScheduleRange();
+        budgetScheduleRange3.setSingleDate(false);
+        budgetScheduleRange3.setStartRange(LocalDate.of(2025, 1, 15));
+        budgetScheduleRange3.setEndRange(LocalDate.of(2025, 1, 22));
+        budgetScheduleRange3.setBudgetedAmount(new BigDecimal("140"));
+        budgetScheduleRange3.setSpentOnRange(new BigDecimal("95"));
+        budgetScheduleRange3.setRangeType("Week");
+        budgetScheduleRange3.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 15),  LocalDate.of(2025, 1, 22)));
+
+        BudgetScheduleRange budgetScheduleRange4 = new BudgetScheduleRange();
+        budgetScheduleRange4.setSingleDate(false);
+        budgetScheduleRange4.setStartRange(LocalDate.of(2025, 1, 23));
+        budgetScheduleRange4.setEndRange(LocalDate.of(2025, 1, 31));
+        budgetScheduleRange4.setBudgetedAmount(new BigDecimal("140"));
+        budgetScheduleRange4.setSpentOnRange(new BigDecimal("95"));
+        budgetScheduleRange4.setRangeType("Week");
+        budgetScheduleRange4.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 23),  LocalDate.of(2025, 1, 31)));
+
+        budgetSchedule.setBudgetScheduleRanges(List.of(budgetScheduleRange1, budgetScheduleRange2, budgetScheduleRange3, budgetScheduleRange4));
         Optional<BudgetSchedule> expectedBudgetSchedule = Optional.of(budgetSchedule);
 
-//        Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
-//                .thenReturn(createTestBudget());
+        Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(budget);
 
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(userId, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, startDate, endDate);
         assertTrue(actual.isPresent());
         assertEquals(expectedBudgetSchedule.get().getBudgetId(), actual.get().getBudgetId());
         assertEquals(expectedBudgetSchedule.get().getPeriod(), actual.get().getPeriod());
@@ -158,11 +198,11 @@ class BudgetScheduleEngineTest {
         assertEquals(expectedBudgetSchedule.get().getTotalPeriods(), actual.get().getTotalPeriods());
         assertEquals(expectedBudgetSchedule.get().getStartDate(), actual.get().getStartDate());
         assertEquals(expectedBudgetSchedule.get().getEndDate(), actual.get().getEndDate());
-        assertEquals(expectedBudgetSchedule.get().getBudgetDateRanges().size(), actual.get().getBudgetDateRanges().size());
+        assertEquals(expectedBudgetSchedule.get().getBudgetScheduleRanges().size(), actual.get().getBudgetScheduleRanges().size());
     }
 
     @Test
-    void testCreateMonthlyBudgetSchedule_whenJanuaryBudgetStartDateOffsetAndEndDateOffset_thenReturnBudgetSchedule(){
+    void testCreateMonthSubBudgetSchedule_whenJanuaryBudgetStartDateOffsetAndEndDateOffset_thenReturnBudgetSchedule(){
         LocalDate startDate = LocalDate.of(2025, 1, 5);
         LocalDate endDate = LocalDate.of(2025, 2, 5);
         Long userId = 1L;
@@ -181,7 +221,7 @@ class BudgetScheduleEngineTest {
   /*      Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(createTestBudget(startDate, endDate, Period.MONTHLY));*/
 
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(userId, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, startDate, endDate);
         assertTrue(actual.isPresent());
         assertEquals(expectedBudgetSchedule.get().getBudgetId(), actual.get().getBudgetId());
         assertEquals(expectedBudgetSchedule.get().getPeriod(), actual.get().getPeriod());
@@ -189,11 +229,11 @@ class BudgetScheduleEngineTest {
         assertEquals(expectedBudgetSchedule.get().getTotalPeriods(), actual.get().getTotalPeriods());
         assertEquals(expectedBudgetSchedule.get().getStartDate(), actual.get().getStartDate());
         assertEquals(expectedBudgetSchedule.get().getEndDate(), actual.get().getEndDate());
-        assertEquals(expectedBudgetSchedule.get().getBudgetDateRanges().size(), actual.get().getBudgetDateRanges().size());
+        assertEquals(expectedBudgetSchedule.get().getBudgetScheduleRanges().size(), actual.get().getBudgetScheduleRanges().size());
     }
 
     @Test
-    void testCreateMonthlyBudgetSchedule_whenNoBudgetSchedulesTiedToBudget_thenCreateNewBudgetScheduleAndReturn(){
+    void testCreateMonthSubBudgetSchedule_whenNoBudgetSchedulesTiedToBudget_thenCreateNewBudgetScheduleAndReturn(){
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate endDate = LocalDate.of(2025, 1, 31);
         Long userId = 1L;
@@ -212,7 +252,7 @@ class BudgetScheduleEngineTest {
 //        Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
 //                .thenReturn(createTestBudgetNoSchedule());
 
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(userId, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, startDate, endDate);
         assertTrue(actual.isPresent());
         assertEquals(expectedBudgetSchedule.get().getBudgetId(), actual.get().getBudgetId());
         assertEquals(expectedBudgetSchedule.get().getPeriod(), actual.get().getPeriod());
@@ -220,11 +260,11 @@ class BudgetScheduleEngineTest {
         assertEquals(expectedBudgetSchedule.get().getTotalPeriods(), actual.get().getTotalPeriods());
         assertEquals(expectedBudgetSchedule.get().getStartDate(), actual.get().getStartDate());
         assertEquals(expectedBudgetSchedule.get().getEndDate(), actual.get().getEndDate());
-        assertEquals(expectedBudgetSchedule.get().getBudgetDateRanges().size(), actual.get().getBudgetDateRanges().size());
+        assertEquals(expectedBudgetSchedule.get().getBudgetScheduleRanges().size(), actual.get().getBudgetScheduleRanges().size());
     }
 
     @Test
-    void testCreateMonthlyBudgetSchedule_whenBudgetHasMultipleBudgetSchedulesFindFebSchedule_thenReturnBudgetSchedule(){
+    void testCreateMonthSubBudgetSchedule_whenBudgetHasMultipleBudgetSchedulesFindFebSchedule_thenReturnBudgetSchedule(){
         LocalDate startDate = LocalDate.of(2025, 2, 1);
         LocalDate endDate = LocalDate.of(2025, 2, 28);
         Long userId = 1L;
@@ -243,7 +283,7 @@ class BudgetScheduleEngineTest {
 //        Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
 //                .thenReturn(createTestBudgetWithMultipleSchedules());
 
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(userId, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, startDate, endDate);
         assertTrue(actual.isPresent());
         assertEquals(expectedBudgetSchedule.get().getBudgetId(), actual.get().getBudgetId());
         assertEquals(expectedBudgetSchedule.get().getPeriod(), actual.get().getPeriod());
@@ -251,11 +291,11 @@ class BudgetScheduleEngineTest {
         assertEquals(expectedBudgetSchedule.get().getTotalPeriods(), actual.get().getTotalPeriods());
         assertEquals(expectedBudgetSchedule.get().getStartDate(), actual.get().getStartDate());
         assertEquals(expectedBudgetSchedule.get().getEndDate(), actual.get().getEndDate());
-        assertEquals(expectedBudgetSchedule.get().getBudgetDateRanges().size(), actual.get().getBudgetDateRanges().size());
+        assertEquals(expectedBudgetSchedule.get().getBudgetScheduleRanges().size(), actual.get().getBudgetScheduleRanges().size());
     }
 
     @Test
-    void testCreateMonthBudgetSchedule_whenBudgetHasNullBudgetSchedulesForMonth_thenReturnEmptyOptional(){
+    void testCreateMonthSubBudgetSchedule_whenBudgetHasNullBudgetSchedulesForMonth_thenReturnEmptyOptional(){
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate endDate = LocalDate.of(2025, 1, 31);
         Long userId = 1L;
@@ -263,12 +303,12 @@ class BudgetScheduleEngineTest {
 //        Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
 //                .thenReturn(createTestBudgetWithNullBudgetSchedule());
 
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(userId, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, startDate, endDate);
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testCreateMonthBudgetSchedule_whenStartDateAndEndDateOverlapsBudgetSchedulePeriod_thenReturnBudgetSchedule(){
+    void testCreateMonthSubBudgetSchedule_whenStartDateAndEndDateOverlapsBudgetSchedulePeriod_thenReturnBudgetSchedule(){
         LocalDate startDate = LocalDate.of(2025, 1, 7);
         LocalDate endDate = LocalDate.of(2025, 1, 31);
         Long userId = 1L;
@@ -287,7 +327,7 @@ class BudgetScheduleEngineTest {
 //        Mockito.when(budgetService.loadUserBudgetForPeriod(anyLong(), any(LocalDate.class), any(LocalDate.class)))
 //                .thenReturn(createTestBudgetWithMultipleSchedules());
 
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(userId, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, startDate, endDate);
         assertTrue(actual.isPresent());
         assertEquals(expectedBudgetSchedule.get().getBudgetId(), actual.get().getBudgetId());
         assertEquals(expectedBudgetSchedule.get().getPeriod(), actual.get().getPeriod());
@@ -295,11 +335,11 @@ class BudgetScheduleEngineTest {
         assertEquals(expectedBudgetSchedule.get().getTotalPeriods(), actual.get().getTotalPeriods());
         assertEquals(expectedBudgetSchedule.get().getStartDate(), actual.get().getStartDate());
         assertEquals(expectedBudgetSchedule.get().getEndDate(), actual.get().getEndDate());
-        assertEquals(expectedBudgetSchedule.get().getBudgetDateRanges().size(), actual.get().getBudgetDateRanges().size());
+        assertEquals(expectedBudgetSchedule.get().getBudgetScheduleRanges().size(), actual.get().getBudgetScheduleRanges().size());
     }
 
     @Test
-    void testCreateMonthBudgetSchedule_whenNoBudgetScheduleFoundInList_thenReturnBudgetScheduleFromDB(){
+    void testCreateMonthSubBudgetSchedule_whenNoBudgetScheduleFoundInList_thenReturnBudgetScheduleFromDB(){
         LocalDate startDate = LocalDate.of(2025, 1, 1);
         LocalDate endDate = LocalDate.of(2025, 1, 31);
         Long userId = 1L;
@@ -322,7 +362,7 @@ class BudgetScheduleEngineTest {
 //        Mockito.when(budgetScheduleService.getBudgetScheduleByDate(anyLong(), any(LocalDate.class), any(LocalDate.class)))
 //                .thenReturn(Optional.of(budgetSchedule));
 
-        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthBudgetSchedule(userId, startDate, endDate);
+        Optional<BudgetSchedule> actual = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, startDate, endDate);
         assertTrue(actual.isPresent());
         assertEquals(expectedBudgetSchedule.get().getBudgetId(), actual.get().getBudgetId());
         assertEquals(expectedBudgetSchedule.get().getPeriod(), actual.get().getPeriod());
@@ -330,7 +370,7 @@ class BudgetScheduleEngineTest {
         assertEquals(expectedBudgetSchedule.get().getTotalPeriods(), actual.get().getTotalPeriods());
         assertEquals(expectedBudgetSchedule.get().getStartDate(), actual.get().getStartDate());
         assertEquals(expectedBudgetSchedule.get().getEndDate(), actual.get().getEndDate());
-        assertEquals(expectedBudgetSchedule.get().getBudgetDateRanges().size(), actual.get().getBudgetDateRanges().size());
+        assertEquals(expectedBudgetSchedule.get().getBudgetScheduleRanges().size(), actual.get().getBudgetScheduleRanges().size());
     }
 
     @Test
@@ -414,7 +454,7 @@ class BudgetScheduleEngineTest {
             assertEquals(expected.getTotalPeriods(), actualSchedule.getTotalPeriods(), "Mismatch in TotalPeriods for " + month);
             assertEquals(expected.getStartDate(), actualSchedule.getStartDate(), "Mismatch in StartDate for " + month);
             assertEquals(expected.getEndDate(), actualSchedule.getEndDate(), "Mismatch in EndDate for " + month);
-            assertEquals(expected.getBudgetDateRanges().size(), actualSchedule.getBudgetDateRanges().size(), "Mismatch in BudgetDateRanges size for " + month);
+            assertEquals(expected.getBudgetScheduleRanges().size(), actualSchedule.getBudgetScheduleRanges().size(), "Mismatch in BudgetDateRanges size for " + month);
         }
     }
 
@@ -526,7 +566,7 @@ class BudgetScheduleEngineTest {
         assertEquals(expectedBudgetSchedule.get().getBudgetId(), actual.get().getBudgetId(), "Mismatch in BudgetId for " + budgetId);
         assertEquals(expectedBudgetSchedule.get().getPeriod(), actual.get().getPeriod(), "Mismatch in Period for " + budgetId);
         assertEquals(expectedBudgetSchedule.get().getStatus(), actual.get().getStatus(), "Mismatch in Status for " + budgetId);
-        assertEquals(expectedBudgetSchedule.get().getBudgetDateRanges().size(), actual.get().getBudgetDateRanges().size(), "Mismatch in BudgetDateRanges for " + budgetId);
+        assertEquals(expectedBudgetSchedule.get().getBudgetScheduleRanges().size(), actual.get().getBudgetScheduleRanges().size(), "Mismatch in BudgetDateRanges for " + budgetId);
     }
 
     @Test
@@ -616,7 +656,7 @@ class BudgetScheduleEngineTest {
             assertEquals(expected.getStartDate(), actualSchedule.getStartDate(), "Mismatch in StartDate for " + month);
             assertEquals(expected.getEndDate(), actualSchedule.getEndDate(), "Mismatch in EndDate for " + month);
             assertEquals(expected.getScheduleRange().getStartDate(), actualSchedule.getScheduleRange().getStartDate(), "Mismatch in ScheduleRange for " + month);
-            assertEquals(expected.getBudgetDateRanges().size(), actualSchedule.getBudgetDateRanges().size(), "Mismatch in BudgetDateRanges for " + month);
+            assertEquals(expected.getBudgetScheduleRanges().size(), actualSchedule.getBudgetScheduleRanges().size(), "Mismatch in BudgetDateRanges for " + month);
         }
     }
 
@@ -684,7 +724,7 @@ class BudgetScheduleEngineTest {
             assertEquals(expected.getStartDate(), actualSchedule.getStartDate(), "Mismatch in StartDate for " + month);
             assertEquals(expected.getEndDate(), actualSchedule.getEndDate(), "Mismatch in EndDate for " + month);
             assertEquals(expected.getScheduleRange().getStartDate(), actualSchedule.getScheduleRange().getStartDate(), "Mismatch in ScheduleRange for " + month);
-            assertEquals(expected.getBudgetDateRanges().size(), actualSchedule.getBudgetDateRanges().size(), "Mismatch in BudgetDateRanges for " + month);
+            assertEquals(expected.getBudgetScheduleRanges().size(), actualSchedule.getBudgetScheduleRanges().size(), "Mismatch in BudgetDateRanges for " + month);
         }
     }
 
@@ -742,7 +782,7 @@ class BudgetScheduleEngineTest {
             assertEquals(expected.getStartDate(), actualSchedule.getStartDate(), "Mismatch in StartDate for " + month);
             assertEquals(expected.getEndDate(), actualSchedule.getEndDate(), "Mismatch in EndDate for " + month);
             assertEquals(expected.getScheduleRange().getStartDate(), actualSchedule.getScheduleRange().getStartDate(), "Mismatch in ScheduleRange for " + month);
-            assertEquals(expected.getBudgetDateRanges().size(), actualSchedule.getBudgetDateRanges().size(), "Mismatch in BudgetDateRanges for " + month);
+            assertEquals(expected.getBudgetScheduleRanges().size(), actualSchedule.getBudgetScheduleRanges().size(), "Mismatch in BudgetDateRanges for " + month);
         }
 
     }
@@ -833,7 +873,7 @@ class BudgetScheduleEngineTest {
                 assertEquals(expected.getEndDate(), actualSchedule.getEndDate(), "Mismatch in EndDate for " + month);
                 assertEquals(expected.getScheduleRange().getStartDate(), actualSchedule.getScheduleRange().getStartDate(), "Mismatch in ScheduleRange StartDate for " + month);
                 assertEquals(expected.getScheduleRange().getEndDate(), actualSchedule.getScheduleRange().getEndDate(), "Mismatch in ScheduleRange EndDate for " + month);
-                assertEquals(expected.getBudgetDateRanges().size(), actualSchedule.getBudgetDateRanges().size(), "Mismatch in BudgetDateRanges for " + month);
+                assertEquals(expected.getBudgetScheduleRanges().size(), actualSchedule.getBudgetScheduleRanges().size(), "Mismatch in BudgetDateRanges for " + month);
             }
         }
     }
