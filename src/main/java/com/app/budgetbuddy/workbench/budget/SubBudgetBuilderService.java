@@ -21,19 +21,59 @@ import java.util.Optional;
 public class SubBudgetBuilderService
 {
     private final SubBudgetService subBudgetService;
+    private final BudgetCalculations budgetCalculations;
     private final BudgetScheduleEngine budgetScheduleEngine;
 
     @Autowired
     public SubBudgetBuilderService(SubBudgetService subBudgetService,
+                                   BudgetCalculations budgetCalculations,
                                    BudgetScheduleEngine budgetScheduleEngine)
     {
         this.subBudgetService = subBudgetService;
+        this.budgetCalculations = budgetCalculations;
         this.budgetScheduleEngine = budgetScheduleEngine;
     }
 
-    public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal totalIncome, final MonthlyBudgetGoals monthlyBudgetGoals)
+    public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal totalIncome, final BudgetGoals budgetGoals)
     {
+        if(budget == null || totalIncome == null || startDate == null || endDate == null || budgetGoals == null)
+        {
+            return Optional.empty();
+        }
+        // Is the start and end dates within the budget start date and end date?
+        LocalDate budgetStartDate = budget.getStartDate();
+        LocalDate budgetEndDate = budget.getEndDate();
+        if(startDate.isAfter(budgetStartDate) && endDate.isBefore(budgetEndDate))
+        {
+            // 1. Determine the Allocated (Budgeted) amount for the sub budget
+            double monthlyAllocation = budgetGoals.getMonthlyAllocation();
+            double currentSavings = budgetGoals.getCurrentSavings();
+            int totalMonthsToSave = budget.getTotalMonthsToSave();
+            double targetAmount = budgetGoals.getTargetAmount();
+            BigDecimal totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, totalMonthsToSave);
+            BigDecimal allocatedAmountNeeded = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, totalIncome, totalMonthsToSave);
+
+            // 2. Determine the Subsavings target for the sub budget
+            BigDecimal subBudgetSavingsTarget = getTotalSubBudgetSavingsTarget(targetAmount, totalMonthsToSave, currentSavings, monthlyAllocation);
+
+            // 3. Determine the SubSavings amount that's been put into the sub budget
+
+            // 4. Determine what's been spent on the sub budget
+
+            // 5. Build the Budget Schedules for the sub budget
+
+            // 6. Build the Sub Budget
+
+            // 7. Return the Sub Budget
+        }
         return null;
+    }
+
+
+    
+    private BigDecimal getTotalSubBudgetSavingsTarget(double targetAmount, int monthsToSave, double currentSavings, double monthlyAllocated)
+    {
+        return budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(targetAmount, monthsToSave, currentSavings, monthlyAllocated);
     }
 
     public List<SubBudget> createSubBudgetsByPeriod(final Budget budget, final Period period, final LocalDate startDate, final LocalDate endDate)
@@ -61,18 +101,18 @@ public class SubBudgetBuilderService
         return null;
     }
 
-    private List<BudgetSchedule> getBudgetSchedulesByBudgetStartAndEndDates(final List<DateRange> budgetDateRanges, final Long userId, final Period period)
-    {
-        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
-        for(DateRange dateRange : budgetDateRanges)
-        {
-            LocalDate budgetStartDate = dateRange.getStartDate();
-            LocalDate budgetEndDate = dateRange.getEndDate();
-            List<BudgetSchedule> newSchedules = createBudgetSchedules(budgetStartDate, budgetEndDate, userId, period);
-            budgetSchedules.addAll(newSchedules);
-        }
-        return budgetSchedules;
-    }
+//    private List<BudgetSchedule> getBudgetSchedulesByBudgetStartAndEndDates(final List<DateRange> budgetDateRanges, final Long userId, final Period period)
+//    {
+//        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
+//        for(DateRange dateRange : budgetDateRanges)
+//        {
+//            LocalDate budgetStartDate = dateRange.getStartDate();
+//            LocalDate budgetEndDate = dateRange.getEndDate();
+//            List<BudgetSchedule> newSchedules = createBudgetSchedules(budgetStartDate, budgetEndDate, userId, period);
+//            budgetSchedules.addAll(newSchedules);
+//        }
+//        return budgetSchedules;
+//    }
 
     public void saveBudgetSchedules(final List<BudgetSchedule> budgetSchedules)
     {
@@ -89,38 +129,6 @@ public class SubBudgetBuilderService
             log.error("There was an error saving the budget schedules to the database: ", e);
         }
     }
-
-
-    public List<BudgetSchedule> createBudgetSchedules(final LocalDate monthStart, final LocalDate monthEnd, final Long userId, final Period period)
-    {
-        if(monthStart == null || monthEnd == null)
-        {
-            return Collections.emptyList();
-        }
-        List<BudgetSchedule> newBudgetSchedules = new ArrayList<>();
-        try
-        {
-            if(userId < 1)
-            {
-                throw new InvalidUserIDException("Invalid UserId has been encountered: " + userId);
-            }
-            if(period == Period.MONTHLY)
-            {
-                Optional<BudgetSchedule> budgetScheduleOptional = budgetScheduleEngine.createMonthSubBudgetSchedule(userId, monthStart, monthEnd);
-                if(budgetScheduleOptional.isPresent())
-                {
-                    BudgetSchedule monthBudgetSchedule = budgetScheduleOptional.get();
-                    newBudgetSchedules.add(monthBudgetSchedule);
-                }
-            }
-            return newBudgetSchedules;
-        }catch(InvalidUserIDException e)
-        {
-            log.error("There was an error creating the budget schedules with the invalid userId: ", e);
-            return Collections.emptyList();
-        }
-    }
-
 
 
 

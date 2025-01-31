@@ -408,6 +408,17 @@ public class BudgetCalculations {
         }
     }
 
+    public BigDecimal calculateTotalSavedInSubBudget(final LocalDate subBudgetStartDate, final LocalDate subBudgetEndDate, final BigDecimal spendingInSubBudget, final Long budgetId)
+    {
+        // 1.
+        return null;
+    }
+
+    public BigDecimal calculateTotalSpendingInSubBudget(LocalDate subBudgetStartDate, LocalDate subBudgetEndDate, Long budgetId)
+    {
+        return null;
+    }
+
     public BigDecimal calculateTotalSavedInBudget(final Budget budget, final BigDecimal totalSpentOnBudget, final DateRange monthRange)
     {
         if(budget == null)
@@ -874,13 +885,39 @@ public class BudgetCalculations {
         return budgetEntity.orElseThrow(() -> new IllegalArgumentException("Budget id " + budgetId + " not found"));
     }
 
-
-    public BigDecimal calculateRemainingAmount(BigDecimal actualSpent, BigDecimal budgetedAmount)
+    public BigDecimal calculateMonthlySubBudgetSavingsTargetAmount(double targetSavingsAmount, int totalMonthsToSave, double currentSavings, double monthlyAllocation)
     {
-        return budgetedAmount.subtract(actualSpent);
+        if(targetSavingsAmount == 0 || totalMonthsToSave == 0 || currentSavings == 0 || monthlyAllocation == 0)
+        {
+            return BigDecimal.ZERO;
+        }
+        double savingsTargetDifference = targetSavingsAmount - currentSavings;
+        double monthlyNeeded = savingsTargetDifference / totalMonthsToSave;
+        // Will the current savings meet the savings Target using the savings amount when divided from the target amount?
+        // Is the monthly contribution enough
+        double totalPlannedContribution = monthlyAllocation * 12;
+        if(totalPlannedContribution > targetSavingsAmount)
+        {
+            log.warn("Reduce the monthly contributed amount to match target savings amount");
+        }
+        else if(totalPlannedContribution < targetSavingsAmount)
+        {
+            log.warn("Increase the monthly contributed amount to match target savings amount");
+        }
+        double finalSavingsTargetAmount = (totalPlannedContribution >= savingsTargetDifference) ? monthlyAllocation : monthlyNeeded;
+        return BigDecimal.valueOf(finalSavingsTargetAmount);
     }
 
-    public BigDecimal calculateRemainingBudgetAmountForCategory(final Category category, final Budget budget){
-        return null;
+
+    public BigDecimal calculateTotalBudgetForSubBudget(final Budget budget, double monthlyAllocation, int totalMonthsToSave)
+    {
+        if(budget == null || monthlyAllocation <= 0 || totalMonthsToSave <= 0)
+        {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal totalBudgetAmount = budget.getBudgetAmount();
+        BigDecimal totalMonthsToSaveDec = BigDecimal.valueOf(totalMonthsToSave);
+        BigDecimal monthlyBudgetAmount = totalBudgetAmount.divide(totalMonthsToSaveDec, 2, RoundingMode.HALF_UP);
+        return monthlyBudgetAmount.subtract(BigDecimal.valueOf(monthlyAllocation));
     }
 }

@@ -842,6 +842,45 @@ class BudgetCalculatorTest {
         });
     }
 
+    @Test
+    void testCalculateTotalBudgetForSubBudget_whenCriteriaValid_thenReturnTotalBudget()
+    {
+        BigDecimal totalIncome = new BigDecimal("3260");
+        Budget budget = new Budget();
+        budget.setStartDate(LocalDate.of(2025,1 ,1));
+        budget.setEndDate(LocalDate.of(2025,12, 31));
+        budget.setBudgetPeriod(Period.MONTHLY);
+        budget.setBudgetMode(BudgetMode.SAVINGS_PLAN);
+        budget.setBudgetName("Savings Budget Plan");
+        budget.setBudgetDescription("Savings Budget Plan");
+        budget.setTotalMonthsToSave(12);
+        budget.setUserId(1L);
+        budget.setSavingsProgress(BigDecimal.ZERO);
+        budget.setSavingsAmountAllocated(BigDecimal.ZERO);
+        budget.setBudgetAmount(new BigDecimal("39120"));
+        budget.setActual(new BigDecimal("1609"));
+
+        double monthlyAllocation = 250;
+        double targetSavingsAmount = 2500;
+        int monthsToSave = 12;
+
+        BigDecimal totalSubBudgetAmount = new BigDecimal("3010.00");
+        BigDecimal actual = budgetCalculator.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, monthsToSave);
+        assertNotNull(actual);
+        assertEquals(totalSubBudgetAmount, actual);
+    }
+
+    @Test
+    void testCalculateSubBudgetSavingsTargetAmount_whenCriteriaValid_thenReturnSavingsTarget(){
+        double targetAmount = 2500;
+        int monthsToSave = 12;
+        double currentSavings = 120;
+        double monthlyAllocation = 200;
+        BigDecimal expected = new BigDecimal("200.0");
+        BigDecimal actual = budgetCalculator.calculateMonthlySubBudgetSavingsTargetAmount(targetAmount, monthsToSave, currentSavings, monthlyAllocation);
+        assertEquals(expected, actual);
+    }
+
 //    @Test
 //    void testCalculateBudgetedAmountForCategory_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
 //        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("350.00"));
