@@ -43,14 +43,13 @@ public class SubBudget
         this.isActive = isActive;
     }
 
-    private static SubBudget buildSubBudget(boolean isActive, BigDecimal allocatedAmount, BigDecimal savingsTarget, BigDecimal savingsAmount, Budget budget, BigDecimal spentOnBudget, String budgetName, LocalDate startDate, LocalDate endDate, List<BudgetSchedule> budgetSchedules)
+    public static SubBudget buildSubBudget(boolean isActive, BigDecimal allocatedAmount, BigDecimal savingsTarget, BigDecimal savingsAmount, Budget budget, BigDecimal spentOnBudget, String budgetName, LocalDate startDate, LocalDate endDate)
     {
         return SubBudget.builder()
                 .budget(budget)
                 .endDate(endDate)
                 .startDate(startDate)
                 .isActive(isActive)
-                .budgetSchedule(budgetSchedules)
                 .spentOnBudget(spentOnBudget)
                 .subBudgetName(budgetName)
                 .subSavingsTarget(savingsTarget)

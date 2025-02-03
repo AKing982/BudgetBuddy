@@ -414,11 +414,6 @@ public class BudgetCalculations {
         return null;
     }
 
-    public BigDecimal calculateTotalSpendingInSubBudget(LocalDate subBudgetStartDate, LocalDate subBudgetEndDate, Long budgetId)
-    {
-        return null;
-    }
-
     public BigDecimal calculateTotalSavedInBudget(final Budget budget, final BigDecimal totalSpentOnBudget, final DateRange monthRange)
     {
         if(budget == null)

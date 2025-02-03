@@ -7,9 +7,10 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Entity(name="budgetScheduleRanges")
+@Entity
 @Getter
 @Setter
+@Table(name="budgetScheduleRanges")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class BudgetScheduleRangeEntity

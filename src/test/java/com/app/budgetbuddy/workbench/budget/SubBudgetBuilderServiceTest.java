@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.SubBudgetService;
+import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,10 +133,58 @@ class SubBudgetBuilderServiceTest
         Mockito.when(budgetCalculations.calculateActualMonthlyAllocation(anyDouble(), anyDouble(), anyDouble(), any(BigDecimal.class), anyInt()))
                 .thenReturn(new BigDecimal("250"));
 
+        Mockito.when(budgetCalculations.calculateTotalBudgetForSubBudget(any(Budget.class), anyDouble(), anyInt()))
+                .thenReturn(new BigDecimal("3260"));
+
+        Mockito.when(budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(anyDouble(), anyInt(), anyDouble(), anyDouble()))
+                        .thenReturn(new BigDecimal("250"));
+
+        Mockito.when(budgetScheduleEngine.createMonthSubBudgetSchedule(any(SubBudget.class)))
+                .thenReturn(Optional.of(januaryBudgetSchedule));
+
         Optional<SubBudget> expectedSubBudgetOptional = Optional.of(expectedSubBudget);
         Optional<SubBudget> actual = subBudgetBuilderService.createNewMonthSubBudget(budget, startDate, endDate, totalIncome, budgetGoals);
-        assertTrue(actual.isPresent());
-        assertEquals(expectedSubBudgetOptional.get(), actual.get());
+        SubBudget actualSubBudget = actual.get();
+
+        // Assertions: Check each attribute separately
+        assertEquals(expectedSubBudget.getSubBudgetName(), actualSubBudget.getSubBudgetName(), "SubBudget name mismatch");
+        assertEquals(expectedSubBudget.getStartDate(), actualSubBudget.getStartDate(), "Start date mismatch");
+        assertEquals(expectedSubBudget.getEndDate(), actualSubBudget.getEndDate(), "End date mismatch");
+        assertEquals(expectedSubBudget.getAllocatedAmount(), actualSubBudget.getAllocatedAmount(), "Allocated amount mismatch");
+        assertEquals(expectedSubBudget.getSubSavingsTarget(), actualSubBudget.getSubSavingsTarget(), "Sub savings target mismatch");
+        assertEquals(expectedSubBudget.getSubSavingsAmount(), actualSubBudget.getSubSavingsAmount(), "Sub savings amount mismatch");
+        assertEquals(expectedSubBudget.getSpentOnBudget(), actualSubBudget.getSpentOnBudget(), "Spent on budget mismatch");
+        assertEquals(expectedSubBudget.isActive(), actualSubBudget.isActive(), "SubBudget active status mismatch");
+        assertEquals(expectedSubBudget.getBudget(), actualSubBudget.getBudget(), "Budget mismatch");
+
+        // Assertions: Check budget schedules
+        assertNotNull(actualSubBudget.getBudgetSchedule(), "Budget schedule should not be null");
+        assertEquals(1, actualSubBudget.getBudgetSchedule().size(), "Expected only one budget schedule");
+
+        BudgetSchedule actualSchedule = actualSubBudget.getBudgetSchedule().get(0);
+        assertEquals(januaryBudgetSchedule.getBudgetId(), actualSchedule.getBudgetId(), "Budget ID mismatch");
+        assertEquals(januaryBudgetSchedule.getPeriod(), actualSchedule.getPeriod(), "Period mismatch");
+        assertEquals(januaryBudgetSchedule.getStartDate(), actualSchedule.getStartDate(), "Schedule start date mismatch");
+        assertEquals(januaryBudgetSchedule.getEndDate(), actualSchedule.getEndDate(), "Schedule end date mismatch");
+        assertEquals(januaryBudgetSchedule.getScheduleRange(), actualSchedule.getScheduleRange(), "Schedule range mismatch");
+        assertEquals(januaryBudgetSchedule.getStatus(), actualSchedule.getStatus(), "Status mismatch");
+        assertEquals(januaryBudgetSchedule.getTotalPeriods(), actualSchedule.getTotalPeriods(), "Total periods mismatch");
+
+        // Assertions: Check budget schedule ranges
+        assertNotNull(actualSchedule.getBudgetScheduleRanges(), "Budget schedule ranges should not be null");
+        assertEquals(januaryBudgetScheduleRanges.size(), actualSchedule.getBudgetScheduleRanges().size(), "Budget schedule range count mismatch");
+
+        for (int i = 0; i < januaryBudgetScheduleRanges.size(); i++) {
+            BudgetScheduleRange expectedRange = januaryBudgetScheduleRanges.get(i);
+            BudgetScheduleRange actualRange = actualSchedule.getBudgetScheduleRanges().get(i);
+
+            assertEquals(expectedRange.getStartRange(), actualRange.getStartRange(), "Budget schedule range start date mismatch");
+            assertEquals(expectedRange.getEndRange(), actualRange.getEndRange(), "Budget schedule range end date mismatch");
+            assertEquals(expectedRange.getBudgetedAmount(), actualRange.getBudgetedAmount(), "Budgeted amount mismatch");
+            assertEquals(expectedRange.getSpentOnRange(), actualRange.getSpentOnRange(), "Spent amount mismatch");
+            assertEquals(expectedRange.getRangeType(), actualRange.getRangeType(), "Range type mismatch");
+            assertEquals(expectedRange.isSingleDate(), actualRange.isSingleDate(), "Single date flag mismatch");
+        }
     }
 
     private List<BudgetScheduleRange> generateJanuaryBudgetScheduleRanges(){

@@ -1,10 +1,11 @@
-package com.app.budgetbuddy.workbench.budget;
+package com.app.budgetbuddy.workbench.subBudget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.SubBudgetService;
+import com.app.budgetbuddy.workbench.budget.BudgetCalculations;
+import com.app.budgetbuddy.workbench.budget.BudgetScheduleEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,9 +13,11 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+
+import static com.app.budgetbuddy.domain.SubBudget.buildSubBudget;
 
 @Component
 @Slf4j
@@ -43,13 +46,16 @@ public class SubBudgetBuilderService
         // Is the start and end dates within the budget start date and end date?
         LocalDate budgetStartDate = budget.getStartDate();
         LocalDate budgetEndDate = budget.getEndDate();
-        if(startDate.isAfter(budgetStartDate) && endDate.isBefore(budgetEndDate))
+        if(!startDate.isBefore(budgetStartDate) && !endDate.isAfter(budgetEndDate))
         {
             // 1. Determine the Allocated (Budgeted) amount for the sub budget
             double monthlyAllocation = budgetGoals.getMonthlyAllocation();
             double currentSavings = budgetGoals.getCurrentSavings();
             int totalMonthsToSave = budget.getTotalMonthsToSave();
             double targetAmount = budgetGoals.getTargetAmount();
+            String monthName = startDate.getMonth().name();
+            String firstMonthChar = monthName.substring(0, 1).toUpperCase(Locale.ENGLISH).toUpperCase();
+            String subBudgetName = firstMonthChar + monthName.substring(1).toLowerCase(Locale.ROOT) + " " + "Budget";
             BigDecimal totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, totalMonthsToSave);
             BigDecimal allocatedAmountNeeded = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, totalIncome, totalMonthsToSave);
 
@@ -57,20 +63,20 @@ public class SubBudgetBuilderService
             BigDecimal subBudgetSavingsTarget = getTotalSubBudgetSavingsTarget(targetAmount, totalMonthsToSave, currentSavings, monthlyAllocation);
 
             // 3. Determine the SubSavings amount that's been put into the sub budget
+            BigDecimal totalSavingsInSubBudget = BigDecimal.ZERO;
+            BigDecimal totalSubBudgetSpending = BigDecimal.ZERO;
 
             // 4. Determine what's been spent on the sub budget
-
             // 5. Build the Budget Schedules for the sub budget
-
-            // 6. Build the Sub Budget
-
-            // 7. Return the Sub Budget
+            SubBudget subBudget = buildSubBudget(true, totalSubBudgetAmount, subBudgetSavingsTarget, allocatedAmountNeeded, budget, totalSubBudgetSpending, subBudgetName, startDate, endDate);
+            Optional<BudgetSchedule> budgetSchedules = budgetScheduleEngine.createMonthSubBudgetSchedule(subBudget);
+            subBudget.setBudgetSchedule(List.of(budgetSchedules.get()));
+            saveSingleSubBudget(subBudget);
+            return Optional.of(subBudget);
         }
-        return null;
+        return Optional.empty();
     }
 
-
-    
     private BigDecimal getTotalSubBudgetSavingsTarget(double targetAmount, int monthsToSave, double currentSavings, double monthlyAllocated)
     {
         return budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(targetAmount, monthsToSave, currentSavings, monthlyAllocated);
@@ -91,28 +97,28 @@ public class SubBudgetBuilderService
         return null;
     }
 
-    public List<SubBudgetEntity> saveSubBudgets(final List<SubBudget> subBudgets)
+    public void saveSubBudgets(final List<SubBudget> subBudgets)
     {
-        return null;
+        for(SubBudget subBudget : subBudgets)
+        {
+            saveSingleSubBudget(subBudget);
+        }
     }
 
-    public List<BudgetSchedule> createMonthlyBudgetSchedule(final LocalDate monthStart, final LocalDate monthEnd, final Long userId)
+    public void saveSingleSubBudget(final SubBudget subBudget)
     {
-        return null;
+        if(subBudget == null)
+        {
+            return;
+        }
+        try
+        {
+            subBudgetService.saveSubBudget(subBudget);
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error saving single sub budget: ", e);
+        }
     }
-
-//    private List<BudgetSchedule> getBudgetSchedulesByBudgetStartAndEndDates(final List<DateRange> budgetDateRanges, final Long userId, final Period period)
-//    {
-//        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
-//        for(DateRange dateRange : budgetDateRanges)
-//        {
-//            LocalDate budgetStartDate = dateRange.getStartDate();
-//            LocalDate budgetEndDate = dateRange.getEndDate();
-//            List<BudgetSchedule> newSchedules = createBudgetSchedules(budgetStartDate, budgetEndDate, userId, period);
-//            budgetSchedules.addAll(newSchedules);
-//        }
-//        return budgetSchedules;
-//    }
 
     public void saveBudgetSchedules(final List<BudgetSchedule> budgetSchedules)
     {
