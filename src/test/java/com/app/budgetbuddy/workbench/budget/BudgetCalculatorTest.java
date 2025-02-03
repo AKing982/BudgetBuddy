@@ -881,6 +881,18 @@ class BudgetCalculatorTest {
         assertEquals(expected, actual);
     }
 
+    @Test
+    void testCalculateSubBudgetSpending_whenSubBudgetDateRangeIsNull_thenReturnZero(){
+        Long budgetId = 1L;
+        BigDecimal actual = budgetCalculator.calculateSubBudgetSpending(null, budgetId);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testCalculateSubBudgetSpending_whenCriteriaValid_thenReturnSubBudgetSpending(){
+
+    }
+
 //    @Test
 //    void testCalculateBudgetedAmountForCategory_whenCategoryIsGroceriesAndDateRangeIsNovemberTest_thenReturnBudgetPeriodAmount(){
 //        CategoryPeriodSpending grocerySpending = new CategoryPeriodSpending("Groceries", new BigDecimal("350.00"));

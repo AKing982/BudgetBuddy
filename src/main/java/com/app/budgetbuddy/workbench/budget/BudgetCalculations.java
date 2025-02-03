@@ -908,6 +908,18 @@ public class BudgetCalculations {
         return BigDecimal.valueOf(finalSavingsTargetAmount);
     }
 
+    public BigDecimal calculateSubBudgetSpending(final DateRange subBudgetDateRange, final Long budgetId)
+    {
+        if(subBudgetDateRange == null || budgetId == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        LocalDate subBudgetStartDate = subBudgetDateRange.getStartDate();
+        LocalDate subBudgetEndDate = subBudgetDateRange.getEndDate();
+
+        return null;
+    }
+
 
     public BigDecimal calculateTotalBudgetForSubBudget(final Budget budget, double monthlyAllocation, int totalMonthsToSave)
     {
