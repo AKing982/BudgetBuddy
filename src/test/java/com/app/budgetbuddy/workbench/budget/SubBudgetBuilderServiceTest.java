@@ -15,8 +15,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -54,6 +56,7 @@ class SubBudgetBuilderServiceTest
         budget.setTotalMonthsToSave(12);
         budget.setUserId(1L);
         budget.setId(1L);
+        budget.setIncome(new BigDecimal("39120"));
         budget.setSavingsProgress(BigDecimal.ZERO);
         budget.setSavingsAmountAllocated(BigDecimal.ZERO);
         budget.setBudgetAmount(new BigDecimal("39120"));
@@ -130,14 +133,20 @@ class SubBudgetBuilderServiceTest
         januaryBudgetSchedule.setBudgetScheduleRanges(januaryBudgetScheduleRanges);
         expectedSubBudget.setBudgetSchedule(List.of(januaryBudgetSchedule));
 
-        Mockito.when(budgetCalculations.calculateActualMonthlyAllocation(anyDouble(), anyDouble(), anyDouble(), any(BigDecimal.class), anyInt()))
-                .thenReturn(new BigDecimal("250"));
+//        Mockito.when(budgetCalculations.calculateActualMonthlyAllocation(anyDouble(), anyDouble(), anyDouble(), any(BigDecimal.class), anyInt()))
+//                .thenReturn(new BigDecimal("250"));
 
         Mockito.when(budgetCalculations.calculateTotalBudgetForSubBudget(any(Budget.class), anyDouble(), anyInt()))
                 .thenReturn(new BigDecimal("3260"));
 
         Mockito.when(budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(anyDouble(), anyInt(), anyDouble(), anyDouble()))
                         .thenReturn(new BigDecimal("250"));
+
+        Mockito.when(budgetCalculations.calculateSubBudgetSavings(any(DateRange.class), anyLong()))
+                        .thenReturn(new BigDecimal("120"));
+
+        Mockito.when(budgetCalculations.calculateSubBudgetSpending(any(DateRange.class), anyLong()))
+                        .thenReturn(new BigDecimal("300"));
 
         Mockito.when(budgetScheduleEngine.createMonthSubBudgetSchedule(any(SubBudget.class)))
                 .thenReturn(Optional.of(januaryBudgetSchedule));
@@ -186,6 +195,118 @@ class SubBudgetBuilderServiceTest
             assertEquals(expectedRange.isSingleDate(), actualRange.isSingleDate(), "Single date flag mismatch");
         }
     }
+
+    @Test
+    void testCreateMonthlySubBudgets_whenBudgetIsNull_thenReturnEmptyList() {
+        List<SubBudget> actual = subBudgetBuilderService.createMonthlySubBudgets(null, budgetGoals);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testCreateMonthlySubBudgets_whenBudgetAndGoalsValid_thenReturnSubBudgets(){
+
+        // Build expected sub-budgets using the helper method
+        List<SubBudget> expectedSubBudgets = List.of(
+                buildSubBudgetForMonth(budget, 0),
+                buildSubBudgetForMonth(budget, 1),
+                buildSubBudgetForMonth(budget, 2),
+                buildSubBudgetForMonth(budget, 3),
+                buildSubBudgetForMonth(budget, 4),
+                buildSubBudgetForMonth(budget, 5),
+                buildSubBudgetForMonth(budget, 6),
+                buildSubBudgetForMonth(budget, 7),
+                buildSubBudgetForMonth(budget, 8),
+                buildSubBudgetForMonth(budget, 9),
+                buildSubBudgetForMonth(budget, 10),
+                buildSubBudgetForMonth(budget, 11)
+        );
+
+        // Mocking budget calculations
+        Mockito.when(budgetCalculations.calculateTotalBudgetForSubBudget(any(Budget.class), anyDouble(), anyInt()))
+                .thenReturn(new BigDecimal("3260")); // Monthly allocation
+
+        Mockito.when(budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(anyDouble(), anyInt(), anyDouble(), anyDouble()))
+                .thenReturn(new BigDecimal("250")); // Monthly savings target
+
+        Mockito.when(budgetCalculations.calculateSubBudgetSavings(any(DateRange.class), any(Long.class)))
+                .thenReturn(new BigDecimal("120")); // Monthly sub-savings amount
+
+        Mockito.when(budgetCalculations.calculateSubBudgetSpending(any(DateRange.class), any(Long.class)))
+                .thenReturn(BigDecimal.ZERO); // No spending in test scenario
+
+        Mockito.when(budgetScheduleEngine.createMonthSubBudgetSchedule(any(SubBudget.class)))
+                .thenAnswer(invocation -> {
+                    SubBudget subBudget = invocation.getArgument(0);
+                    return Optional.of(buildMockBudgetSchedule(subBudget));
+                });
+
+        // Act: Call the method under test
+        List<SubBudget> actualSubBudgets = subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals);
+
+        // Assert: Check if the correct number of sub-budgets are created
+        assertNotNull(actualSubBudgets, "Sub-budgets list should not be null");
+        assertEquals(12, actualSubBudgets.size(), "Should create 12 sub-budgets for each month");
+
+        // Verify each sub-budget's attributes
+        for (int i = 0; i < 12; i++) {
+            SubBudget expected = expectedSubBudgets.get(i);
+            SubBudget actual = actualSubBudgets.get(i);
+
+            System.out.println("Comparing sub-budget for month " + (i + 1));
+            System.out.println("Expected Start Date: " + expected.getStartDate() + " | Actual Start Date: " + actual.getStartDate());
+            System.out.println("Expected End Date: " + expected.getEndDate() + " | Actual End Date: " + actual.getEndDate());
+
+            assertEquals(expected.getSubBudgetName(), actual.getSubBudgetName(), "Sub-budget name mismatch for month " + (i + 1));
+            assertEquals(expected.getStartDate(), actual.getStartDate(), "Start date mismatch for month " + (i + 1));
+            assertEquals(expected.getEndDate(), actual.getEndDate(), "End date mismatch for month " + (i + 1));
+            assertEquals(expected.getAllocatedAmount(), actual.getAllocatedAmount(), "Allocated amount mismatch for month " + (i + 1));
+            assertEquals(expected.getSubSavingsTarget(), actual.getSubSavingsTarget(), "Sub-savings target mismatch for month " + (i + 1));
+            assertEquals(expected.getSubSavingsAmount(), actual.getSubSavingsAmount(), "Sub-savings amount mismatch for month " + (i + 1));
+            assertEquals(expected.getSpentOnBudget(), actual.getSpentOnBudget(), "Spent on budget mismatch for month " + (i + 1));
+            assertEquals(expected.isActive(), actual.isActive(), "Sub-budget active status mismatch for month " + (i + 1));
+            assertEquals(expected.getBudget(), actual.getBudget(), "Budget mismatch for month " + (i + 1));
+        }
+    }
+
+    private BudgetSchedule buildMockBudgetSchedule(SubBudget subBudget) {
+        return BudgetSchedule.builder()
+                .budgetId(subBudget.getBudget().getId())
+                .period(Period.MONTHLY)
+                .startDate(subBudget.getStartDate())
+                .endDate(subBudget.getEndDate())
+                .scheduleRange(new DateRange(subBudget.getStartDate(), subBudget.getEndDate()))
+                .status("Active")
+                .totalPeriods(4)
+                .budgetScheduleRanges(new ArrayList<>()) // You can mock actual ranges if needed
+                .build();
+    }
+
+    private SubBudget buildSubBudgetForMonth(Budget budget, int monthOffset) {
+        LocalDate monthStart = budget.getStartDate().plusMonths(monthOffset).withDayOfMonth(1);
+        LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+
+        // ✅ Correct month formatting: Capitalize first letter only
+        String monthName = monthStart.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+        String subBudgetName = monthName + " Budget"; // "January Budget", "February Budget", etc.
+
+        System.out.println("Building SubBudget for Month: " + monthStart.getMonth());
+        System.out.println("Start Date: " + monthStart);
+        System.out.println("End Date: " + monthEnd); // Debug output
+
+        return SubBudget.buildSubBudget(
+                true,
+                new BigDecimal("3260"), // Monthly allocated amount
+                new BigDecimal("250"),  // Mocked savings target per month
+                new BigDecimal("120"),  // Mocked sub savings per month
+                budget,
+                BigDecimal.ZERO,  // No spending
+                subBudgetName,
+                monthStart,
+                monthEnd
+        );
+    }
+
+
 
     private List<BudgetScheduleRange> generateJanuaryBudgetScheduleRanges(){
         List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();

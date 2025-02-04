@@ -27,17 +27,19 @@ public class BudgetCalculations {
     private final BudgetService budgetService;
     private final BudgetGoalsService budgetGoalsService;
     private final ControlledSpendingCategoriesService budgetCategoriesService;
-
+    private final TransactionCategoryService transactionCategoryService;
     private final BudgetValidator budgetValidator;
 
     @Autowired
     public BudgetCalculations(BudgetService budgetService,
                             BudgetGoalsService budgetGoalsService,
                             ControlledSpendingCategoriesService budgetCategoriesService,
+                            TransactionCategoryService transactionCategoryService,
                             BudgetValidator budgetValidator) {
         this.budgetService = budgetService;
         this.budgetGoalsService = budgetGoalsService;
         this.budgetCategoriesService = budgetCategoriesService;
+        this.transactionCategoryService = transactionCategoryService;
         this.budgetValidator = budgetValidator;
     }
 
@@ -912,9 +914,40 @@ public class BudgetCalculations {
         LocalDate subBudgetStartDate = subBudgetDateRange.getStartDate();
         LocalDate subBudgetEndDate = subBudgetDateRange.getEndDate();
 
-        return null;
+        // Get the Transaction Categories for the sub budget period
+        List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budgetId, subBudgetStartDate, subBudgetEndDate);
+        if(transactionCategories.isEmpty())
+        {
+            return BigDecimal.ZERO;
+        }
+        return transactionCategories.stream()
+                .map(TransactionCategory::getBudgetActual)
+                .filter(Objects::nonNull)
+                .map(BigDecimal::valueOf)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    public BigDecimal calculateSubBudgetSavings(final DateRange subBudgetDateRange, final Long budgetId)
+    {
+        if(subBudgetDateRange == null || budgetId == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        LocalDate subBudgetStartDate = subBudgetDateRange.getStartDate();
+        LocalDate subBudgetEndDate = subBudgetDateRange.getEndDate();
+        List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budgetId, subBudgetStartDate, subBudgetEndDate);
+        if(transactionCategories.isEmpty())
+        {
+            return BigDecimal.ZERO;
+        }
+        return transactionCategories.stream()
+                .map(tc -> {
+                    BigDecimal budgeted = BigDecimal.valueOf(tc.getBudgetActual());
+                    BigDecimal actualSpent = BigDecimal.valueOf(tc.getBudgetActual());
+                    return budgeted.subtract(actualSpent).max(BigDecimal.ZERO);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 
     public BigDecimal calculateTotalBudgetForSubBudget(final Budget budget, double monthlyAllocation, int totalMonthsToSave)
     {

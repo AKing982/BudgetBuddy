@@ -4,6 +4,7 @@ import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,10 +128,18 @@ public class DateRange implements Comparable<DateRange>
     public List<DateRange> splitIntoMonths(){
         List<DateRange> dateRanges = new ArrayList<>();
         LocalDate current = startDate;
-        while(!current.isAfter(endDate)){
-            dateRanges.add(new DateRange(current, current));
-            current = current.plusMonths(1);
+        while (!current.isAfter(endDate))
+        {
+            LocalDate monthEnd = YearMonth.from(current).atEndOfMonth();
+            // Ensure the month end does not exceed the overall budget end date
+            if (monthEnd.isAfter(endDate))
+            {
+                monthEnd = endDate;
+            }
+            dateRanges.add(new DateRange(current, monthEnd));
+            current = monthEnd.plusDays(1);
         }
+
         return dateRanges;
     }
 

@@ -26,6 +26,7 @@ public class Budget
     private LocalDate endDate;
     private Period budgetPeriod;
     private BudgetMode budgetMode;
+    private BigDecimal income;
     private BigDecimal savingsAmountAllocated;
     private BigDecimal savingsProgress;
     private int totalMonthsToSave;
