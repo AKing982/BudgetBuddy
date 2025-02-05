@@ -34,9 +34,9 @@ public class SubBudgetBuilderService
         this.budgetScheduleEngine = budgetScheduleEngine;
     }
 
-    public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal totalIncome, final BudgetGoals budgetGoals)
+    public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal monthlyIncome, final BudgetGoals budgetGoals)
     {
-        if(budget == null || totalIncome == null || startDate == null || endDate == null || budgetGoals == null)
+        if(budget == null || monthlyIncome == null || startDate == null || endDate == null || budgetGoals == null)
         {
             return Optional.empty();
         }
@@ -56,7 +56,7 @@ public class SubBudgetBuilderService
             String firstMonthChar = monthName.substring(0, 1).toUpperCase(Locale.ENGLISH).toUpperCase();
             String subBudgetName = firstMonthChar + monthName.substring(1).toLowerCase(Locale.ROOT) + " " + "Budget";
             BigDecimal totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, totalMonthsToSave);
-            BigDecimal allocatedAmountNeeded = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, totalIncome, totalMonthsToSave);
+            BigDecimal allocatedAmountNeeded = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, monthlyIncome, totalMonthsToSave);
 
             // 2. Determine the Subsavings target for the sub budget
             BigDecimal subBudgetSavingsTarget = getTotalSubBudgetSavingsTarget(targetAmount, totalMonthsToSave, currentSavings, monthlyAllocation);
