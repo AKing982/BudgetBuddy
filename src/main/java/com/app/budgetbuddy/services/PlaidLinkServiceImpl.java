@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.PlaidLinkStatus;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.UserNotFoundException;
@@ -65,6 +66,42 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     @Override
     public Optional<PlaidLinkEntity> findPlaidLinkByUserIdAndAccessToken(Long userID, String accessToken) {
         return plaidLinkRepository.findPlaidLinkByUserIdAndAccessToken(userID, accessToken);
+    }
+
+    @Override
+    public PlaidLinkStatus checkPlaidLinkStatus(Long userId)
+    {
+        Optional<PlaidLinkEntity> plaidLink = plaidLinkRepository.findPlaidLinkByUserId(userId);
+        if (plaidLink.isEmpty()) {
+            return new PlaidLinkStatus(false, false);
+        }
+
+        PlaidLinkEntity link = plaidLink.get();
+
+        // Define a threshold for when an update is required (e.g., 30 days)
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        boolean needsUpdate = link.getUpdatedAt() == null || link.getUpdatedAt().isBefore(thirtyDaysAgo);
+
+        return new PlaidLinkStatus(true, needsUpdate);
+    }
+
+    @Override
+    public void markPlaidAsNeedingUpdate(Long userId)
+    {
+        plaidLinkRepository.findPlaidLinkByUserId(userId).ifPresent(plaidLink -> {
+            plaidLink.setRequiresUpdate(true);
+            plaidLinkRepository.save(plaidLink);
+        });
+    }
+
+    @Override
+    public void markPlaidAsUpdated(Long userId)
+    {
+        plaidLinkRepository.findPlaidLinkByUserId(userId).ifPresent(plaidLink -> {
+            plaidLink.setRequiresUpdate(false);
+            plaidLink.setUpdatedAt(LocalDateTime.now());
+            plaidLinkRepository.save(plaidLink);
+        });
     }
 
     private UserEntity findUserByUserID(Long userID)

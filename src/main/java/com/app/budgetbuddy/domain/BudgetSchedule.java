@@ -18,7 +18,7 @@ import java.util.Objects;
 public class BudgetSchedule
 {
     private Long budgetScheduleId;
-    private Long budgetId;
+    private Long subBudgetId;
     private LocalDate startDate;
     private LocalDate endDate;
     private DateRange scheduleRange;
@@ -30,7 +30,7 @@ public class BudgetSchedule
 
     public BudgetSchedule(Long budgetScheduleId, Long budgetId, LocalDate startDate, LocalDate endDate, Period period, int totalPeriods, String status){
         this.budgetScheduleId = budgetScheduleId;
-        this.budgetId = budgetId;
+        this.subBudgetId = budgetId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.period = period;
@@ -73,19 +73,19 @@ public class BudgetSchedule
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BudgetSchedule that = (BudgetSchedule) o;
-        return totalPeriods == that.totalPeriods && Objects.equals(budgetScheduleId, that.budgetScheduleId) && Objects.equals(budgetId, that.budgetId) && Objects.equals(startDate, that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(scheduleRange, that.scheduleRange) && Objects.equals(status, that.status) && Objects.equals(createdDate, that.createdDate);
+        return totalPeriods == that.totalPeriods && Objects.equals(budgetScheduleId, that.budgetScheduleId) && Objects.equals(subBudgetId, that.subBudgetId) && Objects.equals(startDate, that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(scheduleRange, that.scheduleRange) && Objects.equals(status, that.status) && Objects.equals(createdDate, that.createdDate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(budgetScheduleId, budgetId, startDate, endDate, scheduleRange, totalPeriods, status, createdDate);
+        return Objects.hash(budgetScheduleId,subBudgetId, startDate, endDate, scheduleRange, totalPeriods, status, createdDate);
     }
 
     @Override
     public String toString() {
         return "BudgetSchedule{" +
                 "budgetScheduleId=" + budgetScheduleId +
-                ", budgetId=" + budgetId +
+                ", subBudgetId=" + subBudgetId +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
                 ", scheduleRange=" + scheduleRange +

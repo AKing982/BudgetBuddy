@@ -37,4 +37,7 @@ public class PlaidLinkEntity
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime updatedAt;
 
+    @Column(name="requiresUpdate")
+    private boolean requiresUpdate;
+
 }

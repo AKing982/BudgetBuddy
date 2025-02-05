@@ -63,12 +63,8 @@ public class SubBudgetEntity
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdDate;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name="sub_budget_schedule_mapping",
-            joinColumns=@JoinColumn(name="subBudgetId"),
-            inverseJoinColumns = @JoinColumn(name="scheduleId")
-    )
+    // One-to-Many Relationship: SubBudget → BudgetSchedules
+    @OneToMany(mappedBy = "subBudget", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BudgetScheduleEntity> budgetSchedules = new HashSet<>();
 
 }

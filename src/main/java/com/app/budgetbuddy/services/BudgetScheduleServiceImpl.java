@@ -3,9 +3,12 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetScheduleEntity;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.repositories.BudgetScheduleRepository;
+import com.app.budgetbuddy.repositories.SubBudgetRepository;
+import com.app.budgetbuddy.workbench.budget.BudgetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,13 +23,16 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
 {
     private final BudgetScheduleRepository budgetScheduleRepository;
     private final BudgetService budgetService;
+    private final SubBudgetRepository subBudgetRepository;
 
     @Autowired
     public BudgetScheduleServiceImpl(BudgetScheduleRepository budgetScheduleRepository,
-                                     BudgetService budgetService)
+                                     BudgetService budgetService,
+                                     SubBudgetRepository subBudgetRepository)
     {
         this.budgetScheduleRepository = budgetScheduleRepository;
         this.budgetService = budgetService;
+        this.subBudgetRepository = subBudgetRepository;
     }
 
     @Override
@@ -183,12 +189,13 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
     private Optional<BudgetScheduleEntity> buildBudgetScheduleEntity(final BudgetSchedule budgetSchedule)
     {
 
-        Optional<BudgetEntity> budgetEntityOptional = budgetService.findById(budgetSchedule.getBudgetId());
-        if(budgetEntityOptional.isEmpty())
+        Long subBudgetId = budgetSchedule.getSubBudgetId();
+        Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findById(subBudgetId);
+        if(subBudgetEntityOptional.isEmpty())
         {
             return Optional.empty();
         }
-        BudgetEntity budgetEntity = budgetEntityOptional.get();
+        SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
         BudgetScheduleEntity budgetScheduleEntity = new BudgetScheduleEntity();
         budgetScheduleEntity.setScheduleRange(budgetSchedule.getScheduleRange().toString());
         budgetScheduleEntity.setEndDate(budgetSchedule.getEndDate());
@@ -196,7 +203,7 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
         budgetScheduleEntity.setPeriodType(budgetSchedule.getPeriod());
         budgetScheduleEntity.setStatus(ScheduleStatus.valueOf(budgetSchedule.getStatus()));
         budgetScheduleEntity.setTotalPeriodsInRange(budgetSchedule.getTotalPeriods());
-        budgetScheduleEntity.setBudgets(Set.of(budgetEntity));
+        budgetScheduleEntity.setSubBudget(subBudgetEntity);
         return Optional.of(budgetScheduleEntity);
     }
 
@@ -248,17 +255,7 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
 
     private BudgetSchedule convertBudgetScheduleEntity(BudgetScheduleEntity budgetScheduleEntity)
     {
-        BudgetEntity budgetEntity = budgetScheduleEntity.getBudget();
-        return BudgetSchedule.builder()
-                .budgetId(budgetEntity.getId())
-                .endDate(budgetScheduleEntity.getEndDate())
-                .startDate(budgetScheduleEntity.getStartDate())
-                .scheduleRange(new DateRange(budgetScheduleEntity.getStartDate(), budgetScheduleEntity.getEndDate()))
-                .period(budgetScheduleEntity.getPeriodType())
-                .status(budgetScheduleEntity.getStatus().name())
-                .totalPeriods(budgetScheduleEntity.getTotalPeriodsInRange())
-                .createdDate(LocalDateTime.now())
-                .build();
+        return BudgetUtil.convertBudgetScheduleEntity(budgetScheduleEntity);
     }
 
     private Budget convertBudgetEntity(BudgetEntity budgetEntity){

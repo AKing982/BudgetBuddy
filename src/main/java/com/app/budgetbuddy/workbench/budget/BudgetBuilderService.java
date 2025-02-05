@@ -6,6 +6,7 @@ import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetService;
+import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,17 +22,17 @@ import java.util.stream.Collectors;
 public class BudgetBuilderService
 {
     private final BudgetService budgetService;
-    private final BudgetScheduleEngine budgetScheduleEngine;
     private final BudgetCalculations budgetCalculations;
+    private final SubBudgetBuilderService subBudgetBuilderService;
 
     @Autowired
     public BudgetBuilderService(BudgetService budgetService,
-                                BudgetScheduleEngine budgetScheduleEngine,
-                                BudgetCalculations budgetCalculations)
+                                BudgetCalculations budgetCalculations,
+                                SubBudgetBuilderService subBudgetBuilderService)
     {
         this.budgetService = budgetService;
-        this.budgetScheduleEngine = budgetScheduleEngine;
         this.budgetCalculations = budgetCalculations;
+        this.subBudgetBuilderService = subBudgetBuilderService;
     }
 
     private void validateBudgetRegistration(final BudgetRegistration budgetRegistration)
@@ -78,7 +79,6 @@ public class BudgetBuilderService
         String budgetName = budgetRegistration.getBudgetName();
         Long userId = budgetRegistration.getUserId();
         BudgetGoals budgetGoals = budgetRegistration.getBudgetGoals();
-        int budgetYear = budgetRegistration.getBudgetYear();
         String budgetDescription = budgetRegistration.getBudgetDescription();
         LocalDate budgetStartDate = budgetRegistration.getBudgetStartDate();
         if(budgetPeriod == Period.MONTHLY && budgetMode == BudgetMode.SAVINGS_PLAN)
@@ -93,8 +93,6 @@ public class BudgetBuilderService
             // Use the remaining amount after the savings has been deducted as the budget amount
             BigDecimal remainingOnBudgetAfterAllocation = totalIncomeAmount.subtract(actualMonthlyAllocation);
 
-            // Calculate the actual amount
-
             // Calculate the savings progress
             BigDecimal currentlySaved = BigDecimal.valueOf(currentSavings);
             BigDecimal targetAmountAsDecimal = BigDecimal.valueOf(targetAmount);
@@ -103,9 +101,10 @@ public class BudgetBuilderService
             // Next create the Budget Schedules
             Map<BudgetMonth, List<DateRange>> monthlyBudgetDateRanges = createMonthlyBudgetDateRanges(budgetDateRanges);
             List<DateRange> budgetStartAndEndDateRanges = getBudgetStartAndEndDateCriteria(monthlyBudgetDateRanges);
-//            List<BudgetSchedule> budgetSchedules = getBudgetSchedulesByBudgetStartAndEndDates(budgetStartAndEndDateRanges, userId, budgetPeriod);
-//            saveBudgetSchedules(budgetSchedules);
-            Budget budget = createBudget(budgetYear, actualMonthlyAllocation, totalMonths, userId, budgetDescription, budgetPeriod, budgetMode, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate);
+            Budget budget = createBudget(actualMonthlyAllocation, totalMonths, userId, budgetDescription, budgetPeriod, budgetMode, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate);
+            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals);
+            subBudgetBuilderService.saveSubBudgets(subBudgets);
+            budget.setSubBudgets(subBudgets);
             Optional<BudgetEntity> savedBudget = saveBudget(budget);
             if(savedBudget.isEmpty())
             {
@@ -114,13 +113,14 @@ public class BudgetBuilderService
             Long budgetId = savedBudget.get().getId();
             // Once saved, get the id for the budget
             budget.setId(budgetId);
+
             return Optional.of(budget);
         }
         // Depending on the period and budget mode and the budget goals, we need to calculate the budget amount
         return Optional.empty();
     }
 
-    private Budget createBudget(int budgetYear, BigDecimal actualMonthlyAllocation, int totalMonths, Long userId, String budgetDescription,  Period budgetPeriod, BudgetMode budgetMode, String budgetName, BigDecimal savingsProgress, BigDecimal remainingOnBudgetAfterAllocation, LocalDate budgetStartDate) {
+    private Budget createBudget(BigDecimal actualMonthlyAllocation, int totalMonths, Long userId, String budgetDescription,  Period budgetPeriod, BudgetMode budgetMode, String budgetName, BigDecimal savingsProgress, BigDecimal remainingOnBudgetAfterAllocation, LocalDate budgetStartDate) {
         return Budget.builder()
                 .savingsAmountAllocated(actualMonthlyAllocation)
                 .savingsProgress(savingsProgress)

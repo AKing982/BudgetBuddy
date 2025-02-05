@@ -480,7 +480,7 @@ class BudgetRunnerTest {
     private BudgetSchedule createTestBudgetSchedule() {
         BudgetSchedule budgetSchedule = new BudgetSchedule();
         budgetSchedule.setBudgetScheduleId(1L);
-        budgetSchedule.setBudgetId(1L);
+        budgetSchedule.setSubBudgetId(1L);
         budgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
         budgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
         budgetSchedule.setPeriod(Period.MONTHLY);
@@ -498,7 +498,7 @@ class BudgetRunnerTest {
         budget.setActual(new BigDecimal("1020"));
 
         BudgetSchedule budgetSchedule = new BudgetSchedule();
-        budgetSchedule.setBudgetId(budget.getId());
+        budgetSchedule.setSubBudgetId(budget.getId());
         budgetSchedule.setStartDate(startDate);
         budgetSchedule.setEndDate(endDate);
         budgetSchedule.setScheduleRange(new DateRange(startDate, endDate));

@@ -19,6 +19,7 @@ interface PlaidExchangeResponse {
 
 interface PlaidLinkStatus {
     isLinked: boolean;
+    requiresUpdate: boolean;
 }
 
 interface PlaidLinkRequest {
@@ -373,6 +374,21 @@ class PlaidService {
                 console.error('An unexpected error occurred:', error);
             }
             return null;
+        }
+    }
+
+    public async updatePlaidLink(userId: number, accessToken: string) : Promise<string>
+    {
+        try
+        {
+            const response = await axios.post<{linkToken: string}>(`${apiUrl}/api/plaid/update_link_token`, {
+                userId,
+                accessToken
+            });
+            return response.data.linkToken;
+        }catch(error){
+            console.error('Error updating plaid link: ', error);
+            throw error;
         }
     }
 

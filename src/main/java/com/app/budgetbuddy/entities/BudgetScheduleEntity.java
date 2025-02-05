@@ -23,10 +23,10 @@ public class BudgetScheduleEntity
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="budgetId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="sub_budgetid")
     @NotNull
-    private BudgetEntity budget;
+    private SubBudgetEntity subBudget;
 
     @Column(name="startDate")
     @NotNull
@@ -51,9 +51,6 @@ public class BudgetScheduleEntity
     @Column(name="status")
     @Enumerated(EnumType.STRING)
     private ScheduleStatus status;
-
-    @ManyToMany(mappedBy = "budgetSchedules")
-    private Set<BudgetEntity> budgets = new HashSet<>();
 
     // ---- NEW: One-to-Many to BudgetScheduleRangeEntity
     @OneToMany(mappedBy = "budgetSchedule", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -122,7 +122,7 @@ class SubBudgetBuilderServiceTest
         expectedSubBudget.setEndDate(LocalDate.of(2025, 1, 31));
 
         BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
-        januaryBudgetSchedule.setBudgetId(1L);
+        januaryBudgetSchedule.setSubBudgetId(1L);
         januaryBudgetSchedule.setPeriod(Period.MONTHLY);
         januaryBudgetSchedule.setStartDate(startDate);
         januaryBudgetSchedule.setEndDate(endDate);
@@ -171,7 +171,7 @@ class SubBudgetBuilderServiceTest
         assertEquals(1, actualSubBudget.getBudgetSchedule().size(), "Expected only one budget schedule");
 
         BudgetSchedule actualSchedule = actualSubBudget.getBudgetSchedule().get(0);
-        assertEquals(januaryBudgetSchedule.getBudgetId(), actualSchedule.getBudgetId(), "Budget ID mismatch");
+        assertEquals(januaryBudgetSchedule.getSubBudgetId(), actualSchedule.getSubBudgetId(), "Budget ID mismatch");
         assertEquals(januaryBudgetSchedule.getPeriod(), actualSchedule.getPeriod(), "Period mismatch");
         assertEquals(januaryBudgetSchedule.getStartDate(), actualSchedule.getStartDate(), "Schedule start date mismatch");
         assertEquals(januaryBudgetSchedule.getEndDate(), actualSchedule.getEndDate(), "Schedule end date mismatch");
@@ -215,7 +215,7 @@ class SubBudgetBuilderServiceTest
 
         List<BudgetSchedule> budgetSchedules = new ArrayList<>();
         BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
-        januaryBudgetSchedule.setBudgetId(budget.getId());
+        januaryBudgetSchedule.setSubBudgetId(budget.getId());
         januaryBudgetSchedule.setStatus("Active");
         januaryBudgetSchedule.setTotalPeriods(4);
         januaryBudgetSchedule.setScheduleRange(new DateRange(startDate, endDate));
@@ -265,7 +265,7 @@ class SubBudgetBuilderServiceTest
         assertEquals(1, actualSubBudget.getBudgetSchedule().size(), "Expected one budget schedule");
 
         BudgetSchedule actualSchedule = actualSubBudget.getBudgetSchedule().get(0);
-        assertEquals(januaryBudgetSchedule.getBudgetId(), actualSchedule.getBudgetId(), "Budget ID mismatch");
+        assertEquals(januaryBudgetSchedule.getSubBudgetId(), actualSchedule.getSubBudgetId(), "Budget ID mismatch");
         assertEquals(januaryBudgetSchedule.getStatus(), actualSchedule.getStatus(), "Status mismatch");
         assertEquals(januaryBudgetSchedule.getPeriod(), actualSchedule.getPeriod(), "Period mismatch");
         assertEquals(januaryBudgetSchedule.getStartDate(), actualSchedule.getStartDate(), "Schedule start date mismatch");
@@ -367,7 +367,7 @@ class SubBudgetBuilderServiceTest
 
     private BudgetSchedule buildMockBudgetSchedule(SubBudget subBudget) {
         return BudgetSchedule.builder()
-                .budgetId(subBudget.getBudget().getId())
+                .subBudgetId(subBudget.getBudget().getId())
                 .period(Period.MONTHLY)
                 .startDate(subBudget.getStartDate())
                 .endDate(subBudget.getEndDate())

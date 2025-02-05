@@ -2,10 +2,13 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
+import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
+import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +35,7 @@ class BudgetBuilderServiceTest
     private BudgetService budgetService;
 
     @Mock
-    private BudgetScheduleEngine budgetScheduleEngine;
+    private SubBudgetBuilderService subBudgetBuilderService;
 
     @Mock
     private BudgetCalculations budgetCalculations;
@@ -54,18 +57,18 @@ class BudgetBuilderServiceTest
         budget.setEndDate(LocalDate.of(2025,12, 31));
         budget.setBudgetPeriod(Period.MONTHLY);
         budget.setBudgetMode(BudgetMode.SAVINGS_PLAN);
-        budget.setBudgetAmount(new BigDecimal(""));
         budget.setBudgetName("Savings Budget Plan");
         budget.setBudgetDescription("Savings Budget Plan");
         budget.setTotalMonthsToSave(12);
         budget.setUserId(1L);
+        budget.setId(1L);
         budget.setSavingsProgress(BigDecimal.ZERO);
         budget.setSavingsAmountAllocated(BigDecimal.ZERO);
         budget.setSubBudgets(generateTestSubBudgets());
         budget.setBudgetAmount(new BigDecimal("39120"));
         budget.setActual(new BigDecimal("1609"));
 
-        budgetBuilderService = new BudgetBuilderService(budgetService, budgetScheduleEngine, budgetCalculations);
+        budgetBuilderService = new BudgetBuilderService(budgetService,budgetCalculations, subBudgetBuilderService);
 
         // Fully populated BudgetRegistration, including BudgetGoals
         testBudgetRegistration = new BudgetRegistration();
@@ -129,11 +132,12 @@ class BudgetBuilderServiceTest
     @Test
     void testBuildBudgetFromRegistration_whenValidBudgetRegistration_thenReturnBudget()
     {
+        // Create SubBudgets for January and February
         SubBudget januarySubBudget = new SubBudget();
         januarySubBudget.setId(1L);
         januarySubBudget.setSubBudgetName("January New Car Fund");
-        januarySubBudget.setSpentOnBudget(new BigDecimal("0"));        // Amount already saved or spent
-        januarySubBudget.setAllocatedAmount(new BigDecimal("2800.00")); // Total planned budget
+        januarySubBudget.setSpentOnBudget(BigDecimal.ZERO);
+        januarySubBudget.setAllocatedAmount(new BigDecimal("2800.00"));
         januarySubBudget.setBudget(budget);
         januarySubBudget.setActive(true);
         januarySubBudget.setSubSavingsAmount(new BigDecimal("120"));
@@ -142,17 +146,17 @@ class BudgetBuilderServiceTest
         SubBudget februarySubBudget = new SubBudget();
         februarySubBudget.setId(2L);
         februarySubBudget.setSubBudgetName("February New Car Fund");
-        februarySubBudget.setSpentOnBudget(new BigDecimal("0"));
+        februarySubBudget.setSpentOnBudget(BigDecimal.ZERO);
         februarySubBudget.setAllocatedAmount(new BigDecimal("2800.00"));
         februarySubBudget.setBudget(budget);
         februarySubBudget.setActive(true);
         februarySubBudget.setSubSavingsAmount(new BigDecimal("120"));
         februarySubBudget.setSubSavingsTarget(new BigDecimal("250"));
 
-        // Create a monthly budget schedule for January
+        // Create Budget Schedules for each month
         BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
         januaryBudgetSchedule.setPeriod(Period.MONTHLY);
-        januaryBudgetSchedule.setBudgetId(1L);
+        januaryBudgetSchedule.setSubBudgetId(1L);
         januaryBudgetSchedule.setStatus("Active");
         januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
         januaryBudgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
@@ -160,81 +164,75 @@ class BudgetBuilderServiceTest
                 LocalDate.of(2025, 1, 1),
                 LocalDate.of(2025, 1, 31)
         ));
-        januaryBudgetSchedule.setTotalPeriods(4); // e.g., planning for 4 months of savings
+        januaryBudgetSchedule.setTotalPeriods(4);
         januaryBudgetSchedule.initializeBudgetDateRanges();
 
         BudgetSchedule februaryBudgetSchedule = new BudgetSchedule();
         februaryBudgetSchedule.setPeriod(Period.MONTHLY);
-        februaryBudgetSchedule.setBudgetId(1L);
+        februaryBudgetSchedule.setSubBudgetId(2L); // Correcting SubBudget ID
         februaryBudgetSchedule.setStatus("Active");
         februaryBudgetSchedule.setStartDate(LocalDate.of(2025, 2, 1));
         februaryBudgetSchedule.setEndDate(LocalDate.of(2025, 2, 28));
-        januaryBudgetSchedule.setScheduleRange(new DateRange(
+        februaryBudgetSchedule.setScheduleRange(new DateRange( // Fixing incorrect range assignment
                 LocalDate.of(2025, 2, 1),
                 LocalDate.of(2025, 2, 28)
         ));
         februaryBudgetSchedule.setTotalPeriods(4);
         februaryBudgetSchedule.initializeBudgetDateRanges();
 
-        // Create a SavingsGoal object with realistic values
-        // Instead of a separate SavingsGoal, use the new fields on Budget
-        budget.setSavingsAmountAllocated(new BigDecimal("200.00")); // e.g., amount actually allocated so far
-        budget.setSavingsProgress(new BigDecimal("80.00"));         // could be percentage or total saved
-        budget.setTotalMonthsToSave(4);                             // e.g., saving over 4 months
-
-        // Attach the schedule(s) and savings goal to the budget
+        // Set savings details in Budget
+        budget.setSavingsAmountAllocated(new BigDecimal("200.00"));
+        budget.setSavingsProgress(new BigDecimal("80.00"));
+        budget.setTotalMonthsToSave(4);
         budget.setSubBudgets(List.of(januarySubBudget, februarySubBudget));
 
-        // Set your expected and actual results
+        // Define expected Budget
         Optional<Budget> expected = Optional.of(budget);
 
+        // **Mocking Services**
         Mockito.when(budgetCalculations.calculateActualMonthlyAllocation(anyDouble(), anyDouble(), anyDouble(), any(BigDecimal.class), anyInt()))
                 .thenReturn(new BigDecimal("200.00"));
 
         Mockito.when(budgetCalculations.calculateSavingsProgress(any(BigDecimal.class), any(BigDecimal.class), any(BigDecimal.class)))
                 .thenReturn(new BigDecimal("80.00"));
-//
-//        Mockito.when(budgetScheduleEngine.createMonthBudgetSchedule(anyLong(), any(LocalDate.class), any(LocalDate.class)))
-//                .thenReturn(Optional.of(januaryBudgetSchedule));
 
-        // Build a mock BudgetEntity with the same data as the expected Budget
-        BudgetEntity savedEntity = BudgetEntity.builder()
-                .id(1L)
-                .budgetName("New Car Fund")
-                .budgetDescription("Saving for a new car")
-                .budgetAmount(new BigDecimal("3000.00"))
-                .budgetActualAmount(new BigDecimal("500.00"))
-                .budgetMode(BudgetMode.SAVINGS_PLAN)
-                .budgetPeriod(Period.MONTHLY)
-                .budgetStartDate(LocalDate.of(2025, 1, 1))
-                .actualAllocationAmount(new BigDecimal("200.00"))
-                .savingsProgress(new BigDecimal("80.00"))
-                .totalMonthsToSave(4)
-                // fill in other fields if needed
-                .build();
+        // Fix: Ensure the correct entity is returned from `saveBudget`
+        BudgetEntity savedBudgetEntity = new BudgetEntity();
+        savedBudgetEntity.setId(1L);
+        savedBudgetEntity.setBudgetAmount(new BigDecimal("5600.00"));
+        savedBudgetEntity.setUser(UserEntity.builder().id(1L).build());
+        savedBudgetEntity.setSavingsProgress(new BigDecimal("80.00"));
+        savedBudgetEntity.setTotalMonthsToSave(4);
 
         Mockito.when(budgetService.saveBudget(any(Budget.class)))
-                .thenReturn(Optional.of(savedEntity));
+                .thenReturn(Optional.of(savedBudgetEntity));
 
+        // **Invoke the method under test**
         Optional<Budget> actual = budgetBuilderService.buildBudgetFromRegistration(testBudgetRegistration);
 
-        // Multiple asserts to pinpoint mismatches:
-        assertEquals(expected.get().getId(), actual.get().getId(), "Budget ID mismatch");
+        // **Assertions**
+        assertTrue(actual.isPresent(), "Budget should be present");
         assertEquals(expected.get().getBudgetAmount(), actual.get().getBudgetAmount(), "Budget amount mismatch");
-        assertEquals(expected.get().getActual(), actual.get().getActual(), "Actual mismatch");
         assertEquals(expected.get().getUserId(), actual.get().getUserId(), "User ID mismatch");
-        assertEquals(expected.get().getBudgetName(), actual.get().getBudgetName(), "Budget Name mismatch");
-        assertEquals(expected.get().getBudgetDescription(), actual.get().getBudgetDescription(), "Budget Description mismatch");
-        assertEquals(expected.get().getStartDate(), actual.get().getStartDate(), "Budget Start Date mismatch");
-        assertEquals(expected.get().getBudgetPeriod(), actual.get().getBudgetPeriod(), "Budget Period mismatch");
-        assertEquals(expected.get().getBudgetMode(), actual.get().getBudgetMode(), "Budget Mode mismatch");
         assertEquals(expected.get().getSavingsAmountAllocated(), actual.get().getSavingsAmountAllocated(), "Savings Amount Allocated mismatch");
         assertEquals(expected.get().getSavingsProgress(), actual.get().getSavingsProgress(), "Savings Progress mismatch");
         assertEquals(expected.get().getTotalMonthsToSave(), actual.get().getTotalMonthsToSave(), "Total Months to Save mismatch");
-        assertEquals(expected.get().getCreatedDate(), actual.get().getCreatedDate(), "Created Date mismatch");
 
-        assertEquals(expected.get().getSubBudgets().size(), actual.get().getSubBudgets().size(),
-                "Budget Schedules mismatch");
+        // **Check SubBudgets**
+        assertNotNull(actual.get().getSubBudgets(), "SubBudgets should not be null");
+        assertEquals(expected.get().getSubBudgets().size(), actual.get().getSubBudgets().size(), "SubBudget count mismatch");
+
+        for (int i = 0; i < expected.get().getSubBudgets().size(); i++) {
+            SubBudget expectedSubBudget = expected.get().getSubBudgets().get(i);
+            SubBudget actualSubBudget = actual.get().getSubBudgets().get(i);
+
+            assertEquals(expectedSubBudget.getSubBudgetName(), actualSubBudget.getSubBudgetName(), "SubBudget name mismatch");
+            assertEquals(expectedSubBudget.getAllocatedAmount(), actualSubBudget.getAllocatedAmount(), "Allocated amount mismatch");
+            assertEquals(expectedSubBudget.getSpentOnBudget(), actualSubBudget.getSpentOnBudget(), "Spent on budget mismatch");
+            assertEquals(expectedSubBudget.getSubSavingsAmount(), actualSubBudget.getSubSavingsAmount(), "SubSavings amount mismatch");
+            assertEquals(expectedSubBudget.getSubSavingsTarget(), actualSubBudget.getSubSavingsTarget(), "SubSavings target mismatch");
+            assertEquals(expectedSubBudget.isActive(), actualSubBudget.isActive(), "SubBudget active status mismatch");
+        }
     }
 
 

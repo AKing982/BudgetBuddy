@@ -158,7 +158,7 @@ public class BudgetRunner {
 
         WeeklyBudgetSchedule weeklyBudgetSchedule = new WeeklyBudgetSchedule(
                 budgetSchedule.getBudgetScheduleId(),  // ID of the schedule
-                budgetSchedule.getBudgetId(),          // Associated budget ID
+                budgetSchedule.getSubBudgetId(),          // Associated budget ID
                 budgetSchedule.getStartDate(),         // Start date of the schedule
                 budgetSchedule.getEndDate(),           // End date of the schedule
                 budgetSchedule.getPeriod(),            // Period (should be WEEKLY for this method)
@@ -179,7 +179,7 @@ public class BudgetRunner {
         }
         BiWeeklyBudgetSchedule biweeklyBudgetSchedule = new BiWeeklyBudgetSchedule(
                 budgetSchedule.getBudgetScheduleId(),
-                budgetSchedule.getBudgetId(),
+                budgetSchedule.getSubBudgetId(),
                 budgetSchedule.getStartDate(),
                 budgetSchedule.getEndDate(),
                 budgetSchedule.getPeriod(),

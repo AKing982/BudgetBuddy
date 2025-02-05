@@ -7,6 +7,7 @@ import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
+import com.app.budgetbuddy.workbench.converter.SubBudgetEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,19 +17,24 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.app.budgetbuddy.workbench.budget.BudgetUtil.*;
+
 @Service
 @Slf4j
 public class SubBudgetServiceImpl implements SubBudgetService
 {
     private final SubBudgetRepository subBudgetRepository;
     private final BudgetRepository budgetRepository;
+    private final SubBudgetEntityConverter subBudgetEntityConverter;
 
     @Autowired
     public SubBudgetServiceImpl(SubBudgetRepository subBudgetRepository,
-                                BudgetRepository budgetRepository)
+                                BudgetRepository budgetRepository,
+                                SubBudgetEntityConverter subBudgetEntityConverter)
     {
         this.subBudgetRepository = subBudgetRepository;
         this.budgetRepository = budgetRepository;
+        this.subBudgetEntityConverter = subBudgetEntityConverter;
     }
 
     @Override
@@ -110,6 +116,30 @@ public class SubBudgetServiceImpl implements SubBudgetService
         }
     }
 
+    @Override
+    public Optional<SubBudget> findSubBudgetById(Long id)
+    {
+        if(id == null || id <= 0)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findById(id);
+            if(subBudgetEntityOptional.isEmpty())
+            {
+                return Optional.empty();
+            }
+            SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
+            SubBudget subBudget = subBudgetEntityConverter.convert(subBudgetEntity);
+            return Optional.of(subBudget);
+        }catch(DataAccessException e){
+            log.error("There was an error getting the sub budget from the database: ", e);
+            return Optional.empty();
+        }
+    }
+
+
     private SubBudgetEntity convertSubBudgetToEntity(SubBudget subBudget)
     {
         SubBudgetEntity subBudgetEntity = new SubBudgetEntity();
@@ -129,6 +159,7 @@ public class SubBudgetServiceImpl implements SubBudgetService
         subBudgetEntity.setBudgetSchedules(convertBudgetSchedulesToEntities(budgetSchedules));
         return subBudgetEntity;
     }
+
 
     private @NotNull BudgetEntity getBudget(Long budgetId) {
         Optional<BudgetEntity> budgetEntityOptional = budgetRepository.findById(budgetId);
@@ -153,8 +184,13 @@ public class SubBudgetServiceImpl implements SubBudgetService
                 budgetScheduleEntity.setTotalPeriodsInRange(budgetSchedule.getTotalPeriods());
                 budgetScheduleEntity.setScheduleRange(budgetSchedule.getScheduleRange().toString());
 
-                Long budgetId = budgetSchedule.getBudgetId();
-                budgetScheduleEntity.setBudget(getBudget(budgetId));
+                Long subBudgetId = budgetSchedule.getSubBudgetId();
+                Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findById(subBudgetId);
+                if(subBudgetEntityOptional.isEmpty()){
+                    throw new RuntimeException("No SubBudget found with id: " + subBudgetId);
+                }
+                SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
+                budgetScheduleEntity.setSubBudget(subBudgetEntity);
                 budgetScheduleEntities.add(budgetScheduleEntity);
             }
             return budgetScheduleEntities;
@@ -165,82 +201,6 @@ public class SubBudgetServiceImpl implements SubBudgetService
         }
     }
 
-    private List<SubBudget> convertSubBudgetEntitiesToSubBudget(List<SubBudgetEntity> subBudgetEntities)
-    {
-        List<SubBudget> subBudgets = new ArrayList<>();
-        try
-        {
-            for(SubBudgetEntity subBudgetEntity : subBudgetEntities)
-            {
-                SubBudget subBudget = new SubBudget();
-                subBudget.setId(subBudgetEntity.getId());
-                subBudget.setActive(subBudgetEntity.isActive());
-                subBudget.setAllocatedAmount(subBudgetEntity.getAllocatedAmount());
-                subBudget.setSpentOnBudget(subBudgetEntity.getSpentOnBudget());
-                subBudget.setSubBudgetName(subBudgetEntity.getSubBudgetName());
-                subBudget.setStartDate(subBudgetEntity.getStartDate());
-                subBudget.setEndDate(subBudgetEntity.getEndDate());
-                subBudget.setSubSavingsTarget(subBudgetEntity.getSubSavingsTarget());
-                subBudget.setSubSavingsAmount(subBudgetEntity.getSubSavingsAmount());
-                subBudget.setBudget(convertBudgetEntity(subBudgetEntity.getBudget()));
-                subBudget.setBudgetSchedule(convertBudgetScheduleSet(subBudgetEntity.getBudgetSchedules()));
-                subBudget.setSpentOnBudget(subBudgetEntity.getSpentOnBudget());
-                subBudgets.add(subBudget);
-            }
-        }catch(Exception e){
-            log.error("There was an error converting the sub budget entities to sub budgets; ", e);
-            return Collections.emptyList();
-        }
 
-        return subBudgets;
-    }
 
-    private List<BudgetSchedule> convertBudgetScheduleSet(Set<BudgetScheduleEntity> budgetScheduleEntities)
-    {
-        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
-        for(BudgetScheduleEntity budgetScheduleEntity : budgetScheduleEntities)
-        {
-            BudgetSchedule budgetSchedule = convertBudgetScheduleEntity(budgetScheduleEntity);
-            budgetSchedules.add(budgetSchedule);
-        }
-        return budgetSchedules;
-    }
-
-    private BudgetSchedule convertBudgetScheduleEntity(BudgetScheduleEntity budgetScheduleEntity)
-    {
-        BudgetEntity budgetEntity = budgetScheduleEntity.getBudget();
-        return BudgetSchedule.builder()
-                .budgetId(budgetEntity.getId())
-                .endDate(budgetScheduleEntity.getEndDate())
-                .startDate(budgetScheduleEntity.getStartDate())
-                .scheduleRange(new DateRange(budgetScheduleEntity.getStartDate(), budgetScheduleEntity.getEndDate()))
-                .period(budgetScheduleEntity.getPeriodType())
-                .status(budgetScheduleEntity.getStatus().name())
-                .totalPeriods(budgetScheduleEntity.getTotalPeriodsInRange())
-                .createdDate(LocalDateTime.now())
-                .build();
-    }
-
-    private Budget convertBudgetEntity(BudgetEntity budgetEntity)
-    {
-        if(budgetEntity == null) {
-            return null;
-        }
-        Budget budget = new Budget();
-        budget.setId(budgetEntity.getId());
-        budget.setUserId(budgetEntity.getUser().getId());
-        budget.setActual(budgetEntity.getBudgetActualAmount());
-        budget.setBudgetMode(budgetEntity.getBudgetMode());
-        budget.setSavingsAmountAllocated(budgetEntity.getActualAllocationAmount());
-        budget.setSavingsProgress(budgetEntity.getSavingsProgress());
-        budget.setStartDate(budgetEntity.getBudgetStartDate());
-        budget.setEndDate(budgetEntity.getBudgetEndDate());
-        budget.setBudgetPeriod(budgetEntity.getBudgetPeriod());
-        budget.setBudgetAmount(budgetEntity.getBudgetAmount());
-        budget.setTotalMonthsToSave(budgetEntity.getTotalMonthsToSave());
-        budget.setBudgetName(budgetEntity.getBudgetName());
-        budget.setBudgetDescription(budgetEntity.getBudgetDescription());
-//        budget.setSubBudgets(convertBudgetScheduleEntities(budgetEntity.getBudgetSchedules()));
-        return budget;
-    }
 }

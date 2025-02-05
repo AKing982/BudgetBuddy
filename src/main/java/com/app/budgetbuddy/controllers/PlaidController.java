@@ -189,11 +189,9 @@ public class PlaidController {
     public ResponseEntity<PlaidLinkStatus> checkPlaidLinkStatus(@PathVariable Long userId){
         Optional<PlaidLinkEntity> plaidLink = plaidLinkService.findPlaidLinkByUserID(userId);
         LOGGER.info("PlaidLink: " + plaidLink);
-        if(plaidLink.isPresent()){
-            PlaidLinkStatus plaidLinkStatus = new PlaidLinkStatus(true);
-            return ResponseEntity.ok(plaidLinkStatus);
-        }
-        return ResponseEntity.ok(new PlaidLinkStatus(false));
+        boolean isLinked = plaidLink.isPresent();
+        boolean requiresUpdate = plaidLinkService.checkPlaidLinkStatus(userId);
+        return ResponseEntity.ok(new PlaidLinkStatus(false, false));
     }
 
     @PostMapping("/link")

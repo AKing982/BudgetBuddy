@@ -15,7 +15,7 @@ import {
 import {LockOutlined} from '@mui/icons-material';
 import {useNavigate} from "react-router-dom";
 import {authenticateUser, LoginCredentials} from "../api/LoginApiService";
-import {PlaidLinkOnSuccessMetadata} from "react-plaid-link";
+import {PlaidLinkOnSuccessMetadata, usePlaidLink} from "react-plaid-link";
 import PlaidService from "../services/PlaidService";
 import PlaidLink, {PlaidLinkRef} from "./PlaidLink";
 import LoginService from "../services/LoginService";
@@ -40,6 +40,7 @@ interface FormErrors {
 
 interface PlaidLinkStatus {
     isLinked: boolean;
+    requiresUpdate: boolean;
 }
 
 
@@ -213,15 +214,67 @@ const LoginForm: React.FC = () => {
         try
         {
             const plaidService = PlaidService.getInstance();
-            return await plaidService.checkPlaidLinkStatusByUserId(userId);
+            const plaidStatus = await plaidService.checkPlaidLinkStatusByUserId(userId);
 
-        }catch(error)
-        {
-            console.error('There was an error verifying the user has a plaid link: ', error);
+            // Fetch access token from session storage or backend
+            const accessToken = sessionStorage.getItem('plaidAccessToken') || '';
+            if (!plaidStatus.isLinked)
+            {
+                console.warn('Plaid link is not active. Reconnecting...');
+                const response = await plaidService.createLinkToken();
+                setLinkToken(response.linkToken);
+            }
+            else if (plaidStatus.requiresUpdate && accessToken)
+            {
+                console.warn('Plaid link requires update. Opening update mode...');
+                if(accessToken){
+                    await openUpdateMode(userId, accessToken);
+                }
+                return;
+            }
+            return plaidStatus;
+        } catch (error) {
+            console.error('Error verifying Plaid link:', error);
             throw error;
         }
 
     }
+
+    const openUpdateMode = async (userId: number, accessToken: string) => {
+        try {
+            const plaidService = PlaidService.getInstance();
+            const linkToken = await plaidService.updatePlaidLink(userId, accessToken);
+
+            if (!linkToken) {
+                console.error("Failed to fetch update link token");
+                return;
+            }
+
+            // Use the Plaid React hook to open update mode
+            const { open, ready } = usePlaidLink({
+                token: linkToken,
+                onSuccess: async (publicToken, metadata) => {
+                    console.log("Plaid re-authentication successful!", metadata);
+                    await plaidService.exchangePublicToken(publicToken, userId);
+                    await plaidService.markPlaidAsUpdated(userId);
+                    console.log("Plaid access token updated successfully!");
+                },
+                onExit: (error, metadata) => {
+                    if (error) {
+                        console.error("Error exiting Plaid Link:", error);
+                    }
+                },
+            });
+
+            if (ready) {
+                open(); // Open Plaid update mode if ready
+            } else {
+                console.error("Plaid is not ready to open update mode");
+            }
+        } catch (error) {
+            console.error("Error opening Plaid update mode:", error);
+        }
+    };
 
     const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
         if(isProcessing) return;
@@ -401,7 +454,6 @@ const LoginForm: React.FC = () => {
                 </Paper>
             </Container>
         </ThemeProvider>
-
     );
 };
 

@@ -19,13 +19,13 @@ import java.util.Optional;
 @Repository
 public interface BudgetScheduleRepository extends JpaRepository<BudgetScheduleEntity, Long>
 {
-    @Query("SELECT bs FROM BudgetScheduleEntity bs WHERE bs.budget.id = :budgetId")
-    Optional<BudgetScheduleEntity> findByBudgetId(@Param("budgetId") Long budgetId);
+    @Query("SELECT bs FROM BudgetScheduleEntity bs WHERE bs.subBudget.id = :subBudgetId")
+    Optional<BudgetScheduleEntity> findByBudgetId(@Param("subBudgetId") Long subBudgetId);
 
     @Query("SELECT bs FROM BudgetScheduleEntity bs WHERE bs.status = :status")
     List<BudgetScheduleEntity> findByStatus(@Param("status") ScheduleStatus status);
 
-    @Query("SELECT bs FROM BudgetScheduleEntity bs WHERE bs.startDate =:start AND bs.endDate =:end AND bs.budget.id =:id")
+    @Query("SELECT bs FROM BudgetScheduleEntity bs WHERE bs.startDate =:start AND bs.endDate =:end AND bs.subBudget.id =:id")
     Optional<BudgetScheduleEntity> findByBudgetIdAndDates(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("id") Long id);
 
     @Query("SELECT bs FROM BudgetScheduleEntity bs WHERE bs.startDate <= :date AND bs.endDate >= :date")

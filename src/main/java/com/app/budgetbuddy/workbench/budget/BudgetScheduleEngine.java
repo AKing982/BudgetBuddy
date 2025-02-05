@@ -55,7 +55,7 @@ public class BudgetScheduleEngine
     private BudgetSchedule createBudgetSchedule(Long budgetId, LocalDate startDate, LocalDate endDate)
     {
         BudgetSchedule budgetSchedule = BudgetSchedule.builder()
-                .budgetId(budgetId)
+                .subBudgetId(budgetId)
                 .startDate(startDate)
                 .endDate(endDate)
                 .period(Period.MONTHLY)
@@ -117,7 +117,7 @@ public class BudgetScheduleEngine
         newBudgetSchedule.setScheduleRange(new DateRange(subBudgetStartDate, subBudgetEndDate));
         newBudgetSchedule.setStatus("Active");
         newBudgetSchedule.setTotalPeriods(4); // Example: Adjust based on real calculations
-        newBudgetSchedule.setBudgetId(subBudget.getId());
+        newBudgetSchedule.setSubBudgetId(subBudget.getId());
 
         // Initialize date ranges for the budget schedule
         newBudgetSchedule.initializeBudgetDateRanges();
@@ -127,27 +127,18 @@ public class BudgetScheduleEngine
         return Optional.of(newBudgetSchedule);
     }
 
-    public Optional<BudgetSchedule> createSingleBudgetSchedule(final LocalDate startDate, final LocalDate endDate, final Long budgetId)
+    public Optional<BudgetSchedule> createSingleBudgetSchedule(final LocalDate startDate, final LocalDate endDate, final SubBudget subBudget)
     {
         if(startDate == null || endDate == null)
         {
             return Optional.empty();
         }
         Optional<BudgetSchedule> budgetScheduleOptional;
-        try
-        {
-            if(budgetId < 0)
-            {
-                throw new IllegalArgumentException("budgetId cannot be negative: " + budgetId);
-            }
-            BudgetSchedule budgetSchedule = getBudgetSchedule(startDate, endDate, budgetId);
-            budgetScheduleOptional = Optional.of(budgetSchedule);
-
-        }catch(IllegalArgumentException e)
-        {
-            log.error("There was an error building budget schedules by date/period: " + e.getMessage());
-            throw e;
-        }
+        BudgetSchedule budgetSchedule = getBudgetSchedule(startDate, endDate, subBudget);
+        //TODO: Create the BudgetScheduleRanges and add to the budget schedule
+        List<BudgetScheduleRange> budgetScheduleRanges = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
+        budgetSchedule.setBudgetScheduleRanges(budgetScheduleRanges);
+        budgetScheduleOptional = Optional.of(budgetSchedule);
         return budgetScheduleOptional;
     }
 
@@ -159,100 +150,90 @@ public class BudgetScheduleEngine
      * @return List<BudgetSchedule> Generated future schedules
      */
     //TODO: Add code which re-adds missing budget schedules and add unit tests for this
-    public List<BudgetSchedule> createBudgetSchedules(final Long userId, final LocalDate startMonth, final boolean isFutureEnabled, final int numberOfMonths)
+    public List<BudgetSchedule> createMonthlyBudgetSchedules(final Long userId, final LocalDate startMonth, final boolean isFutureEnabled, final int numberOfMonths)
     {
         if(startMonth == null)
         {
             return Collections.emptyList();
         }
-//        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
-//        Set<BudgetSchedule> uniqueBudgetSchedules = new HashSet<>();
-//        try
-//        {
-//            if(numberOfMonths < 0)
-//            {
-//                throw new IllegalArgumentException("Number of months cannot be less than 1");
-//            }
-//            // Determine the endDate using the startMonth and the numberOfMonths
-//            LocalDate currentStartDate = isFutureEnabled ? startMonth.plusMonths(1) : startMonth;
-//            if(period == Period.MONTHLY)
-//            {
-//                // When iterating through the months we need to exclude the current month and only add the future months to the budget schedules list
-//                for(int monthIndex = 0; monthIndex <= numberOfMonths; monthIndex++)
-//                {
-//                    LocalDate startDate = currentStartDate.withDayOfMonth(1);
-//                    LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-//                    // Is there a budget for this timeframe?
-//                    Budget budgetForPeriod = budgetService.loadUserBudgetForPeriod(userId, startDate, endDate);
-//
-//                    // If a budget exists, are there any sub budgets that correspond to this time frame?
-//
-//                    // If so, then obtain the budget schedules
-//
-//                    Long budgetId = budgetForPeriod.getId();
-//                    List<BudgetSchedule> budgetSchedulesList = budgetForPeriod.getBudgetSchedules();
-//                    boolean isBudgetScheduleFound = false;
-//                    if(!budgetSchedulesList.isEmpty())
-//                    {
-//                        for(BudgetSchedule budgetSchedule : budgetSchedulesList)
-//                        {
-//                            if(budgetSchedule == null)
-//                            {
-//                                log.error("No Budget Schedule found for period: {} to {} with budgetId: {}", startDate, endDate, budgetId);
-//                                addMissingBudgetScheduleCriteria(budgetId, startDate, endDate);
-//                                continue;
-//                            }
-//                            LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
-//                            LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();
-//                            if(startDate.isEqual(budgetScheduleStartDate) && endDate.isEqual(budgetScheduleEndDate))
-//                            {
-//                                isBudgetScheduleFound = true;
-//                                uniqueBudgetSchedules.add(budgetSchedule);
-//                                break;
-//                            }
-//                        }
-//                        // If no Budget Schedule was found in the existing budget schedules list from our budget
-//                        // then create new budget schedules for the designated periods
-//                        if(!isBudgetScheduleFound)
-//                        {
-//                            BudgetSchedule budgetSchedule = getBudgetSchedule(startDate, endDate, budgetId);
-//                            uniqueBudgetSchedules.add(budgetSchedule);
-//                        }
-//                    }
-//                    // If the BudgetSchedules list doesn't have any existing budget schedules for this period
-//                    // Then create new budget schedule for this period
-//                    else
-//                    {
-//                        Optional<BudgetSchedule> newBudgetScheduleOptional = createSingleBudgetSchedule(startDate, endDate, budgetId);
-//                        if(newBudgetScheduleOptional.isEmpty())
-//                        {
-//                            return Collections.emptyList();
-//                        }
-//                        BudgetSchedule newBudgetSchedule = newBudgetScheduleOptional.get();
-//                        uniqueBudgetSchedules.add(newBudgetSchedule);
-//                    }
-//                    // Move to the next month
-//                   currentStartDate = isFutureEnabled ? currentStartDate.plusMonths(1) : currentStartDate.minusMonths(1);
-//                }
-//            }
-//
-//            budgetSchedules.addAll(uniqueBudgetSchedules);
-//
-//            // Sort by start date to ensure order
-//            if (!isFutureEnabled) {
-//                budgetSchedules.sort(Comparator.comparing(BudgetSchedule::getStartDate).reversed());
-//            } else {
-//                budgetSchedules.sort(Comparator.comparing(BudgetSchedule::getStartDate));
-//            }
-//
-//            return budgetSchedules;
-//
-//        }catch(IllegalArgumentException e)
-//        {
-//            log.error("There was an error while trying to create a future budget schedule: ", e);
-//            throw e;
-//        }
-        return null;
+        List<BudgetSchedule> budgetSchedules = new ArrayList<>();
+        Set<BudgetSchedule> uniqueBudgetSchedules = new HashSet<>();
+        try
+        {
+            if(numberOfMonths < 0)
+            {
+                throw new IllegalArgumentException("Number of months cannot be less than 1");
+            }
+            LocalDate currentStartDate = isFutureEnabled ? startMonth.plusMonths(1) : startMonth.minusMonths(numberOfMonths);
+            log.info("Current Start Date: {}", currentStartDate);
+            for(int monthIndex = 0; monthIndex < numberOfMonths; monthIndex++)
+            {
+                LocalDate startDate = currentStartDate.withDayOfMonth(1);
+                log.info("Start Date: {}", startDate);
+                LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+                log.info("End Date: {}", endDate);
+
+                // Are there any sub budgets in this time frame?
+                List<SubBudget> monthlySubBudgets = subBudgetService.getSubBudgetsByUserIdAndDate(userId, startDate, endDate);
+                if(monthlySubBudgets.isEmpty())
+                {
+                    log.warn("No Sub-Budgets found for user {} for period {} - {}. Skipping budget schedule creation.", userId, startDate, endDate);
+                    return Collections.emptyList();
+                }
+                else
+                {
+                    for(SubBudget monthSubBudget : monthlySubBudgets)
+                    {
+                        Long subBudgetId = monthSubBudget.getId();
+                        List<BudgetSchedule> subBudgetSchedules = monthSubBudget.getBudgetSchedule();
+                        if(!isFutureEnabled && !subBudgetSchedules.isEmpty())
+                        {
+                            boolean isBudgetScheduleFound = false;
+                            for(BudgetSchedule budgetSchedule : subBudgetSchedules)
+                            {
+                                if (budgetSchedule == null)
+                                {
+                                    log.error("No Budget Schedule found for period: {} to {} with subBudgetId: {}", startDate, endDate, subBudgetId);
+                                    addMissingBudgetScheduleCriteria(subBudgetId, startDate, endDate);
+                                    continue;
+                                }
+                                LocalDate scheduleStartDate = budgetSchedule.getStartDate();
+                                LocalDate scheduleEndDate = budgetSchedule.getEndDate();
+                                if (startDate.isEqual(scheduleStartDate) && endDate.isEqual(scheduleEndDate))
+                                {
+                                    isBudgetScheduleFound = true;
+                                    uniqueBudgetSchedules.add(budgetSchedule);
+                                    break;
+                                }
+                            }
+
+                            if(!isBudgetScheduleFound)
+                            {
+                                BudgetSchedule newBudgetSchedule = getBudgetSchedule(startDate, endDate, monthSubBudget);
+                                budgetSchedules.add(newBudgetSchedule);
+                            }
+                        }
+                        else
+                        {
+                            Optional<BudgetSchedule> newBudgetScheduleOptional = createSingleBudgetSchedule(startDate, endDate, monthSubBudget);
+                            newBudgetScheduleOptional.ifPresent(uniqueBudgetSchedules::add);
+                        }
+                    }
+                }
+
+                budgetSchedules.addAll(uniqueBudgetSchedules);
+                currentStartDate = currentStartDate.plusMonths(1);
+
+                // ** Ensure the schedules are sorted properly **
+                budgetSchedules.sort(Comparator.comparing(BudgetSchedule::getStartDate).reversed());
+
+            }
+            return budgetSchedules;
+        }catch(IllegalArgumentException e)
+        {
+            log.error("There was an error while trying to create a future budget schedule: ", e);
+            return Collections.emptyList();
+        }
     }
 
     private void addMissingBudgetScheduleCriteria(Long budgetId, LocalDate startDate, LocalDate endDate)
@@ -271,21 +252,29 @@ public class BudgetScheduleEngine
         {
             for(Map.Entry<Long, List<DateRange>> entry : missingBudgetSchedulesMap.entrySet())
             {
-                Long budgetId = entry.getKey();
+                Long subBudgetId = entry.getKey();
                 List<DateRange> dateRanges = entry.getValue();
                 if(dateRanges.isEmpty())
                 {
                     break;
                 }
+                Optional<SubBudget> subBudgetOptional = subBudgetService.findSubBudgetById(subBudgetId);
+                if(subBudgetOptional.isEmpty())
+                {
+                    return Collections.emptyList();
+                }
+                SubBudget subBudget = subBudgetOptional.get();
                 for(DateRange dateRange : dateRanges)
                 {
                     LocalDate dateRangeStart = dateRange.getStartDate();
                     LocalDate dateRangeEnd = dateRange.getEndDate();
                     if(dateRangeStart == null || dateRangeEnd == null)
                     {
-                        throw new IllegalDateException("Start Date or End Date missing for budgetId: " + budgetId + " in date range: " + dateRange.toString());
+                        throw new IllegalDateException("Start Date or End Date missing for budgetId: " + subBudgetId + " in date range: " + dateRange.toString());
                     }
-                    BudgetSchedule budgetSchedule = getBudgetSchedule(dateRangeStart, dateRangeEnd, budgetId);
+                    BudgetSchedule budgetSchedule = getBudgetSchedule(dateRangeStart, dateRangeEnd, subBudget);
+                    List<BudgetScheduleRange> budgetScheduleRanges = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
+                    budgetSchedule.setBudgetScheduleRanges(budgetScheduleRanges);
                     budgetSchedules.add(budgetSchedule);
                 }
             }
@@ -297,13 +286,14 @@ public class BudgetScheduleEngine
         return budgetSchedules;
     }
 
-    private static @NotNull BudgetSchedule getBudgetSchedule(LocalDate startDate, LocalDate endDate, Long budgetId)
+    private static @NotNull BudgetSchedule getBudgetSchedule(LocalDate startDate, LocalDate endDate, SubBudget subBudget)
     {
+        Long subBudgetId = subBudget.getId();
         BudgetSchedule budgetSchedule = new BudgetSchedule();
         budgetSchedule.setStartDate(startDate);
         budgetSchedule.setEndDate(endDate);
         budgetSchedule.setPeriod(Period.MONTHLY);
-        budgetSchedule.setBudgetId(budgetId); // Hardcoded for simplicity, replace with actual logic if needed
+        budgetSchedule.setSubBudgetId(subBudgetId); // Hardcoded for simplicity, replace with actual logic if needed
         budgetSchedule.setStatus("Active");
         budgetSchedule.setTotalPeriods(4); // Hardcoded, replace with actual logic if needed
         budgetSchedule.setScheduleRange(new DateRange(startDate, endDate));
@@ -334,7 +324,7 @@ public class BudgetScheduleEngine
 
         // Use Streams to group BudgetSchedules by their budgetId
         return budgetSchedules.stream()
-                .collect(Collectors.groupingBy(BudgetSchedule::getBudgetId));
+                .collect(Collectors.groupingBy(BudgetSchedule::getSubBudgetId));
     }
 
     public void updateBudgetSchedule(final Long budgetScheduleId, final BudgetSchedule newBudgetSchedule)
@@ -363,7 +353,7 @@ public class BudgetScheduleEngine
         budgetSchedule1.setStartDate(newBudgetSchedule.getStartDate());
         budgetSchedule1.setEndDate(newBudgetSchedule.getEndDate());
         budgetSchedule1.setPeriod(newBudgetSchedule.getPeriod());
-        budgetSchedule1.setBudgetId(newBudgetSchedule.getBudgetId());
+        budgetSchedule1.setSubBudgetId(newBudgetSchedule.getSubBudgetId());
         budgetSchedule1.setStatus(newBudgetSchedule.getStatus());
         budgetSchedule1.setTotalPeriods(newBudgetSchedule.getTotalPeriods());
         budgetSchedule1.setScheduleRange(newBudgetSchedule.getScheduleRange());
@@ -388,7 +378,7 @@ public class BudgetScheduleEngine
                     log.warn("Skipping Save of Missing or Empty Budget Schedule");
                     continue;
                 }
-                Long budgetScheduledId = budgetSchedule.getBudgetId();
+                Long budgetScheduledId = budgetSchedule.getSubBudgetId();
                 if(updateEnabled)
                 {
                         updateBudgetSchedule(budgetScheduledId, budgetSchedule);

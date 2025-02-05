@@ -3,9 +3,12 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetScheduleEntity;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetRepository;
+import com.app.budgetbuddy.repositories.SubBudgetRepository;
+import com.app.budgetbuddy.workbench.subBudget.SubBudgetConverterUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,12 +23,18 @@ import java.util.stream.Collectors;
 @Slf4j
 public class BudgetServiceImpl implements BudgetService
 {
-    private final BudgetRepository budgetRepository;
+    private BudgetRepository budgetRepository;
+    private SubBudgetRepository subBudgetRepository;
+    private SubBudgetConverterUtil subBudgetConverterUtil;
 
     @Autowired
-    public BudgetServiceImpl(BudgetRepository budgetRepository)
+    public BudgetServiceImpl(BudgetRepository budgetRepository,
+                             SubBudgetRepository subBudgetRepository,
+                             SubBudgetConverterUtil subBudgetConverterUtil)
     {
         this.budgetRepository = budgetRepository;
+        this.subBudgetRepository = subBudgetRepository;
+        this.subBudgetConverterUtil = subBudgetConverterUtil;
     }
 
     @Override
@@ -107,18 +116,10 @@ public class BudgetServiceImpl implements BudgetService
             budgetEntity.setSavingsProgress(budget.getSavingsProgress());
             budgetEntity.setBudgetName(budget.getBudgetName());
             budgetEntity.setBudgetDescription(budget.getBudgetDescription());
-//
-//            List<BudgetSchedule> budgetSchedules = budget.getBudgetSchedules();
-//            if(budgetSchedules.isEmpty())
-//            {
-//                log.warn("Budget with Id: {} found with no budget schedules", budget.getId());
-//                budgetEntity.setBudgetSchedules(Set.of());
-//            }
-//            List<BudgetScheduleEntity> budgetScheduleEntities = convertBudgetSchedulesToEntity(budgetSchedules);
-//            Set<BudgetScheduleEntity> budgetScheduleEntitySet = new HashSet<>(budgetScheduleEntities);
-//            budgetEntity.setSubBudgetEntities(budgetScheduleEntitySet);
-//            return Optional.of(budgetEntity);
-            return null;
+            List<SubBudget> subBudgets = budget.getSubBudgets();
+            Set<SubBudgetEntity> subBudgetEntities = subBudgetConverterUtil.convertSubBudgetToEntities(subBudgets);
+            budgetEntity.setSubBudgetEntities(subBudgetEntities);
+            return Optional.of(budgetEntity);
         }catch(Exception e){
             log.error("There was an error creating the budget entity: ", e);
             return Optional.empty();
@@ -138,7 +139,7 @@ public class BudgetServiceImpl implements BudgetService
         return budget;
     }
 
-    private List<BudgetScheduleEntity> convertBudgetSchedulesToEntity(List<BudgetSchedule> budgetSchedules)
+    private List<BudgetScheduleEntity> convertBudgetSchedulesToEntity(final List<BudgetSchedule> budgetSchedules)
     {
         if(budgetSchedules.isEmpty())
         {
@@ -148,12 +149,12 @@ public class BudgetServiceImpl implements BudgetService
         for (BudgetSchedule schedule : budgetSchedules)
         {
             BudgetScheduleEntity entity = new BudgetScheduleEntity();
-            Long budgetId = schedule.getBudgetId();
-            Optional<BudgetEntity> budgetEntity = findById(budgetId);
-            BudgetEntity budget = budgetEntity.get();
+            Long subBudgetId = schedule.getSubBudgetId();
+            Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findById(subBudgetId);
+            SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
             // Map basic fields
             entity.setId(schedule.getBudgetScheduleId());
-            entity.setBudget(budget);  // if you need to associate it with a parent budget
+            entity.setSubBudget(subBudgetEntity);  // if you need to associate it with a parent budget
             entity.setStartDate(schedule.getStartDate());
             entity.setEndDate(schedule.getEndDate());
 
@@ -197,9 +198,9 @@ public class BudgetServiceImpl implements BudgetService
         {
             for(BudgetScheduleEntity budgetSchedule : budgetScheduleEntitySet)
             {
-                BudgetEntity budgetEntity = budgetSchedule.getBudget();
+                SubBudgetEntity subBudgetEntity = budgetSchedule.getSubBudget();
                 BudgetSchedule budgetSchedule1 = BudgetSchedule.builder()
-                        .budgetId(budgetEntity.getId())
+                        .subBudgetId(subBudgetEntity.getId())
                         .endDate(budgetSchedule.getEndDate())
                         .startDate(budgetSchedule.getStartDate())
                         .period(budgetSchedule.getPeriodType())
