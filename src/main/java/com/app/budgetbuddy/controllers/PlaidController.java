@@ -156,6 +156,7 @@ public class PlaidController {
             return ResponseEntity.notFound().build();
         }
 
+        plaidLinkService.markPlaidAsUpdated(userID);
         ExchangeResponse exchangeResponse = createExchangeResponse(accessToken, itemId, userID);
         return ResponseEntity.ok(exchangeResponse);
     }
@@ -185,13 +186,28 @@ public class PlaidController {
         }
     }
 
+    @GetMapping("/{userID}/access-token")
+    public ResponseEntity<?> getAccessToken(@PathVariable Long userID)
+    {
+        Optional<PlaidLinkEntity> plaidLink = plaidLinkService.findPlaidLinkByUserID(userID);
+        if(plaidLink.isEmpty())
+        {
+            throw new RuntimeException("Plaid Link Not Found");
+        }
+        PlaidLinkEntity plaidLinkEntity = plaidLink.get();
+        String accessToken = plaidLinkEntity.getAccessToken();
+        LOGGER.info("Access Token: {}", accessToken);
+        return ResponseEntity.ok(accessToken);
+    }
+
     @GetMapping("/{userId}/plaid-link")
     public ResponseEntity<PlaidLinkStatus> checkPlaidLinkStatus(@PathVariable Long userId){
         Optional<PlaidLinkEntity> plaidLink = plaidLinkService.findPlaidLinkByUserID(userId);
         LOGGER.info("PlaidLink: " + plaidLink);
         boolean isLinked = plaidLink.isPresent();
-        boolean requiresUpdate = plaidLinkService.checkPlaidLinkStatus(userId);
-        return ResponseEntity.ok(new PlaidLinkStatus(false, false));
+        boolean requiresUpdate = plaidLinkService.checkIfPlaidRequiresUpdate(userId);
+        PlaidLinkStatus status = new PlaidLinkStatus(isLinked, requiresUpdate);
+        return ResponseEntity.ok(status);
     }
 
     @PostMapping("/link")

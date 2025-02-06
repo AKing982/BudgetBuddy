@@ -33,7 +33,7 @@ public class BudgetUtil
     {
         BudgetEntity budgetEntity = new BudgetEntity();
         budgetEntity.setId(budget.getId());
-        budgetEntity.setActualAllocationAmount(budget.getSavingsAmountAllocated());
+        budgetEntity.setActualSavingsAllocation(budget.getSavingsAmountAllocated());
         budgetEntity.setBudgetActualAmount(budget.getBudgetAmount());
         budgetEntity.setBudgetAmount(budget.getBudgetAmount());
         budgetEntity.setBudgetDescription(budget.getBudgetDescription());
@@ -150,7 +150,7 @@ public class BudgetUtil
         budget.setUserId(budgetEntity.getUser().getId());
         budget.setActual(budgetEntity.getBudgetActualAmount());
         budget.setBudgetMode(budgetEntity.getBudgetMode());
-        budget.setSavingsAmountAllocated(budgetEntity.getActualAllocationAmount());
+        budget.setSavingsAmountAllocated(budgetEntity.getActualSavingsAllocation());
         budget.setSavingsProgress(budgetEntity.getSavingsProgress());
         budget.setStartDate(budgetEntity.getBudgetStartDate());
         budget.setEndDate(budgetEntity.getBudgetEndDate());

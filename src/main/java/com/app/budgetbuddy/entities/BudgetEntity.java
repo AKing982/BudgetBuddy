@@ -66,8 +66,8 @@ public class BudgetEntity {
     @NotNull
     private LocalDate budgetEndDate;
 
-    @Column(name="actualAllocationAmount")
-    private BigDecimal actualAllocationAmount;
+    @Column(name="actualSavingsAllocation")
+    private BigDecimal actualSavingsAllocation;
 
     @Column(name="savingsProgress")
     private BigDecimal savingsProgress;
@@ -85,9 +85,9 @@ public class BudgetEntity {
 
     @ManyToMany
     @JoinTable(
-            name = "subBudget_mapping",
+            name = "sub_Budget_mapping",
             joinColumns = @JoinColumn(name = "budgetId"),
-            inverseJoinColumns = @JoinColumn(name = "scheduleId")
+            inverseJoinColumns = @JoinColumn(name = "subbudgetid")
     )
     private Set<SubBudgetEntity> subBudgetEntities = new HashSet<>();
 

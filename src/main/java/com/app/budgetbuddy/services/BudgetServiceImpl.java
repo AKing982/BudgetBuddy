@@ -71,6 +71,7 @@ public class BudgetServiceImpl implements BudgetService
     public Budget loadUserBudgetForPeriod(Long userId, LocalDate startDate, LocalDate endDate) {
         try
         {
+            log.info("Executing query: SELECT b FROM BudgetEntity b JOIN b.subBudgetEntities sb WHERE DATE(sb.startDate) = {} AND DATE(sb.endDate) = {} AND b.user.id = {}", startDate, endDate, userId);
             Optional<BudgetEntity> budgetEntityOptional = budgetRepository.findBudgetByUserIdAndDates(startDate, endDate, userId);
             return budgetEntityOptional.map(this::convertBudgetEntity).orElseThrow(() -> new RuntimeException("Budget not found"));
         }catch(DataAccessException e){
@@ -89,7 +90,7 @@ public class BudgetServiceImpl implements BudgetService
         budget.setUserId(budgetEntity.getUser().getId());
         budget.setActual(budgetEntity.getBudgetActualAmount());
         budget.setBudgetMode(budgetEntity.getBudgetMode());
-        budget.setSavingsAmountAllocated(budgetEntity.getActualAllocationAmount());
+        budget.setSavingsAmountAllocated(budgetEntity.getActualSavingsAllocation());
         budget.setSavingsProgress(budgetEntity.getSavingsProgress());
         budget.setStartDate(budgetEntity.getBudgetStartDate());
         budget.setEndDate(budgetEntity.getBudgetEndDate());

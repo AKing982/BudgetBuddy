@@ -377,6 +377,32 @@ class PlaidService {
         }
     }
 
+    public async getAccessTokenForUser(userId: number) : Promise<string>
+    {
+        try
+        {
+            const response = await axios.get(`${apiUrl}/api/plaid/${userId}/access-token`);
+            return response.data.accessToken;
+        }catch(error)
+        {
+            console.error(`Error fetching the plaid access token for user ${userId}: `, error);
+            throw error;
+        }
+    }
+
+    public async markPlaidAsUpdated(userId: number) : Promise<void>
+    {
+        try
+        {
+            const response = await axios.post(`${apiUrl}/api/plaid/users/${userId}/mark-updated`);
+            console.log(`Successfully marked Plaid as updated for user ${userId}:`, response.data);
+        }catch(error)
+        {
+            console.error(`Error marking plaid as updated for user ${userId}: `, error);
+            throw error;
+        }
+    }
+
     public async updatePlaidLink(userId: number, accessToken: string) : Promise<string>
     {
         try

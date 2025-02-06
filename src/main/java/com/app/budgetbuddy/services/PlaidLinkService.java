@@ -16,6 +16,8 @@ public interface PlaidLinkService extends ServiceModel<PlaidLinkEntity>
 
     PlaidLinkStatus checkPlaidLinkStatus(Long userId);
 
+    boolean checkIfPlaidRequiresUpdate(Long userId);
+
     void markPlaidAsNeedingUpdate(Long userId);
     void markPlaidAsUpdated(Long userId);
 }

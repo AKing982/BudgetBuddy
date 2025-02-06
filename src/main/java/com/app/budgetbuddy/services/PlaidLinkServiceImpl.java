@@ -86,6 +86,13 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     }
 
     @Override
+    public boolean checkIfPlaidRequiresUpdate(Long userId)
+    {
+        Optional<PlaidLinkEntity> plaidLink = plaidLinkRepository.findPlaidLinkByUserId(userId);
+        return plaidLink.map(PlaidLinkEntity::isRequiresUpdate).orElse(false);
+    }
+
+    @Override
     public void markPlaidAsNeedingUpdate(Long userId)
     {
         plaidLinkRepository.findPlaidLinkByUserId(userId).ifPresent(plaidLink -> {

@@ -97,6 +97,7 @@ const LoginForm: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const budgetService = BudgetService.getInstance();
     const transactionRunnerService = TransactionRunnerService.getInstance();
+    const plaidService = PlaidService.getInstance();
     const transactionCategoryRunnerService = TransactionCategoryRunnerService.getInstance();
 
     const navigate = useNavigate();
@@ -108,6 +109,20 @@ const LoginForm: React.FC = () => {
             [name]: value,
         }));
     };
+
+    const { open, ready } = usePlaidLink({
+        token: linkToken,
+        onSuccess: async (publicToken, metadata) => {
+            console.log("Plaid re-authentication successful!", metadata);
+            await plaidService.exchangePublicToken(publicToken, Number(sessionStorage.getItem("userId")));
+            console.log("Plaid access token updated successfully!");
+        },
+        onExit: (error, metadata) => {
+            if (error) {
+                console.error("Error exiting Plaid Link:", error);
+            }
+        },
+    });
 
 
     const validateForm = (): boolean => {
@@ -139,7 +154,12 @@ const LoginForm: React.FC = () => {
                 // Fetch the link token
 
                 const isPlaidLinkedResponse = await handlePlaidLinkVerification(userId);
+                if(!isPlaidLinkedResponse){
+                    console.error("Error: Failed to verify Plaid link status, defaulting to not linked.");
+                    return;
+                }
                 const isPlaidLinked = isPlaidLinkedResponse.isLinked;
+                const requiresUpdate = isPlaidLinkedResponse.requiresUpdate;
                 if(!isPlaidLinked){
                     const response = await plaidService.createLinkToken();
 
@@ -154,7 +174,12 @@ const LoginForm: React.FC = () => {
                     }else{
                         console.error('Plaid Link reference is not available');
                     }
-                }else{
+                }else if(requiresUpdate){
+                    console.log('Updating Plaid Link automatically...');
+                    await openUpdateMode(userId);
+                }
+
+                else{
                     try {
 
                         await transactionRunnerService.syncTransactions(userId);
@@ -210,14 +235,13 @@ const LoginForm: React.FC = () => {
         }
     }
 
-    const handlePlaidLinkVerification = async (userId: number) : Promise<PlaidLinkStatus> => {
+    const handlePlaidLinkVerification = async (userId: number) : Promise<PlaidLinkStatus>  => {
         try
         {
-            const plaidService = PlaidService.getInstance();
-            const plaidStatus = await plaidService.checkPlaidLinkStatusByUserId(userId);
 
+            const plaidStatus = await plaidService.checkPlaidLinkStatusByUserId(userId);
             // Fetch access token from session storage or backend
-            const accessToken = sessionStorage.getItem('plaidAccessToken') || '';
+            const accessToken = await plaidService.getAccessTokenForUser(userId);
             if (!plaidStatus.isLinked)
             {
                 console.warn('Plaid link is not active. Reconnecting...');
@@ -228,9 +252,8 @@ const LoginForm: React.FC = () => {
             {
                 console.warn('Plaid link requires update. Opening update mode...');
                 if(accessToken){
-                    await openUpdateMode(userId, accessToken);
+                    await openUpdateMode(userId);
                 }
-                return;
             }
             return plaidStatus;
         } catch (error) {
@@ -240,31 +263,17 @@ const LoginForm: React.FC = () => {
 
     }
 
-    const openUpdateMode = async (userId: number, accessToken: string) => {
+    const openUpdateMode = async (userId: number) => {
         try {
-            const plaidService = PlaidService.getInstance();
+            const accessToken = await plaidService.getAccessTokenForUser(userId);
             const linkToken = await plaidService.updatePlaidLink(userId, accessToken);
-
             if (!linkToken) {
                 console.error("Failed to fetch update link token");
                 return;
             }
 
             // Use the Plaid React hook to open update mode
-            const { open, ready } = usePlaidLink({
-                token: linkToken,
-                onSuccess: async (publicToken, metadata) => {
-                    console.log("Plaid re-authentication successful!", metadata);
-                    await plaidService.exchangePublicToken(publicToken, userId);
-                    await plaidService.markPlaidAsUpdated(userId);
-                    console.log("Plaid access token updated successfully!");
-                },
-                onExit: (error, metadata) => {
-                    if (error) {
-                        console.error("Error exiting Plaid Link:", error);
-                    }
-                },
-            });
+            setLinkToken(linkToken);
 
             if (ready) {
                 open(); // Open Plaid update mode if ready
