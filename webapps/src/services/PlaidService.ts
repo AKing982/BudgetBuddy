@@ -19,7 +19,7 @@ interface PlaidExchangeResponse {
 
 interface PlaidLinkStatus {
     isLinked: boolean;
-    requiresUpdate: boolean;
+    requiresLinkUpdate: boolean;
 }
 
 interface PlaidLinkRequest {
@@ -382,7 +382,8 @@ class PlaidService {
         try
         {
             const response = await axios.get(`${apiUrl}/api/plaid/${userId}/access-token`);
-            return response.data.accessToken;
+            console.log('Access Token response: ', response);
+            return response.data;
         }catch(error)
         {
             console.error(`Error fetching the plaid access token for user ${userId}: `, error);
@@ -405,15 +406,27 @@ class PlaidService {
 
     public async updatePlaidLink(userId: number, accessToken: string) : Promise<string>
     {
+        console.log('UserId: ', userId);
+        console.log('Access Token: ', accessToken);
+        if (!userId || userId < 1 || !accessToken) {
+            throw new Error("Invalid userId or accessToken provided for Plaid update.");
+        }
         try
         {
             const response = await axios.post<{linkToken: string}>(`${apiUrl}/api/plaid/update_link_token`, {
                 userId,
                 accessToken
             });
+            if (!response.data || !response.data.linkToken) {
+                throw new Error("Failed to retrieve update link token from server.");
+            }
             return response.data.linkToken;
         }catch(error){
-            console.error('Error updating plaid link: ', error);
+            if (axios.isAxiosError(error)) {
+                console.error("Axios error updating Plaid link:", error.response?.data || error.message);
+            } else {
+                console.error("Unexpected error updating Plaid link:", error);
+            }
             throw error;
         }
     }

@@ -175,8 +175,10 @@ public class TransactionCategoryRunner
     }
 
     // TODO: Unit test this method
-    public Boolean checkIfTransactionCategoryExists(TransactionCategory transactionCategory){
-        if (transactionCategory == null || transactionCategory.getBudgetId() == null) {
+    public Boolean checkIfTransactionCategoryExists(TransactionCategory transactionCategory)
+    {
+        if (transactionCategory == null || transactionCategory.getBudgetId() == null)
+        {
             return false;
         }
 
@@ -189,8 +191,7 @@ public class TransactionCategoryRunner
         return existingCategories.stream()
                 .anyMatch(category ->
                         category.getCategory().getId().equals(transactionCategory.getCategoryId()) &&
-                                category.getBudgetedAmount().equals(transactionCategory.getBudgetedAmount())
-                );
+                                category.getBudgetedAmount().equals(transactionCategory.getBudgetedAmount()));
     }
 
     public void batchSaveTransactionCategories(final List<TransactionCategory> transactionCategories){

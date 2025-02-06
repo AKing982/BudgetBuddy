@@ -22,7 +22,8 @@ import java.util.*;
 
 @Service
 @Slf4j
-public class BudgetRunner {
+public class BudgetRunner
+{
     private final BudgetPeriodQueries budgetPeriodQueries;
     private final BudgetQueriesService budgetQueriesService;
     private final BudgetCalculations budgetCalculations;
@@ -237,23 +238,20 @@ public class BudgetRunner {
                 budget.getId(),
                 startDate,
                 endDate,
-                budgetPeriod
-        );
+                budgetPeriod);
 
         List<Category> incomeCategories = loadIncomeCategory(
                 budget.getBudgetAmount(),
                 budget.getId(),
                 startDate,
-                endDate
-        );
+                endDate);
 
         BudgetCategoryStats budgetCategoryStats = new BudgetCategoryStats(
                 periodCategories,
                 topExpenses,
                 expenseCategories,
                 savingsCategories,
-                incomeCategories
-        );
+                incomeCategories);
 
         // Build the result
         return BudgetRunnerResult.builder()

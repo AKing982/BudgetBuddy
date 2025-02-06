@@ -3,9 +3,12 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.PlaidLinkStatus;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.PlaidApiException;
+import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.exceptions.UserNotFoundException;
 import com.app.budgetbuddy.repositories.PlaidLinkRepository;
 import com.app.budgetbuddy.repositories.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class PlaidLinkServiceImpl implements PlaidLinkService
 {
     private final PlaidLinkRepository plaidLinkRepository;
@@ -88,26 +92,36 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     @Override
     public boolean checkIfPlaidRequiresUpdate(Long userId)
     {
-        Optional<PlaidLinkEntity> plaidLink = plaidLinkRepository.findPlaidLinkByUserId(userId);
-        return plaidLink.map(PlaidLinkEntity::isRequiresUpdate).orElse(false);
+        try
+        {
+            LocalDateTime minThreshold = LocalDateTime.now().minusDays(30); // 30 days ago
+            LocalDateTime maxThreshold = LocalDateTime.now().minusDays(10); // 10 days ago
+            return plaidLinkRepository.requiresUpdate(userId, minThreshold, maxThreshold);
+        }catch(PlaidLinkException e)
+        {
+            log.error("There was an error validating the link token for updating: ", e);
+            return false;
+        }
     }
 
     @Override
     public void markPlaidAsNeedingUpdate(Long userId)
     {
-        plaidLinkRepository.findPlaidLinkByUserId(userId).ifPresent(plaidLink -> {
-            plaidLink.setRequiresUpdate(true);
-            plaidLinkRepository.save(plaidLink);
-        });
+        try
+        {
+            plaidLinkRepository.updateRequiresUpdate(userId);
+        }catch(PlaidLinkException e)
+        {
+            log.error("There was an error marking the plaid as needing update: ", e);
+        }
     }
 
     @Override
-    public void markPlaidAsUpdated(Long userId)
+    public void markPlaidAsUpdated(Long userId, String accessToken, String oldAccessToken)
     {
         plaidLinkRepository.findPlaidLinkByUserId(userId).ifPresent(plaidLink -> {
-            plaidLink.setRequiresUpdate(false);
             plaidLink.setUpdatedAt(LocalDateTime.now());
-            plaidLinkRepository.save(plaidLink);
+            plaidLinkRepository.updateAccessToken(accessToken, oldAccessToken, userId);
         });
     }
 

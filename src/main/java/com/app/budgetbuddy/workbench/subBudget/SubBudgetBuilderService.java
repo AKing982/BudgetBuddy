@@ -101,7 +101,8 @@ public class SubBudgetBuilderService
                 LocalDate monthStart = budgetMonth.getStartDate();
                 LocalDate monthEnd = budgetMonth.getEndDate();
                 Optional<SubBudget> monthSubBudget = createNewMonthSubBudget(budget, monthStart, monthEnd, incomeAmount, budgetGoals);
-                if(monthSubBudget.isEmpty()) {
+                if(monthSubBudget.isEmpty())
+                {
                     throw new RuntimeException("Month Sub budget for: " + monthStart + " - " + monthEnd + " not found");
                 }
                 SubBudget subBudget = monthSubBudget.get();

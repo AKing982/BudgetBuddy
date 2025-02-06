@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -18,6 +19,12 @@ import java.util.Arrays;
 @Service
 public class PlaidLinkTokenProcessor extends AbstractPlaidManager
 {
+    @Value("{plaid.client-id}")
+    private String clientId;
+
+    @Value("{plaid.secret}")
+    private String secret;
+
     private Logger LOGGER = LoggerFactory.getLogger(PlaidLinkTokenProcessor.class);
 
     @Autowired
@@ -126,6 +133,31 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
 
         Call<ItemPublicTokenExchangeResponse> publicTokenExchangeResponseCall = plaidApi.itemPublicTokenExchange(itemPublicTokenExchangeRequest);
         Response<ItemPublicTokenExchangeResponse> response = publicTokenExchangeResponseCall.execute();
+        return response.body();
+    }
+
+    public LinkTokenCreateResponse createUpdateLinkToken(Long userId, String accessToken) throws IOException
+    {
+        if (userId == null || userId < 1 || accessToken == null || accessToken.isEmpty())
+        {
+            throw new IllegalArgumentException("Invalid userId or accessToken for Plaid update link.");
+        }
+
+        LinkTokenCreateRequest request = new LinkTokenCreateRequest()
+                .clientName("BudgetBuddy")
+                .user(new LinkTokenCreateRequestUser().clientUserId(userId.toString()))
+                .countryCodes(Arrays.asList(CountryCode.US))
+                .language("en")
+                .products(Arrays.asList(Products.TRANSACTIONS))
+                .accessToken(accessToken);
+
+        Call<LinkTokenCreateResponse> linkTokenCall = plaidApi.linkTokenCreate(request);
+        Response<LinkTokenCreateResponse> response = linkTokenCall.execute();
+
+        if (!response.isSuccessful() || response.body() == null) {
+            throw new PlaidApiException("Failed to create update link token: " + response.errorBody().string());
+        }
+
         return response.body();
     }
 }

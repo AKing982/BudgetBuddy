@@ -40,7 +40,7 @@ interface FormErrors {
 
 interface PlaidLinkStatus {
     isLinked: boolean;
-    requiresUpdate: boolean;
+    requiresLinkUpdate: boolean;
 }
 
 
@@ -154,12 +154,14 @@ const LoginForm: React.FC = () => {
                 // Fetch the link token
 
                 const isPlaidLinkedResponse = await handlePlaidLinkVerification(userId);
+                console.log('Plaid Link Response: ', isPlaidLinkedResponse);
                 if(!isPlaidLinkedResponse){
                     console.error("Error: Failed to verify Plaid link status, defaulting to not linked.");
                     return;
                 }
                 const isPlaidLinked = isPlaidLinkedResponse.isLinked;
-                const requiresUpdate = isPlaidLinkedResponse.requiresUpdate;
+                const requiresLinkUpdate = isPlaidLinkedResponse.requiresLinkUpdate;
+                console.log('Requires Update: ', requiresLinkUpdate);
                 if(!isPlaidLinked){
                     const response = await plaidService.createLinkToken();
 
@@ -171,15 +173,11 @@ const LoginForm: React.FC = () => {
                         plaidLinkRef.current.open();
                         // Fetch and link plaid accounts
 
-                    }else{
-                        console.error('Plaid Link reference is not available');
                     }
-                }else if(requiresUpdate){
+                }else if(requiresLinkUpdate){
                     console.log('Updating Plaid Link automatically...');
                     await openUpdateMode(userId);
-                }
-
-                else{
+                } else{
                     try {
 
                         await transactionRunnerService.syncTransactions(userId);
@@ -248,7 +246,7 @@ const LoginForm: React.FC = () => {
                 const response = await plaidService.createLinkToken();
                 setLinkToken(response.linkToken);
             }
-            else if (plaidStatus.requiresUpdate && accessToken)
+            else if (plaidStatus.requiresLinkUpdate && accessToken)
             {
                 console.warn('Plaid link requires update. Opening update mode...');
                 if(accessToken){
@@ -275,10 +273,21 @@ const LoginForm: React.FC = () => {
             // Use the Plaid React hook to open update mode
             setLinkToken(linkToken);
 
+            // Ensure Plaid is ready before opening update mode
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            while (!ready && attempts < maxAttempts) {
+                console.warn(`Waiting for Plaid to be ready... (${attempts + 1}/${maxAttempts})`);
+                await new Promise((resolve) => setTimeout(resolve, 3500)); // Wait 500ms before checking again
+                attempts++;
+            }
+
             if (ready) {
-                open(); // Open Plaid update mode if ready
+                console.log("Opening Plaid update mode...");
+                open();
             } else {
-                console.error("Plaid is not ready to open update mode");
+                console.error("Plaid did not become ready in time. Update mode not opened.");
             }
         } catch (error) {
             console.error("Error opening Plaid update mode:", error);
