@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -24,9 +25,11 @@ public class PlaidLinkEntity
     private UserEntity user;
 
     @Column(name="access_token")
+    @NotNull
     private String accessToken;
 
     @Column(name="item_id")
+    @NotNull
     private String itemId;
 
     @Column(name="createdAt")

@@ -13,7 +13,7 @@ import java.util.Objects;
 public class TransactionCategory
 {
     private Long id;
-    private Long budgetId;
+    private Long subBudgetId;
     private String categoryId;
     private String categoryName;
     private Double budgetedAmount;
@@ -25,9 +25,9 @@ public class TransactionCategory
     private boolean isOverSpent;
     private List<Transaction> transactions;
 
-    public TransactionCategory(Long id, Long budgetId, String categoryId, String categoryName, Double budgetedAmount, Double budgetActual, Boolean isActive, LocalDate startDate, LocalDate endDate, Double overSpendingAmount, boolean isOverSpent) {
+    public TransactionCategory(Long id, Long subBudgetId, String categoryId, String categoryName, Double budgetedAmount, Double budgetActual, Boolean isActive, LocalDate startDate, LocalDate endDate, Double overSpendingAmount, boolean isOverSpent) {
         this.id = id;
-        this.budgetId = budgetId;
+        this.subBudgetId = subBudgetId;
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.budgetedAmount = budgetedAmount;
@@ -44,11 +44,11 @@ public class TransactionCategory
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TransactionCategory that = (TransactionCategory) o;
-        return isOverSpent == that.isOverSpent && Objects.equals(id, that.id) && Objects.equals(budgetId, that.budgetId) && Objects.equals(categoryId, that.categoryId) && Objects.equals(categoryName, that.categoryName) && Objects.equals(budgetedAmount, that.budgetedAmount) && Objects.equals(budgetActual, that.budgetActual) && Objects.equals(isActive, that.isActive) && Objects.equals(startDate, that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(overSpendingAmount, that.overSpendingAmount) && Objects.equals(transactions, that.transactions);
+        return isOverSpent == that.isOverSpent && Objects.equals(id, that.id) && Objects.equals(subBudgetId, that.subBudgetId) && Objects.equals(categoryId, that.categoryId) && Objects.equals(categoryName, that.categoryName) && Objects.equals(budgetedAmount, that.budgetedAmount) && Objects.equals(budgetActual, that.budgetActual) && Objects.equals(isActive, that.isActive) && Objects.equals(startDate, that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(overSpendingAmount, that.overSpendingAmount) && Objects.equals(transactions, that.transactions);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, budgetId, categoryId, categoryName, budgetedAmount, budgetActual, isActive, startDate, endDate, overSpendingAmount, isOverSpent, transactions);
+        return Objects.hash(id, subBudgetId, categoryId, categoryName, budgetedAmount, budgetActual, isActive, startDate, endDate, overSpendingAmount, isOverSpent, transactions);
     }
 }

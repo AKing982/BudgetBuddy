@@ -33,6 +33,20 @@ public class BudgetPeriodCategory
         this.budgetStatus = budgetStatus;
     }
 
+    /**
+     * Determines if the budget is over-spent or under-utilized.
+     */
+    private BudgetStatus determineBudgetStatus(double spendingPercentage)
+    {
+        if (spendingPercentage > 1.0) {
+            return BudgetStatus.OVER_BUDGET;
+        } else if (spendingPercentage < 0.8) {
+            return BudgetStatus.UNDER_UTILIZED;
+        } else {
+            return BudgetStatus.GOOD;
+        }
+    }
+
     private boolean isOverBudget(BigDecimal budgeted, BigDecimal actual) {
         return actual.compareTo(budgeted) > 0;
     }

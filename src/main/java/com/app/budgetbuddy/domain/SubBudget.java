@@ -58,6 +58,23 @@ public class SubBudget
                 .build();
     }
 
+    /**
+     * Retrieves the total budgeted vs. actual difference.
+     * @return The difference as a BigDecimal.
+     */
+    public BigDecimal getBudgetVariance() {
+        return allocatedAmount.subtract(spentOnBudget);
+    }
+
+    /**
+     * Retrieves the savings ratio.
+     * @return The savings ratio as a BigDecimal.
+     */
+    public BigDecimal getSavingsRatio() {
+        if (allocatedAmount.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
+        return subSavingsAmount.divide(allocatedAmount, 2, BigDecimal.ROUND_HALF_UP);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
