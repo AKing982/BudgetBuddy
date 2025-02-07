@@ -51,24 +51,13 @@ public class BudgetRunner
      * @param endMonth
      * @return
      */
-    public Optional<Budget> createBudgetAndScheduleForPeriod(final Long userId, final LocalDate startMonth, final LocalDate endMonth) {
-        if (startMonth == null || endMonth == null) {
+    public Optional<Budget> createBudgetAndSubBudgetsForDates(final Long userId, final LocalDate startMonth, final LocalDate endMonth)
+    {
+        if (startMonth == null || endMonth == null)
+        {
             return Optional.empty();
         }
-        try {
-            if (userId < 1L) {
-                throw new InvalidUserIDException("Invalid user ID Found: " + userId);
-            }
-            Budget budget = budgetService.loadUserBudgetForPeriod(userId, startMonth, endMonth);
-            if (budget == null) {
-                // If no budget is found, then create a new budget
-            }
 
-
-        } catch (InvalidUserIDException e) {
-            log.error("There was an error due to an invalid userId: ", e);
-            return Optional.empty();
-        }
 
         return null;
     }
