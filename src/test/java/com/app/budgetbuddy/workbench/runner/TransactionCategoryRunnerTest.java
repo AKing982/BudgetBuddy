@@ -57,18 +57,18 @@ class TransactionCategoryRunnerTest {
 
     private Budget testBudget;
 
-    @BeforeEach
-    void setUp() {
-
-        testBudget = new Budget();
-        testBudget.setId(1L);
-        testBudget.setActual(new BigDecimal("1200"));
-        testBudget.setBudgetAmount(new BigDecimal("3070"));
-        testBudget.setUserId(1L);
-        testBudget.setBudgetName("Savings Budget Plan");
-        testBudget.setBudgetDescription("Savings Budget Plan for Savings Account");
-        transactionCategoryRunner = new TransactionCategoryRunner(transactionCategoryService, transactionCategoryBuilder, transactionService, budgetService, budgetScheduleService, categoryService, categoryRuleEngine, recurringTransactionService);
-    }
+//    @BeforeEach
+//    void setUp() {
+//
+//        testBudget = new Budget();
+//        testBudget.setId(1L);
+//        testBudget.setActual(new BigDecimal("1200"));
+//        testBudget.setBudgetAmount(new BigDecimal("3070"));
+//        testBudget.setUserId(1L);
+//        testBudget.setBudgetName("Savings Budget Plan");
+//        testBudget.setBudgetDescription("Savings Budget Plan for Savings Account");
+//        transactionCategoryRunner = new TransactionCategoryRunner(transactionCategoryService, transactionCategoryBuilder, transactionService, budgetService, budgetScheduleService, categoryService, categoryRuleEngine, recurringTransactionService);
+//    }
 //
 //    @Test
 //    void testCreateNewTransactionCategories_whenTransactionsIsNull_thenReturnEmptyList(){

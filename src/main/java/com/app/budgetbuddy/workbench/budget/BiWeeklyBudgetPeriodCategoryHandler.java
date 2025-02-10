@@ -1,7 +1,11 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.DateRangeException;
 import com.app.budgetbuddy.services.TransactionCategoryService;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,12 +21,13 @@ import java.util.Optional;
 @Slf4j
 public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHandler
 {
-    private final TransactionCategoryService transactionCategoryService;
+    @PersistenceContext
+    private final EntityManager entityManager;
 
     @Autowired
-    public BiWeeklyBudgetPeriodCategoryHandler(TransactionCategoryService transactionCategoryService)
+    public BiWeeklyBudgetPeriodCategoryHandler(EntityManager entityManager)
     {
-        this.transactionCategoryService = transactionCategoryService;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -33,8 +38,8 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
         }
 
         List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
-
-        try {
+        try
+        {
             LocalDate subBudgetStartDate = budget.getStartDate();
             LocalDate subBudgetEndDate = budget.getEndDate();
             Long subBudgetId = budget.getId();
@@ -42,41 +47,71 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
             // Split the budget period into biweekly periods
             DateRange dateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
             List<DateRange> biWeeklyRanges = dateRange.splitIntoBiWeeks();
+            if (biWeeklyRanges.isEmpty())
+            {
+                log.warn("No biweekly date ranges found for SubBudget ID: {}", subBudgetId);
+                return Collections.emptyList();
+            }
 
-            for (DateRange biWeeklyRange : biWeeklyRanges) {
-                // Fetch transactions for this biweekly period
-                List<TransactionCategory> transactionCategories = transactionCategoryService
-                        .getTransactionCategoryListByBudgetIdAndDateRange(subBudgetId, biWeeklyRange.getStartDate(), biWeeklyRange.getEndDate());
+            if (biWeeklyRanges.size() > 3)
+            {
+                throw new DateRangeException("Bi-weekly budget periods cannot exceed 3 periods.");
+            }
 
-                for (TransactionCategory category : transactionCategories) {
-                    BigDecimal budgetedAmount = Optional.ofNullable(category.getBudgetedAmount())
-                            .map(BigDecimal::valueOf)
-                            .orElse(BigDecimal.ZERO);
+            final String biWeeklyQuery = """
+               SELECT DISTINCT tc.category.id,
+                      tc.category.name,
+                      tc.budgetedAmount,
+                      COALESCE(tc.actual, 0) as actualSpent,
+                      tc.budgetedAmount - COALESCE(tc.actual, 0) as remainingAmount
+               FROM TransactionCategoryEntity tc
+               JOIN tc.category c
+               JOIN tc.budget b
+               WHERE tc.startDate <= :endDate 
+               AND tc.endDate >= :startDate
+               AND tc.budget.id = :budgetId
+               AND tc.isactive = true
+               """;
 
-                    BigDecimal actualSpent = Optional.ofNullable(category.getBudgetActual())
-                            .map(BigDecimal::valueOf)
-                            .orElse(BigDecimal.ZERO);
-
-                    // Determine budget performance
-                    BudgetStatus status = determineCategoryStatus(budgetedAmount, actualSpent);
-
-                    // Create biweekly BudgetPeriodCategory
-                    BudgetPeriodCategory periodCategory = new BudgetPeriodCategory(
-                            category.getCategoryName(),
-                            budgetedAmount,
-                            actualSpent,
-                            biWeeklyRange,
-                            status
-                    );
-
-                    budgetPeriodCategories.add(periodCategory);
+            for(DateRange biWeeklyRange : biWeeklyRanges)
+            {
+                if (biWeeklyRange.getStartDate() == null || biWeeklyRange.getEndDate() == null)
+                {
+                    throw new DateRangeException("Bi-weekly period cannot have null start date or end date.");
                 }
+
+                List<Object[]> results = entityManager.createQuery(biWeeklyQuery, Object[].class)
+                        .setParameter("startDate", biWeeklyRange.getStartDate())
+                        .setParameter("endDate", biWeeklyRange.getEndDate())
+                        .setParameter("budgetId", subBudgetId)
+                        .getResultList();
+
+                results.stream()
+                        .map(row -> {
+                            String categoryName = (String) row[1];
+                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
+                            BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+
+                            return new BudgetPeriodCategory(
+                                    categoryName,
+                                    budgeted,
+                                    actual,
+                                    biWeeklyRange,
+                                    determineCategoryStatus(budgeted, actual)
+                            );
+                        })
+                        .forEach(budgetPeriodCategories::add);
             }
 
             return budgetPeriodCategories;
 
-        } catch (Exception e) {
-            log.error("Error retrieving biweekly budget period categories for SubBudget ID: {}", budget.getId(), e);
+        } catch (DateRangeException e)
+        {
+            log.error("There was an error with the bi-weekly ranges: ", e);
+            throw e;
+        } catch (Exception e)
+        {
+            log.error("Error getting bi-weekly budget data for budget ID: {}", budget.getId(), e);
             return Collections.emptyList();
         }
     }

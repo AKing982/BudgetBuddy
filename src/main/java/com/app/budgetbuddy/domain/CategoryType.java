@@ -10,5 +10,6 @@ public enum CategoryType
     UTILITIES,
     MEDICAL,
     SUBSCRIPTIONS,
-    PAYMENT
+    PAYMENT,
+    EXPENSE
 }

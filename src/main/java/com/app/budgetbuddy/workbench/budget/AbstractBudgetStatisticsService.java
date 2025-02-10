@@ -17,5 +17,5 @@ public abstract class AbstractBudgetStatisticsService<T>
         this.budgetCalculations = budgetCalculations;
     }
 
-    abstract List<BudgetStats> getBudgetStats(T budget);
+    public abstract List<BudgetStats> getBudgetStats(T budget);
 }

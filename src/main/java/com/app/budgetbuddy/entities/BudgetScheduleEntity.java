@@ -40,7 +40,7 @@ public class BudgetScheduleEntity
     @NotNull
     private String scheduleRange;
 
-    @Column(name="totalPeriodsInRange")
+    @Column(name="totalperiods")
     @NotNull
     private Integer totalPeriodsInRange;
 

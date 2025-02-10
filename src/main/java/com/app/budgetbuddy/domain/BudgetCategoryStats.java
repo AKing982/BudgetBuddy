@@ -13,11 +13,11 @@ public class BudgetCategoryStats
 {
     private List<BudgetPeriodCategory> budgetPeriodCategories;
     private List<Category> topExpenseCategories;
-    private List<Category> expenseCategories;
+    private List<ExpenseCategory> expenseCategories;
     private List<Category> savingsCategories;
     private List<Category> incomeCategories;
 
-    public BudgetCategoryStats(List<BudgetPeriodCategory> budgetPeriodCategories, List<Category> topExpenseCategories, List<Category> expenseCategories, List<Category> savingsCategories, List<Category> incomeCategories) {
+    public BudgetCategoryStats(List<BudgetPeriodCategory> budgetPeriodCategories, List<Category> topExpenseCategories, List<ExpenseCategory> expenseCategories, List<Category> savingsCategories, List<Category> incomeCategories) {
         this.budgetPeriodCategories = budgetPeriodCategories;
         this.topExpenseCategories = topExpenseCategories;
         this.expenseCategories = expenseCategories;

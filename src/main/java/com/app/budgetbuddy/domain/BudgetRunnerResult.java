@@ -21,7 +21,7 @@ public class BudgetRunnerResult
 {
     private Budget budget;
     private BudgetSchedule budgetSchedule;
-    private BudgetStats budgetStats;
+    private List<BudgetStats> budgetStats;
     private BudgetCategoryStats budgetCategoryStats;
     private boolean isOverBudget;
 
@@ -51,7 +51,7 @@ public class BudgetRunnerResult
         return Map.of(
                 "budgetId", budget.getId(),
                 "processDate", LocalDateTime.now(),
-                "healthScore", budgetStats.getHealthScore(),
+//                "healthScore", budgetStats.getHealthScore(),
                 "isOverBudget", isOverBudget,
                 "remainingAmount", budget.getBudgetAmount().subtract(budget.getActual()),
                 "spendingPercentage", getSpendingPercentage()

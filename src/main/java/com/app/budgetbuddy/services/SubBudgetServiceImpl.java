@@ -82,17 +82,23 @@ public class SubBudgetServiceImpl implements SubBudgetService
     }
 
     @Override
-    public List<SubBudget> getSubBudgetsByUserIdAndDate(Long userId, LocalDate startDate, LocalDate endDate)
+    public Optional<SubBudget> getSubBudgetsByUserIdAndDate(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try
         {
 
-            List<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntityByIdAndDate(userId, startDate, endDate);
-            return convertSubBudgetEntitiesToSubBudget(subBudgetEntities);
+            Optional<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntityByIdAndDate(userId, startDate, endDate);
+            if(subBudgetEntities.isEmpty())
+            {
+                return Optional.empty();
+            }
+            SubBudgetEntity subBudgetEntity = subBudgetEntities.get();
+            SubBudget subBudget = subBudgetEntityConverter.convert(subBudgetEntity);
+            return Optional.of(subBudget);
         }catch(DataAccessException e)
         {
             log.error("There was an error getting the subBudgets from the database: ", e);
-            return Collections.emptyList();
+            return Optional.empty();
         }
     }
 

@@ -191,7 +191,7 @@ public class TransactionCategoryBuilder
         return newCategory;
     }
 
-    public List<TransactionCategory> initializeTransactionCategories(final Budget budget, final BudgetPeriod budgetPeriod, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryDesignators)
+    public List<TransactionCategory> initializeTransactionCategories(final SubBudget budget, final BudgetPeriod budgetPeriod, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryDesignators)
     {
         if(budget == null || budgetPeriod == null || categoryDesignators == null || categoryDesignators.isEmpty()){
             return Collections.emptyList();
@@ -278,7 +278,7 @@ public class TransactionCategoryBuilder
      *
      */
     //TODO: Re
-    public List<TransactionCategory> buildTransactionCategoryList(final List<CategoryBudget> categoryBudgets, final Budget budget)
+    public List<TransactionCategory> buildTransactionCategoryList(final List<CategoryBudget> categoryBudgets, final SubBudget budget)
     {
         if(categoryBudgets == null || budget == null)
         {
@@ -355,7 +355,7 @@ public class TransactionCategoryBuilder
 
 
     //TODO: Retest this method
-    public List<CategoryBudget> createCategoryBudgets(final Budget budget, final BudgetSchedule budgetSchedule, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final List<CategoryTransactions> categoryTransactionsList)
+    public List<CategoryBudget> createCategoryBudgets(final SubBudget budget, final BudgetSchedule budgetSchedule, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final List<CategoryTransactions> categoryTransactionsList)
     {
         if(budgetStartDate == null || budgetEndDate == null)
         {

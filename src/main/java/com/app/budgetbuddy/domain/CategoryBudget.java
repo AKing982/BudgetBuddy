@@ -13,7 +13,7 @@ public class CategoryBudget
 {
     private String categoryId;
     private String category;
-    private Budget budget;
+    private SubBudget budget;
     private BudgetSchedule budgetSchedule;
     private List<Transaction> categoryTransactions;
     private List<DateRange> categoryDateRanges;
@@ -21,7 +21,7 @@ public class CategoryBudget
     private List<BudgetPeriodAmount> actualAmounts;
     private boolean active;
 
-    public CategoryBudget(String categoryId, Budget budget, BudgetSchedule budgetSchedule, List<DateRange> categoryDateRanges, boolean active) {
+    public CategoryBudget(String categoryId, SubBudget budget, BudgetSchedule budgetSchedule, List<DateRange> categoryDateRanges, boolean active) {
         this.categoryId = categoryId;
         this.budget = budget;
         this.budgetSchedule = budgetSchedule;
@@ -45,7 +45,7 @@ public class CategoryBudget
         this.actualAmounts = new ArrayList<>();
     }
 
-    public CategoryBudget(String category, List<DateRange> dateRanges, Budget budget, Boolean isActive) {
+    public CategoryBudget(String category, List<DateRange> dateRanges, SubBudget budget, Boolean isActive) {
         this.category = category;
         this.categoryDateRanges = dateRanges;
         this.budgetedAmounts = new ArrayList<>();
@@ -54,7 +54,7 @@ public class CategoryBudget
         this.active = isActive;
     }
 
-    public CategoryBudget(String categoryId, String category, List<DateRange> dateRanges, Budget budget, List<Transaction> categoryTransactions, Boolean isActive) {
+    public CategoryBudget(String categoryId, String category, List<DateRange> dateRanges, SubBudget budget, List<Transaction> categoryTransactions, Boolean isActive) {
         this.categoryId = categoryId;
         this.category = category;
         this.categoryDateRanges = dateRanges;
@@ -83,7 +83,7 @@ public class CategoryBudget
     }
 
     public static CategoryBudget buildCategoryBudget(List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualBudgetAmounts,
-                                               List<DateRange> categoryDateRanges, Budget budget, List<Transaction> transactions, String category) {
+                                               List<DateRange> categoryDateRanges, SubBudget budget, List<Transaction> transactions, String category) {
 
         CategoryBudget categoryBudget = new CategoryBudget();
         categoryBudget.setCategory(category);
@@ -98,7 +98,7 @@ public class CategoryBudget
     }
 
     public static CategoryBudget buildCategoryBudget(String categoryId, String category, List<Transaction> transactions,  List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualBudgetAmounts,
-                                                     List<DateRange> categoryDateRanges, Budget budget, boolean isActive) {
+                                                     List<DateRange> categoryDateRanges, SubBudget budget, boolean isActive) {
 
         CategoryBudget categoryBudget = new CategoryBudget();
         categoryBudget.setCategory(category);

@@ -174,50 +174,48 @@ public class BudgetScheduleEngine
                 log.info("End Date: {}", endDate);
 
                 // Are there any sub budgets in this time frame?
-                List<SubBudget> monthlySubBudgets = subBudgetService.getSubBudgetsByUserIdAndDate(userId, startDate, endDate);
-                if(monthlySubBudgets.isEmpty())
+                Optional<SubBudget> monthlySubBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, startDate, endDate);
+                if(monthlySubBudgetOptional.isEmpty())
                 {
                     log.warn("No Sub-Budgets found for user {} for period {} - {}. Skipping budget schedule creation.", userId, startDate, endDate);
                     return Collections.emptyList();
                 }
                 else
                 {
-                    for(SubBudget monthSubBudget : monthlySubBudgets)
+                    SubBudget subBudget = monthlySubBudgetOptional.get();
+                    Long subBudgetId = subBudget.getId();
+                    List<BudgetSchedule> subBudgetSchedules = subBudget.getBudgetSchedule();
+                    if(!isFutureEnabled && !subBudgetSchedules.isEmpty())
                     {
-                        Long subBudgetId = monthSubBudget.getId();
-                        List<BudgetSchedule> subBudgetSchedules = monthSubBudget.getBudgetSchedule();
-                        if(!isFutureEnabled && !subBudgetSchedules.isEmpty())
+                        boolean isBudgetScheduleFound = false;
+                        for(BudgetSchedule budgetSchedule : subBudgetSchedules)
                         {
-                            boolean isBudgetScheduleFound = false;
-                            for(BudgetSchedule budgetSchedule : subBudgetSchedules)
+                            if (budgetSchedule == null)
                             {
-                                if (budgetSchedule == null)
-                                {
-                                    log.error("No Budget Schedule found for period: {} to {} with subBudgetId: {}", startDate, endDate, subBudgetId);
-                                    addMissingBudgetScheduleCriteria(subBudgetId, startDate, endDate);
-                                    continue;
-                                }
-                                LocalDate scheduleStartDate = budgetSchedule.getStartDate();
-                                LocalDate scheduleEndDate = budgetSchedule.getEndDate();
-                                if (startDate.isEqual(scheduleStartDate) && endDate.isEqual(scheduleEndDate))
-                                {
-                                    isBudgetScheduleFound = true;
-                                    uniqueBudgetSchedules.add(budgetSchedule);
-                                    break;
-                                }
+                                log.error("No Budget Schedule found for period: {} to {} with subBudgetId: {}", startDate, endDate, subBudgetId);
+                                addMissingBudgetScheduleCriteria(subBudgetId, startDate, endDate);
+                                continue;
                             }
+                            LocalDate scheduleStartDate = budgetSchedule.getStartDate();
+                            LocalDate scheduleEndDate = budgetSchedule.getEndDate();
+                            if (startDate.isEqual(scheduleStartDate) && endDate.isEqual(scheduleEndDate))
+                            {
+                                isBudgetScheduleFound = true;
+                                uniqueBudgetSchedules.add(budgetSchedule);
+                                break;
+                            }
+                        }
 
-                            if(!isBudgetScheduleFound)
-                            {
-                                BudgetSchedule newBudgetSchedule = getBudgetSchedule(startDate, endDate, monthSubBudget);
-                                budgetSchedules.add(newBudgetSchedule);
-                            }
-                        }
-                        else
+                        if(!isBudgetScheduleFound)
                         {
-                            Optional<BudgetSchedule> newBudgetScheduleOptional = createSingleBudgetSchedule(startDate, endDate, monthSubBudget);
-                            newBudgetScheduleOptional.ifPresent(uniqueBudgetSchedules::add);
+                            BudgetSchedule newBudgetSchedule = getBudgetSchedule(startDate, endDate, subBudget);
+                            budgetSchedules.add(newBudgetSchedule);
                         }
+                    }
+                    else
+                    {
+                        Optional<BudgetSchedule> newBudgetScheduleOptional = createSingleBudgetSchedule(startDate, endDate, subBudget);
+                        newBudgetScheduleOptional.ifPresent(uniqueBudgetSchedules::add);
                     }
                 }
 

@@ -2,6 +2,8 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.TransactionCategoryService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,17 +14,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHandler
 {
-    private final TransactionCategoryService transactionCategoryService;
+    @PersistenceContext
+    private final EntityManager entityManager;
 
     @Autowired
-    public DailyBudgetPeriodCategoryHandler(TransactionCategoryService transactionCategoryService)
+    public DailyBudgetPeriodCategoryHandler(EntityManager entityManager)
     {
-        this.transactionCategoryService = transactionCategoryService;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -41,36 +45,61 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
 
             // Generate daily date ranges
             DateRange dailyDateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
-            List<DateRange> dailyRanges = dailyDateRange.splitIntoDays();
-            for (DateRange dailyRange : dailyRanges)
+            List<LocalDate> dailyDates = dailyDateRange.splitIntoDays().stream()
+                    .map(DateRange::getStartDate)
+                    .toList();
+
+            for (LocalDate date : dailyDates)
             {
-                // Fetch transactions for this daily period
-                List<TransactionCategory> transactionCategories = transactionCategoryService
-                        .getTransactionCategoryListByBudgetIdAndDateRange(subBudgetId, dailyRange.getStartDate(), dailyRange.getEndDate());
+                List<Object[]> results = entityManager.createQuery("""
+                    SELECT DISTINCT 
+                           tc.category.id AS categoryId,
+                           c.name AS categoryName,
+                           tc.budgetedAmount,
+                           COALESCE(daily_trans.total, 0) AS actualSpent,
+                           (tc.budgetedAmount - COALESCE(daily_trans.total, 0)) AS remainingAmount
+                    FROM TransactionCategoryEntity tc
+                    JOIN CategoryEntity c ON tc.category.id = c.id
+                    JOIN BudgetEntity b ON tc.budget.id = b.id
+                    LEFT JOIN (
+                        SELECT t.category.id AS catId, 
+                               SUM(t.amount) AS total
+                        FROM TransactionsEntity t
+                        WHERE t.posted = :date
+                        GROUP BY t.category.id
+                        UNION ALL
+                        SELECT rt.category.id AS catId, 
+                               SUM(rt.lastAmount) AS total
+                        FROM RecurringTransactionEntity rt
+                        WHERE rt.firstDate <= :date
+                          AND rt.lastDate >= :date
+                          AND rt.active = true
+                        GROUP BY rt.category.id
+                    ) daily_trans ON tc.category.id = daily_trans.catId
+                    WHERE tc.startDate <= :date
+                      AND tc.endDate >= :date
+                      AND tc.budget.id = :budgetId
+                      AND tc.isActive = true
+                """, Object[].class)
+                        .setParameter("date", date)
+                        .setParameter("budgetId", subBudgetId)
+                        .getResultList();
 
-                for (TransactionCategory category : transactionCategories) {
-                    BigDecimal budgetedAmount = Optional.ofNullable(category.getBudgetedAmount())
-                            .map(BigDecimal::valueOf)
-                            .orElse(BigDecimal.ZERO);
+                results.stream()
+                        .map(row -> {
+                            String categoryName = (String) row[1];
+                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
+                            BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
 
-                    BigDecimal actualSpent = Optional.ofNullable(category.getBudgetActual())
-                            .map(BigDecimal::valueOf)
-                            .orElse(BigDecimal.ZERO);
-
-                    // Determine budget performance
-                    BudgetStatus status = determineCategoryStatus(budgetedAmount, actualSpent);
-
-                    // Create daily BudgetPeriodCategory
-                    BudgetPeriodCategory periodCategory = new BudgetPeriodCategory(
-                            category.getCategoryName(),
-                            budgetedAmount,
-                            actualSpent,
-                            dailyRange,
-                            status
-                    );
-
-                    budgetPeriodCategories.add(periodCategory);
-                }
+                            return new BudgetPeriodCategory(
+                                    categoryName,
+                                    budgeted,
+                                    actual,
+                                    new DateRange(date, date),
+                                    determineCategoryStatus(budgeted, actual)
+                            );
+                        })
+                        .forEach(budgetPeriodCategories::add);
             }
 
             return budgetPeriodCategories;

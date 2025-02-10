@@ -142,9 +142,9 @@ public class BudgetCalculations {
         }
 
         // 2. Is the SavingsGoalProgress between 1 and 100?
-        if(savingsGoalProgress.compareTo(BigDecimal.ZERO) < 0 || savingsGoalProgress.compareTo(new BigDecimal("100.00")) > 0){
-            throw new IllegalArgumentException("Savings Goals Progress should be between 0 and 100");
-        }
+//        if(savingsGoalProgress.compareTo(BigDecimal.ZERO) < 0 || savingsGoalProgress.compareTo(new BigDecimal("100.00")) > 0){
+//            throw new IllegalArgumentException("Savings Goals Progress should be between 0 and 100");
+//        }
 
         return budgetUtilizationScore.multiply(BigDecimal.valueOf(0.5))
                 .add(savingsGoalProgress.multiply(BigDecimal.valueOf(0.5)));
@@ -304,14 +304,14 @@ public class BudgetCalculations {
         }
     }
 
-    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategoryPeriodSpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final Budget budget, final BudgetSchedule budgetSchedule)
+    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategoryPeriodSpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final SubBudget budget, final BudgetSchedule budgetSchedule)
     {
         if(categorySpendingData == null || categoryDateRanges == null || budget == null)
         {
             return Collections.emptyList();
         }
         List<BudgetPeriodAmount> budgetPeriodAmounts = new ArrayList<>();
-        BigDecimal totalBudgetAmount = budget.getBudgetAmount();
+        BigDecimal totalBudgetAmount = budget.getAllocatedAmount();
 
         // Calculate category's portion based on spending ratio
         BigDecimal categorySpendingRatio = categorySpendingData.getActualSpending()
@@ -334,7 +334,7 @@ public class BudgetCalculations {
         return budgetPeriodAmounts;
     }
 
-    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategoryPeriodSpending categorySpending, final CategoryTransactions categoryDesignator, final List<DateRange> categoryDateRanges, final Budget budget)
+    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategoryPeriodSpending categorySpending, final CategoryTransactions categoryDesignator, final List<DateRange> categoryDateRanges, final SubBudget budget)
     {
         if(categorySpending == null || categoryDateRanges == null || budget == null)
         {

@@ -1,7 +1,10 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.DateRangeException;
 import com.app.budgetbuddy.services.TransactionCategoryService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,17 +15,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHandler
 {
-    private final TransactionCategoryService transactionCategoryService;
+    @PersistenceContext
+    private final EntityManager entityManager;
 
     @Autowired
-    public MonthlyBudgetPeriodCategoryHandler(TransactionCategoryService transactionCategoryService)
+    public MonthlyBudgetPeriodCategoryHandler(EntityManager entityManager)
     {
-        this.transactionCategoryService = transactionCategoryService;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -32,45 +37,55 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
         {
             return Collections.emptyList();
         }
-        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
+        LocalDate startDate = budgetSchedule.getStartDate();
+        LocalDate endDate = budgetSchedule.getEndDate();
         try
         {
-            LocalDate subBudgetStartDate = budget.getStartDate();
-            LocalDate subBudgetEndDate = budget.getEndDate();
-            Long subBudgetId = budget.getId();
-
-            // Fetch the Transaction Categories tied to this sub budget
-            List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(subBudgetId, subBudgetStartDate, subBudgetEndDate);
-            for(TransactionCategory category : transactionCategories)
-            {
-                // Safely convert nullable Double values to BigDecimal
-                BigDecimal budgetedAmount = Optional.ofNullable(category.getBudgetedAmount())
-                        .map(BigDecimal::valueOf)
-                        .orElse(BigDecimal.ZERO);
-
-                BigDecimal actualSpent = Optional.ofNullable(category.getBudgetActual())
-                        .map(BigDecimal::valueOf)
-                        .orElse(BigDecimal.ZERO);
-
-                // Determine budget status
-                BudgetStatus status = determineCategoryStatus(budgetedAmount, actualSpent);
-
-                // Build the BudgetPeriodCategory object
-                BudgetPeriodCategory periodCategory = new BudgetPeriodCategory(
-                        category.getCategoryName(),   // Category name
-                        budgetedAmount,              // Budgeted amount
-                        actualSpent,                 // Actual spent
-                        new DateRange(subBudgetStartDate, subBudgetEndDate),  // Date range
-                        status                        // Budget status
-                );
-
-                budgetPeriodCategories.add(periodCategory);
+            if(startDate == null || endDate == null){
+                throw new DateRangeException("Monthly budget period cannot have null start date or end date.");
             }
-            return budgetPeriodCategories;
-        }catch(Exception e)
-        {
-            log.error("Error retrieving budget period categories for SubBudget ID: {}", budget.getId(), e);
-            return Collections.emptyList();
+            final String monthlyBudgetQuery = """
+            SELECT DISTINCT tc.category.id,
+                   tc.category.name,
+                   tc.budgetedAmount,
+                   tc.actual as actualSpent,
+                   tc.budgetedAmount - tc.actual as remainingAmount
+            FROM TransactionCategoryEntity tc
+            JOIN tc.category c
+            JOIN tc.budget b
+            WHERE tc.startDate <= :endDate
+            AND tc.endDate >= :startDate
+            AND tc.budget.id = :budgetId
+            AND tc.isactive = true
+            """;
+
+            Long subBudgetId = budget.getId();
+            List<Object[]> results = entityManager.createQuery(monthlyBudgetQuery, Object[].class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("budgetId", subBudgetId)
+                    .getResultList();
+
+            DateRange monthRange = new DateRange(startDate, endDate);
+            return results.stream()
+                    .map(row -> {
+                        String categoryName = (String) row[1];
+                        BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
+                        BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+
+                        return new BudgetPeriodCategory(
+                                categoryName,
+                                budgeted,
+                                actual,
+                                monthRange,
+                                determineCategoryStatus(budgeted, actual)
+                        );
+                    })
+                    .collect(Collectors.toList());
+
+        }catch(DateRangeException e){
+            log.error("There was an error with the month range: ", e);
+            throw e;
         }
     }
 

@@ -76,21 +76,22 @@ public class ExpenseBudgetCategoryService
      * Maps a `Category` entity into an `ExpenseCategory` model and attaches transactions.
      */
     private ExpenseCategory mapToExpenseCategory(Category category) {
-        Set<String> transactionIds = transactionService.getTransactionIdsForCategory(category.getCategoryId());
-
-        return new ExpenseCategory(
-                category.getCategoryId(),
-                category.getCategoryName(),
-                category.getCategoryDescription(),
-                category.getBudgetedAmount(),
-                category.getCategoryStartDate(),
-                category.getCategoryEndDate(),
-                category.getActual(),
-                category.isActive(),
-                category.getCategoryType(),
-                category.getDateRange(),
-                transactionIds // Attach transactions
-        );
+//        Set<String> transactionIds = transactionService.get(category.getCategoryId());
+//
+//        return new ExpenseCategory(
+//                category.getCategoryId(),
+//                category.getCategoryName(),
+//                category.getCategoryDescription(),
+//                category.getBudgetedAmount(),
+//                category.getCategoryStartDate(),
+//                category.getCategoryEndDate(),
+//                category.getActual(),
+//                category.isActive(),
+//                category.getCategoryType(),
+//                category.getDateRange(),
+//                transactionIds // Attach transactions
+//        );
+        return null;
     }
 
     /**
