@@ -53,6 +53,7 @@ public class BudgetRunnerResult
                 "processDate", LocalDateTime.now(),
 //                "healthScore", budgetStats.getHealthScore(),
                 "isOverBudget", isOverBudget,
+                "budgetSchedule", budgetSchedule,
                 "remainingAmount", budget.getBudgetAmount().subtract(budget.getActual()),
                 "spendingPercentage", getSpendingPercentage()
         );
