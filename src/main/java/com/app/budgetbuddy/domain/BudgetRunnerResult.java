@@ -20,6 +20,7 @@ import java.util.Map;
 public class BudgetRunnerResult
 {
     private Budget budget;
+    private SubBudget subBudget;
     private BudgetSchedule budgetSchedule;
     private List<BudgetStats> budgetStats;
     private BudgetCategoryStats budgetCategoryStats;
@@ -49,11 +50,13 @@ public class BudgetRunnerResult
     @JsonProperty("processingSummary")
     public Map<String, Object> getProcessingSummary() {
         return Map.of(
-                "budgetId", budget.getId(),
+                "budget", budget,
+                "subBudget", subBudget,
                 "processDate", LocalDateTime.now(),
 //                "healthScore", budgetStats.getHealthScore(),
                 "isOverBudget", isOverBudget,
                 "budgetSchedule", budgetSchedule,
+                "budgetScheduleRanges", budgetSchedule.getBudgetScheduleRanges(),
                 "remainingAmount", budget.getBudgetAmount().subtract(budget.getActual()),
                 "spendingPercentage", getSpendingPercentage()
         );

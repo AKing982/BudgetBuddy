@@ -32,8 +32,8 @@ public class BudgetScheduleRangeEntity
     @NotNull
     private LocalDate rangeEnd;
 
-    @Column(name="totalDaysInRange")
-    private int totalDaysInRange;
+    @Column(name="totalDays")
+    private int totalDays;
 
     @Column(name="budgetedAmount")
     @NotNull

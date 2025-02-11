@@ -56,6 +56,14 @@ public class BudgetRunner
     public List<BudgetRunnerResult> runBudgetProcess(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         log.info("Starting monthly budget process for user {} between {} and {}", userId, startDate, endDate);
+        Optional<Budget> budgetOptional = Optional.ofNullable(budgetService.loadUserBudget(userId));
+        if(budgetOptional.isEmpty())
+        {
+            log.warn("No Budgets found for user {}", userId);
+            return new ArrayList<>();
+        }
+        Budget budget = budgetOptional.get();
+        log.info("Found Budget: {}", budget.toString());
         Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, startDate, endDate);
         if(subBudgetOptional.isEmpty())
         {
@@ -84,6 +92,9 @@ public class BudgetRunner
         // Get Period Categories
         List<BudgetPeriodCategory> periodCategories = budgetPeriodCategoryService.getBudgetPeriodCategories(subBudget, budgetSchedule);
         log.info("Retrieved {} budget period categories for SubBudget ID: {}", periodCategories.size(), subBudgetId);
+        periodCategories.forEach((periodCategory) -> {
+            log.info("BudgetPeriodCategory: {}", periodCategory);
+        });
 
         List<ExpenseCategory> expenseCategories = subBudgetOverviewService.loadExpenseCategories(subBudgetId, startDate, endDate);
         log.info("Retrieved {} expense categories for SubBudget ID: {}", expenseCategories.size(), subBudgetId);
@@ -91,7 +102,8 @@ public class BudgetRunner
 
         // Build Result
         BudgetRunnerResult result = new BudgetRunnerResult(
-                subBudget.getBudget(),
+                budget,
+                subBudget,
                 budgetSchedule,
                 budgetStats,
                 new BudgetCategoryStats(periodCategories, List.of(), expenseCategories, List.of(), List.of()),

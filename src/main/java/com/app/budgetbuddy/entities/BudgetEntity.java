@@ -58,11 +58,11 @@ public class BudgetEntity {
     @Column(name="monthlyIncome")
     private BigDecimal monthlyIncome;
 
-    @Column(name="budgetStartDate")
+    @Column(name="startDate")
     @NotNull
     private LocalDate budgetStartDate;
 
-    @Column(name="budgetEndDate")
+    @Column(name="endDate")
     @NotNull
     private LocalDate budgetEndDate;
 
