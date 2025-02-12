@@ -42,7 +42,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                    tc.endDate
                    FROM TransactionCategoryEntity tc
                    JOIN CategoryEntity c ON tc.category.id = c.id
-                   WHERE tc.budget.id = :budgetId
+                   WHERE tc.subBudget.id = :budgetId
                    AND tc.startDate >= :startDate
                    AND tc.endDate <= :endDate
                    AND tc.isactive = true
@@ -168,7 +168,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                   tc.startDate, 
                   tc.endDate
            FROM TransactionCategoryEntity tc
-           INNER JOIN BudgetEntity b ON tc.budget.id = b.id
+           INNER JOIN BudgetEntity b ON tc.subBudget.id = b.id
            INNER JOIN BudgetGoalsEntity bg ON b.id = bg.budget.id
            WHERE b.id = :budgetId
            AND tc.startDate >= :startDate 
@@ -216,7 +216,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
                   tc.startDate,
                   tc.endDate
            FROM TransactionCategoryEntity tc
-           INNER JOIN BudgetEntity b ON tc.budget.id = b.id 
+           INNER JOIN BudgetEntity b ON tc.subBudget.id = b.id 
            WHERE b.id = :budgetId
            AND tc.startDate >= :startDate
            AND tc.endDate <= :endDate
@@ -273,13 +273,13 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
     @Override
     public BigDecimal getRemainingOnBudget(Long budgetId, LocalDate startDate, LocalDate endDate) {
         final String remainingBudget = """
-                                    SELECT SUM(b.budgetAmount - tc.actual) as remainingBudget
+                                    SELECT SUM(sb.allocatedAmount - tc.actual) as remainingBudget
                                     FROM TransactionCategoryEntity tc
-                                    INNER JOIN BudgetEntity b ON tc.budget.id = b.id
-                                    INNER JOIN BudgetScheduleEntity bs ON tc.budget.id = bs.budget.id
+                                    INNER JOIN SubBudgetEntity sb ON tc.subBudget.id = sb.id
+                                    INNER JOIN BudgetScheduleEntity bs ON tc.subBudget.id = bs.subBudget.id
                                     WHERE bs.startDate =:startDate AND tc.endDate =:endDate
-                                     AND b.id =:budgetId AND b.user.id =:userId
-                                     GROUP BY b.budgetAmount, tc.startDate, tc.endDate
+                                     AND sb.id =:budgetId AND sb.budget.user.id =:userId
+                                     GROUP BY sb.allocatedAmount, tc.startDate, tc.endDate
                 """;
         try
         {
@@ -301,11 +301,11 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
         final String totalSpentQuery = """
            SELECT SUM(tc.actual) as totalSpent 
            FROM TransactionCategoryEntity tc
-           INNER JOIN BudgetEntity b ON tc.budget.id = b.id
-           INNER JOIN BudgetScheduleEntity bs ON tc.budget.id = bs.id
+           INNER JOIN SubBudgetEntity sb ON tc.subBudget.id = sb.id
+           INNER JOIN BudgetScheduleEntity bs ON tc.subBudget.id = bs.id
            WHERE bs.startDate = :startDate 
            AND bs.endDate = :endDate
-           AND b.id = :budgetId
+           AND sb.id = :budgetId
            """;
 
         try {

@@ -454,10 +454,10 @@ public class TransactionCategoryRunner
         entity.setCategory(categoryEntity);
 
         // Set Budget Entity
-        BudgetEntity budgetEntity = budgetService.findById(transactionCategory.getSubBudgetId())
+        SubBudgetEntity budgetEntity = subBudgetService.findById(transactionCategory.getSubBudgetId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Could not find budget with ID: " + transactionCategory.getSubBudgetId()));
-        entity.setBudget(budgetEntity);
+        entity.setSubBudget(budgetEntity);
         // Set required transaction ID - use first transaction ID if available
 //        if (transactionCategory.getTransactionIds() != null && !transactionCategory.getTransactionIds().isEmpty()) {
 //            entity.setTransactions(Set.of(transactionCategory.getTransactionIds().get(0)));

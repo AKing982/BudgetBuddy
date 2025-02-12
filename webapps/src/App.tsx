@@ -15,10 +15,10 @@ import BudgetPage from "./components/BudgetPage";
 import BudgetCategoryDetails from './components/BudgetCategoryDetails';
 import DebtOverview from "./components/DebtOverview";
 import DebtPaymentProgress from './components/DebtPaymentProgress';
-import BudgetDebtPage from "./components/BudgetDebtPage";
+// import BudgetDebtPage from "./components/BudgetDebtPage";
 import SpendingOverview from "./components/SpendingOverview";
 import BudgetControlPage from "./components/BudgetControlPage";
-import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
+// import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
 
 const theme = createTheme({
     palette: {
@@ -47,9 +47,9 @@ function App() {
                       <Route path="/budget-test" element={<BudgetCategoryDetails/>}/>
                       <Route path="/debt-overview" element={<DebtOverview />}/>
                       <Route path="/debt-progress" element={<DebtPaymentProgress />}/>
-                      <Route path="/budget-debt" element={<BudgetDebtPage />}/>
+                      {/*<Route path="/budget-debt" element={<BudgetDebtPage />}/>*/}
                       <Route path="/budget-spending" element={<BudgetControlPage />}/>
-                      <Route path="/budget-emergency" element={<BudgetEmergencyFundPage />}/>
+                      {/*<Route path="/budget-emergency" element={<BudgetEmergencyFundPage />}/>*/}
                   </Routes>
               </div>
           </BrowserRouter>

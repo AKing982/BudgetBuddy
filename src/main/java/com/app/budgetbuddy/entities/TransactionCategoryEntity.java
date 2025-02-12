@@ -30,8 +30,8 @@ public class TransactionCategoryEntity
     private Set<String> transactions = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="budgetid")
-    private BudgetEntity budget;
+    @JoinColumn(name="sub_budgetId")
+    private SubBudgetEntity subBudget;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="categoryid")

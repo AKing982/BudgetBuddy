@@ -40,8 +40,11 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
         try
         {
             LocalDate subBudgetStartDate = budget.getStartDate();
+            log.info("SubBudget Start Date: {}", subBudgetStartDate);
             LocalDate subBudgetEndDate = budget.getEndDate();
+            log.info("SubBudget End Date: {}", subBudgetEndDate);
             Long subBudgetId = budget.getId();
+            log.info("SubBudget ID: {}", subBudgetId);
 
             // Split the budget period into weekly periods
             DateRange dateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
@@ -65,23 +68,29 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
                        tc.budgetedAmount - COALESCE(tc.actual, 0) as remainingAmount
                 FROM TransactionCategoryEntity tc
                 JOIN tc.category c
-                JOIN tc.budget b
+                JOIN tc.subBudget b
                 WHERE tc.startDate <= :endDate
                 AND tc.endDate >= :startDate
-                AND tc.budget.id = :budgetId
+                AND tc.subBudget.id = :budgetId
                 AND tc.isactive = true
                 """;
 
-            for (DateRange weekRange : weeklyRanges) {
-                if (weekRange.getStartDate() == null || weekRange.getEndDate() == null) {
+
+            for (DateRange weekRange : weeklyRanges)
+            {
+                if (weekRange.getStartDate() == null || weekRange.getEndDate() == null)
+                {
                     throw new DateRangeException("Weekly period cannot have null start date or end date.");
                 }
+                log.info("Budget Query Week Start: {}", weekRange.getStartDate());
+                log.info("Budget Query Week End: {}", weekRange.getEndDate());
 
                 List<Object[]> results = entityManager.createQuery(weeklyBudgetQuery, Object[].class)
                         .setParameter("startDate", weekRange.getStartDate())
                         .setParameter("endDate", weekRange.getEndDate())
                         .setParameter("budgetId", subBudgetId)
                         .getResultList();
+                log.info("Results size: {}", results.size());
 
                 results.stream()
                         .map(row -> {
@@ -99,7 +108,7 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
                         })
                         .forEach(budgetPeriodCategories::add);
             }
-
+            log.info("Budget Period Categories Size: {}", budgetPeriodCategories.size());
             return budgetPeriodCategories;
 
         } catch (DateRangeException e) {

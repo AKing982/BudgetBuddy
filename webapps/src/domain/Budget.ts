@@ -3,19 +3,25 @@ class Budget {
     private budgetName: string;
     private budgetDescription: string;
     private budgetAmount: number;
+    private budgetActual: number;
     private monthlyIncome: number;
     private startDate: Date;
     private endDate: Date;
 
     constructor(id: number, budgetName: string, budgetDescription: string, budgetAmount: number,
-                monthlyIncome: number, startDate: Date, endDate: Date){
+                budgetActual: number, monthlyIncome: number, startDate: Date, endDate: Date){
         this.budgetId = id;
         this.budgetName = budgetName;
         this.budgetDescription = budgetDescription;
         this.budgetAmount = budgetAmount;
+        this.budgetActual = budgetActual;
         this.monthlyIncome = monthlyIncome;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    getBudgetActual(): number {
+        return this.budgetActual;
     }
 
     getBudgetId(): number {

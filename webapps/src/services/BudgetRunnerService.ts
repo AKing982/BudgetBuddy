@@ -1,6 +1,6 @@
 import axios, {AxiosInstance} from "axios";
 import {apiUrl} from "../config/api";
-import {BudgetCategoryStats, BudgetSchedule, BudgetStats, SubBudget} from "../utils/Items";
+import {BudgetCategoryStats, BudgetSchedule, BudgetStats, SubBudget, Budget} from "../utils/Items";
 
 export interface BudgetRunnerResult {
     budget: Budget;
@@ -8,7 +8,7 @@ export interface BudgetRunnerResult {
     isOverBudget: boolean;
     needsAttention: boolean;
     periodStats: any[];
-    budgetCategoryStats: BudgetCategoryStats[];
+    budgetCategoryStats: BudgetCategoryStats;
     // ✅ Add missing budget schedule fields
     budgetSchedule?: BudgetSchedule;
     subBudget?: SubBudget;

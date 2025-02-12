@@ -81,7 +81,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
             TransactionCategory transactionCategory = new TransactionCategory();
             transactionCategory.setId(transactionCategoryEntity.getId());
             transactionCategory.setCategoryId(transactionCategoryEntity.getCategory().getId());
-            transactionCategory.setSubBudgetId(transactionCategoryEntity.getBudget().getId());
+            transactionCategory.setSubBudgetId(transactionCategoryEntity.getSubBudget().getId());
             transactionCategory.setCategoryName(transactionCategoryEntity.getCategory().getName());
             transactionCategory.setBudgetedAmount(transactionCategoryEntity.getBudgetedAmount());
             transactionCategory.setBudgetActual(transactionCategoryEntity.getActual());

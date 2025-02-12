@@ -9,6 +9,7 @@ import SpendingOverview from './SpendingOverview';
 import SpendingControlProgress from './SpendingControlProgress';
 import Sidebar from "./Sidebar";
 import {BudgetRunnerResult} from "../services/BudgetRunnerService";
+import {Budget} from '../utils/Items';
 
 const BudgetControlPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -46,10 +47,18 @@ const BudgetControlPage: React.FC = () => {
         }
 
         // Aggregate data from all budgets
-        const totalBudget = budgetData.reduce((sum, budget) => sum + budget.budgetAmount, 0);
-        const totalSpent = budgetData.reduce((sum, budget) => sum + budget.actualAmount, 0);
-        const totalSaved = budgetData.reduce((sum, budget) =>
-            sum + (budget.savingsCategories?.reduce((acc, cat) => acc + (cat.actualAmount || 0), 0) || 0), 0);
+        const totalBudget = budgetData.reduce((sum, budget) => sum + budget.budget.budgetAmount, 0);
+        const totalSpent = budgetData.reduce((sum, budget) => sum + budget.budget.actual, 0);
+        const totalSaved = budgetData.reduce((sum, budget) => {
+            // Since budgetCategoryStats is now an object, we directly access savingsCategories
+            const savingsTotal = budget.budgetCategoryStats?.savingsCategories?.reduce(
+                (acc: number, cat: any) => acc + (cat.actualAmount || 0),
+                0
+            ) || 0;
+
+            return sum + savingsTotal;
+        }, 0);
+
         const remaining = totalBudget - totalSpent - totalSaved;
 
         // Calculate date range from the first budget
@@ -61,7 +70,7 @@ const BudgetControlPage: React.FC = () => {
 
         return {
             averageSpendingPerDay: totalSpent / daysInRange,
-            budgetId: budgetData[0]?.budgetId || 0,
+            budgetId: budgetData[0]?.budget.id || 0,
             dateRange: {
                 startDate: [startDate.getFullYear(), startDate.getMonth(), startDate.getDate()],
                 endDate: [endDate.getFullYear(), endDate.getMonth(), endDate.getDate()],
