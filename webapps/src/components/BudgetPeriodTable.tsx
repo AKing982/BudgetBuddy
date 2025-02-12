@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {
     format,
     addDays,
@@ -187,12 +187,14 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         if (!data?.length) return [];
 
         return data.flatMap(budget => {
+            console.log('BudgetPeriodCategories: ', budget.budgetPeriodCategories);
             const categories = [
                 ...(budget.budgetPeriodCategories || []),
                 ...(budget.expenseCategories || []),
                 ...(budget.savingsCategories || []),
                 ...(budget.incomeCategories || [])
             ];
+            console.log('Categories: ', categories);
 
             // Extract budgetScheduleRanges
             const scheduleRanges = budget.budgetSchedule?.budgetScheduleRanges || [];
@@ -229,6 +231,10 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
             });
         });
     }, [data]);
+
+    useEffect(() => {
+        console.log("Processed Data:", processedData);
+    }, [processedData]);
 
 
     const calculatePeriodData = (start: Date, end: Date) => {
@@ -277,76 +283,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
 
 
     const getDateRanges = () => {
-        // if (!selectedDate || !data?.length) return [];
-        //
-        // const selectedDateObj = new Date(selectedDate); // Ensure selectedDate is valid
-        //
-        // // Find the budget that matches the selected date
-        // const selectedBudget = data.find(budget => {
-        //     if (!budget.subBudget) return false;
-        //
-        //     const budgetStart = Array.isArray(budget.subBudget?.startDate)
-        //         ? new Date(budget.subBudget.startDate[0], budget.subBudget.startDate[1] - 1, budget.subBudget.startDate[2])
-        //         : undefined;
-        //
-        //     const budgetEnd = Array.isArray(budget.subBudget?.endDate)
-        //         ? new Date(budget.subBudget.endDate[0], budget.subBudget.endDate[1] - 1, budget.subBudget.endDate[2])
-        //         : undefined;
-        //
-        //     console.log('Budget Start:', budgetStart);
-        //     console.log('Budget End:', budgetEnd);
-        //
-        //     if (!budgetStart || !budgetEnd) {
-        //         console.warn("Invalid budget start or end date:", budget);
-        //         return false;
-        //     }
-        //
-        //     return isWithinInterval(selectedDateObj, { start: budgetStart, end: budgetEnd });
-        // });
-        //
-        // if (!selectedBudget) {
-        //     console.warn("No budget found for selected date:", selectedDateObj);
-        //     return [];
-        // }
-        //
-        // // Extract budgetScheduleRanges
-        // const scheduleRanges = selectedBudget.budgetSchedule?.budgetScheduleRanges || [];
-        // if (!scheduleRanges.length) {
-        //     console.warn("No schedule ranges found for budget:", selectedBudget);
-        //     return [];
-        // }
-        //
-        // return scheduleRanges
-        //     .filter(range => {
-        //         const startRange = range.startRange
-        //             ? new Date(Number(range.startRange[0]), Number(range.startRange[1]) - 1, Number(range.startRange[2]))
-        //             : undefined;
-        //
-        //         const endRange = range.endRange
-        //             ? new Date(Number(range.endRange[0]), Number(range.endRange[1]) - 1, Number(range.endRange[2]))
-        //             : undefined;
-        //
-        //         if (!startRange || !endRange) {
-        //             console.warn("Invalid date range in scheduleRanges:", range);
-        //             return false;
-        //         }
-        //
-        //         switch (budgetPeriod) {
-        //             case 'Daily':
-        //                 return isSameDay(startRange, selectedDateObj);
-        //             case 'Weekly':
-        //                 return differenceInDays(endRange, startRange) === 6;
-        //             case 'BiWeekly':
-        //                 return differenceInDays(endRange, startRange) === 13;
-        //             case 'Monthly':
-        //             default:
-        //                 return true; // Return all ranges for monthly view
-        //         }
-        //     })
-        //     .map(range => [
-        //         new Date(Number(range.startRange[0]), Number(range.startRange[1]) - 1, Number(range.startRange[2])),
-        //         new Date(Number(range.endRange[0]), Number(range.endRange[1]) - 1, Number(range.endRange[2]))
-        //     ]);
+
         if (!selectedDate || !data?.length) return [];
 
         const selectedDateObj = new Date(selectedDate); // Convert selectedDate to Date
@@ -413,6 +350,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                         new Date(range.endRange) // Convert endRange from string to Date
                     ];
             });
+
     };
 
     if (isLoading) {
@@ -552,8 +490,8 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
 
                                 const periodData = processedData.filter(row =>
                                     row.startRange && row.endRange &&
-                                    format(row.startRange, "yyyy-MM-dd") === format(start, "yyyy-MM-dd") &&
-                                    format(row.endRange, "yyyy-MM-dd") === format(end, "yyyy-MM-dd")
+                                    isSameDay(row.startRange, start) &&
+                                    isSameDay(row.endRange, end)
                                 );
 
                                 console.log("🔍 Matching Categories for this range:", periodData);

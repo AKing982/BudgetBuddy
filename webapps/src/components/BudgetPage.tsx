@@ -12,21 +12,7 @@ import {Add} from "@mui/icons-material";
 import AddBudgetDialog from "./AddBudgetDialog";
 import BudgetRunnerService, {BudgetRunnerResult} from "../services/BudgetRunnerService";
 
-export interface BudgetStats {
-    averageSpendingPerDay: number;
-    budgetId: number;
-    dateRange: {
-        startDate: number[];
-        endDate: number[];
-        weeksInRange: number;
-        biWeeksInRange: number;
-        daysInRange: number;
-    };
-    remaining: number;
-    totalBudget: number;
-    totalSaved: number;
-    totalSpent: number;
-}
+
 
 const BudgetPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -100,7 +86,7 @@ const BudgetPage: React.FC = () => {
         const totalBudget = budgetData.reduce((sum, budget) => sum + budget.budgetAmount, 0);
         console.log('Total Budget: ', totalBudget);
         const totalSpent = budgetData.reduce((sum, budget) => {
-            const periodSpent = budget.budgetPeriodCategories?.reduce((catSum, cat) =>
+            const periodSpent = budget.budgetCategoryStats?.budgetPeriodCategories.reduce((catSum, cat) =>
                 catSum + (cat.actual || 0), 0) || 0;
             console.log('Period spent for budget:', periodSpent);
             return sum + periodSpent;
