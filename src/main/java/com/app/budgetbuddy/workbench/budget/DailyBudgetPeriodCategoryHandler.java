@@ -30,56 +30,38 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
     }
 
     @Override
-    public List<BudgetPeriodCategory> getBudgetPeriodCategories(SubBudget budget, BudgetSchedule budgetSchedule)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategories(BudgetSchedule budgetSchedule)
     {
-        if(budget == null || budgetSchedule == null)
+        if(budgetSchedule == null)
         {
             return Collections.emptyList();
         }
         List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
         try
         {
-            LocalDate subBudgetStartDate = budget.getStartDate();
-            LocalDate subBudgetEndDate = budget.getEndDate();
-            Long subBudgetId = budget.getId();
-
+            LocalDate subBudgetStartDate = budgetSchedule.getStartDate();
+            LocalDate subBudgetEndDate = budgetSchedule.getEndDate();
+            Long subBudgetId = budgetSchedule.getSubBudgetId();
             // Generate daily date ranges
             DateRange dailyDateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
             List<LocalDate> dailyDates = dailyDateRange.splitIntoDays().stream()
                     .map(DateRange::getStartDate)
                     .toList();
 
-            for (LocalDate date : dailyDates)
+            for(LocalDate date : dailyDates)
             {
                 List<Object[]> results = entityManager.createQuery("""
-                    SELECT DISTINCT 
-                           tc.category.id AS categoryId,
+                    SELECT DISTINCT tc.category.id AS categoryId,
                            c.name AS categoryName,
                            tc.budgetedAmount,
-                           COALESCE(daily_trans.total, 0) AS actualSpent,
-                           (tc.budgetedAmount - COALESCE(daily_trans.total, 0)) AS remainingAmount
+                           COALESCE(tc.actual, 0) AS actualSpent,
+                           (tc.budgetedAmount - COALESCE(tc.actual, 0)) AS remainingAmount
                     FROM TransactionCategoryEntity tc
                     JOIN CategoryEntity c ON tc.category.id = c.id
-                    JOIN BudgetEntity b ON tc.budget.id = b.id
-                    LEFT JOIN (
-                        SELECT t.category.id AS catId, 
-                               SUM(t.amount) AS total
-                        FROM TransactionsEntity t
-                        WHERE t.posted = :date
-                        GROUP BY t.category.id
-                        UNION ALL
-                        SELECT rt.category.id AS catId, 
-                               SUM(rt.lastAmount) AS total
-                        FROM RecurringTransactionEntity rt
-                        WHERE rt.firstDate <= :date
-                          AND rt.lastDate >= :date
-                          AND rt.active = true
-                        GROUP BY rt.category.id
-                    ) daily_trans ON tc.category.id = daily_trans.catId
                     WHERE tc.startDate <= :date
                       AND tc.endDate >= :date
-                      AND tc.budget.id = :budgetId
-                      AND tc.isActive = true
+                      AND tc.subBudget.id = :budgetId
+                      AND tc.isactive = true
                 """, Object[].class)
                         .setParameter("date", date)
                         .setParameter("budgetId", subBudgetId)
@@ -105,7 +87,7 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
             return budgetPeriodCategories;
 
         } catch (Exception e) {
-            log.error("Error retrieving daily budget period categories for SubBudget ID: {}", budget.getId(), e);
+            log.error("Error retrieving daily budget period categories for SubBudget ID: {}", budgetSchedule.getBudgetScheduleId(), e);
             return Collections.emptyList();
         }
     }

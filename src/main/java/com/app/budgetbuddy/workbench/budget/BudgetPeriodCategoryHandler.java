@@ -9,5 +9,5 @@ import java.util.List;
 
 public interface BudgetPeriodCategoryHandler
 {
-    List<BudgetPeriodCategory> getBudgetPeriodCategories(SubBudget budget, BudgetSchedule budgetSchedule);
+    List<BudgetPeriodCategory> getBudgetPeriodCategories(BudgetSchedule budgetSchedule);
 }

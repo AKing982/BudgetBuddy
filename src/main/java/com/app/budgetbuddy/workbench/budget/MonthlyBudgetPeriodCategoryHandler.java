@@ -31,9 +31,9 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
     }
 
     @Override
-    public List<BudgetPeriodCategory> getBudgetPeriodCategories(SubBudget budget, BudgetSchedule budgetSchedule)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategories(BudgetSchedule budgetSchedule)
     {
-        if(budget == null || budgetSchedule == null)
+        if(budgetSchedule == null)
         {
             return Collections.emptyList();
         }
@@ -52,14 +52,14 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
                    tc.budgetedAmount - tc.actual as remainingAmount
             FROM TransactionCategoryEntity tc
             JOIN tc.category c
-            JOIN tc.budget b
+            JOIN tc.subBudget sb
             WHERE tc.startDate <= :endDate
             AND tc.endDate >= :startDate
-            AND tc.budget.id = :budgetId
+            AND tc.subBudget.id = :budgetId
             AND tc.isactive = true
             """;
 
-            Long subBudgetId = budget.getId();
+            Long subBudgetId = budgetSchedule.getSubBudgetId();
             List<Object[]> results = entityManager.createQuery(monthlyBudgetQuery, Object[].class)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)

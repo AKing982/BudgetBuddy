@@ -31,7 +31,7 @@ public class BudgetPeriodCategoryService
         {
             Period period = budgetSchedule.getPeriod();
             BudgetPeriodCategoryHandler handler = handlerFactory.getHandler(period);
-            return handler.getBudgetPeriodCategories(budget, budgetSchedule);
+            return handler.getBudgetPeriodCategories(budgetSchedule);
         } catch (Exception e)
         {
             log.error("Error determining budget period categories: ", e);
