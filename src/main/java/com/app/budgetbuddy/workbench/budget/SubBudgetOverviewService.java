@@ -7,10 +7,11 @@ import com.app.budgetbuddy.domain.SavingsCategory;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface SubBudgetOverviewService
 {
-    List<IncomeCategory> loadIncomeCategories(Long budgetId, LocalDate startDate, LocalDate endDate);
-    List<ExpenseCategory> loadExpenseCategories(Long budgetId, LocalDate startDate, LocalDate endDate);
-    List<SavingsCategory> loadSavingsCategories(Long budgetId, LocalDate startDate, LocalDate endDate);
+    Optional<IncomeCategory> loadIncomeCategory(Long budgetId, LocalDate startDate, LocalDate endDate);
+    Optional<ExpenseCategory> loadExpenseCategory(Long budgetId, LocalDate startDate, LocalDate endDate);
+    Optional<SavingsCategory> loadSavingsCategory(Long budgetId, LocalDate startDate, LocalDate endDate);
 }

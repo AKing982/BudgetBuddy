@@ -1,5 +1,8 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.BudgetPeriodCategory;
+import com.app.budgetbuddy.domain.BudgetPeriodCategoryResponse;
+import com.app.budgetbuddy.domain.Period;
 import com.app.budgetbuddy.workbench.budget.BudgetPeriodCategoryService;
 import com.app.budgetbuddy.workbench.budget.BudgetPeriodQueries;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/budgetPeriod")
@@ -33,36 +37,34 @@ public class BudgetPeriodController
         }
         try
         {
-           return null;
+           List<BudgetPeriodCategory> dailyBudgetPeriodCategories = budgetPeriodQueries.getBudgetPeriodQueryForDate(date, userId);
+           BudgetPeriodCategoryResponse budgetPeriodCategoryResponse = new BudgetPeriodCategoryResponse(dailyBudgetPeriodCategories);
+           return ResponseEntity.ok(budgetPeriodCategoryResponse);
         }catch(Exception e)
         {
-
+            log.error("There was an error retrieving the budget period categories for date {}: ", date, e);
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
-        return null;
     }
 
-    @GetMapping("/bi-weekly")
-    public ResponseEntity<?> getBiWeeklyBudgetPeriodCategories(@RequestParam Long userId,
-                                                               @RequestParam LocalDate monthStart,
-                                                               @RequestParam LocalDate monthEnd)
-    {
-        return null;
-    }
-
-    @GetMapping("/weekly")
-    public ResponseEntity<?> getWeeklyBudgetPeriodCategories(@RequestParam Long userId,
-                                                             @RequestParam LocalDate monthStart,
-                                                             @RequestParam LocalDate monthEnd)
-    {
-        return null;
-    }
-
-    @GetMapping("/monthly")
-    public ResponseEntity<?> getMonthlyBudgetPeriodCategories(@RequestParam Long userID,
-                                                              @RequestParam LocalDate monthStart,
-                                                              @RequestParam LocalDate monthEnd)
-    {
-        return null;
+    @GetMapping("/period")
+    public ResponseEntity<?> getBudgetPeriodCategoriesByPeriod(@RequestParam Long userId,
+                                                               @RequestParam Period period,
+                                                               @RequestParam LocalDate startDate,
+                                                               @RequestParam LocalDate endDate) {
+        if(userId <= 0 || period == null || startDate == null || endDate == null)
+        {
+            return ResponseEntity.badRequest().body("Invalid user id");
+        }
+        try
+        {
+            List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getBudgetPeriodQueryData(userId, startDate, endDate, period);
+            return ResponseEntity.ok(new BudgetPeriodCategoryResponse(budgetPeriodCategories));
+        }catch(Exception e)
+        {
+            log.error("There was an error retrieving the budget period categories for period {} and startDate {} and endDate {}: ", period, startDate, endDate, e);
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
 }

@@ -32,116 +32,42 @@ public class BudgetPeriodQueries
     private final EntityManager entityManager;
     private final BudgetPeriodCategoryService budgetPeriodCategoryService;
     private final SubBudgetService subBudgetService;
-    private final BudgetScheduleService budgetScheduleService;
-    private final BudgetScheduleRangeService budgetScheduleRangeService;
-
-    private static final String budgetQuery =  """
-    SELECT DISTINCT tc.category.id,
-           tc.category.name,
-           tc.budgetedAmount,
-           COALESCE(tc.actual, 0) as actualSpent,
-           tc.budgetedAmount - COALESCE(tc.actual, 0) as remainingAmount
-    FROM TransactionCategoryEntity tc
-    JOIN tc.category c
-    JOIN tc.%s b
-    WHERE tc.startDate <= :endDate
-    AND tc.endDate >= :startDate
-    AND tc.%s.id = :budgetId
-    AND tc.isactive = true
-    """;
-
 
     @Autowired
     public BudgetPeriodQueries(EntityManager entityManager,
                                BudgetPeriodCategoryService budgetPeriodCategoryService,
-                               SubBudgetService subBudgetService,
-                               BudgetScheduleService budgetScheduleService,
-                               BudgetScheduleRangeService budgetScheduleRangeService)
+                               SubBudgetService subBudgetService)
     {
         this.entityManager = entityManager;
         this.budgetPeriodCategoryService = budgetPeriodCategoryService;
         this.subBudgetService = subBudgetService;
-        this.budgetScheduleService = budgetScheduleService;
-        this.budgetScheduleRangeService = budgetScheduleRangeService;
     }
 
-    private void validateDailyBudget(final LocalDate date, final Budget monthlyBudget)
+    public List<BudgetPeriodCategory> getBudgetPeriodQueryData(Long userId, LocalDate startMonth, LocalDate endMonth, Period period)
     {
+        if(userId <= 0 || startMonth == null || endMonth == null)
+        {
+            return Collections.emptyList();
+        }
+        Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, startMonth, endMonth);
+        if(subBudgetOptional.isEmpty())
+        {
+            log.warn("No SubBudget was found for user {} and startMonth {} and endMonth {}", userId, startMonth, endMonth);
+            return Collections.emptyList();
+        }
         try
         {
-            if(date == null){
-                throw new IllegalDateException("INVALID DATE ENTERED: " + date);
-            }
-            if(monthlyBudget == null){
-                throw new IllegalArgumentException("Monthly Budget is null");
-            }
-
-        }catch(IllegalDateException e){
-            log.error("There was an error with the budget date: ", e);
-            throw e;
-        }catch(IllegalArgumentException e){
-            log.error("There was an error with the budget data: ", e);
-            throw e;
-        }
-    }
-
-    private Optional<BudgetSchedule> getBudgetScheduleWithDate(final LocalDate date, final List<BudgetSchedule> budgetSchedules)
-    {
-        Optional<BudgetSchedule> optionalBudgetSchedule = Optional.empty();
-        for(BudgetSchedule budgetSchedule : budgetSchedules)
+            SubBudget subBudget = subBudgetOptional.get();
+            List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+            BudgetSchedule budgetSchedule = budgetSchedules.get(0);
+            return budgetPeriodCategoryService.getBudgetPeriodCategoriesByPeriod(budgetSchedule, period);
+        }catch(Exception e)
         {
-            LocalDate budgetStartDate = budgetSchedule.getStartDate();
-            LocalDate budgetEndDate = budgetSchedule.getEndDate();
-            if(date.isAfter(budgetStartDate) && date.isBefore(budgetEndDate))
-            {
-                optionalBudgetSchedule = Optional.of(budgetSchedule);
-                break;
-            }
-        }
-        return optionalBudgetSchedule;
-    }
-
-    private class BudgetQueryResult
-    {
-        private final String categoryName;
-        private final BigDecimal budgeted;
-        private final BigDecimal actual;
-        private final DateRange dateRange;
-
-        public BudgetQueryResult(Object[] row, DateRange dateRange) {
-            this.categoryName = (String) row[1];
-            this.budgeted = BigDecimal.valueOf((Double) row[2]);
-            this.actual = BigDecimal.valueOf((Double) row[3]);
-            this.dateRange = dateRange;
-        }
-
-        public BudgetPeriodCategory toBudgetPeriodCategory()
-        {
-            return new BudgetPeriodCategory(
-                    categoryName,
-                    budgeted,
-                    actual,
-                    dateRange,
-                    determineBudgetStatus(budgeted, actual)
-            );
+            log.error("There was an error retrieving the budget period query data from the server: ", e);
+            return Collections.emptyList();
         }
     }
 
-    private List<BudgetPeriodCategory> executeBudgetQuery(String query,
-                                                          LocalDate startDate,
-                                                          LocalDate endDate,
-                                                          Long subBudgetId,
-                                                          DateRange dateRange) {
-        List<Object[]> results = entityManager.createQuery(query, Object[].class)
-                .setParameter("startDate", startDate)
-                .setParameter("endDate", endDate)
-                .setParameter("budgetId", subBudgetId)
-                .getResultList();
-
-        return results.stream()
-                .map(row -> new BudgetQueryResult(row, dateRange).toBudgetPeriodCategory())
-                .collect(Collectors.toList());
-    }
 
     public List<BudgetPeriodCategory> getBudgetPeriodQueryForDate(final LocalDate date, final Long userId)
     {
@@ -205,138 +131,4 @@ public class BudgetPeriodQueries
             return Collections.emptyList();
         }
     }
-
-    public List<BudgetPeriodCategory> getWeeklyBudgetPeriodCategories(final Long userId, final LocalDate monthStart, final LocalDate monthEnd)
-    {
-        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
-        if(userId == null || userId <= 0)
-        {
-            return Collections.emptyList();
-        }
-        Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, monthStart, monthEnd);
-        if(subBudgetOptional.isEmpty())
-        {
-            log.warn("Sub budget not found for user {} and monthStart {} and monthEnd {}", userId, monthStart, monthEnd);
-            return Collections.emptyList();
-        }
-        SubBudget subBudget = subBudgetOptional.get();
-        List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-        Long subBudgetId = subBudget.getId();
-        try
-        {
-            if(budgetSchedules.size() == 1)
-            {
-                BudgetSchedule budgetSchedule = budgetSchedules.get(0);
-                List<BudgetScheduleRange> budgetScheduleRanges = getBudgetSchedulesRanges(budgetSchedule);
-                getBudgetPeriodCategoryResultList(budgetScheduleRanges, subBudgetId, budgetPeriodCategories);
-                return budgetPeriodCategories;
-            }
-            else
-            {
-                for(BudgetSchedule budgetSchedule : budgetSchedules)
-                {
-                    List<BudgetScheduleRange> budgetScheduleRanges = getBudgetSchedulesRanges(budgetSchedule);
-                    getBudgetPeriodCategoryResultList(budgetScheduleRanges, subBudgetId, budgetPeriodCategories);
-                }
-            }
-            return budgetPeriodCategories;
-        }catch(Exception e)
-        {
-            log.error("Error retrieving weekly budget period categories for user {} and period {} to {}: {}",
-                    userId, monthStart, monthEnd, e.getMessage(), e);
-            return Collections.emptyList();
-        }
-    }
-
-    private void getBudgetPeriodCategoryResultList(List<BudgetScheduleRange> budgetScheduleRanges, Long subBudgetId, List<BudgetPeriodCategory> budgetPeriodCategories)
-    {
-        for (BudgetScheduleRange budgetScheduleWeek : budgetScheduleRanges)
-        {
-            LocalDate budgetScheduleRangeWeekStart = budgetScheduleWeek.getStartRange();
-            LocalDate budgetScheduleRangeWeekEnd = budgetScheduleWeek.getEndRange();
-            DateRange weekRange = budgetScheduleWeek.getBudgetDateRange();
-            List<BudgetPeriodCategory> budgetPeriodCategoryList = executeBudgetQuery(budgetQuery, budgetScheduleRangeWeekStart, budgetScheduleRangeWeekEnd, subBudgetId, weekRange);
-            budgetPeriodCategories.addAll(budgetPeriodCategoryList);
-        }
-    }
-
-    private List<BudgetScheduleRange> getBudgetSchedulesRanges(final BudgetSchedule budgetSchedule)
-    {
-        if(budgetSchedule == null)
-        {
-            return Collections.emptyList();
-        }
-        return budgetSchedule.getBudgetScheduleRanges();
-    }
-
-    private BudgetStatus determineBudgetStatus(BigDecimal budgetAmount, BigDecimal spentOnBudget){
-        if (budgetAmount.compareTo(BigDecimal.ZERO) == 0) {
-            return BudgetStatus.GOOD;
-        }
-
-        BigDecimal spendingRatio = spentOnBudget.divide(budgetAmount, 2, RoundingMode.HALF_UP);
-
-        if (spendingRatio.compareTo(BigDecimal.ONE) > 0) {
-            return BudgetStatus.OVER_BUDGET;
-        } else if (spendingRatio.compareTo(new BigDecimal("0.90")) >= 0) {
-            return BudgetStatus.WARNING;
-        } else {
-            return BudgetStatus.GOOD;
-        }
-    }
-
-    public List<BudgetPeriodCategory> getMonthlyBudgetPeriodCategories(final LocalDate monthStart, final LocalDate monthEnd, final Long userId)
-    {
-        try
-        {
-            Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, monthStart, monthEnd);
-            if(subBudgetOptional.isEmpty())
-            {
-                log.warn("Sub budget not found for user {} and monthStart {} and monthEnd {}", userId, monthStart, monthEnd);
-                return Collections.emptyList();
-            }
-            SubBudget subBudget = subBudgetOptional.get();
-            DateRange monthRange = new DateRange(monthStart, monthEnd);
-            return executeBudgetQuery(budgetQuery, monthStart, monthEnd, subBudget.getId(), monthRange);
-
-        }catch(Exception e)
-        {
-            log.error("Error retrieving monthly budget period categories for user {} and period {} to {}: {}",
-                    userId, monthStart, monthEnd, e.getMessage(), e);
-            return Collections.emptyList();
-        }
-    }
-
-
-
-    public List<BudgetPeriodCategory> getBiWeeklyBudgetPeriodCategories(final Long userId, final LocalDate monthStart, final LocalDate monthEnd)
-    {
-        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
-        if(userId == null || userId <= 0)
-        {
-            return Collections.emptyList();
-        }
-        try
-        {
-            Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, monthStart, monthEnd);
-            if(subBudgetOptional.isEmpty())
-            {
-                log.warn("Sub budget not found for user {} and monthStart {} and monthEnd {}", userId, monthStart, monthEnd);
-                return Collections.emptyList();
-            }
-            SubBudget subBudget = subBudgetOptional.get();
-            List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-
-
-        }catch(Exception e)
-        {
-            log.error("Error retrieving bi-weekly budget period categories for user {} and period {} to {}: {}",
-                    userId, monthStart, monthEnd, e.getMessage(), e);
-            return Collections.emptyList();
-        }
-
-        return null;
-    }
-
-
 }

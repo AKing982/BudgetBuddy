@@ -22,7 +22,8 @@ export interface BudgetCategoryRequest {
 }
 
 
-class BudgetCategoriesService {
+class BudgetCategoriesService
+{
     private static instance: BudgetCategoriesService;
 
     private constructor(){

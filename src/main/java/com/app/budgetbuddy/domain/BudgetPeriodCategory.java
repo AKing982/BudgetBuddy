@@ -3,12 +3,15 @@ package com.app.budgetbuddy.domain;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 
 @Getter
 @Setter(AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
+@Builder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class BudgetPeriodCategory
 {
     private String category;
@@ -16,6 +19,7 @@ public class BudgetPeriodCategory
     private BigDecimal actual;
     private BigDecimal remaining;
     private DateRange dateRange;
+    private List<DateRange> biWeekRanges;
     private boolean isOverBudget;
     private double spendingPercentage;
     private BudgetStatus budgetStatus;

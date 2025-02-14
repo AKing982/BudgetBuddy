@@ -20,6 +20,22 @@ public class BudgetPeriodCategoryService
         this.handlerFactory = handlerFactory;
     }
 
+    public List<BudgetPeriodCategory> getBudgetPeriodCategoriesByPeriod(BudgetSchedule budgetSchedule, Period period)
+    {
+        if(budgetSchedule == null || period == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            BudgetPeriodCategoryHandler handler = handlerFactory.getHandler(period);
+            return handler.getBudgetPeriodCategories(budgetSchedule);
+        }catch(Exception e){
+            log.error("Error determining budget period categories: ", e);
+            return Collections.emptyList();
+        }
+    }
+
     public List<BudgetPeriodCategory> getBudgetPeriodCategories(SubBudget budget, BudgetSchedule budgetSchedule)
     {
         if(budget == null || budgetSchedule == null)
