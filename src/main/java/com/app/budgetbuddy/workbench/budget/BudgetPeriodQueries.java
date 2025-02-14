@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 
+import com.app.budgetbuddy.exceptions.BudgetScheduleException;
 import com.app.budgetbuddy.exceptions.DateRangeException;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.BudgetScheduleRangeService;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +34,22 @@ public class BudgetPeriodQueries
     private final SubBudgetService subBudgetService;
     private final BudgetScheduleService budgetScheduleService;
     private final BudgetScheduleRangeService budgetScheduleRangeService;
+
+    private static final String budgetQuery =  """
+    SELECT DISTINCT tc.category.id,
+           tc.category.name,
+           tc.budgetedAmount,
+           COALESCE(tc.actual, 0) as actualSpent,
+           tc.budgetedAmount - COALESCE(tc.actual, 0) as remainingAmount
+    FROM TransactionCategoryEntity tc
+    JOIN tc.category c
+    JOIN tc.%s b
+    WHERE tc.startDate <= :endDate
+    AND tc.endDate >= :startDate
+    AND tc.%s.id = :budgetId
+    AND tc.isactive = true
+    """;
+
 
     @Autowired
     public BudgetPeriodQueries(EntityManager entityManager,
@@ -69,119 +87,186 @@ public class BudgetPeriodQueries
 
     private Optional<BudgetSchedule> getBudgetScheduleWithDate(final LocalDate date, final List<BudgetSchedule> budgetSchedules)
     {
-        return null;
+        Optional<BudgetSchedule> optionalBudgetSchedule = Optional.empty();
+        for(BudgetSchedule budgetSchedule : budgetSchedules)
+        {
+            LocalDate budgetStartDate = budgetSchedule.getStartDate();
+            LocalDate budgetEndDate = budgetSchedule.getEndDate();
+            if(date.isAfter(budgetStartDate) && date.isBefore(budgetEndDate))
+            {
+                optionalBudgetSchedule = Optional.of(budgetSchedule);
+                break;
+            }
+        }
+        return optionalBudgetSchedule;
     }
 
-    public List<BudgetPeriodCategory> getDailyBudgetPeriodQuery(final LocalDate date, final Long userId)
+    private class BudgetQueryResult
     {
-        if(userId == null || userId <= 0 || date == null)
+        private final String categoryName;
+        private final BigDecimal budgeted;
+        private final BigDecimal actual;
+        private final DateRange dateRange;
+
+        public BudgetQueryResult(Object[] row, DateRange dateRange) {
+            this.categoryName = (String) row[1];
+            this.budgeted = BigDecimal.valueOf((Double) row[2]);
+            this.actual = BigDecimal.valueOf((Double) row[3]);
+            this.dateRange = dateRange;
+        }
+
+        public BudgetPeriodCategory toBudgetPeriodCategory()
+        {
+            return new BudgetPeriodCategory(
+                    categoryName,
+                    budgeted,
+                    actual,
+                    dateRange,
+                    determineBudgetStatus(budgeted, actual)
+            );
+        }
+    }
+
+    private List<BudgetPeriodCategory> executeBudgetQuery(String query,
+                                                          LocalDate startDate,
+                                                          LocalDate endDate,
+                                                          Long subBudgetId,
+                                                          DateRange dateRange) {
+        List<Object[]> results = entityManager.createQuery(query, Object[].class)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDate)
+                .setParameter("budgetId", subBudgetId)
+                .getResultList();
+
+        return results.stream()
+                .map(row -> new BudgetQueryResult(row, dateRange).toBudgetPeriodCategory())
+                .collect(Collectors.toList());
+    }
+
+    public List<BudgetPeriodCategory> getBudgetPeriodQueryForDate(final LocalDate date, final Long userId)
+    {
+        if(userId == null || userId <= 0)
         {
             log.warn("Found null or invalid user id");
             return Collections.emptyList();
         }
-
-        Optional<SubBudget> optionalSubBudget = subBudgetService.findSubBudgetById(userId);
-        if(optionalSubBudget.isEmpty())
+        LocalDate monthStart = date.withDayOfMonth(1);
+        LocalDate monthEnd = date.withDayOfMonth(date.lengthOfMonth());
+        Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, monthStart, monthEnd);
+        if(subBudgetOptional.isEmpty())
         {
-            log.warn("Sub budget not found");
+            log.warn("Sub budget not found for user {} and date: {}", userId, date);
             return Collections.emptyList();
         }
-        SubBudget subBudget = optionalSubBudget.get();
-        List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+        SubBudget subBudget = subBudgetOptional.get();
+        Long subBudgetId = subBudget.getId();
+        try
+        {
 
-        // Grab the BudgetSchedule that contains the chosen date by the user
+            final String dateBudgetQuery = """
+                    SELECT DISTINCT tc.category.id,
+                   tc.category.name,
+                   tc.budgetedAmount,
+                   tc.actual as actualSpent,
+                   tc.budgetedAmount - tc.actual as remainingAmount
+            FROM TransactionCategoryEntity tc
+            JOIN tc.category c
+            JOIN tc.subBudget sb
+            WHERE tc.startDate <= :date
+           AND tc.endDate >= :date
+            AND tc.subBudget.id = :budgetId
+            AND tc.isactive = true""";
+            List<Object[]> results = entityManager.createQuery(dateBudgetQuery, Object[].class)
+                    .setParameter("date", date)
+                    .setParameter("budgetId", subBudgetId)
+                    .getResultList();
+
+            return results.stream()
+                    .map(row -> {
+                        String categoryName = (String) row[1];
+                        BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
+                        BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+
+                        return new BudgetPeriodCategory(
+                                categoryName,
+                                budgeted,
+                                actual,
+                                new DateRange(date, date),
+                                BudgetStatus.GOOD
+                        );
+                    })
+                    .collect(Collectors.toList());
 
 
-//        try {
-//            List<Object[]> results = entityManager.createQuery(dailyBudgetQuery, Object[].class)
-//                    .setParameter("date", date)
-//                    .setParameter("budgetId", monthlyBudget.getId())
-//                    .getResultList();
-//
-//            return results.stream()
-//                    .map(row -> {
-//                        String categoryName = (String) row[1];
-//                        BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-//                        BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
-//
-//                        return new BudgetPeriodCategory(
-//                                categoryName,
-//                                budgeted,
-//                                actual,
-//                                new DateRange(date, date),
-//                                BudgetStatus.GOOD
-//                        );
-//                    })
-//                    .collect(Collectors.toList());
-//
-//        } catch(Exception e) {
-//            log.error("Error getting daily budget data for date: {} and budget: {}",
-//                    date, monthlyBudget.getId(), e);
-//            return null;
-//        }
-        return null;
+        }catch(BudgetScheduleException e)
+        {
+            log.error("Error getting daily budget data for date: {} and budget: {}",
+                    date,subBudget.getId(), e);
+            return Collections.emptyList();
+        }
     }
 
     public List<BudgetPeriodCategory> getWeeklyBudgetPeriodCategories(final Long userId, final LocalDate monthStart, final LocalDate monthEnd)
     {
-//        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
-//        if(budgetWeeks == null || budgetWeeks.isEmpty() || monthlyBudget == null){
-//            return budgetPeriodCategories;
-//        }
-//
-//        try
-//        {
-//            if(budgetWeeks.size() > 5){
-//                throw new DateRangeException("Weekly budget period cannot exceed 5 weeks.");
-//            }
-//            final String weeklyBudgetQuery = """
-//                    SELECT DISTINCT tc.category.id,
-//                   tc.category.name,
-//                   tc.budgetedAmount,
-//                   tc.actual as actualSpent,
-//                   tc.budgetedAmount - tc.actual as remainingAmount
-//            FROM TransactionCategoryEntity tc
-//            JOIN tc.category c
-//            JOIN tc.budget b
-//            WHERE tc.startDate <= :endDate\s
-//            AND tc.endDate >= :startDate
-//            AND tc.budget.id = :budgetId
-//            AND tc.isactive = true
-//            """;
-//
-//            for(DateRange weekRange : budgetWeeks)
-//            {
-//                List<Object[]> results = entityManager.createQuery(weeklyBudgetQuery, Object[].class)
-//                        .setParameter("startDate", weekRange.getStartDate())
-//                        .setParameter("endDate", weekRange.getEndDate())
-//                        .setParameter("budgetId", monthlyBudget.getId())
-//                        .getResultList();
-//
-//                results.stream()
-//                        .map(row -> {
-//                            String categoryName = (String) row[1];
-//                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-//                            BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
-//
-//                            return new BudgetPeriodCategory(
-//                                    categoryName,
-//                                    budgeted,
-//                                    actual,
-//                                    weekRange,
-//                                    determineBudgetStatus(budgeted, actual)
-//                            );
-//                        })
-//                        .forEach(budgetPeriodCategories::add);
-//            }
-//
-//            return budgetPeriodCategories;
-//
-//
-//        }catch(DateRangeException e){
-//            log.error("There was an error with the budget date: ", e);
-//            throw e;
-//        }
-        return null;
+        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
+        if(userId == null || userId <= 0)
+        {
+            return Collections.emptyList();
+        }
+        Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, monthStart, monthEnd);
+        if(subBudgetOptional.isEmpty())
+        {
+            log.warn("Sub budget not found for user {} and monthStart {} and monthEnd {}", userId, monthStart, monthEnd);
+            return Collections.emptyList();
+        }
+        SubBudget subBudget = subBudgetOptional.get();
+        List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+        Long subBudgetId = subBudget.getId();
+        try
+        {
+            if(budgetSchedules.size() == 1)
+            {
+                BudgetSchedule budgetSchedule = budgetSchedules.get(0);
+                List<BudgetScheduleRange> budgetScheduleRanges = getBudgetSchedulesRanges(budgetSchedule);
+                getBudgetPeriodCategoryResultList(budgetScheduleRanges, subBudgetId, budgetPeriodCategories);
+                return budgetPeriodCategories;
+            }
+            else
+            {
+                for(BudgetSchedule budgetSchedule : budgetSchedules)
+                {
+                    List<BudgetScheduleRange> budgetScheduleRanges = getBudgetSchedulesRanges(budgetSchedule);
+                    getBudgetPeriodCategoryResultList(budgetScheduleRanges, subBudgetId, budgetPeriodCategories);
+                }
+            }
+            return budgetPeriodCategories;
+        }catch(Exception e)
+        {
+            log.error("Error retrieving weekly budget period categories for user {} and period {} to {}: {}",
+                    userId, monthStart, monthEnd, e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    private void getBudgetPeriodCategoryResultList(List<BudgetScheduleRange> budgetScheduleRanges, Long subBudgetId, List<BudgetPeriodCategory> budgetPeriodCategories)
+    {
+        for (BudgetScheduleRange budgetScheduleWeek : budgetScheduleRanges)
+        {
+            LocalDate budgetScheduleRangeWeekStart = budgetScheduleWeek.getStartRange();
+            LocalDate budgetScheduleRangeWeekEnd = budgetScheduleWeek.getEndRange();
+            DateRange weekRange = budgetScheduleWeek.getBudgetDateRange();
+            List<BudgetPeriodCategory> budgetPeriodCategoryList = executeBudgetQuery(budgetQuery, budgetScheduleRangeWeekStart, budgetScheduleRangeWeekEnd, subBudgetId, weekRange);
+            budgetPeriodCategories.addAll(budgetPeriodCategoryList);
+        }
+    }
+
+    private List<BudgetScheduleRange> getBudgetSchedulesRanges(final BudgetSchedule budgetSchedule)
+    {
+        if(budgetSchedule == null)
+        {
+            return Collections.emptyList();
+        }
+        return budgetSchedule.getBudgetScheduleRanges();
     }
 
     private BudgetStatus determineBudgetStatus(BigDecimal budgetAmount, BigDecimal spentOnBudget){
@@ -202,124 +287,54 @@ public class BudgetPeriodQueries
 
     public List<BudgetPeriodCategory> getMonthlyBudgetPeriodCategories(final LocalDate monthStart, final LocalDate monthEnd, final Long userId)
     {
-//        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
-//        if(monthRange == null || monthlyBudget == null){
-//            return budgetPeriodCategories;
-//        }
-//        try
-//        {
-//            LocalDate monthStartDate = monthRange.getStartDate();
-//            LocalDate monthEndDate = monthRange.getEndDate();
-//            if(monthStartDate == null || monthEndDate == null){
-//                throw new DateRangeException("Monthly budget period cannot have null start date or end date.");
-//            }
-//            final String monthlyBudgetQuery = """
-//            SELECT DISTINCT tc.category.id,
-//                   tc.category.name,
-//                   tc.budgetedAmount,
-//                   tc.actual as actualSpent,
-//                   tc.budgetedAmount - tc.actual as remainingAmount
-//            FROM TransactionCategoryEntity tc
-//            JOIN tc.category c
-//            JOIN tc.budget b
-//            WHERE tc.startDate <= :endDate
-//            AND tc.endDate >= :startDate
-//            AND tc.budget.id = :budgetId
-//            AND tc.isactive = true
-//            """;
-//
-//            List<Object[]> results = entityManager.createQuery(monthlyBudgetQuery, Object[].class)
-//                    .setParameter("startDate", monthStartDate)
-//                    .setParameter("endDate", monthEndDate)
-//                    .setParameter("budgetId", monthlyBudget.getId())
-//                    .getResultList();
-//
-//            return results.stream()
-//                    .map(row -> {
-//                        String categoryName = (String) row[1];
-//                        BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-//                        BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
-//
-//                        return new BudgetPeriodCategory(
-//                                categoryName,
-//                                budgeted,
-//                                actual,
-//                                monthRange,
-//                                determineBudgetStatus(budgeted, actual)
-//                        );
-//                    })
-//                    .collect(Collectors.toList());
-//
-//        }catch(DateRangeException e){
-//            log.error("There was an error with the month range: ", e);
-//            throw e;
-//        }
-        return null;
+        try
+        {
+            Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, monthStart, monthEnd);
+            if(subBudgetOptional.isEmpty())
+            {
+                log.warn("Sub budget not found for user {} and monthStart {} and monthEnd {}", userId, monthStart, monthEnd);
+                return Collections.emptyList();
+            }
+            SubBudget subBudget = subBudgetOptional.get();
+            DateRange monthRange = new DateRange(monthStart, monthEnd);
+            return executeBudgetQuery(budgetQuery, monthStart, monthEnd, subBudget.getId(), monthRange);
+
+        }catch(Exception e)
+        {
+            log.error("Error retrieving monthly budget period categories for user {} and period {} to {}: {}",
+                    userId, monthStart, monthEnd, e.getMessage(), e);
+            return Collections.emptyList();
+        }
     }
 
-    public List<BudgetPeriodCategory> getBiWeeklyBudgetPeriodCategories(final Long userId, final LocalDate monthStart, final LocalDate monthEnd){
-//        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
-//        if(biWeeks == null || biWeeks.isEmpty() || budget == null) {
-//            return budgetPeriodCategories;
-//        }
-//
-//        try {
-//            if(biWeeks.size() > 3) { // Max 3 bi-weekly periods in a month
-//                throw new DateRangeException("Bi-weekly budget periods cannot exceed 3 periods.");
-//            }
-//
-//            final String biWeeklyQuery = """
-//           SELECT DISTINCT tc.category.id,
-//                  tc.category.name,
-//                  tc.budgetedAmount,
-//                  tc.actual as actualSpent,
-//                  tc.budgetedAmount - tc.actual as remainingAmount
-//           FROM TransactionCategoryEntity tc
-//           JOIN tc.category c
-//           JOIN tc.budget b
-//           WHERE tc.startDate <= :endDate
-//           AND tc.endDate >= :startDate
-//           AND tc.budget.id = :budgetId
-//           AND tc.isactive = true
-//           """;
-//
-//            for(DateRange biWeek : biWeeks) {
-//                if(biWeek.getStartDate() == null || biWeek.getEndDate() == null) {
-//                    throw new DateRangeException("Bi-weekly period cannot have null start date or end date.");
-//                }
-//
-//                List<Object[]> results = entityManager.createQuery(biWeeklyQuery, Object[].class)
-//                        .setParameter("startDate", biWeek.getStartDate())
-//                        .setParameter("endDate", biWeek.getEndDate())
-//                        .setParameter("budgetId", budget.getId())
-//                        .getResultList();
-//
-//                results.stream()
-//                        .map(row -> {
-//                            String categoryName = (String) row[1];
-//                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-//                            BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
-//
-//                            return new BudgetPeriodCategory(
-//                                    categoryName,
-//                                    budgeted,
-//                                    actual,
-//                                    biWeek,
-//                                    determineBudgetStatus(budgeted, actual)
-//                            );
-//                        })
-//                        .forEach(budgetPeriodCategories::add);
-//            }
-//
-//            return budgetPeriodCategories;
-//
-//        } catch(DateRangeException e) {
-//            log.error("There was an error with the bi-weekly ranges: ", e);
-//            throw e;
-//        } catch(Exception e) {
-//            log.error("Error getting bi-weekly budget data for budget: {}", budget.getId(), e);
-//            return Collections.emptyList();
-//        }
+
+
+    public List<BudgetPeriodCategory> getBiWeeklyBudgetPeriodCategories(final Long userId, final LocalDate monthStart, final LocalDate monthEnd)
+    {
+        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
+        if(userId == null || userId <= 0)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, monthStart, monthEnd);
+            if(subBudgetOptional.isEmpty())
+            {
+                log.warn("Sub budget not found for user {} and monthStart {} and monthEnd {}", userId, monthStart, monthEnd);
+                return Collections.emptyList();
+            }
+            SubBudget subBudget = subBudgetOptional.get();
+            List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+
+
+        }catch(Exception e)
+        {
+            log.error("Error retrieving bi-weekly budget period categories for user {} and period {} to {}: {}",
+                    userId, monthStart, monthEnd, e.getMessage(), e);
+            return Collections.emptyList();
+        }
+
         return null;
     }
 
