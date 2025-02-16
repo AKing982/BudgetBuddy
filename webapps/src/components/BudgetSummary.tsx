@@ -127,7 +127,7 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                             Total Budget
                         </Typography>
                         <Typography variant="body1" fontWeight="bold">
-                            ${budgetStats.totalBudget.toFixed(2)}
+                            ${budgetStats.totalBudget}
                         </Typography>
                     </Box>
                     <Box>
@@ -135,7 +135,7 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                             Total Spent
                         </Typography>
                         <Typography variant="body1" fontWeight="bold">
-                            ${budgetStats.totalSpent.toFixed(2)}
+                            ${budgetStats.totalSpent}
                         </Typography>
                     </Box>
                     <Box>
@@ -143,7 +143,7 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                             Total Saved
                         </Typography>
                         <Typography variant="body1" fontWeight="bold" color="success.main">
-                            ${budgetStats.totalSaved.toFixed(2)}
+                            ${budgetStats.totalSaved}
                         </Typography>
                     </Box>
                 </Box>

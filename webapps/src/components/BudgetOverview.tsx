@@ -31,53 +31,60 @@ interface BudgetTotals {
 }
 
 
-const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) => {
-
-
+const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) =>
+{
     const calculateCategoryTotals = (categories: any[] = []): CategoryTotals => {
+        console.log('Categories received:', categories);
+        console.log('Type of categories:', typeof categories);
+        console.log('Is Array?:', Array.isArray(categories));
+
+        // Guard clause to ensure we have an array
+        if (!Array.isArray(categories)) {
+            console.warn('Categories is not an array:', categories);
+            return { budgeted: 0, actual: 0, remaining: 0 };
+        }
+
         return categories.reduce(
             (sum, cat) => ({
                 budgeted: sum.budgeted + (cat?.budgetedAmount || 0),
                 actual: sum.actual + (cat?.actualAmount || 0),
                 remaining: sum.remaining + (cat?.remainingAmount || 0)
             }),
-            { budgeted: 0, actual: 0, remaining: 0 }
         );
     };
 
-    const calculateBudgetTotals = (data: BudgetRunnerResult[]): BudgetTotals => {
+    const calculateBudgetTotals = (data: BudgetRunnerResult[]): BudgetTotals =>
+    {
         const initialTotals: BudgetTotals = {
             income: { budgeted: 0, actual: 0, remaining: 0 },
             expenses: { budgeted: 0, actual: 0, remaining: 0 },
             savings: { budgeted: 0, actual: 0, remaining: 0 }
         };
 
-        return data.reduce((acc: BudgetTotals, budget: BudgetRunnerResult) => {
+        return data.reduce((acc: BudgetTotals, budget: BudgetRunnerResult) =>
+        {
             // Extract categories from budgetCategoryStats if it exists
             const stats = budget.budgetCategoryStats;
             if (!stats) return acc;
 
-            const incomeTotals = calculateCategoryTotals(stats.incomeCategories);
-            const expenseTotals = calculateCategoryTotals(stats.expenseCategories);
-            const savingsTotals = calculateCategoryTotals(stats.savingsCategories);
+            if(stats.incomeCategories){
+                acc.income.budgeted += stats.incomeCategories?.budgetedIncome || 0;
+                acc.income.actual += stats.incomeCategories.actualBudgetedIncome || 0;
+                acc.income.remaining += stats.incomeCategories.remainingIncome || 0;
+            }
 
-            return {
-                income: {
-                    budgeted: acc.income.budgeted + incomeTotals.budgeted,
-                    actual: acc.income.actual + incomeTotals.actual,
-                    remaining: acc.income.remaining + incomeTotals.remaining
-                },
-                expenses: {
-                    budgeted: acc.expenses.budgeted + expenseTotals.budgeted,
-                    actual: acc.expenses.actual + expenseTotals.actual,
-                    remaining: acc.expenses.remaining + expenseTotals.remaining
-                },
-                savings: {
-                    budgeted: acc.savings.budgeted + savingsTotals.budgeted,
-                    actual: acc.savings.actual + savingsTotals.actual,
-                    remaining: acc.savings.remaining + savingsTotals.remaining
-                }
-            };
+            if(stats.expenseCategories){
+                acc.expenses.budgeted += stats.expenseCategories.budgetedExpenses || 0;
+                acc.expenses.actual += stats.expenseCategories.actualExpenses || 0;
+                acc.expenses.remaining += stats.expenseCategories.remainingExpenses || 0;
+            }
+
+            if(stats.savingsCategories){
+                acc.savings.budgeted += stats.savingsCategories.budgetedSavingsTarget || 0;
+                acc.savings.actual += stats.savingsCategories.actualSavedAmount || 0;
+                acc.savings.remaining += stats.savingsCategories.remainingToSave || 0;
+            }
+            return acc;
         }, initialTotals);
     };
 
@@ -92,112 +99,38 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) => {
         return calculateBudgetTotals(data);
     }, [data]);
 
-
-
-    // const budgetData = useMemo(() => {
-    //     if (!data.length) {
-    //         return {
-    //             income: { budgeted: 0, actual: 0, remaining: 0 },
-    //             expenses: { budgeted: 0, actual: 0, remaining: 0 },
-    //             savings: { budgeted: 0, actual: 0, remaining: 0 }
-    //         };
-    //     }
-    //
-    //
-    //     // // Aggregate data from all budgets
-    //     // return data.reduce((acc, budget) => {
-    //     //     // Get income from incomeCategories
-    //     //     const incomeBudgeted = budget.incomeCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.budgetedAmount || 0), 0);
-    //     //     const incomeActual = budget.incomeCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.actualAmount || 0), 0);
-    //     //     const incomeRemaining = budget.incomeCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.remainingAmount || 0), 0);
-    //     //
-    //     //     // Get expense totals from topExpenseCategories
-    //     //     const expenseBudgeted = budget.expenseCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.budgetedAmount || 0), 0);
-    //     //     const expenseActual = budget.expenseCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.actualAmount || 0), 0);
-    //     //     const expenseRemaining = budget.expenseCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.remainingAmount || 0), 0);
-    //     //
-    //     //     // Get savings from savingsCategories
-    //     //     const savingsBudgeted = budget.savingsCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.budgetedAmount || 0), 0);
-    //     //     const savingsActual = budget.savingsCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.actualAmount || 0), 0);
-    //     //     const savingsRemaining = budget.savingsCategories.reduce((sum, cat) =>
-    //     //         sum + (cat.remainingAmount || 0), 0);
-    //     //
-    //     //     return {
-    //     //         income: {
-    //     //             budgeted: acc.income.budgeted + incomeBudgeted,
-    //     //             actual: acc.income.actual + incomeActual,
-    //     //             remaining: acc.income.remaining + incomeRemaining
-    //     //         },
-    //     //         expenses: {
-    //     //             budgeted: acc.expenses.budgeted + expenseBudgeted,
-    //     //             actual: acc.expenses.actual + expenseActual,
-    //     //             remaining: acc.expenses.remaining + expenseRemaining
-    //     //         },
-    //     //         savings: {
-    //     //             budgeted: acc.savings.budgeted + savingsBudgeted,
-    //     //             actual: acc.savings.actual + savingsActual,
-    //     //             remaining: acc.savings.remaining + savingsRemaining
-    //     //         }
-    //     //     };
-    //     // }, {
-    //     //     income: { budgeted: 0, actual: 0, remaining: 0 },
-    //     //     expenses: { budgeted: 0, actual: 0, remaining: 0 },
-    //     //     savings: { budgeted: 0, actual: 0, remaining: 0 }
-    //     // });
-    //     // Aggregate data safely
-    //     return data.reduce((acc, budget) => {
-    //         const incomeBudgeted = (budget.incomeCategories || []).reduce((sum, cat) => sum + (cat.budgetedAmount || 0), 0);
-    //         const incomeActual = (budget.incomeCategories || []).reduce((sum, cat) => sum + (cat.actualAmount || 0), 0);
-    //         const incomeRemaining = (budget.incomeCategories || []).reduce((sum, cat) => sum + (cat.remainingAmount || 0), 0);
-    //
-    //
-    //         const expenseBudgeted = (budget.expenseCategories || []).reduce((sum, cat) => sum + (cat?.budgetedAmount || 0), 0);
-    //         const expenseActual = (budget.expenseCategories || []).reduce((sum, cat) => sum + (cat?.actualAmount || 0), 0);
-    //         const expenseRemaining = (budget.expenseCategories || []).reduce((sum, cat) => sum + (cat?.remainingAmount || 0), 0);
-    //
-    //         const savingsBudgeted = (budget.savingsCategories || []).reduce((sum, cat) => sum + (cat?.budgetedAmount || 0), 0);
-    //         const savingsActual = (budget.savingsCategories || []).reduce((sum, cat) => sum + (cat?.actualAmount || 0), 0);
-    //         const savingsRemaining = (budget.savingsCategories || []).reduce((sum, cat) => sum + (cat?.remainingAmount || 0), 0);
-    //
-    //         return {
-    //             income: {
-    //                 budgeted: acc.income.budgeted + incomeBudgeted,
-    //                 actual: acc.income.actual + incomeActual,
-    //                 remaining: acc.income.remaining + incomeRemaining
-    //             },
-    //             expenses: {
-    //                 budgeted: acc.expenses.budgeted + expenseBudgeted,
-    //                 actual: acc.expenses.actual + expenseActual,
-    //                 remaining: acc.expenses.remaining + expenseRemaining
-    //             },
-    //             savings: {
-    //                 budgeted: acc.savings.budgeted + savingsBudgeted,
-    //                 actual: acc.savings.actual + savingsActual,
-    //                 remaining: acc.savings.remaining + savingsRemaining
-    //             }
-    //         };
-    //     }, {
-    //         income: { budgeted: 0, actual: 0, remaining: 0 },
-    //         expenses: { budgeted: 0, actual: 0, remaining: 0 },
-    //         savings: { budgeted: 0, actual: 0, remaining: 0 }
-    //     });
-    // }, [data]);
-
     const healthScore = useMemo(() => {
-        if (!data.length) return 0;
+        if (!data.length) {
+            console.log('No data found');
+            return 0;
+        }
 
-        const avgHealthScore = data.reduce((sum, budget) =>
-            sum + (budget.budgetStats.healthScore || 0), 0) / data.length;
+        console.log('Full data:', data);
 
-        return Math.round(avgHealthScore);
+        const totalScore = data.reduce((sum, budget) => {
+            // Handle budgetStats as an array
+            const stats = Array.isArray(budget.budgetStats) ?
+                budget.budgetStats[0] : budget.budgetStats;
+
+            console.log('Stats being processed:', stats);
+
+            if (!stats?.healthScore) {
+                console.log('No health score found in stats');
+                return sum;
+            }
+
+            const normalizedScore = Math.min(stats.healthScore, 100);
+            console.log('Normalized score:', normalizedScore);
+            const newSum = sum + normalizedScore;
+            console.log('Running sum:', newSum);
+
+            return newSum;
+        }, 0);
+
+        const finalScore = Math.round(totalScore / data.length);
+        console.log('Final score:', finalScore);
+
+        return finalScore;
     }, [data]);
 
     if (isLoading) {
@@ -215,16 +148,6 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) => {
             </Box>
         );
     }
-
-    // // Calculate budget health score
-    // const calculateHealthScore = () => {
-    //     const incomeScore = Math.min(budgetData.income.actual / budgetData.income.budgeted, 1) * 50;
-    //     const expenseScore = (1 - Math.max(0, budgetData.expenses.actual - budgetData.expenses.budgeted) / budgetData.expenses.budgeted) * 40;
-    //     const savingsScore = Math.min(budgetData.savings.actual / budgetData.savings.budgeted, 1) * 10;
-    //     return Math.round(incomeScore + expenseScore + savingsScore);
-    // };
-    //
-    // const healthScore = calculateHealthScore();
 
     return (
         <Box>
@@ -290,7 +213,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) => {
                     <TableBody>
                         <TableRow>
                             <TableCell component="th" scope="row">Income</TableCell>
-                            <TableCell align="right">${totals.income.budgeted.toFixed(2)}</TableCell>
+                            <TableCell align="right">${totals.income.budgeted}</TableCell>
                             <TableCell align="right">${totals.income.actual.toFixed(2)}</TableCell>
                             <TableCell align="right">${totals.income.remaining.toFixed(2)}</TableCell>
                         </TableRow>

@@ -14,4 +14,5 @@ public interface SubBudgetOverviewService
     Optional<IncomeCategory> loadIncomeCategory(Long budgetId, LocalDate startDate, LocalDate endDate);
     Optional<ExpenseCategory> loadExpenseCategory(Long budgetId, LocalDate startDate, LocalDate endDate);
     Optional<SavingsCategory> loadSavingsCategory(Long budgetId, LocalDate startDate, LocalDate endDate);
+    List<ExpenseCategory> loadTopExpenseCategories(Long budgetId, LocalDate startDate, LocalDate endDate);
 }

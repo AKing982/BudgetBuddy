@@ -4,7 +4,7 @@ import {BudgetCategoryStats, BudgetSchedule, BudgetStats, SubBudget, Budget} fro
 
 export interface BudgetRunnerResult {
     budget: Budget;
-    budgetStats: BudgetStats;
+    budgetStats: BudgetStats[];
     isOverBudget: boolean;
     needsAttention: boolean;
     periodStats: any[];

@@ -96,8 +96,17 @@ public class BudgetRunner
             log.info("BudgetPeriodCategory: {}", periodCategory);
         });
 
-        List<ExpenseCategory> expenseCategories = subBudgetOverviewService.loadExpenseCategories(subBudgetId, startDate, endDate);
-        log.info("Retrieved {} expense categories for SubBudget ID: {}", expenseCategories.size(), subBudgetId);
+        List<ExpenseCategory> topFiveExpenses = subBudgetOverviewService.loadTopExpenseCategories(subBudgetId, startDate, endDate);
+        log.info("Retrieved {} top five expenses for SubBudget ID: {}", topFiveExpenses.size(), subBudgetId);
+
+        Optional<ExpenseCategory> expenseCategories = subBudgetOverviewService.loadExpenseCategory(subBudgetId, startDate, endDate);
+        log.info("Retrieved {} expense categories for SubBudget ID: {}", expenseCategories, subBudgetId);
+
+        Optional<IncomeCategory> incomeCategory = subBudgetOverviewService.loadIncomeCategory(subBudgetId, startDate, endDate);
+        log.info("Retrieved {} income category for SubBudget ID: {}", incomeCategory, subBudgetId);
+
+        Optional<SavingsCategory> savingsCategory = subBudgetOverviewService.loadSavingsCategory(subBudgetId, startDate, endDate);
+        log.info("Retrieved {} savings category for SubBudget ID: {}", savingsCategory, subBudgetId);
 
 
         // Build Result
@@ -106,7 +115,7 @@ public class BudgetRunner
                 subBudget,
                 budgetSchedule,
                 budgetStats,
-                new BudgetCategoryStats(periodCategories, List.of(), expenseCategories, List.of(), List.of()),
+                new BudgetCategoryStats(periodCategories, topFiveExpenses, expenseCategories, savingsCategory, incomeCategory),
                 budgetHealthScore.getScoreValue().compareTo(new BigDecimal("50")) < 0
         );
         log.info("Budget Runner Result: {}", result.getProcessingSummary());

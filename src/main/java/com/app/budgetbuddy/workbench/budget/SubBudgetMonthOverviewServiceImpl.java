@@ -68,7 +68,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                     .setParameter("endDate", endDate)
                     .getResultList();
 
-            IncomeCategory incomeCategory = mapToIncomeCategory(incomeCategories.get(0));
+            IncomeCategory incomeCategory = mapToIncomeCategory(incomeCategories);
             return Optional.of(incomeCategory);
         }catch(Exception e)
         {
@@ -78,25 +78,27 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         }
     }
 
-    private IncomeCategory mapToIncomeCategory(Object[] result)
-    {
-        TransactionCategoryEntity tc = (TransactionCategoryEntity) result[0];
-        CategoryEntity category = (CategoryEntity) result[1];
+    private IncomeCategory mapToIncomeCategory(List<Object[]> results) {
+        BigDecimal totalBudgeted = BigDecimal.ZERO;
+        BigDecimal totalActual = BigDecimal.ZERO;
+
+        // Aggregate totals
+        for (Object[] result : results) {
+            TransactionCategoryEntity tc = (TransactionCategoryEntity) result[0];
+            totalBudgeted = totalBudgeted.add(BigDecimal.valueOf(tc.getBudgetedAmount()));
+            totalActual = totalActual.add(BigDecimal.valueOf(tc.getActual()));
+        }
+
+        // Get first record for date range (assuming all records are in same month)
+        TransactionCategoryEntity firstTc = (TransactionCategoryEntity) results.get(0)[0];
 
         return new IncomeCategory(
-                category.getId(),
-                category.getName(),
-                "Income from " + category.getName(),
-                BigDecimal.valueOf(tc.getBudgetedAmount()),
-                tc.getStartDate(),
-                tc.getEndDate(),
-                BigDecimal.valueOf(tc.getActual()),
-                tc.getIsactive(),
-                CategoryType.INCOME,
-                new DateRange(tc.getStartDate(), tc.getEndDate()),
-                BigDecimal.valueOf(tc.getBudgetedAmount()),  // incomeGrossAmount
-                category.getName(),                          // incomeSource
-                determineIncomeFrequency(tc.getStartDate(), tc.getEndDate())  // frequency
+                totalBudgeted,
+                totalActual,
+                totalBudgeted.subtract(totalActual),
+                firstTc.getStartDate(),
+                firstTc.getEndDate(),
+                true
         );
     }
 
@@ -139,20 +141,31 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                                 AND tc.isactive = true""";
         try
         {
-            List<Object[]> expenseCategories = entityManager.createQuery(expenseCategoryQuery, Object[].class)
+            Object[] expenseCategories = entityManager.createQuery(expenseCategoryQuery, Object[].class)
                     .setParameter("payrollPattern", "%Payroll%")
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
-                    .getResultList();
+                    .getSingleResult();
 
-            if(expenseCategories.isEmpty())
+            if(expenseCategories[0] == null)
             {
                 return Optional.empty();
             }
 
-            ExpenseCategory expenseCategory = mapToExpenseCategory(expenseCategories.get(0));
-            return Optional.of(expenseCategory);
+
+            BigDecimal budgeted = BigDecimal.valueOf((Double) expenseCategories[0]);
+            BigDecimal actual = BigDecimal.valueOf((Double) expenseCategories[1]);
+
+            return Optional.of(new ExpenseCategory(
+                    "Expense",
+                    budgeted,
+                    actual,
+                    budgeted.subtract(actual),
+                    true,
+                    startDate,
+                    endDate
+            ));
         }catch(Exception e)
         {
             log.error("There was an error fetching the expense budget categories: ", e);
@@ -168,25 +181,104 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
 
-        return List.of();
+        final String savingsCategoryQuery = """
+    SELECT bg.targetAmount,
+        SUM(tc.budgetedAmount - tc.actual) as totalSaved 
+    FROM TransactionCategoryEntity tc
+    JOIN tc.subBudget sb
+    JOIN sb.budget b
+    LEFT JOIN b.budgetGoals bg
+    WHERE tc.subBudget.id = :subBudgetId
+    AND tc.startDate >= :startDate
+    AND tc.endDate <= :endDate
+    AND tc.isactive = true
+    GROUP BY bg.targetAmount
+    """;
+
+        try {
+            Object[] result = entityManager.createQuery(savingsCategoryQuery, Object[].class)
+                    .setParameter("subBudgetId", subBudgetId)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .getSingleResult();
+
+            if (result[0] == null) {
+                return Optional.empty();
+            }
+
+            BigDecimal targetAmount = BigDecimal.valueOf((Double) result[0]);
+            BigDecimal totalSaved = BigDecimal.valueOf((Double) result[1]);
+            BigDecimal remainingToSave = targetAmount.subtract(totalSaved);
+
+            SavingsCategory savingsCategory = new SavingsCategory(
+                    targetAmount,
+                    totalSaved,
+                    remainingToSave,
+                    true,
+                    startDate,
+                    endDate
+            );
+
+            return Optional.of(savingsCategory);
+        } catch (Exception e) {
+            log.error("Error loading savings category for subBudgetId {} between {} and {}: {}",
+                    subBudgetId, startDate, endDate, e.getMessage(), e);
+            return Optional.empty();
+        }
     }
 
-    private ExpenseCategory mapToExpenseCategory(Object[] result) {
-        TransactionCategoryEntity tc = (TransactionCategoryEntity) result[0];
-        CategoryEntity category = tc.getCategory();
+    @Override
+    public List<ExpenseCategory> loadTopExpenseCategories(Long budgetId, LocalDate startDate, LocalDate endDate)
+    {
+        if(budgetId == null || startDate == null || endDate == null)
+        {
+            log.warn("Invalid parameters provided to loadTopExpenseCategories");
+            return Collections.emptyList();
+        }
+        final String topExpensesQuery = """
+        SELECT tc.category.id,
+               tc.category.name,
+               tc.budgetedAmount,
+               tc.actual,
+               (tc.budgetedAmount - tc.actual) as remaining
+        FROM TransactionCategoryEntity tc
+        JOIN tc.category c
+        WHERE tc.subBudget.id = :budgetId
+            AND tc.startDate >= :startDate
+            AND tc.endDate <= :endDate
+            AND tc.isactive = true
+            AND (c.id <> '21009000' AND c.name NOT LIKE :payrollPattern)
+        ORDER BY tc.actual DESC
+        """;
 
-        return new ExpenseCategory(
-                category.getId(),
-                category.getName(),
-                "Expense category",
-                BigDecimal.valueOf(tc.getBudgetedAmount()),
-                tc.getStartDate(),
-                tc.getEndDate(),
-                BigDecimal.valueOf(tc.getActual()),
-                tc.getIsactive(),
-                CategoryType.EXPENSE,
-                new DateRange(tc.getStartDate(), tc.getEndDate())
-        );
+        try
+        {
+            List<Object[]> results = entityManager.createQuery(topExpensesQuery, Object[].class)
+                    .setParameter("budgetId", budgetId)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("payrollPattern", "%Payroll%")
+                    .setMaxResults(5)
+                    .getResultList();
+
+
+            return results.stream()
+                    .map(result -> new ExpenseCategory(
+                            (String) result[1],
+                            BigDecimal.valueOf((Double) result[2]),  // budgetedAmount
+                            BigDecimal.valueOf((Double) result[3]),  // actual
+                            BigDecimal.valueOf((Double) result[4]),  // remaining
+                            true,                                    // isActive
+                            startDate,
+                            endDate
+                    ))
+                    .collect(Collectors.toList());
+        } catch (Exception e)
+        {
+            log.error("Error loading top expense categories for budgetId {} between {} and {}: {}",
+                    budgetId, startDate, endDate, e.getMessage(), e);
+            return Collections.emptyList();
+        }
     }
 
 }

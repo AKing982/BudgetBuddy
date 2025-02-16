@@ -10,20 +10,23 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-public class SavingsCategory extends Category
+public class SavingsCategory
 {
-    private BigDecimal targetSavingsAmount;
-    private BigDecimal currentSavings;
-    private LocalDate savingsGoalDate;
-    private boolean isGoalReached;
+    private final String categoryName = "Savings Category";
+    private BigDecimal budgetedSavingsTarget;
+    private BigDecimal actualSavedAmount;
+    private BigDecimal remainingToSave;
+    private boolean isActive;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
-    public SavingsCategory(String categoryId, String categoryName, String categoryDescription, BigDecimal budgetedAmount, LocalDate categoryStartDate, LocalDate categoryEndDate, BigDecimal actual, boolean isActive, CategoryType categoryType, DateRange dateRange, BigDecimal targetSavingsAmount, BigDecimal currentSavings, LocalDate savingsGoalDate, boolean isGoalReached) {
-        super(categoryId, categoryName, categoryDescription, budgetedAmount, categoryStartDate, categoryEndDate, actual, isActive, categoryType, dateRange);
-        this.targetSavingsAmount = targetSavingsAmount;
-        this.currentSavings = currentSavings;
-        this.savingsGoalDate = savingsGoalDate;
-        this.isGoalReached = isGoalReached;
+    public SavingsCategory(BigDecimal budgetedSavingsTarget, BigDecimal actualSavedAmount, BigDecimal remainingToSave, boolean isActive, LocalDate startDate, LocalDate endDate) {
+        this.budgetedSavingsTarget = budgetedSavingsTarget;
+        this.actualSavedAmount = actualSavedAmount;
+        this.remainingToSave = remainingToSave;
+        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 }

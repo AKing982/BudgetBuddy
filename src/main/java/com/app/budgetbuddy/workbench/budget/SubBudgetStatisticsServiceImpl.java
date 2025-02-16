@@ -41,7 +41,7 @@ public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsServ
             BigDecimal budgetAmount = subBudget.getAllocatedAmount();
             BigDecimal totalSpent = budgetQueriesService.getTotalSpentOnBudget(subBudget.getId(), subBudgetStartDate, subBudgetEndDate);
             BigDecimal remaining = budgetAmount.subtract(totalSpent);
-            BigDecimal savings = budgetCalculations.calculateTotalSavedInSubBudget(subBudgetStartDate, subBudgetEndDate, totalSpent, budgetId);
+            BigDecimal savings = budgetAmount.subtract(remaining);
             BigDecimal budgetHealthScore = budgetCalculations.calculateTotalBudgetHealth(budgetAmount, totalSpent, subBudgetSavingsTarget);
 
             BudgetStats subBudgetStats = new BudgetStats(

@@ -45,18 +45,17 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
                 throw new DateRangeException("Monthly budget period cannot have null start date or end date.");
             }
             final String monthlyBudgetQuery = """
-            SELECT DISTINCT tc.category.id,
-                   tc.category.name,
-                   tc.budgetedAmount,
-                   tc.actual as actualSpent,
-                   tc.budgetedAmount - tc.actual as remainingAmount
+            SELECT DISTINCT tc.category.name,
+                   SUM(tc.budgetedAmount) as totalBudgeted,
+                   SUM(tc.actual) as actualSpent,
+                   SUM(tc.budgetedAmount - tc.actual) as remainingAmount
             FROM TransactionCategoryEntity tc
             JOIN tc.category c
-            JOIN tc.subBudget sb
-            WHERE tc.startDate <= :endDate
-            AND tc.endDate >= :startDate
+            WHERE tc.startDate >= :startDate
+            AND tc.endDate <= :endDate
             AND tc.subBudget.id = :budgetId
             AND tc.isactive = true
+            GROUP BY c.name
             """;
 
             Long subBudgetId = budgetSchedule.getSubBudgetId();
@@ -69,9 +68,9 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
             DateRange monthRange = new DateRange(startDate, endDate);
             return results.stream()
                     .map(row -> {
-                        String categoryName = (String) row[1];
-                        BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-                        BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+                        String categoryName = (String) row[0];
+                        BigDecimal budgeted = BigDecimal.valueOf((Double) row[1]);
+                        BigDecimal actual = BigDecimal.valueOf((Double) row[2]);
 
                         return new BudgetPeriodCategory(
                                 categoryName,

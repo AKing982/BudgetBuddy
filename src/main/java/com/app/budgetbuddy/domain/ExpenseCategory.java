@@ -11,22 +11,25 @@ import java.util.Set;
 
 @Getter
 @Setter
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@ToString
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class ExpenseCategory extends Category
+public class ExpenseCategory
 {
-    private Set<Transaction> expenseTransactions = new HashSet<>();
+    private String category;
+    private BigDecimal budgetedExpenses;
+    private BigDecimal actualExpenses;
+    private BigDecimal remainingExpenses;
+    private boolean isActive;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
-    public ExpenseCategory(String categoryId, String categoryName, String categoryDescription, BigDecimal budgetedAmount, LocalDate categoryStartDate, LocalDate categoryEndDate, BigDecimal actual, boolean isActive, CategoryType categoryType, DateRange dateRange) {
-        super(categoryId, categoryName, categoryDescription, budgetedAmount, categoryStartDate, categoryEndDate, actual, isActive, categoryType, dateRange);
-        this.expenseTransactions = new HashSet<>();
+    public ExpenseCategory(String category, BigDecimal budgetedExpenses, BigDecimal actualExpenses, BigDecimal remainingExpenses, boolean isActive, LocalDate startDate, LocalDate endDate) {
+        this.category = category;
+        this.budgetedExpenses = budgetedExpenses;
+        this.actualExpenses = actualExpenses;
+        this.remainingExpenses = remainingExpenses;
+        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
-
-//    public void addExpenseCategory(TransactionCategory expenseCategory)
-//    {
-//        expenseCategories.add(expenseCategory);
-//        setBudgetedAmount(getBudgetedAmount().add(BigDecimal.valueOf(expenseCategory.getBudgetedAmount())));
-//        setActual(getActual().add(BigDecimal.valueOf(expenseCategory.getBudgetActual())));
-//    }
-
 }

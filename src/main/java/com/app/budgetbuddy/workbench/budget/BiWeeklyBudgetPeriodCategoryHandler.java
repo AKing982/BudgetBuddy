@@ -57,16 +57,14 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
         try
         {
 
-            log.info("Getting to Weekly Budget Query");
+            log.info("Getting to BiWeekly Budget Query");
             final String biWeeklyBudgetQuery = """
-            SELECT DISTINCT tc.category.id,
-                   tc.category.name,
-                   tc.budgetedAmount,
-                   COALESCE(tc.actual, 0) as actualSpent,
-                   tc.budgetedAmount - COALESCE(tc.actual, 0) as remainingAmount
+            SELECT DISTINCT tc.category.name,
+                   SUM(tc.budgetedAmount) as totalBudgeted,
+                   SUM(COALESCE(tc.actual, 0)) as actualSpent,
+                   SUM(tc.budgetedAmount - COALESCE(tc.actual, 0)) as remainingAmount
             FROM TransactionCategoryEntity tc
             JOIN tc.category c
-            JOIN tc.subBudget b
             WHERE tc.subBudget.id = :budgetId
             AND tc.isactive = true
             AND (
@@ -74,6 +72,7 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
                 OR
                 (tc.startDate >= :secondPeriodStart AND tc.endDate <= :secondPeriodEnd)
             )
+            GROUP BY c.name
             """;
             BudgetScheduleRange firstBiWeekRange = biWeeklyRanges.get(0);
             log.info("First BiWeek Range: start={}, end={}", firstBiWeekRange.getStartRange(), firstBiWeekRange.getEndRange());
@@ -88,12 +87,14 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
                     .getResultList();
                     results.stream()
                         .map(row -> {
-                            String categoryName = (String) row[1];
-                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-                            BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+                            String categoryName = (String) row[0];  // First column: category.name
+                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[1]);  // Second column: totalBudgeted
+                            BigDecimal actual = BigDecimal.valueOf((Double) row[2]);    // Third column: actualSpent
+                            BigDecimal remaining = BigDecimal.valueOf((Double) row[3]); // Fourth column: remainingAmount
                             return BudgetPeriodCategory.builder()
                                     .category(categoryName)
                                     .budgeted(budgeted)
+                                    .remaining(remaining)
                                     .actual(actual)
                                     .budgetStatus(determineCategoryStatus(budgeted, actual))
                                     .biWeekRanges(buildBiWeeklyDateRanges(firstBiWeekRange, secondBiWeekRange))

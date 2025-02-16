@@ -79,14 +79,16 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
                             String categoryName = (String) row[1];
                             BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
                             BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+                            BigDecimal remaining = BigDecimal.valueOf((Double) row[4]);
 
-                            return new BudgetPeriodCategory(
-                                    categoryName,
-                                    budgeted,
-                                    actual,
-                                    weekRange,
-                                    determineCategoryStatus(budgeted, actual)
-                            );
+                            return BudgetPeriodCategory.builder()
+                                    .remaining(remaining)
+                                    .budgetStatus(determineCategoryStatus(budgeted, actual))
+                                    .actual(actual)
+                                    .budgeted(budgeted)
+                                    .category(categoryName)
+                                    .dateRange(weekRange)
+                                    .build();
                         })
                         .forEach(budgetPeriodCategories::add);
             }

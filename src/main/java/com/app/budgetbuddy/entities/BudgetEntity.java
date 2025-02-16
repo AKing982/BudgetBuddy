@@ -66,6 +66,10 @@ public class BudgetEntity {
     @NotNull
     private LocalDate budgetEndDate;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="budgetid")
+    private BudgetGoalsEntity budgetGoals;
+
     @Column(name="actualSavingsAllocation")
     private BigDecimal actualSavingsAllocation;
 

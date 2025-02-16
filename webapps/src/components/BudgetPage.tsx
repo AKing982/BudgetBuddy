@@ -9,7 +9,7 @@ import BudgetPeriodTable from './BudgetPeriodTable';
 import BudgetSummary from "./BudgetSummary";
 import BudgetProgressSummary from "./BudgetProgressSummary";
 import BudgetRunnerService, {BudgetRunnerResult} from "../services/BudgetRunnerService";
-import {BudgetCategoryStats, BudgetPeriodCategory} from "../utils/Items";
+import {BudgetCategoryStats, BudgetPeriodCategory, BudgetStats} from "../utils/Items";
 
 
 const BudgetPage: React.FC = () => {
@@ -55,187 +55,78 @@ const BudgetPage: React.FC = () => {
     };
 
 
-
     useEffect(() => {
         fetchBudgetData(currentMonth);
     }, [currentMonth, userId]);
 
-    // Calculate summary data from budgetData
-    // const budgetStats = useMemo(() => {
-    //     if (!budgetData.length) {
-    //         return {
-    //             averageSpendingPerDay: 0,
-    //             budgetId: 0,
-    //             dateRange: {
-    //                 startDate: [],
-    //                 endDate: [],
-    //                 weeksInRange: 0,
-    //                 biWeeksInRange: 0,
-    //                 daysInRange: 0
-    //             },
-    //             remaining: 0,
-    //             totalBudget: 0,
-    //             totalSaved: 0,
-    //             totalSpent: 0
-    //         };
-    //     }
-    //
-    //     // Aggregate data from all budgets
-    //     const totalBudget = budgetData.reduce((sum, budget) => sum + budget.budget.budgetAmount, 0);
-    //     console.log('Total Budget: ', totalBudget);
-    //     const totalSpent = budgetData.reduce((sum, result) => {
-    //         // result.budgetCategoryStats is an array of BudgetCategoryStats.
-    //         const periodSpent = result.budgetCategoryStats.reduce((statSum, stats) => {
-    //             // Sum all the 'actual' values from each BudgetPeriodCategory inside this BudgetCategoryStats.
-    //             return statSum + stats.budgetPeriodCategories.reduce((catSum, cat) =>
-    //                 catSum + (cat.actual || 0), 0);
-    //         }, 0);
-    //         console.log('Period spent for budget:', periodSpent);
-    //         return sum + periodSpent;
-    //     }, 0);
-    //     console.log('Total Spent: ', totalSpent);
-    //
-    //     console.log('Total Spent: ', totalSpent);
-    //     const totalSaved = budgetData.reduce((sum, result) => {
-    //         const savingsAmount = result.budgetCategoryStats.reduce((statSum, stats) => {
-    //             return statSum + stats.budgetPeriodCategories.reduce((catSum, cat) => {
-    //                 // Only count the 'actual' amount if the category name contains "saving"
-    //                 const amount = cat.category.toLowerCase().includes('saving')
-    //                     ? (cat.actual || 0)
-    //                     : 0;
-    //                 return catSum + amount;
-    //             }, 0);
-    //         }, 0);
-    //         console.log('Savings amount for budget:', savingsAmount);
-    //         return sum + savingsAmount;
-    //     }, 0);
-    //
-    //     const remaining = totalBudget - totalSpent - totalSaved;
-    //     console.log('Total remaining: ', remaining);
-    //
-    //     // Calculate date range from the first budget
-    //     const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    //     const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-    //     const daysInRange = endDate.getDate();
-    //     const weeksInRange = Math.ceil(daysInRange / 7);
-    //     const biWeeksInRange = Math.ceil(daysInRange / 14);
-    //
-    //     return {
-    //         averageSpendingPerDay: totalSpent / daysInRange,
-    //         budgetId: budgetData[0]?.budget.id || 0,
-    //         dateRange: {
-    //             startDate: [startDate.getFullYear(), startDate.getMonth(), startDate.getDate()],
-    //             endDate: [endDate.getFullYear(), endDate.getMonth(), endDate.getDate()],
-    //             weeksInRange,
-    //             biWeeksInRange,
-    //             daysInRange
-    //         },
-    //         remaining,
-    //         totalBudget,
-    //         totalSaved,
-    //         totalSpent
-    //     };
-    // }, [budgetData, currentMonth]);
+    const defaultBudgetStats: BudgetStats = {
+        averageSpendingPerDay: 0,
+        budgetId: 0,
+        dateRange: {
+            startDate: [0, 0, 0],
+            endDate: [0, 0, 0],
+            yearsInRange: 0,
+            monthsInRange: 0,
+            daysInRange: 0,
+            weeksInRange: 0,
+            biWeeksInRange: 0
+        },
+        healthScore: 0,
+        monthlyProjection: null,
+        remaining: 0,
+        totalBudget: 0,
+        totalSaved: 0,
+        totalSpent: 0
+    };
 
-
-    // const categoriesData = React.useMemo(() => {
-    //     if (!budgetData.length) return [];
-    //     return budgetData.flatMap(budget => budget.topExpenseCategories);
-    // }, [budgetData]);
-    //
-    // const periodData = React.useMemo(() => {
-    //     if (!budgetData.length) return [];
-    //     return budgetData.flatMap(budget => budget.budgetPeriodCategories);
-    // }, [budgetData]);
-
+    // Then update the implementation with proper default values
     const budgetStats = useMemo(() => {
         if (!budgetData?.length) {
             return {
                 averageSpendingPerDay: 0,
                 budgetId: 0,
                 dateRange: {
-                    startDate: [],
-                    endDate: [],
-                    weeksInRange: 0,
-                    biWeeksInRange: 0,
-                    daysInRange: 0
+                    startDate: [0, 0, 0],
+                    endDate: [0, 0, 0],
+                    yearsInRange: 0,
+                    monthsInRange: 0,
+                    daysInRange: 0,
+                    weeksInRange: 0,     // Added
+                    biWeeksInRange: 0    // Added
                 },
+                healthScore: 0,
+                monthlyProjection: null,
                 remaining: 0,
                 totalBudget: 0,
                 totalSaved: 0,
                 totalSpent: 0
-            };
+            } as BudgetStats;
         }
 
-        // Aggregate data from all budgets
-        const totalBudget = budgetData.reduce((sum, budget) => sum + budget.budget.budgetAmount, 0);
+        const stats = budgetData[0]?.budgetStats[0];
+        if(!stats) return defaultBudgetStats;
 
-        const totalSpent: number = budgetData.reduce((sum: number, result: BudgetRunnerResult) => {
-            if (!Array.isArray(result.budgetCategoryStats)) {
-                return sum;
-            }
-
-            const periodSpent = result.budgetCategoryStats.reduce((statSum: number, stats: BudgetCategoryStats) => {
-                if (!Array.isArray(stats.budgetPeriodCategories)) {
-                    return statSum;
-                }
-
-                return statSum + stats.budgetPeriodCategories.reduce((catSum: number, cat: BudgetPeriodCategory) =>
-                        catSum + (cat?.actual || 0),
-                    0
-                );
-            }, 0);
-
-            return sum + periodSpent;
-        }, 0);
-
-        const totalSaved: number = budgetData.reduce((sum: number, result: BudgetRunnerResult) => {
-            if (!Array.isArray(result.budgetCategoryStats)) {
-                return sum;
-            }
-
-            const savingsAmount = result.budgetCategoryStats.reduce((statSum: number, stats: BudgetCategoryStats) => {
-                if (!Array.isArray(stats.budgetPeriodCategories)) {
-                    return statSum;
-                }
-
-                return statSum + stats.budgetPeriodCategories.reduce((catSum: number, cat: BudgetPeriodCategory) => {
-                    const amount = cat?.category?.toLowerCase().includes('saving')
-                        ? (cat.actual || 0)
-                        : 0;
-                    return catSum + amount;
-                }, 0);
-            }, 0);
-
-            return sum + savingsAmount;
-        }, 0);
-
-        const remaining = totalBudget - totalSpent - totalSaved;
-
-        // Calculate date range from the first budget
-        const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-        const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-        const daysInRange = endDate.getDate();
+        // Calculate missing properties for dateRange
+        const daysInRange = stats.dateRange.daysInRange;
         const weeksInRange = Math.ceil(daysInRange / 7);
         const biWeeksInRange = Math.ceil(daysInRange / 14);
 
         return {
-            averageSpendingPerDay: totalSpent / daysInRange,
-            budgetId: budgetData[0]?.budget.id || 0,
+            averageSpendingPerDay: stats.averageSpendingPerDay ?? 0,
+            budgetId: stats.budgetId,
             dateRange: {
-                startDate: [startDate.getFullYear(), startDate.getMonth(), startDate.getDate()],
-                endDate: [endDate.getFullYear(), endDate.getMonth(), endDate.getDate()],
-                weeksInRange,
-                biWeeksInRange,
-                daysInRange
+                ...stats.dateRange,
+                weeksInRange,      // Add calculated property
+                biWeeksInRange     // Add calculated property
             },
-            remaining,
-            totalBudget,
-            totalSaved,
-            totalSpent
-        };
-    }, [budgetData, currentMonth]);
-
+            healthScore: stats.healthScore ?? 0,
+            monthlyProjection: stats.monthlyProjection,
+            remaining: stats.remaining,
+            totalBudget: stats.totalBudget,
+            totalSaved: stats.totalSaved,
+            totalSpent: stats.totalSpent
+        } as BudgetStats;
+    }, [budgetData]);
 
     const handleBudgetTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
         setBudgetType(event.target.value as string);
@@ -249,19 +140,25 @@ const BudgetPage: React.FC = () => {
     const topExpenseCategories = useMemo(() => {
         if (!budgetData?.length) return [];
 
+        // Flatten topExpenseCategories from all budget results
         return budgetData.reduce<any[]>((acc, budget) => {
-            if (!Array.isArray(budget.budgetCategoryStats)) {
+            const stats = budget.budgetCategoryStats;
+            if (!stats || !stats.topExpenseCategories) {
                 return acc;
             }
 
-            const categoryStats = budget.budgetCategoryStats.reduce<any[]>((statAcc, stats) => {
-                if (!Array.isArray(stats.topExpenseCategories)) {
-                    return statAcc;
-                }
-                return [...statAcc, ...stats.topExpenseCategories];
-            }, []);
+            // Map the top expenses to match the component's expected structure
+            const mappedExpenses = stats.topExpenseCategories.map(expense => ({
+                categoryName: expense.category,
+                budgetedAmount: expense.budgetedExpenses,
+                actualAmount: expense.actualExpenses,
+                remainingAmount: expense.remainingExpenses,
+                startDate: expense.startDate,
+                endDate: expense.endDate,
+                isActive: expense.active
+            }));
 
-            return [...acc, ...categoryStats];
+            return [...acc, ...mappedExpenses];
         }, []);
     }, [budgetData]);
 

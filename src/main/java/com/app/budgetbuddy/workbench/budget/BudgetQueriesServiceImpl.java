@@ -299,16 +299,17 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
     @Override
     public BigDecimal getTotalSpentOnBudget(Long budgetId, LocalDate startDate, LocalDate endDate) {
         final String totalSpentQuery = """
-           SELECT SUM(tc.actual) as totalSpent 
+           SELECT SUM(tc.actual) as totalSpent
            FROM TransactionCategoryEntity tc
-           INNER JOIN SubBudgetEntity sb ON tc.subBudget.id = sb.id
-           INNER JOIN BudgetScheduleEntity bs ON tc.subBudget.id = bs.id
-           WHERE bs.startDate = :startDate 
-           AND bs.endDate = :endDate
-           AND sb.id = :budgetId
+           JOIN tc.category c
+           WHERE tc.startDate >= :startDate
+           AND tc.endDate <= :endDate
+           AND tc.subBudget.id = :budgetId
+           AND tc.isactive = true AND (c.id <> '21009000' AND c.name NOT LIKE '%Payroll')
            """;
 
-        try {
+        try
+        {
             Object result = entityManager.createQuery(totalSpentQuery)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)

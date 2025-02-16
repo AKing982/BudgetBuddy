@@ -9,24 +9,26 @@ import java.util.List;
 
 @Getter
 @Setter
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-@Builder(toBuilder = true)
-public class IncomeCategory extends Category
+@Builder
+@ToString
+public class IncomeCategory
 {
-    private List<TransactionCategory> incomeCategories;
+    private final String category = "Income";
+    private BigDecimal budgetedIncome;
+    private BigDecimal actualBudgetedIncome;
+    private BigDecimal remainingIncome;
+    private LocalDate startMonth;
+    private LocalDate endMonth;
+    private boolean isActive;
 
-    public IncomeCategory(String categoryId, String categoryName, String categoryDescription, BigDecimal budgetedAmount, LocalDate categoryStartDate, LocalDate categoryEndDate, BigDecimal actual, boolean isActive, CategoryType categoryType, DateRange dateRange, BigDecimal incomeAmount, String incomeSource, IncomeFrequency frequency) {
-        super(categoryId, categoryName, categoryDescription, budgetedAmount, categoryStartDate, categoryEndDate, actual, isActive, categoryType, dateRange);
-        this.incomeCategories = new ArrayList<>();
-    }
-
-    public void addIncomeCategory(TransactionCategory category)
+    public IncomeCategory(BigDecimal budgetedIncome, BigDecimal actualBudgetedIncome, BigDecimal remainingIncome, LocalDate startMonth, LocalDate endMonth, boolean isActive)
     {
-        incomeCategories.add(category);
-        // Update totals
-        setBudgetedAmount(getBudgetedAmount().add(BigDecimal.valueOf(category.getBudgetedAmount())));
-        setActual(getActual().add(BigDecimal.valueOf(category.getBudgetActual())));
+        this.budgetedIncome = budgetedIncome;
+        this.actualBudgetedIncome = actualBudgetedIncome;
+        this.remainingIncome = remainingIncome;
+        this.startMonth = startMonth;
+        this.endMonth = endMonth;
+        this.isActive = isActive;
     }
-
 }

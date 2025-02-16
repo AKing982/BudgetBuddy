@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Data
@@ -12,17 +13,17 @@ import java.util.stream.Collectors;
 public class BudgetCategoryStats
 {
     private List<BudgetPeriodCategory> budgetPeriodCategories;
-    private List<Category> topExpenseCategories;
-    private List<ExpenseCategory> expenseCategories;
-    private List<Category> savingsCategories;
-    private List<Category> incomeCategories;
+    private List<ExpenseCategory> topExpenseCategories;
+    private ExpenseCategory expenseCategories;
+    private SavingsCategory savingsCategories;
+    private IncomeCategory incomeCategories;
 
-    public BudgetCategoryStats(List<BudgetPeriodCategory> budgetPeriodCategories, List<Category> topExpenseCategories, List<ExpenseCategory> expenseCategories, List<Category> savingsCategories, List<Category> incomeCategories) {
+    public BudgetCategoryStats(List<BudgetPeriodCategory> budgetPeriodCategories, List<ExpenseCategory> topExpenseCategories, Optional<ExpenseCategory> expenseCategories, Optional<SavingsCategory> savingsCategories, Optional<IncomeCategory> incomeCategories) {
         this.budgetPeriodCategories = budgetPeriodCategories;
         this.topExpenseCategories = topExpenseCategories;
-        this.expenseCategories = expenseCategories;
-        this.savingsCategories = savingsCategories;
-        this.incomeCategories = incomeCategories;
+        this.expenseCategories = expenseCategories.orElse(null);
+        this.savingsCategories = savingsCategories.orElse(null);
+        this.incomeCategories = incomeCategories.orElse(null);
     }
 
     @Override
@@ -38,54 +39,29 @@ public class BudgetCategoryStats
         return Objects.hash(budgetPeriodCategories, topExpenseCategories, expenseCategories, savingsCategories, incomeCategories);
     }
 
-    public void getBudgetCategoryStatsSummary()
-    {
+    public void getBudgetCategoryStatsSummary() {
         log.info("Budget Category Stats Summary:");
+        log.info("Total Budget Period Categories: {}", budgetPeriodCategories.size());
+        log.info("Top Expense Categories: {}", topExpenseCategories.size());
 
-        // Summary of Budget Period Categories
-        log.info("Total Budget Period Categories: " +
-                (budgetPeriodCategories != null ? budgetPeriodCategories.size() : 0));
-
-        // Top Expense Categories
-        log.info("Top Expense Categories: " +
-                (topExpenseCategories != null ? topExpenseCategories.size() : 0));
-        if (topExpenseCategories != null && !topExpenseCategories.isEmpty()) {
-            log.info("Top Expense Category Names: " +
-                    topExpenseCategories.stream()
-                            .map(Category::getCategoryName)
-                            .collect(Collectors.joining(", ")));
+        if (expenseCategories != null) {
+            log.info("Expense Category Summary:");
+            log.info("  Budgeted: ${}", expenseCategories.getBudgetedExpenses());
+            log.info("  Actual: ${}", expenseCategories.getActualExpenses());
+            log.info("  Remaining: ${}", expenseCategories.getRemainingExpenses());
         }
 
-        // Expense Categories
-        log.info("Total Expense Categories: " +
-                (expenseCategories != null ? expenseCategories.size() : 0));
-
-        // Savings Categories
-        log.info("Total Savings Categories: " +
-                (savingsCategories != null ? savingsCategories.size() : 0));
-
-        // Income Categories
-        log.info("Total Income Categories: " +
-                (incomeCategories != null ? incomeCategories.size() : 0));
-
-        // Optional detailed breakdown for debugging or analytics
-        if (expenseCategories != null && !expenseCategories.isEmpty()) {
-            log.info("Expense Category Names: " +
-                    expenseCategories.stream()
-                            .map(Category::getCategoryName)
-                            .collect(Collectors.joining(", ")));
+        if (savingsCategories != null) {
+            log.info("Savings Category Summary:");
+            log.info("  Target Amount: ${}", savingsCategories.getBudgetedSavingsTarget());
+            log.info("  Total Saved: ${}", savingsCategories.getActualSavedAmount());
         }
-        if (savingsCategories != null && !savingsCategories.isEmpty()) {
-            log.info("Savings Category Names: " +
-                    savingsCategories.stream()
-                            .map(Category::getCategoryName)
-                            .collect(Collectors.joining(", ")));
-        }
-        if (incomeCategories != null && !incomeCategories.isEmpty()) {
-            log.info("Income Category Names: " +
-                    incomeCategories.stream()
-                            .map(Category::getCategoryName)
-                            .collect(Collectors.joining(", ")));
+
+        if (incomeCategories != null) {
+            log.info("Income Category Summary:");
+            log.info("  Budgeted Income: ${}", incomeCategories.getBudgetedIncome());
+            log.info("  Actual Income: ${}", incomeCategories.getActualBudgetedIncome());
+            log.info("  Remaining Income: ${}", incomeCategories.getRemainingIncome());
         }
     }
 }

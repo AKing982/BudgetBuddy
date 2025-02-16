@@ -1,4 +1,4 @@
-import {BudgetStatus, DateRange} from "../utils/Items";
+import {BudgetPeriodCategory, BudgetStatus, DateRange} from "../utils/Items";
 
 interface Transaction {
     transactionId: string;
@@ -15,20 +15,24 @@ interface Transaction {
 }
 
 export enum Period {
-    DAILY,
-    WEEKLY,
-    BIWEEKLY,
-    MONTHLY
+    DAILY = 'DAILY',
+    WEEKLY = 'WEEKLY',
+    MONTHLY = 'MONTHLY',
+    BIWEEKLY = 'BIWEEKLY',
+    QUARTERLY = 'QUARTERLY',
+    SEMIANNUAL = 'SEMIANNUAL',
+    BIMONTHLY = 'BIMONTHLY',
+    ANNUAL = 'ANNUAL'
 }
 
 export interface BudgetCategoryResponse {
     budgetPeriodCategories: BudgetPeriodCategory[];
 }
 
-export interface BudgetPeriodCategory {
-    categoryName: string;
-    budgetedAmount: number;
-    actualAmount: number;
-    dateRange: DateRange;
-    budgetStatus: BudgetStatus;
-}
+// export interface BudgetPeriodCategory {
+//     categoryName: string;
+//     budgetedAmount: number;
+//     actualAmount: number;
+//     dateRange: DateRange;
+//     budgetStatus: BudgetStatus;
+// }

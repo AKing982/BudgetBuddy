@@ -18,44 +18,94 @@ export interface Budget {
 }
 
 export interface BudgetStats {
+    averageSpendingPerDay: number;
     budgetId: number;
-    totalBudget: number;
-    totalSpent: number;
-    remaining: number;
-    totalSaved: number | null;
-    averageSpendingPerDay?: number;
-    healthScore?: number;
-    monthlyProjection?: number;
     dateRange: DateRange;
+    healthScore: number;
+    monthlyProjection: number | null;
+    remaining: number;
+    totalBudget: number;
+    totalSaved: number;
+    totalSpent: number;
+}
+
+export interface IncomeCategory
+{
+    budgetedIncome: number;
+    actualBudgetedIncome: number;
+    remainingIncome: number;
+    category: string;
+    startMonth: number[];
+    endMonth: number[];
+    active: boolean;
+}
+
+interface ExpenseCategory
+{
+    budgetedExpenses: number;
+    actualExpenses: number;
+    remainingExpenses: number;
+    category: string;
+    startDate: number[];
+    endDate: number[];
+    active: boolean;
+}
+
+interface SavingsCategory
+{
+    budgetedSavingsTarget: number;
+    actualSavedAmount: number;
+    remainingToSave: number;
+    categoryName: string;
+    startDate: number[];
+    endDate: number[];
+    active: boolean;
 }
 
 export interface BudgetCategoryStats
 {
     budgetPeriodCategories: BudgetPeriodCategory[];
-    expenseCategories: any[];
-    topExpenseCategories: any[];
-    savingsCategories: any[];
-    incomeCategories: any[];
+    expenseCategories: ExpenseCategory;
+    topExpenseCategories: ExpenseCategory[];
+    savingsCategories: SavingsCategory;
+    incomeCategories: IncomeCategory;
 }
 
-export interface SubBudget {
-    id: number;
-    subBudgetName: string;
+export interface SubBudget
+{
+    active: boolean;
     allocatedAmount: number;
-    subSavingsTarget: number;
-    subSavingsAmount: number;
+    budget: Budget;
+    budgetSchedule: BudgetSchedule[];
+    budgetVariance: number;
+    controlledBudgetCategory: null;
+    endDate: [number, number, number];
+    id: number;
+    savingsRatio: number;
     spentOnBudget: number;
-    budgetId: number;
-    startDate: string;
-    endDate: string;
-    isActive: boolean;
+    startDate: [number, number, number];
+    subBudgetName: string;
+    subSavingsAmount: number;
+    subSavingsTarget: number;
 }
+
+export interface BiWeekRange {
+    biWeeksInRange: number;
+    daysInRange: number;
+    endDate: [number, number, number];
+    monthsInRange: number;
+    startDate: [number, number, number];
+    weeksInRange: number;
+    yearsInRange: number;
+}
+
 
 export interface BudgetPeriodCategory
 {
     category: string;
     budgeted: number;
     actual: number;
+    biWeekRanges?: BiWeekRange[];
     remaining: number;
     dateRange: DateRange;
     isOverBudget: boolean;
@@ -64,14 +114,15 @@ export interface BudgetPeriodCategory
 }
 
 export interface DateRange {
-    startDate: [number, number, number]; // ✅ [year, month, day]
-    endDate: [number, number, number];   // ✅ [year, month, day]
-    monthsInRange: number;
+    startDate: number[];
+    endDate: number[];
     yearsInRange: number;
-    weeksInRange: number;
-    biWeeksInRange: number;
+    monthsInRange: number;
     daysInRange: number;
+    weeksInRange: number;     // Added missing property
+    biWeeksInRange: number;   // Added missing property
 }
+
 
 export enum BudgetStatus {
     OVER_BUDGET = 0,
