@@ -67,8 +67,17 @@
             <mxPoint x="580" y="510" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="hOHK6j9ulI8fMrlgcuLO-17" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-17" value="Create Budget Schedule Templates" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="520" y="510" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-18" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="hOHK6j9ulI8fMrlgcuLO-17">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="380" as="sourcePoint" />
+            <mxPoint x="580" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-19" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="520" y="600" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
