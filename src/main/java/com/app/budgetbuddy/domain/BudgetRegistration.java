@@ -1,8 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,6 +10,8 @@ import java.util.Set;
 
 @Data
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
+@AllArgsConstructor(access= AccessLevel.PUBLIC)
+@Builder
 public class BudgetRegistration
 {
     private Long userId;

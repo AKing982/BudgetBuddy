@@ -8,9 +8,11 @@ import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.exceptions.UserNotFoundException;
 import com.app.budgetbuddy.repositories.PlaidLinkRepository;
 import com.app.budgetbuddy.repositories.UserRepository;
+import jakarta.persistence.Temporal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -105,6 +107,7 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     }
 
     @Override
+    @Transactional
     public void markPlaidAsNeedingUpdate(Long userId)
     {
         try
@@ -117,6 +120,7 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     }
 
     @Override
+    @Transactional
     public void markPlaidAsUpdated(Long userId, String accessToken, String oldAccessToken)
     {
         plaidLinkRepository.findPlaidLinkByUserId(userId).ifPresent(plaidLink -> {

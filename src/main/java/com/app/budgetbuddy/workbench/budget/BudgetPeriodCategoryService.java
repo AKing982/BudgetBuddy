@@ -36,7 +36,7 @@ public class BudgetPeriodCategoryService
         }
     }
 
-    public List<BudgetPeriodCategory> getBudgetPeriodCategories(SubBudget budget, BudgetSchedule budgetSchedule)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategories(final SubBudget budget, final BudgetSchedule budgetSchedule)
     {
         if(budget == null || budgetSchedule == null)
         {
