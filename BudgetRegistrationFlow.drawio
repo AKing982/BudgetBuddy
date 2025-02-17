@@ -103,8 +103,23 @@
             <mxPoint x="585" y="900" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="hOHK6j9ulI8fMrlgcuLO-26" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-26" value="Build the top expense categories for each subBudget period" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="525" y="900" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-27" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="hOHK6j9ulI8fMrlgcuLO-26">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="1120" as="sourcePoint" />
+            <mxPoint x="585" y="1000" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-28" value="Build the budget Period categories for each subBudget period" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="525" y="1000" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-29" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="hOHK6j9ulI8fMrlgcuLO-28">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="1230" as="sourcePoint" />
+            <mxPoint x="585" y="1100" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
