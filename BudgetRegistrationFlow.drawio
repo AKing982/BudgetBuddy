@@ -76,8 +76,35 @@
             <mxPoint x="580" y="600" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="hOHK6j9ulI8fMrlgcuLO-19" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="520" y="600" width="120" height="60" as="geometry" />
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-19" value="Create BudgetScheduleRanges for BudgetSchedules" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="510" y="600" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-21" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="hOHK6j9ulI8fMrlgcuLO-19">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="460" as="sourcePoint" />
+            <mxPoint x="585" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-22" value="Build the budget statistics for each subBudgets" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="525" y="700" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-23" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="hOHK6j9ulI8fMrlgcuLO-22">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="690" as="sourcePoint" />
+            <mxPoint x="585" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-24" value="Build the subBudgetOverview data for each subBudget" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="525" y="800" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-25" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="hOHK6j9ulI8fMrlgcuLO-24">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="690" as="sourcePoint" />
+            <mxPoint x="585" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hOHK6j9ulI8fMrlgcuLO-26" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="525" y="900" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
