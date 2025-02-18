@@ -27,8 +27,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BudgetSetupEngineTest
@@ -49,7 +48,7 @@ class BudgetSetupEngineTest
     private AbstractBudgetStatisticsService<SubBudget> abstractBudgetStatisticsService;
 
     @Mock
-    private MonthlyBudgetGoalService monthlyBudgetGoalService;
+    private MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
 
     @Mock
     private BudgetPeriodCategoryService budgetPeriodCategoryService;
@@ -128,7 +127,7 @@ class BudgetSetupEngineTest
                 .budgetGoals(budgetGoals)
                 .build();
 
-        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, subBudgetOverviewService, budgetHealthService, abstractBudgetStatisticsService, budgetPeriodCategoryService, monthlyBudgetGoalService);
+        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, subBudgetOverviewService, budgetHealthService, abstractBudgetStatisticsService, budgetPeriodCategoryService, monthlyBudgetGoalsBuilder);
     }
 
     @Test
@@ -666,6 +665,95 @@ class BudgetSetupEngineTest
                     eq(subBudget.getEndDate())
             );
         }
+    }
+
+    @Test
+    void testCreateMonthlyBudgetGoalsForSubBudgets_whenBudgetGoalsNull_thenReturnEmptyList()
+    {
+        List<SubBudget> subBudgetList = new ArrayList<>();
+        subBudgetList.add(new SubBudget());
+        List<MonthlyBudgetGoals> actual = budgetSetupEngine.createMonthlyBudgetGoalsForSubBudgets(null, subBudgetList);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateMonthlyBudgetGoalsForSubBudgets_whenSubBudgetsListNull_thenReturnEmptyList(){
+        BudgetGoals budgetGoals1 = budgetGoals;
+        List<MonthlyBudgetGoals> actual = budgetSetupEngine.createMonthlyBudgetGoalsForSubBudgets(budgetGoals1, null);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateMonthlyBudgetGoalsForSubBudgets_whenSubBudgetsListEmpty_thenReturnEmptyList(){
+        List<SubBudget> subBudgetList = new ArrayList<>();
+        List<MonthlyBudgetGoals> actual = budgetSetupEngine.createMonthlyBudgetGoalsForSubBudgets(budgetGoals, subBudgetList);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateMonthlyBudgetGoalsForSubBudgets_shouldReturnMonthlyBudgetGoals()
+    {
+        List<MonthlyBudgetGoals> expectedMonthlyBudgetGoals = new ArrayList<>();
+
+        // Setup test data
+        BudgetGoals budgetGoals = BudgetGoals.builder()
+                .budgetId(1L)
+                .targetAmount(4500)
+                .monthlyAllocation(375)
+                .currentSavings(0)
+                .goalType("Savings Goal")
+                .savingsFrequency("Monthly")
+                .status("Active")
+                .build();
+
+        // Create expected MonthlyBudgetGoals for each SubBudget
+        for (int i = 0; i < subBudgets.size(); i++) {
+            SubBudget subBudget = subBudgets.get(i);
+
+            MonthlyBudgetGoals monthlyGoal = new MonthlyBudgetGoals(
+                    (long) (i + 1),                   // id
+                    subBudget.getId(),                // subBudgetId
+                    budgetGoals.getBudgetId(),        // budgetGoalId
+                    BigDecimal.valueOf(375),          // monthlySavingsTarget
+                    BigDecimal.ZERO,                  // monthlyContributed
+                    BigDecimal.valueOf(100),          // goalScore (100 as starting score)
+                    BigDecimal.valueOf(375),          // remainingAmount
+                    "NOT_STARTED"                     // monthlyStatus
+            );
+
+            expectedMonthlyBudgetGoals.add(monthlyGoal);
+
+            // Setup mock for MonthlyBudgetGoalsBuilder
+            when(monthlyBudgetGoalsBuilder.createBudgetGoal(eq(budgetGoals)))
+                    .thenReturn(Optional.of(monthlyGoal));
+        }
+
+        // Execute test
+        List<MonthlyBudgetGoals> actualMonthlyBudgetGoals =
+                budgetSetupEngine.createMonthlyBudgetGoalsForSubBudgets(budgetGoals, subBudgets);
+
+        // Verify results
+        assertNotNull(actualMonthlyBudgetGoals);
+        assertEquals(expectedMonthlyBudgetGoals.size(), actualMonthlyBudgetGoals.size());
+
+        // Verify each MonthlyBudgetGoals
+        for (int i = 0; i < actualMonthlyBudgetGoals.size(); i++) {
+            MonthlyBudgetGoals expected = expectedMonthlyBudgetGoals.get(i);
+            MonthlyBudgetGoals actual = actualMonthlyBudgetGoals.get(i);
+
+            assertEquals(expected.getId(), actual.getId());
+            assertEquals(expected.getSubBudgetId(), actual.getSubBudgetId());
+            assertEquals(expected.getBudgetGoalId(), actual.getBudgetGoalId());
+            assertEquals(expected.getMonthlySavingsTarget(), actual.getMonthlySavingsTarget());
+            assertEquals(expected.getMonthlyContributed(), actual.getMonthlyContributed());
+            assertEquals(expected.getGoalScore(), actual.getGoalScore());
+            assertEquals(expected.getRemainingAmount(), actual.getRemainingAmount());
+            assertEquals(expected.getMonthlyStatus(), actual.getMonthlyStatus());
+        }
+
+        // Verify builder was called for each SubBudget
+        verify(monthlyBudgetGoalsBuilder, times(subBudgets.size()))
+                .createBudgetGoal(eq(budgetGoals));
     }
 
 

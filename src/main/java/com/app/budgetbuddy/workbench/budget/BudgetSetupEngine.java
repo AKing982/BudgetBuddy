@@ -1,25 +1,13 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.entities.BudgetGoalsEntity;
-import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.RecurringTransactionEntity;
-import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
-import com.app.budgetbuddy.exceptions.IllegalDateException;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
-import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
-import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.TransactionDataLoaderImpl;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.support.AbstractLobCreatingPreparedStatementCallback;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,7 +21,7 @@ public class BudgetSetupEngine
     private final SubBudgetOverviewService subBudgetOverviewService;
     private final BudgetHealthService<SubBudget> subBudgetHealthService;
     private final AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService;
-    private final MonthlyBudgetGoalService monthlyBudgetGoalService;
+    private final MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
     private final BudgetPeriodCategoryService budgetPeriodCategoryService;
 
     @Autowired
@@ -43,7 +31,7 @@ public class BudgetSetupEngine
                              BudgetHealthService<SubBudget> subBudgetHealthService,
                              @Qualifier("subBudgetStatisticsServiceImpl") AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService,
                              BudgetPeriodCategoryService budgetPeriodCategoryService,
-                             MonthlyBudgetGoalService monthlyBudgetGoalService)
+                             MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder)
     {
         this.budgetBuilderService = budgetBuilderService;
         this.subBudgetBuilderService = subBudgetBuilderService;
@@ -51,7 +39,7 @@ public class BudgetSetupEngine
         this.subBudgetHealthService = subBudgetHealthService;
         this.subBudgetStatisticsService = subBudgetStatisticsService;
         this.budgetPeriodCategoryService = budgetPeriodCategoryService;
-        this.monthlyBudgetGoalService = monthlyBudgetGoalService;
+        this.monthlyBudgetGoalsBuilder = monthlyBudgetGoalsBuilder;
     }
 
 
@@ -78,6 +66,19 @@ public class BudgetSetupEngine
         }
     }
 
+    public List<MonthlyBudgetGoals> createMonthlyBudgetGoalsForSubBudgets(final BudgetGoals budgetGoals, final List<SubBudget> subBudgets)
+    {
+        if(budgetGoals == null || subBudgets == null || subBudgets.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        for(SubBudget subBudget : subBudgets)
+        {
+
+        }
+        return null;
+    }
+
     public List<SubBudget> createNewMonthlySubBudgetsForUser(final Budget budget, final BudgetGoals budgetGoals)
     {
         if(budget == null)
@@ -95,6 +96,11 @@ public class BudgetSetupEngine
         }
     }
 
+    /**
+     * Creates Monthly Budget Stats for past budgets
+     * @param subBudgets
+     * @return
+     */
     public List<BudgetStats> createMonthlyBudgetStats(final List<SubBudget> subBudgets)
     {
         return Optional.ofNullable(subBudgets)
@@ -105,7 +111,7 @@ public class BudgetSetupEngine
     }
 
     /**
-     * Creates a list of IncomeCategory's corresponding to each SubBudget
+     * Creates a list of IncomeCategory's corresponding to each past SubBudget
      * @param subBudgets
      * @return
      */
@@ -132,6 +138,11 @@ public class BudgetSetupEngine
         return incomeCategories;
     }
 
+    /**
+     * Creates ExpenseCategory overview data for past SubBudget data
+     * @param subBudgets
+     * @return
+     */
     public List<ExpenseCategory> createExpenseOverviewCategory(final List<SubBudget> subBudgets)
     {
         if(subBudgets == null || subBudgets.isEmpty())
@@ -155,7 +166,11 @@ public class BudgetSetupEngine
         return expenseCategories;
     }
 
-
+    /**
+     * Creates Savings Category overview data for past subBudgets
+     * @param subBudgets
+     * @return
+     */
     public List<SavingsCategory> createSavingsOverviewCategory(final List<SubBudget> subBudgets)
     {
         if(subBudgets == null || subBudgets.isEmpty())
@@ -179,6 +194,11 @@ public class BudgetSetupEngine
         return savingsCategories;
     }
 
+    /**
+     * Creates Top Expense Categories for past subBudgets
+     * @param subBudgets
+     * @return
+     */
     public List<ExpenseCategory> createTopExpensesCategories(final List<SubBudget> subBudgets)
     {
         if(subBudgets == null || subBudgets.isEmpty())
@@ -197,6 +217,11 @@ public class BudgetSetupEngine
         return topExpenseCategories;
     }
 
+    /**
+     * Creates BudgetPeriodCategories for past SubBudgets
+     * @param subBudgets
+     * @return
+     */
     public List<BudgetPeriodCategory> createBudgetPeriodCategories(final List<SubBudget> subBudgets)
     {
         if(subBudgets == null || subBudgets.isEmpty())
