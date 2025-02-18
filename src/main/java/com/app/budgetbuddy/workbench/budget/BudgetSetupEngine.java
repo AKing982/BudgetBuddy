@@ -104,6 +104,11 @@ public class BudgetSetupEngine
                 .orElseGet(Collections::emptyList);
     }
 
+    /**
+     * Creates a list of IncomeCategory's corresponding to each SubBudget
+     * @param subBudgets
+     * @return
+     */
     public List<IncomeCategory> createIncomeCategoryForSubBudgets(final List<SubBudget> subBudgets)
     {
         List<IncomeCategory> incomeCategories = new ArrayList<>();
@@ -176,21 +181,20 @@ public class BudgetSetupEngine
 
     public List<ExpenseCategory> createTopExpensesCategories(final List<SubBudget> subBudgets)
     {
-//        if(subBudgets == null || subBudgets.isEmpty())
-//        {
-//            return Collections.emptyList();
-//        }
-//        List<ExpenseCategory> topExpenseCategories = new ArrayList<>();
-//        for(SubBudget subBudget : subBudgets)
-//        {
-//            Long subBudgetId = subBudget.getId();
-//            LocalDate subBudgetStartDate = subBudget.getStartDate();
-//            LocalDate subBudgetEndDate = subBudget.getEndDate();
-//            List<ExpenseCategory> topFiveExpenseCategories = subBudgetOverviewService.loadTopExpenseCategories(subBudgetId, subBudgetStartDate, subBudgetEndDate);
-//            topExpenseCategories.addAll(topFiveExpenseCategories);
-//        }
-//        return topExpenseCategories;
-        return null;'='
+        if(subBudgets == null || subBudgets.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        List<ExpenseCategory> topExpenseCategories = new ArrayList<>();
+        for(SubBudget subBudget : subBudgets)
+        {
+            Long subBudgetId = subBudget.getId();
+            LocalDate subBudgetStartDate = subBudget.getStartDate();
+            LocalDate subBudgetEndDate = subBudget.getEndDate();
+            List<ExpenseCategory> topFiveExpenseCategories = subBudgetOverviewService.loadTopExpenseCategories(subBudgetId, subBudgetStartDate, subBudgetEndDate);
+            topExpenseCategories.addAll(topFiveExpenseCategories);
+        }
+        return topExpenseCategories;
     }
 
     public List<BudgetPeriodCategory> createBudgetPeriodCategories(final List<SubBudget> subBudgets)

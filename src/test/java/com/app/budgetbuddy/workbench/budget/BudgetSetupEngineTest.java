@@ -358,9 +358,314 @@ class BudgetSetupEngineTest
     }
 
     @Test
-    void testCreateTopExpenseCategories_whenSubBudgetsListIsNull_thenReturnEmptyList(){
+    void testCreateTopExpenseCategories_whenSubBudgetsListIsNull_thenReturnEmptyList()
+    {
         List<ExpenseCategory> expenseCategories = budgetSetupEngine.createTopExpensesCategories(null);
         assertEquals(0, expenseCategories.size());
+    }
+
+    @Test
+    void testCreateTopExpenseCategories_whenSubBudgetsListIsEmpty_thenReturnEmptyList()
+    {
+        List<SubBudget> subBudgetList = new ArrayList<>();
+        List<ExpenseCategory> actual = budgetSetupEngine.createTopExpensesCategories(subBudgetList);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateTopExpenseCategories_shouldReturnTopFiveExpenses()
+    {
+        // Create base expense categories
+        List<ExpenseCategory> topFiveForEachSubBudget = Arrays.asList(
+                new ExpenseCategory(
+                        "Housing",
+                        BigDecimal.valueOf(2000),
+                        BigDecimal.valueOf(1900),
+                        BigDecimal.valueOf(100),
+                        true,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 1, 31)
+                ),
+                new ExpenseCategory(
+                        "Transportation",
+                        BigDecimal.valueOf(1500),
+                        BigDecimal.valueOf(1450),
+                        BigDecimal.valueOf(50),
+                        true,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 1, 31)
+                ),
+                new ExpenseCategory(
+                        "Groceries",
+                        BigDecimal.valueOf(800),
+                        BigDecimal.valueOf(750),
+                        BigDecimal.valueOf(50),
+                        true,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 1, 31)
+                ),
+                new ExpenseCategory(
+                        "Utilities",
+                        BigDecimal.valueOf(600),
+                        BigDecimal.valueOf(580),
+                        BigDecimal.valueOf(20),
+                        true,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 1, 31)
+                ),
+                new ExpenseCategory(
+                        "Entertainment",
+                        BigDecimal.valueOf(400),
+                        BigDecimal.valueOf(380),
+                        BigDecimal.valueOf(20),
+                        true,
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 1, 31)
+                )
+        );
+
+        // Setup mock for each SubBudget
+        for (SubBudget subBudget : subBudgets) {
+            when(subBudgetOverviewService.loadTopExpenseCategories(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())))
+                    .thenReturn(topFiveForEachSubBudget);
+        }
+
+        // Execute test
+        List<ExpenseCategory> actualTopExpenses = budgetSetupEngine.createTopExpensesCategories(subBudgets);
+
+        // Verify results
+        assertNotNull(actualTopExpenses);
+        assertEquals(60, actualTopExpenses.size()); // 12 SubBudgets * 5 categories each = 60
+
+        // Verify the pattern repeats for each SubBudget's categories
+        for (int subBudgetIndex = 0; subBudgetIndex < subBudgets.size(); subBudgetIndex++) {
+            int startIndex = subBudgetIndex * 5;
+            List<ExpenseCategory> subBudgetCategories = actualTopExpenses.subList(startIndex, startIndex + 5);
+
+            assertEquals("Housing", subBudgetCategories.get(0).getCategory());
+            assertEquals("Transportation", subBudgetCategories.get(1).getCategory());
+            assertEquals("Groceries", subBudgetCategories.get(2).getCategory());
+            assertEquals("Utilities", subBudgetCategories.get(3).getCategory());
+            assertEquals("Entertainment", subBudgetCategories.get(4).getCategory());
+
+            // Verify each category's properties
+            for (int i = 0; i < 5; i++) {
+                ExpenseCategory expected = topFiveForEachSubBudget.get(i);
+                ExpenseCategory actual = subBudgetCategories.get(i);
+
+                assertEquals(expected.getCategory(), actual.getCategory());
+                assertEquals(expected.getBudgetedExpenses(), actual.getBudgetedExpenses());
+                assertEquals(expected.getActualExpenses(), actual.getActualExpenses());
+                assertEquals(expected.getRemainingExpenses(), actual.getRemainingExpenses());
+                assertEquals(expected.isActive(), actual.isActive());
+                assertEquals(expected.getStartDate(), actual.getStartDate());
+                assertEquals(expected.getEndDate(), actual.getEndDate());
+            }
+        }
+
+        // Verify service was called for each SubBudget
+        for (SubBudget subBudget : subBudgets) {
+            verify(subBudgetOverviewService).loadTopExpenseCategories(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())
+            );
+        }
+    }
+
+    @Test
+    void testCreateSavingsOverviewCategories_whenSubBudgetsListNull_thenReturnEmptyList(){
+        List<SavingsCategory> actual = budgetSetupEngine.createSavingsOverviewCategory(null);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateSavingsOverviewCategories_whenSubBudgetsListEmpty_thenReturnEmptyList()
+    {
+        List<SubBudget> subBudgets = new ArrayList<>();
+        List<SavingsCategory> actual = budgetSetupEngine.createSavingsOverviewCategory(subBudgets);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateSavingsOverviewCategories_shouldReturnSavingsCategories()
+    {
+        List<SavingsCategory> expectedSavingsCategories = new ArrayList<>();
+
+        for (SubBudget subBudget : subBudgets) {
+            SavingsCategory savingsCategory = new SavingsCategory(
+                    BigDecimal.valueOf(500),      // budgetedSavingsTarget
+                    BigDecimal.valueOf(300),      // actualSavedAmount
+                    BigDecimal.valueOf(200),      // remainingToSave
+                    true,                         // isActive
+                    subBudget.getStartDate(),
+                    subBudget.getEndDate()
+            );
+            expectedSavingsCategories.add(savingsCategory);
+
+            // Setup mock for each SubBudget
+            when(subBudgetOverviewService.loadSavingsCategory(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())))
+                    .thenReturn(Optional.of(savingsCategory));
+        }
+
+        // Execute test
+        List<SavingsCategory> actualSavingsCategories = budgetSetupEngine.createSavingsOverviewCategory(subBudgets);
+
+        // Verify results
+        assertNotNull(actualSavingsCategories);
+        assertEquals(expectedSavingsCategories.size(), actualSavingsCategories.size());
+
+        // Verify each savings category
+        for (int i = 0; i < actualSavingsCategories.size(); i++) {
+            SavingsCategory expected = expectedSavingsCategories.get(i);
+            SavingsCategory actual = actualSavingsCategories.get(i);
+
+            assertEquals(expected.getCategoryName(), actual.getCategoryName());
+            assertEquals(expected.getBudgetedSavingsTarget(), actual.getBudgetedSavingsTarget());
+            assertEquals(expected.getActualSavedAmount(), actual.getActualSavedAmount());
+            assertEquals(expected.getRemainingToSave(), actual.getRemainingToSave());
+            assertEquals(expected.isActive(), actual.isActive());
+            assertEquals(expected.getStartDate(), actual.getStartDate());
+            assertEquals(expected.getEndDate(), actual.getEndDate());
+        }
+
+        // Verify service was called for each SubBudget
+        for (SubBudget subBudget : subBudgets) {
+            verify(subBudgetOverviewService).loadSavingsCategory(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())
+            );
+        }
+    }
+
+    @Test
+    void testCreateExpenseOverviewCategory_whenSubBudgetsListNull_thenReturnEmptyList(){
+        List<ExpenseCategory> actual = budgetSetupEngine.createExpenseOverviewCategory(null);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateExpenseOverviewCategory_whenSubBudgetsListEmpty_thenReturnEmptyList(){
+        List<SubBudget> subBudgetList = new ArrayList<>();
+        List<ExpenseCategory> actual = budgetSetupEngine.createExpenseOverviewCategory(subBudgetList);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateExpenseOverviewCategory_shouldReturnExpenseOverviewCategories(){
+        List<ExpenseCategory> expectedExpenseCategories = new ArrayList<>();
+
+        for (SubBudget subBudget : subBudgets) {
+            ExpenseCategory expenseCategory = new ExpenseCategory(
+                    "Monthly Expenses",
+                    BigDecimal.valueOf(3000),      // budgetedExpenses
+                    BigDecimal.valueOf(2500),      // actualExpenses
+                    BigDecimal.valueOf(500),       // remainingExpenses
+                    true,                          // isActive
+                    subBudget.getStartDate(),
+                    subBudget.getEndDate()
+            );
+            expectedExpenseCategories.add(expenseCategory);
+
+            // Setup mock for each SubBudget
+            when(subBudgetOverviewService.loadExpenseCategory(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())))
+                    .thenReturn(Optional.of(expenseCategory));
+        }
+
+        // Execute test
+        List<ExpenseCategory> actualExpenseCategories = budgetSetupEngine.createExpenseOverviewCategory(subBudgets);
+
+        // Verify results
+        assertNotNull(actualExpenseCategories);
+        assertEquals(expectedExpenseCategories.size(), actualExpenseCategories.size());
+
+        // Verify each expense category
+        for (int i = 0; i < actualExpenseCategories.size(); i++) {
+            ExpenseCategory expected = expectedExpenseCategories.get(i);
+            ExpenseCategory actual = actualExpenseCategories.get(i);
+
+            assertEquals(expected.getCategory(), actual.getCategory());
+            assertEquals(expected.getBudgetedExpenses(), actual.getBudgetedExpenses());
+            assertEquals(expected.getActualExpenses(), actual.getActualExpenses());
+            assertEquals(expected.getRemainingExpenses(), actual.getRemainingExpenses());
+            assertEquals(expected.isActive(), actual.isActive());
+            assertEquals(expected.getStartDate(), actual.getStartDate());
+            assertEquals(expected.getEndDate(), actual.getEndDate());
+        }
+
+        // Verify service was called for each SubBudget
+        for (SubBudget subBudget : subBudgets) {
+            verify(subBudgetOverviewService).loadExpenseCategory(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())
+            );
+        }
+    }
+
+    @Test
+    void testCreateIncomeCategoryForSubBudgets_shouldReturnIncomeCategories() {
+        // Create expected income categories for each SubBudget
+        List<IncomeCategory> expectedIncomeCategories = new ArrayList<>();
+
+        for (SubBudget subBudget : subBudgets) {
+            IncomeCategory incomeCategory = new IncomeCategory(
+                    BigDecimal.valueOf(3250),      // budgetedIncome (39000/12)
+                    BigDecimal.valueOf(3250),      // actualBudgetedIncome
+                    BigDecimal.valueOf(0),         // remainingIncome
+                    subBudget.getStartDate(),      // startMonth
+                    subBudget.getEndDate(),        // endMonth
+                    true                           // isActive
+            );
+            expectedIncomeCategories.add(incomeCategory);
+
+            // Setup mock for each SubBudget
+            when(subBudgetOverviewService.loadIncomeCategory(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())))
+                    .thenReturn(Optional.of(incomeCategory));
+        }
+
+        // Execute test
+        List<IncomeCategory> actualIncomeCategories = budgetSetupEngine.createIncomeCategoryForSubBudgets(subBudgets);
+
+        // Verify results
+        assertNotNull(actualIncomeCategories);
+        assertEquals(expectedIncomeCategories.size(), actualIncomeCategories.size());
+
+        // Verify each income category
+        for (int i = 0; i < actualIncomeCategories.size(); i++) {
+            IncomeCategory expected = expectedIncomeCategories.get(i);
+            IncomeCategory actual = actualIncomeCategories.get(i);
+
+            assertEquals("Income", actual.getCategory());
+            assertEquals(expected.getBudgetedIncome(), actual.getBudgetedIncome());
+            assertEquals(expected.getActualBudgetedIncome(), actual.getActualBudgetedIncome());
+            assertEquals(expected.getRemainingIncome(), actual.getRemainingIncome());
+            assertEquals(expected.isActive(), actual.isActive());
+            assertEquals(expected.getStartMonth(), actual.getStartMonth());
+            assertEquals(expected.getEndMonth(), actual.getEndMonth());
+        }
+
+        // Verify service was called for each SubBudget
+        for (SubBudget subBudget : subBudgets) {
+            verify(subBudgetOverviewService).loadIncomeCategory(
+                    eq(subBudget.getId()),
+                    eq(subBudget.getStartDate()),
+                    eq(subBudget.getEndDate())
+            );
+        }
     }
 
 
