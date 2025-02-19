@@ -5,10 +5,7 @@ import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
-import com.app.budgetbuddy.services.BudgetGoalsService;
-import com.app.budgetbuddy.services.BudgetScheduleService;
-import com.app.budgetbuddy.services.BudgetService;
-import com.app.budgetbuddy.services.SubBudgetService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.budget.*;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +31,7 @@ public class BudgetRunner
     private final AbstractBudgetStatisticsService<SubBudget> budgetStatisticsService;
     private final BudgetPeriodCategoryService budgetPeriodCategoryService;
     private final SubBudgetOverviewService subBudgetOverviewService;
+    private final BudgetHistoricalDataService budgetHistoricalDataService;
 
     @Autowired
     public BudgetRunner(BudgetPeriodQueries budgetPeriodQueries,
@@ -42,7 +40,8 @@ public class BudgetRunner
                         BudgetHealthService<SubBudget> budgetHealthService,
                         @Qualifier("subBudgetStatisticsServiceImpl") AbstractBudgetStatisticsService<SubBudget> budgetStatisticsService,
                         BudgetPeriodCategoryService budgetPeriodCategoryService,
-                        SubBudgetOverviewService subBudgetOverviewService) {
+                        SubBudgetOverviewService subBudgetOverviewService,
+                        BudgetHistoricalDataService budgetHistoricalDataService) {
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.subBudgetService = subBudgetService;
         this.budgetService = budgetService;
@@ -50,6 +49,7 @@ public class BudgetRunner
         this.budgetStatisticsService = budgetStatisticsService;
         this.budgetPeriodCategoryService = budgetPeriodCategoryService;
         this.subBudgetOverviewService = subBudgetOverviewService;
+        this.budgetHistoricalDataService = budgetHistoricalDataService;
     }
 
 
@@ -121,6 +121,11 @@ public class BudgetRunner
         log.info("Budget Runner Result: {}", result.getProcessingSummary());
 
         return List.of(result);
+    }
+
+    public List<BudgetRunnerResult> runHistoricalBudgetProcess(final Long userId, int year, int month)
+    {
+        return null;
     }
 
 

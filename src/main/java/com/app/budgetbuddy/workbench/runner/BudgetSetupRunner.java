@@ -20,9 +20,14 @@ public class BudgetSetupRunner
         this.budgetSetupEngine = budgetSetupEngine;
     }
 
-    public void createBudget(BudgetRegistration budgetRegistration)
+    public void runBudgetSetupInitialization(final BudgetRegistration budgetRegistration)
     {
 
+    }
+
+    public Optional<Budget> createBudget(BudgetRegistration budgetRegistration)
+    {
+        return null;
     }
 
     public void createPreviousYearBudget()
