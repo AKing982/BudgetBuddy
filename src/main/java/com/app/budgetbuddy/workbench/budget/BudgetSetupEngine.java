@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,9 +45,26 @@ public class BudgetSetupEngine
     }
 
 
-    public Map<Long, BudgetHealthScore> createBudgetHealthScoresForSubBudget(final Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    public Map<Long, BudgetHealthScore> createBudgetHealthScoresForSubBudgets(final List<SubBudget> subBudgets)
     {
-        return null;
+        if (subBudgets == null || subBudgets.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        Map<Long, BudgetHealthScore> healthScores = new HashMap<>();
+        for(SubBudget subBudget : subBudgets)
+        {
+            // Skip if subBudget is null
+            if(subBudget == null)
+            {
+                continue;
+            }
+            // Get health score from service
+            BudgetHealthScore healthScore = subBudgetHealthService.calculateHealthScore(subBudget);
+            healthScores.put(subBudget.getId(), healthScore);
+        }
+
+        return healthScores;
     }
 
     public Optional<Budget> createNewBudget(final BudgetRegistration budgetRegistration)
@@ -72,11 +91,19 @@ public class BudgetSetupEngine
         {
             return Collections.emptyList();
         }
+        List<MonthlyBudgetGoals> monthlyBudgetGoals = new ArrayList<>();
         for(SubBudget subBudget : subBudgets)
         {
-
+            Long subBudgetId = subBudget.getId();
+            Optional<MonthlyBudgetGoals> monthlyBudgetGoalsOptional = monthlyBudgetGoalsBuilder.createBudgetGoal(budgetGoals, subBudgetId);
+            if(monthlyBudgetGoalsOptional.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            MonthlyBudgetGoals monthlyBudgetGoal = monthlyBudgetGoalsOptional.get();
+            monthlyBudgetGoals.add(monthlyBudgetGoal);
         }
-        return null;
+        return monthlyBudgetGoals;
     }
 
     public List<SubBudget> createNewMonthlySubBudgetsForUser(final Budget budget, final BudgetGoals budgetGoals)
