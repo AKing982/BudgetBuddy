@@ -26,6 +26,8 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
     @Query("SELECT b FROM BudgetEntity b JOIN b.subBudgetEntities sb WHERE DATE(sb.startDate) =:startDate AND DATE(sb.endDate) =:endDate AND b.user.id =:uId")
     Optional<BudgetEntity> findBudgetByUserIdAndDates(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("uId") Long userId);
 
+    @Query("SELECT b FROM BudgetEntity b WHERE b.user.id =:user AND b.year =:year")
+    Optional<BudgetEntity> findBudgetByUserAndYear(@Param("user") Long user, @Param("year") Integer year);
 
 
 }

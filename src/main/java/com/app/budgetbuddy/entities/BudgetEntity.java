@@ -66,6 +66,9 @@ public class BudgetEntity {
     @NotNull
     private LocalDate budgetEndDate;
 
+    @Column(name="year")
+    private int year;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="budgetid")
     private BudgetGoalsEntity budgetGoals;

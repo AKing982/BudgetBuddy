@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.repositories.BudgetScheduleRepository;
 import com.app.budgetbuddy.services.BudgetScheduleRangeService;
 import jakarta.persistence.Embeddable;
 import org.junit.jupiter.api.AfterEach;
@@ -24,6 +25,9 @@ class BudgetScheduleRangeBuilderServiceTest
     @Mock
     private BudgetScheduleRangeService budgetScheduleRangeService;
 
+    @Mock
+    private BudgetScheduleRepository budgetScheduleRepository;
+
     @InjectMocks
     private BudgetScheduleRangeBuilderService budgetScheduleRangeBuilderService;
 
@@ -46,7 +50,7 @@ class BudgetScheduleRangeBuilderServiceTest
         budget.setSavingsAmountAllocated(BigDecimal.ZERO);
         budget.setBudgetAmount(new BigDecimal("39120"));
         budget.setActual(new BigDecimal("1609"));
-        budgetScheduleRangeBuilderService = new BudgetScheduleRangeBuilderService(budgetScheduleRangeService);
+        budgetScheduleRangeBuilderService = new BudgetScheduleRangeBuilderService(budgetScheduleRangeService, budgetScheduleRepository);
     }
 
     @Test

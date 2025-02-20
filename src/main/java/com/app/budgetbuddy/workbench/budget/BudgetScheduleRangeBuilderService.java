@@ -1,8 +1,10 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetScheduleEntity;
 import com.app.budgetbuddy.entities.BudgetScheduleRangeEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.repositories.BudgetScheduleRepository;
 import com.app.budgetbuddy.services.BudgetScheduleRangeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,18 +24,20 @@ import java.util.Optional;
 public class BudgetScheduleRangeBuilderService
 {
     private final BudgetScheduleRangeService budgetScheduleRangeService;
+    private final BudgetScheduleRepository budgetScheduleRepository;
 
     @Autowired
-    public BudgetScheduleRangeBuilderService(BudgetScheduleRangeService budgetScheduleRangeService)
+    public BudgetScheduleRangeBuilderService(BudgetScheduleRangeService budgetScheduleRangeService,
+                                             BudgetScheduleRepository budgetScheduleRepository)
     {
         this.budgetScheduleRangeService = budgetScheduleRangeService;
+        this.budgetScheduleRepository = budgetScheduleRepository;
     }
 
     public List<BudgetScheduleRange> createBudgetScheduleRangesBySubBudget(final SubBudget subBudget)
     {
         List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
-        if (subBudget == null || subBudget.getStartDate() == null || subBudget.getEndDate() == null)
-        {
+        if (subBudget == null || subBudget.getStartDate() == null || subBudget.getEndDate() == null) {
             return budgetScheduleRanges;
         }
         LocalDate subBudgetStartDate = subBudget.getStartDate();
@@ -42,7 +46,7 @@ public class BudgetScheduleRangeBuilderService
         try
         {
 
-            if(subBudgetStartDate.isAfter(budget.getStartDate()) && subBudgetEndDate.isBefore(budget.getEndDate()))
+            if (subBudgetStartDate.isAfter(budget.getStartDate()) && subBudgetEndDate.isBefore(budget.getEndDate()))
             {
                 throw new IllegalArgumentException("SubBudget should be contained within a single month.");
             }
@@ -75,46 +79,66 @@ public class BudgetScheduleRangeBuilderService
             }
             return budgetScheduleRanges;
 
-        }catch(IllegalArgumentException e)
-        {
+        } catch (IllegalArgumentException e) {
             log.error("There was an error generating the budget schedule ranges: ", e);
             log.error("There was an issue with the budget schedule range: startDate={}, endDate={}", subBudgetStartDate, subBudgetEndDate);
             return budgetScheduleRanges;
         }
     }
 
-    public List<BudgetScheduleRange> getBudgetScheduleRangeByDate(final LocalDate startDate, final LocalDate endDate, final Long scheduleID)
-    {
-        if(startDate == null || endDate == null)
-        {
+    public List<BudgetScheduleRange> getBudgetScheduleRangeByDate(final LocalDate startDate, final LocalDate endDate, final Long scheduleID) {
+        if (startDate == null || endDate == null) {
             return Collections.emptyList();
         }
-        try
-        {
+        try {
             return budgetScheduleRangeService.getBudgetScheduleRangesByRangeAndScheduleId(startDate, endDate, scheduleID);
-        }catch(Exception e)
-        {
+        } catch (Exception e) {
             log.error("There was an error generating the budget schedule ranges: ", e);
             return Collections.emptyList();
         }
     }
 
-    public void updateBudgetScheduleRange(BudgetScheduleRange budgetScheduleRange)
-    {
-
-    }
-
-    public void saveBudgetScheduleRanges(List<BudgetScheduleRangeEntity> budgetScheduleRanges)
+    public void saveBudgetScheduleRanges(List<BudgetScheduleRange> budgetScheduleRanges)
     {
         try
         {
-            for(BudgetScheduleRangeEntity budgetScheduleRangeEntity : budgetScheduleRanges)
+            for(BudgetScheduleRange budgetScheduleRange : budgetScheduleRanges)
             {
+                BudgetScheduleRangeEntity budgetScheduleRangeEntity = new BudgetScheduleRangeEntity();
+                budgetScheduleRangeEntity.setBudgetedAmount(budgetScheduleRange.getBudgetedAmount());
+                budgetScheduleRangeEntity.setSpentOnRange(budgetScheduleRange.getSpentOnRange());
+                budgetScheduleRangeEntity.setRangeType(budgetScheduleRange.getRangeType());
+                Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = findBudgetScheduleEntity(budgetScheduleRange.getBudgetScheduleId());
+                if(budgetScheduleEntityOptional.isEmpty())
+                {
+                    budgetScheduleRangeEntity.setBudgetSchedule(null);
+                }
+                BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
+                budgetScheduleRangeEntity.setBudgetSchedule(budgetScheduleEntity);
+                budgetScheduleRangeEntity.setRangeStart(budgetScheduleRange.getStartRange());
+                budgetScheduleRangeEntity.setRangeEnd(budgetScheduleRange.getEndRange());
+                budgetScheduleRangeEntity.setId(budgetScheduleRange.getId());
                 budgetScheduleRangeService.save(budgetScheduleRangeEntity);
             }
-        }catch(DataAccessException e)
-        {
+        }catch(DataAccessException e){
             log.error("There was an error saving the budget schedule ranges: ", e);
         }
     }
+
+    private Optional<BudgetScheduleEntity> findBudgetScheduleEntity(Long budgetScheduleId)
+    {
+        if(budgetScheduleId == null || budgetScheduleId < 1)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return budgetScheduleRepository.findById(budgetScheduleId);
+        }catch(DataAccessException e)
+        {
+            log.error("Unable to find the budget schedule entity: ", e);
+            return Optional.empty();
+        }
+    }
+
 }

@@ -3,6 +3,8 @@ package com.app.budgetbuddy.workbench.subBudget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.repositories.BudgetRepository;
+import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.workbench.budget.BudgetCalculations;
 import com.app.budgetbuddy.workbench.budget.BudgetScheduleEngine;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -23,27 +26,58 @@ public class SubBudgetBuilderService
     private final SubBudgetService subBudgetService;
     private final BudgetCalculations budgetCalculations;
     private final BudgetScheduleEngine budgetScheduleEngine;
+    private final BudgetService budgetService;
 
     @Autowired
     public SubBudgetBuilderService(SubBudgetService subBudgetService,
                                    BudgetCalculations budgetCalculations,
-                                   BudgetScheduleEngine budgetScheduleEngine)
+                                   BudgetScheduleEngine budgetScheduleEngine,
+                                   BudgetService budgetService)
     {
         this.subBudgetService = subBudgetService;
         this.budgetCalculations = budgetCalculations;
         this.budgetScheduleEngine = budgetScheduleEngine;
+        this.budgetService = budgetService;
     }
 
-    public List<SubBudget> createSubBudgetTemplates(final int year, final Budget budget, final BudgetGoals budgetGoals)
+    public List<SubBudget> createSubBudgetTemplates(int year, final Budget budget, final BudgetGoals budgetGoals)
     {
-        if(year < 0 || budget == null || budgetGoals == null)
+        if(year < 0 || budgetGoals == null)
         {
             return Collections.emptyList();
         }
-        LocalDate budgetStartDate = budget.getStartDate();
-        LocalDate budgetEndDate = budget.getEndDate();
 
-        return null;
+        int budgetYear = budget.getBudgetYear();
+        if(year != budgetYear)
+        {
+            return Collections.emptyList();
+        }
+        BigDecimal budgetGoalsTargetAmount = BigDecimal.valueOf(budgetGoals.getTargetAmount());
+        BigDecimal monthlyAllocation = budget.getBudgetAmount().divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+        BigDecimal monthlySavingsTarget = budgetGoalsTargetAmount.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+        List<SubBudget> subBudgets = new ArrayList<>();
+        for(int month = 1; month <= 12; month++)
+        {
+            LocalDate startDate = LocalDate.of(year, month, 1);
+            LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+            SubBudget subBudget = SubBudget.buildSubBudget(
+                    true,  // isActive
+                    monthlyAllocation,  // allocatedAmount
+                    monthlySavingsTarget,  // savingsTarget
+                    BigDecimal.ZERO,  // savingsAmount
+                    budget,  // budget
+                    BigDecimal.ZERO,  // spentOnBudget
+                    year + "-" + String.format("%02d", month) + " Budget",  // budgetName
+                    startDate,
+                    endDate
+            );
+
+            subBudget.setYear(year);
+            subBudgets.add(subBudget);
+        }
+
+        return subBudgets;
     }
 
     public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal monthlyIncome, final BudgetGoals budgetGoals)

@@ -80,6 +80,24 @@ public class BudgetServiceImpl implements BudgetService
         }
     }
 
+    @Override
+    public Optional<Budget> loadBudgetByUserIdAndYear(Long userId, Integer year)
+    {
+        try
+        {
+            Optional<BudgetEntity> optionalBudgetEntity = budgetRepository.findBudgetByUserAndYear(userId, year);
+            if(optionalBudgetEntity.isEmpty())
+            {
+                throw new DataAccessException("Budget not found");
+            }
+            return Optional.of(convertBudgetEntity(optionalBudgetEntity.get()));
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error loading the budget for user {} in year {}: {} ", userId, year, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
     private Budget convertBudgetEntity(BudgetEntity budgetEntity)
     {
         if(budgetEntity == null) {

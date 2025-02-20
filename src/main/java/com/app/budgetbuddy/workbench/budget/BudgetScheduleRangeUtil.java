@@ -26,20 +26,17 @@ public class BudgetScheduleRangeUtil
             // Only combine if they are consecutive weeks
             if (firstWeek.getEndRange().plusDays(1).equals(secondWeek.getStartRange()))
             {
-                DateRange biWeeklyRange = new DateRange(
-                        firstWeek.getStartRange(),
-                        secondWeek.getEndRange());
-
-                BudgetScheduleRange biWeeklySchedule = new BudgetScheduleRange(
-                        firstWeek.getBudgetScheduleId(),  // Use first week's ID
-                        firstWeek.getStartRange(),
-                        secondWeek.getEndRange(),
-                        firstWeek.getBudgetedAmount().add(secondWeek.getBudgetedAmount()),
-                        firstWeek.getSpentOnRange().add(secondWeek.getSpentOnRange()),
-                        biWeeklyRange,
-                        "BIWEEKLY",
-                        false
-                );
+                BudgetScheduleRange biWeeklySchedule = BudgetScheduleRange.builder()
+                        .id(firstWeek.getId())  // Use first week's ID
+                        .budgetScheduleId(firstWeek.getBudgetScheduleId())
+                        .startRange(firstWeek.getStartRange())
+                        .endRange(secondWeek.getEndRange())
+                        .budgetedAmount(firstWeek.getBudgetedAmount().add(secondWeek.getBudgetedAmount()))
+                        .spentOnRange(firstWeek.getSpentOnRange().add(secondWeek.getSpentOnRange()))
+                        .budgetDateRange(new DateRange(firstWeek.getStartRange(), secondWeek.getEndRange()))
+                        .rangeType("BIWEEKLY")
+                        .isSingleDate(false)
+                        .build();
 
                 budgetScheduleRanges.add(biWeeklySchedule);
             }

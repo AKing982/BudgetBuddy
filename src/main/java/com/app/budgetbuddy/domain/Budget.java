@@ -25,6 +25,7 @@ public class Budget
     private LocalDate startDate;
     private LocalDate endDate;
     private Period budgetPeriod;
+    private int budgetYear;
     private BudgetMode budgetMode;
     private BigDecimal income;
     private BigDecimal savingsAmountAllocated;

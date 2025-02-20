@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.budget;
 
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +37,9 @@ class SubBudgetBuilderServiceTest
     @Mock
     private BudgetCalculations budgetCalculations;
 
+    @Mock
+    private BudgetService budgetService;
+
     @InjectMocks
     private SubBudgetBuilderService subBudgetBuilderService;
 
@@ -56,6 +60,7 @@ class SubBudgetBuilderServiceTest
         budget.setTotalMonthsToSave(12);
         budget.setUserId(1L);
         budget.setId(1L);
+        budget.setBudgetYear(2025);
         budget.setIncome(new BigDecimal("39120"));
         budget.setSavingsProgress(BigDecimal.ZERO);
         budget.setSavingsAmountAllocated(BigDecimal.ZERO);
@@ -70,7 +75,7 @@ class SubBudgetBuilderServiceTest
         budgetGoals.setMonthlyAllocation(250);
         budgetGoals.setCurrentSavings(150);
 
-        subBudgetBuilderService = new SubBudgetBuilderService(subBudgetService, budgetCalculations, budgetScheduleEngine);
+        subBudgetBuilderService = new SubBudgetBuilderService(subBudgetService, budgetCalculations, budgetScheduleEngine, budgetService);
     }
 
     @Test
@@ -362,6 +367,87 @@ class SubBudgetBuilderServiceTest
             assertEquals(expected.getSpentOnBudget(), actual.getSpentOnBudget(), "Spent on budget mismatch for month " + (i + 1));
             assertEquals(expected.isActive(), actual.isActive(), "Sub-budget active status mismatch for month " + (i + 1));
             assertEquals(expected.getBudget(), actual.getBudget(), "Budget mismatch for month " + (i + 1));
+        }
+    }
+
+    @Test
+    void testCreateSubBudgetTemplates_whenYearIsNegative_thenReturnEmptyList(){
+        int year = -1;
+        List<SubBudget> actual = subBudgetBuilderService.createSubBudgetTemplates(year, budget, budgetGoals);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateSubBudgetTemplates_whenBudgetIsNull_thenReturnEmptyList(){
+        final int year = 2024;
+        List<SubBudget> actual = subBudgetBuilderService.createSubBudgetTemplates(year, null, budgetGoals);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateSubBudgetTemplates_whenBudgetGoalsNull_thenReturnEmptyList(){
+        final int year = 2024;
+        List<SubBudget> actual = subBudgetBuilderService.createSubBudgetTemplates(year, budget, null);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
+    }
+
+    @Test
+    void testCreateSubBudgetTemplates_shouldReturnSubBudgetsFor2024Year()
+    {
+        final int year = 2024;
+
+        Budget budget = new Budget();
+        budget.setStartDate(LocalDate.of(2024,1 ,1));
+        budget.setEndDate(LocalDate.of(2024,12, 31));
+        budget.setBudgetPeriod(Period.MONTHLY);
+        budget.setBudgetMode(BudgetMode.SAVINGS_PLAN);
+        budget.setBudgetName("Savings Budget Plan");
+        budget.setBudgetDescription("Savings Budget Plan");
+        budget.setTotalMonthsToSave(12);
+        budget.setUserId(1L);
+        budget.setId(1L);
+        budget.setBudgetYear(2024);
+        budget.setIncome(new BigDecimal("39120"));
+        budget.setSavingsProgress(BigDecimal.ZERO);
+        budget.setSavingsAmountAllocated(BigDecimal.ZERO);
+        budget.setBudgetAmount(new BigDecimal("39120"));
+        budget.setActual(new BigDecimal("1609"));
+
+        List<SubBudget> result = subBudgetBuilderService.createSubBudgetTemplates(year, budget, budgetGoals);
+        // Verify results
+        assertNotNull(result);
+        assertEquals(12, result.size(), "Should create 12 monthly sub-budgets");
+
+        // Verify each month's SubBudget
+        for (int month = 0; month < 12; month++) {
+            SubBudget subBudget = result.get(month);
+            LocalDate expectedStartDate = LocalDate.of(2024, month + 1, 1);
+            LocalDate expectedEndDate = expectedStartDate.withDayOfMonth(expectedStartDate.lengthOfMonth());
+
+            assertEquals(expectedStartDate, subBudget.getStartDate(),
+                    "Start date mismatch for month " + (month + 1));
+            assertEquals(expectedEndDate, subBudget.getEndDate(),
+                    "End date mismatch for month " + (month + 1));
+            assertEquals(new BigDecimal("3260.00"), subBudget.getAllocatedAmount(),
+                    "Allocated amount mismatch for month " + (month + 1));
+            assertEquals(new BigDecimal("208.33"), subBudget.getSubSavingsTarget(),
+                    "Savings target mismatch for month " + (month + 1));
+            assertEquals(budget, subBudget.getBudget(),
+                    "Budget reference mismatch for month " + (month + 1));
+            assertEquals("2024-" + String.format("%02d", month + 1) + " Budget",
+                    subBudget.getSubBudgetName(),
+                    "Budget name mismatch for month " + (month + 1));
+            assertEquals(2024, subBudget.getYear(),
+                    "Year mismatch for month " + (month + 1));
+            assertTrue(subBudget.isActive(),
+                    "SubBudget should be active for month " + (month + 1));
+            assertEquals(BigDecimal.ZERO, subBudget.getSpentOnBudget(),
+                    "Initial spent amount should be zero for month " + (month + 1));
+            assertEquals(BigDecimal.ZERO, subBudget.getSubSavingsAmount(),
+                    "Initial savings amount should be zero for month " + (month + 1));
         }
     }
 

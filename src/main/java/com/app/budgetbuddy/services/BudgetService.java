@@ -16,6 +16,8 @@ public interface BudgetService extends ServiceModel<BudgetEntity>
 
     Budget loadUserBudgetForPeriod(Long userId, LocalDate startDate, LocalDate endDate);
 
+    Optional<Budget> loadBudgetByUserIdAndYear(Long userId, Integer year);
+
     BudgetEntity createAndSaveBudget(BudgetCreateRequest createRequest);
 
     List<BudgetEntity> getBudgetByUserId(Long id);

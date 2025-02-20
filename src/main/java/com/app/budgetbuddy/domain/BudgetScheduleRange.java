@@ -8,11 +8,11 @@ import java.util.Objects;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
 @Builder
 public class BudgetScheduleRange
 {
+    private Long id;
     private Long budgetScheduleId;
     private LocalDate startRange;
     private LocalDate endRange;
@@ -29,6 +29,18 @@ public class BudgetScheduleRange
         this.budgetedAmount = budgetedAmount;
         this.spentOnRange = spentOnRange;
         this.budgetDateRange = new DateRange(startRange, endRange);
+        this.rangeType = rangeType;
+        this.isSingleDate = isSingleDate;
+    }
+
+    public BudgetScheduleRange(Long id, Long budgetScheduleId, LocalDate startRange, LocalDate endRange, BigDecimal budgetedAmount, BigDecimal spentOnRange, DateRange budgetDateRange, String rangeType, boolean isSingleDate) {
+        this.id = id;
+        this.budgetScheduleId = budgetScheduleId;
+        this.startRange = startRange;
+        this.endRange = endRange;
+        this.budgetedAmount = budgetedAmount;
+        this.spentOnRange = spentOnRange;
+        this.budgetDateRange = budgetDateRange;
         this.rangeType = rangeType;
         this.isSingleDate = isSingleDate;
     }
