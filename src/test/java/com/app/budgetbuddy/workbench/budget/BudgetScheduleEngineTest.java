@@ -391,9 +391,9 @@ class BudgetScheduleEngineTest {
         List<DateRange> dateRanges = new ArrayList<>();
         dateRanges.add(new DateRange(LocalDate.of(2025, 1, 1), null));
         budgetDateRanges.put(2L, dateRanges);
-        assertThrows(IllegalDateException.class, () -> {
-            budgetScheduleEngine.createMissingBudgetSchedules(budgetDateRanges);
-        });
+        List<BudgetSchedule> actual = budgetScheduleEngine.createMissingBudgetSchedules(budgetDateRanges);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
     }
 
     @Test
@@ -427,6 +427,16 @@ class BudgetScheduleEngineTest {
         List<BudgetSchedule> expectedBudgetSchedules = new ArrayList<>();
         expectedBudgetSchedules.add(januaryBudgetSchedule);
         expectedBudgetSchedules.add(februaryBudgetSchedule);
+
+        SubBudget mockSubBudget = new SubBudget();
+        mockSubBudget.setId(2L);
+
+        // Mock the service calls
+        Mockito.when(subBudgetService.findSubBudgetById(2L)).thenReturn(Optional.of(mockSubBudget));
+
+        // Mock the budgetScheduleRangeBuilderService to return empty list or actual ranges if needed
+        Mockito.when(budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(any(SubBudget.class)))
+                .thenReturn(new ArrayList<>());
 
         List<BudgetSchedule> actual = budgetScheduleEngine.createMissingBudgetSchedules(budgetDateRanges);
         assertNotNull(actual);
@@ -548,6 +558,9 @@ class BudgetScheduleEngineTest {
         expectedBudgetSchedules.add(februaryBudgetSchedule);
         expectedBudgetSchedules.add(marchBudgetSchedule);
         expectedBudgetSchedules.add(aprilBudgetSchedule);
+
+        Mockito.when(subBudgetService.getSubBudgetsByUserIdAndDate(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(Optional.of(any(SubBudget.class)));
 
         List<BudgetSchedule> actual = budgetScheduleEngine.createMonthlyBudgetSchedules(userId, startDate, true, numberOfMonths);
         assertNotNull(actual);

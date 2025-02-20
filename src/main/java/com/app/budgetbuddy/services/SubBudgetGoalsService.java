@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface SubBudgetGoalsService extends ServiceModel<SubBudgetGoalsEntity>
 {
-    Optional<SubBudgetGoalsEntity> createAndSaveGoal()
+
 }

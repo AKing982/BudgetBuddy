@@ -56,6 +56,9 @@ public class SubBudgetEntity
     @NotNull
     private LocalDate endDate;
 
+    @Column(name="year")
+    private int year;
+
     @Column(name="isActive")
     private boolean isActive;
 

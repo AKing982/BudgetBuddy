@@ -84,6 +84,50 @@ public class BudgetScheduleEngine
         }
     }
 
+    private Optional<BudgetSchedule> findMatchingBudgetSchedule(SubBudget subBudget)
+    {
+        if(subBudget == null)
+        {
+            return Optional.empty();
+        }
+        LocalDate startDate = subBudget.getStartDate();
+        LocalDate endDate = subBudget.getEndDate();
+        List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+        if(budgetSchedules.isEmpty())
+        {
+            return Optional.empty();
+        }
+        return budgetSchedules.stream()
+                .filter(schedule -> isScheduleMatching(schedule, startDate, endDate))
+                .findFirst();
+    }
+
+    private boolean isScheduleMatching(BudgetSchedule schedule, LocalDate startDate, LocalDate endDate)
+    {
+        return schedule.getStartDate().isEqual(startDate) && schedule.getEndDate().isEqual(endDate);
+    }
+
+    private BudgetSchedule createNewBudgetSchedule(SubBudget subBudget)
+    {
+        BudgetSchedule newBudgetSchedule = new BudgetSchedule();
+        LocalDate startDate = subBudget.getStartDate();
+        LocalDate endDate = subBudget.getEndDate();
+        newBudgetSchedule.setStartDate(startDate);
+        newBudgetSchedule.setEndDate(endDate);
+        newBudgetSchedule.setPeriod(Period.MONTHLY);
+        newBudgetSchedule.setScheduleRange(new DateRange(startDate, endDate));
+        newBudgetSchedule.setStatus("Active");
+        newBudgetSchedule.setTotalPeriods(4); // Example: Adjust based on real calculations
+        newBudgetSchedule.setSubBudgetId(subBudget.getId());
+
+        // Initialize date ranges for the budget schedule
+        newBudgetSchedule.initializeBudgetDateRanges();
+
+        List<BudgetScheduleRange> budgetScheduleRanges = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
+        newBudgetSchedule.setBudgetScheduleRanges(budgetScheduleRanges);
+        return newBudgetSchedule;
+    }
+
     /**
      * This method will build a budget schedule for a particular month
      *
@@ -95,36 +139,21 @@ public class BudgetScheduleEngine
             return Optional.empty();
         }
 
-        LocalDate subBudgetStartDate = subBudget.getStartDate();
-        LocalDate subBudgetEndDate = subBudget.getEndDate();
-        List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-        if(!budgetSchedules.isEmpty())
+        Optional<BudgetSchedule> existingBudgetSchedule = findMatchingBudgetSchedule(subBudget);
+        if(existingBudgetSchedule.isPresent())
         {
-            for(BudgetSchedule budgetSchedule : budgetSchedules)
-            {
-                if (budgetSchedule.getStartDate().isEqual(subBudgetStartDate) &&
-                        budgetSchedule.getEndDate().isEqual(subBudgetEndDate))
-                {
-                    return Optional.of(budgetSchedule);
-                }
-            }
+            return existingBudgetSchedule;
         }
-        // Create a new BudgetSchedule if none exists
-        BudgetSchedule newBudgetSchedule = new BudgetSchedule();
-        newBudgetSchedule.setStartDate(subBudgetStartDate);
-        newBudgetSchedule.setEndDate(subBudgetEndDate);
-        newBudgetSchedule.setPeriod(Period.MONTHLY);
-        newBudgetSchedule.setScheduleRange(new DateRange(subBudgetStartDate, subBudgetEndDate));
-        newBudgetSchedule.setStatus("Active");
-        newBudgetSchedule.setTotalPeriods(4); // Example: Adjust based on real calculations
-        newBudgetSchedule.setSubBudgetId(subBudget.getId());
-
-        // Initialize date ranges for the budget schedule
-        newBudgetSchedule.initializeBudgetDateRanges();
-
-        List<BudgetScheduleRange> budgetScheduleRanges = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
-        newBudgetSchedule.setBudgetScheduleRanges(budgetScheduleRanges);
-        return Optional.of(newBudgetSchedule);
+        BudgetSchedule newBudgetSchedule = createNewBudgetSchedule(subBudget);
+        try
+        {
+            budgetScheduleService.saveBudgetSchedule(newBudgetSchedule);
+            return Optional.of(newBudgetSchedule);
+        }catch(BudgetScheduleException e)
+        {
+            log.error("Failed to Save new Budget Schedule for subBudget {}: {}", subBudget.getId(), e.getMessage());
+            return Optional.empty();
+        }
     }
 
     public Optional<BudgetSchedule> createSingleBudgetSchedule(final LocalDate startDate, final LocalDate endDate, final SubBudget subBudget)

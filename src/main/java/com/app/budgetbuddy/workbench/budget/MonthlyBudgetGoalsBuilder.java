@@ -44,7 +44,6 @@ public class MonthlyBudgetGoalsBuilder implements BudgetGoalsBuilder<MonthlyBudg
 
         // Save the SubBudgetEntity
 
-        monthlyBudgetGoalsService.save()
 
         return Optional.of(monthlyBudgetGoals);
     }

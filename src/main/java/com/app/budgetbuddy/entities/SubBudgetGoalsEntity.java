@@ -20,11 +20,11 @@ public class SubBudgetGoalsEntity
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="id")
+    @JoinColumn(name="sub_budgetid")
     private SubBudgetEntity subBudgetEntity;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="id")
+    @JoinColumn(name="budget_goalsid")
     private BudgetGoalsEntity budgetGoals;
 
     @Column(name="monthlySavingsTarget")

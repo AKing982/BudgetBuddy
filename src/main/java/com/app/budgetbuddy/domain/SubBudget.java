@@ -24,6 +24,7 @@ public class SubBudget
     private Budget budget;
     private LocalDate startDate;
     private LocalDate endDate;
+    private int year;
     private List<BudgetSchedule> budgetSchedule;
     private List<ControlledBudgetCategory> controlledBudgetCategory;
     private boolean isActive;
@@ -38,6 +39,22 @@ public class SubBudget
         this.budget = budget;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.budgetSchedule = budgetSchedule;
+        this.controlledBudgetCategory = controlledBudgetCategory;
+        this.isActive = isActive;
+    }
+
+    public SubBudget(Long id, String subBudgetName, BigDecimal allocatedAmount, BigDecimal subSavingsTarget, BigDecimal subSavingsAmount, BigDecimal spentOnBudget, Budget budget, LocalDate startDate, LocalDate endDate, int year, List<BudgetSchedule> budgetSchedule, List<ControlledBudgetCategory> controlledBudgetCategory, boolean isActive) {
+        this.id = id;
+        this.subBudgetName = subBudgetName;
+        this.allocatedAmount = allocatedAmount;
+        this.subSavingsTarget = subSavingsTarget;
+        this.subSavingsAmount = subSavingsAmount;
+        this.spentOnBudget = spentOnBudget;
+        this.budget = budget;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.year = year;
         this.budgetSchedule = budgetSchedule;
         this.controlledBudgetCategory = controlledBudgetCategory;
         this.isActive = isActive;

@@ -31,7 +31,6 @@ public class BudgetRunner
     private final AbstractBudgetStatisticsService<SubBudget> budgetStatisticsService;
     private final BudgetPeriodCategoryService budgetPeriodCategoryService;
     private final SubBudgetOverviewService subBudgetOverviewService;
-    private final BudgetHistoricalDataService budgetHistoricalDataService;
 
     @Autowired
     public BudgetRunner(BudgetPeriodQueries budgetPeriodQueries,
@@ -40,8 +39,7 @@ public class BudgetRunner
                         BudgetHealthService<SubBudget> budgetHealthService,
                         @Qualifier("subBudgetStatisticsServiceImpl") AbstractBudgetStatisticsService<SubBudget> budgetStatisticsService,
                         BudgetPeriodCategoryService budgetPeriodCategoryService,
-                        SubBudgetOverviewService subBudgetOverviewService,
-                        BudgetHistoricalDataService budgetHistoricalDataService) {
+                        SubBudgetOverviewService subBudgetOverviewService) {
         this.budgetPeriodQueries = budgetPeriodQueries;
         this.subBudgetService = subBudgetService;
         this.budgetService = budgetService;
@@ -49,7 +47,6 @@ public class BudgetRunner
         this.budgetStatisticsService = budgetStatisticsService;
         this.budgetPeriodCategoryService = budgetPeriodCategoryService;
         this.subBudgetOverviewService = subBudgetOverviewService;
-        this.budgetHistoricalDataService = budgetHistoricalDataService;
     }
 
 
@@ -123,10 +120,6 @@ public class BudgetRunner
         return List.of(result);
     }
 
-    public List<BudgetRunnerResult> runHistoricalBudgetProcess(final Long userId, int year, int month)
-    {
-        return null;
-    }
 
 
 }

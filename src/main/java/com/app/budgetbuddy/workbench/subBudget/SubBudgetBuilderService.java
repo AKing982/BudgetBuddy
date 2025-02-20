@@ -34,6 +34,18 @@ public class SubBudgetBuilderService
         this.budgetScheduleEngine = budgetScheduleEngine;
     }
 
+    public List<SubBudget> createSubBudgetTemplates(final int year, final Budget budget, final BudgetGoals budgetGoals)
+    {
+        if(year < 0 || budget == null || budgetGoals == null)
+        {
+            return Collections.emptyList();
+        }
+        LocalDate budgetStartDate = budget.getStartDate();
+        LocalDate budgetEndDate = budget.getEndDate();
+
+        return null;
+    }
+
     public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal monthlyIncome, final BudgetGoals budgetGoals)
     {
         if(budget == null || monthlyIncome == null || startDate == null || endDate == null || budgetGoals == null)
