@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.services.BudgetStatisticsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,9 +18,10 @@ public class BudgetStatisticsServiceImpl extends AbstractBudgetStatisticsService
 
     @Autowired
     public BudgetStatisticsServiceImpl(BudgetQueriesService budgetQueriesService,
-                                       BudgetCalculations budgetCalculations)
+                                       BudgetCalculations budgetCalculations,
+                                       BudgetStatisticsService budgetStatisticsService)
     {
-        super(budgetQueriesService, budgetCalculations);
+        super(budgetQueriesService, budgetCalculations, budgetStatisticsService);
     }
 
     @Override
