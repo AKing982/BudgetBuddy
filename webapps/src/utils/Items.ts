@@ -1,3 +1,5 @@
+import {Period} from "../config/Types";
+
 export interface Budget {
     id: number;
     userId: number;
@@ -15,6 +17,29 @@ export interface Budget {
     savingsProgress?: number | null;
     subBudgets: SubBudget[];
     totalMonthsToSave: number;
+}
+
+export enum BudgetMode
+{
+    CONTROLLED_SPENDING = "CONTROLLED_SPENDING",
+    SAVINGS_PLAN = "SAVINGS_PLAN"
+}
+
+export interface BudgetRegistration
+{
+    userId: number;
+    budgetName: string;
+    budgetDescription: string;
+    budgetPeriod: Period;
+    budgetMode: BudgetMode;
+    budgetGoals: BudgetGoal;
+    budgetYear: number;
+    budgetStartDate: [number, number, number];
+    budgetEndDate: [number, number, number];
+    budgetDateRanges: DateRange[];
+    totalIncomeAmount: number;
+    numberOfMonths: number;
+    totalBudgetsNeeded: number;
 }
 
 export interface BudgetStats {

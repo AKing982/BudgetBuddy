@@ -1,12 +1,11 @@
 package com.app.budgetbuddy.controllers;
 
-import com.app.budgetbuddy.workbench.budget.BudgetSetupEngine;
+import com.app.budgetbuddy.domain.BudgetRegistration;
 import com.app.budgetbuddy.workbench.runner.BudgetSetupRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/budgetSetup")
@@ -20,6 +19,26 @@ public class BudgetSetupController
     public BudgetSetupController(BudgetSetupRunner budgetSetupRunner)
     {
         this.budgetSetupRunner = budgetSetupRunner;
+    }
+
+    @PostMapping("/setup")
+    public ResponseEntity<?> runBudgetSetupProcess(@RequestBody BudgetRegistration budgetRegistration)
+    {
+        if(budgetRegistration == null)
+        {
+            return ResponseEntity.badRequest().body("budgetRegistration is null");
+        }
+        Long userId = budgetRegistration.getUserId();
+        try
+        {
+            log.info("Running Budget Setup Process for user {} ", userId);
+            budgetSetupRunner.runBudgetSetup(budgetRegistration);
+            return ResponseEntity.ok().build();
+        }catch(Exception e)
+        {
+            log.error("Failed to run the budget setup process for user {}: {}", userId, e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
 
