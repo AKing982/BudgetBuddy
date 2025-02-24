@@ -1,6 +1,7 @@
 import {Box, IconButton, TableCell, TableRow, Typography} from "@mui/material";
 import {AccountBalanceWallet, Block, ChevronRight, Edit} from "@mui/icons-material";
 import {useState} from "react";
+import {Transaction} from "../utils/Items";
 
 
 interface TransactionRowProps {
@@ -8,11 +9,18 @@ interface TransactionRowProps {
 }
 
 const TransactionRow: React.FC<TransactionRowProps> = ({transaction}) => {
-    const formattedDate = new Date(transaction.posted).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    const formattedDate = transaction.posted ?
+        new Date(transaction.posted).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        }) :
+        transaction.date ?
+            new Date(transaction.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            }) : 'Pending';
     const [imageError, setImageError] = useState<boolean>(false);
 
     const formattedAmount = new Intl.NumberFormat('en-US', {
@@ -33,9 +41,9 @@ const TransactionRow: React.FC<TransactionRowProps> = ({transaction}) => {
             <TableCell sx={{ color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>{formattedDate}</TableCell>
             <TableCell sx={{ borderBottom: '1px solid #E5E7EB' }}>
                 <Box display="flex" alignItems="center">
-                    {transaction.logoURL && !imageError ? (
+                    {transaction.logoUrl && !imageError ? (
                         <img
-                            src={transaction.logoURL}
+                            src={transaction.logoUrl}
                             alt={`${transaction.name} logo`}
                             style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }}
                             onError={handleImageError}

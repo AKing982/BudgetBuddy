@@ -20,6 +20,7 @@ import Sidebar from "./Sidebar";
 import CategoryDropdown from "./CategoryDropdown";
 import TransactionService from '../services/TransactionService';
 import {ArrowDownward, ArrowUpward} from "@mui/icons-material";
+import {Transaction} from "../utils/Items";
 
 
 
@@ -63,8 +64,15 @@ const TransactionsPage: React.FC = () => {
         setSearchTerm(newSearchTerm);
     };
 
-    const formatDate = (date: Date | string) => {
-        return new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+    const formatDate = (postedDate: string | null, transactionDate: string) => {
+        try {
+            // Use posted date if available, otherwise fall back to transaction date
+            const dateToFormat = postedDate || transactionDate;
+            return new Date(dateToFormat).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'N/A'; // Fallback if date parsing fails
+        }
     };
 
     const filteredTransactions = useMemo(() => {
@@ -74,16 +82,15 @@ const TransactionsPage: React.FC = () => {
             const category = transaction.categories[0]?.toLowerCase() ?? '';
             const merchantName = transaction.merchantName?.toLowerCase() ?? '';
             const amount = transaction.amount?.toString() ?? '';
-            const date = formatDate(transaction.posted) ?? '';
-            const authorizedDate = transaction.authorizedDate ? transaction.authorizedDate.toString() : '';
+            const date = formatDate(transaction.posted, transaction.date);
             return name.includes(searchTermLowerCase) ||
                 category.includes(searchTermLowerCase) ||
                 merchantName.includes(searchTermLowerCase) ||
                 amount.includes(searchTermLowerCase) ||
-                date.includes(searchTermLowerCase) ||
-                authorizedDate.includes(searchTermLowerCase);
+                date.includes(searchTermLowerCase);
         });
     }, [transactions, searchTerm]);
+
 
 
 
@@ -327,12 +334,12 @@ const TransactionsPage: React.FC = () => {
                                     <TableCell padding="checkbox">
                                         <Checkbox />
                                     </TableCell>
-                                    <TableCell sx={{fontWeight: 'bold'}}>{formatDate(transaction.posted)}</TableCell>
+                                    <TableCell sx={{fontWeight: 'bold'}}> {formatDate(transaction.posted, transaction.date)}</TableCell>
                                     <TableCell sx={{fontWeight: 'bold'}}>
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            {transaction.logoURL && (
+                                            {transaction.logoUrl && (
                                                 <img
-                                                    src={transaction.logoURL}
+                                                    src={transaction.logoUrl}
                                                     alt={`${transaction.merchantName} logo`}
                                                     style={{ width: 24, height: 24, marginRight: 8, borderRadius: '50%' }}
                                                 />

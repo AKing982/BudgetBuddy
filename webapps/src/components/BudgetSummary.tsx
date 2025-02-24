@@ -4,6 +4,7 @@ import React, {useMemo} from "react";
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import {BudgetRunnerResult} from "../services/BudgetRunnerService";
+import DateRange from "../domain/DateRange";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -11,13 +12,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface BudgetStats {
     averageSpendingPerDay: number;
     budgetId: number;
-    dateRange: {
-        startDate: number[];
-        endDate: number[];
-        weeksInRange: number;
-        biWeeksInRange: number;
-        daysInRange: number;
-    };
+    dateRange: DateRange;
     remaining: number;
     totalBudget: number;
     totalSaved: number;
@@ -118,8 +113,8 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                 </Typography>
                 <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
                     Daily average spending: ${budgetStats.averageSpendingPerDay.toFixed(2)}
-                    {budgetStats.dateRange.daysInRange > 0 &&
-                        ` over ${budgetStats.dateRange.daysInRange} days`}
+                    {budgetStats.dateRange.getDaysInRange() > 0 &&
+                        ` over ${budgetStats.dateRange.getDaysInRange()} days`}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                     <Box>

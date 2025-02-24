@@ -42,7 +42,7 @@ public class SubBudgetBuilderService
 
     public List<SubBudget> createSubBudgetTemplates(int year, final Budget budget, final BudgetGoals budgetGoals)
     {
-        if(year < 0 || budgetGoals == null)
+        if(year < 0 || budget == null || budgetGoals == null)
         {
             return Collections.emptyList();
         }
@@ -82,7 +82,7 @@ public class SubBudgetBuilderService
 
     public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal monthlyIncome, final BudgetGoals budgetGoals)
     {
-        if(budget == null || monthlyIncome == null || startDate == null || endDate == null || budgetGoals == null)
+        if(budget == null || monthlyIncome == null || startDate == null || endDate == null)
         {
             return Optional.empty();
         }
@@ -91,35 +91,63 @@ public class SubBudgetBuilderService
         LocalDate budgetEndDate = budget.getEndDate();
         DateRange subBudgetDateRange = new DateRange(startDate, endDate);
         Long budgetId = budget.getId();
-        if(!startDate.isBefore(budgetStartDate) && !endDate.isAfter(budgetEndDate))
+        if(startDate.isBefore(budgetStartDate) || endDate.isAfter(budgetEndDate))
         {
-            // 1. Determine the Allocated (Budgeted) amount for the sub budget
+            return Optional.empty();
+        }
+        try {
+        String monthName = startDate.getMonth().name();
+        String firstMonthChar = monthName.substring(0, 1).toUpperCase(Locale.ENGLISH).toUpperCase();
+        String subBudgetName = firstMonthChar + monthName.substring(1).toLowerCase(Locale.ROOT) + " " + "Budget";
+        int totalMonthsToSave = budget.getTotalMonthsToSave();
+        BigDecimal totalSubBudgetAmount;
+        BigDecimal subBudgetSavingsTarget;
+        BigDecimal monthlyAllocationAmount;
+        if(budgetGoals != null)
+        {
             double monthlyAllocation = budgetGoals.getMonthlyAllocation();
             double currentSavings = budgetGoals.getCurrentSavings();
-            int totalMonthsToSave = budget.getTotalMonthsToSave();
             double targetAmount = budgetGoals.getTargetAmount();
-            String monthName = startDate.getMonth().name();
-            String firstMonthChar = monthName.substring(0, 1).toUpperCase(Locale.ENGLISH).toUpperCase();
-            String subBudgetName = firstMonthChar + monthName.substring(1).toLowerCase(Locale.ROOT) + " " + "Budget";
-            BigDecimal totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, totalMonthsToSave);
-            BigDecimal allocatedAmountNeeded = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, monthlyIncome, totalMonthsToSave);
+            totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, totalMonthsToSave);
+            subBudgetSavingsTarget = getTotalSubBudgetSavingsTarget(targetAmount, totalMonthsToSave, currentSavings, monthlyAllocation);
+            monthlyAllocationAmount = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, monthlyIncome, totalMonthsToSave);
+        }
+        else
+        {
+            totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyIncome.doubleValue(), totalMonthsToSave);
+            subBudgetSavingsTarget = budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(monthlyIncome.doubleValue(), totalMonthsToSave, 0.0, 0.0);
+            monthlyAllocationAmount = budgetCalculations.calculateActualMonthlyAllocation(monthlyIncome.doubleValue(), 0.0, 0.0, monthlyIncome, totalMonthsToSave);
+        }
 
-            // 2. Determine the Subsavings target for the sub budget
-            BigDecimal subBudgetSavingsTarget = getTotalSubBudgetSavingsTarget(targetAmount, totalMonthsToSave, currentSavings, monthlyAllocation);
-
-            // 3. Determine the SubSavings amount that's been put into the sub budget
-            BigDecimal totalSavingsInSubBudget = budgetCalculations.calculateSubBudgetSavings(subBudgetDateRange, budgetId);
-            BigDecimal totalSubBudgetSpending = budgetCalculations.calculateSubBudgetSpending(subBudgetDateRange, budgetId);
+        // 3. Determine the SubSavings amount that's been put into the sub budget
+        BigDecimal totalSavingsInSubBudget = budgetCalculations.calculateSubBudgetSavings(subBudgetDateRange, budgetId);
+        BigDecimal totalSubBudgetSpending = budgetCalculations.calculateSubBudgetSpending(subBudgetDateRange, budgetId);
 
             // 4. Determine what's been spent on the sub budget
             // 5. Build the Budget Schedules for the sub budget
-            SubBudget subBudget = buildSubBudget(true, totalSubBudgetAmount, subBudgetSavingsTarget, totalSavingsInSubBudget, budget, totalSubBudgetSpending, subBudgetName, startDate, endDate);
-            Optional<BudgetSchedule> budgetSchedules = budgetScheduleEngine.createMonthSubBudgetSchedule(subBudget);
-            subBudget.setBudgetSchedule(List.of(budgetSchedules.get()));
-            saveSingleSubBudget(subBudget);
-            return Optional.of(subBudget);
+        SubBudget subBudget = buildSubBudget(true, totalSubBudgetAmount, subBudgetSavingsTarget, totalSavingsInSubBudget, budget, totalSubBudgetSpending, subBudgetName, startDate, endDate);
+        Optional<BudgetSchedule> budgetSchedules = budgetScheduleEngine.createMonthSubBudgetSchedule(subBudget);
+        if(budgetSchedules.isEmpty())
+        {
+            log.error("Failed to create budget schedule");
+            return Optional.empty();
         }
-        return Optional.empty();
+        subBudget.setBudgetSchedule(List.of(budgetSchedules.get()));
+        Optional<SubBudgetEntity> subBudgetEntityOptional = saveSingleSubBudget(subBudget);
+        if(subBudgetEntityOptional.isEmpty())
+        {
+            log.error("Failed to save sub budget entity");
+            return Optional.empty();
+        }
+        SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
+        Long subBudgetId = subBudgetEntity.getId();
+        subBudget.setId(subBudgetId);
+        return Optional.of(subBudget);
+        }catch(Exception e)
+        {
+            log.error("Error saving sub Budget: ", e);
+            return Optional.empty();
+        }
     }
 
     private BigDecimal getTotalSubBudgetSavingsTarget(double targetAmount, int monthsToSave, double currentSavings, double monthlyAllocated)
@@ -127,16 +155,52 @@ public class SubBudgetBuilderService
         return budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(targetAmount, monthsToSave, currentSavings, monthlyAllocated);
     }
 
+    //TODO: When creating budg
+    public List<SubBudget> createMonthlySubBudgetsToDate(final Budget budget, final BudgetGoals budgetGoals)
+    {
+        if(budget == null)
+        {
+            return Collections.emptyList();
+        }
+        LocalDate currentDate = LocalDate.now();
+        LocalDate budgetStartDate = budget.getStartDate();
+        DateRange budgetDateRange = new DateRange(budgetStartDate, currentDate);
+        List<DateRange> dateRanges = budgetDateRange.splitIntoMonths();
+        BigDecimal incomeAmount = budget.getIncome();
+        List<SubBudget> monthlySubBudgets = new ArrayList<>();
+        try
+        {
+            for(DateRange month : dateRanges)
+            {
+                LocalDate startDate = month.getStartDate();
+                LocalDate endDate = month.getEndDate();
+                Optional<SubBudget> subBudgetOptional = createNewMonthSubBudget(budget, startDate, endDate, incomeAmount, budgetGoals);
+                if(subBudgetOptional.isEmpty())
+                {
+                    return Collections.emptyList();
+                }
+                SubBudget subBudget = subBudgetOptional.get();
+                monthlySubBudgets.add(subBudget);
+            }
+            return monthlySubBudgets;
+        }catch(RuntimeException e)
+        {
+            log.error("There was an error building the monthly sub budgets: ", e);
+            return Collections.emptyList();
+        }
+    }
+
     public List<SubBudget> createMonthlySubBudgets(final Budget budget, final BudgetGoals budgetGoals)
     {
         List<SubBudget> monthlySubBudgets = new ArrayList<>();
-        if(budget == null || budgetGoals == null)
+        if(budget == null)
         {
             log.warn("Missing budget found");
             return Collections.emptyList();
         }
         LocalDate budgetStartDate = budget.getStartDate();
         LocalDate budgetEndDate = budget.getEndDate();
+        log.info("Budget Dates: start={} end={}", budgetStartDate, budgetEndDate);
         DateRange budgetDateRange = new DateRange(budgetStartDate, budgetEndDate);
         List<DateRange> monthlyBudgetDates = budgetDateRange.splitIntoMonths();
         BigDecimal incomeAmount = budget.getIncome();
@@ -172,18 +236,19 @@ public class SubBudgetBuilderService
         }
     }
 
-    public void saveSingleSubBudget(final SubBudget subBudget)
+    public Optional<SubBudgetEntity> saveSingleSubBudget(final SubBudget subBudget)
     {
         if(subBudget == null)
         {
-            return;
+            return Optional.empty();
         }
         try
         {
-            subBudgetService.saveSubBudget(subBudget);
+            return subBudgetService.saveSubBudget(subBudget);
         }catch(DataAccessException e)
         {
             log.error("There was an error saving single sub budget: ", e);
+            return Optional.empty();
         }
     }
 

@@ -1,6 +1,8 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.services.BudgetStatisticsService;
 import com.app.budgetbuddy.services.SubBudgetService;
 import lombok.extern.slf4j.Slf4j;
@@ -9,23 +11,55 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 @Service
 @Slf4j
 public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsService<SubBudget>
 {
     private TreeMap<Integer, List<SubBudget>> yearlySubBudgets = new TreeMap<>();
+    private SubBudgetService subBudgetService;
 
     @Autowired
     public SubBudgetStatisticsServiceImpl(BudgetQueriesService budgetQueriesService,
                                           BudgetCalculations budgetCalculations, BudgetStatisticsService budgetStatisticsService,
                                           SubBudgetService subBudgetService)
     {
-        super(budgetQueriesService, budgetCalculations, budgetStatisticsService, subBudgetService);
+        super(budgetQueriesService, budgetCalculations, budgetStatisticsService);
+        this.subBudgetService = subBudgetService;
+    }
+
+    @Override
+    public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets, Long budgetId)
+    {
+        List<BudgetStatisticsEntity> budgetStatisticsEntities = new ArrayList<>();
+
+        try
+        {
+            for(BudgetStats budgetStats : budgets)
+            {
+                Long subBudgetId = budgetStats.getBudgetId();
+                BudgetStatisticsEntity budgetStatisticsEntity = new BudgetStatisticsEntity();
+                budgetStatisticsEntity.setTotalBudget(budgetStats.getTotalBudget());
+                budgetStatisticsEntity.setHealthScore(budgetStats.getHealthScore());
+                budgetStatisticsEntity.setTotalSpent(budgetStats.getTotalSpent());
+                budgetStatisticsEntity.setAverageSpendingPerDay(budgetStats.getAverageSpendingPerDay());
+                budgetStatisticsEntity.setSubBudget(getSubBudgetById(subBudgetId));
+                budgetStatisticsService.save(budgetStatisticsEntity);
+                budgetStatisticsEntities.add(budgetStatisticsEntity);
+            }
+            return budgetStatisticsEntities;
+        }catch(Exception e)
+        {
+            log.error("There was an error saving the budget stats: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private SubBudgetEntity getSubBudgetById(Long subBudgetId)
+    {
+        return subBudgetService.findById(subBudgetId)
+                .orElseThrow(() -> new IllegalArgumentException("Sub budget id " + subBudgetId + " not found"));
     }
 
     @Override

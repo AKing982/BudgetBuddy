@@ -1,6 +1,7 @@
 import {Box, TableCell} from "@mui/material";
 import {ArrowDownward, ArrowUpward} from "@mui/icons-material";
 import {useState} from "react";
+import {Transaction} from '../utils/Items';
 
 type SortConfig = {
     key: keyof Transaction;

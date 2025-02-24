@@ -76,6 +76,8 @@ public class BudgetGoalsServiceImpl implements BudgetGoalsService
                 budgetGoalsEntity.getTargetAmount(),
                 budgetGoalsEntity.getMonthlyAllocation(),
                 budgetGoalsEntity.getCurrentSavings(),
+                budgetGoalsEntity.getGoalName(),
+                budgetGoalsEntity.getGoalDescription(),
                 budgetGoalsEntity.getGoalType(),
                 budgetGoalsEntity.getSavingsFrequency(),
                 budgetGoalsEntity.getStatus()

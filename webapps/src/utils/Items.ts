@@ -1,4 +1,6 @@
 import {Period} from "../config/Types";
+import {BudgetGoal} from "./BudgetUtils";
+import DateRange from "../domain/DateRange";
 
 export interface Budget {
     id: number;
@@ -22,8 +24,28 @@ export interface Budget {
 export enum BudgetMode
 {
     CONTROLLED_SPENDING = "CONTROLLED_SPENDING",
-    SAVINGS_PLAN = "SAVINGS_PLAN"
+    SAVINGS_PLAN = "SAVINGS_PLAN",
+    DEBT_PAYOFF = "DEBT_PAYOFF",
+    EMERGENCY_FUND = "EMERGENCY_FUND"
 }
+
+export interface Transaction {
+    accountId: string;
+    amount: number;  // BigDecimal in Java maps to number in TypeScript
+    isoCurrencyCode: string;
+    categories: string[];
+    categoryId: string;
+    date: string;    // LocalDate will come as string in JSON
+    description: string;
+    merchantName: string;
+    name: string;
+    pending: boolean;
+    transactionId: string;
+    authorizedDate: string | null;  // LocalDate, optional
+    logoUrl: string | null;         // Optional
+    posted: string | null;          // LocalDate, optional
+}
+
 
 export interface BudgetRegistration
 {
@@ -40,6 +62,15 @@ export interface BudgetRegistration
     totalIncomeAmount: number;
     numberOfMonths: number;
     totalBudgetsNeeded: number;
+    previousIncomeAmount: number;
+    previousBudgetName: string;
+}
+
+// Interface for the budget data array
+
+export interface DateRangeInput {
+    startDate: [number, number, number];
+    endDate: [number, number, number];
 }
 
 export interface BudgetStats {
@@ -85,6 +116,33 @@ interface SavingsCategory
     startDate: number[];
     endDate: number[];
     active: boolean;
+}
+
+export interface ProcessedStats {
+    dateRange: DateRange;
+    averageSpendingPerDay: number;
+    budgetId: number;
+    healthScore: number;
+    monthlyProjection: number | null;
+    remaining: number;
+    totalBudget: number;
+    totalSaved: number;
+    totalSpent: number;
+}
+
+export interface InputStats {
+    dateRange: {
+        startDate: [number, number, number];
+        endDate: [number, number, number];
+    };
+    averageSpendingPerDay: number;
+    budgetId: number;
+    healthScore: number;
+    monthlyProjection: number | null;
+    remaining: number;
+    totalBudget: number;
+    totalSaved: number;
+    totalSpent: number;
 }
 
 export interface BudgetCategoryStats
@@ -138,16 +196,16 @@ export interface BudgetPeriodCategory
     budgetStatus: BudgetStatus;
 }
 
-export interface DateRange {
-    startDate: number[];
-    endDate: number[];
-    yearsInRange: number;
-    monthsInRange: number;
-    daysInRange: number;
-    weeksInRange: number;     // Added missing property
-    biWeeksInRange: number;   // Added missing property
-}
-
+// export interface DateRange {
+//     startDate: number[];
+//     endDate: number[];
+//     // yearsInRange: number;
+//     // monthsInRange: number;
+//     // daysInRange: number;
+//     // weeksInRange: number;     // Added missing property
+//     // biWeeksInRange: number;   // Added missing property
+// }
+//
 
 export enum BudgetStatus {
     OVER_BUDGET = 0,

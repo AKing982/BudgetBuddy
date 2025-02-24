@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
 import com.app.budgetbuddy.services.BudgetStatisticsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,15 +14,21 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class BudgetStatisticsServiceImpl extends AbstractBudgetStatisticsService<Budget>
+public class BudgetStatisticsDataServiceImpl extends AbstractBudgetStatisticsService<Budget>
 {
 
     @Autowired
-    public BudgetStatisticsServiceImpl(BudgetQueriesService budgetQueriesService,
+    public BudgetStatisticsDataServiceImpl(BudgetQueriesService budgetQueriesService,
                                        BudgetCalculations budgetCalculations,
                                        BudgetStatisticsService budgetStatisticsService)
     {
         super(budgetQueriesService, budgetCalculations, budgetStatisticsService);
+    }
+
+    @Override
+    public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets, Long budgetId)
+    {
+        return List.of();
     }
 
     @Override

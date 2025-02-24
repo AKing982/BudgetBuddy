@@ -67,6 +67,7 @@ public class SubBudget
                 .endDate(endDate)
                 .startDate(startDate)
                 .isActive(isActive)
+                .year(LocalDate.now().getYear())
                 .spentOnBudget(spentOnBudget)
                 .subBudgetName(budgetName)
                 .subSavingsTarget(savingsTarget)

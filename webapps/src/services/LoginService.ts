@@ -7,6 +7,7 @@ class LoginService {
     constructor(){
     }
 
+
     public async fetchUserIdByUsername(user: string | null) : Promise<number>
     {
         console.log('Fetching UserId for username: ', user);

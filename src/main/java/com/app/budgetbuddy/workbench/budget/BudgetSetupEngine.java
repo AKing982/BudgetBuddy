@@ -39,6 +39,11 @@ public class BudgetSetupEngine
         return currentBudgetYear - 1;
     }
 
+    public Optional<BudgetGoals> createBudgetGoals(final BudgetRegistration budgetRegistration)
+    {
+        return null;
+    }
+
     public Optional<Budget> createPreviousYearBudget(final BigDecimal previousIncomeAmount, final String previousBudgetName, final Budget budget)
     {
         if(previousIncomeAmount == null || previousBudgetName == null || budget == null)
@@ -104,28 +109,20 @@ public class BudgetSetupEngine
 
     private boolean isSubBudgetInCurrentYear(final SubBudget subBudget, final int currentYear)
     {
-        if (subBudget.getStartDate() == null) {
+        if(subBudget.getStartDate() == null)
+        {
             return false;
         }
         return subBudget.getStartDate().getYear() == currentYear;
     }
 
-    public List<BudgetStatisticsEntity> saveBudgetStats(final List<BudgetStats> budgetStatsList)
+    public List<BudgetStatisticsEntity> saveBudgetStats(final List<BudgetStats> budgetStatsList, final Long subBudgetId)
     {
         if(budgetStatsList == null || budgetStatsList.isEmpty())
         {
             return Collections.emptyList();
         }
-        return subBudgetStatisticsService.saveBudgetStats(budgetStatsList);
-    }
-
-    public List<SubBudgetGoalsEntity> saveMonthlySubBudgetGoals(final List<MonthlyBudgetGoals> monthlyBudgetGoals)
-    {
-        if(monthlyBudgetGoals == null || monthlyBudgetGoals.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        return monthlyBudgetGoalsBuilder.saveBudgetGoals(monthlyBudgetGoals);
+        return subBudgetStatisticsService.saveBudgetStats(budgetStatsList, subBudgetId);
     }
 
     private int getCurrentYear()
@@ -145,8 +142,7 @@ public class BudgetSetupEngine
         {
             for(SubBudget subBudget : subBudgets)
             {
-                boolean isCurrentYear = isSubBudgetInCurrentYear(subBudget, currentYear);
-                if(isCurrentYear)
+                if(isSubBudgetInCurrentYear(subBudget, currentYear))
                 {
                     List<BudgetStats> budgetStats = subBudgetStatisticsService.getBudgetStats(subBudget);
                     budgetStatsList.addAll(budgetStats);
@@ -249,12 +245,21 @@ public class BudgetSetupEngine
         }
         try
         {
-            return subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals);
+            return subBudgetBuilderService.createMonthlySubBudgetsToDate(budget, budgetGoals);
         }catch(BudgetBuildException e)
         {
             log.error("There was an error build the monthly subbudgets from the budget: ", e);
             return Collections.emptyList();
         }
+    }
+
+    public List<SubBudgetGoalsEntity> saveMonthlyBudgetGoals(List<MonthlyBudgetGoals> monthlyBudgetGoals)
+    {
+        if(monthlyBudgetGoals == null || monthlyBudgetGoals.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return monthlyBudgetGoalsBuilder.saveBudgetGoals(monthlyBudgetGoals);
     }
 
 }

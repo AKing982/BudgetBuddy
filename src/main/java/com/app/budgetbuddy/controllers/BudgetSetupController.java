@@ -29,18 +29,20 @@ public class BudgetSetupController
             return ResponseEntity.badRequest().body("budgetRegistration is null");
         }
         Long userId = budgetRegistration.getUserId();
+        log.info("DateRanges: " + budgetRegistration.getBudgetDateRanges());
         try
         {
             log.info("Running Budget Setup Process for user {} ", userId);
-            budgetSetupRunner.runBudgetSetup(budgetRegistration);
-            return ResponseEntity.ok().build();
+            if(budgetSetupRunner.runBudgetSetup(budgetRegistration))
+            {
+                return ResponseEntity.ok().body("budget setup completed");
+            }
+            return ResponseEntity.internalServerError().body("budget setup failed");
+
         }catch(Exception e)
         {
             log.error("Failed to run the budget setup process for user {}: {}", userId, e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
-
-
-
 }

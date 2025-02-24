@@ -39,6 +39,14 @@ interface BudgetCategory {
     monthlyActual: number;
 }
 
+interface Category {
+    dateRange: {
+        startDate: Array<number>;  // or [number, number, number] if you want to be more specific
+        endDate: Array<number>;    // or [number, number, number]
+    };
+    // ... other category properties
+}
+
 
 
 interface BudgetPeriodTableProps {
@@ -230,20 +238,39 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
             console.log("Categories: ", categories);
 
             // No need to do additional filtering - each category already has its date range
-            return categories.map(category => {
+            return categories.map((category: BudgetPeriodCategory) => {
+
+                const startDateArr = (category.dateRange.startDate as unknown) as number[];
+                const endDateArr = (category.dateRange.endDate as unknown) as number[];
+
+                // const startDate = new Date(
+                //     Number(category.dateRange.startDate[0]),
+                //     Number(category.dateRange.startDate[1]) - 1,
+                //     Number(category.dateRange.startDate[2])
+                // );
+                // console.log('Start Date: ', startDate);
+                //
+                // const endDate = new Date(
+                //     Number(category.dateRange.endDate[0]),
+                //     Number(category.dateRange.endDate[1]) - 1,
+                //     Number(category.dateRange.endDate[2])
+                // );
+                // console.log('End Date: ', endDate);
+
                 const startDate = new Date(
-                    Number(category.dateRange.startDate[0]),
-                    Number(category.dateRange.startDate[1]) - 1,
-                    Number(category.dateRange.startDate[2])
+                    Number(startDateArr[0]),
+                    Number(startDateArr[1]) - 1,
+                    Number(startDateArr[2])
                 );
                 console.log('Start Date: ', startDate);
 
                 const endDate = new Date(
-                    Number(category.dateRange.endDate[0]),
-                    Number(category.dateRange.endDate[1]) - 1,
-                    Number(category.dateRange.endDate[2])
+                    Number(endDateArr[0]),
+                    Number(endDateArr[1]) - 1,
+                    Number(endDateArr[2])
                 );
                 console.log('End Date: ', endDate);
+
 
                 console.log("Processing category:", {
                     name: category.category,
@@ -322,26 +349,88 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         );
 
 
+        // periodData.forEach(category => {
+        //     try {
+        //         if (budgetPeriod === 'BiWeekly') {
+        //             // Handle BiWeekly period using biWeekRanges array
+        //             if (!category?.biWeekRanges?.length) {
+        //                 console.warn("No BiWeekly ranges found for category:", category);
+        //                 return;
+        //             }
+        //
+        //             category.biWeekRanges.forEach(range => {
+        //                 const startDate = new Date(
+        //                     Number(range.startDate[0]),
+        //                     Number(range.startDate[1]) - 1,
+        //                     Number(range.startDate[2])
+        //                 );
+        //
+        //                 const endDate = new Date(
+        //                     Number(range.endDate[0]),
+        //                     Number(range.endDate[1]) - 1,
+        //                     Number(range.endDate[2])
+        //                 );
+        //
+        //                 if (isWithinInterval(startDate, { start: subBudgetStartDate, end: subBudgetEndDate }) &&
+        //                     isWithinInterval(endDate, { start: subBudgetStartDate, end: subBudgetEndDate })) {
+        //
+        //                     const rangeKey = `${format(startDate, 'yyyy-MM-dd')}-${format(endDate, 'yyyy-MM-dd')}`;
+        //                     if (!uniqueRanges.has(rangeKey)) {
+        //                         uniqueRanges.set(rangeKey, [startDate, endDate]);
+        //                     }
+        //                 }
+        //             });
+        //         } else {
+        //             // Handle other periods using dateRange
+        //             if (!category?.dateRange?.startDate || !category?.dateRange?.endDate) {
+        //                 console.warn("Invalid Date Range found: ", category);
+        //                 return;
+        //             }
+        //
+        //             const startDate = new Date(
+        //                 Number(category.dateRange.startDate[0]),
+        //                 Number(category.dateRange.startDate[1]) - 1,
+        //                 Number(category.dateRange.startDate[2])
+        //             );
+        //
+        //             const endDate = new Date(
+        //                 Number(category.dateRange.endDate[0]),
+        //                 Number(category.dateRange.endDate[1]) - 1,
+        //                 Number(category.dateRange.endDate[2])
+        //             );
+        //
+        //             const rangeKey = `${format(startDate, 'yyyy-MM-dd')}-${format(endDate, 'yyyy-MM-dd')}`;
+        //             if (!uniqueRanges.has(rangeKey)) {
+        //                 uniqueRanges.set(rangeKey, [startDate, endDate]);
+        //             }
+        //         }
+        //     } catch (error) {
+        //         console.error('Error processing date range: ', error, category);
+        //     }
+        // });
         periodData.forEach(category => {
             try {
                 if (budgetPeriod === 'BiWeekly') {
-                    // Handle BiWeekly period using biWeekRanges array
                     if (!category?.biWeekRanges?.length) {
                         console.warn("No BiWeekly ranges found for category:", category);
                         return;
                     }
 
                     category.biWeekRanges.forEach(range => {
+                        // Type assert the range arrays
+                        const startArr = (range.startDate as unknown) as number[];
+                        const endArr = (range.endDate as unknown) as number[];
+
                         const startDate = new Date(
-                            Number(range.startDate[0]),
-                            Number(range.startDate[1]) - 1,
-                            Number(range.startDate[2])
+                            Number(startArr[0]),
+                            Number(startArr[1]) - 1,
+                            Number(startArr[2])
                         );
 
                         const endDate = new Date(
-                            Number(range.endDate[0]),
-                            Number(range.endDate[1]) - 1,
-                            Number(range.endDate[2])
+                            Number(endArr[0]),
+                            Number(endArr[1]) - 1,
+                            Number(endArr[2])
                         );
 
                         if (isWithinInterval(startDate, { start: subBudgetStartDate, end: subBudgetEndDate }) &&
@@ -354,22 +443,25 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                         }
                     });
                 } else {
-                    // Handle other periods using dateRange
                     if (!category?.dateRange?.startDate || !category?.dateRange?.endDate) {
                         console.warn("Invalid Date Range found: ", category);
                         return;
                     }
 
+                    // Type assert the date range arrays
+                    const startArr = (category.dateRange.startDate as unknown) as number[];
+                    const endArr = (category.dateRange.endDate as unknown) as number[];
+
                     const startDate = new Date(
-                        Number(category.dateRange.startDate[0]),
-                        Number(category.dateRange.startDate[1]) - 1,
-                        Number(category.dateRange.startDate[2])
+                        Number(startArr[0]),
+                        Number(startArr[1]) - 1,
+                        Number(startArr[2])
                     );
 
                     const endDate = new Date(
-                        Number(category.dateRange.endDate[0]),
-                        Number(category.dateRange.endDate[1]) - 1,
-                        Number(category.dateRange.endDate[2])
+                        Number(endArr[0]),
+                        Number(endArr[1]) - 1,
+                        Number(endArr[2])
                     );
 
                     const rangeKey = `${format(startDate, 'yyyy-MM-dd')}-${format(endDate, 'yyyy-MM-dd')}`;
@@ -764,32 +856,102 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                                 </TableCell>
                                             </TableRow>
 
+                                            {/*{periodData.length > 0 ? (*/}
+                                            {/*    periodData.filter(category => {*/}
+                                            {/*        if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {*/}
+                                            {/*            return category.biWeekRanges.some(range => {*/}
+                                            {/*                const categoryStart = new Date(*/}
+                                            {/*                    Number(range.startDate[0]),*/}
+                                            {/*                    Number(range.startDate[1]) - 1,*/}
+                                            {/*                    Number(range.startDate[2])*/}
+                                            {/*                );*/}
+                                            {/*                const categoryEnd = new Date(*/}
+                                            {/*                    Number(range.endDate[0]),*/}
+                                            {/*                    Number(range.endDate[1]) - 1,*/}
+                                            {/*                    Number(range.endDate[2])*/}
+                                            {/*                );*/}
+                                            {/*                return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);*/}
+                                            {/*            });*/}
+                                            {/*        } else if (category.dateRange?.startDate && category.dateRange?.endDate) {*/}
+                                            {/*            const categoryStart = new Date(*/}
+                                            {/*                Number(category.dateRange.startDate[0]),*/}
+                                            {/*                Number(category.dateRange.startDate[1]) - 1,*/}
+                                            {/*                Number(category.dateRange.startDate[2])*/}
+                                            {/*            );*/}
+                                            {/*            const categoryEnd = new Date(*/}
+                                            {/*                Number(category.dateRange.endDate[0]),*/}
+                                            {/*                Number(category.dateRange.endDate[1]) - 1,*/}
+                                            {/*                Number(category.dateRange.endDate[2])*/}
+                                            {/*            );*/}
+                                            {/*            return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);*/}
+                                            {/*        }*/}
+                                            {/*        return false;*/}
+                                            {/*    }).map((category, categoryIndex) => (*/}
+                                            {/*        <TableRow key={`${format(start, 'yyyy-MM-dd')}-${category.category}-${categoryIndex}`}>*/}
+                                            {/*            <TableCell component="th" scope="row">*/}
+                                            {/*                {category.category}*/}
+                                            {/*            </TableCell>*/}
+                                            {/*            <TableCell align="right">*/}
+                                            {/*                ${(category.budgeted || 0).toFixed(2)}*/}
+                                            {/*            </TableCell>*/}
+                                            {/*            <TableCell align="right">*/}
+                                            {/*                ${(category.actual || 0).toFixed(2)}*/}
+                                            {/*            </TableCell>*/}
+                                            {/*            <TableCell*/}
+                                            {/*                align="right"*/}
+                                            {/*                sx={{*/}
+                                            {/*                    color: (category.remaining || 0) >= 0 ? 'green' : 'red',*/}
+                                            {/*                    fontWeight: 'bold'*/}
+                                            {/*                }}*/}
+                                            {/*            >*/}
+                                            {/*                ${Math.abs(category.remaining || 0).toFixed(2)}*/}
+                                            {/*                {(category.remaining || 0) >= 0 ? ' under' : ' over'}*/}
+                                            {/*            </TableCell>*/}
+                                            {/*        </TableRow>*/}
+                                            {/*    ))*/}
+                                            {/*) : (*/}
+                                            {/*    <TableRow>*/}
+                                            {/*        <TableCell*/}
+                                            {/*            colSpan={4}*/}
+                                            {/*            align="center"*/}
+                                            {/*            sx={{ color: 'gray', fontStyle: 'italic' }}*/}
+                                            {/*        >*/}
+                                            {/*            No categories available for this range.*/}
+                                            {/*        </TableCell>*/}
+                                            {/*    </TableRow>*/}
+                                            {/*)}*/}
                                             {periodData.length > 0 ? (
                                                 periodData.filter(category => {
                                                     if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {
                                                         return category.biWeekRanges.some(range => {
+                                                            const startArr = (range.startDate as unknown) as number[];
+                                                            const endArr = (range.endDate as unknown) as number[];
+
                                                             const categoryStart = new Date(
-                                                                Number(range.startDate[0]),
-                                                                Number(range.startDate[1]) - 1,
-                                                                Number(range.startDate[2])
+                                                                Number(startArr[0]),
+                                                                Number(startArr[1]) - 1,
+                                                                Number(startArr[2])
                                                             );
                                                             const categoryEnd = new Date(
-                                                                Number(range.endDate[0]),
-                                                                Number(range.endDate[1]) - 1,
-                                                                Number(range.endDate[2])
+                                                                Number(endArr[0]),
+                                                                Number(endArr[1]) - 1,
+                                                                Number(endArr[2])
                                                             );
                                                             return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
                                                         });
                                                     } else if (category.dateRange?.startDate && category.dateRange?.endDate) {
+                                                        const startArr = (category.dateRange.startDate as unknown) as number[];
+                                                        const endArr = (category.dateRange.endDate as unknown) as number[];
+
                                                         const categoryStart = new Date(
-                                                            Number(category.dateRange.startDate[0]),
-                                                            Number(category.dateRange.startDate[1]) - 1,
-                                                            Number(category.dateRange.startDate[2])
+                                                            Number(startArr[0]),
+                                                            Number(startArr[1]) - 1,
+                                                            Number(startArr[2])
                                                         );
                                                         const categoryEnd = new Date(
-                                                            Number(category.dateRange.endDate[0]),
-                                                            Number(category.dateRange.endDate[1]) - 1,
-                                                            Number(category.dateRange.endDate[2])
+                                                            Number(endArr[0]),
+                                                            Number(endArr[1]) - 1,
+                                                            Number(endArr[2])
                                                         );
                                                         return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
                                                     }
@@ -828,6 +990,8 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                                     </TableCell>
                                                 </TableRow>
                                             )}
+
+
                                         </React.Fragment>
                                     ));
                                 })()

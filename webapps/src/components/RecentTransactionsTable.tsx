@@ -27,21 +27,21 @@ import {
 import PlaidService from "../services/PlaidService";
 import TransactionRow from "./TransactionRow";
 import TransactionService from "../services/TransactionService";
-
-interface Transaction {
-    transactionId: string;
-    accountId: string;
-    amount: number;
-    categories: string[];
-    categoryId: string;
-    posted: Date | string;
-    name: string;
-    merchantName: string;
-    pending: boolean;
-    logoURL: string;
-    authorizedDate: Date | string;
-    transactionType: string;
-}
+import {Transaction} from '../utils/Items';
+// interface Transaction {
+//     transactionId: string;
+//     accountId: string;
+//     amount: number;
+//     categories: string[];
+//     categoryId: string;
+//     posted: Date | string;
+//     name: string;
+//     merchantName: string;
+//     pending: boolean;
+//     logoURL: string;
+//     authorizedDate: Date | string;
+//     transactionType: string;
+// }
 
 const transactions = [
     { date: '8/8', name: 'WinCo', amount: '$25.47', icon: <ShoppingCart sx={{ color: '#EF4444' }} /> },

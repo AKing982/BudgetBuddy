@@ -20,7 +20,7 @@ import {
     IconButton,
     Divider,
     FormControl,
-    InputLabel, Select, MenuItem, SelectChangeEvent, Slider
+    InputLabel, Select, MenuItem, SelectChangeEvent, Slider, FormControlLabel, FormLabel, RadioGroup, Radio
 } from '@mui/material';
 import { AddCircleOutline, Check } from '@mui/icons-material';
 
@@ -36,7 +36,10 @@ import BudgetGoalsService from "../services/BudgetGoalsService";
 import BudgetCategoriesService, {BudgetCategoryRequest} from "../services/BudgetCategoriesService";
 import LoginService from "../services/LoginService";
 import axios from "axios";
-import {apiUrl} from "../config/api";
+import {HistoricalBudgetData} from "./HistoricalBudgetQuestions";
+import BudgetSetupService from "../services/BudgetSetupService";
+import {BudgetRegistration} from "../utils/Items";
+import {Period} from "../config/Types";
 
 interface BudgetCategory {
     budgetId: number;
@@ -63,6 +66,7 @@ interface BudgetGoal {
 }
 
 interface BudgetQuestions {
+    historicalData?: HistoricalBudgetData;
     budgetType: string;
     monthlyIncome: number;
     expenseCategories: BudgetCategory[];
@@ -122,11 +126,15 @@ const theme = createTheme({
     },
 });
 
-const steps = ['Budget Type', 'Income', 'Goals', 'Review'];
+const steps = ['Previous Budget','Budget Type', 'Income', 'Goals', 'Review'];
 
 const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit }) => {
     const [activeStep, setActiveStep] = useState<number>(0);
     const [budgetData, setBudgetData] = useState<BudgetQuestions>({
+        historicalData: {
+            previousIncome: 0,
+            hadPreviousBudget: false
+        },
         budgetType: '',
         monthlyIncome: 0,
         expenseCategories: [],
@@ -155,10 +163,22 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         isActive: true,
         priority: 0
     });
+    // Add state for notification
+    const [notification, setNotification] = useState<{
+        message: string;
+        severity: 'success' | 'error' | 'warning';
+        show: boolean;
+    }>({
+        message: '',
+        severity: 'success',
+        show: false
+    });
+
     const navigate = useNavigate();
     const budgetService = BudgetService.getInstance();
     const budgetGoalsService = BudgetGoalsService.getInstance();
     const budgetCategoriesService = BudgetCategoriesService.getInstance();
+    const budgetSetupService = BudgetSetupService.getInstance();
     const loginService = new LoginService();
 
     const handleNext = () => {
@@ -207,6 +227,16 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                 priority: 0
             });
         }
+    };
+
+    const handleHistoricalDataChange = (field: keyof HistoricalBudgetData, value: any) => {
+        setBudgetData(prev => ({
+            ...prev,
+            historicalData: {
+                ...prev.historicalData!,
+                [field]:value
+            }
+        }));
     };
 
     const handleCategoryDelete = (index: number) => {
@@ -350,64 +380,111 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         }
     }
 
+    // Add notification clearing function
+    const clearNotification = () => {
+        setNotification(prev => ({ ...prev, show: false }));
+    };
+
 
     const handleSubmit = async () => {
         try {
-            const finalBudgetData = {
-                ...budgetData,
-                savingGoalData: budgetData.budgetType === 'Saving for a goal' ? budgetData.savingsGoalData : undefined,
-                debtPayoffData: budgetData.budgetType === 'Paying off debt' ? budgetData.debtPayoffData : undefined,
-                spendingControlData: budgetData.budgetType === 'Controlling spending' ? budgetData.spendingControlData : undefined,
+
+            const userId = await loginService.fetchMaximumUserId();
+            const currentDate = new Date();
+            const startDate: [number, number, number] = [
+                currentDate.getFullYear(),
+                currentDate.getMonth(),
+                1
+            ];
+
+            const endDate: [number, number, number] = [
+                currentDate.getFullYear(),
+                12,
+                31
+            ];
+            const budgetMode = budgetSetupService.getBudgetModeByBudgetType(budgetData.budgetType);
+            const budgetDateRanges = budgetSetupService.calculateBudgetDateRanges(startDate, endDate);
+            const numberOfMonths = budgetSetupService.calculateNumberOfMonths(startDate, endDate);
+            const budgetName = `${startDate[0]} ${budgetData.budgetType} Budget`;
+            let budgetDescription = `${budgetData.budgetType} budget`;
+            if(budgetData.savingsGoalData){
+                budgetDescription += ` for ${budgetData.savingsGoalData.goalName}`;
+            }else if(budgetData.debtPayoffData){
+                budgetDescription += ` for debt repayment`;
+            }else if(budgetData.spendingControlData){
+                budgetDescription += ` for spending control`;
+            }
+
+            const budgetGoals = budgetData.financialGoal;
+            // Create the budget registration object
+            const budgetRegistration: BudgetRegistration = {
+                userId: userId,
+                budgetName: budgetName,
+                budgetDescription: budgetDescription,
+                budgetPeriod: Period.MONTHLY,
+                budgetMode: budgetMode,
+                budgetGoals: budgetGoals,
+                budgetYear: startDate[0],
+                budgetStartDate: startDate,
+                budgetEndDate: endDate,
+                budgetDateRanges: budgetDateRanges,
+                totalIncomeAmount: budgetData.monthlyIncome * numberOfMonths,
+                numberOfMonths: numberOfMonths,
+                totalBudgetsNeeded: numberOfMonths,
+                previousIncomeAmount: budgetData.historicalData?.previousIncome || 0,
+                previousBudgetName: budgetData.historicalData?.hadPreviousBudget ?
+                    `${startDate[0] - 1} ${budgetData.historicalData.previousBudgetType} Budget` : ''
             };
 
-            // Step 1: Register the budget
-            let createdBudget;
-            try {
-                console.log('Attempting to register budget...');
-                console.log('Budget Data: ', budgetData);
-                createdBudget = await handleBudgetRegistration(budgetData);
-                if (!createdBudget) {
-                    throw new Error('Budget registration returned null');
-                }
-                console.log('Budget registered successfully:', createdBudget);
-            } catch (error) {
-                console.error('Error during budget registration:', error);
-                let errorMessage = 'Failed to create budget';
-                if (error instanceof Error) {
-                    errorMessage += `: ${error.message}`;
-                } else if (typeof error === 'object' && error !== null && 'message' in error) {
-                    errorMessage += `: ${error.message}`;
-                }
-                throw new Error(errorMessage);
+            console.log('Starting budget setup process...', budgetRegistration);
+            const setupSuccess = await budgetSetupService.startBudgetSetupProcess(budgetRegistration);
+
+            if (!setupSuccess) {
+                throw new Error('Budget setup process failed');
             }
+            console.log('Budget setup completed successfully');
 
             // Step 2: Register the Budget Goal
             try {
                 console.log('Attempting to register budget goal...');
-                await handleBudgetGoalRegistration(createdBudget.id);
+                await handleBudgetGoalRegistration(budgetRegistration.budgetGoals.budgetId);
                 console.log('Budget goal registered successfully');
             } catch (goalError) {
                 console.error('Error during budget goal registration:', goalError);
-                // Consider whether you want to throw here or continue
+                setNotification({
+                    message: 'Warning: Budget was created but goal registration failed',
+                    severity: 'warning',
+                    show: true
+                });
+                // Continue execution despite goal registration failure
             }
 
-            // Step 3: Handle the Budget Categories when budget type is controlled spending
-            if (budgetData.budgetType === 'Controlling spending') {
-                try {
-                    console.log('Attempting to register budget categories...');
-                    await handleBudgetCategoriesRegistration(createdBudget.id);
-                    console.log('Budget categories registered successfully');
-                } catch (categoriesError) {
-                    console.error('Error during budget categories registration:', categoriesError);
-                    // Consider whether you want to throw here or continue
-                }
-            }
-            onSubmit(finalBudgetData);
+            // Success path
+            setNotification({
+                message: 'Budget created successfully!',
+                severity: 'success',
+                show: true
+            });
+            onSubmit(budgetData);
             navigate('/');
-        } catch(error) {
-            console.error('Error submitting budget data: ', error);
 
+        } catch (error) {
+            console.error('Error during budget setup:', error);
+            let errorMessage = 'Failed to create budget';
+
+            if (error instanceof Error) {
+                errorMessage += `: ${error.message}`;
+            } else if (typeof error === 'object' && error !== null && 'message' in error) {
+                errorMessage += `: ${error.message}`;
+            }
+
+            setNotification({
+                message: errorMessage,
+                severity: 'error',
+                show: true
+            });
         }
+
     };
 
     return (
@@ -427,7 +504,112 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                     ))}
                 </Stepper>
 
+
                 {activeStep === 0 && (
+                    <Box>
+                        <Typography variant="h6" gutterBottom>
+                            Previous Year's Budget Information
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            label="What was your annual income last year?"
+                            type="number"
+                            InputProps={{ startAdornment: '$' }}
+                            value={budgetData.historicalData?.previousIncome || ''}
+                            onChange={(e) => handleHistoricalDataChange('previousIncome', Number(e.target.value))}
+                            sx={{ mb: 3 }}
+                        />
+
+                        <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
+                            <FormLabel>Did you have a budget last year?</FormLabel>
+                            <RadioGroup
+                                value={budgetData.historicalData?.hadPreviousBudget || false}
+                                onChange={(e) => handleHistoricalDataChange('hadPreviousBudget', e.target.value === 'true')}
+                            >
+                                <FormControlLabel value={true} control={<Radio />} label="Yes" />
+                                <FormControlLabel value={false} control={<Radio />} label="No" />
+                            </RadioGroup>
+                        </FormControl>
+
+                        {budgetData.historicalData?.hadPreviousBudget && (
+                            <>
+                                <FormControl fullWidth sx={{ mb: 3 }}>
+                                    <InputLabel>What was your primary financial focus last year?</InputLabel>
+                                    <Select
+                                        value={budgetData.historicalData?.previousBudgetType || ''}
+                                        onChange={(e) => handleHistoricalDataChange('previousBudgetType', e.target.value)}
+                                    >
+                                        <MenuItem value="Saving">Saving money</MenuItem>
+                                        <MenuItem value="DebtPayoff">Paying off debt</MenuItem>
+                                        <MenuItem value="SpendingControl">Controlling spending</MenuItem>
+                                        <MenuItem value="EmergencyFund">Building emergency fund</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                {budgetData.historicalData?.previousBudgetType === 'Saving' && (
+                                    <TextField
+                                        fullWidth
+                                        label="How much did you manage to save?"
+                                        type="number"
+                                        InputProps={{ startAdornment: '$' }}
+                                        value={budgetData.historicalData?.previousSavingsAmount || ''}
+                                        onChange={(e) => handleHistoricalDataChange('previousSavingsAmount', Number(e.target.value))}
+                                        sx={{ mb: 3 }}
+                                    />
+                                )}
+
+                                {budgetData.historicalData?.previousBudgetType === 'DebtPayoff' && (
+                                    <TextField
+                                        fullWidth
+                                        label="How much debt did you pay off?"
+                                        type="number"
+                                        InputProps={{ startAdornment: '$' }}
+                                        value={budgetData.historicalData?.previousDebtAmount || ''}
+                                        onChange={(e) => handleHistoricalDataChange('previousDebtAmount', Number(e.target.value))}
+                                        sx={{ mb: 3 }}
+                                    />
+                                )}
+
+                                {budgetData.historicalData?.previousBudgetType === 'SpendingControl' && (
+                                    <TextField
+                                        fullWidth
+                                        label="What was your average monthly spending?"
+                                        type="number"
+                                        InputProps={{ startAdornment: '$' }}
+                                        value={budgetData.historicalData?.previousSpendingAmount || ''}
+                                        onChange={(e) => handleHistoricalDataChange('previousSpendingAmount', Number(e.target.value))}
+                                        sx={{ mb: 3 }}
+                                    />
+                                )}
+
+                                <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
+                                    <FormLabel>Are your financial goals similar to last year?</FormLabel>
+                                    <RadioGroup
+                                        value={budgetData.historicalData?.previousGoalsSimilar || false}
+                                        onChange={(e) => handleHistoricalDataChange('previousGoalsSimilar', e.target.value === 'true')}
+                                    >
+                                        <FormControlLabel value={true} control={<Radio />} label="Yes" />
+                                        <FormControlLabel value={false} control={<Radio />} label="No" />
+                                    </RadioGroup>
+                                </FormControl>
+
+                                {budgetData.historicalData?.previousGoalsSimilar === false && (
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={3}
+                                        label="Please describe what's different this year"
+                                        value={budgetData.historicalData?.previousGoalsDifference || ''}
+                                        onChange={(e) => handleHistoricalDataChange('previousGoalsDifference', e.target.value)}
+                                        sx={{ mb: 3 }}
+                                    />
+                                )}
+                            </>
+                        )}
+                    </Box>
+                )}
+
+                {activeStep === 1 && (
                     <Box>
                         <Typography variant="h6" gutterBottom>
                             Select Your Budget Type
@@ -461,7 +643,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                     </Box>
                 )}
 
-                {activeStep === 1 && (
+                {activeStep === 2 && (
                     <Box>
                         <Typography variant="h6" gutterBottom>
                             Enter Your Income
@@ -478,7 +660,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                     </Box>
                 )}
 
-                {activeStep === 2 && (
+                {activeStep === 3 && (
                     <Box>
                         {budgetData.budgetType === 'Saving for a goal' && <SavingsGoalQuestions onDataChange={handleSavingsGoalDataChange} />}
                         {budgetData.budgetType === 'Paying off debt' && <DebtPayoffQuestions onDataChange={handleDebtPayoffDataChange}/>}
@@ -487,12 +669,47 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                     </Box>
                 )}
 
-                {activeStep === 3 && (
+                {activeStep === 4 && (
                     <Box>
                         <Typography variant="h6" gutterBottom color="primary">
                             Review Your Budget
                         </Typography>
+
+
                         <List>
+                            {/* Historical Data Review */}
+                            {budgetData.historicalData && (
+                                <>
+                                    <ListItem>
+                                        <ListItemText
+                                            primary="Previous Year's Information"
+                                            secondary={
+                                                <>
+                                                    <Typography component="span" display="block">
+                                                        Previous Annual Income: ${budgetData.historicalData.previousIncome?.toFixed(2)}
+                                                    </Typography>
+                                                    <Typography component="span" display="block">
+                                                        Had Previous Budget: {budgetData.historicalData.hadPreviousBudget ? 'Yes' : 'No'}
+                                                    </Typography>
+                                                    {budgetData.historicalData.hadPreviousBudget && (
+                                                        <>
+                                                            <Typography component="span" display="block">
+                                                                Previous Focus: {budgetData.historicalData.previousBudgetType}
+                                                            </Typography>
+                                                            {budgetData.historicalData.previousGoalsSimilar === false && (
+                                                                <Typography component="span" display="block">
+                                                                    Changes This Year: {budgetData.historicalData.previousGoalsDifference}
+                                                                </Typography>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </>
+                                            }
+                                        />
+                                    </ListItem>
+                                    <Divider />
+                                </>
+                            )}
                             <ListItem>
                                 <ListItemText primary="Budget Type" secondary={budgetData.budgetType} />
                             </ListItem>

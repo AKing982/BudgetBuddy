@@ -89,7 +89,9 @@ class BudgetBuilderServiceTest
                 101L,       // budgetId
                 5000.0,     // targetAmount
                 500.0,      // monthlyAllocation
-                250.0,      // currentSavings
+                250.0,      // currentSavings,
+                "Savings Plan",
+                "Savings Plan",
                 "LONG_TERM",// goalType
                 "MONTHLY",  // savingsFrequency
                 "ACTIVE"    // status

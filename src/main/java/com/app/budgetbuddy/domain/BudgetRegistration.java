@@ -27,7 +27,27 @@ public class BudgetRegistration
     private BigDecimal totalIncomeAmount;
     private int numberOfMonths;
     private int totalBudgetsNeeded;
+    private BigDecimal previousIncomeAmount;
+    private String previousBudgetName;
     private Set<ControlledBudgetCategory> controlledBudgetCategorySet = new HashSet<>();
+
+    public BudgetRegistration(Long userId, String budgetName, String budgetDescription, Period budgetPeriod, BudgetMode budgetMode, BudgetGoals budgetGoals, int budgetYear, LocalDate budgetStartDate, LocalDate budgetEndDate, Set<DateRange> budgetDateRanges, BigDecimal totalIncomeAmount, int numberOfMonths, int totalBudgetsNeeded, BigDecimal previousIncomeAmount, String previousBudgetName) {
+        this.userId = userId;
+        this.budgetName = budgetName;
+        this.budgetDescription = budgetDescription;
+        this.budgetPeriod = budgetPeriod;
+        this.budgetMode = budgetMode;
+        this.budgetGoals = budgetGoals;
+        this.budgetYear = budgetYear;
+        this.budgetStartDate = budgetStartDate;
+        this.budgetEndDate = budgetEndDate;
+        this.budgetDateRanges = budgetDateRanges;
+        this.totalIncomeAmount = totalIncomeAmount;
+        this.numberOfMonths = numberOfMonths;
+        this.totalBudgetsNeeded = totalBudgetsNeeded;
+        this.previousIncomeAmount = previousIncomeAmount;
+        this.previousBudgetName = previousBudgetName;
+    }
 
     public BudgetRegistration(Long userId, String budgetName, String budgetDescription, Period budgetPeriod, BudgetMode budgetMode, BudgetGoals budgetGoals, int budgetYear, Set<DateRange> budgetDateRanges, BigDecimal totalIncomeAmount, int numberOfMonths, int totalBudgetsNeeded, Set<ControlledBudgetCategory> controlledBudgetCategorySet) {
         this.userId = userId;

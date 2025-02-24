@@ -15,6 +15,8 @@ public class BudgetGoals
     private double targetAmount;
     private double monthlyAllocation;
     private double currentSavings;
+    private String goalName;
+    private String goalDescription;
     private String goalType;
     private String savingsFrequency;
     private String status;

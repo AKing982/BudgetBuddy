@@ -9,7 +9,20 @@ import BudgetPeriodTable from './BudgetPeriodTable';
 import BudgetSummary from "./BudgetSummary";
 import BudgetProgressSummary from "./BudgetProgressSummary";
 import BudgetRunnerService, {BudgetRunnerResult} from "../services/BudgetRunnerService";
-import {BudgetCategoryStats, BudgetPeriodCategory, BudgetStats} from "../utils/Items";
+import {
+    BudgetCategoryStats,
+    BudgetPeriodCategory,
+    BudgetStats,
+    DateRangeInput,
+    InputStats,
+    ProcessedStats
+} from "../utils/Items";
+import DateRange from "../domain/DateRange";
+
+interface DateArrays {
+    startDate: [number, number, number];
+    endDate: [number, number, number];
+}
 
 
 const BudgetPage: React.FC = () => {
@@ -59,18 +72,11 @@ const BudgetPage: React.FC = () => {
         fetchBudgetData(currentMonth);
     }, [currentMonth, userId]);
 
+
     const defaultBudgetStats: BudgetStats = {
         averageSpendingPerDay: 0,
         budgetId: 0,
-        dateRange: {
-            startDate: [0, 0, 0],
-            endDate: [0, 0, 0],
-            yearsInRange: 0,
-            monthsInRange: 0,
-            daysInRange: 0,
-            weeksInRange: 0,
-            biWeeksInRange: 0
-        },
+        dateRange: new DateRange(new Date(), new Date()),
         healthScore: 0,
         monthlyProjection: null,
         remaining: 0,
@@ -79,53 +85,75 @@ const BudgetPage: React.FC = () => {
         totalSpent: 0
     };
 
+
     // Then update the implementation with proper default values
+    // const budgetStats = useMemo(() => {
+    //     if (!budgetData?.length) {
+    //         return defaultBudgetStats;
+    //     }
+    //
+    //     const stats = budgetData[0]?.budgetStats[0];
+    //     if(!stats) return defaultBudgetStats;
+    //
+    //     // Calculate missing properties for dateRange
+    //     const daysInRange = stats.dateRange.daysInRange;
+    //     const weeksInRange = Math.ceil(daysInRange / 7);
+    //     const biWeeksInRange = Math.ceil(daysInRange / 14);
+    //
+    //     return {
+    //         averageSpendingPerDay: stats.averageSpendingPerDay ?? 0,
+    //         budgetId: stats.budgetId,
+    //         dateRange: {
+    //             ...stats.dateRange,
+    //             weeksInRange,      // Add calculated property
+    //             biWeeksInRange     // Add calculated property
+    //         },
+    //         healthScore: stats.healthScore ?? 0,
+    //         monthlyProjection: stats.monthlyProjection,
+    //         remaining: stats.remaining,
+    //         totalBudget: stats.totalBudget,
+    //         totalSaved: stats.totalSaved,
+    //         totalSpent: stats.totalSpent
+    //     } as BudgetStats;
+    // }, [budgetData]);
+
     const budgetStats = useMemo(() => {
         if (!budgetData?.length) {
             return {
                 averageSpendingPerDay: 0,
                 budgetId: 0,
-                dateRange: {
-                    startDate: [0, 0, 0],
-                    endDate: [0, 0, 0],
-                    yearsInRange: 0,
-                    monthsInRange: 0,
-                    daysInRange: 0,
-                    weeksInRange: 0,     // Added
-                    biWeeksInRange: 0    // Added
-                },
+                dateRange: new DateRange(new Date(), new Date()),
                 healthScore: 0,
                 monthlyProjection: null,
                 remaining: 0,
                 totalBudget: 0,
                 totalSaved: 0,
                 totalSpent: 0
-            } as BudgetStats;
+            };
         }
 
         const stats = budgetData[0]?.budgetStats[0];
-        if(!stats) return defaultBudgetStats;
+        if (!stats) return defaultBudgetStats;
 
-        // Calculate missing properties for dateRange
-        const daysInRange = stats.dateRange.daysInRange;
-        const weeksInRange = Math.ceil(daysInRange / 7);
-        const biWeeksInRange = Math.ceil(daysInRange / 14);
+        // Just tell TypeScript these are number arrays
+        const startDate = (stats.dateRange.startDate as unknown) as number[];
+        const endDate = (stats.dateRange.endDate as unknown) as number[];
+
 
         return {
             averageSpendingPerDay: stats.averageSpendingPerDay ?? 0,
             budgetId: stats.budgetId,
-            dateRange: {
-                ...stats.dateRange,
-                weeksInRange,      // Add calculated property
-                biWeeksInRange     // Add calculated property
-            },
+            dateRange: new DateRange(
+                new Date(startDate[0], startDate[1] - 1, startDate[2]),
+                new Date(endDate[0], endDate[1] - 1, endDate[2])
+            ),
             healthScore: stats.healthScore ?? 0,
             monthlyProjection: stats.monthlyProjection,
             remaining: stats.remaining,
             totalBudget: stats.totalBudget,
             totalSaved: stats.totalSaved,
             totalSpent: stats.totalSpent
-        } as BudgetStats;
+        };
     }, [budgetData]);
 
     const handleBudgetTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {

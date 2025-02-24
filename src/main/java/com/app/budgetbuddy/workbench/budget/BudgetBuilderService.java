@@ -81,6 +81,7 @@ public class BudgetBuilderService
         BudgetGoals budgetGoals = budgetRegistration.getBudgetGoals();
         String budgetDescription = budgetRegistration.getBudgetDescription();
         LocalDate budgetStartDate = budgetRegistration.getBudgetStartDate();
+        LocalDate budgetEndDate = budgetRegistration.getBudgetEndDate();
         if(budgetPeriod == Period.MONTHLY && budgetMode == BudgetMode.SAVINGS_PLAN)
         {
             // Calculate the Budget Amount
@@ -101,7 +102,7 @@ public class BudgetBuilderService
             // Next create the Budget Schedules
             Map<BudgetMonth, List<DateRange>> monthlyBudgetDateRanges = createMonthlyBudgetDateRanges(budgetDateRanges);
             List<DateRange> budgetStartAndEndDateRanges = getBudgetStartAndEndDateCriteria(monthlyBudgetDateRanges);
-            Budget budget = createBudget(actualMonthlyAllocation, totalMonths, userId, budgetDescription, budgetPeriod, budgetMode, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate);
+            Budget budget = createBudget(actualMonthlyAllocation, totalMonths, userId, budgetDescription, budgetPeriod, budgetMode, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate, budgetEndDate);
             List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals);
             subBudgetBuilderService.saveSubBudgets(subBudgets);
             budget.setSubBudgets(subBudgets);
@@ -120,7 +121,7 @@ public class BudgetBuilderService
         return Optional.empty();
     }
 
-    private Budget createBudget(BigDecimal actualMonthlyAllocation, int totalMonths, Long userId, String budgetDescription,  Period budgetPeriod, BudgetMode budgetMode, String budgetName, BigDecimal savingsProgress, BigDecimal remainingOnBudgetAfterAllocation, LocalDate budgetStartDate) {
+    private Budget createBudget(BigDecimal actualMonthlyAllocation, int totalMonths, Long userId, String budgetDescription,  Period budgetPeriod, BudgetMode budgetMode, String budgetName, BigDecimal savingsProgress, BigDecimal remainingOnBudgetAfterAllocation, LocalDate budgetStartDate, LocalDate endDate) {
         return Budget.builder()
                 .savingsAmountAllocated(actualMonthlyAllocation)
                 .savingsProgress(savingsProgress)
@@ -131,6 +132,7 @@ public class BudgetBuilderService
                 .budgetMode(budgetMode)
                 .budgetName(budgetName)
                 .startDate(budgetStartDate)
+                .endDate(endDate)
                 .budgetAmount(remainingOnBudgetAfterAllocation)
                 .actual(BigDecimal.ZERO)
                 .build();
