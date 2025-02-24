@@ -8,7 +8,7 @@ import {
     ListItemText,
     ListItemSecondaryAction,
     Paper,
-    Avatar
+    Avatar, Button
 } from '@mui/material';
 import PlaidService from "../services/PlaidService";
 import RecurringTransactionService from "../services/RecurringTransactionService";
@@ -87,32 +87,29 @@ const charges: Charge[] = [
     { name: 'American Express Card P...', dueDate: 'Due on 9/5/24', amount: '$98.55', icon: 'AE' },
     { name: 'JetBrains', dueDate: 'Due on 9/6/24', amount: '$10.73', icon: 'JB' },
 ];
-
 const PaymentCharges: React.FC = () => {
     const [recurringCharges, setRecurringCharges] = useState<RecurringTransaction[] | null>(null);
+    const [visibleCount, setVisibleCount] = useState<number>(6); // State to track number of visible charges
     const recurringTransactionsService = new RecurringTransactionService();
-    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchCharges = async () => {
-            try
-            {
+            try {
                 const userId = Number(sessionStorage.getItem('userId'));
-                if(isNaN(userId)){
+                if (isNaN(userId)) {
                     throw new Error(`Invalid UserId: ${userId}`);
                 }
                 const fetchedRecurringCharges = await recurringTransactionsService.fetchRecurringTransactionsForUser(userId);
                 console.log('Fetched Recurring Charges: ', fetchedRecurringCharges);
                 setRecurringCharges(fetchedRecurringCharges);
-            }catch(error)
-            {
+            } catch (error) {
                 console.error('There was an error fetching recurring charges: ', error);
             }
-        }
+        };
         fetchCharges();
     }, []);
 
-    const getUpcomingCharges = (streams: RecurringTransaction[]) : RecurringTransaction[] => {
+    const getUpcomingCharges = (streams: RecurringTransaction[]): RecurringTransaction[] => {
         if (!streams || !Array.isArray(streams)) {
             return [];
         }
@@ -120,29 +117,24 @@ const PaymentCharges: React.FC = () => {
         const now = new Date();
         const thirteenDaysLater = addDays(now, 13);
 
-        const filteredStreams = streams.filter(stream => {
+        return streams.filter(stream => {
             if (!stream.lastDate || !stream.active) {
                 return false;
             }
 
             try {
-                // Assuming lastDate is in 'yyyy-MM-dd' format
-                const [year, month, day] = stream.lastDate;
-                const nextDate = new Date(year, month - 1, day);
+                const nextDate = new Date(stream.lastDate[0], stream.lastDate[1] - 1, stream.lastDate[2]);
                 return (isBefore(nextDate, thirteenDaysLater) || isEqual(nextDate, thirteenDaysLater)) && stream.active;
             } catch (error) {
                 console.error(`Error parsing date for stream ${stream.streamId}:`, error);
                 return false;
             }
         });
-
-        console.log('filteredStreams: ', filteredStreams);
-        return filteredStreams;
     };
 
     const parseDate = (dateArray: [number, number, number]): Date => {
         const [year, month, day] = dateArray;
-        return new Date(year, month - 1, day);  // month is 0-indexed in JS Date
+        return new Date(year, month - 1, day);
     };
 
     const formatDate = (dateArray: [number, number, number]): string => {
@@ -150,91 +142,151 @@ const PaymentCharges: React.FC = () => {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    // const parseDate = (dateString: string | null | undefined): Date => {
-    //     // This assumes dateString is in format "YYYY-MM-DD"
-    //     if(!dateString || typeof dateString !== 'string'){
-    //         console.error('Invalid date string:', dateString);
-    //         return new Date();
-    //     }
-    //
-    //     const parts = dateString.split('-');
-    //     if(parts.length !== 3){
-    //         console.error('Date string is not in expected format (YYYY-MM-DD):', dateString);
-    //         return new Date();
-    //     }
-    //
-    //     const [year, month, day] = parts.map(Number);
-    //     if(isNaN(year) || isNaN(month) || isNaN(day)){
-    //         console.error('Date parts are not valid numbers:', {year, month, day});
-    //         return new Date();
-    //     }
-    //     return new Date(year, month - 1, day);
-    // };
-    //
-    // const formatDate = (dateString: string): string => {
-    //     const date = parseDate(dateString);
-    //     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    // };
-
     const upcomingCharges = recurringCharges ? getUpcomingCharges(recurringCharges) : [];
-    console.log('Upcoming Charges: ', upcomingCharges);
-    // const upcomingCharges: any[] = [];
     const totalAmount = upcomingCharges.reduce((sum, charge) => {
-        console.log('Charge: ', charge);
-        if(charge && charge.lastAmount){
-            let chargeAmount = charge.lastAmount;
-            console.log('Charge Amount: ', chargeAmount);
-            return sum + Math.abs(charge.lastAmount);
-        }
-        console.log('Current Sum: ', sum);
-        return sum;
+        return charge && charge.lastAmount ? sum + Math.abs(charge.lastAmount) : sum;
     }, 0);
 
-    console.log('Total Amount: ', totalAmount);
+    // Slice the charges to show only the visible count
+    const visibleCharges = upcomingCharges.slice(0, visibleCount);
+    const hasMoreCharges = upcomingCharges.length > visibleCount;
+
+    const handleShowMore = () => {
+        setVisibleCount(prevCount => prevCount + 6); // Show 6 more charges
+    };
+
     return (
-        <Paper elevation={3} sx={{ maxWidth: 400, margin: 'auto', mt: 2, borderRadius: '12px', overflow: 'hidden' }}>
+        <Paper
+            elevation={3}
+            sx={{
+                maxWidth: 400,
+                margin: 'auto',
+                mt: 2,
+                borderRadius: '12px',
+                overflow: 'hidden',
+                bgcolor: '#FFFFFF',
+            }}
+        >
             <Box sx={{ p: 2, backgroundColor: '#F9FAFB' }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#111827', mb: 2 }}>COMING UP</Typography>
-                <Typography variant="body2" sx={{ color: '#4B5563', mb: 2 }}>
+                <Typography
+                    variant="h6"
+                    sx={{
+                        fontWeight: 'bold',
+                        color: '#111827',
+                        mb: 1.5,
+                    }}
+                >
+                    COMING UP
+                </Typography>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: '#4B5563',
+                        mb: 2.5,
+                        fontSize: '0.875rem',
+                    }}
+                >
                     You have {upcomingCharges.length} recurring charges due within the next 13 days for ${totalAmount.toFixed(2)}.
                 </Typography>
-                <List disablePadding>
-                    {upcomingCharges.map((charge, index) => (
-                        <ListItem
-                            key={`${charge.accountId}-${index}`}
-                            divider={index !== upcomingCharges.length - 1}
+                <Box
+                    sx={{
+                        maxHeight: 300, // Fixed height to limit visible area
+                        overflowY: 'auto', // Enable vertical scrolling
+                        scrollbarWidth: 'thin', // For Firefox
+                        '&::-webkit-scrollbar': {
+                            width: '6px', // For Webkit browsers (Chrome, Safari)
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: '#6B7280',
+                            borderRadius: '4px',
+                        },
+                    }}
+                >
+                    <List disablePadding>
+                        {visibleCharges.map((charge, index) => (
+                            <ListItem
+                                key={`${charge.accountId}-${index}`}
+                                divider={index !== visibleCharges.length - 1}
+                                sx={{
+                                    py: 1.5,
+                                    px: 2,
+                                    '&:hover': { backgroundColor: '#F3F4F6' },
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <ListItemIcon sx={{ minWidth: 40 }}>
+                                    <Avatar
+                                        sx={{
+                                            width: 32,
+                                            height: 32,
+                                            fontSize: '0.875rem',
+                                            bgcolor: getBgColor(charge.merchantName),
+                                        }}
+                                    >
+                                        {(charge.merchantName || charge.description || 'U')[0].toUpperCase()}
+                                    </Avatar>
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={charge.merchantName || charge.description}
+                                    secondary={formatDate(charge.lastDate)}
+                                    primaryTypographyProps={{
+                                        sx: {
+                                            fontWeight: 'medium',
+                                            color: '#111827',
+                                            fontSize: '0.9375rem',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            maxWidth: '180px',
+                                        },
+                                    }}
+                                    secondaryTypographyProps={{
+                                        sx: {
+                                            color: '#6B7280',
+                                            fontSize: '0.75rem',
+                                        },
+                                    }}
+                                />
+                                <ListItemSecondaryAction sx={{ right: 16 }}>
+                                    <Typography
+                                        sx={{
+                                            fontWeight: 'bold',
+                                            color: '#111827',
+                                            fontSize: '0.9375rem',
+                                        }}
+                                    >
+                                        ${Math.abs(charge.lastAmount).toFixed(2)}
+                                    </Typography>
+                                </ListItemSecondaryAction>
+                            </ListItem>
+                        ))}
+                    </List>
+                </Box>
+                {hasMoreCharges && (
+                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                        <Button
+                            variant="outlined"
+                            onClick={handleShowMore}
                             sx={{
-                                py: 1.5,
-                                '&:hover': { backgroundColor: '#F3F4F6' }
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                color: '#111827',
+                                borderColor: '#D1D5DB',
+                                '&:hover': {
+                                    backgroundColor: '#F3F4F6',
+                                    borderColor: '#9CA3AF',
+                                },
                             }}
                         >
-                            <ListItemIcon>
-                                <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor: getBgColor(charge.merchantName) }}>
-                                    {(charge.merchantName || charge.description || 'U')[0].toUpperCase()}
-                                </Avatar>
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={charge.merchantName || charge.description}
-                                secondary={formatDate(charge.lastDate)}
-                                primaryTypographyProps={{
-                                    sx: { fontWeight: 'medium', color: '#111827' }
-                                }}
-                                secondaryTypographyProps={{
-                                    sx: { color: '#6B7280', fontSize: '0.75rem' }
-                                }}
-                            />
-                            <ListItemSecondaryAction>
-                                <Typography sx={{ fontWeight: 'bold', color: '#111827' }}>
-                                    ${Math.abs(charge.lastAmount).toFixed(2)}
-                                </Typography>
-                            </ListItemSecondaryAction>
-                        </ListItem>
-                    ))}
-                </List>
+                            Show More Charges
+                        </Button>
+                    </Box>
+                )}
             </Box>
         </Paper>
     );
 };
+
 
 const getBgColor = (merchantName: string): string => {
     switch (merchantName.toLowerCase()) {
