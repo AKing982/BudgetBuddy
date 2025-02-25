@@ -3,12 +3,11 @@ import {BudgetMode, BudgetRegistration} from "../utils/Items";
 import DateRange from "../domain/DateRange";
 
 
-class BudgetSetupService
-{
+class BudgetSetupService {
     private static instance: BudgetSetupService;
     private static axios: AxiosInstance;
 
-    constructor(){
+    constructor() {
         BudgetSetupService.axios = axios.create({
             baseURL: 'http://localhost:8080/api/budgetSetup/',
             headers: {
@@ -17,19 +16,16 @@ class BudgetSetupService
         });
     }
 
-    public static getInstance() : BudgetSetupService
-    {
-        if(!BudgetSetupService.instance){
+    public static getInstance(): BudgetSetupService {
+        if (!BudgetSetupService.instance) {
             BudgetSetupService.instance = new BudgetSetupService();
         }
         return BudgetSetupService.instance;
     }
 
-    public async startBudgetSetupProcess(budgetRegistration: BudgetRegistration): Promise<boolean>
-    {
+    public async startBudgetSetupProcess(budgetRegistration: BudgetRegistration): Promise<boolean> {
         let userId = budgetRegistration.userId;
-        try
-        {
+        try {
 
             const transformedRegistration = {
                 ...budgetRegistration,
@@ -45,9 +41,7 @@ class BudgetSetupService
             if (response.status === 200) {
                 console.log(`Budget setup completed successfully for user ${userId}`);
                 return true;
-            }
-            else
-            {
+            } else {
                 console.error(`Budget setup failed for user ${userId}. Status: ${response.status}`);
                 return false;
             }
@@ -62,10 +56,8 @@ class BudgetSetupService
         }
     }
 
-    public getBudgetModeByBudgetType(budgetType: string) : BudgetMode
-    {
-        switch(budgetType)
-        {
+    public getBudgetModeByBudgetType(budgetType: string): BudgetMode {
+        switch (budgetType) {
             case 'Saving for a goal':
                 return BudgetMode.SAVINGS_PLAN
             case 'Paying off debt':
@@ -79,36 +71,10 @@ class BudgetSetupService
         }
     }
 
-    // public calculateBudgetDateRanges(startDate: [number, number, number],
-    //                                  endDate: [number, number, number]): DateRange[] {
-    //     const dateRanges: DateRange[] = [];
-    //     let currentYear = startDate[0];
-    //     let currentMonth = startDate[1];
-    //     const endYear = endDate[0];
-    //     const endMonth = endDate[1];
-    //
-    //     while (currentYear < endYear || (currentYear === endYear && currentMonth <= endMonth)) {
-    //         // Get the last day of the current month
-    //         const lastDay = new Date(currentYear, currentMonth, 0).getDate();
-    //
-    //         // Create DateRange with proper Date objects
-    //         const monthRange = new DateRange(
-    //             new Date(currentYear, currentMonth - 1, 1),  // Month is 0-based in Date constructor
-    //             new Date(currentYear, currentMonth - 1, lastDay)
-    //         );
-    //
-    //         dateRanges.push(monthRange);
-    //
-    //         // Move to next month
-    //         if (currentMonth === 12) {
-    //             currentMonth = 1;
-    //             currentYear++;
-    //         } else {
-    //             currentMonth++;
-    //         }
-    //     }
-    //     return dateRanges;
-    // }
+    public calculateExpectedSavingsDeadline(startDate: number, savingsTarget: number, monthlyAllocation: number, numberOfMonths: number) : number
+    {
+        return 0;
+    }
 
     public calculateBudgetDateRanges(startDate: [number, number, number],
                                      endDate: [number, number, number]): DateRange[] {

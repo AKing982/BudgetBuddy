@@ -110,13 +110,11 @@ public class SubBudgetBuilderService
             double targetAmount = budgetGoals.getTargetAmount();
             totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, totalMonthsToSave);
             subBudgetSavingsTarget = getTotalSubBudgetSavingsTarget(targetAmount, totalMonthsToSave, currentSavings, monthlyAllocation);
-            monthlyAllocationAmount = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, monthlyIncome, totalMonthsToSave);
-        }
-        else
-        {
+//            monthlyAllocationAmount = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, monthlyIncome, totalMonthsToSave);
+        } else {
             totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyIncome.doubleValue(), totalMonthsToSave);
             subBudgetSavingsTarget = budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(monthlyIncome.doubleValue(), totalMonthsToSave, 0.0, 0.0);
-            monthlyAllocationAmount = budgetCalculations.calculateActualMonthlyAllocation(monthlyIncome.doubleValue(), 0.0, 0.0, monthlyIncome, totalMonthsToSave);
+//            monthlyAllocationAmount = budgetCalculations.calculateActualMonthlyAllocation(monthlyIncome.doubleValue(), 0.0, 0.0, monthlyIncome, totalMonthsToSave);
         }
 
         // 3. Determine the SubSavings amount that's been put into the sub budget
@@ -142,6 +140,7 @@ public class SubBudgetBuilderService
         SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
         Long subBudgetId = subBudgetEntity.getId();
         subBudget.setId(subBudgetId);
+        log.info("Returning SubBudget: {}", subBudget.toString());
         return Optional.of(subBudget);
         }catch(Exception e)
         {
@@ -211,13 +210,16 @@ public class SubBudgetBuilderService
                 LocalDate monthStart = budgetMonth.getStartDate();
                 LocalDate monthEnd = budgetMonth.getEndDate();
                 Optional<SubBudget> monthSubBudget = createNewMonthSubBudget(budget, monthStart, monthEnd, incomeAmount, budgetGoals);
-                if(monthSubBudget.isEmpty())
-                {
+                if (monthSubBudget.isEmpty()) {
+                    log.error("Failed to create sub-budget for {} - {}. Budget: {}, Goals: {}, Income: {}",
+                            monthStart, monthEnd, budget, budgetGoals, incomeAmount);
                     throw new RuntimeException("Month Sub budget for: " + monthStart + " - " + monthEnd + " not found");
                 }
+                //TODO: Add Test case for when a sub Budget already exists in the database, then fetch the subBudget and add to the list
                 SubBudget subBudget = monthSubBudget.get();
                 monthlySubBudgets.add(subBudget);
             }
+            log.info("Returning Monthly SubBudgets: " + monthlySubBudgets.size());
             return monthlySubBudgets;
         }catch(RuntimeException e)
         {

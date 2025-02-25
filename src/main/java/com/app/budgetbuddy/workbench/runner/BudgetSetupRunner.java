@@ -29,7 +29,7 @@ public class BudgetSetupRunner
             log.warn("Budget registration is null. Unable to run budget setup.");
             return false;
         }
-
+        log.info("Budget Registration: {}", budgetRegistration.toString());
         log.info("Starting budget setup for user: {}", budgetRegistration.getUserId());
         int currentYear = budgetRegistration.getBudgetYear();
         try
@@ -40,7 +40,9 @@ public class BudgetSetupRunner
             int previousYear = currentBudget.getBudgetYear() - 1;
             log.info("Creating budget for previous year: {}", previousYear);
             BigDecimal previousYearIncome = budgetRegistration.getPreviousIncomeAmount();
+            log.info("Previous Year Income: {}", previousYearIncome);
             String previousYearBudgetName = budgetRegistration.getPreviousBudgetName();
+            log.info("Previous Year Budget Name: {}", previousYearBudgetName);
             Budget previousYearBudget = budgetSetupEngine.createPreviousYearBudget(previousYearIncome, previousYearBudgetName, currentBudget)
                     .orElseThrow(() -> new RuntimeException("Failed to create previous year budget"));
 
@@ -52,6 +54,7 @@ public class BudgetSetupRunner
 
             log.info("Creating Monthly Sub Budget goals for current year {}", currentYear);
             BudgetGoals budgetGoals = budgetRegistration.getBudgetGoals();
+            log.info("User Budget Goals: {}", budgetGoals.toString());
             List<MonthlyBudgetGoals> currentYearMonthlyBudgetGoals = budgetSetupEngine.createMonthlyBudgetGoalsForSubBudgets(budgetGoals, currentYearSubBudgets);
             budgetSetupEngine.saveMonthlyBudgetGoals(currentYearMonthlyBudgetGoals);
             log.info("Creating Monthly Sub Budget goals for previous year {}", previousYear);

@@ -285,22 +285,6 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         }));
     };
 
-    const handleBudgetRegistration = async (budgetData: BudgetQuestions)=> {
-        if(budgetData == null){
-            return null;
-        }
-        try
-        {
-            // Get the response from the server
-            const budgetServerResponse = await budgetService.saveBudget(budgetData);
-            console.log('Budget Response: ', budgetServerResponse.data);
-            return budgetServerResponse.data;
-        }catch(error){
-            console.error('There was an error creating the budget: ', error);
-            throw error;
-        }
-    };
-
     const handleBudgetGoalRegistration = async (budgetId: number) => {
         try {
             let goalData;
