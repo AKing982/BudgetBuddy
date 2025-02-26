@@ -101,7 +101,7 @@ public class BudgetScheduleEngine
         newBudgetSchedule.setEndDate(endDate);
         newBudgetSchedule.setPeriod(Period.MONTHLY);
         newBudgetSchedule.setScheduleRange(new DateRange(startDate, endDate));
-        newBudgetSchedule.setStatus("Active");
+        newBudgetSchedule.setStatus("ACTIVE");
         newBudgetSchedule.setTotalPeriods(4); // Example: Adjust based on real calculations
         newBudgetSchedule.setSubBudgetId(subBudget.getId());
 

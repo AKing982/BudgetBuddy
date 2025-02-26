@@ -64,6 +64,7 @@ public class MonthlyBudgetGoalsBuilder extends BudgetGoalsBuilder<MonthlyBudgetG
             for(MonthlyBudgetGoals monthlyBudgetGoals: budgetGoals)
             {
                 SubBudgetGoalsEntity subBudgetGoalsEntity = new SubBudgetGoalsEntity();
+                log.info("Setting Budget Goals using budget goals id: {}", monthlyBudgetGoals.getBudgetGoalId());
                 subBudgetGoalsEntity.setBudgetGoals(getBudgetGoalsEntity(monthlyBudgetGoals.getBudgetGoalId()));
                 subBudgetGoalsEntity.setGoalScore(monthlyBudgetGoals.getGoalScore());
                 subBudgetGoalsEntity.setId(monthlyBudgetGoals.getId());

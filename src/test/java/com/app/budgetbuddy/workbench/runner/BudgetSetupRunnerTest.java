@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.runner;
 import com.app.budgetbuddy.domain.Budget;
 import com.app.budgetbuddy.domain.BudgetGoals;
 import com.app.budgetbuddy.domain.BudgetRegistration;
+import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.workbench.budget.BudgetSetupEngine;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,9 @@ class BudgetSetupRunnerTest
 {
     @Mock
     private BudgetSetupEngine budgetSetupEngine;
+
+    @Mock
+    private BudgetGoalsService budgetGoalsService;
 
     @InjectMocks
     private BudgetSetupRunner budgetSetupRunner;
@@ -59,7 +63,7 @@ class BudgetSetupRunnerTest
         previousYearBudget.setStartDate(LocalDate.of(2022, 1, 1));
         previousYearBudget.setEndDate(LocalDate.of(2022, 12, 31));
 
-        budgetSetupRunner = new BudgetSetupRunner(budgetSetupEngine);
+        budgetSetupRunner = new BudgetSetupRunner(budgetSetupEngine, budgetGoalsService);
     }
 
 

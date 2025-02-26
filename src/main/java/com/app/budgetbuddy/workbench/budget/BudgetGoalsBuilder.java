@@ -25,6 +25,7 @@ public abstract class BudgetGoalsBuilder<T>
     {
         try
         {
+            log.info("Getting Budget Goals with id: {}", id);
             return budgetGoalsService.findById(id);
         }catch(Exception e)
         {

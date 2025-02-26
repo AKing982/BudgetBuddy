@@ -111,9 +111,20 @@ public class SubBudgetServiceImpl implements SubBudgetService
         }
         try
         {
-            SubBudgetEntity convertSubBudget = convertSubBudgetToEntity(subBudget);
-            subBudgetRepository.save(convertSubBudget);
-            return Optional.of(convertSubBudget);
+            SubBudgetEntity subBudgetEntity = convertSubBudgetToEntity(subBudget);
+            log.debug("Saving SubBudgetEntity: budgetId={}, id={}", subBudgetEntity.getBudget().getId(), subBudgetEntity.getId());
+            SubBudgetEntity savedEntity = subBudgetRepository.save(subBudgetEntity);
+            log.debug("Saved SubBudgetEntity with ID: {}", savedEntity.getId());
+
+            // Fetch the entity post-save to ensure we get the generated ID
+            Optional<SubBudgetEntity> fetchedEntity = subBudgetRepository.findById(savedEntity.getId());
+            if (fetchedEntity.isEmpty()) {
+                log.error("Failed to fetch SubBudgetEntity after save with ID: {}", savedEntity.getId());
+                return Optional.of(savedEntity); // Fallback to saved entity if fetch fails
+            }
+
+            log.debug("Saved and fetched SubBudgetEntity with ID: {}", fetchedEntity.get().getId());
+            return fetchedEntity;
 
         }catch(DataAccessException e)
         {
@@ -155,16 +166,16 @@ public class SubBudgetServiceImpl implements SubBudgetService
     private SubBudgetEntity convertSubBudgetToEntity(SubBudget subBudget)
     {
         SubBudgetEntity subBudgetEntity = new SubBudgetEntity();
-        subBudgetEntity.setId(subBudget.getId());
         subBudgetEntity.setActive(subBudget.isActive());
         subBudgetEntity.setAllocatedAmount(subBudget.getAllocatedAmount());
         subBudgetEntity.setSubBudgetName(subBudget.getSubBudgetName());
         subBudgetEntity.setSpentOnBudget(subBudget.getSpentOnBudget());
         subBudgetEntity.setStartDate(subBudget.getStartDate());
+        subBudgetEntity.setYear(subBudget.getYear());
         subBudgetEntity.setEndDate(subBudget.getEndDate());
         subBudgetEntity.setSubSavingsAmount(subBudget.getSubSavingsAmount());
         subBudgetEntity.setSubSavingsTarget(subBudget.getSubSavingsTarget());
-        Long budgetId = subBudget.getId();
+        Long budgetId = subBudget.getBudget().getId();
         BudgetEntity budgetEntity = getBudget(budgetId);
         List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
         subBudgetEntity.setBudget(budgetEntity);
@@ -174,6 +185,7 @@ public class SubBudgetServiceImpl implements SubBudgetService
 
 
     private @NotNull BudgetEntity getBudget(Long budgetId) {
+        log.info("Getting budget with id: {}", budgetId);
         Optional<BudgetEntity> budgetEntityOptional = budgetRepository.findById(budgetId);
         if(budgetEntityOptional.isEmpty()){
             throw new RuntimeException("No Budget found with id: " + budgetId);

@@ -34,7 +34,7 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
 
     @Modifying
     @Query("UPDATE BudgetEntity b SET b.subBudgetEntities =:subBudgets WHERE b.id =:id")
-    Optional<BudgetEntity> updateBudgetEntity(@Param("id") Long id, @Param("subBudgets") Set<SubBudgetEntity> subBudgets);
+    void updateBudgetEntity(@Param("id") Long id, @Param("subBudgets") Set<SubBudgetEntity> subBudgets);
 
 
 }

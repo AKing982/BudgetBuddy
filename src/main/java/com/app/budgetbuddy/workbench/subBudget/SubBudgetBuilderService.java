@@ -122,7 +122,6 @@ public class SubBudgetBuilderService
             // 4. Determine what's been spent on the sub budget
             // 5. Build the Budget Schedules for the sub budget
             SubBudget subBudget = buildSubBudget(true, totalSubBudgetAmount, subBudgetSavingsTarget, totalSavingsInSubBudget, budget, totalSubBudgetSpending, subBudgetName, startDate, endDate);
-            log.info("Sub-Budget: {}", subBudget.toString());
             Optional<SubBudgetEntity> subBudgetEntityOptional = saveSingleSubBudget(subBudget);
             if (subBudgetEntityOptional.isEmpty()) {
                 log.error("Failed to save sub budget entity");

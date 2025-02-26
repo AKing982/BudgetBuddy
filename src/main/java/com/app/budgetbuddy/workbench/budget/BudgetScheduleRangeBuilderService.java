@@ -46,10 +46,22 @@ public class BudgetScheduleRangeBuilderService
         try
         {
 
-            if (subBudgetStartDate.isAfter(budget.getStartDate()) && subBudgetEndDate.isBefore(budget.getEndDate()))
-            {
-                throw new IllegalArgumentException("SubBudget should be contained within a single month.");
+            // Check if sub-budget spans a single month
+            if (!subBudgetStartDate.getMonth().equals(subBudgetEndDate.getMonth()) ||
+                    subBudgetStartDate.getYear() != subBudgetEndDate.getYear()) {
+                throw new IllegalArgumentException("SubBudget must span exactly one month: start=" +
+                        subBudgetStartDate + ", end=" + subBudgetEndDate);
             }
+
+            // Ensure sub-budget is within parent budget's range
+            LocalDate budgetStartDate = budget.getStartDate();
+            LocalDate budgetEndDate = budget.getEndDate();
+            if (subBudgetStartDate.isBefore(budgetStartDate) || subBudgetEndDate.isAfter(budgetEndDate)) {
+                throw new IllegalArgumentException("SubBudget must be within parent budget range: " +
+                        "subBudgetStart=" + subBudgetStartDate + ", subBudgetEnd=" + subBudgetEndDate +
+                        ", budgetStart=" + budgetStartDate + ", budgetEnd=" + budgetEndDate);
+            }
+
             // Create a DateRange for the sub-budget's month
             DateRange monthDateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
 

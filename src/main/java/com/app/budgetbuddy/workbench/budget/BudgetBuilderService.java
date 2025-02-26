@@ -15,6 +15,7 @@ import com.app.budgetbuddy.workbench.subBudget.SubBudgetConverterUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -155,6 +156,8 @@ public class BudgetBuilderService
 //        }
 //        // Depending on the period and budget mode and the budget goals, we need to calculate the budget amount
 //    }
+
+    @Transactional
     public Optional<Budget> buildBudgetFromRegistration(final BudgetRegistration budgetRegistration) {
         if (budgetRegistration == null) {
             return Optional.empty();
@@ -176,46 +179,44 @@ public class BudgetBuilderService
         LocalDate budgetStartDate = budgetRegistration.getBudgetStartDate();
         LocalDate budgetEndDate = budgetRegistration.getBudgetEndDate();
 
-        try
-        {
+        try {
             // Calculate the Budget Amount
             double monthlyAllocation = budgetGoals.getMonthlyAllocation();
             double targetAmount = budgetGoals.getTargetAmount();
             double currentSavings = budgetGoals.getCurrentSavings();
 
             BigDecimal actualMonthlyAllocation = budgetCalculations.calculateActualMonthlyAllocation(
-                monthlyAllocation, targetAmount, currentSavings, totalIncomeAmount, totalMonths);
+                    monthlyAllocation, targetAmount, currentSavings, totalIncomeAmount, totalMonths);
             BigDecimal remainingOnBudgetAfterAllocation = totalIncomeAmount.subtract(actualMonthlyAllocation);
 
             BigDecimal currentlySaved = BigDecimal.valueOf(currentSavings);
             BigDecimal targetAmountAsDecimal = BigDecimal.valueOf(targetAmount);
             BigDecimal savingsProgress = budgetCalculations.calculateSavingsProgress(
-                actualMonthlyAllocation, currentlySaved, targetAmountAsDecimal);
+                    actualMonthlyAllocation, currentlySaved, targetAmountAsDecimal);
 
             // Create BudgetEntity
-            BudgetEntity budget = BudgetEntity.builder()
-                .user(UserEntity.builder().id(userId).build()) // Simplified, adjust as needed
-                .budgetName(budgetName)
-                .budgetDescription(budgetDescription)
-                .budgetAmount(remainingOnBudgetAfterAllocation)
-                .budgetMode(budgetMode)
-                .budgetPeriod(budgetPeriod)
-                .monthlyIncome(totalIncomeAmount)
-                .budgetStartDate(budgetStartDate)
-                .budgetEndDate(budgetEndDate)
-                .year(budgetYear)
+            BudgetEntity budgetEntity = BudgetEntity.builder()
+                    .user(UserEntity.builder().id(userId).build())
+                    .budgetName(budgetName)
+                    .budgetDescription(budgetDescription)
+                    .budgetAmount(remainingOnBudgetAfterAllocation)
+                    .budgetMode(budgetMode)
+                    .budgetPeriod(budgetPeriod)
                     .monthlyIncome(totalIncomeAmount)
-                .actualSavingsAllocation(actualMonthlyAllocation)
-                .savingsProgress(savingsProgress)
-                .totalMonthsToSave(totalMonths)
-                .createdDate(LocalDateTime.now())
-                .subBudgetEntities(new HashSet<>())
-                .build();
+                    .budgetStartDate(budgetStartDate)
+                    .budgetEndDate(budgetEndDate)
+                    .year(budgetYear)
+                    .actualSavingsAllocation(actualMonthlyAllocation)
+                    .savingsProgress(savingsProgress)
+                    .totalMonthsToSave(totalMonths)
+                    .createdDate(LocalDateTime.now())
+                    .subBudgetEntities(new HashSet<>())
+                    .build();
 
-            // Save BudgetEntity to generate budgetId
-            Optional<BudgetEntity> savedBudgetOptional = budgetService.saveBudgetEntity(budget);
+            // Save BudgetEntity first
+            Optional<BudgetEntity> savedBudgetOptional = budgetService.saveBudgetEntity(budgetEntity);
             if (savedBudgetOptional.isEmpty()) {
-                log.error("Failed to save budget initially: {}", budget);
+                log.error("Failed to save budget initially: {}", budgetEntity);
                 return Optional.empty();
             }
 
@@ -225,50 +226,51 @@ public class BudgetBuilderService
                 log.error("Saved budget ID is null");
                 return Optional.empty();
             }
+            log.info("Budget saved with ID: {}", budgetId);
 
-            // Create BudgetGoalsEntity
+            // Create and link BudgetGoalsEntity
             BudgetGoalsEntity goalsEntity = BudgetGoalsEntity.builder()
-                    .targetAmount(targetAmount)
+                    .budget(savedBudgetEntity)
+                    .targetAmount(targetAmountAsDecimal.doubleValue())
                     .monthlyAllocation(monthlyAllocation)
                     .currentSavings(currentSavings)
                     .goalName(budgetGoals.getGoalName())
-                    .budget(savedBudgetEntity)
                     .goalDescription(budgetGoals.getGoalDescription())
                     .goalType(budgetGoals.getGoalType())
                     .savingsFrequency(budgetGoals.getSavingsFrequency())
                     .status(budgetGoals.getStatus())
+                    .createdAt(LocalDateTime.now())
                     .build();
 
-            // Link back from goals to budget
             budgetGoalsService.save(goalsEntity);
-            // Update BudgetEntity with the saved BudgetGoalsEntity
             savedBudgetEntity.setBudgetGoals(goalsEntity);
-            Optional<BudgetEntity> updatedBudgetWithGoalsOptional = budgetService.saveBudgetEntity(savedBudgetEntity);
-            if (updatedBudgetWithGoalsOptional.isEmpty()) {
-                log.error("Failed to update budget with goals: {}", savedBudgetEntity);
-                return Optional.empty();
-            }
+            budgetService.saveBudgetEntity(savedBudgetEntity);
 
-            log.info("Budget saved with ID: {}", budgetId);
-            // Create and attach sub-budgets
-            Budget savedBudget = budgetService.convertBudgetEntity(savedBudgetEntity);
-            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgets(savedBudget, budgetGoals);
+            // Convert to Budget domain model
+            Budget budget = budgetService.convertBudgetEntity(savedBudgetEntity);
+            log.debug("Converted Budget: id={}, income={}", budget.getId(), budget.getIncome());
+
+            // Create sub-budgets
+            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals);
             if (subBudgets.isEmpty()) {
                 log.error("No Sub-Budgets created for budget: {}", budget);
                 return Optional.empty();
             }
-            Set<SubBudgetEntity> subBudgetEntities = subBudgetConverterUtil.convertSubBudgetToEntities(subBudgets);
-            budget.setSubBudgetEntities(subBudgetEntities);
 
-            // Update Budget with sub-budgets
-            Optional<BudgetEntity> updatedBudgetOptional = updateBudget(savedBudget);
+            // Convert and attach sub-budgets
+            Set<SubBudgetEntity> subBudgetEntities = subBudgetConverterUtil.convertSubBudgetToEntities(subBudgets);
+            savedBudgetEntity.setSubBudgetEntities(subBudgetEntities);
+
+            // Save the updated BudgetEntity instead of using updateBudgetEntity
+            Optional<BudgetEntity> updatedBudgetOptional = budgetService.saveBudgetEntity(savedBudgetEntity);
             if (updatedBudgetOptional.isEmpty()) {
-                log.error("Failed to update budget with sub-budgets: {}", budget);
+                log.error("Failed to update budget with sub-budgets for ID: {}", budgetId);
                 return Optional.empty();
             }
-            Budget updatedBudget = budgetService.convertBudgetEntity(updatedBudgetOptional.get());
+
+            Budget finalBudget = budgetService.convertBudgetEntity(updatedBudgetOptional.get());
             log.info("Budget successfully created and updated with ID: {}", budgetId);
-            return Optional.of(updatedBudget);
+            return Optional.of(finalBudget);
 
         } catch (BudgetBuildException e) {
             log.error("There was an error building the budget from the registration: ", e);
