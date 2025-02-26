@@ -1,7 +1,9 @@
 package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.entities.BudgetEntity;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
@@ -28,6 +31,10 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
 
     @Query("SELECT b FROM BudgetEntity b WHERE b.user.id =:user AND b.year =:year")
     Optional<BudgetEntity> findBudgetByUserAndYear(@Param("user") Long user, @Param("year") Integer year);
+
+    @Modifying
+    @Query("UPDATE BudgetEntity b SET b.subBudgetEntities =:subBudgets WHERE b.id =:id")
+    Optional<BudgetEntity> updateBudgetEntity(@Param("id") Long id, @Param("subBudgets") Set<SubBudgetEntity> subBudgets);
 
 
 }

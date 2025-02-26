@@ -123,6 +123,14 @@ public class SubBudgetBuilderService
             // 5. Build the Budget Schedules for the sub budget
             SubBudget subBudget = buildSubBudget(true, totalSubBudgetAmount, subBudgetSavingsTarget, totalSavingsInSubBudget, budget, totalSubBudgetSpending, subBudgetName, startDate, endDate);
             log.info("Sub-Budget: {}", subBudget.toString());
+            Optional<SubBudgetEntity> subBudgetEntityOptional = saveSingleSubBudget(subBudget);
+            if (subBudgetEntityOptional.isEmpty()) {
+                log.error("Failed to save sub budget entity");
+                return Optional.empty();
+            }
+            SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
+            Long subBudgetId = subBudgetEntity.getId();
+            subBudget.setId(subBudgetId);
             Optional<BudgetSchedule> budgetSchedules = budgetScheduleEngine.createMonthSubBudgetSchedule(subBudget);
             if(budgetSchedules.isEmpty())
             {
@@ -131,15 +139,6 @@ public class SubBudgetBuilderService
             }
             subBudget.setBudgetSchedule(List.of(budgetSchedules.get()));
             log.debug("Budget Schedule Set: {}", budgetSchedules.get());
-            Optional<SubBudgetEntity> subBudgetEntityOptional = saveSingleSubBudget(subBudget);
-            if(subBudgetEntityOptional.isEmpty())
-            {
-                log.error("Failed to save sub budget entity");
-                return Optional.empty();
-            }
-            SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
-            Long subBudgetId = subBudgetEntity.getId();
-            subBudget.setId(subBudgetId);
             log.info("Returning SubBudget: {}", subBudget.toString());
             return Optional.of(subBudget);
         }catch(Exception e)
@@ -253,6 +252,21 @@ public class SubBudgetBuilderService
             return Optional.empty();
         }
     }
+
+//    public Optional<SubBudgetEntity> updateSingleSubBudget(final SubBudget subBudget)
+//    {
+//        if(subBudget == null)
+//        {
+//            return Optional.empty();
+//        }
+//        try
+//        {
+//            return subBudgetService.up
+//        }catch(DataAccessException e){
+//            log.error("There was an error updating single sub budget: ", e);
+//            return Optional.empty();
+//        }
+//    }
 
     public void saveBudgetSchedules(final List<BudgetSchedule> budgetSchedules)
     {

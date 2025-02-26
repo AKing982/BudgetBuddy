@@ -98,7 +98,7 @@ public class BudgetServiceImpl implements BudgetService
         }
     }
 
-    private Budget convertBudgetEntity(BudgetEntity budgetEntity)
+    public Budget convertBudgetEntity(BudgetEntity budgetEntity)
     {
         if(budgetEntity == null) {
             return null;
@@ -289,7 +289,41 @@ public class BudgetServiceImpl implements BudgetService
     }
 
     @Override
-    public Optional<BudgetEntity> updateBudget(Long id, BudgetCreateRequest updateRequest) {
+    public Optional<BudgetEntity> saveBudgetEntity(BudgetEntity budgetEntity)
+    {
+        if(budgetEntity == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            budgetRepository.save(budgetEntity);
+            return Optional.of(budgetEntity);
+        }catch(DataAccessException e){
+            log.error("There was an error saving the budget to the database: ", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<BudgetEntity> updateBudget(Budget budget)
+    {
+        if(budget == null)
+        {
+            return Optional.empty();
+        }
+
+        List<SubBudget> subBudgets = budget.getSubBudgets();
+        Set<SubBudgetEntity> subBudgetEntities = subBudgetConverterUtil.convertSubBudgetToEntities(subBudgets);
+        Long budgetId = budget.getId();
+        try
+        {
+            budgetRepository.updateBudgetEntity(budgetId, subBudgetEntities);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the budget: ", e);
+            return Optional.empty();
+        }
+
         return Optional.empty();
     }
 

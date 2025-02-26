@@ -13,5 +13,6 @@ public interface SubBudgetService extends ServiceModel<SubBudgetEntity>
     Optional<SubBudgetEntity> saveSubBudget(SubBudget subBudget);
     Optional<SubBudget> findSubBudgetById(Long id);
 
+    Optional<SubBudgetEntity> updateSubBudget(SubBudget subBudget);
 
 }

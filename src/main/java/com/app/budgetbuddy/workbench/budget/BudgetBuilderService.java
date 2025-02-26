@@ -2,17 +2,22 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
+import com.app.budgetbuddy.entities.BudgetGoalsEntity;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
+import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
+import com.app.budgetbuddy.workbench.subBudget.SubBudgetConverterUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,15 +29,18 @@ public class BudgetBuilderService
     private final BudgetService budgetService;
     private final BudgetCalculations budgetCalculations;
     private final SubBudgetBuilderService subBudgetBuilderService;
+    private final SubBudgetConverterUtil subBudgetConverterUtil;
 
     @Autowired
     public BudgetBuilderService(BudgetService budgetService,
                                 BudgetCalculations budgetCalculations,
-                                SubBudgetBuilderService subBudgetBuilderService)
+                                SubBudgetBuilderService subBudgetBuilderService,
+                                SubBudgetConverterUtil subBudgetConverterUtil)
     {
         this.budgetService = budgetService;
         this.budgetCalculations = budgetCalculations;
         this.subBudgetBuilderService = subBudgetBuilderService;
+        this.subBudgetConverterUtil = subBudgetConverterUtil;
     }
 
     private void validateBudgetRegistration(final BudgetRegistration budgetRegistration)
@@ -63,13 +71,93 @@ public class BudgetBuilderService
     }
 
 
-    public Optional<Budget> buildBudgetFromRegistration(final BudgetRegistration budgetRegistration)
-    {
-        if(budgetRegistration == null)
-        {
+//    public Optional<Budget> buildBudgetFromRegistration(final BudgetRegistration budgetRegistration)
+//    {
+//        if(budgetRegistration == null)
+//        {
+//            return Optional.empty();
+//        }
+//        validateBudgetRegistration(budgetRegistration);
+//        BigDecimal totalIncomeAmount = budgetRegistration.getTotalIncomeAmount();
+//        int totalMonths = budgetRegistration.getNumberOfMonths();
+//        int totalBudgetsNeeded = budgetRegistration.getTotalBudgetsNeeded();
+//        int budgetYear = budgetRegistration.getBudgetYear();
+//        BudgetMode budgetMode = budgetRegistration.getBudgetMode();
+//        Period budgetPeriod = budgetRegistration.getBudgetPeriod();
+//        Set<DateRange> budgetDateRanges = budgetRegistration.getBudgetDateRanges();
+//        String budgetName = budgetRegistration.getBudgetName();
+//        Long userId = budgetRegistration.getUserId();
+//        BudgetGoals budgetGoals = budgetRegistration.getBudgetGoals();
+//        String budgetDescription = budgetRegistration.getBudgetDescription();
+//        LocalDate budgetStartDate = budgetRegistration.getBudgetStartDate();
+//        LocalDate budgetEndDate = budgetRegistration.getBudgetEndDate();
+//        try
+//        {
+//
+//            // Calculate the Budget Amount
+//            double monthlyAllocation = budgetGoals.getMonthlyAllocation();
+//            double targetAmount = budgetGoals.getTargetAmount();
+//            double currentSavings = budgetGoals.getCurrentSavings();
+//            // Based on target amount for savings, and given what the user wants to allocate every month and what their current savings are
+//            // determine how much needs to be allocated and deduct this from the totalIncomeAmount
+//            BigDecimal actualMonthlyAllocation = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, totalIncomeAmount, totalMonths);
+//            // Use the remaining amount after the savings has been deducted as the budget amount
+//            BigDecimal remainingOnBudgetAfterAllocation = totalIncomeAmount.subtract(actualMonthlyAllocation);
+//
+//            // Calculate the savings progress
+//            BigDecimal currentlySaved = BigDecimal.valueOf(currentSavings);
+//            BigDecimal targetAmountAsDecimal = BigDecimal.valueOf(targetAmount);
+//            BigDecimal savingsProgress = budgetCalculations.calculateSavingsProgress(actualMonthlyAllocation, currentlySaved, targetAmountAsDecimal);
+//
+//            // Next create the Budget Schedules
+//            Budget budget = createBudget(actualMonthlyAllocation, totalMonths, userId, budgetDescription, budgetYear, budgetPeriod, budgetMode, totalIncomeAmount, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate, budgetEndDate);
+//            if(budget.getSubBudgets() == null){
+//                budget.setSubBudgets(new ArrayList<>());
+//            }
+//            Optional<BudgetEntity> savedBudgetOptional = saveBudget(budget);
+//            if(savedBudgetOptional.isEmpty())
+//            {
+//                log.error("Failed to save budget: {}", budget);
+//                return Optional.empty();
+//            }
+//            BudgetEntity savedBudgetEntity = savedBudgetOptional.get();
+//            Long budgetId = savedBudgetEntity.getId();
+//            if(budgetId == null){
+//                log.error("Saved budgetID is null");
+//                return Optional.empty();
+//            }
+//            budget.setId(budgetId);
+//            log.info("Budget saved with ID: {}", budgetId);
+//            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals);
+//            if(subBudgets.isEmpty())
+//            {
+//                log.error("No Sub-Budgets created for budget: {}", budget);
+//                return Optional.empty();
+//            }
+//            subBudgetBuilderService.saveSubBudgets(subBudgets);
+//            budget.setSubBudgets(subBudgets);
+//            Optional<BudgetEntity> updatedBudgetOptional = saveBudget(budget);
+//            if (updatedBudgetOptional.isEmpty()) {
+//                log.error("Failed to update budget with sub-budgets: {}", budget);
+//                return Optional.empty();
+//            }
+//
+//            return Optional.of(budget);
+//        }catch(BudgetBuildException e)
+//        {
+//            log.error("There was an error building the budget from the registration: ", e);
+//            log.warn("Returning empty optional");
+//            return Optional.empty();
+//        }
+//        // Depending on the period and budget mode and the budget goals, we need to calculate the budget amount
+//    }
+    public Optional<Budget> buildBudgetFromRegistration(final BudgetRegistration budgetRegistration) {
+        if (budgetRegistration == null) {
             return Optional.empty();
         }
+
         validateBudgetRegistration(budgetRegistration);
+
         BigDecimal totalIncomeAmount = budgetRegistration.getTotalIncomeAmount();
         int totalMonths = budgetRegistration.getNumberOfMonths();
         int totalBudgetsNeeded = budgetRegistration.getTotalBudgetsNeeded();
@@ -83,51 +171,99 @@ public class BudgetBuilderService
         String budgetDescription = budgetRegistration.getBudgetDescription();
         LocalDate budgetStartDate = budgetRegistration.getBudgetStartDate();
         LocalDate budgetEndDate = budgetRegistration.getBudgetEndDate();
+
         try
         {
-
             // Calculate the Budget Amount
             double monthlyAllocation = budgetGoals.getMonthlyAllocation();
             double targetAmount = budgetGoals.getTargetAmount();
             double currentSavings = budgetGoals.getCurrentSavings();
-            // Based on target amount for savings, and given what the user wants to allocate every month and what their current savings are
-            // determine how much needs to be allocated and deduct this from the totalIncomeAmount
-            BigDecimal actualMonthlyAllocation = budgetCalculations.calculateActualMonthlyAllocation(monthlyAllocation, targetAmount, currentSavings, totalIncomeAmount, totalMonths);
-            // Use the remaining amount after the savings has been deducted as the budget amount
+
+            BigDecimal actualMonthlyAllocation = budgetCalculations.calculateActualMonthlyAllocation(
+                monthlyAllocation, targetAmount, currentSavings, totalIncomeAmount, totalMonths);
             BigDecimal remainingOnBudgetAfterAllocation = totalIncomeAmount.subtract(actualMonthlyAllocation);
 
-            // Calculate the savings progress
             BigDecimal currentlySaved = BigDecimal.valueOf(currentSavings);
             BigDecimal targetAmountAsDecimal = BigDecimal.valueOf(targetAmount);
-            BigDecimal savingsProgress = budgetCalculations.calculateSavingsProgress(actualMonthlyAllocation, currentlySaved, targetAmountAsDecimal);
+            BigDecimal savingsProgress = budgetCalculations.calculateSavingsProgress(
+                actualMonthlyAllocation, currentlySaved, targetAmountAsDecimal);
 
-            // Next create the Budget Schedules
-            Budget budget = createBudget(actualMonthlyAllocation, totalMonths, userId, budgetDescription, budgetYear, budgetPeriod, budgetMode, totalIncomeAmount, budgetName,savingsProgress, remainingOnBudgetAfterAllocation, budgetStartDate, budgetEndDate);
-            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals);
-            if(subBudgets.isEmpty())
-            {
+            // Create BudgetGoalsEntity
+            BudgetGoalsEntity goalsEntity = BudgetGoalsEntity.builder()
+                .targetAmount(targetAmount)
+                .monthlyAllocation(monthlyAllocation)
+                .currentSavings(currentSavings)
+                .goalName(budgetGoals.getGoalName())
+                .goalDescription(budgetGoals.getGoalDescription())
+                .goalType(budgetGoals.getGoalType())
+                .savingsFrequency(budgetGoals.getSavingsFrequency())
+                .status(budgetGoals.getStatus())
+                .build();
+
+            // Create BudgetEntity
+            BudgetEntity budget = BudgetEntity.builder()
+                .user(UserEntity.builder().id(userId).build()) // Simplified, adjust as needed
+                .budgetName(budgetName)
+                .budgetDescription(budgetDescription)
+                .budgetAmount(remainingOnBudgetAfterAllocation)
+                .budgetMode(budgetMode)
+                .budgetPeriod(budgetPeriod)
+                .monthlyIncome(totalIncomeAmount)
+                .budgetStartDate(budgetStartDate)
+                .budgetEndDate(budgetEndDate)
+                .year(budgetYear)
+                .budgetGoals(goalsEntity)
+                .actualSavingsAllocation(actualMonthlyAllocation)
+                .savingsProgress(savingsProgress)
+                .totalMonthsToSave(totalMonths)
+                .createdDate(LocalDateTime.now())
+                .subBudgetEntities(new HashSet<>())
+                .build();
+
+            // Link back from goals to budget
+            goalsEntity.setBudget(budget);
+
+            // Save Budget (cascades to BudgetGoalsEntity)
+            Optional<BudgetEntity> savedBudgetOptional = budgetService.saveBudgetEntity(budget);
+            if (savedBudgetOptional.isEmpty()) {
+                log.error("Failed to save budget initially: {}", budget);
+                return Optional.empty();
+            }
+
+            BudgetEntity savedBudgetEntity = savedBudgetOptional.get();
+            Long budgetId = savedBudgetEntity.getId();
+            if (budgetId == null) {
+                log.error("Saved budget ID is null");
+                return Optional.empty();
+            }
+            log.info("Budget saved with ID: {}", budgetId);
+            // Create and attach sub-budgets
+            Budget savedBudget = budgetService.convertBudgetEntity(savedBudgetEntity);
+            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgets(savedBudget, budgetGoals);
+            if (subBudgets.isEmpty()) {
                 log.error("No Sub-Budgets created for budget: {}", budget);
                 return Optional.empty();
             }
-            subBudgetBuilderService.saveSubBudgets(subBudgets);
-            budget.setSubBudgets(subBudgets);
-            Optional<BudgetEntity> savedBudget = saveBudget(budget);
-            if(savedBudget.isEmpty() || savedBudget.get().getId() == null)
-            {
-                log.error("Failed to save budget or ID is null");
+            Set<SubBudgetEntity> subBudgetEntities = subBudgetConverterUtil.convertSubBudgetToEntities(subBudgets);
+            budget.setSubBudgetEntities(subBudgetEntities);
+
+            // Update Budget with sub-budgets
+            Optional<BudgetEntity> updatedBudgetOptional = updateBudget(savedBudget);
+            if (updatedBudgetOptional.isEmpty()) {
+                log.error("Failed to update budget with sub-budgets: {}", budget);
                 return Optional.empty();
             }
-            Long budgetId = savedBudget.get().getId();
-            // Once saved, get the id for the budget
-            budget.setId(budgetId);
-            return Optional.of(budget);
-        }catch(BudgetBuildException e)
-        {
+            Budget updatedBudget = budgetService.convertBudgetEntity(updatedBudgetOptional.get());
+            log.info("Budget successfully created and updated with ID: {}", budgetId);
+            return Optional.of(updatedBudget);
+
+        } catch (BudgetBuildException e) {
             log.error("There was an error building the budget from the registration: ", e);
-            log.warn("Returning empty optional");
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("Unexpected error during budget creation: ", e);
             return Optional.empty();
         }
-        // Depending on the period and budget mode and the budget goals, we need to calculate the budget amount
     }
 
     private Budget createBudget(BigDecimal actualMonthlyAllocation, int totalMonths, Long userId, String budgetDescription, int budgetYear,  Period budgetPeriod, BudgetMode budgetMode, BigDecimal totalIncome, String budgetName, BigDecimal savingsProgress, BigDecimal remainingOnBudgetAfterAllocation, LocalDate budgetStartDate, LocalDate endDate) {
@@ -214,6 +350,21 @@ public class BudgetBuilderService
             }
         }
         return monthlyBudgetStartAndEndDates;
+    }
+
+    public Optional<BudgetEntity> updateBudget(Budget budget)
+    {
+        if(budget == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return budgetService.updateBudget(budget);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the budget: ", e);
+            return Optional.empty();
+        }
     }
 
 

@@ -163,19 +163,19 @@ class BudgetControllerTest {
                 .andExpect(expectedStatus);
     }
 
-    @Test
-    void testUpdateBudget_whenRequestParametersValid_thenReturnStatus200() throws Exception {
-        Long userId = 1L;
-        String budgetName = "Budget Test New";
-        String budgetDescription = "Budget Description New ";
-        BigDecimal budgetAmount = BigDecimal.valueOf(650);
-        BigDecimal monthlyIncome = BigDecimal.valueOf(1830);
-        LocalDate startDate = LocalDate.of(2024, 6, 5);
-        LocalDate endDate = LocalDate.of(2024, 7, 10);
-        BudgetCreateRequest updatedBudget = new BudgetCreateRequest(userId, budgetName, budgetDescription, budgetAmount, monthlyIncome, startDate, endDate);
-
-        Mockito.when(budgetService.updateBudget(1L, updatedBudget));
-    }
+//    @Test
+//    void testUpdateBudget_whenRequestParametersValid_thenReturnStatus200() throws Exception {
+//        Long userId = 1L;
+//        String budgetName = "Budget Test New";
+//        String budgetDescription = "Budget Description New ";
+//        BigDecimal budgetAmount = BigDecimal.valueOf(650);
+//        BigDecimal monthlyIncome = BigDecimal.valueOf(1830);
+//        LocalDate startDate = LocalDate.of(2024, 6, 5);
+//        LocalDate endDate = LocalDate.of(2024, 7, 10);
+//        BudgetCreateRequest updatedBudget = new BudgetCreateRequest(userId, budgetName, budgetDescription, budgetAmount, monthlyIncome, startDate, endDate);
+//
+//        Mockito.when(budgetService.updateBudget(1L, updatedBudget));
+//    }
 
     private static Stream<Arguments> updateBudgetTestCases() {
         return Stream.of(

@@ -70,7 +70,7 @@ public class BudgetEntity {
     private int year;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="budgetid")
+    @JoinColumn(name="budget_goals_id")
     private BudgetGoalsEntity budgetGoals;
 
     @Column(name="actualSavingsAllocation")

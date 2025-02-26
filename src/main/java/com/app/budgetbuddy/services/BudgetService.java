@@ -28,7 +28,12 @@ public interface BudgetService extends ServiceModel<BudgetEntity>
 
     Optional<BudgetEntity> saveBudget(Budget budget);
 
-    Optional<BudgetEntity> updateBudget(Long id, BudgetCreateRequest updateRequest);
+    Optional<BudgetEntity> saveBudgetEntity(BudgetEntity budgetEntity);
 
+//    Optional<BudgetEntity> updateBudget(Long id, BudgetCreateRequest updateRequest);
+
+    Budget convertBudgetEntity(BudgetEntity budgetEntity);
+
+    Optional<BudgetEntity> updateBudget(Budget budget);
 
 }

@@ -145,6 +145,12 @@ public class SubBudgetServiceImpl implements SubBudgetService
         }
     }
 
+    @Override
+    public Optional<SubBudgetEntity> updateSubBudget(SubBudget subBudget)
+    {
+        return Optional.empty();
+    }
+
 
     private SubBudgetEntity convertSubBudgetToEntity(SubBudget subBudget)
     {
