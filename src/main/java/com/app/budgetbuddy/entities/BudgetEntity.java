@@ -69,8 +69,7 @@ public class BudgetEntity {
     @Column(name="year")
     private int year;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="budget_goals_id")
+    @OneToOne(mappedBy = "budget", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BudgetGoalsEntity budgetGoals;
 
     @Column(name="actualSavingsAllocation")

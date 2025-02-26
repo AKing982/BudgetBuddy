@@ -8,6 +8,7 @@ import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
+import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetConverterUtil;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 public class BudgetBuilderService
 {
     private final BudgetService budgetService;
+    private final BudgetGoalsService budgetGoalsService;
     private final BudgetCalculations budgetCalculations;
     private final SubBudgetBuilderService subBudgetBuilderService;
     private final SubBudgetConverterUtil subBudgetConverterUtil;
@@ -35,12 +37,14 @@ public class BudgetBuilderService
     public BudgetBuilderService(BudgetService budgetService,
                                 BudgetCalculations budgetCalculations,
                                 SubBudgetBuilderService subBudgetBuilderService,
-                                SubBudgetConverterUtil subBudgetConverterUtil)
+                                SubBudgetConverterUtil subBudgetConverterUtil,
+                                BudgetGoalsService budgetGoalsService)
     {
         this.budgetService = budgetService;
         this.budgetCalculations = budgetCalculations;
         this.subBudgetBuilderService = subBudgetBuilderService;
         this.subBudgetConverterUtil = subBudgetConverterUtil;
+        this.budgetGoalsService = budgetGoalsService;
     }
 
     private void validateBudgetRegistration(final BudgetRegistration budgetRegistration)
@@ -188,18 +192,6 @@ public class BudgetBuilderService
             BigDecimal savingsProgress = budgetCalculations.calculateSavingsProgress(
                 actualMonthlyAllocation, currentlySaved, targetAmountAsDecimal);
 
-            // Create BudgetGoalsEntity
-            BudgetGoalsEntity goalsEntity = BudgetGoalsEntity.builder()
-                .targetAmount(targetAmount)
-                .monthlyAllocation(monthlyAllocation)
-                .currentSavings(currentSavings)
-                .goalName(budgetGoals.getGoalName())
-                .goalDescription(budgetGoals.getGoalDescription())
-                .goalType(budgetGoals.getGoalType())
-                .savingsFrequency(budgetGoals.getSavingsFrequency())
-                .status(budgetGoals.getStatus())
-                .build();
-
             // Create BudgetEntity
             BudgetEntity budget = BudgetEntity.builder()
                 .user(UserEntity.builder().id(userId).build()) // Simplified, adjust as needed
@@ -212,7 +204,7 @@ public class BudgetBuilderService
                 .budgetStartDate(budgetStartDate)
                 .budgetEndDate(budgetEndDate)
                 .year(budgetYear)
-                .budgetGoals(goalsEntity)
+                    .monthlyIncome(totalIncomeAmount)
                 .actualSavingsAllocation(actualMonthlyAllocation)
                 .savingsProgress(savingsProgress)
                 .totalMonthsToSave(totalMonths)
@@ -220,10 +212,7 @@ public class BudgetBuilderService
                 .subBudgetEntities(new HashSet<>())
                 .build();
 
-            // Link back from goals to budget
-            goalsEntity.setBudget(budget);
-
-            // Save Budget (cascades to BudgetGoalsEntity)
+            // Save BudgetEntity to generate budgetId
             Optional<BudgetEntity> savedBudgetOptional = budgetService.saveBudgetEntity(budget);
             if (savedBudgetOptional.isEmpty()) {
                 log.error("Failed to save budget initially: {}", budget);
@@ -236,6 +225,30 @@ public class BudgetBuilderService
                 log.error("Saved budget ID is null");
                 return Optional.empty();
             }
+
+            // Create BudgetGoalsEntity
+            BudgetGoalsEntity goalsEntity = BudgetGoalsEntity.builder()
+                    .targetAmount(targetAmount)
+                    .monthlyAllocation(monthlyAllocation)
+                    .currentSavings(currentSavings)
+                    .goalName(budgetGoals.getGoalName())
+                    .budget(savedBudgetEntity)
+                    .goalDescription(budgetGoals.getGoalDescription())
+                    .goalType(budgetGoals.getGoalType())
+                    .savingsFrequency(budgetGoals.getSavingsFrequency())
+                    .status(budgetGoals.getStatus())
+                    .build();
+
+            // Link back from goals to budget
+            budgetGoalsService.save(goalsEntity);
+            // Update BudgetEntity with the saved BudgetGoalsEntity
+            savedBudgetEntity.setBudgetGoals(goalsEntity);
+            Optional<BudgetEntity> updatedBudgetWithGoalsOptional = budgetService.saveBudgetEntity(savedBudgetEntity);
+            if (updatedBudgetWithGoalsOptional.isEmpty()) {
+                log.error("Failed to update budget with goals: {}", savedBudgetEntity);
+                return Optional.empty();
+            }
+
             log.info("Budget saved with ID: {}", budgetId);
             // Create and attach sub-budgets
             Budget savedBudget = budgetService.convertBudgetEntity(savedBudgetEntity);

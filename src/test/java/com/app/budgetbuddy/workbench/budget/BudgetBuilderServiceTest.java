@@ -6,9 +6,11 @@ import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
+import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetScheduleService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
+import com.app.budgetbuddy.workbench.subBudget.SubBudgetConverterUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +42,12 @@ class BudgetBuilderServiceTest
     @Mock
     private BudgetCalculations budgetCalculations;
 
+    @Mock
+    private SubBudgetConverterUtil subBudgetConverterUtil;
+
+    @Mock
+    private BudgetGoalsService budgetGoalsService;
+
     @InjectMocks
     private BudgetBuilderService budgetBuilderService;
 
@@ -68,7 +76,7 @@ class BudgetBuilderServiceTest
         budget.setBudgetAmount(new BigDecimal("39120"));
         budget.setActual(new BigDecimal("1609"));
 
-        budgetBuilderService = new BudgetBuilderService(budgetService,budgetCalculations, subBudgetBuilderService);
+        budgetBuilderService = new BudgetBuilderService(budgetService,budgetCalculations, subBudgetBuilderService, subBudgetConverterUtil, budgetGoalsService);
 
         // Fully populated BudgetRegistration, including BudgetGoals
         testBudgetRegistration = new BudgetRegistration();

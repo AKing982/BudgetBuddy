@@ -115,6 +115,8 @@ public class BudgetServiceImpl implements BudgetService
         budget.setBudgetPeriod(budgetEntity.getBudgetPeriod());
         budget.setBudgetAmount(budgetEntity.getBudgetAmount());
         budget.setTotalMonthsToSave(budgetEntity.getTotalMonthsToSave());
+        budget.setBudgetYear(budgetEntity.getYear());
+        budget.setIncome(budgetEntity.getMonthlyIncome());
         budget.setBudgetName(budgetEntity.getBudgetName());
         budget.setBudgetDescription(budgetEntity.getBudgetDescription());
 //        budget.setSubBudgets(convertBudgetScheduleEntities(budgetEntity.getBudgetSchedules()));
