@@ -56,6 +56,46 @@ class BudgetSetupService {
         }
     }
 
+    public calculateMonthlyAllocationNeeded(
+        startDate: number,
+        targetDate: number,
+        savingsTarget: number,
+        currentSavings: number = 0
+    ): number {
+        // Validate inputs
+        if (savingsTarget < 0 || currentSavings < 0) {
+            throw new Error("Savings target and current savings must be non-negative");
+        }
+        if (startDate >= targetDate) {
+            throw new Error("Target date must be after start date");
+        }
+
+        // Convert timestamps to Date objects
+        const start = new Date(startDate);
+        const target = new Date(targetDate);
+
+        // Calculate number of months between dates
+        const monthsDiff = (target.getFullYear() - start.getFullYear()) * 12 +
+            (target.getMonth() - start.getMonth());
+
+        // If no months remain, return infinity or throw an error based on your needs
+        if (monthsDiff <= 0) {
+            throw new Error("No full months available between start and target dates");
+        }
+
+        // Calculate remaining amount to save
+        const remainingAmount = savingsTarget - currentSavings;
+
+        // If target is already met or exceeded
+        if (remainingAmount <= 0) {
+            return 0;
+        }
+
+        // Calculate monthly allocation (round to 2 decimal places)
+        const monthlyAllocation = remainingAmount / monthsDiff;
+        return Number(monthlyAllocation.toFixed(2));
+    }
+
     public getBudgetModeByBudgetType(budgetType: string): BudgetMode {
         switch (budgetType) {
             case 'Saving for a goal':
@@ -71,29 +111,37 @@ class BudgetSetupService {
         }
     }
 
-    public calculateExpectedSavingsDeadline(startDate: number, savingsTarget: number, monthlyAllocation: number, numberOfMonths: number) : number
+    public calculateExpectedSavingsDeadline(startDate: number, savingsTarget: number, monthlyAllocation: number, currentSavings: number) : number
     {
-        return 0;
+        if(monthlyAllocation <= 0 || savingsTarget < 0 || currentSavings < 0){
+            throw new Error("Invalid input parameters");
+        }
+        const remainingAmount = savingsTarget - currentSavings;
+        if(remainingAmount <= 0){
+            return startDate;
+        }
+        const monthsNeeded = Math.ceil(remainingAmount / monthlyAllocation);
+        const start = new Date(startDate);
+        const deadline = new Date(start);
+        deadline.setMonth(start.getMonth() + monthsNeeded);
+        return deadline.getTime();
     }
 
-    public calculateBudgetDateRanges(startDate: [number, number, number],
-                                     endDate: [number, number, number]): DateRange[] {
+    public calculateBudgetDateRanges(startDate: [number, number, number], endDate: [number, number, number]): DateRange[] {
         const dateRanges: DateRange[] = [];
-        const year = startDate[0];  // Get the year from startDate
+        const year = startDate[0];
 
-        // Always start from January (month 1)
         for (let month = 1; month <= 12; month++) {
-            // Get the last day of the current month
             const lastDay = new Date(year, month, 0).getDate();
-
             const monthRange = new DateRange(
-                new Date(year, month - 1, 1),    // Month is 0-based in Date constructor
+                new Date(year, month - 1, 1),
                 new Date(year, month - 1, lastDay)
             );
-
             dateRanges.push(monthRange);
         }
 
+        // Sort by start date
+        dateRanges.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
         return dateRanges;
     }
 

@@ -1,11 +1,14 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography} from "@mui/material";
+import budgetSetupService from "../services/BudgetSetupService";
+import BudgetSetupService from "../services/BudgetSetupService";
 
 export interface SavingsGoalData {
     goalName: string;
     goalDescription: string;
     targetAmount: number;
     currentSavings: number;
+    monthlyAllocation: number;
     savingsFrequency: 'weekly' | 'monthly' | 'yearly';
     targetDate: string;
 }
@@ -21,6 +24,7 @@ const SavingsGoalQuestions: React.FC<SavingsGoalQuestionProps> = ({onDataChange}
         goalDescription: '',
         targetAmount: 0,
         currentSavings: 0,
+        monthlyAllocation: 0,
         savingsFrequency: 'monthly',
         targetDate: ''
     });
@@ -37,6 +41,77 @@ const SavingsGoalQuestions: React.FC<SavingsGoalQuestionProps> = ({onDataChange}
         onDataChange(updatedData);
     };
 
+    const budgetSetupService = BudgetSetupService.getInstance();
+
+    const startDate = Date.now();
+
+    // Calculate both monthlyAllocation and targetDate
+    useEffect(() => {
+        const { targetAmount, currentSavings, savingsFrequency } = savingsGoalData;
+
+        if (targetAmount <= 0) return; // Skip calculation if targetAmount is invalid
+
+        try {
+            // Step 1: Calculate monthlyAllocation using a default targetDate (e.g., 1 year from start)
+
+            const defaultTargetDate = new Date(startDate);
+            defaultTargetDate.setFullYear(defaultTargetDate.getFullYear() + 1); // Default to 1 year
+            const defaultTargetTimestamp = defaultTargetDate.getTime();
+
+            let adjustedTargetAmount = targetAmount;
+            let adjustedCurrentSavings = currentSavings;
+
+            // Adjust for savings frequency if needed
+            if (savingsFrequency === 'weekly') {
+                adjustedTargetAmount *= 52; // Convert to yearly
+                adjustedCurrentSavings *= 52;
+            } else if (savingsFrequency === 'yearly') {
+                adjustedTargetAmount /= 12; // Convert to monthly
+                adjustedCurrentSavings /= 12;
+            }
+
+            const calculatedMonthlyAllocation = budgetSetupService.calculateMonthlyAllocationNeeded(
+                startDate,
+                defaultTargetTimestamp,
+                adjustedTargetAmount,
+                adjustedCurrentSavings
+            );
+
+            // Step 2: Use the calculated monthlyAllocation to determine the exact targetDate
+            const calculatedDeadline = budgetSetupService.calculateExpectedSavingsDeadline(
+                startDate,
+                adjustedTargetAmount,
+                calculatedMonthlyAllocation,
+                adjustedCurrentSavings
+            );
+            const calculatedTargetDate = new Date(calculatedDeadline).toISOString().split('T')[0];
+
+            const updatedData = {
+                ...savingsGoalData,
+                monthlyAllocation: calculatedMonthlyAllocation,
+                targetDate: calculatedTargetDate
+            };
+            setSavingsGoalData(updatedData);
+            onDataChange(updatedData);
+        } catch (error) {
+            console.error("Error in calculations:", error);
+            const updatedData = {
+                ...savingsGoalData,
+                monthlyAllocation: 0,
+                targetDate: ''
+            };
+            setSavingsGoalData(updatedData);
+            onDataChange(updatedData);
+        }
+    }, [savingsGoalData.targetAmount, savingsGoalData.currentSavings, savingsGoalData.savingsFrequency, startDate]);
+
+    const formatCurrency = (amount: number) => {
+        return amount > 0 ? `$${amount.toFixed(2)}` : 'N/A';
+    };
+
+    const formatDate = (timestamp: string) => {
+        return timestamp ? new Date(timestamp).toLocaleDateString() : 'N/A';
+    };
 
     return (
         <Box>
@@ -81,6 +156,7 @@ const SavingsGoalQuestions: React.FC<SavingsGoalQuestionProps> = ({onDataChange}
                 onChange={handleChange}
                 sx={{ mb: 2 }}
             />
+
             <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Saving Frequency</InputLabel>
                 <Select
@@ -94,16 +170,15 @@ const SavingsGoalQuestions: React.FC<SavingsGoalQuestionProps> = ({onDataChange}
                     <MenuItem value="yearly">Yearly</MenuItem>
                 </Select>
             </FormControl>
-            <TextField
-                fullWidth
-                label="Target Date"
-                name="targetDate"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={savingsGoalData.targetDate}
-                onChange={handleChange}
-                sx={{ mb: 2 }}
-            />
+
+            <Box sx={{ mb: 2 }}>
+                <Typography variant="body1">
+                    Calculated Monthly Allocation: {formatCurrency(savingsGoalData.monthlyAllocation)}
+                </Typography>
+                <Typography variant="body1">
+                    Calculated Target Date: {formatDate(savingsGoalData.targetDate)}
+                </Typography>
+            </Box>
         </Box>
     );
 };

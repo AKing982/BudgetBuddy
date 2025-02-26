@@ -73,6 +73,7 @@ public class SubBudget
                 .subSavingsTarget(savingsTarget)
                 .subSavingsAmount(savingsAmount)
                 .allocatedAmount(allocatedAmount)
+                .budgetSchedule(new ArrayList<>())
                 .build();
     }
 

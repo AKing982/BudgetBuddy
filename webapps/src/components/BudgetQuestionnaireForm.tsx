@@ -391,6 +391,63 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
             const numberOfMonths = budgetSetupService.calculateNumberOfMonths(startDate, endDate);
             const budgetName = `${startDate[0]} ${budgetData.budgetType} Budget`;
             let budgetDescription = `${budgetData.budgetType} budget`;
+            let budgetGoals: BudgetGoal;
+            switch(budgetData.budgetType){
+                case 'Saving for a goal':
+                    if(!budgetData.savingsGoalData){
+                        throw new Error("Savings Goal data is missing");
+                    }
+                    budgetGoals = {
+                        budgetId: 0,
+                        goalName: budgetData.savingsGoalData.goalName,
+                        goalDescription: budgetData.savingsGoalData.goalDescription || "Savings goal",
+                        goalType: "SAVINGS",
+                        targetAmount: budgetData.savingsGoalData.targetAmount,
+                        monthlyAllocation: budgetData.savingsGoalData.monthlyAllocation,
+                        currentSavings: budgetData.savingsGoalData.currentSavings || 0,
+                        savingsFrequency: budgetData.savingsGoalData.savingsFrequency || "monthly",
+                        status: "ACTIVE"
+                    };
+                    budgetDescription += ` for ${budgetData.savingsGoalData.goalName}`;
+                    break;
+                case "Paying off debt":
+                    if (!budgetData.debtPayoffData) {
+                        throw new Error("Debt payoff data is missing");
+                    }
+                    budgetGoals = {
+                        budgetId: 0,
+                        goalName: "Debt Reduction",
+                        goalDescription: "Paying off outstanding debts",
+                        goalType: "DEBT_REDUCTION",
+                        targetAmount: budgetData.debtPayoffData.debts.reduce((sum, debt) => sum + debt.amount, 0),
+                        monthlyAllocation: budgetData.debtPayoffData.debts.reduce((sum, debt) => sum + debt.allocation, 0),
+                        currentSavings: 0,
+                        savingsFrequency: "MONTHLY",
+                        status: "ACTIVE"
+                    };
+                    budgetDescription += ` for debt repayment`;
+                    break;
+                case "Controlling spending":
+                    if (!budgetData.spendingControlData) {
+                        throw new Error("Spending control data is missing");
+                    }
+                    budgetGoals = {
+                        budgetId: 0,
+                        goalName: "Spending Control",
+                        goalDescription: "Manage and reduce spending",
+                        goalType: "SPENDING_CONTROL",
+                        targetAmount: budgetData.spendingControlData.categories.reduce((sum, cat) => sum + cat.spendingLimit, 0),
+                        monthlyAllocation: 0,
+                        currentSavings: 0,
+                        savingsFrequency: "MONTHLY",
+                        status: "ACTIVE"
+                    };
+                    budgetDescription += ` for spending control`;
+                    break;
+                default:
+                    budgetGoals = budgetData.financialGoal; // Fallback to existing goal
+            }
+
             if(budgetData.savingsGoalData){
                 budgetDescription += ` for ${budgetData.savingsGoalData.goalName}`;
             }else if(budgetData.debtPayoffData){
@@ -399,7 +456,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                 budgetDescription += ` for spending control`;
             }
 
-            const budgetGoals = budgetData.financialGoal;
+            // const budgetGoals = budgetData.financialGoal;
             // Create the budget registration object
             const budgetRegistration: BudgetRegistration = {
                 userId: userId,
@@ -710,12 +767,27 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                                         primary="Savings Goal"
                                         secondary={
                                             <>
-                                                <Typography component="span" display="block">Goal Name: {budgetData.savingsGoalData.goalName}</Typography>
-                                                <Typography component="span" display="block">Goal Description: {budgetData.savingsGoalData.goalDescription}</Typography>
-                                                <Typography component="span" display="block">Target Amount: ${budgetData.savingsGoalData.targetAmount}</Typography>
-                                                <Typography component="span" display="block">Current Savings: ${budgetData.savingsGoalData.currentSavings}</Typography>
-                                                <Typography component="span" display="block">Saving Frequency: {budgetData.savingsGoalData.savingsFrequency}</Typography>
-                                                <Typography component="span" display="block">Target Date: {budgetData.savingsGoalData.targetDate}</Typography>
+                                                <Typography component="span" display="block">
+                                                    Goal Name: {budgetData.savingsGoalData.goalName}
+                                                </Typography>
+                                                <Typography component="span" display="block">
+                                                    Goal Description: {budgetData.savingsGoalData.goalDescription}
+                                                </Typography>
+                                                <Typography component="span" display="block">
+                                                    Target Amount: ${budgetData.savingsGoalData.targetAmount.toFixed(2)}
+                                                </Typography>
+                                                <Typography component="span" display="block">
+                                                    Current Savings: ${budgetData.savingsGoalData.currentSavings.toFixed(2)}
+                                                </Typography>
+                                                <Typography component="span" display="block">
+                                                    Saving Frequency: {budgetData.savingsGoalData.savingsFrequency}
+                                                </Typography>
+                                                <Typography component="span" display="block">
+                                                    Monthly Allocation: ${budgetData.savingsGoalData.monthlyAllocation?.toFixed(2) || 'N/A'}
+                                                </Typography>
+                                                <Typography component="span" display="block">
+                                                    Target Date: {budgetData.savingsGoalData.targetDate ? new Date(budgetData.savingsGoalData.targetDate).toLocaleDateString() : 'N/A'}
+                                                </Typography>
                                             </>
                                         }
                                     />

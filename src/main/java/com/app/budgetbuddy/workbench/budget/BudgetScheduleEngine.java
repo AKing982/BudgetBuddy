@@ -130,6 +130,7 @@ public class BudgetScheduleEngine
             return existingBudgetSchedule;
         }
         BudgetSchedule newBudgetSchedule = createNewBudgetSchedule(subBudget);
+        log.info("Created BudgetSchedule: {}", newBudgetSchedule.toString());
         try
         {
             budgetScheduleService.saveBudgetSchedule(newBudgetSchedule);
