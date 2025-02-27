@@ -63,7 +63,7 @@ public class BudgetScheduleUtil
                 budgetScheduleEntity.setEndDate(budgetSchedule.getEndDate());
                 budgetScheduleEntity.setStartDate(budgetSchedule.getStartDate());
                 budgetScheduleEntity.setId(budgetSchedule.getBudgetScheduleId());
-                budgetScheduleEntity.setPeriodType(budgetSchedule.getPeriod());
+                budgetScheduleEntity.setPeriodType(budgetSchedule.getPeriodType());
                 budgetScheduleEntity.setStatus(ScheduleStatus.valueOf(budgetSchedule.getStatus()));
                 budgetScheduleEntity.setScheduleRange(budgetSchedule.getScheduleRange().toString());
                 Long subBudgetId = budgetSchedule.getSubBudgetId();
@@ -99,7 +99,7 @@ public class BudgetScheduleUtil
                         .subBudgetId(subBudgetEntity.getId())
                         .endDate(budgetSchedule.getEndDate())
                         .startDate(budgetSchedule.getStartDate())
-                        .period(budgetSchedule.getPeriodType())
+                        .periodType(budgetSchedule.getPeriodType())
                         .budgetScheduleRanges(convertBudgetScheduleRangeEntities(budgetScheduleRangeEntities))
                         .budgetScheduleId(budgetSchedule.getId())
                         .scheduleRange(new DateRange(budgetSchedule.getStartDate(), budgetSchedule.getEndDate()))

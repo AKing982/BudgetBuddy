@@ -12,6 +12,7 @@ import com.app.budgetbuddy.workbench.budget.BudgetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -170,16 +171,19 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
     }
 
     @Override
+    @Transactional
     public void saveBudgetSchedule(BudgetSchedule budgetSchedule)
     {
          try
          {
              Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = buildBudgetScheduleEntity(budgetSchedule);
+
              if(budgetScheduleEntityOptional.isEmpty())
              {
                  throw new DataAccessException("Budget Schedule with id: " + budgetScheduleEntityOptional.get().getId() + " not found");
              }
              BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
+             log.info("Saving newly created budgetScheduleEntity: {}", budgetScheduleEntity.toString());
              budgetScheduleRepository.save(budgetScheduleEntity);
          }catch(DataAccessException e){
              log.error("There was a problem saving the budget schedule", e);
@@ -188,7 +192,7 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
 
     private Optional<BudgetScheduleEntity> buildBudgetScheduleEntity(final BudgetSchedule budgetSchedule)
     {
-
+        log.info("Budget Schedule: {}", budgetSchedule.toString());
         Long subBudgetId = budgetSchedule.getSubBudgetId();
         Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findById(subBudgetId);
         if(subBudgetEntityOptional.isEmpty())
@@ -196,11 +200,34 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
             return Optional.empty();
         }
         SubBudgetEntity subBudgetEntity = subBudgetEntityOptional.get();
+        // Check for existing schedule
+        Optional<BudgetScheduleEntity> existingSchedule = budgetScheduleRepository.findByBudgetId(subBudgetId);
+        if (existingSchedule.isPresent())
+        {
+            log.info("BudgetSchedule already exists for subBudgetId={}", subBudgetId);
+            BudgetScheduleEntity entity = existingSchedule.get();
+            // Update existing schedule
+            entity.setScheduleRange(budgetSchedule.getScheduleRange().toString());
+            entity.setEndDate(budgetSchedule.getEndDate());
+            entity.setStartDate(budgetSchedule.getStartDate());
+            entity.setPeriodType(budgetSchedule.getPeriodType());
+            entity.setStatus(ScheduleStatus.valueOf(budgetSchedule.getStatus()));
+            entity.setTotalPeriodsInRange(budgetSchedule.getTotalPeriods());
+            entity.setSubBudget(subBudgetEntity);
+            log.info("Updated BudgetScheduleEntity: {}", entity);
+            return Optional.of(entity);
+        }
         BudgetScheduleEntity budgetScheduleEntity = new BudgetScheduleEntity();
         budgetScheduleEntity.setScheduleRange(budgetSchedule.getScheduleRange().toString());
         budgetScheduleEntity.setEndDate(budgetSchedule.getEndDate());
         budgetScheduleEntity.setStartDate(budgetSchedule.getStartDate());
-        budgetScheduleEntity.setPeriodType(budgetSchedule.getPeriod());
+        // Make sure periodType isn't null before using it
+        if (budgetSchedule.getPeriodType() != null) {
+            budgetScheduleEntity.setPeriodType(budgetSchedule.getPeriodType());
+        } else {
+            // Set a default or throw an appropriate error
+            budgetScheduleEntity.setPeriodType(Period.MONTHLY); // Assuming MONTHLY is your default
+        }
         budgetScheduleEntity.setStatus(ScheduleStatus.valueOf(budgetSchedule.getStatus()));
         budgetScheduleEntity.setTotalPeriodsInRange(budgetSchedule.getTotalPeriods());
         budgetScheduleEntity.setSubBudget(subBudgetEntity);

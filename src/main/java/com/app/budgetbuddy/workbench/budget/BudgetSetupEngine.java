@@ -222,7 +222,9 @@ public class BudgetSetupEngine
         }
         try
         {
-            return subBudgetBuilderService.createSubBudgetTemplates(year, budget, budgetGoals);
+            List<SubBudget> subBudgets = subBudgetBuilderService.createSubBudgetTemplates(year, budget, budgetGoals);
+            subBudgetBuilderService.saveSubBudgets(subBudgets);
+            return subBudgets;
         }catch(BudgetBuildException e)
         {
             log.error("There was an error building the subBudget templates: ", e);
@@ -248,6 +250,8 @@ public class BudgetSetupEngine
         {
             List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgetsToDate(budget, budgetGoals);
             log.info("Created subBudgets for user: {}", subBudgets.toString());
+            subBudgetBuilderService.saveSubBudgets(subBudgets);
+            log.info("Successfully saved subBudgets");
             return subBudgets;
         }catch(BudgetBuildException e)
         {

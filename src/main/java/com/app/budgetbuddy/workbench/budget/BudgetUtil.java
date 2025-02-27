@@ -122,7 +122,7 @@ public class BudgetUtil
                 .endDate(budgetScheduleEntity.getEndDate())
                 .startDate(budgetScheduleEntity.getStartDate())
                 .scheduleRange(new DateRange(budgetScheduleEntity.getStartDate(), budgetScheduleEntity.getEndDate()))
-                .period(budgetScheduleEntity.getPeriodType())
+                .periodType(budgetScheduleEntity.getPeriodType())
                 .status(budgetScheduleEntity.getStatus().name())
                 .totalPeriods(budgetScheduleEntity.getTotalPeriodsInRange())
                 .createdDate(LocalDateTime.now())

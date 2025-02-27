@@ -189,7 +189,7 @@ public class BudgetServiceImpl implements BudgetService
             entity.setTotalPeriodsInRange(schedule.getTotalPeriods());
 
             // period -> periodType
-            entity.setPeriodType(schedule.getPeriod());
+            entity.setPeriodType(schedule.getPeriodType());
 
             /*
              * If your BudgetSchedule.status is just a String,
@@ -225,7 +225,7 @@ public class BudgetServiceImpl implements BudgetService
                         .subBudgetId(subBudgetEntity.getId())
                         .endDate(budgetSchedule.getEndDate())
                         .startDate(budgetSchedule.getStartDate())
-                        .period(budgetSchedule.getPeriodType())
+                        .periodType(budgetSchedule.getPeriodType())
                         .scheduleRange(new DateRange(budgetSchedule.getStartDate(), budgetSchedule.getEndDate()))
                         .totalPeriods(budgetSchedule.getTotalPeriodsInRange())
                         .status(budgetSchedule.getStatus().name())
@@ -300,8 +300,8 @@ public class BudgetServiceImpl implements BudgetService
         }
         try
         {
-            budgetRepository.save(budgetEntity);
-            return Optional.of(budgetEntity);
+            BudgetEntity budgetEntity1 = budgetRepository.save(budgetEntity);
+            return Optional.of(budgetEntity1);
         }catch(DataAccessException e){
             log.error("There was an error saving the budget to the database: ", e);
             return Optional.empty();

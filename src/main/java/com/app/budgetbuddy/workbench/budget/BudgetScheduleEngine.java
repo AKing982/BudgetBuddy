@@ -99,7 +99,7 @@ public class BudgetScheduleEngine
         LocalDate endDate = subBudget.getEndDate();
         newBudgetSchedule.setStartDate(startDate);
         newBudgetSchedule.setEndDate(endDate);
-        newBudgetSchedule.setPeriod(Period.MONTHLY);
+        newBudgetSchedule.setPeriodType(Period.MONTHLY);
         newBudgetSchedule.setScheduleRange(new DateRange(startDate, endDate));
         newBudgetSchedule.setStatus("ACTIVE");
         newBudgetSchedule.setTotalPeriods(4); // Example: Adjust based on real calculations
@@ -110,6 +110,7 @@ public class BudgetScheduleEngine
 
         List<BudgetScheduleRange> budgetScheduleRanges = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
         newBudgetSchedule.setBudgetScheduleRanges(budgetScheduleRanges);
+        log.info("Created new Budget Schedule: {}", newBudgetSchedule);
         return newBudgetSchedule;
     }
 
@@ -314,7 +315,7 @@ public class BudgetScheduleEngine
         BudgetSchedule budgetSchedule = new BudgetSchedule();
         budgetSchedule.setStartDate(startDate);
         budgetSchedule.setEndDate(endDate);
-        budgetSchedule.setPeriod(Period.MONTHLY);
+        budgetSchedule.setPeriodType(Period.MONTHLY);
         budgetSchedule.setSubBudgetId(subBudgetId); // Hardcoded for simplicity, replace with actual logic if needed
         budgetSchedule.setStatus("Active");
         budgetSchedule.setScheduleRange(new DateRange(startDate, endDate));
@@ -360,7 +361,7 @@ public class BudgetScheduleEngine
         BudgetSchedule budgetSchedule1 = existingBudgetSchedule.get();
         budgetSchedule1.setStartDate(newBudgetSchedule.getStartDate());
         budgetSchedule1.setEndDate(newBudgetSchedule.getEndDate());
-        budgetSchedule1.setPeriod(newBudgetSchedule.getPeriod());
+        budgetSchedule1.setPeriodType(newBudgetSchedule.getPeriodType());
         budgetSchedule1.setSubBudgetId(newBudgetSchedule.getSubBudgetId());
         budgetSchedule1.setStatus(newBudgetSchedule.getStatus());
         budgetSchedule1.setTotalPeriods(newBudgetSchedule.getTotalPeriods());

@@ -69,19 +69,17 @@ public class BudgetSetupRunner
             log.info("Creating sub-Budgets for current year up to current date");
             List<SubBudget> currentYearSubBudgets = budgetSetupEngine.createNewMonthlySubBudgetsForUser(currentBudget, budgetRegistration.getBudgetGoals());
             entityManager.flush();
-            entityManager.clear();
 
             log.info("Creating sub-budget templates for previous year {}", previousYear);
             List<SubBudget> previousYearSubBudgets = budgetSetupEngine.createSubBudgetTemplatesForYear(previousYear, previousYearBudget, budgetRegistration.getBudgetGoals());
             entityManager.flush();
-            entityManager.clear();
-            log.info("Creating Monthly Sub Budget goals for current year {}", currentYear);
 
             // Fix: Fetch the saved BudgetGoalsEntity instead of using registration
             BudgetGoalsEntity savedGoalsEntity = budgetGoalsService.findByBudgetId(currentBudgetId)
                     .orElseThrow(() -> new RuntimeException("No BudgetGoalsEntity found for budget ID: " + currentBudget.getId()));
             BudgetGoals budgetGoals = budgetGoalsService.convertToBudgetGoals(savedGoalsEntity); // Assuming a conversion method exists
 
+            log.info("Creating Monthly Sub Budget goals for current year {}", currentYear);
             log.info("User Budget Goals: {}", budgetGoals.toString());
             List<MonthlyBudgetGoals> currentYearMonthlyBudgetGoals = budgetSetupEngine.createMonthlyBudgetGoalsForSubBudgets(budgetGoals, currentYearSubBudgets);
             budgetSetupEngine.saveMonthlyBudgetGoals(currentYearMonthlyBudgetGoals);

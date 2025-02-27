@@ -6,6 +6,7 @@ import com.app.budgetbuddy.domain.ScheduleStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -17,6 +18,7 @@ import java.util.Set;
 @Table(name="budgetSchedules")
 @Getter
 @Setter
+@ToString
 public class BudgetScheduleEntity
 {
     @Id
@@ -44,7 +46,6 @@ public class BudgetScheduleEntity
     @NotNull
     private Integer totalPeriodsInRange;
 
-    @Column(name="periodType")
     @Enumerated(EnumType.STRING)
     private Period periodType;
 

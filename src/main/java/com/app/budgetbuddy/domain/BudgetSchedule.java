@@ -23,7 +23,7 @@ public class BudgetSchedule
     private LocalDate endDate;
     private DateRange scheduleRange;
     private List<BudgetScheduleRange> budgetScheduleRanges;
-    private Period period;
+    private Period periodType;
     private int totalPeriods;
     private String status;
     private LocalDateTime createdDate;
@@ -33,7 +33,7 @@ public class BudgetSchedule
         this.subBudgetId = budgetId;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.period = period;
+        this.periodType = period;
         this.scheduleRange = new DateRange(startDate, endDate);
         this.totalPeriods = totalPeriods;
         this.budgetScheduleRanges = new ArrayList<>();
@@ -89,6 +89,8 @@ public class BudgetSchedule
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
                 ", scheduleRange=" + scheduleRange +
+                ", budgetScheduleRanges=" + budgetScheduleRanges +
+                ", periodType='" + periodType + '\'' +
                 ", totalPeriods=" + totalPeriods +
                 ", status='" + status + '\'' +
                 ", createdDate=" + createdDate +

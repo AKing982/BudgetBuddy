@@ -45,7 +45,7 @@ public class BudgetPeriodCategoryService
 
         try
         {
-            Period period = budgetSchedule.getPeriod();
+            Period period = budgetSchedule.getPeriodType();
             BudgetPeriodCategoryHandler handler = handlerFactory.getHandler(period);
             return handler.getBudgetPeriodCategories(budgetSchedule);
         } catch (Exception e)

@@ -371,7 +371,7 @@ public class TransactionCategoryBuilder
                     .sorted(Comparator.comparing(Transaction::getPosted))
                     .collect(Collectors.toList());
             // Build the Budget Date Ranges
-            Period period = budgetSchedule.getPeriod();
+            Period period = budgetSchedule.getPeriodType();
             List<DateRange> budgetDateRanges = buildBudgetDateRanges(budgetStartDate, budgetEndDate, period);
             // Determine the Category Period Date Ranges
             int categorySpendingIndex = 0;
