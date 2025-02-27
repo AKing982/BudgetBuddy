@@ -72,6 +72,7 @@ public class MonthlyBudgetGoalsBuilder extends BudgetGoalsBuilder<MonthlyBudgetG
                 subBudgetGoalsEntity.setRemainingAmount(monthlyBudgetGoals.getRemainingAmount());
                 subBudgetGoalsEntity.setMonthlySavingsTarget(monthlyBudgetGoals.getMonthlySavingsTarget());
                 subBudgetGoalsEntity.setMonthlyContributed(monthlyBudgetGoals.getMonthlyContributed());
+                log.info("Setting SubBudget with id: {}", monthlyBudgetGoals.getSubBudgetId());
                 subBudgetGoalsEntity.setSubBudgetEntity(getSubBudgetEntityById(monthlyBudgetGoals.getSubBudgetId()));
                 monthlyBudgetGoalsService.save(subBudgetGoalsEntity);
                 log.info("Successfully saved Monthly Budget Goals....");

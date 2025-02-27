@@ -4,9 +4,13 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.workbench.budget.BudgetSetupEngine;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Transient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,14 +23,20 @@ public class BudgetSetupRunner
     private final BudgetSetupEngine budgetSetupEngine;
     private final BudgetGoalsService budgetGoalsService;
 
+    @PersistenceContext
+    private final EntityManager entityManager;
+
     @Autowired
     public BudgetSetupRunner(BudgetSetupEngine budgetSetupEngine,
-                             BudgetGoalsService budgetGoalsService)
+                             BudgetGoalsService budgetGoalsService,
+                             EntityManager entityManager)
     {
         this.budgetSetupEngine = budgetSetupEngine;
         this.budgetGoalsService = budgetGoalsService;
+        this.entityManager = entityManager;
     }
 
+    @Transactional
     public boolean runBudgetSetup(final BudgetRegistration budgetRegistration)
     {
         if(budgetRegistration == null)
@@ -58,10 +68,13 @@ public class BudgetSetupRunner
 
             log.info("Creating sub-Budgets for current year up to current date");
             List<SubBudget> currentYearSubBudgets = budgetSetupEngine.createNewMonthlySubBudgetsForUser(currentBudget, budgetRegistration.getBudgetGoals());
+            entityManager.flush();
+            entityManager.clear();
 
             log.info("Creating sub-budget templates for previous year {}", previousYear);
             List<SubBudget> previousYearSubBudgets = budgetSetupEngine.createSubBudgetTemplatesForYear(previousYear, previousYearBudget, budgetRegistration.getBudgetGoals());
-
+            entityManager.flush();
+            entityManager.clear();
             log.info("Creating Monthly Sub Budget goals for current year {}", currentYear);
 
             // Fix: Fetch the saved BudgetGoalsEntity instead of using registration

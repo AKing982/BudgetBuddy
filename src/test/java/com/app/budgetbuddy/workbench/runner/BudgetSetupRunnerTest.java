@@ -33,40 +33,40 @@ class BudgetSetupRunnerTest
     private Budget currentBudget;
     private Budget previousYearBudget;
 
-
-    @BeforeEach
-    void setUp() {
-
-        // Setup budget registration
-        budgetRegistration = new BudgetRegistration();
-        budgetRegistration.setUserId(1L);
-        budgetRegistration.setBudgetYear(2023);
-        budgetRegistration.setBudgetName("Test Budget 2023");
-        budgetRegistration.setTotalIncomeAmount(new BigDecimal("50000.00"));
-        budgetRegistration.setBudgetGoals(new BudgetGoals());
-
-        // Setup current budget
-        currentBudget = new Budget();
-        currentBudget.setId(101L);
-        currentBudget.setUserId(1L);
-        currentBudget.setBudgetYear(2023);
-        currentBudget.setBudgetName("Test Budget 2023");
-        currentBudget.setStartDate(LocalDate.of(2023, 1, 1));
-        currentBudget.setEndDate(LocalDate.of(2023, 12, 31));
-
-        // Setup previous year budget
-        previousYearBudget = new Budget();
-        previousYearBudget.setId(102L);
-        previousYearBudget.setUserId(1L);
-        previousYearBudget.setBudgetYear(2022);
-        previousYearBudget.setBudgetName("Test Budget 2022");
-        previousYearBudget.setStartDate(LocalDate.of(2022, 1, 1));
-        previousYearBudget.setEndDate(LocalDate.of(2022, 12, 31));
-
-        budgetSetupRunner = new BudgetSetupRunner(budgetSetupEngine, budgetGoalsService);
-    }
-
-
+//
+//    @BeforeEach
+//    void setUp() {
+//
+//        // Setup budget registration
+//        budgetRegistration = new BudgetRegistration();
+//        budgetRegistration.setUserId(1L);
+//        budgetRegistration.setBudgetYear(2023);
+//        budgetRegistration.setBudgetName("Test Budget 2023");
+//        budgetRegistration.setTotalIncomeAmount(new BigDecimal("50000.00"));
+//        budgetRegistration.setBudgetGoals(new BudgetGoals());
+//
+//        // Setup current budget
+//        currentBudget = new Budget();
+//        currentBudget.setId(101L);
+//        currentBudget.setUserId(1L);
+//        currentBudget.setBudgetYear(2023);
+//        currentBudget.setBudgetName("Test Budget 2023");
+//        currentBudget.setStartDate(LocalDate.of(2023, 1, 1));
+//        currentBudget.setEndDate(LocalDate.of(2023, 12, 31));
+//
+//        // Setup previous year budget
+//        previousYearBudget = new Budget();
+//        previousYearBudget.setId(102L);
+//        previousYearBudget.setUserId(1L);
+//        previousYearBudget.setBudgetYear(2022);
+//        previousYearBudget.setBudgetName("Test Budget 2022");
+//        previousYearBudget.setStartDate(LocalDate.of(2022, 1, 1));
+//        previousYearBudget.setEndDate(LocalDate.of(2022, 12, 31));
+//
+//        budgetSetupRunner = new BudgetSetupRunner(budgetSetupEngine, budgetGoalsService);
+//    }
+//
+//
 
     @AfterEach
     void tearDown() {

@@ -202,6 +202,7 @@ public class BudgetSetupEngine
         for(SubBudget subBudget : subBudgets)
         {
             Long subBudgetId = subBudget.getId();
+            log.info("Creating monthly budget goal for subBudgetId: {}", subBudgetId);
             Optional<MonthlyBudgetGoals> monthlyBudgetGoalsOptional = monthlyBudgetGoalsBuilder.createBudgetGoal(budgetGoals, subBudgetId);
             if(monthlyBudgetGoalsOptional.isEmpty())
             {
@@ -245,7 +246,9 @@ public class BudgetSetupEngine
         }
         try
         {
-            return subBudgetBuilderService.createMonthlySubBudgetsToDate(budget, budgetGoals);
+            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgetsToDate(budget, budgetGoals);
+            log.info("Created subBudgets for user: {}", subBudgets.toString());
+            return subBudgets;
         }catch(BudgetBuildException e)
         {
             log.error("There was an error build the monthly subbudgets from the budget: ", e);
