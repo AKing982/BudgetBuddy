@@ -30,7 +30,7 @@ public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsServ
     }
 
     @Override
-    public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets, Long budgetId)
+    public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets)
     {
         List<BudgetStatisticsEntity> budgetStatisticsEntities = new ArrayList<>();
 

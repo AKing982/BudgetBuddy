@@ -73,6 +73,13 @@ public class BudgetSetupRunner
             log.info("Creating sub-budget templates for previous year {}", previousYear);
             List<SubBudget> previousYearSubBudgets = budgetSetupEngine.createSubBudgetTemplatesForYear(previousYear, previousYearBudget, budgetRegistration.getBudgetGoals());
 
+            log.info("Assigning Budget Stats templates for current year");
+            List<BudgetStats> currentYearBudgetStats = budgetSetupEngine.createBudgetStatistics(currentYearSubBudgets);
+            budgetSetupEngine.saveBudgetStats(currentYearBudgetStats);
+
+            List<BudgetStats> previousYearBudgetStats = budgetSetupEngine.createBudgetStatistics(previousYearSubBudgets);
+            budgetSetupEngine.saveBudgetStats(previousYearBudgetStats);
+
             // Fix: Fetch the saved BudgetGoalsEntity instead of using registration
             BudgetGoalsEntity savedGoalsEntity = budgetGoalsService.findByBudgetId(currentBudgetId)
                     .orElseThrow(() -> new RuntimeException("No BudgetGoalsEntity found for budget ID: " + currentBudget.getId()));

@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.subBudget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
+import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.SubBudgetService;
@@ -55,28 +56,43 @@ public class SubBudgetBuilderService
         BigDecimal monthlyAllocation = budget.getBudgetAmount().divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
         BigDecimal monthlySavingsTarget = budgetGoalsTargetAmount.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
         List<SubBudget> subBudgets = new ArrayList<>();
-        for(int month = 1; month <= 12; month++)
+        try
         {
-            LocalDate startDate = LocalDate.of(year, month, 1);
-            LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-
-            SubBudget subBudget = SubBudget.buildSubBudget(
-                    true,  // isActive
-                    monthlyAllocation,  // allocatedAmount
-                    monthlySavingsTarget,  // savingsTarget
-                    BigDecimal.ZERO,  // savingsAmount
-                    budget,  // budget
-                    BigDecimal.ZERO,  // spentOnBudget
-                    year + "-" + String.format("%02d", month) + " Budget",  // budgetName
-                    startDate,
-                    endDate
-            );
-
-            subBudget.setYear(year);
-            subBudgets.add(subBudget);
+            for(int month = 1; month <= 12; month++)
+            {
+                LocalDate startDate = LocalDate.of(year, month, 1);
+                LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+                String monthName = startDate.getMonth().name();
+                String subBudgetName = monthName.charAt(0) + monthName.substring(1).toLowerCase(Locale.ROOT) + " " + year + " - Budget";
+                SubBudget subBudget = SubBudget.buildSubBudget(
+                        true,  // isActive
+                        monthlyAllocation,  // allocatedAmount
+                        monthlySavingsTarget,  // savingsTarget
+                        BigDecimal.ZERO,  // savingsAmount
+                        budget,  // budget
+                        BigDecimal.ZERO,  // spentOnBudget
+                        subBudgetName,  // budgetName
+                        startDate,
+                        endDate
+                );
+                subBudget.setYear(year);
+                Optional<SubBudgetEntity> subBudgetEntity = subBudgetService.saveSubBudget(subBudget);
+                if(subBudgetEntity.isEmpty())
+                {
+                    log.error("Failed to create sub budget");
+                    return Collections.emptyList();
+                }
+                SubBudgetEntity subBudgetEntity1 = subBudgetEntity.get();
+                Long subBudgetId = subBudgetEntity1.getId();
+                subBudget.setId(subBudgetId);
+                subBudgets.add(subBudget);
+            }
+            return subBudgets;
+        }catch(BudgetBuildException e)
+        {
+            log.error("Failed to create sub-budget templates for year {} and budget {} due to the error: ", year, budget, e);
+            return Collections.emptyList();
         }
-
-        return subBudgets;
     }
 
     public Optional<SubBudget> createNewMonthSubBudget(final Budget budget, final LocalDate startDate, final LocalDate endDate, final BigDecimal monthlyIncome, final BudgetGoals budgetGoals)
@@ -97,8 +113,8 @@ public class SubBudgetBuilderService
         try
         {
             String monthName = startDate.getMonth().name();
-            String firstMonthChar = monthName.substring(0, 1).toUpperCase(Locale.ENGLISH).toUpperCase();
-            String subBudgetName = firstMonthChar + monthName.substring(1).toLowerCase(Locale.ROOT) + " " + "Budget";
+            int year = startDate.getYear();
+            String subBudgetName = monthName.charAt(0) + monthName.substring(1).toLowerCase(Locale.ROOT) + " " + year + " - Budget";
             int totalMonthsToSave = budget.getTotalMonthsToSave();
             BigDecimal totalSubBudgetAmount;
             BigDecimal subBudgetSavingsTarget;

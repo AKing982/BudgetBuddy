@@ -143,13 +143,13 @@ public class BudgetSetupEngine
         }
     }
 
-    public List<BudgetStatisticsEntity> saveBudgetStats(final List<BudgetStats> budgetStatsList, final Long subBudgetId)
+    public List<BudgetStatisticsEntity> saveBudgetStats(final List<BudgetStats> budgetStatsList)
     {
         if(budgetStatsList == null || budgetStatsList.isEmpty())
         {
             return Collections.emptyList();
         }
-        return subBudgetStatisticsService.saveBudgetStats(budgetStatsList, subBudgetId);
+        return subBudgetStatisticsService.saveBudgetStats(budgetStatsList);
     }
 
     public List<BudgetStats> createBudgetStatistics(final List<SubBudget> subBudgets) {
@@ -224,7 +224,7 @@ public class BudgetSetupEngine
         try
         {
             List<SubBudget> subBudgets = subBudgetBuilderService.createSubBudgetTemplates(year, budget, budgetGoals);
-            subBudgetBuilderService.saveSubBudgets(subBudgets);
+            log.info("Created sub-Budget templates: {}", subBudgets);
             return subBudgets;
         }catch(BudgetBuildException e)
         {
@@ -232,6 +232,7 @@ public class BudgetSetupEngine
             return Collections.emptyList();
         }
     }
+
 
 
 //    /**
@@ -292,7 +293,6 @@ public class BudgetSetupEngine
 
             // Combine both lists
             List<SubBudget> allSubBudgets = new ArrayList<>();
-            allSubBudgets.addAll(pastToPresentSubBudgets);
             allSubBudgets.addAll(futureSubBudgetTemplates);
 
             if (allSubBudgets.isEmpty()) {
@@ -300,8 +300,6 @@ public class BudgetSetupEngine
                 return Collections.emptyList();
             }
 
-            // Save all sub-budgets
-            subBudgetBuilderService.saveSubBudgets(allSubBudgets);
             log.info("Created and saved subBudgets for user: {}", allSubBudgets);
             log.info("Successfully saved subBudgets for budget ID: {}", budget.getId());
             return allSubBudgets;

@@ -26,7 +26,7 @@ public class BudgetStatisticsDataServiceImpl extends AbstractBudgetStatisticsSer
     }
 
     @Override
-    public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets, Long budgetId)
+    public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets)
     {
         return List.of();
     }

@@ -30,7 +30,7 @@ public abstract class AbstractBudgetStatisticsService<T>
         this.budgetStatisticsService = budgetStatisticsService;
     }
 
-    public abstract List<BudgetStatisticsEntity> saveBudgetStats(final List<BudgetStats> budgets, final Long budgetId);
+    public abstract List<BudgetStatisticsEntity> saveBudgetStats(final List<BudgetStats> budgets);
 
     public abstract List<BudgetStats> getBudgetStats(T budget);
 }
