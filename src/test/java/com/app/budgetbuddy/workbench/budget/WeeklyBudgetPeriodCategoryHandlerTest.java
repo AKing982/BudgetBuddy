@@ -139,7 +139,7 @@ class WeeklyBudgetPeriodCategoryHandlerTest {
                 .subBudgetId(1L)
                 .startDate(LocalDate.of(2025, 1, 1))
                 .endDate(LocalDate.of(2025, 1, 31))
-                .period(Period.WEEKLY)
+                .periodType(Period.WEEKLY)
                 .budgetScheduleRanges(scheduleRanges)
                 .build();
     }

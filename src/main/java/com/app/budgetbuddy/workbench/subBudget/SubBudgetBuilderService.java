@@ -3,7 +3,6 @@ package com.app.budgetbuddy.workbench.subBudget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
-import com.app.budgetbuddy.repositories.BudgetRepository;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.workbench.budget.BudgetCalculations;
@@ -251,21 +250,6 @@ public class SubBudgetBuilderService
             return Optional.empty();
         }
     }
-
-//    public Optional<SubBudgetEntity> updateSingleSubBudget(final SubBudget subBudget)
-//    {
-//        if(subBudget == null)
-//        {
-//            return Optional.empty();
-//        }
-//        try
-//        {
-//            return subBudgetService.up
-//        }catch(DataAccessException e){
-//            log.error("There was an error updating single sub budget: ", e);
-//            return Optional.empty();
-//        }
-//    }
 
     public void saveBudgetSchedules(final List<BudgetSchedule> budgetSchedules)
     {

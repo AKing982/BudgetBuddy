@@ -165,7 +165,7 @@ class BudgetBuilderServiceTest
 
         // Create Budget Schedules for each month
         BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
-        januaryBudgetSchedule.setPeriod(Period.MONTHLY);
+        januaryBudgetSchedule.setPeriodType(Period.MONTHLY);
         januaryBudgetSchedule.setSubBudgetId(1L);
         januaryBudgetSchedule.setStatus("Active");
         januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
@@ -178,7 +178,7 @@ class BudgetBuilderServiceTest
         januaryBudgetSchedule.initializeBudgetDateRanges();
 
         BudgetSchedule februaryBudgetSchedule = new BudgetSchedule();
-        februaryBudgetSchedule.setPeriod(Period.MONTHLY);
+        februaryBudgetSchedule.setPeriodType(Period.MONTHLY);
         februaryBudgetSchedule.setSubBudgetId(2L); // Correcting SubBudget ID
         februaryBudgetSchedule.setStatus("Active");
         februaryBudgetSchedule.setStartDate(LocalDate.of(2025, 2, 1));

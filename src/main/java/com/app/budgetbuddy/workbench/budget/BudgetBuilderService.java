@@ -12,6 +12,7 @@ import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetConverterUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Service
 @Slf4j
@@ -46,6 +48,62 @@ public class BudgetBuilderService
         this.subBudgetBuilderService = subBudgetBuilderService;
         this.subBudgetConverterUtil = subBudgetConverterUtil;
         this.budgetGoalsService = budgetGoalsService;
+    }
+
+    public Optional<BudgetGoalsEntity> saveBudgetGoals(BudgetGoals budgetGoals)
+    {
+        try
+        {
+            // Step 1: Validate input
+            if (budgetGoals == null) {
+                log.warn("BudgetGoals is null; returning empty list");
+                return Optional.empty();
+            }
+
+            // Step 2: Create BudgetGoalsEntity from BudgetGoals
+            BudgetGoalsEntity goalsEntity = new BudgetGoalsEntity();
+            goalsEntity.setGoalName(budgetGoals.getGoalName());
+            goalsEntity.setGoalDescription(budgetGoals.getGoalDescription());
+            goalsEntity.setGoalType(budgetGoals.getGoalType());
+            goalsEntity.setTargetAmount(budgetGoals.getTargetAmount());
+            goalsEntity.setMonthlyAllocation(budgetGoals.getMonthlyAllocation());
+            goalsEntity.setCurrentSavings(budgetGoals.getCurrentSavings());
+            goalsEntity.setSavingsFrequency(budgetGoals.getSavingsFrequency());
+            goalsEntity.setStatus(budgetGoals.getStatus());
+
+            // Step 3: Link to BudgetEntity using budgetId
+            if (budgetGoals.getBudgetId() != null) {
+                BudgetEntity budgetEntity = budgetService.findById(budgetGoals.getBudgetId())
+                        .orElseThrow(() -> new EntityNotFoundException("Budget with ID " + budgetGoals.getBudgetId() + " not found"));
+                goalsEntity.setBudget(budgetEntity);
+            } else {
+                log.warn("BudgetId is null for BudgetGoals; saving without linking to a budget");
+            }
+
+            // Step 4: Set timestamps
+            LocalDateTime now = LocalDateTime.now();
+            goalsEntity.setCreatedAt(now);
+            goalsEntity.setUpdatedAt(now);
+
+            // Step 5: Save the entity
+            Optional<BudgetGoalsEntity> savedEntity = budgetGoalsService.saveBudgetGoals(goalsEntity);
+            log.info("Saved BudgetGoalsEntity with ID: {} for Budget ID: {}",
+                    savedEntity.get().getId(), budgetGoals.getBudgetId());
+
+            BudgetGoalsEntity savedGoalsEntity = savedEntity.get();
+
+            // Step 6: Return as a list
+            return Optional.of(savedGoalsEntity);
+
+        } catch (DataAccessException e) {
+            log.error("Error saving BudgetGoals: ", e);
+            throw e; // Re-throw to allow caller to handle it, or return Collections.emptyList() if preferred
+        }
+    }
+
+    public BudgetGoals convertBudgetGoalsEntity(BudgetGoalsEntity goalsEntity)
+    {
+        return budgetGoalsService.convertToBudgetGoals(goalsEntity);
     }
 
     private void validateBudgetRegistration(final BudgetRegistration budgetRegistration)
@@ -75,8 +133,11 @@ public class BudgetBuilderService
         }
     }
 
+    public Budget convertBudgetEntity(BudgetEntity budgetEntity)
+    {
+        return budgetService.convertBudgetEntity(budgetEntity);
+    }
 
-    @Transactional
     public Optional<Budget> buildBudgetFromRegistration(final BudgetRegistration budgetRegistration) {
         if (budgetRegistration == null) {
             return Optional.empty();

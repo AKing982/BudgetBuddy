@@ -4,8 +4,10 @@ import com.app.budgetbuddy.domain.BudgetGoals;
 import com.app.budgetbuddy.domain.BudgetGoalsRequest;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetGoalsRepository;
 import com.app.budgetbuddy.repositories.BudgetRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class BudgetGoalsServiceImpl implements BudgetGoalsService
 {
     private final BudgetGoalsRepository budgetGoalsRepository;
@@ -71,8 +74,17 @@ public class BudgetGoalsServiceImpl implements BudgetGoalsService
 
     @Override
     public BudgetGoals convertToBudgetGoals(BudgetGoalsEntity budgetGoalsEntity) {
+        if (budgetGoalsEntity == null) {
+            log.warn("BudgetGoalsEntity is null; returning null");
+            return null;
+        }
+
+        Long budgetId = (budgetGoalsEntity.getBudget() != null)
+                ? budgetGoalsEntity.getBudget().getId()
+                : null;
+
         return new BudgetGoals(
-                budgetGoalsEntity.getId(),
+                budgetId, // Use the BudgetEntity's ID, not BudgetGoalsEntity's ID
                 budgetGoalsEntity.getTargetAmount(),
                 budgetGoalsEntity.getMonthlyAllocation(),
                 budgetGoalsEntity.getCurrentSavings(),
@@ -84,10 +96,37 @@ public class BudgetGoalsServiceImpl implements BudgetGoalsService
         );
     }
 
+
     @Override
     public Optional<BudgetGoalsEntity> findByUserId(Long userId) {
         return budgetGoalsRepository.findByUserId(userId);
     }
+
+    @Override
+    public Optional<BudgetGoalsEntity> convertToBudgetGoalsEntity(BudgetGoals budgetGoals)
+    {
+
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<BudgetGoalsEntity> saveBudgetGoals(BudgetGoalsEntity budgetGoals)
+    {
+        if(budgetGoals == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            BudgetGoalsEntity budgetGoalsEntityOptional = budgetGoalsRepository.save(budgetGoals);
+            return Optional.of(budgetGoalsEntityOptional);
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error saving the budget goals: ", e);
+            return Optional.empty();
+        }
+    }
+
 
     private BudgetEntity findBudgetById(Long budgetId){
         if(budgetId == null){

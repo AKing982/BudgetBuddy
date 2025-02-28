@@ -65,14 +65,13 @@ public class BudgetSetupRunner
             log.info("Previous Year Budget Name: {}", previousYearBudgetName);
             Budget previousYearBudget = budgetSetupEngine.createPreviousYearBudget(previousYearIncome, previousYearBudgetName, currentBudget)
                     .orElseThrow(() -> new RuntimeException("Failed to create previous year budget"));
+            log.info("Previous Year Budget: {}", previousYearBudget.toString());
 
             log.info("Creating sub-Budgets for current year up to current date");
             List<SubBudget> currentYearSubBudgets = budgetSetupEngine.createNewMonthlySubBudgetsForUser(currentBudget, budgetRegistration.getBudgetGoals());
-            entityManager.flush();
 
             log.info("Creating sub-budget templates for previous year {}", previousYear);
             List<SubBudget> previousYearSubBudgets = budgetSetupEngine.createSubBudgetTemplatesForYear(previousYear, previousYearBudget, budgetRegistration.getBudgetGoals());
-            entityManager.flush();
 
             // Fix: Fetch the saved BudgetGoalsEntity instead of using registration
             BudgetGoalsEntity savedGoalsEntity = budgetGoalsService.findByBudgetId(currentBudgetId)

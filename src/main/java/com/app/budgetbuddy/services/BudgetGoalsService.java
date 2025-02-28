@@ -15,4 +15,8 @@ public interface BudgetGoalsService extends ServiceModel<BudgetGoalsEntity>
     BudgetGoals convertToBudgetGoals(BudgetGoalsEntity budgetGoalsRequest);
 
     Optional<BudgetGoalsEntity> findByUserId(Long userId);
+
+    Optional<BudgetGoalsEntity> convertToBudgetGoalsEntity(BudgetGoals budgetGoals);
+
+    Optional<BudgetGoalsEntity> saveBudgetGoals(BudgetGoalsEntity budgetGoals);
 }

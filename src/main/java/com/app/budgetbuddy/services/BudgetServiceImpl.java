@@ -8,6 +8,7 @@ import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
+import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetConverterUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,15 +26,18 @@ import java.util.stream.Collectors;
 public class BudgetServiceImpl implements BudgetService
 {
     private BudgetRepository budgetRepository;
+    private UserRepository userRepository;
     private SubBudgetRepository subBudgetRepository;
     private SubBudgetConverterUtil subBudgetConverterUtil;
 
     @Autowired
     public BudgetServiceImpl(BudgetRepository budgetRepository,
+                             UserRepository userRepository,
                              SubBudgetRepository subBudgetRepository,
                              SubBudgetConverterUtil subBudgetConverterUtil)
     {
         this.budgetRepository = budgetRepository;
+        this.userRepository = userRepository;
         this.subBudgetRepository = subBudgetRepository;
         this.subBudgetConverterUtil = subBudgetConverterUtil;
     }
@@ -115,7 +119,12 @@ public class BudgetServiceImpl implements BudgetService
         budget.setEndDate(budgetEntity.getBudgetEndDate());
         budget.setBudgetPeriod(budgetEntity.getBudgetPeriod());
         budget.setBudgetAmount(budgetEntity.getBudgetAmount());
-        budget.setTotalMonthsToSave(budgetEntity.getTotalMonthsToSave());
+        // Handle potentially null totalMonthsToSave
+        Integer totalMonthsToSave = budgetEntity.getTotalMonthsToSave();
+        budget.setTotalMonthsToSave(totalMonthsToSave != null ? totalMonthsToSave : 12); // Default to 12 if null
+        if (totalMonthsToSave == null) {
+            log.warn("totalMonthsToSave is null for BudgetEntity ID: {}; defaulting to 12", budgetEntity.getId());
+        }
         budget.setBudgetYear(budgetEntity.getYear());
         budget.setIncome(budgetEntity.getMonthlyIncome());
         budget.setBudgetName(budgetEntity.getBudgetName());
@@ -133,10 +142,15 @@ public class BudgetServiceImpl implements BudgetService
             budgetEntity.setBudgetPeriod(budget.getBudgetPeriod());
             budgetEntity.setBudgetAmount(budget.getBudgetAmount());
             budgetEntity.setBudgetStartDate(budget.getStartDate());
+            budgetEntity.setBudgetEndDate(budget.getEndDate());
             budgetEntity.setBudgetMode(budget.getBudgetMode());
             budgetEntity.setBudgetActualAmount(budget.getActual());
+            budgetEntity.setYear(budget.getBudgetYear());
+            budgetEntity.setMonthlyIncome(budget.getIncome());
+            budgetEntity.setActualSavingsAllocation(budget.getSavingsAmountAllocated());
             budgetEntity.setSavingsProgress(budget.getSavingsProgress());
             budgetEntity.setBudgetName(budget.getBudgetName());
+            budgetEntity.setUser(getUserEntityById(budget.getUserId()));
             budgetEntity.setBudgetDescription(budget.getBudgetDescription());
             List<SubBudget> subBudgets = budget.getSubBudgets();
             Set<SubBudgetEntity> subBudgetEntities = subBudgetConverterUtil.convertSubBudgetToEntities(subBudgets);
@@ -146,7 +160,10 @@ public class BudgetServiceImpl implements BudgetService
             log.error("There was an error creating the budget entity: ", e);
             return Optional.empty();
         }
+    }
 
+    private UserEntity getUserEntityById(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     private Budget convertBudget(BudgetEntity budgetEntity)

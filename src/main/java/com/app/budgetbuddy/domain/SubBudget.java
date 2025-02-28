@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Objects;
 
 @Data
-@ToString
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder
 public class SubBudget

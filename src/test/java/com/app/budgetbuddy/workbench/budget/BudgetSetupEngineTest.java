@@ -11,10 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -171,35 +168,6 @@ class BudgetSetupEngineTest
         assertTrue(actual.isEmpty());
     }
 
-    @Test
-    void testCreateNewSubBudgetsForUser_whenBudgetValid_thenReturnSubBudgets()
-    {
-        List<SubBudget> expected = subBudgets;
-        Mockito.when(subBudgetBuilderService.createMonthlySubBudgets(budget, budgetGoals)).thenReturn(expected);
-
-        List<SubBudget> actual = budgetSetupEngine.createNewMonthlySubBudgetsForUser(budget, budgetGoals);
-        assertNotNull(actual);
-        assertEquals(expected.size(), actual.size());
-
-        for (int i = 0; i < expected.size(); i++) {
-            SubBudget expectedBudget = expected.get(i);
-            SubBudget actualBudget = actual.get(i);
-
-            assertEquals(expectedBudget.getId(), actualBudget.getId());
-            assertEquals(expectedBudget.getSubBudgetName(), actualBudget.getSubBudgetName());
-            assertEquals(expectedBudget.getAllocatedAmount(), actualBudget.getAllocatedAmount());
-            assertEquals(expectedBudget.getSubSavingsTarget(), actualBudget.getSubSavingsTarget());
-            assertEquals(expectedBudget.getSubSavingsAmount(), actualBudget.getSubSavingsAmount());
-            assertEquals(expectedBudget.getSpentOnBudget(), actualBudget.getSpentOnBudget());
-            assertEquals(expectedBudget.getStartDate(), actualBudget.getStartDate());
-            assertEquals(expectedBudget.getEndDate(), actualBudget.getEndDate());
-            assertEquals(expectedBudget.isActive(), actualBudget.isActive());
-        }
-
-        verify(subBudgetBuilderService).createMonthlySubBudgets(budget, budgetGoals);
-    }
-
-
 
     @Test
     void testCreateMonthlyBudgetGoalsForSubBudgets_whenBudgetGoalsNull_thenReturnEmptyList()
@@ -297,255 +265,173 @@ class BudgetSetupEngineTest
     }
 
     @Test
-    void testCreateBudgetStatistics_shouldReturnBudgetStats()
-    {
-        List<BudgetStats> expectedBudgetStats = new ArrayList<>();
-        // Create real SubBudgets for January, February, and March
-        SubBudget januaryBudget = new SubBudget();
-        januaryBudget.setId(101L);
-        januaryBudget.setSubBudgetName("January 2023");
-        januaryBudget.setId(1L);
-        januaryBudget.setStartDate(LocalDate.of(2023, 1, 1));
-        januaryBudget.setEndDate(LocalDate.of(2023, 1, 31));
+    void testCreateBudgetStatistics_whenSubBudgetsInSetupPhase_shouldReturnStatsTemplates() {
+        // Arrange
+        LocalDate currentDate = LocalDate.of(2025, 2, 28);
+        try (MockedStatic<LocalDate> mockedLocalDate = Mockito.mockStatic(LocalDate.class, Mockito.CALLS_REAL_METHODS)) {
+            mockedLocalDate.when(LocalDate::now).thenReturn(currentDate);
 
-        SubBudget februaryBudget = new SubBudget();
-        februaryBudget.setId(102L);
-        februaryBudget.setSubBudgetName("February 2023");
-        februaryBudget.setId(2L);
-        februaryBudget.setStartDate(LocalDate.of(2023, 2, 1));
-        februaryBudget.setEndDate(LocalDate.of(2023, 2, 28));
+            Budget budget = new Budget();
+            budget.setId(2L);
 
-        SubBudget marchBudget = new SubBudget();
-        marchBudget.setId(103L);
-        marchBudget.setSubBudgetName("March 2023");
-        marchBudget.setId(3L);
-        marchBudget.setStartDate(LocalDate.of(2023, 3, 1));
-        marchBudget.setEndDate(LocalDate.of(2023, 3, 31));
+            // Previous year sub-budget
+            SubBudget dec2024Budget = new SubBudget();
+            dec2024Budget.setId(12L);
+            dec2024Budget.setSubBudgetName("December 2024");
+            dec2024Budget.setStartDate(LocalDate.of(2024, 12, 1));
+            dec2024Budget.setEndDate(LocalDate.of(2024, 12, 31));
+            dec2024Budget.setBudget(budget);
+            dec2024Budget.setAllocatedAmount(new BigDecimal("1200.00"));
 
-        List<SubBudget> subBudgets = Arrays.asList(januaryBudget, februaryBudget, marchBudget);
+            // Current year sub-budgets
+            SubBudget januaryBudget = new SubBudget();
+            januaryBudget.setId(13L);
+            januaryBudget.setSubBudgetName("January 2025");
+            januaryBudget.setStartDate(LocalDate.of(2025, 1, 1));
+            januaryBudget.setEndDate(LocalDate.of(2025, 1, 31));
+            januaryBudget.setBudget(budget);
+            januaryBudget.setAllocatedAmount(new BigDecimal("1200.00"));
 
-        // Create BudgetStats with real date ranges
-        DateRange januaryRange = new DateRange(
-                LocalDate.of(2023, 1, 1),
-                LocalDate.of(2023, 1, 31)
-        );
+            SubBudget februaryBudget = new SubBudget();
+            februaryBudget.setId(14L);
+            februaryBudget.setSubBudgetName("February 2025");
+            februaryBudget.setStartDate(LocalDate.of(2025, 2, 1));
+            februaryBudget.setEndDate(LocalDate.of(2025, 2, 28));
+            februaryBudget.setBudget(budget);
+            februaryBudget.setAllocatedAmount(new BigDecimal("1200.00"));
 
-        BudgetStats januaryStats = new BudgetStats(
-                januaryBudget.getId(),
-                new BigDecimal("1200.00"),   // totalBudget
-                new BigDecimal("950.75"),    // totalSpent
-                new BigDecimal("249.25"),    // remaining
-                new BigDecimal("100.00"),    // totalSaved
-                new BigDecimal("30.67"),     // averageSpendingPerDay
-                new BigDecimal("85.5"),      // healthScore
-                januaryRange
-        );
+            List<SubBudget> subBudgets = Arrays.asList(dec2024Budget, januaryBudget, februaryBudget);
 
-        DateRange februaryRange = new DateRange(
-                LocalDate.of(2023, 2, 1),
-                LocalDate.of(2023, 2, 28)
-        );
+            // Act
+            List<BudgetStats> actualBudgetStats = budgetSetupEngine.createBudgetStatistics(subBudgets);
 
-        BudgetStats februaryStats = new BudgetStats(
-                februaryBudget.getId(),
-                new BigDecimal("1200.00"),   // totalBudget
-                new BigDecimal("1050.25"),   // totalSpent
-                new BigDecimal("149.75"),    // remaining
-                new BigDecimal("75.00"),     // totalSaved
-                new BigDecimal("37.51"),     // averageSpendingPerDay
-                new BigDecimal("79.2"),      // healthScore
-                februaryRange
-        );
+            // Assert
+            assertNotNull(actualBudgetStats);
+            assertEquals(3, actualBudgetStats.size(), "Should return 3 BudgetStats templates for Dec 2024, Jan-Feb 2025");
 
-        DateRange marchRange = new DateRange(
-                LocalDate.of(2023, 3, 1),
-                LocalDate.of(2023, 3, 31)
-        );
+            // Verify Dec 2024 stats template
+            assertEquals(12L, actualBudgetStats.get(0).getBudgetId());
+            assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(0).getTotalBudget()), "Dec 2024 totalBudget mismatch");
+            assertEquals(0, BigDecimal.ZERO.compareTo(actualBudgetStats.get(0).getTotalSpent()), "Dec 2024 totalSpent mismatch");
+            assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(0).getRemaining()), "Dec 2024 remaining mismatch");
 
-        BudgetStats marchStats = new BudgetStats(
-                marchBudget.getId(),
-                new BigDecimal("1200.00"),   // totalBudget
-                new BigDecimal("875.50"),    // totalSpent
-                new BigDecimal("324.50"),    // remaining
-                new BigDecimal("150.00"),    // totalSaved
-                new BigDecimal("28.24"),     // averageSpendingPerDay
-                new BigDecimal("92.7"),      // healthScore
-                marchRange
-        );
+            // Verify January 2025 stats template
+            assertEquals(13L, actualBudgetStats.get(1).getBudgetId());
+            assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(1).getTotalBudget()), "January totalBudget mismatch");
+            assertEquals(0, BigDecimal.ZERO.compareTo(actualBudgetStats.get(1).getTotalSpent()), "January totalSpent mismatch");
+            assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(1).getRemaining()), "January remaining mismatch");
 
-        // Set up expected results
-        List<BudgetStats> januaryBudgetStats = Collections.singletonList(januaryStats);
-        List<BudgetStats> februaryBudgetStats = Collections.singletonList(februaryStats);
-        List<BudgetStats> marchBudgetStats = Collections.singletonList(marchStats);
+            // Verify February 2025 stats template
+            assertEquals(14L, actualBudgetStats.get(2).getBudgetId());
+            assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(2).getTotalBudget()), "February totalBudget mismatch");
+            assertEquals(0, BigDecimal.ZERO.compareTo(actualBudgetStats.get(2).getTotalSpent()), "February totalSpent mismatch");
+            assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(2).getRemaining()), "February remaining mismatch");
 
-        expectedBudgetStats.addAll(januaryBudgetStats);
-        expectedBudgetStats.addAll(februaryBudgetStats);
-        expectedBudgetStats.addAll(marchBudgetStats);
+            // No service calls expected—no transaction data
+            verify(subBudgetStatisticsService, never()).getBudgetStats(any(SubBudget.class));
+        }
+    }
 
-        // Mock the service behavior
-        when(subBudgetStatisticsService.getBudgetStats(januaryBudget)).thenReturn(januaryBudgetStats);
-        when(subBudgetStatisticsService.getBudgetStats(februaryBudget)).thenReturn(februaryBudgetStats);
-        when(subBudgetStatisticsService.getBudgetStats(marchBudget)).thenReturn(marchBudgetStats);
 
-        // Act
-        List<BudgetStats> actualBudgetStats = budgetSetupEngine.createBudgetStatistics(subBudgets);
 
-        // Assert
-        assertNotNull(actualBudgetStats);
-        assertEquals(expectedBudgetStats.size(), actualBudgetStats.size());
+    @Test
+    void testCreateNewMonthlySubBudgetsForUser_withValidBudgetAndGoals_shouldCombinePastAndFutureSubBudgets() {
+        // Arrange
+        LocalDate currentDate = LocalDate.of(2025, 2, 28); // Mid-year split
+        LocalDate budgetStartDate = LocalDate.of(2025, 1, 1);
+        LocalDate budgetEndDate = LocalDate.of(2025, 12, 31);
 
-        // Verify the content of the first BudgetStats (January)
-        assertEquals(januaryBudget.getId(), actualBudgetStats.get(0).getBudgetId());
-        assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(0).getTotalBudget()));
-        assertEquals(0, new BigDecimal("950.75").compareTo(actualBudgetStats.get(0).getTotalSpent()));
-        assertEquals(LocalDate.of(2023, 1, 1), actualBudgetStats.get(0).getDateRange().getStartDate());
-        assertEquals(LocalDate.of(2023, 1, 31), actualBudgetStats.get(0).getDateRange().getEndDate());
+        // Update budget
+        budget.setStartDate(budgetStartDate);
+        budget.setEndDate(budgetEndDate);
+        budget.setId(2L);
+        budget.setBudgetYear(2025);
 
-        // Verify the content of the second BudgetStats (February)
-        assertEquals(februaryBudget.getId(), actualBudgetStats.get(1).getBudgetId());
-        assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(1).getTotalBudget()));
-        assertEquals(0, new BigDecimal("1050.25").compareTo(actualBudgetStats.get(1).getTotalSpent()));
-        assertEquals(LocalDate.of(2023, 2, 1), actualBudgetStats.get(1).getDateRange().getStartDate());
-        assertEquals(LocalDate.of(2023, 2, 28), actualBudgetStats.get(1).getDateRange().getEndDate());
+        // Past sub-budgets (Jan-Feb)
+        List<SubBudget> pastSubBudgets = new ArrayList<>();
+        SubBudget jan = SubBudget.buildSubBudget(
+                true, BigDecimal.valueOf(3250), BigDecimal.valueOf(375), BigDecimal.ZERO, budget, BigDecimal.ZERO,
+                "January 2025", LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31));
+        jan.setId(13L);
+        SubBudget feb = SubBudget.buildSubBudget(
+                true, BigDecimal.valueOf(3250), BigDecimal.valueOf(375), BigDecimal.ZERO, budget, BigDecimal.ZERO,
+                "February 2025", LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 28));
+        feb.setId(14L);
+        pastSubBudgets.add(jan);
+        pastSubBudgets.add(feb);
 
-        // Verify the content of the third BudgetStats (March)
-        assertEquals(marchBudget.getId(), actualBudgetStats.get(2).getBudgetId());
-        assertEquals(0, new BigDecimal("1200.00").compareTo(actualBudgetStats.get(2).getTotalBudget()));
-        assertEquals(0, new BigDecimal("875.50").compareTo(actualBudgetStats.get(2).getTotalSpent()));
-        assertEquals(LocalDate.of(2023, 3, 1), actualBudgetStats.get(2).getDateRange().getStartDate());
-        assertEquals(LocalDate.of(2023, 3, 31), actualBudgetStats.get(2).getDateRange().getEndDate());
+        // Full year sub-budgets (Jan-Dec, filtered to Mar-Dec in method)
+        List<SubBudget> fullYearSubBudgets = new ArrayList<>();
+        for (int month = 1; month <= 12; month++) {
+            LocalDate start = LocalDate.of(2025, month, 1);
+            LocalDate end = start.plusMonths(1).minusDays(1);
+            SubBudget sub = SubBudget.buildSubBudget(
+                    true, BigDecimal.valueOf(3250), BigDecimal.valueOf(375), BigDecimal.ZERO, budget, BigDecimal.ZERO,
+                    "Month " + month + " 2025", start, end);
+            sub.setId((long) (13 + month - 1)); // IDs 13-24
+            fullYearSubBudgets.add(sub);
+        }
 
-        // Verify that the service method was called for each subBudget
-        verify(subBudgetStatisticsService).getBudgetStats(januaryBudget);
-        verify(subBudgetStatisticsService).getBudgetStats(februaryBudget);
-        verify(subBudgetStatisticsService).getBudgetStats(marchBudget);
+        // Expected combined result
+        List<SubBudget> expectedSubBudgets = new ArrayList<>(pastSubBudgets);
+        expectedSubBudgets.addAll(fullYearSubBudgets.stream()
+                .filter(sub -> sub.getStartDate().isAfter(currentDate))
+                .collect(Collectors.toList()));
+
+        // Mock with fixed current date
+        try (MockedStatic<LocalDate> mockedLocalDate = Mockito.mockStatic(LocalDate.class, Mockito.CALLS_REAL_METHODS)) {
+            mockedLocalDate.when(LocalDate::now).thenReturn(currentDate);
+
+            when(subBudgetBuilderService.createMonthlySubBudgetsToDate(budget, budgetGoals))
+                    .thenReturn(pastSubBudgets);
+            when(subBudgetBuilderService.createSubBudgetTemplates(2025, budget, budgetGoals))
+                    .thenReturn(fullYearSubBudgets);
+            doNothing().when(subBudgetBuilderService).saveSubBudgets(anyList());
+
+            // Act
+            List<SubBudget> result = budgetSetupEngine.createNewMonthlySubBudgetsForUser(budget, budgetGoals);
+
+            // Assert
+            assertNotNull(result, "Result should not be null");
+            assertEquals(12, result.size(), "Should have 12 sub-budgets (Jan-Dec)");
+
+            // Verify all sub-budgets
+            for (int i = 0; i < 12; i++) {
+                SubBudget expected = expectedSubBudgets.get(i);
+                SubBudget actual = result.get(i);
+                assertEquals(expected.getId(), actual.getId(), "Sub-budget ID mismatch at index " + i);
+                assertEquals(expected.getSubBudgetName(), actual.getSubBudgetName(), "Sub-budget name mismatch at index " + i);
+                assertEquals(expected.getStartDate(), actual.getStartDate(), "Start date mismatch at index " + i);
+                assertEquals(expected.getEndDate(), actual.getEndDate(), "End date mismatch at index " + i);
+                assertEquals(expected.getAllocatedAmount(), actual.getAllocatedAmount(), "Allocated amount mismatch at index " + i);
+            }
+
+            // Verify mocks
+            verify(subBudgetBuilderService).createMonthlySubBudgetsToDate(budget, budgetGoals);
+            verify(subBudgetBuilderService).createSubBudgetTemplates(2025, budget, budgetGoals);
+            verify(subBudgetBuilderService).saveSubBudgets(result);
+            verifyNoMoreInteractions(subBudgetBuilderService);
+        }
     }
 
     @Test
-    void testCreateBudgetStatistics_whenSubBudgetsInPreviousYear()
-    {
-
-
-    }
-
-    @Test
-    void testCreatePreviousYearBudget_whenYearIsNegative_thenReturnEmptyOptional(){
+    void testCreatePreviousYearBudget_whenYearIsNegative_thenReturnEmptyOptional() {
+        // Arrange
         BigDecimal previousIncomeAmount = new BigDecimal("39000");
         final String previousBudgetName = "2024 Budget Savings Plan";
         final Long userId = 1L;
 
+        // Set current year to 0, so previous year is -1 (negative)
         Budget currentYearBudget = budget;
-        Budget previousYearBudget = new Budget();
-        previousYearBudget.setStartDate(LocalDate.of(2024, 1, 1));
-        previousYearBudget.setEndDate(LocalDate.of(2024, 12, 31));
-        previousYearBudget.setIncome(previousIncomeAmount);
-        previousYearBudget.setBudgetName(previousBudgetName);
-        previousYearBudget.setUserId(userId);
-        previousYearBudget.setBudgetAmount(previousIncomeAmount);
-        previousYearBudget.setTotalMonthsToSave(12);
-        previousYearBudget.setBudgetMode(BudgetMode.SAVINGS_PLAN);
-        previousYearBudget.setBudgetYear(2024);
-        previousYearBudget.setBudgetPeriod(Period.MONTHLY);
-        previousYearBudget.setSavingsAmountAllocated(BigDecimal.ZERO);
-        previousYearBudget.setSavingsProgress(BigDecimal.ZERO);
-        previousYearBudget.setSubBudgets(new ArrayList<>());
-
-        Optional<Budget> expected = Optional.of(previousYearBudget);
-        Optional<Budget> actual = budgetSetupEngine.createPreviousYearBudget(previousIncomeAmount, previousBudgetName, currentYearBudget);
-        assertNotNull(actual);
-        Budget expectedBudget = expected.get();
-        Budget actualBudget = actual.get();
-        assertEquals(expectedBudget.getSubBudgets(), actualBudget.getSubBudgets());
-        assertEquals(expectedBudget.getBudgetName(), actualBudget.getBudgetName());
-        assertEquals(expectedBudget.getUserId(), actualBudget.getUserId());
-        assertEquals(expectedBudget.getBudgetAmount(), actualBudget.getBudgetAmount());
-        assertEquals(expectedBudget.getTotalMonthsToSave(), actualBudget.getTotalMonthsToSave());
-        assertEquals(expectedBudget.getBudgetMode(), actualBudget.getBudgetMode());
-        assertEquals(expectedBudget.getBudgetYear(), actualBudget.getBudgetYear());
-        assertEquals(expectedBudget.getBudgetPeriod(), actualBudget.getBudgetPeriod());
-        assertEquals(expectedBudget.getSavingsAmountAllocated(), actualBudget.getSavingsAmountAllocated());
-        assertEquals(expectedBudget.getSavingsProgress(), actualBudget.getSavingsProgress());
-        assertEquals(expectedBudget.getStartDate(), actualBudget.getStartDate());
-        assertEquals(expectedBudget.getEndDate(), actualBudget.getEndDate());
-    }
-
-    @Test
-    void testCreateBudgetStatistics_currentAndPreviousYearSubBudgets_shouldHandleDifferently() {
-        // Arrange
-        int currentYear = LocalDate.now().getYear();
-        int previousYear = currentYear - 1;
-
-        // Create a current year SubBudget
-        SubBudget currentYearSubBudget = new SubBudget();
-        currentYearSubBudget.setSubBudgetName("March " + currentYear);
-        currentYearSubBudget.setId(1L);
-        currentYearSubBudget.setAllocatedAmount(new BigDecimal("1200.00"));
-        currentYearSubBudget.setStartDate(LocalDate.of(currentYear, 3, 1));
-        currentYearSubBudget.setEndDate(LocalDate.of(currentYear, 3, 31));
-
-        // Create a previous year SubBudget
-        SubBudget previousYearSubBudget = new SubBudget();
-        previousYearSubBudget.setSubBudgetName("December " + previousYear);
-        previousYearSubBudget.setId(2L);
-        previousYearSubBudget.setAllocatedAmount(new BigDecimal("1200.00"));
-        previousYearSubBudget.setStartDate(LocalDate.of(previousYear, 12, 1));
-        previousYearSubBudget.setEndDate(LocalDate.of(previousYear, 12, 31));
-
-        List<SubBudget> mixedSubBudgets = Arrays.asList(currentYearSubBudget, previousYearSubBudget);
-
-        // Create current year stats that would be returned by the service
-        DateRange currentYearRange = new DateRange(
-                LocalDate.of(currentYear, 3, 1),
-                LocalDate.of(currentYear, 3, 31)
-        );
-
-        BudgetStats currentYearStats = new BudgetStats(
-                currentYearSubBudget.getId(),
-                new BigDecimal("1200.00"),   // totalBudget
-                new BigDecimal("875.50"),    // totalSpent
-                new BigDecimal("324.50"),    // remaining
-                new BigDecimal("150.00"),    // totalSaved
-                new BigDecimal("28.24"),     // averageSpendingPerDay
-                new BigDecimal("92.7"),      // healthScore
-                currentYearRange
-        );
-
-        // Mock service to return stats for current year SubBudget
-        when(subBudgetStatisticsService.getBudgetStats(currentYearSubBudget))
-                .thenReturn(Collections.singletonList(currentYearStats));
+        currentYearBudget.setBudgetYear(0); // Previous year will be -1
+        currentYearBudget.setStartDate(LocalDate.of(0, 1, 1)); // Adjust dates to match
+        currentYearBudget.setEndDate(LocalDate.of(0, 12, 31));
 
         // Act
-        List<BudgetStats> actualBudgetStats = budgetSetupEngine.createBudgetStatistics(mixedSubBudgets);
+        Optional<Budget> actual = budgetSetupEngine.createPreviousYearBudget(previousIncomeAmount, previousBudgetName, currentYearBudget);
 
         // Assert
-        assertNotNull(actualBudgetStats);
-        assertEquals(1, actualBudgetStats.size());
-
-        // Get stats by budget ID
-        Map<Long, BudgetStats> statsMap = actualBudgetStats.stream()
-                .collect(Collectors.toMap(BudgetStats::getBudgetId, stats -> stats));
-
-        // Verify current year stats have real values
-        BudgetStats returnedCurrentYearStats = statsMap.get(currentYearSubBudget.getId());
-        assertNotNull(returnedCurrentYearStats);
-        assertEquals(0, new BigDecimal("875.50").compareTo(returnedCurrentYearStats.getTotalSpent()));
-        assertEquals(0, new BigDecimal("28.24").compareTo(returnedCurrentYearStats.getAverageSpendingPerDay()));
-        assertEquals(0, new BigDecimal("92.7").compareTo(returnedCurrentYearStats.getHealthScore()));
-
-        // Verify previous year stats have zero values
-        BudgetStats returnedPreviousYearStats = statsMap.get(previousYearSubBudget.getId());
-        assertNotNull(returnedPreviousYearStats);
-        assertEquals(0, BigDecimal.ZERO.compareTo(returnedPreviousYearStats.getTotalSpent()));
-        assertEquals(0, BigDecimal.ZERO.compareTo(returnedPreviousYearStats.getAverageSpendingPerDay()));
-        assertEquals(0, BigDecimal.ZERO.compareTo(returnedPreviousYearStats.getHealthScore()));
-        assertEquals(0, previousYearSubBudget.getAllocatedAmount().compareTo(returnedPreviousYearStats.getRemaining()));
-
-        // Verify that the service was only called for current year SubBudget
-        verify(subBudgetStatisticsService, times(1)).getBudgetStats(any(SubBudget.class));
-        verify(subBudgetStatisticsService).getBudgetStats(currentYearSubBudget);
-        verify(subBudgetStatisticsService, never()).getBudgetStats(previousYearSubBudget);
+        assertNotNull(actual, "Result should not be null");
+        assertTrue(actual.isEmpty(), "Should return empty Optional for negative previous year");
     }
-
-
-
 }

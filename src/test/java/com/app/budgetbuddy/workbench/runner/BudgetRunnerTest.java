@@ -72,7 +72,7 @@ class BudgetRunnerTest {
         budgetSchedule.setSubBudgetId(1L);
         budgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
         budgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
-        budgetSchedule.setPeriod(Period.MONTHLY);
+        budgetSchedule.setPeriodType(Period.MONTHLY);
         budgetSchedule.setStatus("ACTIVE");
         return budgetSchedule;
     }
@@ -93,7 +93,7 @@ class BudgetRunnerTest {
         budgetSchedule.setScheduleRange(new DateRange(startDate, endDate));
         budgetSchedule.setTotalPeriods(4);
         budgetSchedule.setStatus("Active");
-        budgetSchedule.setPeriod(Period.MONTHLY);
+        budgetSchedule.setPeriodType(Period.MONTHLY);
 //
 //        budget.setBudgetSchedules(List.of(budgetSchedule));
         return budget;
