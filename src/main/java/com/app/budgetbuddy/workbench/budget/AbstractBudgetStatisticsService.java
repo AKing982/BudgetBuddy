@@ -32,5 +32,9 @@ public abstract class AbstractBudgetStatisticsService<T>
 
     public abstract List<BudgetStatisticsEntity> saveBudgetStats(final List<BudgetStats> budgets);
 
+    public abstract Optional<BudgetStatisticsEntity> saveBudgetStatistic(BudgetStats budgetStats);
+
     public abstract List<BudgetStats> getBudgetStats(T budget);
+
+
 }

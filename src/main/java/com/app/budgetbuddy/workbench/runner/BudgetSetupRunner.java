@@ -69,16 +69,19 @@ public class BudgetSetupRunner
 
             log.info("Creating sub-Budgets for current year up to current date");
             List<SubBudget> currentYearSubBudgets = budgetSetupEngine.createNewMonthlySubBudgetsForUser(currentBudget, budgetRegistration.getBudgetGoals());
+            entityManager.flush();
 
             log.info("Creating sub-budget templates for previous year {}", previousYear);
             List<SubBudget> previousYearSubBudgets = budgetSetupEngine.createSubBudgetTemplatesForYear(previousYear, previousYearBudget, budgetRegistration.getBudgetGoals());
+            entityManager.flush();
 
-            log.info("Assigning Budget Stats templates for current year");
+            log.info("Assigning Budget Stats templates for current year and subBudgets: {}", currentYearSubBudgets.toString());
             List<BudgetStats> currentYearBudgetStats = budgetSetupEngine.createBudgetStatistics(currentYearSubBudgets);
-            budgetSetupEngine.saveBudgetStats(currentYearBudgetStats);
+            log.info("Retrieving budget stats for current year: {}", currentYearBudgetStats.toString());
 
+            log.info("Getting Budget Stats for Previous Year Sub Budgets: {}", previousYearSubBudgets.toString());
             List<BudgetStats> previousYearBudgetStats = budgetSetupEngine.createBudgetStatistics(previousYearSubBudgets);
-            budgetSetupEngine.saveBudgetStats(previousYearBudgetStats);
+            log.info("Retrieving saved budget stats for previous year: {}", previousYearBudgetStats.toString());
 
             // Fix: Fetch the saved BudgetGoalsEntity instead of using registration
             BudgetGoalsEntity savedGoalsEntity = budgetGoalsService.findByBudgetId(currentBudgetId)

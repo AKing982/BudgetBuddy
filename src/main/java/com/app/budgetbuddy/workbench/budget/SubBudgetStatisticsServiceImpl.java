@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.BudgetStatisticsService;
 import com.app.budgetbuddy.services.SubBudgetService;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,19 @@ public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsServ
         this.subBudgetService = subBudgetService;
     }
 
+    public BudgetStatisticsEntity convertBudgetStatisticsToEntity(BudgetStats budgetStats)
+    {
+        Long subBudgetId = budgetStats.getBudgetId();
+        BudgetStatisticsEntity budgetStatisticsEntity = new BudgetStatisticsEntity();
+        budgetStatisticsEntity.setTotalBudget(budgetStats.getTotalBudget());
+        budgetStatisticsEntity.setHealthScore(budgetStats.getHealthScore());
+        budgetStatisticsEntity.setTotalSpent(budgetStats.getTotalSpent());
+        budgetStatisticsEntity.setAverageSpendingPerDay(budgetStats.getAverageSpendingPerDay());
+        budgetStatisticsEntity.setSubBudget(getSubBudgetById(subBudgetId));
+        return budgetStatisticsEntity;
+    }
+
+
     @Override
     public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets)
     {
@@ -39,12 +53,8 @@ public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsServ
             for(BudgetStats budgetStats : budgets)
             {
                 Long subBudgetId = budgetStats.getBudgetId();
-                BudgetStatisticsEntity budgetStatisticsEntity = new BudgetStatisticsEntity();
-                budgetStatisticsEntity.setTotalBudget(budgetStats.getTotalBudget());
-                budgetStatisticsEntity.setHealthScore(budgetStats.getHealthScore());
-                budgetStatisticsEntity.setTotalSpent(budgetStats.getTotalSpent());
-                budgetStatisticsEntity.setAverageSpendingPerDay(budgetStats.getAverageSpendingPerDay());
-                budgetStatisticsEntity.setSubBudget(getSubBudgetById(subBudgetId));
+                log.info("Retrieving budget stats for sub-budgetId: {}", subBudgetId);
+                BudgetStatisticsEntity budgetStatisticsEntity = convertBudgetStatisticsToEntity(budgetStats);
                 budgetStatisticsService.save(budgetStatisticsEntity);
                 budgetStatisticsEntities.add(budgetStatisticsEntity);
             }
@@ -56,10 +66,41 @@ public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsServ
         }
     }
 
+
+
+    @Override
+    public Optional<BudgetStatisticsEntity> saveBudgetStatistic(BudgetStats budgetStats)
+    {
+        if(budgetStats == null){
+            return Optional.empty();
+        }
+        try
+        {
+             BudgetStatisticsEntity budgetStatisticsEntity = convertBudgetStatisticsToEntity(budgetStats);
+             budgetStatisticsService.save(budgetStatisticsEntity);
+             return Optional.of(budgetStatisticsEntity);
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error saving the budget stats: ", e);
+            return Optional.empty();
+        }
+    }
+
     private SubBudgetEntity getSubBudgetById(Long subBudgetId)
     {
-        return subBudgetService.findById(subBudgetId)
-                .orElseThrow(() -> new IllegalArgumentException("Sub budget id " + subBudgetId + " not found"));
+        try
+        {
+            log.info("Getting sub-budget with id: {}", subBudgetId);
+            Optional<SubBudgetEntity> subBudgetEntity = subBudgetService.findById(subBudgetId);
+            if(subBudgetEntity.isEmpty())
+            {
+                throw new DataAccessException("Sub budget with id " + subBudgetId + " not found");
+            }
+            return subBudgetEntity.get();
+        }catch(DataAccessException e){
+            log.error("There was an error getting the sub budget by id: ", e);
+            throw e;
+        }
     }
 
     @Override

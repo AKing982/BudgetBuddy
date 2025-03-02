@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -29,6 +30,11 @@ public class BudgetStatisticsDataServiceImpl extends AbstractBudgetStatisticsSer
     public List<BudgetStatisticsEntity> saveBudgetStats(List<BudgetStats> budgets)
     {
         return List.of();
+    }
+
+    @Override
+    public Optional<BudgetStatisticsEntity> saveBudgetStatistic(BudgetStats budgetStats) {
+        return Optional.empty();
     }
 
     @Override

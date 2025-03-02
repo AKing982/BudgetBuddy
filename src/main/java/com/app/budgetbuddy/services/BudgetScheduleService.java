@@ -29,7 +29,9 @@ public interface BudgetScheduleService extends ServiceModel<BudgetScheduleEntity
 
     void updateBudgetSchedule(BudgetSchedule budgetSchedule);
 
-    void saveBudgetSchedule(BudgetSchedule budgetSchedule);
+    Optional<BudgetScheduleEntity> saveBudgetSchedule(BudgetSchedule budgetSchedule);
+
+    Optional<BudgetScheduleEntity> saveBudgetScheduleEntity(BudgetScheduleEntity budgetScheduleEntity);
 
     BudgetScheduleEntity createSchedule(
             BudgetEntity budget,
@@ -39,6 +41,8 @@ public interface BudgetScheduleService extends ServiceModel<BudgetScheduleEntity
             Integer totalPeriodsInRange,
             PeriodType periodType
     );
+
+    Optional<BudgetScheduleEntity> buildBudgetScheduleEntity(final BudgetSchedule budgetSchedule);
 
     void updateScheduleStatus(Long scheduleId, ScheduleStatus newStatus);
 

@@ -377,7 +377,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
             const currentDate = new Date();
             const startDate: [number, number, number] = [
                 currentDate.getFullYear(),
-                currentDate.getMonth(),
+                1,
                 1
             ];
 
@@ -485,20 +485,20 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
             }
             console.log('Budget setup completed successfully');
 
-            // Step 2: Register the Budget Goal
-            try {
-                console.log('Attempting to register budget goal...');
-                await handleBudgetGoalRegistration(budgetRegistration.budgetGoals.budgetId);
-                console.log('Budget goal registered successfully');
-            } catch (goalError) {
-                console.error('Error during budget goal registration:', goalError);
-                setNotification({
-                    message: 'Warning: Budget was created but goal registration failed',
-                    severity: 'warning',
-                    show: true
-                });
-                // Continue execution despite goal registration failure
-            }
+            // // Step 2: Register the Budget Goal
+            // try {
+            //     console.log('Attempting to register budget goal...');
+            //     await handleBudgetGoalRegistration(budgetRegistration.budgetGoals.budgetId);
+            //     console.log('Budget goal registered successfully');
+            // } catch (goalError) {
+            //     console.error('Error during budget goal registration:', goalError);
+            //     setNotification({
+            //         message: 'Warning: Budget was created but goal registration failed',
+            //         severity: 'warning',
+            //         show: true
+            //     });
+            //     // Continue execution despite goal registration failure
+            // }
 
             // Success path
             setNotification({

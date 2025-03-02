@@ -85,6 +85,14 @@ public class SubBudgetBuilderService
                 SubBudgetEntity subBudgetEntity1 = subBudgetEntity.get();
                 Long subBudgetId = subBudgetEntity1.getId();
                 subBudget.setId(subBudgetId);
+                Optional<BudgetSchedule> budgetScheduleOptional = budgetScheduleEngine.createMonthSubBudgetSchedule(subBudget);
+                if(budgetScheduleOptional.isEmpty())
+                {
+                    log.error("Failed to create month sub budget schedule");
+                    continue;
+                }
+                BudgetSchedule budgetSchedule = budgetScheduleOptional.get();
+                subBudget.setBudgetSchedule(List.of(budgetSchedule));
                 subBudgets.add(subBudget);
             }
             return subBudgets;

@@ -20,7 +20,7 @@ public class BudgetStatisticsEntity
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="sub_budgetId")
+    @JoinColumn(name="subbudgetId")
     private SubBudgetEntity subBudget;
 
     @Column(name="totalBudget")

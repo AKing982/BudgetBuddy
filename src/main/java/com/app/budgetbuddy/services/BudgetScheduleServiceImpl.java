@@ -174,24 +174,43 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
 
     @Override
     @Transactional
-    public void saveBudgetSchedule(BudgetSchedule budgetSchedule)
+    public Optional<BudgetScheduleEntity> saveBudgetSchedule(BudgetSchedule budgetSchedule)
     {
          try
          {
+             log.info("Processing Budget Schedule: {}", budgetSchedule.toString());
              Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = buildBudgetScheduleEntity(budgetSchedule);
              if(budgetScheduleEntityOptional.isEmpty())
              {
-                 throw new DataAccessException("Budget Schedule with id: " + budgetScheduleEntityOptional.get().getId() + " not found");
+                 return Optional.empty();
              }
              BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
              log.info("Saving newly created budgetScheduleEntity: {}", budgetScheduleEntity.toString());
-             budgetScheduleRepository.save(budgetScheduleEntity);
+             return Optional.of(budgetScheduleRepository.save(budgetScheduleEntity));
          }catch(DataAccessException e){
              log.error("There was a problem saving the budget schedule", e);
+             return Optional.empty();
          }
     }
 
-    private Optional<BudgetScheduleEntity> buildBudgetScheduleEntity(final BudgetSchedule budgetSchedule)
+    @Override
+    public Optional<BudgetScheduleEntity> saveBudgetScheduleEntity(BudgetScheduleEntity budgetScheduleEntity)
+    {
+        if(budgetScheduleEntity == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return Optional.of(budgetScheduleRepository.save(budgetScheduleEntity));
+        }catch(DataAccessException e)
+        {
+            log.error("There was a problem saving the budget schedule", e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<BudgetScheduleEntity> buildBudgetScheduleEntity(final BudgetSchedule budgetSchedule)
     {
         log.info("Budget Schedule: {}", budgetSchedule.toString());
         Long subBudgetId = budgetSchedule.getSubBudgetId();
@@ -208,17 +227,7 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
             if (existingSchedule.isPresent())
             {
                 log.info("BudgetSchedule already exists for subBudgetId={}", subBudgetId);
-                BudgetScheduleEntity entity = existingSchedule.get();
-                // Update existing schedule
-                entity.setScheduleRange(budgetSchedule.getScheduleRange().toString());
-                entity.setEndDate(budgetSchedule.getEndDate());
-                entity.setStartDate(budgetSchedule.getStartDate());
-                entity.setPeriodType(budgetSchedule.getPeriodType());
-                entity.setStatus(ScheduleStatus.valueOf(budgetSchedule.getStatus()));
-                entity.setTotalPeriodsInRange(budgetSchedule.getTotalPeriods());
-                entity.setSubBudget(subBudgetEntity);
-                log.info("Updated BudgetScheduleEntity: {}", entity);
-                return Optional.of(entity);
+                return Optional.of(existingSchedule.get());
             }
             BudgetScheduleEntity budgetScheduleEntity = new BudgetScheduleEntity();
             budgetScheduleEntity.setScheduleRange(budgetSchedule.getScheduleRange().toString());

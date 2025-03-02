@@ -176,6 +176,13 @@ public class BudgetSetupEngine
                         BigDecimal.ZERO,           // healthScore (initially 0)
                         new DateRange(subBudget.getStartDate(), subBudget.getEndDate())
                 );
+                Optional<BudgetStatisticsEntity> budgetStatisticsEntityOptional = subBudgetStatisticsService.saveBudgetStatistic(statsTemplate);
+                if(budgetStatisticsEntityOptional.isEmpty())
+                {
+                    return Collections.emptyList();
+                }
+                BudgetStatisticsEntity budgetStatisticsEntity = budgetStatisticsEntityOptional.get();
+                log.info("Saved Budget Statistics: {}", budgetStatisticsEntity);
                 budgetStatsList.add(statsTemplate);
                 log.info("Created stats template for subBudget ID {}: {}", subBudget.getId(), statsTemplate);
             }
@@ -233,34 +240,6 @@ public class BudgetSetupEngine
         }
     }
 
-
-
-//    /**
-//     * This will create the SubBudgets for a particular budget up to the current date
-//     * @param budget
-//     * @param budgetGoals
-//     * @return
-//     */
-//    public List<SubBudget> createNewMonthlySubBudgetsForUser(final Budget budget, final BudgetGoals budgetGoals)
-//    {
-//        if(budget == null)
-//        {
-//            log.warn("Missing Budget... return empty subBudgets");
-//            return Collections.emptyList();
-//        }
-//        try
-//        {
-//            List<SubBudget> subBudgets = subBudgetBuilderService.createMonthlySubBudgetsToDate(budget, budgetGoals);
-//            log.info("Created subBudgets for user: {}", subBudgets.toString());
-//            log.info("Successfully saved subBudgets");
-//            return subBudgets;
-//        }catch(BudgetBuildException e)
-//        {
-//            log.error("There was an error build the monthly subbudgets from the budget: ", e);
-//            return Collections.emptyList();
-//        }
-//    }
-
     public List<SubBudget> createNewMonthlySubBudgetsForUser(final Budget budget, final BudgetGoals budgetGoals) {
         if (budget == null || budgetGoals == null) {
             log.warn("Missing Budget or BudgetGoals... returning empty subBudgets");
@@ -293,6 +272,7 @@ public class BudgetSetupEngine
 
             // Combine both lists
             List<SubBudget> allSubBudgets = new ArrayList<>();
+            allSubBudgets.addAll(pastToPresentSubBudgets);
             allSubBudgets.addAll(futureSubBudgetTemplates);
 
             if (allSubBudgets.isEmpty()) {

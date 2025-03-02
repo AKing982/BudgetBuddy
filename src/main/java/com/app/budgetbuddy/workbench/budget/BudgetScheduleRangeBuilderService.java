@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetScheduleEntity;
 import com.app.budgetbuddy.entities.BudgetScheduleRangeEntity;
+import com.app.budgetbuddy.exceptions.BudgetScheduleException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetScheduleRepository;
 import com.app.budgetbuddy.services.BudgetScheduleRangeService;
@@ -40,6 +41,7 @@ public class BudgetScheduleRangeBuilderService
         if (subBudget == null || subBudget.getStartDate() == null || subBudget.getEndDate() == null) {
             return budgetScheduleRanges;
         }
+        log.info("BudgetSchedules size: {}", subBudget.getBudgetSchedule().size());
         LocalDate subBudgetStartDate = subBudget.getStartDate();
         LocalDate subBudgetEndDate = subBudget.getEndDate();
         Budget budget = subBudget.getBudget();
@@ -87,8 +89,13 @@ public class BudgetScheduleRangeBuilderService
                 range.setRangeType("Week");
                 range.setSingleDate(false);
                 range.setBudgetDateRange(weekRange);
+                List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
+                BudgetSchedule budgetSchedule = budgetSchedules.get(0);
+                range.setBudgetScheduleId(budgetSchedule.getBudgetScheduleId());
+                saveBudgetScheduleRange(range);
                 budgetScheduleRanges.add(range);
             }
+            log.info("Saving BudgetScheduleRanges: {}", budgetScheduleRanges.toString());
             return budgetScheduleRanges;
 
         } catch (IllegalArgumentException e) {
@@ -110,30 +117,64 @@ public class BudgetScheduleRangeBuilderService
         }
     }
 
+    public Optional<BudgetScheduleRangeEntity> saveBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange)
+    {
+        if(budgetScheduleRange == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            BudgetScheduleRangeEntity budgetScheduleRangeEntity = convertBudgetScheduleRange(budgetScheduleRange);
+            log.info("Saving BudgetScheduleRange: {}", budgetScheduleRangeEntity.toString());
+            budgetScheduleRangeService.save(budgetScheduleRangeEntity);
+            log.info("Successfully saved BudgetScheduleRange: {}", budgetScheduleRangeEntity.toString());
+            return Optional.of(budgetScheduleRangeEntity);
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error saving the budget schedule range entity: ", e);
+            return Optional.empty();
+        }
+    }
+
     public void saveBudgetScheduleRanges(List<BudgetScheduleRange> budgetScheduleRanges)
     {
         try
         {
             for(BudgetScheduleRange budgetScheduleRange : budgetScheduleRanges)
             {
-                BudgetScheduleRangeEntity budgetScheduleRangeEntity = new BudgetScheduleRangeEntity();
-                budgetScheduleRangeEntity.setBudgetedAmount(budgetScheduleRange.getBudgetedAmount());
-                budgetScheduleRangeEntity.setSpentOnRange(budgetScheduleRange.getSpentOnRange());
-                budgetScheduleRangeEntity.setRangeType(budgetScheduleRange.getRangeType());
-                Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = findBudgetScheduleEntity(budgetScheduleRange.getBudgetScheduleId());
-                if(budgetScheduleEntityOptional.isEmpty())
-                {
-                    budgetScheduleRangeEntity.setBudgetSchedule(null);
-                }
-                BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
-                budgetScheduleRangeEntity.setBudgetSchedule(budgetScheduleEntity);
-                budgetScheduleRangeEntity.setRangeStart(budgetScheduleRange.getStartRange());
-                budgetScheduleRangeEntity.setRangeEnd(budgetScheduleRange.getEndRange());
-                budgetScheduleRangeEntity.setId(budgetScheduleRange.getId());
+                BudgetScheduleRangeEntity budgetScheduleRangeEntity = convertBudgetScheduleRange(budgetScheduleRange);
                 budgetScheduleRangeService.save(budgetScheduleRangeEntity);
             }
         }catch(DataAccessException e){
             log.error("There was an error saving the budget schedule ranges: ", e);
+        }
+    }
+
+    public BudgetScheduleRangeEntity convertBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange)
+    {
+        try
+        {
+            BudgetScheduleRangeEntity budgetScheduleRangeEntity = new BudgetScheduleRangeEntity();
+            budgetScheduleRangeEntity.setBudgetedAmount(budgetScheduleRange.getBudgetedAmount());
+            budgetScheduleRangeEntity.setSpentOnRange(budgetScheduleRange.getSpentOnRange());
+            budgetScheduleRangeEntity.setRangeType(budgetScheduleRange.getRangeType());
+            Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = findBudgetScheduleEntity(budgetScheduleRange.getBudgetScheduleId());
+            if(budgetScheduleEntityOptional.isEmpty())
+            {
+                log.warn("Unable to find BudgetScheduleEntity with scheduleID: {}", budgetScheduleRange.getBudgetScheduleId());
+                budgetScheduleRangeEntity.setBudgetSchedule(null);
+            }
+            BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
+            budgetScheduleRangeEntity.setBudgetSchedule(budgetScheduleEntity);
+            budgetScheduleRangeEntity.setRangeStart(budgetScheduleRange.getStartRange());
+            budgetScheduleRangeEntity.setRangeEnd(budgetScheduleRange.getEndRange());
+            budgetScheduleRangeEntity.setId(budgetScheduleRange.getId());
+            return budgetScheduleRangeEntity;
+        }catch(BudgetScheduleException e)
+        {
+            log.error("There was an error converting the budget schedule range: ", e);
+            throw e;
         }
     }
 

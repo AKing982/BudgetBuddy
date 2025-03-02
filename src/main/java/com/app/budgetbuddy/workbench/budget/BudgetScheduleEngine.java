@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetScheduleEntity;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.BudgetScheduleException;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
@@ -92,7 +93,7 @@ public class BudgetScheduleEngine
         return schedule.getStartDate().isEqual(startDate) && schedule.getEndDate().isEqual(endDate);
     }
 
-    private BudgetSchedule createNewBudgetSchedule(SubBudget subBudget)
+    private BudgetSchedule createNewBudgetSchedule(final SubBudget subBudget)
     {
         BudgetSchedule newBudgetSchedule = new BudgetSchedule();
         LocalDate startDate = subBudget.getStartDate();
@@ -108,9 +109,7 @@ public class BudgetScheduleEngine
         // Initialize date ranges for the budget schedule
         newBudgetSchedule.initializeBudgetDateRanges();
 
-        List<BudgetScheduleRange> budgetScheduleRanges = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
-        newBudgetSchedule.setBudgetScheduleRanges(budgetScheduleRanges);
-        log.info("Created new Budget Schedule: {}", newBudgetSchedule);
+        //TODO: Remove the below code and use one level higher and attach to the budget schedule
         return newBudgetSchedule;
     }
 
@@ -131,10 +130,28 @@ public class BudgetScheduleEngine
             return existingBudgetSchedule;
         }
         BudgetSchedule newBudgetSchedule = createNewBudgetSchedule(subBudget);
-        log.info("Created BudgetSchedule: {}", newBudgetSchedule.toString());
         try
         {
-            budgetScheduleService.saveBudgetSchedule(newBudgetSchedule);
+            // Convert the Budget Schedule to an entity
+            Optional<BudgetScheduleEntity> convertedBudgetSchedule = budgetScheduleService.buildBudgetScheduleEntity(newBudgetSchedule);
+            if(convertedBudgetSchedule.isEmpty())
+            {
+                return Optional.empty();
+            }
+            BudgetScheduleEntity budgetScheduleEntity = convertedBudgetSchedule.get();
+            // Then save the BudgetScheduleEntity
+            // Then Use the id from teh BudgetScheduleEntity and set the newBudgetSchedule
+            Optional<BudgetScheduleEntity> savedBudgetScheduleEntityOptional = budgetScheduleService.saveBudgetScheduleEntity(budgetScheduleEntity);
+            if(savedBudgetScheduleEntityOptional.isEmpty())
+            {
+                return Optional.empty();
+            }
+            BudgetScheduleEntity savedBudgetScheduleEntity = savedBudgetScheduleEntityOptional.get();
+            newBudgetSchedule.setBudgetScheduleId(savedBudgetScheduleEntity.getId());
+            subBudget.setBudgetSchedule(List.of(newBudgetSchedule));
+            log.info("Created Budget Schedule: {}", newBudgetSchedule.toString());
+            List<BudgetScheduleRange> budgetScheduleRanges = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
+            newBudgetSchedule.setBudgetScheduleRanges(budgetScheduleRanges);
             return Optional.of(newBudgetSchedule);
         }catch(BudgetScheduleException e)
         {

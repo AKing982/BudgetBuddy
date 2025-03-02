@@ -77,8 +77,16 @@ public class SubBudgetServiceImpl implements SubBudgetService
     }
 
     @Override
-    public Optional<SubBudgetEntity> findById(Long id) {
-        return Optional.empty();
+    public Optional<SubBudgetEntity> findById(Long id)
+    {
+        try
+        {
+            return subBudgetRepository.findById(id);
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error retrieving the sub-budget with id: {}", id, e);
+            return Optional.empty();
+        }
     }
 
     @Override
