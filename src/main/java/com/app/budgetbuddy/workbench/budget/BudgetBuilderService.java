@@ -159,7 +159,8 @@ public class BudgetBuilderService
         LocalDate budgetStartDate = budgetRegistration.getBudgetStartDate();
         LocalDate budgetEndDate = budgetRegistration.getBudgetEndDate();
 
-        try {
+        try
+        {
             // Calculate the Budget Amount
             double monthlyAllocation = budgetGoals.getMonthlyAllocation();
             double targetAmount = budgetGoals.getTargetAmount();
@@ -180,6 +181,7 @@ public class BudgetBuilderService
                     .budgetName(budgetName)
                     .budgetDescription(budgetDescription)
                     .budgetAmount(remainingOnBudgetAfterAllocation)
+                    .budgetActualAmount(BigDecimal.ZERO)
                     .budgetMode(budgetMode)
                     .budgetPeriod(budgetPeriod)
                     .monthlyIncome(totalIncomeAmount)
