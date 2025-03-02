@@ -241,45 +241,20 @@ public class BudgetSetupEngine
     }
 
     public List<SubBudget> createNewMonthlySubBudgetsForUser(final Budget budget, final BudgetGoals budgetGoals) {
-        if (budget == null || budgetGoals == null) {
+        if (budget == null || budgetGoals == null)
+        {
             log.warn("Missing Budget or BudgetGoals... returning empty subBudgets");
             return Collections.emptyList();
         }
-
-        try {
-            LocalDate currentDate = LocalDate.now();
-            LocalDate budgetStartDate = budget.getStartDate();
-            LocalDate budgetEndDate = budget.getEndDate();
+        try
+        {
             int budgetYear = budget.getBudgetYear();
-
-            // Past to present: detailed sub-budgets up to current date
-            List<SubBudget> pastToPresentSubBudgets = subBudgetBuilderService.createMonthlySubBudgetsToDate(budget, budgetGoals);
-            log.info("Created past-to-present subBudgets: {}", pastToPresentSubBudgets);
-
-            // Present to end: templates from current date to budget end date
-            List<SubBudget> futureSubBudgetTemplates;
-            if (currentDate.isBefore(budgetEndDate)) {
-                // Filter templates to start after current date up to budget end date
-                futureSubBudgetTemplates = createSubBudgetTemplatesForYear(budgetYear, budget, budgetGoals)
-                        .stream()
-                        .filter(sub -> sub.getStartDate().isAfter(currentDate) && !sub.getEndDate().isAfter(budgetEndDate))
-                        .collect(Collectors.toList());
-                log.info("Created future subBudget templates: {}", futureSubBudgetTemplates);
-            } else {
-                futureSubBudgetTemplates = Collections.emptyList();
-                log.info("Current date is after budget end date—no future templates needed");
-            }
-
-            // Combine both lists
-            List<SubBudget> allSubBudgets = new ArrayList<>();
-            allSubBudgets.addAll(pastToPresentSubBudgets);
-            allSubBudgets.addAll(futureSubBudgetTemplates);
-
-            if (allSubBudgets.isEmpty()) {
-                log.warn("No subBudgets created for budget ID: {}", budget.getId());
+            List<SubBudget> allSubBudgets = subBudgetBuilderService.createSubBudgetTemplates(budgetYear, budget, budgetGoals);
+            if(allSubBudgets.isEmpty())
+            {
+                log.warn("No subBudgets created for budgetID: {} in year {}", budget.getId(), budgetYear);
                 return Collections.emptyList();
             }
-
             log.info("Created and saved subBudgets for user: {}", allSubBudgets);
             log.info("Successfully saved subBudgets for budget ID: {}", budget.getId());
             return allSubBudgets;

@@ -52,29 +52,6 @@ public class TransactionCategoryRunner
         this.recurringTransactionService = recurringTransactionService;
     }
 
-
-
-    private Optional<BudgetSchedule> getBudgetScheduleParam(final Budget budget, final LocalDate startDate, final LocalDate endDate)
-    {
-        List<SubBudget> subBudgets = budget.getSubBudgets();
-        Optional<BudgetSchedule> budgetScheduleOptional = Optional.empty();
-        for(SubBudget subBudget : subBudgets)
-        {
-            List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-            for(BudgetSchedule budgetSchedule : budgetSchedules)
-            {
-                LocalDate budgetScheduleStartDate = budgetSchedule.getStartDate();
-                LocalDate budgetScheduleEndDate = budgetSchedule.getEndDate();
-                if(startDate.isAfter(budgetScheduleStartDate) && endDate.isBefore(budgetScheduleEndDate))
-                {
-                    budgetScheduleOptional = Optional.of(budgetSchedule);
-                    break;
-                }
-            }
-        }
-        return budgetScheduleOptional;
-    }
-
     /**
      * Processes and synchronizes all transaction categories for a user within a given date range.
      * This includes both regular and recurring transactions.

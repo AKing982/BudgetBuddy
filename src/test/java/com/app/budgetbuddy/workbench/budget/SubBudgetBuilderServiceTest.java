@@ -816,8 +816,6 @@ class SubBudgetBuilderServiceTest
         }
     }
 
-
-
     // Helper methods to generate the budget schedule ranges
     private List<BudgetScheduleRange> generateJanuaryScheduleRanges() {
         List<BudgetScheduleRange> ranges = new ArrayList<>();

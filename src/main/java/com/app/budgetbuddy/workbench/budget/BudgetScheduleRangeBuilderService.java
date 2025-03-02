@@ -43,7 +43,9 @@ public class BudgetScheduleRangeBuilderService
         }
         log.info("BudgetSchedules size: {}", subBudget.getBudgetSchedule().size());
         LocalDate subBudgetStartDate = subBudget.getStartDate();
+        log.info("SubBudgetStartDate: {}", subBudgetStartDate);
         LocalDate subBudgetEndDate = subBudget.getEndDate();
+        log.info("SubBudgetEndDate: {}", subBudgetEndDate);
         Budget budget = subBudget.getBudget();
         try
         {
@@ -69,6 +71,7 @@ public class BudgetScheduleRangeBuilderService
 
             // Split into weekly ranges
             List<DateRange> weeklyRanges = monthDateRange.splitIntoWeeks();
+            log.info("WeeklyRanges: {}", weeklyRanges.toString());
 
             // Determine budget per week
             BigDecimal totalBudget = subBudget.getAllocatedAmount();
