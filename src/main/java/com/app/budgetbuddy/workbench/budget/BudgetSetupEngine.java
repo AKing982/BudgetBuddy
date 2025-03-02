@@ -80,6 +80,7 @@ public class BudgetSetupEngine
             previousYearBudget.setBudgetMode(budget.getBudgetMode());
             previousYearBudget.setBudgetPeriod(budget.getBudgetPeriod());
             previousYearBudget.setTotalMonthsToSave(budget.getTotalMonthsToSave());
+            previousYearBudget.setActual(BigDecimal.ZERO);
             // Set a distinct budget description for the previous year
             previousYearBudget.setBudgetDescription("Budget for " + previousBudgetName + " - Previous year savings plan");
 
