@@ -46,5 +46,5 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     List<Transaction> getRecentTransactionsForUser(Long userId, int limit);
     List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate);
     List<Transaction> getTransactionsByDate(LocalDate date, Long userID);
-    Transaction findTransactionById(String transactionId);
+    Optional<Transaction> findTransactionById(String transactionId);
 }

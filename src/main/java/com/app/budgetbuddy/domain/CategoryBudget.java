@@ -8,14 +8,13 @@ import java.util.*;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class CategoryBudget
 {
     private String categoryId;
     private String category;
     private SubBudget budget;
     private BudgetSchedule budgetSchedule;
-    private List<Transaction> categoryTransactions;
+    private CategoryTransactions categoryTransactions;
     private List<DateRange> categoryDateRanges;
     private List<BudgetPeriodAmount> budgetedAmounts;
     private List<BudgetPeriodAmount> actualAmounts;
@@ -54,15 +53,16 @@ public class CategoryBudget
         this.active = isActive;
     }
 
-    public CategoryBudget(String categoryId, String category, List<DateRange> dateRanges, SubBudget budget, List<Transaction> categoryTransactions, Boolean isActive) {
+    public CategoryBudget(String categoryId, String category, SubBudget budget, BudgetSchedule budgetSchedule, CategoryTransactions categoryTransactions, List<DateRange> categoryDateRanges, List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualAmounts, boolean active) {
         this.categoryId = categoryId;
         this.category = category;
-        this.categoryDateRanges = dateRanges;
-        this.budgetedAmounts = new ArrayList<>();
-        this.actualAmounts = new ArrayList<>();
         this.budget = budget;
-        this.active = isActive;
+        this.budgetSchedule = budgetSchedule;
         this.categoryTransactions = categoryTransactions;
+        this.categoryDateRanges = categoryDateRanges;
+        this.budgetedAmounts = budgetedAmounts;
+        this.actualAmounts = actualAmounts;
+        this.active = active;
     }
 
     public Double getBudgetAmount(DateRange dateRange) {
@@ -83,13 +83,13 @@ public class CategoryBudget
     }
 
     public static CategoryBudget buildCategoryBudget(List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualBudgetAmounts,
-                                               List<DateRange> categoryDateRanges, SubBudget budget, List<Transaction> transactions, String category) {
+                                               List<DateRange> categoryDateRanges, SubBudget budget, CategoryTransactions categoryTransactions, String category) {
 
         CategoryBudget categoryBudget = new CategoryBudget();
         categoryBudget.setCategory(category);
         categoryBudget.setBudget(budget);
         categoryBudget.setActive(true);
-        categoryBudget.setCategoryTransactions(transactions);
+        categoryBudget.setCategoryTransactions(categoryTransactions);
         categoryBudget.setActualAmounts(actualBudgetAmounts);
         categoryBudget.setBudgetedAmounts(budgetedAmounts);
         categoryBudget.setCategoryDateRanges(categoryDateRanges);
@@ -97,7 +97,7 @@ public class CategoryBudget
         return categoryBudget;
     }
 
-    public static CategoryBudget buildCategoryBudget(String categoryId, String category, List<Transaction> transactions,  List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualBudgetAmounts,
+    public static CategoryBudget buildCategoryBudget(String categoryId, String category, CategoryTransactions categoryTransactions,  List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualBudgetAmounts,
                                                      List<DateRange> categoryDateRanges, SubBudget budget, boolean isActive) {
 
         CategoryBudget categoryBudget = new CategoryBudget();
@@ -105,7 +105,7 @@ public class CategoryBudget
         categoryBudget.setBudget(budget);
         categoryBudget.setCategoryId(categoryId);
         categoryBudget.setActive(isActive);
-        categoryBudget.setCategoryTransactions(transactions);
+        categoryBudget.setCategoryTransactions(categoryTransactions);
         categoryBudget.setActualAmounts(actualBudgetAmounts);
         categoryBudget.setBudgetedAmounts(budgetedAmounts);
         categoryBudget.setCategoryDateRanges(categoryDateRanges);

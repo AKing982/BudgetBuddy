@@ -191,13 +191,14 @@ public class PlaidController {
     }
 
     @GetMapping("/{userID}/access-token")
-    public ResponseEntity<?> getAccessToken(@PathVariable Long userID) {
+    public ResponseEntity<?> getAccessToken(@PathVariable Long userID)
+    {
         Optional<PlaidLinkEntity> plaidLink = plaidLinkService.findPlaidLinkByUserID(userID);
         try
         {
             if(plaidLink.isEmpty())
             {
-                throw new RuntimeException("Plaid Link Not Found");
+                return ResponseEntity.ok(null);
             }
             PlaidLinkEntity plaidLinkEntity = plaidLink.get();
             String accessToken = plaidLinkEntity.getAccessToken();

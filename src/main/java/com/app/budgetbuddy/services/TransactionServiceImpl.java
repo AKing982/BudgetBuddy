@@ -399,22 +399,21 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Transaction findTransactionById(String transactionId) {
+    public Optional<Transaction> findTransactionById(String transactionId)
+    {
         try
         {
+            log.info("Fetching TransactionID: {}", transactionId);
             Optional<TransactionsEntity> transactionsEntity = transactionRepository.findTransactionByTransactionId(transactionId);
             if(transactionsEntity.isEmpty())
             {
-                throw new IllegalArgumentException("Transaction not found");
+                return Optional.empty();
             }
-            else
-            {
-                TransactionsEntity transactionsEntity1 = transactionsEntity.get();
-                return transactionEntityToModelConverter.convert(transactionsEntity.get());
-            }
+            TransactionsEntity transactionsEntity1 = transactionsEntity.get();
+            return Optional.ofNullable(transactionEntityToModelConverter.convert(transactionsEntity1));
         }catch(DataAccessException e){
             LOGGER.error("There was an error retrieving transaction from the database: {}", e.getMessage());
-            throw e;
+            return Optional.empty();
         }
     }
 

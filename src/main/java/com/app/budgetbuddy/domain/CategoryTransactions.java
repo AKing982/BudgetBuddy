@@ -28,6 +28,12 @@ public class CategoryTransactions
       this.transactions = transactions;
    }
 
+   public CategoryTransactions(String categoryId, String categoryName, List<Transaction> transactions) {
+      this.categoryId = categoryId;
+      this.categoryName = categoryName;
+      this.transactions = transactions;
+   }
+
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;

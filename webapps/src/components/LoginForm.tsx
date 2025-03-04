@@ -124,7 +124,6 @@ const LoginForm: React.FC = () => {
         },
     });
 
-
     const validateForm = (): boolean => {
         const newErrors: FormErrors = {};
         if(!formData.email) newErrors.username = 'UserName or Email is required';
@@ -132,74 +131,172 @@ const LoginForm: React.FC = () => {
         setFormErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }
+
+    // const handleSubmit = async (event: FormEvent) => {
+    //     event.preventDefault();
+    //     try
+    //     {
+    //         const loginData: LoginCredentials = {
+    //             username: formData.email,
+    //             password: formData.password
+    //         };
+    //         sessionStorage.setItem('username',formData.email);
+    //         console.log('LoginData: ', loginData);
+    //         const response = await authenticateUser(loginData);
+    //         setIsAuthenticated(true);
+    //         const loginService = new LoginService();
+    //         const userId = await loginService.fetchUserIdByUsername(formData.email);
+    //         console.log('UserID: ', userId);
+    //         sessionStorage.setItem('userId', String(userId));
+    //         if(response != null){
+    //             console.log('Is Authenticated: ', isAuthenticated);
+    //             const plaidService = PlaidService.getInstance();
+    //             // Fetch the link token
+    //
+    //             const isPlaidLinkedResponse = await handlePlaidLinkVerification(userId);
+    //             console.log('Plaid Link Response: ', isPlaidLinkedResponse);
+    //             if(!isPlaidLinkedResponse){
+    //                 console.error("Error: Failed to verify Plaid link status, defaulting to not linked.");
+    //                 return;
+    //             }
+    //             const isPlaidLinked = isPlaidLinkedResponse.isLinked;
+    //             const requiresLinkUpdate = isPlaidLinkedResponse.requiresLinkUpdate;
+    //             console.log('Requires Update: ', requiresLinkUpdate);
+    //             if(!isPlaidLinked){
+    //                 const response = await plaidService.createLinkToken();
+    //
+    //                 console.log('Response: ', response);
+    //                 console.log('Link Token: ', response.linkToken);
+    //                 setLinkToken(response.linkToken);
+    //
+    //                 if(plaidLinkRef.current){
+    //                     plaidLinkRef.current.open();
+    //                     // Fetch and link plaid accounts
+    //
+    //                 }
+    //             }else if(requiresLinkUpdate){
+    //                 console.log('Updating Plaid Link automatically...');
+    //                 await openUpdateMode(userId);
+    //             } else{
+    //                 try {
+    //
+    //                     await transactionRunnerService.syncTransactions(userId);
+    //                     console.log('Transaction sync completed');
+    //
+    //                     const result = await transactionCategoryRunnerService.processCurrentMonthTransactionCategories(userId);
+    //                     if(!result.success){
+    //                         console.error('Error Processing transaction categories: ', result.error);
+    //                     }else{
+    //                         console.log('Transaction Categories already processed for user: ', userId);
+    //                     }
+    //                 } catch (error) {
+    //                     console.error('Error syncing transactions:', error);
+    //                 }
+    //                 navigate('/dashboard')
+    //             }
+    //         }
+    //         console.log('Response: ', response);
+    //         // await new Promise(resolve => setTimeout(resolve, 3000));
+    //     }catch(err)
+    //     {
+    //         console.error(err);
+    //     }
+    // };
+
+// Modified handleSubmit function with enhanced Plaid open logic
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
-        try
-        {
+
+        try {
+            // Validate form data
+            if (!formData.email || !formData.password) {
+                console.error('Email or password missing');
+                return;
+            }
+
             const loginData: LoginCredentials = {
                 username: formData.email,
-                password: formData.password
+                password: formData.password,
             };
-            sessionStorage.setItem('username',formData.email);
+            sessionStorage.setItem('username', formData.email);
             console.log('LoginData: ', loginData);
+
             const response = await authenticateUser(loginData);
+            if (!response) {
+                console.error('Authentication failed: No response');
+                return;
+            }
+
             setIsAuthenticated(true);
             const loginService = new LoginService();
             const userId = await loginService.fetchUserIdByUsername(formData.email);
+            if (!userId) {
+                console.error('Failed to fetch userId');
+                return;
+            }
+
             console.log('UserID: ', userId);
             sessionStorage.setItem('userId', String(userId));
-            if(response != null){
-                console.log('Is Authenticated: ', isAuthenticated);
-                const plaidService = PlaidService.getInstance();
-                // Fetch the link token
+            console.log('Is Authenticated: ', true);
 
-                const isPlaidLinkedResponse = await handlePlaidLinkVerification(userId);
-                console.log('Plaid Link Response: ', isPlaidLinkedResponse);
-                if(!isPlaidLinkedResponse){
-                    console.error("Error: Failed to verify Plaid link status, defaulting to not linked.");
-                    return;
-                }
-                const isPlaidLinked = isPlaidLinkedResponse.isLinked;
-                const requiresLinkUpdate = isPlaidLinkedResponse.requiresLinkUpdate;
-                console.log('Requires Update: ', requiresLinkUpdate);
-                if(!isPlaidLinked){
-                    const response = await plaidService.createLinkToken();
-
-                    console.log('Response: ', response);
-                    console.log('Link Token: ', response.linkToken);
-                    setLinkToken(response.linkToken);
-
-                    if(plaidLinkRef.current){
-                        plaidLinkRef.current.open();
-                        // Fetch and link plaid accounts
-
-                    }
-                }else if(requiresLinkUpdate){
-                    console.log('Updating Plaid Link automatically...');
-                    await openUpdateMode(userId);
-                } else{
-                    try {
-
-                        await transactionRunnerService.syncTransactions(userId);
-                        console.log('Transaction sync completed');
-
-                        const result = await transactionCategoryRunnerService.processCurrentMonthTransactionCategories(userId);
-                        if(!result.success){
-                            console.error('Error Processing transaction categories: ', result.error);
-                        }else{
-                            console.log('Transaction Categories already processed for user: ', userId);
-                        }
-                    } catch (error) {
-                        console.error('Error syncing transactions:', error);
-                    }
-                    navigate('/dashboard')
-                }
+            const plaidService = PlaidService.getInstance();
+            const plaidStatus = await handlePlaidLinkVerification(userId);
+            if (!plaidStatus) {
+                console.error('Error: Failed to verify Plaid link status');
+                return;
             }
-            console.log('Response: ', response);
-            // await new Promise(resolve => setTimeout(resolve, 3000));
-        }catch(err)
-        {
-            console.error(err);
+
+            console.log('Plaid Link Status: ', plaidStatus);
+
+            // Handle Plaid linking or updating - ENHANCED LOGIC
+            if (!plaidStatus.isLinked) {
+                if (plaidStatus.requiresLinkUpdate) {
+                    // Case 1: Link exists but needs update
+                    console.log('Plaid link requires update, opening update mode...');
+                    await openUpdateMode(userId);
+                } else {
+                    // Case 2: No link exists, need to create new one
+                    console.log('Plaid not linked, creating link token...');
+                    const linkResponse = await plaidService.createLinkToken();
+
+                    // Enhanced error handling and logging for link token
+                    if (!linkResponse || !linkResponse.linkToken) {
+                        console.error('Failed to create link token:', linkResponse);
+                        return;
+                    }
+
+                    console.log('Link token created successfully:', linkResponse.linkToken);
+                    setLinkToken(linkResponse.linkToken);
+
+                    // Add a small delay to ensure state updates before opening
+                    setTimeout(() => {
+                        if (plaidLinkRef.current) {
+                            console.log('Opening Plaid Link window...');
+                            plaidLinkRef.current.open();
+                        } else {
+                            console.error('Plaid Link reference is not available');
+                        }
+                    }, 500);
+                }
+                // Note: Navigation waits until Plaid linking/updating completes (via callback)
+            } else {
+                // Case 3: Link exists and is up-to-date
+                console.log('Plaid linked and up-to-date, syncing transactions...');
+                await transactionRunnerService.syncTransactions(userId);
+                console.log('Transaction sync completed');
+
+                const result = await transactionCategoryRunnerService.processCurrentMonthTransactionCategories(userId);
+                if (!result.success) {
+                    console.error('Error processing transaction categories: ', result.error);
+                } else {
+                    console.log('Transaction categories processed for user: ', userId);
+                }
+                navigate('/dashboard');
+            }
+        } catch (error) {
+            console.error('Error in handleSubmit:', error);
+            setIsAuthenticated(false); // Reset auth state on failure
+            // Optionally notify user (e.g., setError('Login failed'))
         }
     };
 
@@ -240,19 +337,20 @@ const LoginForm: React.FC = () => {
             const plaidStatus = await plaidService.checkPlaidLinkStatusByUserId(userId);
             // Fetch access token from session storage or backend
             const accessToken = await plaidService.getAccessTokenForUser(userId);
-            if (!plaidStatus.isLinked)
+            if (!plaidStatus.isLinked || !accessToken)
             {
                 console.warn('Plaid link is not active. Reconnecting...');
                 const response = await plaidService.createLinkToken();
                 setLinkToken(response.linkToken);
+                return plaidStatus;
             }
-            else if (plaidStatus.requiresLinkUpdate && accessToken)
-            {
+
+            // Case 2: Plaid link requires update and access token exists
+            if (plaidStatus.requiresLinkUpdate && accessToken) {
                 console.warn('Plaid link requires update. Opening update mode...');
-                if(accessToken){
-                    await openUpdateMode(userId);
-                }
+                await openUpdateMode(userId); // Pass userId; accessToken is handled in openUpdateMode
             }
+
             return plaidStatus;
         } catch (error) {
             console.error('Error verifying Plaid link:', error);
@@ -263,7 +361,12 @@ const LoginForm: React.FC = () => {
 
     const openUpdateMode = async (userId: number) => {
         try {
+            console.log('UserID: ', userId);
             const accessToken = await plaidService.getAccessTokenForUser(userId);
+            if(!accessToken){
+                console.error("Access Token is null or unavailable for user: ", userId);
+                return;
+            }
             const linkToken = await plaidService.updatePlaidLink(userId, accessToken);
             if (!linkToken) {
                 console.error("Failed to fetch update link token");
@@ -279,7 +382,7 @@ const LoginForm: React.FC = () => {
 
             while (!ready && attempts < maxAttempts) {
                 console.warn(`Waiting for Plaid to be ready... (${attempts + 1}/${maxAttempts})`);
-                await new Promise((resolve) => setTimeout(resolve, 3500)); // Wait 500ms before checking again
+                await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms before checking again
                 attempts++;
             }
 

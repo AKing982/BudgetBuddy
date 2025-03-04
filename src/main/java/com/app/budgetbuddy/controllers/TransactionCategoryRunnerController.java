@@ -34,11 +34,8 @@ public class TransactionCategoryRunnerController
         {
             log.info("Starting transaction category processing for user {} between {} and {}",
                     userId, startDate, endDate);
-
             transactionCategoryRunner.processTransactionCategories(userId, startDate, endDate);
-
             return ResponseEntity.ok("Transaction categories processed successfully");
-
         } catch (RuntimeException e) {
             log.error("Error processing transaction categories: ", e);
             return ResponseEntity

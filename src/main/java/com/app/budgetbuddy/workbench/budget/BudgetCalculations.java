@@ -352,13 +352,17 @@ public class BudgetCalculations {
         return budgetPeriodAmounts;
     }
 
-    private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions, final DateRange categoryDateRange, final CategoryTransactions categoryDesignator)
-    {
+    private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions,
+                                                                       final DateRange categoryDateRange,
+                                                                       final CategoryTransactions categoryDesignator) {
         return transactions.stream()
                 .filter(transaction -> transaction.getDate() != null &&
                         transaction.getDate().isAfter(categoryDateRange.getStartDate().minusDays(1)) &&
                         transaction.getDate().isBefore(categoryDateRange.getEndDate().plusDays(1)) &&
-                        categoryDesignator.getCategoryId().equals(transaction.getCategoryId()))
+                        (categoryDesignator.getCategoryName() != null &&
+                                transaction.getCategories() != null &&
+                                !transaction.getCategories().isEmpty() &&
+                                transaction.getCategories().contains(categoryDesignator.getCategoryName())))
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
