@@ -2,6 +2,8 @@ package com.app.budgetbuddy.domain;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -10,11 +12,13 @@ import lombok.*;
 public class BudgetPeriodAmount
 {
     private DateRange dateRange;
-    private double amount;
+    private BigDecimal budgeted;
+    private BigDecimal actual;
 
-    public BudgetPeriodAmount(DateRange dateRange, double amount)
+    public BudgetPeriodAmount(DateRange dateRange, BigDecimal budgeted, BigDecimal actual)
     {
         this.dateRange = dateRange;
-        this.amount = amount;
+        this.budgeted = budgeted;
+        this.actual = actual;
     }
 }

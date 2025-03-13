@@ -289,31 +289,30 @@ public class TransactionCategoryBuilder
             return Collections.emptyList();
         }
         List<TransactionCategory> transactionCategoryList = new ArrayList<>();
-        for(CategoryBudget categoryBudget : categoryBudgets)
-        {
-            if(categoryBudget == null)
-            {
-                continue;
-            }
-            List<DateRange> categoryDateRanges = categoryBudget.getCategoryDateRanges();
-            CategoryTransactions categoryTransactions = categoryBudget.getCategoryTransactions();
-            List<Transaction> transactions = categoryTransactions.getTransactions();
-            if(transactions.isEmpty())
-            {
-                return Collections.emptyList();
-            }
-            for(DateRange categoryDateRange : categoryDateRanges)
-            {
-                validateDateRange(categoryDateRange);
-                List<Transaction> transactionsInCategoryDateRange = transactions.stream()
-                        .filter(t -> !t.getDate().isBefore(categoryDateRange.getStartDate()) && !t.getDate().isAfter(categoryDateRange.getEndDate()))
-                        .distinct()
-                        .toList();
-                Double transactionCategoryBudget = categoryBudget.getBudgetAmount(categoryDateRange);
-                Double budgetActualAmount = categoryBudget.getActualAmount(categoryDateRange);
-
-            }
-        }
+//        for(CategoryBudget categoryBudget : categoryBudgets)
+//        {
+//            if(categoryBudget == null)
+//            {
+//                continue;
+//            }
+//            List<DateRange> categoryDateRanges = categoryBudget.getCategoryDateRanges();
+//            List<Transaction> transactions = categoryTransactions.getTransactions();
+//            if(transactions.isEmpty())
+//            {
+//                return Collections.emptyList();
+//            }
+//            for(DateRange categoryDateRange : categoryDateRanges)
+//            {
+//                validateDateRange(categoryDateRange);
+//                List<Transaction> transactionsInCategoryDateRange = transactions.stream()
+//                        .filter(t -> !t.getDate().isBefore(categoryDateRange.getStartDate()) && !t.getDate().isAfter(categoryDateRange.getEndDate()))
+//                        .distinct()
+//                        .toList();
+//                Double transactionCategoryBudget = categoryBudget.getBudgetAmount(categoryDateRange);
+//                Double budgetActualAmount = categoryBudget.getActualAmount(categoryDateRange);
+//
+//            }
+//        }
 //        Set<CategoryBudget> categoryBudgetSet = new LinkedHashSet<>(categoryBudgets);
 //        Set<TransactionCategory> transactionCategories = new HashSet<>();
 //        for(CategoryBudget categoryBudget : categoryBudgetSet)
@@ -388,12 +387,29 @@ public class TransactionCategoryBuilder
 
 
     //TODO: Retest this method
-    public List<CategoryBudget> createCategoryBudgets(final SubBudget budget, final BudgetSchedule budgetSchedule, final LocalDate budgetStartDate, final LocalDate budgetEndDate, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final List<CategoryTransactions> categoryTransactionsList)
+    //TODO: Implement method using SubBudgetGoals by using SubBudgetId to fetch any SubBudgetGoals from the database
+    public List<CategoryBudget> createCategoryBudgets(final SubBudget budget, final BudgetSchedule budgetSchedule, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final SubBudgetGoals subBudgetGoals)
     {
-//        if(budgetStartDate == null || budgetEndDate == null)
-//        {
-//            return new ArrayList<>();
-//        }
+        if(budget == null || budgetSchedule == null || categoryPeriodSpendingList == null || subBudgetGoals == null)
+        {
+            return Collections.emptyList();
+        }
+        List<CategoryBudget> categoryBudgets = new ArrayList<>();
+        LocalDate subBudgetStartDate = budget.getStartDate();
+        LocalDate subBudgetEndDate = budget.getEndDate();
+        GoalStatus subBudgetGoalStatus = subBudgetGoals.getStatus();
+        if(subBudgetGoalStatus.equals(GoalStatus.IN_PROGRESS))
+        {
+
+        }
+        for(CategoryPeriodSpending categoryPeriodSpending : categoryPeriodSpendingList)
+        {
+            String category = categoryPeriodSpending.getCategoryName();
+            DateRange categoryDateRange = categoryPeriodSpending.getDateRange();
+            BigDecimal actualSpending = categoryPeriodSpending.getActualSpending();
+
+        }
+
 //        List<CategoryBudget> categoryPeriods = new ArrayList<>();
 //        for(CategoryTransactions categoryTransaction : categoryTransactionsList)
 //        {
