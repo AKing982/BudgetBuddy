@@ -397,62 +397,23 @@ public class TransactionCategoryBuilder
         List<CategoryBudget> categoryBudgets = new ArrayList<>();
         LocalDate subBudgetStartDate = budget.getStartDate();
         LocalDate subBudgetEndDate = budget.getEndDate();
+        BigDecimal totalSubBudgetAmount = budget.getAllocatedAmount();
         GoalStatus subBudgetGoalStatus = subBudgetGoals.getStatus();
-        if(subBudgetGoalStatus.equals(GoalStatus.IN_PROGRESS))
+        BigDecimal remainingSubBudgetGoalAmount = subBudgetGoals.getRemaining();
+        if(subBudgetGoalStatus.equals(GoalStatus.IN_PROGRESS) && remainingSubBudgetGoalAmount.compareTo(BigDecimal.ZERO) > 0)
         {
+            // Allocate Monthly Savings target to subBudget contribution
 
         }
         for(CategoryPeriodSpending categoryPeriodSpending : categoryPeriodSpendingList)
         {
             String category = categoryPeriodSpending.getCategoryName();
             DateRange categoryDateRange = categoryPeriodSpending.getDateRange();
-            BigDecimal actualSpending = categoryPeriodSpending.getActualSpending();
-
+            BigDecimal categoryActualSpending = categoryPeriodSpending.getActualSpending();
+            // Determine the budgeted amount for the categoryDateRange
+             // Take the difference of the
         }
 
-//        List<CategoryBudget> categoryPeriods = new ArrayList<>();
-//        for(CategoryTransactions categoryTransaction : categoryTransactionsList)
-//        {
-//            String category = categoryTransaction.getCategoryName();
-//            // Obtain the transactions
-//            List<Transaction> transactions = categoryTransaction.getTransactions().stream()
-//                    .sorted(Comparator.comparing(Transaction::getPosted))
-//                    .collect(Collectors.toList());
-//            // Build the Budget Date Ranges
-//            Period period = budgetSchedule.getPeriodType();
-//            List<DateRange> budgetDateRanges = buildBudgetDateRanges(budgetStartDate, budgetEndDate, period);
-//            // Determine the Category Period Date Ranges
-//            int categorySpendingIndex = 0;
-//            while(categorySpendingIndex < categoryPeriodSpendingList.size()) {
-//                CategoryPeriodSpending categorySpending = categoryPeriodSpendingList.get(categorySpendingIndex);
-//                if(categorySpending.getCategoryName().equals(category) &&
-//                        categorySpending.getCategoryName().equals(categoryTransaction.getCategoryName())) {
-//                    List<DateRange> categoryPeriodDateRanges = buildCategoryPeriodDateRanges(budgetDateRanges, categoryPeriodSpendingList);
-//                    BigDecimal totalSpendingOnAllCategories = budgetCalculator.getTotalSpendingOnAllCategories(categoryPeriodSpendingList);
-//                    LOGGER.info("Total Spending on All Categories: {}", totalSpendingOnAllCategories);
-//                    LOGGER.info("Category Spending: {}", categorySpending.toString());
-//                    categoryPeriodDateRanges.forEach(transactionDateRange -> {
-//                        LOGGER.info("Transaction Date Range: {}", transactionDateRange.toString());
-//                    });
-//                    List<BudgetPeriodAmount> categoryBudgetedAmounts = budgetCalculator.calculateBudgetedAmountForCategoryDateRange(
-//                            categorySpending, totalSpendingOnAllCategories, categoryPeriodDateRanges, budget, budgetSchedule);
-//                    List<BudgetPeriodAmount> actualSpentOnCategories = budgetCalculator.calculateActualAmountForCategoryDateRange(
-//                            categorySpending, categoryTransaction, categoryPeriodDateRanges, budget);
-//
-//                    CategoryBudget categoryBudget = CategoryBudget.buildCategoryBudget(
-//                            categoryBudgetedAmounts,
-//                            actualSpentOnCategories,
-//                            categoryPeriodDateRanges,
-//                            budget,
-//                            transactions,
-//                            category
-//                    );
-//                    categoryPeriods.add(categoryBudget);
-//                }
-//                categorySpendingIndex++;
-//            }
-//        }
-//        return categoryPeriods;
         return null;
     }
 
