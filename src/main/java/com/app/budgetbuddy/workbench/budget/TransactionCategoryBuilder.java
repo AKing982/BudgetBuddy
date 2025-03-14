@@ -385,6 +385,22 @@ public class TransactionCategoryBuilder
         }
     }
 
+    private void updateBudgetGoalsStatus(BigDecimal remainingBudgetGoalsAmount, SubBudgetGoals subBudgetGoals, LocalDate subBudgetStartDate, LocalDate subBudgetEndDate)
+    {
+        LocalDate now = LocalDate.now();
+        if(remainingBudgetGoalsAmount.compareTo(BigDecimal.ZERO) == 0)
+        {
+            subBudgetGoals.setStatus(GoalStatus.COMPLETED);
+        }
+        else if(remainingBudgetGoalsAmount.compareTo(BigDecimal.ZERO) > 0 && now.isAfter(subBudgetStartDate) && now.isBefore(subBudgetEndDate))
+        {
+            subBudgetGoals.setStatus(GoalStatus.IN_PROGRESS);
+        }
+        else
+        {
+            subBudgetGoals.setStatus(GoalStatus.INCOMPLETE);
+        }
+    }
 
     //TODO: Retest this method
     //TODO: Implement method using SubBudgetGoals by using SubBudgetId to fetch any SubBudgetGoals from the database
@@ -395,26 +411,40 @@ public class TransactionCategoryBuilder
             return Collections.emptyList();
         }
         List<CategoryBudget> categoryBudgets = new ArrayList<>();
+        BigDecimal totalAllocatedAmount = budget.getAllocatedAmount();
+        GoalStatus subBudgetGoalStatus = subBudgetGoals.getStatus();
+        BigDecimal savingsGoalTarget = subBudgetGoals.getSavingsTarget();
+        BigDecimal totalSpentOnBudget = budget.getSpentOnBudget();
+        BigDecimal remainingSubBudgetGoalAmount = subBudgetGoals.getRemaining();
         LocalDate subBudgetStartDate = budget.getStartDate();
         LocalDate subBudgetEndDate = budget.getEndDate();
-        BigDecimal totalSubBudgetAmount = budget.getAllocatedAmount();
-        GoalStatus subBudgetGoalStatus = subBudgetGoals.getStatus();
-        BigDecimal remainingSubBudgetGoalAmount = subBudgetGoals.getRemaining();
         if(subBudgetGoalStatus.equals(GoalStatus.IN_PROGRESS) && remainingSubBudgetGoalAmount.compareTo(BigDecimal.ZERO) > 0)
         {
-            // Allocate Monthly Savings target to subBudget contribution
-
+            BigDecimal totalSavedOnBudget = totalAllocatedAmount.subtract(totalSpentOnBudget);
+            BigDecimal remainingOnBudget = totalSavedOnBudget.subtract(savingsGoalTarget);
+            if(remainingOnBudget.compareTo(BigDecimal.ZERO) < 0)
+            {
+                log.warn("Budget has a negative remaining amount, setting total allocation to zero.");
+                remainingOnBudget = BigDecimal.ZERO;
+                budget.setAllocatedAmount(remainingOnBudget);
+                BigDecimal remainingOnSubBudgetGoals = savingsGoalTarget.subtract(subBudgetGoals.getContributedAmount());
+                updateBudgetGoalsStatus(remainingOnSubBudgetGoals, subBudgetGoals, subBudgetStartDate, subBudgetEndDate);
+            }
         }
-        for(CategoryPeriodSpending categoryPeriodSpending : categoryPeriodSpendingList)
+        Map<String, List<CategoryPeriodSpending>> categoryPeriodSpendingMap = getCategoryPeriodSpendingMap(categoryPeriodSpendingList);
+        for(Map.Entry<String, List<CategoryPeriodSpending>> entry : categoryPeriodSpendingMap.entrySet())
         {
-            String category = categoryPeriodSpending.getCategoryName();
-            DateRange categoryDateRange = categoryPeriodSpending.getDateRange();
-            BigDecimal categoryActualSpending = categoryPeriodSpending.getActualSpending();
-            // Determine the budgeted amount for the categoryDateRange
-             // Take the difference of the
+            String categoryName = entry.getKey();
+            List<CategoryPeriodSpending> categorySpending = entry.getValue();
+            
         }
-
         return null;
+    }
+
+    private Map<String, List<CategoryPeriodSpending>> getCategoryPeriodSpendingMap(List<CategoryPeriodSpending> categoryPeriodSpendingList)
+    {
+        return categoryPeriodSpendingList.stream()
+                .collect(Collectors.groupingBy(CategoryPeriodSpending::getCategoryName));
     }
 
     public List<DateRange> buildCategoryPeriodDateRanges(final List<DateRange> budgetDateRanges, final List<CategoryPeriodSpending> categorySpendingList)
