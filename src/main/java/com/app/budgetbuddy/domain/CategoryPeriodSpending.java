@@ -4,6 +4,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Getter
@@ -17,6 +19,16 @@ public class CategoryPeriodSpending
     private BigDecimal actualSpending;
     private LocalDate spendingDate;
     private DateRange dateRange;
+    private List<Transaction> transactions = new ArrayList<>();
+
+    public CategoryPeriodSpending(String categoryId, String categoryName, BigDecimal actualSpending, LocalDate spendingDate, DateRange dateRange, List<Transaction> transactions) {
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.actualSpending = actualSpending;
+        this.spendingDate = spendingDate;
+        this.dateRange = dateRange;
+        this.transactions = transactions;
+    }
 
     public CategoryPeriodSpending(String categoryId, String categoryName, BigDecimal actualSpending)
     {

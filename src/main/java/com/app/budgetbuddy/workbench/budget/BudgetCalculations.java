@@ -304,53 +304,7 @@ public class BudgetCalculations {
         }
     }
 
-//    public List<BudgetPeriodAmount> calculateBudgetedAmountForCategoryDateRange(final CategoryPeriodSpending categorySpendingData, final BigDecimal totalSpendingOnCategories, final List<DateRange> categoryDateRanges, final SubBudget budget, final BudgetSchedule budgetSchedule)
-//    {
-//        if(categorySpendingData == null || categoryDateRanges == null || budget == null)
-//        {
-//            return Collections.emptyList();
-//        }
-//        List<BudgetPeriodAmount> budgetPeriodAmounts = new ArrayList<>();
-//        BigDecimal totalBudgetAmount = budget.getAllocatedAmount();
-//
-//        // Calculate category's portion based on spending ratio
-//        BigDecimal categorySpendingRatio = categorySpendingData.getActualSpending()
-//                .divide(totalSpendingOnCategories, 2, RoundingMode.HALF_UP);
-//        BigDecimal categoryTotalBudget = totalBudgetAmount.multiply(categorySpendingRatio);
-//
-//        // Calculate per period amount based on days in period
-//        DateRange budgetDateRange = new DateRange(budgetSchedule.getStartDate(), budgetSchedule.getEndDate());
-//        long totalDays = budgetDateRange.getDaysInRange();
-//
-//        for(DateRange dateRange : categoryDateRanges) {
-//            int periodDays = (int) dateRange.getDaysInRange();
-//            BigDecimal periodRatio = BigDecimal.valueOf(periodDays)
-//                    .divide(BigDecimal.valueOf(totalDays), 2, RoundingMode.HALF_UP);
-//            BigDecimal periodAmount = categoryTotalBudget.multiply(periodRatio).divide(new BigDecimal("2"), 2, RoundingMode.CEILING);
-//            log.info("Budget Period Amount: " + periodAmount);
-//            budgetPeriodAmounts.add(new BudgetPeriodAmount(dateRange, periodAmount.doubleValue()));
-//        }
-//
-//        return budgetPeriodAmounts;
-//    }
 
-//    public List<BudgetPeriodAmount> calculateActualAmountForCategoryDateRange(final CategoryPeriodSpending categorySpending, final CategoryTransactions categoryDesignator, final List<DateRange> categoryDateRanges, final SubBudget budget)
-//    {
-//        if(categorySpending == null || categoryDateRanges == null || budget == null)
-//        {
-//            return Collections.emptyList();
-//        }
-//        List<BudgetPeriodAmount> budgetPeriodAmounts = new ArrayList<>();
-//        BigDecimal totalCategorySpending = categorySpending.getActualSpending();
-//        DateRange categoryMonthRange = categorySpending.getDateRange();
-//        List<Transaction> transactions = categoryDesignator.getTransactions();
-//        for(DateRange categoryDateRange : categoryDateRanges)
-//        {
-//            BigDecimal totalSpendingForRange = getTotalTransactionSpendingForCategoryDateRange(transactions, categoryDateRange, categoryDesignator);
-//            budgetPeriodAmounts.add(new BudgetPeriodAmount(categoryDateRange, totalSpendingForRange.doubleValue()));
-//        }
-//        return budgetPeriodAmounts;
-//    }
 
     private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions,
                                                                        final DateRange categoryDateRange,
@@ -656,17 +610,78 @@ public class BudgetCalculations {
         return BigDecimal.ZERO;
     }
 
+    public BigDecimal determineCategoryBudget(final String category, final List<Transaction> transactions, final BigDecimal subBudgetAmount)
+    {
+        if(category == null || subBudgetAmount == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal totalCategoryBudget = BigDecimal.ZERO;
+        // Given a category, and its list of transactions,
+        // If the Transaction is a fixed expense, then add that amount to the total budget
+        // Else if the transaction is a variable expense, then 
+        for(Transaction transaction : transactions)
+        {
+            BigDecimal transactionAmount = transaction.getAmount();
+            if(isFixedExpense(transaction))
+            {
+
+            }
+        }
+        return null;
+    }
+
+    public boolean isFixedExpense(final Transaction transaction)
+    {
+        if(transaction == null)
+        {
+            return false;
+        }
+        try
+        {
+            List<String> transactionCategories = transaction.getCategories();
+            String transactionCategoryId = transaction.getCategoryId();
+            Map<String, List<String>> fixedExpenseCategories = new HashMap<>();
+            fixedExpenseCategories.put("18068005", List.of("Utilities", "Service"));
+            fixedExpenseCategories.put("18030000", List.of("Insurance", "Service"));
+            fixedExpenseCategories.put("18061000", List.of("Subscription", "Service"));
+            fixedExpenseCategories.put("18020004", List.of("Financial", "Service"));
+            fixedExpenseCategories.put("19019000", List.of("Digital Purchase", "Shops"));
+            fixedExpenseCategories.put("19013000", List.of("Computers and Electronics", "Shops"));
+            fixedExpenseCategories.put("17018000", List.of("Gyms and Fitness Centers", "Recreation"));
+            if(transactionCategories.isEmpty())
+            {
+                return fixedExpenseCategories.containsKey(transactionCategoryId);
+            }
+            if(transactionCategories.size() == 2)
+            {
+                return fixedExpenseCategories.containsKey(transactionCategoryId) && fixedExpenseCategories.containsValue(transactionCategories.get(0)) || fixedExpenseCategories.containsValue(transactionCategories.get(1));
+            }
+            return fixedExpenseCategories.containsKey(transactionCategoryId) && fixedExpenseCategories.containsValue(transactionCategories.get(0));
+
+        }catch(Exception e)
+        {
+            return false;
+        }
+    }
+
+    public boolean isRentDueDuringPeriod(final DateRange dateRange)
+    {
+        if(dateRange == null){
+            return false;
+        }
+        LocalDate startDate = dateRange.getStartDate();
+        LocalDate endDate = dateRange.getEndDate();
+        LocalDate current = startDate;
+        while()
+        return false;
+    }
 
     private void validateBudgetPeriodAndBudget(BudgetPeriod budgetPeriod, Budget budget)
     {
         if(budgetPeriod == null || budget == null){
             throw new RuntimeException("BudgetPeriod or Budget is null");
         }
-    }
-
-    public BigDecimal calculateNewBudgetedAmountFromRemainingAmount(Category category, Period period, LocalDate startDate, LocalDate endDate, BigDecimal remainingAmount)
-    {
-        return null;
     }
 
     //TODO: Test method implementation
