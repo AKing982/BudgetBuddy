@@ -616,19 +616,126 @@ public class BudgetCalculations {
         {
             return BigDecimal.ZERO;
         }
-        BigDecimal totalCategoryBudget = BigDecimal.ZERO;
-        // Given a category, and its list of transactions,
-        // If the Transaction is a fixed expense, then add that amount to the total budget
-        // Else if the transaction is a variable expense, then 
-        for(Transaction transaction : transactions)
-        {
-            BigDecimal transactionAmount = transaction.getAmount();
-            if(isFixedExpense(transaction))
-            {
+        // Get the total transaction spending in the chosen category using a stream
+        BigDecimal categorySpending = transactions.stream()
+                .filter(e -> e.getCategories().contains(category))
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            }
+        double incomeAmount = subBudgetAmount.doubleValue();
+        BigDecimal rate = categorySpending.divide(subBudgetAmount);
+        BigDecimal percentage = estimateCategoryPercentage(incomeAmount, category);
+        BigDecimal categoryBudget = rate.multiply(percentage);
+        return categoryBudget;
+    }
+
+    private BigDecimal getGroceryPercentage(double incomeAmount){
+        if(incomeAmount < 2000 && incomeAmount >= 1000){
+            return BigDecimal.valueOf(0.10);
+        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
+            return BigDecimal.valueOf(0.09);
+        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
+            return BigDecimal.valueOf(0.08);
+        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
+            return BigDecimal.valueOf(0.075);
+        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
+            return BigDecimal.valueOf(0.07);
+        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
+            return BigDecimal.valueOf(0.065);
+        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
+            return BigDecimal.valueOf(0.06);
+        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
+            return BigDecimal.valueOf(0.06);
+        }else if(incomeAmount < 10000 && incomeAmount >= 9000){
+            return BigDecimal.valueOf(0.055);
+        }else{
+            return BigDecimal.valueOf(0.05);
         }
-        return null;
+    }
+
+    private BigDecimal getRentPercentage(double incomeAmount)
+    {
+        if(incomeAmount < 2000 && incomeAmount >= 1000){
+            return BigDecimal.valueOf(0.50);
+        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
+            return BigDecimal.valueOf(0.45);
+        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
+            return BigDecimal.valueOf(0.42);
+        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
+            return BigDecimal.valueOf(0.40);
+        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
+            return BigDecimal.valueOf(0.38);
+        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
+            return BigDecimal.valueOf(0.36);
+        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
+            return BigDecimal.valueOf(0.34);
+        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
+            return BigDecimal.valueOf(0.32);
+        }else if(incomeAmount < 10000 && incomeAmount >= 9000){
+            return BigDecimal.valueOf(0.31);
+        }else{
+            return BigDecimal.valueOf(0.30);
+        }
+    }
+
+    private BigDecimal getUtilitiesPercentage(double incomeAmount)
+    {
+        if(incomeAmount < 2000 && incomeAmount >= 1000){
+            return BigDecimal.valueOf(0.03);
+        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
+            return BigDecimal.valueOf(0.025);
+        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
+            return BigDecimal.valueOf(0.02);
+        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
+            return BigDecimal.valueOf(0.02);
+        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
+            return BigDecimal.valueOf(0.015);
+        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
+            return BigDecimal.valueOf(0.015);
+        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
+            return BigDecimal.valueOf(0.015);
+        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
+            return BigDecimal.valueOf(0.01);
+        }else{
+            return BigDecimal.valueOf(0.01);
+        }
+    }
+
+    private BigDecimal getSubscriptionPercentage(double incomeAmount)
+    {
+        if(incomeAmount < 2000 && incomeAmount >= 1000){
+            return BigDecimal.valueOf(0.02);
+        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
+            return BigDecimal.valueOf(0.025);
+        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
+            return BigDecimal.valueOf(0.03);
+        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
+            return BigDecimal.valueOf(0.03);
+        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
+            return BigDecimal.valueOf(0.03);
+        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
+            return BigDecimal.valueOf(0.03);
+        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
+            return BigDecimal.valueOf(0.028);
+        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
+            return BigDecimal.valueOf(0.025);
+        }else{
+            return BigDecimal.valueOf(0.02);
+        }
+    }
+
+    private BigDecimal estimateCategoryPercentage(final double incomeAmount, final String category)
+    {
+        switch(category){
+            case "Subscription":
+                return getSubscriptionPercentage(incomeAmount);
+            case "Utilities":
+                return getUtilitiesPercentage(incomeAmount);
+            case "Groceries":
+                return getGroceryPercentage(incomeAmount);
+            case "Rent":
+                return getRentPercentage(incomeAmount);
+        }
     }
 
     public boolean isFixedExpense(final Transaction transaction)
