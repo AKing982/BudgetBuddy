@@ -3,14 +3,10 @@ package com.app.budgetbuddy.workbench.runner;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
-import com.app.budgetbuddy.exceptions.BudgetPeriodException;
-import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.budget.TransactionCategoryBuilder;
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -20,13 +16,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionCategoryRunnerTest {
+class BudgetCategoryRunnerTest {
 
     @Mock
     private TransactionService transactionService;
@@ -47,10 +40,10 @@ class TransactionCategoryRunnerTest {
     private CategoryRuleEngine categoryRuleEngine;
 
     @Mock
-    private TransactionCategoryService transactionCategoryService;
+    private BudgetCategoryService transactionCategoryService;
 
     @Mock
-    private TransactionCategoryBuilder transactionCategoryBuilder;
+    private BudgetCategoryBuilder transactionCategoryBuilder;
 
     @InjectMocks
     private TransactionCategoryRunner transactionCategoryRunner;

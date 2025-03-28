@@ -2,7 +2,6 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DateRangeException;
-import com.app.budgetbuddy.services.TransactionCategoryService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +48,7 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
                    SUM(tc.budgetedAmount) as totalBudgeted,
                    SUM(tc.actual) as actualSpent,
                    SUM(tc.budgetedAmount - tc.actual) as remainingAmount
-            FROM TransactionCategoryEntity tc
+            FROM BudgetCategoryEntity tc
             JOIN tc.category c
             WHERE tc.startDate >= :startDate
             AND tc.endDate <= :endDate

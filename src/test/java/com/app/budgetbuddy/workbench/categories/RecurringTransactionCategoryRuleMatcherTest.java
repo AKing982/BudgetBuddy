@@ -37,7 +37,7 @@ class RecurringTransactionCategoryRuleMatcherTest {
     @Test
     void testCategorizeTransaction_whenRecurringTransactionsIsNull_thenThrowException(){
         assertThrows(IllegalArgumentException.class, () -> {
-            recurringTransactionCategoryRuleMatcher.categorizeTransaction(null);
+            recurringTransactionCategoryRuleMatcher.categorizeTransaction(null, 1);
         });
     }
 

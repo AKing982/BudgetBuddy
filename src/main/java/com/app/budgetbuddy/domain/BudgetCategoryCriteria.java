@@ -1,6 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AllArgsConstructor;
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,7 +9,7 @@ import java.util.*;
 
 @Data
 @NoArgsConstructor
-public class CategoryBudget
+public class BudgetCategoryCriteria
 {
     private String categoryId;
     private String category;
@@ -19,7 +19,7 @@ public class CategoryBudget
     private List<BudgetPeriodAmount> periodAmounts;
     private boolean active;
 
-    public CategoryBudget(String categoryId, SubBudget budget, BudgetSchedule budgetSchedule, List<DateRange> categoryDateRanges, boolean active) {
+    public BudgetCategoryCriteria(String categoryId, SubBudget budget, BudgetSchedule budgetSchedule, List<DateRange> categoryDateRanges, boolean active) {
         this.categoryId = categoryId;
         this.budget = budget;
         this.budgetSchedule = budgetSchedule;
@@ -27,7 +27,7 @@ public class CategoryBudget
         this.active = active;
     }
 
-    public CategoryBudget(String categoryId, String category, List<DateRange> dateRanges, Boolean isActive) {
+    public BudgetCategoryCriteria(String categoryId, String category, List<DateRange> dateRanges, Boolean isActive) {
         this.categoryId = categoryId;
         this.category = category;
         this.categoryDateRanges = dateRanges;
@@ -35,13 +35,13 @@ public class CategoryBudget
         this.active = isActive;
     }
 
-    public CategoryBudget(String category, List<DateRange> dateRange){
+    public BudgetCategoryCriteria(String category, List<DateRange> dateRange){
         this.category = category;
         this.categoryDateRanges = dateRange;
         this.periodAmounts = new ArrayList<>();
     }
 
-    public CategoryBudget(String category, List<DateRange> dateRanges, SubBudget budget, Boolean isActive) {
+    public BudgetCategoryCriteria(String category, List<DateRange> dateRanges, SubBudget budget, Boolean isActive) {
         this.category = category;
         this.categoryDateRanges = dateRanges;
         this.periodAmounts = new ArrayList<>();
@@ -49,7 +49,7 @@ public class CategoryBudget
         this.active = isActive;
     }
 
-    public CategoryBudget(String categoryId, String category, SubBudget budget, BudgetSchedule budgetSchedule, List<DateRange> categoryDateRanges, List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualAmounts, boolean active) {
+    public BudgetCategoryCriteria(String categoryId, String category, SubBudget budget, BudgetSchedule budgetSchedule, List<DateRange> categoryDateRanges, List<BudgetPeriodAmount> budgetedAmounts, List<BudgetPeriodAmount> actualAmounts, boolean active) {
         this.categoryId = categoryId;
         this.category = category;
         this.budget = budget;
@@ -76,10 +76,10 @@ public class CategoryBudget
                 .orElse(BigDecimal.ZERO);
     }
 
-    public static CategoryBudget buildCategoryBudget(List<BudgetPeriodAmount> periodAmounts,
+    public static BudgetCategoryCriteria buildCategoryBudget(List<BudgetPeriodAmount> periodAmounts,
                                                List<DateRange> categoryDateRanges, SubBudget budget, BudgetSchedule budgetSchedule, String category) {
 
-        CategoryBudget categoryBudget = new CategoryBudget();
+        BudgetCategoryCriteria categoryBudget = new BudgetCategoryCriteria();
         categoryBudget.setCategory(category);
         categoryBudget.setBudget(budget);
         categoryBudget.setBudgetSchedule(budgetSchedule);
@@ -90,10 +90,10 @@ public class CategoryBudget
         return categoryBudget;
     }
 
-    public static CategoryBudget buildCategoryBudget(String categoryId, String category, List<BudgetPeriodAmount> periodAmounts,
+    public static BudgetCategoryCriteria buildCategoryBudget(String categoryId, String category, List<BudgetPeriodAmount> periodAmounts,
                                                      List<DateRange> categoryDateRanges, SubBudget budget, BudgetSchedule budgetSchedule, boolean isActive) {
 
-        CategoryBudget categoryBudget = new CategoryBudget();
+        BudgetCategoryCriteria categoryBudget = new BudgetCategoryCriteria();
         categoryBudget.setCategory(category);
         categoryBudget.setBudget(budget);
         categoryBudget.setBudgetSchedule(budgetSchedule);

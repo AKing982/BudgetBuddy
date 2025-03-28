@@ -65,7 +65,7 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t WHERE t.id =:id AND t.category.id =:categoryId")
     Optional<TransactionsEntity> findTransactionByIdAndCategoryId(@Param("id") String id, @Param("categoryId") String categoryId);
 
-    @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.posted BETWEEN :startDate AND :endDate")
+    @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id AND t.posted BETWEEN :startDate AND :endDate AND t.issystemCategorized = false")
     List<TransactionsEntity> findTransactionsByUserIdAndDateRange(@Param("id") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE t.authorizedDate BETWEEN :startDate AND :endDate")
@@ -101,4 +101,8 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Modifying
     @Query("UPDATE TransactionsEntity t SET t.category =:category WHERE t.id =:id")
     Optional<TransactionsEntity> updateTransactionCategory(@Param("category") CategoryEntity category, @Param("id") String transactionId);
+
+    @Modifying
+    @Query("UPDATE TransactionsEntity t SET t.issystemCategorized = true WHERE t.id =:id")
+    void updateIsSystemCategorized(@Param("id") String id);
 }

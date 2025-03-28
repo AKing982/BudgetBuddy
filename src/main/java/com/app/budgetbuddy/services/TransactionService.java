@@ -39,6 +39,8 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId);
     Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName);
 
+    void updateTransactionCategorizationFlag(String transactionId);
+
     Double getTransactionFrequency(String transactionId);
     List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount);
     List<Transaction> getPendingTransactionsForUser(Long userId);

@@ -7,4 +7,5 @@ public enum TransactionMatchType
 //    MULTI_MERCHANT,
     CONTAINS,
     STARTS_WITH,
+    PARTIAL
 }

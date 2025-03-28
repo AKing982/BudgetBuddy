@@ -1,7 +1,6 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.services.TransactionCategoryService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +55,7 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
                            tc.budgetedAmount,
                            COALESCE(tc.actual, 0) AS actualSpent,
                            (tc.budgetedAmount - COALESCE(tc.actual, 0)) AS remainingAmount
-                    FROM TransactionCategoryEntity tc
+                    FROM BudgetCategoryEntity tc
                     JOIN CategoryEntity c ON tc.category.id = c.id
                     WHERE tc.startDate <= :date
                       AND tc.endDate >= :date

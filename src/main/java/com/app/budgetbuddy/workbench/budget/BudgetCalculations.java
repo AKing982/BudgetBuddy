@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetCategoryEntity;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.ControlledSpendingCategoryEntity;
@@ -10,6 +11,7 @@ import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetActualAmountException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
 import com.app.budgetbuddy.services.*;
+import com.app.budgetbuddy.workbench.PercentageCalculator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -27,20 +29,22 @@ public class BudgetCalculations {
     private final BudgetService budgetService;
     private final BudgetGoalsService budgetGoalsService;
     private final ControlledSpendingCategoriesService budgetCategoriesService;
-    private final TransactionCategoryService transactionCategoryService;
+    private final BudgetCategoryService transactionCategoryService;
     private final BudgetValidator budgetValidator;
+    private final PercentageCalculator percentageCalculator;
 
     @Autowired
     public BudgetCalculations(BudgetService budgetService,
                             BudgetGoalsService budgetGoalsService,
                             ControlledSpendingCategoriesService budgetCategoriesService,
-                            TransactionCategoryService transactionCategoryService,
-                            BudgetValidator budgetValidator) {
+                            BudgetCategoryService transactionCategoryService,
+                            BudgetValidator budgetValidator, PercentageCalculator percentageCalculator) {
         this.budgetService = budgetService;
         this.budgetGoalsService = budgetGoalsService;
         this.budgetCategoriesService = budgetCategoriesService;
         this.transactionCategoryService = transactionCategoryService;
         this.budgetValidator = budgetValidator;
+        this.percentageCalculator = percentageCalculator;
     }
 
     private BudgetGoalsEntity getBudgetGoals(Long budgetId)
@@ -49,10 +53,10 @@ public class BudgetCalculations {
         return budgetGoals.orElseThrow();
     }
 
-    private BigDecimal getTotalUserBudgetCategoryExpenses(final Set<TransactionCategoryEntity> categories)
+    private BigDecimal getTotalUserBudgetCategoryExpenses(final Set<BudgetCategoryEntity> categories)
     {
         BigDecimal totalExpenses = BigDecimal.ZERO;
-        for(TransactionCategoryEntity category : categories)
+        for(BudgetCategoryEntity category : categories)
         {
             double categorySpending = category.getActual();
             totalExpenses = totalExpenses.add(BigDecimal.valueOf(categorySpending));
@@ -81,7 +85,7 @@ public class BudgetCalculations {
         return progressPercent.setScale(2, RoundingMode.HALF_UP);
     }
 
-    public BigDecimal calculateSavingsGoalProgress(final Budget budget, final Set<TransactionCategoryEntity> spendingCategories)
+    public BigDecimal calculateSavingsGoalProgress(final Budget budget, final Set<BudgetCategoryEntity> spendingCategories)
     {
         if(budget == null || spendingCategories.isEmpty())
         {
@@ -177,11 +181,11 @@ public class BudgetCalculations {
         }
     }
 
-    private BigDecimal getTotalSpendingForAllUserBudgetCategories(final List<TransactionCategoryEntity> userBudgetCategories)
+    private BigDecimal getTotalSpendingForAllUserBudgetCategories(final List<BudgetCategoryEntity> userBudgetCategories)
     {
 
         BigDecimal totalSpending = BigDecimal.ZERO;
-        for(TransactionCategoryEntity userBudgetCategory : userBudgetCategories)
+        for(BudgetCategoryEntity userBudgetCategory : userBudgetCategories)
         {
             Double actualSpending = userBudgetCategory.getActual();
             totalSpending = totalSpending.add(new BigDecimal(actualSpending));
@@ -417,7 +421,7 @@ public class BudgetCalculations {
         return (int) ChronoUnit.MONTHS.between(startDate, endOfYear) + 1;
     }
 
-    public BigDecimal calculateTotalSpendingOnBudget(final DateRange budgetDateRange, final List<TransactionCategory> transactionCategories, final Budget budget){
+    public BigDecimal calculateTotalSpendingOnBudget(final DateRange budgetDateRange, final List<BudgetCategory> transactionCategories, final Budget budget){
         if(budgetDateRange == null)
         {
             return BigDecimal.ZERO;
@@ -442,7 +446,7 @@ public class BudgetCalculations {
                 throw new RuntimeException("Transaction category entities not found for Budget Id: " + budgetId);
             }
             BigDecimal totalSpending = BigDecimal.ZERO;
-            for(TransactionCategory transactionCategory : transactionCategories)
+            for(BudgetCategory transactionCategory : transactionCategories)
             {
                 if(transactionCategory != null)
                 {
@@ -610,131 +614,47 @@ public class BudgetCalculations {
         return BigDecimal.ZERO;
     }
 
-    public BigDecimal determineCategoryBudget(final String category, final List<Transaction> transactions, final BigDecimal subBudgetAmount)
+    private boolean isValidCategory(String category) {
+        // This method would contain the logic to check if the category is supported
+        // Could be a simple check against an enum, array, or database
+        return Arrays.asList("GROCERY", "RENT", "UTILITIES", "ORDER_OUT", "SUBSCRIPTION", "I")
+                .contains(category);
+    }
+
+    public BigDecimal determineCategoryBudget(final String category, final BigDecimal subBudgetAmount)
     {
         if(category == null || subBudgetAmount == null)
         {
             return BigDecimal.ZERO;
         }
-        // Get the total transaction spending in the chosen category using a stream
-        BigDecimal categorySpending = transactions.stream()
-                .filter(e -> e.getCategories().contains(category))
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        double incomeAmount = subBudgetAmount.doubleValue();
-        BigDecimal rate = categorySpending.divide(subBudgetAmount);
-        BigDecimal percentage = estimateCategoryPercentage(incomeAmount, category);
-        BigDecimal categoryBudget = rate.multiply(percentage);
-        return categoryBudget;
-    }
+        try
+        {
+            // Handle negative income values
+            if (subBudgetAmount.compareTo(BigDecimal.ZERO) < 0) {
+                log.warn("Negative income amount provided: {}", subBudgetAmount);
+                return BigDecimal.ZERO;
+            }
 
-    private BigDecimal getGroceryPercentage(double incomeAmount){
-        if(incomeAmount < 2000 && incomeAmount >= 1000){
-            return BigDecimal.valueOf(0.10);
-        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
-            return BigDecimal.valueOf(0.09);
-        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
-            return BigDecimal.valueOf(0.08);
-        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
-            return BigDecimal.valueOf(0.075);
-        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
-            return BigDecimal.valueOf(0.07);
-        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
-            return BigDecimal.valueOf(0.065);
-        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
-            return BigDecimal.valueOf(0.06);
-        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
-            return BigDecimal.valueOf(0.06);
-        }else if(incomeAmount < 10000 && incomeAmount >= 9000){
-            return BigDecimal.valueOf(0.055);
-        }else{
-            return BigDecimal.valueOf(0.05);
-        }
-    }
+            // Convert to double for calculation
+            double incomeAmount = subBudgetAmount.doubleValue();
 
-    private BigDecimal getRentPercentage(double incomeAmount)
-    {
-        if(incomeAmount < 2000 && incomeAmount >= 1000){
-            return BigDecimal.valueOf(0.50);
-        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
-            return BigDecimal.valueOf(0.45);
-        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
-            return BigDecimal.valueOf(0.42);
-        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
-            return BigDecimal.valueOf(0.40);
-        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
-            return BigDecimal.valueOf(0.38);
-        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
-            return BigDecimal.valueOf(0.36);
-        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
-            return BigDecimal.valueOf(0.34);
-        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
-            return BigDecimal.valueOf(0.32);
-        }else if(incomeAmount < 10000 && incomeAmount >= 9000){
-            return BigDecimal.valueOf(0.31);
-        }else{
-            return BigDecimal.valueOf(0.30);
-        }
-    }
+            // Get percentage based on category and income
+            BigDecimal percentage = percentageCalculator.estimateCategoryPercentage(incomeAmount, category);
+            log.info("Percentage: " + percentage);
 
-    private BigDecimal getUtilitiesPercentage(double incomeAmount)
-    {
-        if(incomeAmount < 2000 && incomeAmount >= 1000){
-            return BigDecimal.valueOf(0.03);
-        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
-            return BigDecimal.valueOf(0.025);
-        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
-            return BigDecimal.valueOf(0.02);
-        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
-            return BigDecimal.valueOf(0.02);
-        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
-            return BigDecimal.valueOf(0.015);
-        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
-            return BigDecimal.valueOf(0.015);
-        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
-            return BigDecimal.valueOf(0.015);
-        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
-            return BigDecimal.valueOf(0.01);
-        }else{
-            return BigDecimal.valueOf(0.01);
-        }
-    }
+            // Calculate budget amount with proper rounding
+            BigDecimal budgetAmount = subBudgetAmount.multiply(percentage)
+                    .setScale(2, RoundingMode.HALF_UP);
 
-    private BigDecimal getSubscriptionPercentage(double incomeAmount)
-    {
-        if(incomeAmount < 2000 && incomeAmount >= 1000){
-            return BigDecimal.valueOf(0.02);
-        }else if(incomeAmount < 3000 && incomeAmount >= 2000){
-            return BigDecimal.valueOf(0.025);
-        }else if(incomeAmount < 4000 && incomeAmount >= 3000){
-            return BigDecimal.valueOf(0.03);
-        }else if(incomeAmount < 5000 && incomeAmount >= 4000){
-            return BigDecimal.valueOf(0.03);
-        }else if(incomeAmount < 6000 && incomeAmount >= 5000){
-            return BigDecimal.valueOf(0.03);
-        }else if(incomeAmount < 7000 && incomeAmount >= 6000){
-            return BigDecimal.valueOf(0.03);
-        }else if(incomeAmount < 8000 && incomeAmount >= 7000){
-            return BigDecimal.valueOf(0.028);
-        }else if(incomeAmount < 9000 && incomeAmount >= 8000){
-            return BigDecimal.valueOf(0.025);
-        }else{
-            return BigDecimal.valueOf(0.02);
-        }
-    }
+            log.debug("Calculated budget for {} with income {}: {}",
+                    category, subBudgetAmount, budgetAmount);
 
-    private BigDecimal estimateCategoryPercentage(final double incomeAmount, final String category)
-    {
-        switch(category){
-            case "Subscription":
-                return getSubscriptionPercentage(incomeAmount);
-            case "Utilities":
-                return getUtilitiesPercentage(incomeAmount);
-            case "Groceries":
-                return getGroceryPercentage(incomeAmount);
-            case "Rent":
-                return getRentPercentage(incomeAmount);
+            return budgetAmount;
+        } catch (Exception e)
+        {
+            log.error("Error calculating budget for category: " + category, e);
+            return BigDecimal.ZERO;
         }
     }
 
@@ -772,17 +692,17 @@ public class BudgetCalculations {
         }
     }
 
-    public boolean isRentDueDuringPeriod(final DateRange dateRange)
-    {
-        if(dateRange == null){
-            return false;
-        }
-        LocalDate startDate = dateRange.getStartDate();
-        LocalDate endDate = dateRange.getEndDate();
-        LocalDate current = startDate;
-        while()
-        return false;
-    }
+//    public boolean isRentDueDuringPeriod(final DateRange dateRange)
+//    {
+//        if(dateRange == null){
+//            return false;
+//        }
+//        LocalDate startDate = dateRange.getStartDate();
+//        LocalDate endDate = dateRange.getEndDate();
+//        LocalDate current = startDate;
+//        while()
+//        return false;
+//    }
 
     private void validateBudgetPeriodAndBudget(BudgetPeriod budgetPeriod, Budget budget)
     {
@@ -877,45 +797,45 @@ public class BudgetCalculations {
         return new DateRange(startDate, endDate);
     }
 
-    private BigDecimal getDefaultPercentageForCategory(final Category category, final Budget budget, final BigDecimal savingsTargetAmount) {
-        switch (category.getCategoryType()) {
-            case AUTO -> {
-                return new BigDecimal("0.10");
-            }
-            case MEDICAL -> {
-                return new BigDecimal("0.02");
-            }
-            case GROCERIES -> {
-                return new BigDecimal("0.15");
-            }
-            case PAYMENT -> {
-                return new BigDecimal("0.05");
-            }
-            case SUBSCRIPTIONS -> {
-                return new BigDecimal("0.03");
-            }
-            case UTILITIES -> {
-                return new BigDecimal("0.04");
-            }
-            case RENT -> {
-                BigDecimal rentAmount = category.getBudgetedAmount();
-                if(rentAmount != null && rentAmount.compareTo(savingsTargetAmount) > 0)
-                {
-                    // Calculate percentage of total budget that rent amount represents
-                    return rentAmount.divide(budget.getBudgetAmount(), 2, BigDecimal.ROUND_HALF_UP);
-                }
-
-                // If no rent amount is defined, fall back to a dynamic percentage
-                BigDecimal remainingBudget = budget.getBudgetAmount().subtract(savingsTargetAmount);
-                if(remainingBudget.compareTo(budget.getBudgetAmount()) > 0)
-                {
-                    return remainingBudget.multiply(new BigDecimal("0.30")).divide(budget.getBudgetAmount(), RoundingMode.HALF_UP);
-                }
-                return new BigDecimal("0.30");
-            }
-        }
-        return new BigDecimal("0.01");
-    }
+//    private BigDecimal getDefaultPercentageForCategory(final Category category, final Budget budget, final BigDecimal savingsTargetAmount) {
+//        switch (category.getCategoryType()) {
+//            case AUTO -> {
+//                return new BigDecimal("0.10");
+//            }
+//            case MEDICAL -> {
+//                return new BigDecimal("0.02");
+//            }
+//            case GROCERIES -> {
+//                return new BigDecimal("0.15");
+//            }
+//            case PAYMENT -> {
+//                return new BigDecimal("0.05");
+//            }
+//            case SUBSCRIPTIONS -> {
+//                return new BigDecimal("0.03");
+//            }
+//            case UTILITIES -> {
+//                return new BigDecimal("0.04");
+//            }
+//            case RENT -> {
+//                BigDecimal rentAmount = category.getBudgetedAmount();
+//                if(rentAmount != null && rentAmount.compareTo(savingsTargetAmount) > 0)
+//                {
+//                    // Calculate percentage of total budget that rent amount represents
+//                    return rentAmount.divide(budget.getBudgetAmount(), 2, BigDecimal.ROUND_HALF_UP);
+//                }
+//
+//                // If no rent amount is defined, fall back to a dynamic percentage
+//                BigDecimal remainingBudget = budget.getBudgetAmount().subtract(savingsTargetAmount);
+//                if(remainingBudget.compareTo(budget.getBudgetAmount()) > 0)
+//                {
+//                    return remainingBudget.multiply(new BigDecimal("0.30")).divide(budget.getBudgetAmount(), RoundingMode.HALF_UP);
+//                }
+//                return new BigDecimal("0.30");
+//            }
+//        }
+//        return new BigDecimal("0.01");
+//    }
 
 
 
@@ -1041,13 +961,13 @@ public class BudgetCalculations {
         LocalDate subBudgetEndDate = subBudgetDateRange.getEndDate();
 
         // Get the Transaction Categories for the sub budget period
-        List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budgetId, subBudgetStartDate, subBudgetEndDate);
+        List<BudgetCategory> transactionCategories = transactionCategoryService.getBudgetCategoryListByBudgetIdAndDateRange(budgetId, subBudgetStartDate, subBudgetEndDate);
         if(transactionCategories.isEmpty())
         {
             return BigDecimal.ZERO;
         }
         return transactionCategories.stream()
-                .map(TransactionCategory::getBudgetActual)
+                .map(BudgetCategory::getBudgetActual)
                 .filter(Objects::nonNull)
                 .map(BigDecimal::valueOf)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -1061,7 +981,7 @@ public class BudgetCalculations {
         }
         LocalDate subBudgetStartDate = subBudgetDateRange.getStartDate();
         LocalDate subBudgetEndDate = subBudgetDateRange.getEndDate();
-        List<TransactionCategory> transactionCategories = transactionCategoryService.getTransactionCategoryListByBudgetIdAndDateRange(budgetId, subBudgetStartDate, subBudgetEndDate);
+        List<BudgetCategory> transactionCategories = transactionCategoryService.getBudgetCategoryListByBudgetIdAndDateRange(budgetId, subBudgetStartDate, subBudgetEndDate);
         if(transactionCategories.isEmpty())
         {
             return BigDecimal.ZERO;

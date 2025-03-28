@@ -3,14 +3,14 @@ package com.app.budgetbuddy.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Table(name="categoryRules")
+@Table(name="transactionRules")
 @Entity
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class CategoryRuleEntity {
+public class TransactionRuleEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,9 +20,8 @@ public class CategoryRuleEntity {
     @JoinColumn(name="userid")
     private UserEntity user;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="categoryId")
-    private CategoryEntity category;
+    @Column(name="category")
+    private String category;
 
     @Column(name="merchantPattern")
     private String merchantPattern;
@@ -32,9 +31,6 @@ public class CategoryRuleEntity {
 
     @Column(name="priority")
     private int priority;
-
-    @Column(name="frequency")
-    private String frequency;
 
     @Column(name="transaction_type")
     private String transactionType;

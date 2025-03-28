@@ -2,7 +2,7 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.CategoryRuleEntity;
+import com.app.budgetbuddy.entities.TransactionRuleEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.PlaidCategoryManager;
@@ -10,9 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -20,30 +19,156 @@ import java.util.regex.PatternSyntaxException;
 @Setter
 @Slf4j
 public abstract class AbstractTransactionMatcher<T extends Transaction, S extends TransactionRule> implements TransactionMatcher<T, S> {
-    protected final CategoryRuleService categoryRuleService;
+    protected final TransactionRuleService transactionRuleService;
     protected final CategoryService categoryService;
-    protected List<CategoryRule> systemCategoryRules = new ArrayList<>();
+    protected List<TransactionRule> systemCategoryRules = new ArrayList<>();
     public List<UserCategoryRule> userCategoryRules;
     protected final PlaidCategoryManager plaidCategoryManager;
     protected final String UNCATEGORIZED = "Uncategorized";
+    protected static final Map<String, String> CATEGORY_NAME_MAPPING = new HashMap<>();
+    protected static final Map<String, Map<String, String>> SPECIAL_CASE_CATEGORY_MAPPING = new HashMap<>();
+    protected static final Map<String, Map<String, String>> MERCHANT_MAPPING = new HashMap<>();
+    protected static final Map<String, Map<String, String>> TRANSACTION_DESCRIPTION_MAPPING = new HashMap<>();
+    protected static final Map<String, String> MERCHANT_SUBSCRIPTIONS = new HashMap<>();
+    protected static final Map<String, Map<String, CategoryType>> CATEGORY_ID_RULES = new HashMap<>();
+    protected static final Map<String, BigDecimal> SPECIAL_AMOUNTS_RULES = new HashMap<>();
+    protected static final Map<String, Map<String, CategoryType>> MERCHANT_CATEGORY_RULES = new HashMap<>();
+    protected static final Map<String, String> MERCHANT_UTILITIES = new HashMap<>();
+    protected static final Map<String, Map<String, CategoryType>> MERCHANT_CATEGORY_DESCRIPTION = new HashMap<>();
 
-    public AbstractTransactionMatcher(CategoryRuleService categoryRuleService, CategoryService categoryService,
+
+    public AbstractTransactionMatcher(TransactionRuleService transactionRuleService, CategoryService categoryService,
                                       PlaidCategoryManager plaidCategoryManager) {
-        this.categoryRuleService = categoryRuleService;
+        this.transactionRuleService = transactionRuleService;
         this.categoryService = categoryService;
-        this.systemCategoryRules = loadCategoryRules();
+        this.systemCategoryRules = loadTransactionRules();
         this.plaidCategoryManager = plaidCategoryManager;
     }
 
-    protected List<CategoryRule> loadCategoryRules(){
-        return categoryRuleService.getConvertedCategoryRules(
-                categoryRuleService.findAllSystemCategoryRules()
+    static {
+
+        Map<String, CategoryType> conservicePayment = new HashMap<>();
+        conservicePayment.put("Service", CategoryType.UTILITIES);
+
+        Map<String, CategoryType> lavazzaSubscription = new HashMap<>();
+        lavazzaSubscription.put("Recreation", CategoryType.SUBSCRIPTION);
+
+        MERCHANT_CATEGORY_DESCRIPTION.put("Conservice LLC", conservicePayment);
+        MERCHANT_CATEGORY_DESCRIPTION.put("Lavazza", lavazzaSubscription);
+    }
+
+    static {
+        Map<String, CategoryType> restaurantIdMap = new HashMap<>();
+        restaurantIdMap.put("13005032", CategoryType.ORDER_OUT);
+        restaurantIdMap.put("13005000", CategoryType.ORDER_OUT);
+        restaurantIdMap.put("17042000", CategoryType.ORDER_OUT);
+        CATEGORY_ID_RULES.put("Restaurants", restaurantIdMap);
+
+        Map<String, CategoryType> greatClipsRules = new HashMap<>();
+        greatClipsRules.put("18045000", CategoryType.HAIRCUT);
+        MERCHANT_CATEGORY_RULES.put("Great Clips", greatClipsRules);
+
+        Map<String, CategoryType> pandasExpressRules = new HashMap<>();
+        pandasExpressRules.put("13005032", CategoryType.ORDER_OUT);
+        Map<String, CategoryType> oliveGardenRules = new HashMap<>();
+        oliveGardenRules.put("13005000", CategoryType.ORDER_OUT);
+
+        MERCHANT_CATEGORY_RULES.put("Pandas Express", pandasExpressRules);
+        MERCHANT_CATEGORY_RULES.put("Olive Garden", oliveGardenRules);
+        SPECIAL_AMOUNTS_RULES.put("Flex Finance", new BigDecimal("14.990"));
+    }
+
+    static {
+        MERCHANT_UTILITIES.put("Enb Gas Ut", "Utilities");
+        MERCHANT_UTILITIES.put("Pacific Power", "Utilities");
+        MERCHANT_UTILITIES.put("Conservice LLC", "Utilities");
+    }
+
+    static {
+        MERCHANT_SUBSCRIPTIONS.put("Affirm", "Subscription");
+        MERCHANT_SUBSCRIPTIONS.put("JetBrains Americas Inc", "Subscription");
+        MERCHANT_SUBSCRIPTIONS.put("Planet Fitness", "Subscription");
+        MERCHANT_SUBSCRIPTIONS.put("YouTube Premium", "Subscription");
+        MERCHANT_SUBSCRIPTIONS.put("Lavazza", "Subscription");
+        MERCHANT_SUBSCRIPTIONS.put("Claude.ai", "Subscription");
+        MERCHANT_SUBSCRIPTIONS.put("Spotify", "Subscription");
+    }
+
+    static {
+        CATEGORY_NAME_MAPPING.put("Gas Stations", "Gas");
+        CATEGORY_NAME_MAPPING.put("Supermarkets and Groceries", "Groceries");
+        CATEGORY_NAME_MAPPING.put("Restaurants", "Order Out");
+        CATEGORY_NAME_MAPPING.put("Payroll", "Payroll");
+        CATEGORY_NAME_MAPPING.put("Credit Card", "Payment");
+        CATEGORY_NAME_MAPPING.put("Insurance", "Insurance");
+        CATEGORY_NAME_MAPPING.put("Subscription", "Subscription");
+        CATEGORY_NAME_MAPPING.put("Pharmacies", "Other");
+        CATEGORY_NAME_MAPPING.put("Gyms and Fitness Centers", "Subscription");
+        CATEGORY_NAME_MAPPING.put("Sports Clubs", "Order Out");
+        CATEGORY_NAME_MAPPING.put("Financial", "Payment");
+        CATEGORY_NAME_MAPPING.put("Digital Purchase", "Other");
+        CATEGORY_NAME_MAPPING.put("Computers and Electronics", "Other");
+        CATEGORY_NAME_MAPPING.put("Personal Care", "Haircut");
+        CATEGORY_NAME_MAPPING.put("Third Party", "Payment");
+        CATEGORY_NAME_MAPPING.put("Parking", "Other");
+        CATEGORY_NAME_MAPPING.put("Utilities", "Utilities");
+        CATEGORY_NAME_MAPPING.put("Payment", "Payment");
+        CATEGORY_NAME_MAPPING.put("Golf", "Other");
+    }
+
+    static {
+        Map<String, String> computersMap = new HashMap<>();
+        computersMap.put("19013000", "Subscription");
+        SPECIAL_CASE_CATEGORY_MAPPING.put("Computers and Electronics", computersMap);
+
+        Map<String, String> digitalMap = new HashMap<>();
+        digitalMap.put("19019000", "Subscription");
+        SPECIAL_CASE_CATEGORY_MAPPING.put("Digital Purchase", digitalMap);
+    }
+
+    static {
+        Map<String, String> jetbrainsMap = new HashMap<>();
+        jetbrainsMap.put("19029000", "Subscription");
+
+        Map<String, String> enbridgeGasMap = new HashMap<>();
+        enbridgeGasMap.put("22009000", "Utilities");
+
+        MERCHANT_MAPPING.put("Jetbrains Americas Inc", jetbrainsMap);
+        MERCHANT_MAPPING.put("Enb Gas Ut", enbridgeGasMap);
+    }
+
+    static {
+        Map<String, String> amazonPrimeMap = new HashMap<>();
+        amazonPrimeMap.put("19019000", "Subscription");
+
+        Map<String, String> amazonPurchaseMap = new HashMap<>();
+        amazonPurchaseMap.put("19019000", "Other");
+
+        Map<String, String> steamPurchasesMap = new HashMap<>();
+        steamPurchasesMap.put("19013001", "Other");
+
+        Map<String, String> paypalPurchaseMap = new HashMap<>();
+        paypalPurchaseMap.put("21010004", "Payment");
+
+        Map<String, String> amexPurchaseMap = new HashMap<>();
+        amexPurchaseMap.put("16001000", "Payment");
+
+        TRANSACTION_DESCRIPTION_MAPPING.put("Amazon Prime", amazonPrimeMap);
+        TRANSACTION_DESCRIPTION_MAPPING.put("Purchase WL *Steam Purchase", steamPurchasesMap);
+        TRANSACTION_DESCRIPTION_MAPPING.put("Steam Games", steamPurchasesMap);
+        TRANSACTION_DESCRIPTION_MAPPING.put("Purchase AMAZON", amazonPurchaseMap);
+        TRANSACTION_DESCRIPTION_MAPPING.put("PAYPAL INST XFER PAYPAL INST XFER", paypalPurchaseMap);
+        TRANSACTION_DESCRIPTION_MAPPING.put("AMEX EPAYMENT ACH PMT AMEX PAYMENT", amexPurchaseMap);
+    }
+
+    protected List<TransactionRule> loadTransactionRules() {
+        return transactionRuleService.getConvertedCategoryRules(
+                transactionRuleService.findAllSystemCategoryRules()
         );
     }
 
-
-    protected boolean hasMatchingUserRule(T transaction, List<UserCategoryRule> userCategoryRules){
-        if(userCategoryRules == null || userCategoryRules.isEmpty()){
+    protected boolean hasMatchingUserRule(T transaction, List<UserCategoryRule> userCategoryRules) {
+        if (userCategoryRules == null || userCategoryRules.isEmpty()) {
             return false;
         }
 
@@ -52,17 +177,47 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
                 .anyMatch(rule -> matchesUserRule(transaction, rule));
     }
 
-    protected boolean isValidPlaidCategory(String category){
-        try
-        {
-            PlaidCategory plaidCategory = plaidCategoryManager.getCategory(category);
-            log.info("Plaid Category: {}", plaidCategory);
-            return plaidCategoryManager.getCategory(category) != null;
-        }catch(Exception e){
-            log.warn("Invalid Plaid Category attempted: {}", category, e);
-            return false;
-        }
+    protected CategoryType matchCategoryIdOnlyRules(T transaction)
+    {
+        return null;
+    }
 
+    protected CategoryType matchWithoutCategoryDescriptionRules(T transaction)
+    {
+        return null;
+    }
+
+    protected CategoryType matchWithoutTransactionDescriptionRules(T transaction)
+    {
+        String categoryId = transaction.getCategoryId();
+        String merchantName = transaction.getMerchantName();
+        Optional<CategoryEntity> categoryOptional = getCategoryEntityById(categoryId);
+        if(categoryOptional.isEmpty())
+        {
+            return CategoryType.UNCATEGORIZED;
+        }
+        CategoryEntity category = categoryOptional.get();
+        String categoryName = category.getName();
+        return null;
+    }
+
+    protected abstract CategoryType matchRulesByPriority(final T transaction, final int priority);
+
+    protected abstract CategoryType determineCategoryMatchByTransaction(final T transaction, final String categoryId, final String categoryName, final String merchantName, final String transactionDescription);
+
+    protected CategoryType matchCompleteDataRules(final T transaction)
+    {
+        String categoryId = transaction.getCategoryId();
+        String transactionDescription = transaction.getDescription();
+        String merchantName = transaction.getMerchantName();
+        Optional<CategoryEntity> categoryOptional = getCategoryEntityById(categoryId);
+        if(categoryOptional.isEmpty())
+        {
+            return CategoryType.UNCATEGORIZED;
+        }
+        CategoryEntity category = categoryOptional.get();
+        String categoryName = category.getName();
+        return determineCategoryMatchByTransaction(transaction, categoryId, categoryName, merchantName, transactionDescription);
     }
 
     protected boolean matchesUserRule(T transaction, UserCategoryRule userCategoryRule){
@@ -71,10 +226,12 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
                 matchesCategoryPattern(transaction, userCategoryRule));
     }
 
-    protected String getTransactionCategory(T transaction) {
+    protected String getTransactionCategory(T transaction)
+    {
         List<String> categories = transaction.getCategories();
         log.info("Categories: {}", categories);
-        if(categories == null){
+        if(categories == null)
+        {
             return UNCATEGORIZED;
         }
 
@@ -82,12 +239,14 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         {
             for(String category : categories)
             {
-                if(category == null){
+                if(category == null)
+                {
                     continue;
                 }
                 return category;
             }
-        }else
+        }
+        else
         {
             String categoryId = transaction.getCategoryId();
             log.info("Category Id: {}", categoryId);
@@ -143,6 +302,21 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         }catch(PatternSyntaxException e){
             log.error("Invalid category pattern in rule: {}", userCategoryRule.getCategoryName(), e);
             return false;
+        }
+    }
+
+    protected Optional<CategoryEntity> getCategoryEntityById(String categoryId)
+    {
+        if(categoryId == null || categoryId.isEmpty())
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return categoryService.findCategoryById(categoryId);
+        }catch(CategoryNotFoundException e){
+            log.error("There was an error retrieving category with id: {}", categoryId, e);
+            return Optional.empty();
         }
     }
 
@@ -203,26 +377,99 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     protected int determineSystemPriority(final T transaction){
+        // Check data completeness first
         boolean hasMerchant = (transaction.getMerchantName() != null && !transaction.getMerchantName().isEmpty());
         boolean hasDescription = (transaction.getDescription() != null && !transaction.getDescription().isEmpty());
         boolean hasCategories = (transaction.getCategories() != null && !transaction.getCategories().isEmpty());
-        if(hasMerchant && hasDescription && hasCategories){
-            return PriorityLevel.HIGHEST.getValue();
-        }else if(hasMerchant && (hasDescription || hasCategories)){
-            return PriorityLevel.HIGH.getValue();
-        }else if(hasDescription && hasCategories || hasMerchant){
-            return PriorityLevel.MEDIUM.getValue();
-        }else if(hasDescription || hasCategories){
-            return PriorityLevel.LOW.getValue();
+        boolean hasCategoryId = (transaction.getCategoryId() != null && !transaction.getCategoryId().isEmpty());
+        boolean hasAmount = (transaction.getAmount() != null);
+        // Determine base priority from data completeness
+        int basePriority;
+
+        if (hasMerchant && hasDescription && hasCategories && hasCategoryId && hasAmount) {
+            basePriority = PriorityLevel.DATA_COMPLETE.getValue();
+        } else if ((hasMerchant && hasCategories) || (hasMerchant && hasDescription) ||
+                (hasDescription && hasCategories)) {
+            basePriority = PriorityLevel.DATA_PARTIAL.getValue();
+        } else if (hasMerchant || hasDescription || hasCategories) {
+            basePriority = PriorityLevel.DATA_MINIMAL.getValue();
+        } else {
+            return PriorityLevel.NONE.getValue();
         }
-        return PriorityLevel.NONE.getValue();
+
+        // Now check for specific rule matches to boost priority
+        String merchantName = transaction.getMerchantName();
+        String categoryId = transaction.getCategoryId();
+        String categoryName = null;
+
+        // Try to get category name if we have a category ID
+        if (hasCategoryId) {
+            Optional<CategoryEntity> categoryOpt = getCategoryEntityById(categoryId);
+            if (categoryOpt.isPresent()) {
+                categoryName = categoryOpt.get().getName();
+            }
+        }
+
+        // Check for special case combinations
+        if (hasMerchant && hasCategoryId && hasAmount) {
+            // Check Flex Finance special case
+            if ("Flex Finance".equals(merchantName)) {
+                BigDecimal flexValue = SPECIAL_AMOUNTS_RULES.get("Flex Finance");
+                if (flexValue != null && transaction.getAmount().compareTo(flexValue) == 0) {
+                    return PriorityLevel.MERCHANT_AMOUNT_CATEGORY.getValue();
+                }
+            }
+        }
+
+        // Check merchant + category combinations
+        if (hasMerchant && hasCategoryId) {
+            Map<String, CategoryType> merchantCategories = MERCHANT_CATEGORY_RULES.get(merchantName);
+            if (merchantCategories != null && merchantCategories.containsKey(categoryId)) {
+                return PriorityLevel.MERCHANT_CATEGORY.getValue();
+            }
+        }
+
+        // Check description + category combinations
+        if (hasDescription && hasCategoryId) {
+            for (Map.Entry<String, Map<String, String>> entry : TRANSACTION_DESCRIPTION_MAPPING.entrySet()) {
+                if (transaction.getDescription().contains(entry.getKey())) {
+                    Map<String, String> categoryMapping = entry.getValue();
+                    if (categoryMapping.containsKey(categoryId)) {
+                        return PriorityLevel.TRANSACTION_DESCRIPTION_CATEGORY.getValue();
+                    }
+                }
+            }
+        }
+        // Check merchant-only rules
+        if (hasMerchant) {
+            if (MERCHANT_SUBSCRIPTIONS.containsKey(merchantName) ||
+                    MERCHANT_UTILITIES.containsKey(merchantName)) {
+                return PriorityLevel.MERCHANT_ONLY.getValue();
+            }
+        }
+
+        // Check category ID + name combinations
+        if (hasCategoryId && categoryName != null) {
+            Map<String, CategoryType> categoryRules = CATEGORY_ID_RULES.get(categoryName);
+            if (categoryRules != null && categoryRules.containsKey(categoryId)) {
+                return PriorityLevel.CATEGORY_ID_NAME.getValue();
+            }
+        }
+
+        // Check category name only mappings
+        if (categoryName != null && CATEGORY_NAME_MAPPING.containsKey(categoryName)) {
+            return PriorityLevel.CATEGORY_NAME_ONLY.getValue();
+        }
+
+        // If no specific rule matched, return the base priority
+        return basePriority;
     }
 
     protected void loadUserCategoryRules(Long userId)
     {
-        List<CategoryRuleEntity> categoryRuleEntities = categoryRuleService.findByUserId(userId);
+        List<TransactionRuleEntity> categoryRuleEntities = transactionRuleService.findByUserId(userId);
         if(!categoryRuleEntities.isEmpty()) {
-            List<CategoryRule> categoryRulesForUser = categoryRuleService.getConvertedCategoryRules(categoryRuleEntities);
+            List<TransactionRule> categoryRulesForUser = transactionRuleService.getConvertedCategoryRules(categoryRuleEntities);
             if(!categoryRulesForUser.isEmpty()) {
                 this.systemCategoryRules.addAll(categoryRulesForUser);
             }

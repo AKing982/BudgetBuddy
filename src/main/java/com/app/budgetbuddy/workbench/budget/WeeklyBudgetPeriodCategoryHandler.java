@@ -3,7 +3,6 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.BudgetScheduleException;
 import com.app.budgetbuddy.exceptions.DateRangeException;
-import com.app.budgetbuddy.services.TransactionCategoryService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +57,7 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
                        tc.budgetedAmount,
                        COALESCE(tc.actual, 0) as actualSpent,
                        tc.budgetedAmount - COALESCE(tc.actual, 0) as remainingAmount
-                FROM TransactionCategoryEntity tc
+                FROM BudgetCategoryEntity tc
                 JOIN tc.category c
                 JOIN tc.subBudget b
                 WHERE tc.startDate <= :endDate

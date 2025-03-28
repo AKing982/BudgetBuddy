@@ -14,16 +14,16 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class CategoryRuleCreator {
-    private final CategoryRuleService categoryRuleService;
+public class TransactionRuleCreator {
+    private final TransactionRuleService transactionRuleService;
     private final CategoryService categoryService;
     private final List<UserCategoryRule> userDefinedRulesTransactions = new ArrayList<>();
-    private final List<CategoryRule> systemDefinedRules = new ArrayList<>();
+    private final List<TransactionRule> systemDefinedRules = new ArrayList<>();
 
     @Autowired
-    public CategoryRuleCreator(CategoryRuleService categoryRuleService,
+    public TransactionRuleCreator(TransactionRuleService transactionRuleService,
                                CategoryService categoryService) {
-        this.categoryRuleService = categoryRuleService;
+        this.transactionRuleService = transactionRuleService;
         this.categoryService = categoryService;
     }
 
@@ -227,14 +227,6 @@ public class CategoryRuleCreator {
         return rules.get(0).getMerchantPattern();
     }
 
-    public Set<CategoryRule> combineTransactionRules(List<? extends TransactionRule> matchedTransactions){
-        return null;
-    }
-
-    public Set<UserCategoryRule> combineTransactionUserRules(List<? extends TransactionRule> matchedTransactions){
-        return null;
-    }
-
     public Set<UserCategoryRule> createUserDefinedRules(final List<? extends TransactionRule> matchedTransactions, final Long userId){
         if (matchedTransactions == null || matchedTransactions.isEmpty()) {
             return new HashSet<>();
@@ -266,20 +258,27 @@ public class CategoryRuleCreator {
         return newRules;
     }
 
-    public void saveUserDefinedRules(final Map<String, UserCategoryRule> userDefinedRules){
+    public void saveUserDefinedRules(final Map<String, UserCategoryRule> userDefinedRules)
+    {
 
     }
 
-    public void saveSystemDefinedRules(final Map<String, CategoryRule> systemDefinedRules){
-
+    public void saveSystemDefinedRules(final Map<String, TransactionRule> systemDefinedRules)
+    {
+        for(Map.Entry<String, TransactionRule> entry : systemDefinedRules.entrySet())
+        {
+            String categoryName = entry.getKey();
+            TransactionRule rule = entry.getValue();
+            transactionRuleService.create(rule);
+        }
     }
 
-    public List<CategoryRule> loadExistingCategoryRules(){
-        return categoryRuleService.getSystemCategoryRules();
+    public List<TransactionRule> loadExistingCategoryRules(){
+        return transactionRuleService.getSystemCategoryRules();
     }
 
     public List<UserCategoryRule> loadExistingUserCategoryRules(Long userId){
-        return categoryRuleService.getUserCategoryRules(userId);
+        return transactionRuleService.getUserCategoryRules(userId);
     }
 
 }

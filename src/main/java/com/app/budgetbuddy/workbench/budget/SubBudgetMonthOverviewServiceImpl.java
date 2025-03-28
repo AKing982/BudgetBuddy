@@ -1,10 +1,10 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BudgetCategoryEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.TransactionCategoryEntity;
+import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.SubBudgetService;
-import com.app.budgetbuddy.services.TransactionCategoryService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -24,14 +24,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewService
 {
-    private final TransactionCategoryService transactionCategoryService;
+    private final BudgetCategoryService transactionCategoryService;
     private final SubBudgetService subBudgetService;
 
     @PersistenceContext
     private final EntityManager entityManager;
 
     @Autowired
-    public SubBudgetMonthOverviewServiceImpl(TransactionCategoryService transactionCategoryService,
+    public SubBudgetMonthOverviewServiceImpl(BudgetCategoryService transactionCategoryService,
                                              SubBudgetService subBudgetService,
                                              EntityManager entityManager)
     {
@@ -51,7 +51,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
 
         final String incomeQuery = """
         SELECT tc
-        FROM TransactionCategoryEntity tc
+        FROM BudgetCategoryEntity tc
         JOIN tc.category c
         WHERE (c.id = '21009000' OR c.name LIKE :payrollPattern)
         AND tc.subBudget.id = :subBudgetId
@@ -84,13 +84,13 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
 
         // Aggregate totals
         for (Object[] result : results) {
-            TransactionCategoryEntity tc = (TransactionCategoryEntity) result[0];
+            BudgetCategoryEntity tc = (BudgetCategoryEntity) result[0];
             totalBudgeted = totalBudgeted.add(BigDecimal.valueOf(tc.getBudgetedAmount()));
             totalActual = totalActual.add(BigDecimal.valueOf(tc.getActual()));
         }
 
         // Get first record for date range (assuming all records are in same month)
-        TransactionCategoryEntity firstTc = (TransactionCategoryEntity) results.get(0)[0];
+        BudgetCategoryEntity firstTc = (BudgetCategoryEntity) results.get(0)[0];
 
         return new IncomeCategory(
                 totalBudgeted,
@@ -132,7 +132,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                             SELECT SUM(tc.budgetedAmount) as totalBudgeted,
                             SUM(tc.actual) as totalSpent,
                             (SUM(tc.budgetedAmount) - SUM(tc.actual)) as remaining
-                            FROM TransactionCategoryEntity tc
+                            FROM BudgetCategoryEntity tc
                             JOIN tc.category c
                             WHERE (c.id <> '21009000' AND c.name NOT LIKE :payrollPattern)
                                 AND tc.subBudget.id = :subBudgetId
@@ -184,7 +184,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         final String savingsCategoryQuery = """
     SELECT bg.targetAmount,
         SUM(tc.budgetedAmount - tc.actual) as totalSaved 
-    FROM TransactionCategoryEntity tc
+    FROM BudgetCategoryEntity tc
     JOIN tc.subBudget sb
     JOIN sb.budget b
     LEFT JOIN b.budgetGoals bg
@@ -241,7 +241,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                tc.budgetedAmount,
                tc.actual,
                (tc.budgetedAmount - tc.actual) as remaining
-        FROM TransactionCategoryEntity tc
+        FROM BudgetCategoryEntity tc
         JOIN tc.category c
         WHERE tc.subBudget.id = :budgetId
             AND tc.startDate >= :startDate

@@ -61,5 +61,8 @@ public class TransactionsEntity
     @Column(name="createdat")
     private LocalDate createDate;
 
+    @Column(name="issystemcategorized")
+    private boolean issystemCategorized;
+
 
 }

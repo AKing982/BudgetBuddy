@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.xml.crypto.Data;
 import java.math.BigDecimal;
@@ -316,6 +317,18 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     public Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName) {
         return List.of();
+    }
+
+    @Override
+    @Transactional
+    public void updateTransactionCategorizationFlag(String transactionId)
+    {
+        try
+        {
+            transactionRepository.updateIsSystemCategorized(transactionId);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the isSystemCategorized flag for transactionId: {}", transactionId, e);
+        }
     }
 
     @Override

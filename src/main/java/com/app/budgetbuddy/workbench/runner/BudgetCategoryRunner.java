@@ -4,7 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.TransactionService;
-import com.app.budgetbuddy.workbench.budget.TransactionCategoryBuilder;
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -16,20 +16,20 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class BudgetCategoryRunner {
-    private List<TransactionCategory> createdUserBudgetCategories = new ArrayList<>();
+    private List<BudgetCategory> createdUserBudgetCategories = new ArrayList<>();
     private List<Transaction> convertedPlaidTransactions = new ArrayList<>();
     private List<Transaction> existingPlaidTransactions = new ArrayList<>();
     private BudgetService budgetService;
     private BudgetGoalsService budgetGoalsService;
     private TransactionService transactionService;
-    private TransactionCategoryBuilder budgetCategoryBuilder;
+    private BudgetCategoryBuilder budgetCategoryBuilder;
     private Budget budget;
     private BudgetPeriod budgetPeriod;
     private boolean categoriesLoaded;
 
     @Autowired
     public BudgetCategoryRunner(BudgetService budgetService, BudgetGoalsService budgetGoalsService, TransactionService transactionService,
-                                TransactionCategoryBuilder budgetCategoryBuilder) {
+                                BudgetCategoryBuilder budgetCategoryBuilder) {
         this.budgetService = budgetService;
         this.budgetGoalsService = budgetGoalsService;
         this.transactionService = transactionService;
@@ -87,7 +87,7 @@ public class BudgetCategoryRunner {
      * Persists the User Budget Categories to the database
      * @param userBudgetCategories
      */
-    public void saveUserBudgetCategories(List<TransactionCategory> userBudgetCategories) {
+    public void saveUserBudgetCategories(List<BudgetCategory> userBudgetCategories) {
 
     }
 

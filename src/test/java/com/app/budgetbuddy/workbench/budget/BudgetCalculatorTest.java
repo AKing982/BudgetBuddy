@@ -4,10 +4,11 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.exceptions.InvalidBudgetAmountException;
+import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.BudgetGoalsService;
 import com.app.budgetbuddy.services.BudgetService;
 import com.app.budgetbuddy.services.RecurringTransactionService;
-import com.app.budgetbuddy.services.TransactionCategoryService;
+import com.app.budgetbuddy.workbench.PercentageCalculator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,10 +41,13 @@ class BudgetCalculatorTest {
     private BudgetGoalsService budgetGoalsService;
 
     @Mock
-    private TransactionCategoryService transactionCategoryService;
+    private BudgetCategoryService transactionCategoryService;
 
     @Mock
     private RecurringTransactionService recurringTransactionService;
+
+    @Mock
+    private PercentageCalculator percentageCalculator;
 
     @Mock
     private BudgetValidator budgetValidator;
@@ -56,11 +60,11 @@ class BudgetCalculatorTest {
 
     private Category testCategory4;
 
-    private TransactionCategoryEntity userBudgetCategory;
+    private BudgetCategoryEntity userBudgetCategory;
 
-    private TransactionCategoryEntity userBudgetCategory2;
+    private BudgetCategoryEntity userBudgetCategory2;
 
-    private TransactionCategoryEntity userBudgetCategory3;
+    private BudgetCategoryEntity userBudgetCategory3;
 
     private Budget testBudget;
 
@@ -87,7 +91,7 @@ class BudgetCalculatorTest {
         testCategory2.setCategoryEndDate(LocalDate.of(2024, 6, 30));
         testCategory2.setCategoryStartDate(LocalDate.of(2024, 6, 1));
         testCategory2.setActive(true);
-        testCategory2.setCategoryType(CategoryType.SUBSCRIPTIONS);
+        testCategory2.setCategoryType(CategoryType.SUBSCRIPTION);
 
         testCategory3 = new Category();
         testCategory3.setCategoryDescription("Rent");
@@ -99,7 +103,7 @@ class BudgetCalculatorTest {
         testCategory3.setActive(true);
         testCategory3.setCategoryType(CategoryType.RENT);
 
-        userBudgetCategory = new TransactionCategoryEntity();
+        userBudgetCategory = new BudgetCategoryEntity();
         userBudgetCategory.setBudgetedAmount(500.00);
         userBudgetCategory.setActual(340.00);
         userBudgetCategory.setStartDate(LocalDate.of(2024, 6, 1));
@@ -108,7 +112,7 @@ class BudgetCalculatorTest {
         userBudgetCategory.setCategory(createCategory("Groceries", "Groceries"));
         userBudgetCategory.setIsactive(true);
 
-        userBudgetCategory2 = new TransactionCategoryEntity();
+        userBudgetCategory2 = new BudgetCategoryEntity();
         userBudgetCategory2.setBudgetedAmount(150.00);
         userBudgetCategory2.setActual(67.00);
         userBudgetCategory2.setStartDate(LocalDate.of(2024, 6, 1));
@@ -117,7 +121,7 @@ class BudgetCalculatorTest {
         userBudgetCategory2.setIsactive(true);
         userBudgetCategory2.setCategory(createCategory("Subscriptions", "Subscriptions"));
 
-        userBudgetCategory3 = new TransactionCategoryEntity();
+        userBudgetCategory3 = new BudgetCategoryEntity();
         userBudgetCategory3.setBudgetedAmount(1200.00);
         userBudgetCategory3.setActual(1200.00);
         userBudgetCategory3.setStartDate(LocalDate.of(2024, 6, 1));
@@ -473,90 +477,6 @@ class BudgetCalculatorTest {
         assertNotNull(actual);
     }
 
-//    @Test
-//    void testLoadCategoryBudgetsForPeriod_whenBudgetIsNull_thenReturnEmptyTreeMap(){
-//        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
-//
-//        TreeMap<DateRange, List<TransactionCategoryEntity>> actual = budgetCalculator.loadCategoryBudgetsForPeriod(null, testBudgetPeriod);
-//        assertNotNull(actual);
-//        assertTrue(actual.isEmpty());
-//    }
-//
-//    @Test
-//    void testLoadCategoryBudgetsForPeriod_whenBudgetPeriodIsNull_thenReturnEmptyTreeMap(){
-//        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgetCategoryMap = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, null);
-//        assertNotNull(userBudgetCategoryMap);
-//        assertTrue(userBudgetCategoryMap.isEmpty());
-//    }
-
-//    @Test
-//    void testLoadCategoryBudgetsForPeriod_returnTreeMap(){
-//        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
-//        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgetCategoryMap = new TreeMap<>();
-//        DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
-//        List<TransactionCategoryEntity> expectedUserBudgets = new ArrayList<>();
-//        expectedUserBudgets.add(createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024,10, 1), LocalDate.of(2024, 10, 7), 125.00, 100.00));
-//        expectedUserBudgets.add(createUserBudgetCategory("Gas", "Gas", LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7), 67.00, 35.00));
-//        userBudgetCategoryMap.put(dateRange, expectedUserBudgets);
-//
-//        Mockito.when(transactionCategoryService.getTransactionCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15))).thenReturn(expectedUserBudgets);
-//        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
-//        assertEquals(userBudgetCategoryMap.size(), userBudgets.size());
-//        assertEquals(userBudgetCategoryMap.get(dateRange).size(), userBudgets.get(dateRange).size());
-//        for(int i = 0; i < expectedUserBudgets.size(); i++){
-//            assertEquals(expectedUserBudgets.get(i), userBudgets.get(dateRange).get(i));
-//        }
-//        assertEquals(userBudgetCategoryMap, userBudgets);
-//    }
-//
-//    @Test
-//    void testLoadCategoryBudgetsForPeriod_whenServiceReturnsEmptyArray_thenReturnEmptyTreeMap(){
-//        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
-//        DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15));
-//
-//        Mockito.when(transactionCategoryService.getTransactionCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 15)))
-//                .thenReturn(new ArrayList<>());
-//
-//        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
-//
-//        assertNotNull(userBudgets);
-//        assertEquals(1, userBudgets.size());
-//        assertTrue(userBudgets.containsKey(dateRange));
-//        assertTrue(userBudgets.get(dateRange).isEmpty());
-//    }
-
-//    @Test
-//    void testLoadCategoryBudgetsForPeriod_withInvalidDates_thenThrowException() {
-//        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.MONTHLY, LocalDate.of(2024, 10, 15), LocalDate.of(2024, 10, 1));
-//
-//        assertThrows(IllegalArgumentException.class, () -> {
-//            budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
-//        });
-//    }
-//
-//    @Test
-//    void testLoadCategoryBudgetsForPeriod_withWeeklyBudgetPeriod() {
-//        BudgetPeriod budgetPeriod = new BudgetPeriod(Period.WEEKLY, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7));
-//        DateRange dateRange = new DateRange(LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7));
-//
-//        List<TransactionCategoryEntity> expectedUserBudgets = new ArrayList<>();
-//        expectedUserBudgets.add(createUserBudgetCategory("Groceries", "Groceries", LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7), 125.00, 100.00));
-//
-//        Mockito.when(transactionCategoryService.getTransactionCategoriesByUserAndDateRange(1L, LocalDate.of(2024, 10, 1), LocalDate.of(2024, 10, 7)))
-//                .thenReturn(expectedUserBudgets);
-//
-//        TreeMap<DateRange, List<TransactionCategoryEntity>> userBudgets = budgetCalculator.loadCategoryBudgetsForPeriod(testBudget, budgetPeriod);
-//
-//        assertEquals(1, userBudgets.size());
-//        assertEquals(expectedUserBudgets.size(), userBudgets.get(dateRange).size());
-//        assertEquals(expectedUserBudgets.get(0), userBudgets.get(dateRange).get(0));
-//    }
-
-    @Test
-    void testCreateCategoryBudgetAmountForPeriod_whenSingleDayRange_thenThrowException(){
-
-    }
-
 
     @Test
     void testCreateCategoryBudgetMap_whenBudgetPeriodIsNull_thenReturnEmptyMap(){
@@ -694,23 +614,6 @@ class BudgetCalculatorTest {
         assertEquals(0, actual.intValue());
     }
 
-//    @Test
-//    void testCalculateSavingsGoalProgress_thenReturnProgress(){
-//        Set<TransactionCategoryEntity> categories = new HashSet<>();
-//        categories.add(userBudgetCategory);
-//        categories.add(userBudgetCategory2);
-//        categories.add(userBudgetCategory3);
-//
-//        Budget budget = new Budget();
-//        budget.setBudgetAmount(new BigDecimal("3070"));
-//        budget.setActual(new BigDecimal("1443"));
-//        budget.setId(1L);
-//
-//        Mockito.lenient().when(budgetGoalsService.findByBudgetId(1L)).thenReturn(Optional.of(createBudgetGoals(2400, 200, 125, new BigDecimal("3070.00"), new BigDecimal(3260), LocalDate.of(2024, 10, 28), LocalDate.of(2025, 2, 25))));
-//        BigDecimal expectedOverAllSavings = new BigDecimal("61.00");
-//        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(budget, categories);
-//        assertEquals(expectedOverAllSavings, actual);
-//    }
 
     @Test
     void testCalculateTotalBudgetHealth_whenBudgetAmountIsNull_thenReturnZero(){
@@ -889,8 +792,29 @@ class BudgetCalculatorTest {
     }
 
     @Test
-    void testCalculateSubBudgetSpending_whenCriteriaValid_thenReturnSubBudgetSpending(){
+    void testDetermineCategoryBudget_whenCategoryIsNull_thenReturnZero(){
+        BigDecimal actual = budgetCalculator.determineCategoryBudget(null, BigDecimal.valueOf(1609));
+        assertEquals(0, actual.intValue());
+    }
 
+    @Test
+    void testDetermineCategoryBudget_whenSubBudgetAmountIsNull_thenReturnZero()
+    {
+        BigDecimal actual = budgetCalculator.determineCategoryBudget("Gas", null);
+        assertEquals(0, actual.intValue());
+    }
+
+    @Test
+    void testDetermineCategoryBudget_whenCategoryIsGroceries_thenReturnBudget(){
+        final String category = "Groceries";
+        final BigDecimal budgetAmount = new BigDecimal("3260");
+        BigDecimal expected = new BigDecimal("260.80");
+
+        Mockito.when(percentageCalculator.estimateCategoryPercentage(3260.0, "Groceries"))
+                .thenReturn(BigDecimal.valueOf(0.08));
+
+        BigDecimal actual = budgetCalculator.determineCategoryBudget(category, budgetAmount);
+        assertEquals(expected, actual);
     }
 
 //    @Test

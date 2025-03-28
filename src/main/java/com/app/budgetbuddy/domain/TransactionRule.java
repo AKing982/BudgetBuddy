@@ -18,5 +18,9 @@ public class TransactionRule
     private int priority;
     private List<String> categories;
     private String matchedCategory;
+    private String plaidCategory;
+    private String transactionType;
+    private boolean isSystemRule;
+
 
 }

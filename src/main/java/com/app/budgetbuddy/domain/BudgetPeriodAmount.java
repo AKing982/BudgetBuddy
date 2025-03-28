@@ -21,4 +21,9 @@ public class BudgetPeriodAmount
         this.budgeted = budgeted;
         this.actual = actual;
     }
+
+    public BudgetPeriodAmount(DateRange dateRange, BigDecimal budgeted) {
+        this.dateRange = dateRange;
+        this.budgeted = budgeted;
+    }
 }

@@ -1,20 +1,54 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@ToString
 public class BudgetCategory
 {
+    private Long id;
+    private Long subBudgetId;
+    private String categoryId;
     private String categoryName;
-    private BigDecimal budgetedAmount;
-    private BigDecimal actualAmount;
-    private BigDecimal remainingAmount;
-    private DateRange dateRange;
+    private Double budgetedAmount;
+    private Double budgetActual;
+    private Boolean isActive;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private Double overSpendingAmount;
+    private boolean isOverSpent;
+    private List<Transaction> transactions;
+
+    public BudgetCategory(Long id, Long subBudgetId, String categoryId, String categoryName, Double budgetedAmount, Double budgetActual, Boolean isActive, LocalDate startDate, LocalDate endDate, Double overSpendingAmount, boolean isOverSpent) {
+        this.id = id;
+        this.subBudgetId = subBudgetId;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.budgetedAmount = budgetedAmount;
+        this.budgetActual = budgetActual;
+        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.overSpendingAmount = overSpendingAmount;
+        this.isOverSpent = isOverSpent;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BudgetCategory that = (BudgetCategory) o;
+        return isOverSpent == that.isOverSpent && Objects.equals(id, that.id) && Objects.equals(subBudgetId, that.subBudgetId) && Objects.equals(categoryId, that.categoryId) && Objects.equals(categoryName, that.categoryName) && Objects.equals(budgetedAmount, that.budgetedAmount) && Objects.equals(budgetActual, that.budgetActual) && Objects.equals(isActive, that.isActive) && Objects.equals(startDate, that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(overSpendingAmount, that.overSpendingAmount) && Objects.equals(transactions, that.transactions);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, subBudgetId, categoryId, categoryName, budgetedAmount, budgetActual, isActive, startDate, endDate, overSpendingAmount, isOverSpent, transactions);
+    }
 }

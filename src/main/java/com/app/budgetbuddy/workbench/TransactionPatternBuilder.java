@@ -57,6 +57,7 @@ public class TransactionPatternBuilder
             case STARTS_WITH -> // Only if text starts with keyword
                     normalizedText.startsWith(normalizedKeyword) ?
                             START_KEY + normalizedKeyword : "";
+            case PARTIAL -> null;
         };
     }
 

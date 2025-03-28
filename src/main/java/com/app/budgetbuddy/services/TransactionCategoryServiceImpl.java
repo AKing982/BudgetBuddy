@@ -2,44 +2,54 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
+import com.app.budgetbuddy.entities.TransactionsEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.exceptions.TransactionsNotFoundException;
 import com.app.budgetbuddy.repositories.TransactionCategoryRepository;
-import com.app.budgetbuddy.workbench.converter.TransactionCategoryConverter;
+import com.app.budgetbuddy.repositories.TransactionRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class TransactionCategoryServiceImpl implements TransactionCategoryService
 {
     private final TransactionCategoryRepository transactionCategoryRepository;
-    private final TransactionCategoryConverter transactionCategoryConverter;
+    private final TransactionRepository transactionRepository;
 
     @Autowired
     public TransactionCategoryServiceImpl(TransactionCategoryRepository transactionCategoryRepository,
-                                          TransactionCategoryConverter transactionCategoryConverter)
+                                          TransactionRepository transactionRepository)
     {
         this.transactionCategoryRepository = transactionCategoryRepository;
-        this.transactionCategoryConverter = transactionCategoryConverter;
+        this.transactionRepository = transactionRepository;
     }
 
     @Override
-    public Collection<TransactionCategoryEntity> findAll() {
-        return transactionCategoryRepository.findAll();
+    public Collection<TransactionCategoryEntity> findAll()
+    {
+        return List.of();
     }
 
     @Override
-    public void save(TransactionCategoryEntity userBudgetCategoryEntity) {
-        transactionCategoryRepository.save(userBudgetCategoryEntity);
+    public void save(TransactionCategoryEntity transactionCategorizationEntity)
+    {
+        try
+        {
+            transactionCategoryRepository.save(transactionCategorizationEntity);
+        }catch(DataAccessException e){
+            log.error("There was an error while saving the TransactionCategory entity", e);
+        }
     }
 
     @Override
-    public void delete(TransactionCategoryEntity userBudgetCategoryEntity) {
-        transactionCategoryRepository.delete(userBudgetCategoryEntity);
+    public void delete(TransactionCategoryEntity transactionCategorizationEntity) {
+
     }
 
     @Override
@@ -47,62 +57,40 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
         return Optional.empty();
     }
 
-
     @Override
-    public List<TransactionCategoryEntity> getAllTransactionCategoriesByUser(Long userId) {
-        return transactionCategoryRepository.findAllByUserId(userId);
+    public void saveAll(List<TransactionCategory> transactionCategoryList)
+    {
+        transactionCategoryList.stream()
+                .map(this::convertToEntity)
+                .forEach(this::save);
     }
 
     @Override
-    public List<TransactionCategoryEntity> getActiveTransactionCategoriesByUser(Long userId) {
-        return transactionCategoryRepository.findActiveCategoriesByUser(userId);
-    }
-
-    @Override
-    public List<TransactionCategoryEntity> getTransactionCategoriesByBudgetId(Long budgetId) {
-        return transactionCategoryRepository.findByBudgetId(budgetId);
-    }
-
-    @Override
-    public List<TransactionCategoryEntity> getTransactionCategoriesByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate) {
-        return transactionCategoryRepository.findByBudgetIdAndDateRange(budgetId, startDate, endDate);
-    }
-
-    @Override
-    public List<TransactionCategoryEntity> getTransactionCategoriesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
-        return List.of();
-    }
-
-    @Override
-    public List<TransactionCategory> getTransactionCategoryListByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate) {
-        List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryRepository.findByBudgetIdAndDateRange(budgetId, startDate, endDate);
-        List<TransactionCategory> transactionCategoryList = new ArrayList<>();
-        for(TransactionCategoryEntity transactionCategoryEntity : transactionCategoryEntities){
-            TransactionCategory transactionCategory = new TransactionCategory();
-            transactionCategory.setId(transactionCategoryEntity.getId());
-            transactionCategory.setCategoryId(transactionCategoryEntity.getCategory().getId());
-            transactionCategory.setSubBudgetId(transactionCategoryEntity.getSubBudget().getId());
-            transactionCategory.setCategoryName(transactionCategoryEntity.getCategory().getName());
-            transactionCategory.setBudgetedAmount(transactionCategoryEntity.getBudgetedAmount());
-            transactionCategory.setBudgetActual(transactionCategoryEntity.getActual());
-            transactionCategory.setEndDate(transactionCategoryEntity.getEndDate());
-            transactionCategory.setStartDate(transactionCategoryEntity.getStartDate());
-            transactionCategory.setIsActive(transactionCategoryEntity.getIsactive());
-            transactionCategory.setOverSpendingAmount(transactionCategoryEntity.getOverspendingAmount());
-            // Fix the isOverSpent handling
-            transactionCategory.setOverSpent(
-                    transactionCategoryEntity.getIsOverSpent() != null ?
-                            transactionCategoryEntity.getIsOverSpent() :
-                            false
-            );
-            transactionCategoryList.add(transactionCategory);
+    public TransactionCategoryEntity convertToEntity(TransactionCategory transactionCategory)
+    {
+        TransactionCategoryEntity transactionCategoryEntity = new TransactionCategoryEntity();
+        transactionCategoryEntity.setMatchedCategory(transactionCategory.getMatchedCategory());
+        transactionCategoryEntity.setPlaidCategory(transactionCategory.getPlaidCategory());
+        transactionCategoryEntity.setRecurring(transactionCategory.isRecurring());
+        transactionCategoryEntity.setRulePriority(transactionCategory.getPriority());
+        transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
+        Optional<TransactionsEntity> transactionsEntityOptional = findTransactionEntityById(transactionCategory.getTransactionId());
+        if(transactionsEntityOptional.isEmpty()){
+            throw new TransactionsNotFoundException("Transaction Not Found: " + transactionCategory.getTransactionId());
         }
-        return transactionCategoryList;
+        TransactionsEntity transactionsEntity = transactionsEntityOptional.get();
+        transactionCategoryEntity.setTransaction(transactionsEntity);
+        return transactionCategoryEntity;
     }
 
-    @Override
-    public Integer getTotalBudgetAmountSumByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
-        return transactionCategoryRepository.sumBudgetedAmountByUserAndDateRange(userId, startDate, endDate);
+    private Optional<TransactionsEntity> findTransactionEntityById(String id)
+    {
+        try
+        {
+            return transactionRepository.findTransactionByTransactionId(id);
+        }catch(DataAccessException e){
+            log.error("There was an error while getting the TransactionCategory entity", e);
+            return Optional.empty();
+        }
     }
 }
-
