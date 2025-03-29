@@ -29,23 +29,23 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TransactionCategorizerTest {
 
-    @Mock
-    private TransactionCategoryRuleMatcher transactionCategoryRuleMatcher;
-
-    @Mock
-    private CategoryRuleService categoryRuleService;
-
-    @Mock
-    private RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
-
-    @InjectMocks
-    private TransactionCategorizer transactionCategorizer;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        transactionCategorizer = new TransactionCategorizer(transactionCategoryRuleMatcher, recurringTransactionCategoryRuleMatcher);
-    }
+//    @Mock
+//    private TransactionRuleMatcher transactionCategoryRuleMatcher;
+//
+//    @Mock
+//    private TransactionRuleService categoryRuleService;
+//
+//    @Mock
+//    private RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
+//
+//    @InjectMocks
+//    private TransactionCategorizer transactionCategorizer;
+//
+//    @BeforeEach
+//    void setUp() {
+//        MockitoAnnotations.openMocks(this);
+//        transactionCategorizer = new TransactionCategorizer(transactionCategoryRuleMatcher, recurringTransactionCategoryRuleMatcher);
+//    }
 
 //    @Test
 //    void testCategorizeTransactionsBySystemRules_whenTransactionListIsEmpty(){

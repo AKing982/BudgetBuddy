@@ -21,6 +21,7 @@ public class TransactionRule
     private String plaidCategory;
     private String transactionType;
     private boolean isSystemRule;
+    private boolean isActive;
 
 
 }

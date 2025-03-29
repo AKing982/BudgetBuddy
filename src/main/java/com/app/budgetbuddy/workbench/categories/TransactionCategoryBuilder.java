@@ -5,6 +5,7 @@ import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.TransactionCategoryService;
+import com.app.budgetbuddy.services.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
@@ -13,61 +14,73 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class TransactionCategoryBuilder
 {
     private final TransactionCategoryService transactionCategoryService;
+    private final TransactionService transactionService;
 
     @Autowired
-    public TransactionCategoryBuilder(TransactionCategoryService transactionCategoryService)
+    public TransactionCategoryBuilder(TransactionCategoryService transactionCategoryService,
+                                      TransactionService transactionService)
     {
         this.transactionCategoryService = transactionCategoryService;
+        this.transactionService = transactionService;
     }
 
-    public List<TransactionCategory> createTransactionCategories(final Map<String, Pair<TransactionRule, List<Transaction>>> categorizedTransactions)
+    public List<TransactionCategory> createTransactionCategories(final Map<String, TransactionRule> categorizedTransactions)
     {
         List<TransactionCategory> allTransactionCategories = new ArrayList<>();
-
         log.info("Creating Transaction Categories");
-        log.info("===============================");
+
         // Process each category group
-        for (Map.Entry<String, Pair<TransactionRule, List<Transaction>>> entry : categorizedTransactions.entrySet()) {
-            String categoryName = entry.getKey();
-            log.info("Category Name: {}", categoryName);
-            TransactionRule rule = entry.getValue().getFirst();
-            log.info("Rule: {}", rule);
-            List<Transaction> transactions = entry.getValue().getSecond();
-            // Create a category entry for EACH transaction in the list
-            for (Transaction transaction : transactions) {
-                log.info("Transaction: {}", transaction);
-                TransactionCategory transactionCategory = new TransactionCategory();
-                transactionCategory.setTransactionId(transaction.getTransactionId());
-                log.info("Priority: {}", rule.getPriority());
-                transactionCategory.setPriority(rule.getPriority());
-                transactionCategory.setMatchedCategory(categoryName);
-                transactionCategory.setRecurring(false);
+        for (Map.Entry<String, TransactionRule> entry : categorizedTransactions.entrySet()) {
+            String transactionId = entry.getKey();
+            TransactionRule transactionRule = entry.getValue();
+            log.info("Processing transactionId: {}", transactionId);
+            log.info("Transaction Rule: {}", transactionRule);
 
-                // Use the transaction's plaid category if available
-                String plaidCategory = "";
-                if (transaction.getCategories() != null && !transaction.getCategories().isEmpty()) {
-                    plaidCategory = transaction.getCategories().get(0);
-                }
-                transactionCategory.setPlaidCategory(plaidCategory);
-                String categorizedBy = rule.isSystemRule() ? "SYSTEM" : "USER_RULE";
-                transactionCategory.setCategorizedBy(categorizedBy);
-                log.info("Transaction Category: {}", transactionCategory);
-                allTransactionCategories.add(transactionCategory);
+            Optional<Transaction> transactionOptional = transactionService.findTransactionById(transactionId);
+            if(transactionOptional.isEmpty())
+            {
+                log.info("Transaction not found for Id: {}", transactionId);
+                continue;
             }
+            Transaction transaction = transactionOptional.get();
+            log.info("Transaction: {}", transaction);
+            TransactionCategory transactionCategory = new TransactionCategory();
+            transactionCategory.setTransactionId(transactionId);
+            log.info("Priority: {}", transactionRule.getPriority());
+            transactionCategory.setPriority(transactionRule.getPriority());
+            transactionCategory.setMatchedCategory(transactionRule.getMatchedCategory());
+            transactionCategory.setRecurring(false);
+            String plaidCategory = "";
+            List<String> plaidCategories = transaction.getCategories();
+            if(plaidCategories.get(0) != null)
+            {
+                plaidCategory = plaidCategories.get(0);
+            }
+            else
+            {
+                plaidCategory = plaidCategories.get(1);
+            }
+            transactionCategory.setPlaidCategory(plaidCategory);
+            String categorizedBy = transactionRule.isSystemRule() ? "SYSTEM" : "USER_RULE";
+            transactionCategory.setCategorizedBy(categorizedBy);
+            log.info("TransactionCategory: {}", transactionCategory);
+            log.info("========================================================");
+            allTransactionCategories.add(transactionCategory);
         }
-        log.info("============================================");
+        log.info("Created {} Transaction Categories", allTransactionCategories.size());
 
-        // Save all transaction categories
-        if (!allTransactionCategories.isEmpty()) {
+
+        if(!allTransactionCategories.isEmpty())
+        {
             saveTransactionCategories(allTransactionCategories);
         }
-
         return allTransactionCategories;
     }
 //

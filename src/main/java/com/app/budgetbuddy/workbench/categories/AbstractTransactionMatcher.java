@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionRuleEntity;
 import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
+import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import lombok.Getter;
@@ -18,11 +19,13 @@ import java.util.regex.PatternSyntaxException;
 @Getter
 @Setter
 @Slf4j
-public abstract class AbstractTransactionMatcher<T extends Transaction, S extends TransactionRule> implements TransactionMatcher<T, S> {
+public abstract class AbstractTransactionMatcher<T extends Transaction, S extends TransactionRule> implements TransactionMatcher<T, S>
+{
     protected final TransactionRuleService transactionRuleService;
+    private final AccountRepository accountRepository;
     protected final CategoryService categoryService;
     protected List<TransactionRule> systemCategoryRules = new ArrayList<>();
-    public List<UserCategoryRule> userCategoryRules;
+    public List<TransactionRule> userCategoryRules;
     protected final PlaidCategoryManager plaidCategoryManager;
     protected final String UNCATEGORIZED = "Uncategorized";
     protected static final Map<String, String> CATEGORY_NAME_MAPPING = new HashMap<>();
@@ -36,13 +39,13 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     protected static final Map<String, String> MERCHANT_UTILITIES = new HashMap<>();
     protected static final Map<String, Map<String, CategoryType>> MERCHANT_CATEGORY_DESCRIPTION = new HashMap<>();
 
-
     public AbstractTransactionMatcher(TransactionRuleService transactionRuleService, CategoryService categoryService,
-                                      PlaidCategoryManager plaidCategoryManager) {
+                                      PlaidCategoryManager plaidCategoryManager, AccountRepository accountRepository)
+    {
         this.transactionRuleService = transactionRuleService;
         this.categoryService = categoryService;
-        this.systemCategoryRules = loadTransactionRules();
         this.plaidCategoryManager = plaidCategoryManager;
+        this.accountRepository = accountRepository;
     }
 
     static {
@@ -362,122 +365,134 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         }
     }
 
-    protected int determinePriority(final T transaction, final List<UserCategoryRule> userCategoryRules)
+//    protected int determinePriority(final T transaction, final List<UserCategoryRule> userCategoryRules)
+//    {
+//        if(transaction == null)
+//        {
+//            return PriorityLevel.NONE.getValue();
+//        }
+//
+//        if(hasMatchingUserRule(transaction, userCategoryRules)){
+//            return PriorityLevel.USER_DEFINED.getValue();
+//        }
+//
+//        return determineSystemPriority(transaction);
+//    }
+
+//    protected int determineSystemPriority(final T transaction){
+//        // Check data completeness first
+//        boolean hasMerchant = (transaction.getMerchantName() != null && !transaction.getMerchantName().isEmpty());
+//        boolean hasDescription = (transaction.getDescription() != null && !transaction.getDescription().isEmpty());
+//        boolean hasCategories = (transaction.getCategories() != null && !transaction.getCategories().isEmpty());
+//        boolean hasCategoryId = (transaction.getCategoryId() != null && !transaction.getCategoryId().isEmpty());
+//        boolean hasAmount = (transaction.getAmount() != null);
+//        // Determine base priority from data completeness
+//        int basePriority;
+//
+//        if (hasMerchant && hasDescription && hasCategories && hasCategoryId && hasAmount) {
+//            basePriority = PriorityLevel.DATA_COMPLETE.getValue();
+//        } else if ((hasMerchant && hasCategories) || (hasMerchant && hasDescription) ||
+//                (hasDescription && hasCategories)) {
+//            basePriority = PriorityLevel.DATA_PARTIAL.getValue();
+//        } else if (hasMerchant || hasDescription || hasCategories) {
+//            basePriority = PriorityLevel.DATA_MINIMAL.getValue();
+//        } else {
+//            return PriorityLevel.NONE.getValue();
+//        }
+//
+//        // Now check for specific rule matches to boost priority
+//        String merchantName = transaction.getMerchantName();
+//        String categoryId = transaction.getCategoryId();
+//        String categoryName = null;
+//
+//        // Try to get category name if we have a category ID
+//        if (hasCategoryId) {
+//            Optional<CategoryEntity> categoryOpt = getCategoryEntityById(categoryId);
+//            if (categoryOpt.isPresent()) {
+//                categoryName = categoryOpt.get().getName();
+//            }
+//        }
+//
+//        // Check for special case combinations
+//        if (hasMerchant && hasCategoryId && hasAmount) {
+//            // Check Flex Finance special case
+//            if ("Flex Finance".equals(merchantName)) {
+//                BigDecimal flexValue = SPECIAL_AMOUNTS_RULES.get("Flex Finance");
+//                if (flexValue != null && transaction.getAmount().compareTo(flexValue) == 0) {
+//                    return PriorityLevel.MERCHANT_AMOUNT_CATEGORY.getValue();
+//                }
+//            }
+//        }
+//
+//        // Check merchant + category combinations
+//        if (hasMerchant && hasCategoryId) {
+//            Map<String, CategoryType> merchantCategories = MERCHANT_CATEGORY_RULES.get(merchantName);
+//            if (merchantCategories != null && merchantCategories.containsKey(categoryId)) {
+//                return PriorityLevel.MERCHANT_CATEGORY.getValue();
+//            }
+//        }
+//
+//        // Check description + category combinations
+//        if (hasDescription && hasCategoryId) {
+//            for (Map.Entry<String, Map<String, String>> entry : TRANSACTION_DESCRIPTION_MAPPING.entrySet()) {
+//                if (transaction.getDescription().contains(entry.getKey())) {
+//                    Map<String, String> categoryMapping = entry.getValue();
+//                    if (categoryMapping.containsKey(categoryId)) {
+//                        return PriorityLevel.TRANSACTION_DESCRIPTION_CATEGORY.getValue();
+//                    }
+//                }
+//            }
+//        }
+//        // Check merchant-only rules
+//        if (hasMerchant) {
+//            if (MERCHANT_SUBSCRIPTIONS.containsKey(merchantName) ||
+//                    MERCHANT_UTILITIES.containsKey(merchantName)) {
+//                return PriorityLevel.MERCHANT_ONLY.getValue();
+//            }
+//        }
+//
+//        // Check category ID + name combinations
+//        if (hasCategoryId && categoryName != null) {
+//            Map<String, CategoryType> categoryRules = CATEGORY_ID_RULES.get(categoryName);
+//            if (categoryRules != null && categoryRules.containsKey(categoryId)) {
+//                return PriorityLevel.CATEGORY_ID_NAME.getValue();
+//            }
+//        }
+//
+//        // Check category name only mappings
+//        if (categoryName != null && CATEGORY_NAME_MAPPING.containsKey(categoryName)) {
+//            return PriorityLevel.CATEGORY_NAME_ONLY.getValue();
+//        }
+//
+//        // If no specific rule matched, return the base priority
+//        return basePriority;
+//    }
+
+    protected Long getUserIdByAccountId(final String accountId)
     {
-        if(transaction == null)
+        if(accountId.isEmpty())
         {
-            return PriorityLevel.NONE.getValue();
+            throw new IllegalArgumentException("Account Id cannot be empty");
         }
-
-        if(hasMatchingUserRule(transaction, userCategoryRules)){
-            return PriorityLevel.USER_DEFINED.getValue();
+        Optional<Long> userIdOptional = accountRepository.findUserIdByAccountId(accountId);
+        if(userIdOptional.isEmpty())
+        {
+            throw new IllegalArgumentException("User Id not found with account Id: " + accountId);
         }
-
-        return determineSystemPriority(transaction);
+        return userIdOptional.get();
     }
 
-    protected int determineSystemPriority(final T transaction){
-        // Check data completeness first
-        boolean hasMerchant = (transaction.getMerchantName() != null && !transaction.getMerchantName().isEmpty());
-        boolean hasDescription = (transaction.getDescription() != null && !transaction.getDescription().isEmpty());
-        boolean hasCategories = (transaction.getCategories() != null && !transaction.getCategories().isEmpty());
-        boolean hasCategoryId = (transaction.getCategoryId() != null && !transaction.getCategoryId().isEmpty());
-        boolean hasAmount = (transaction.getAmount() != null);
-        // Determine base priority from data completeness
-        int basePriority;
-
-        if (hasMerchant && hasDescription && hasCategories && hasCategoryId && hasAmount) {
-            basePriority = PriorityLevel.DATA_COMPLETE.getValue();
-        } else if ((hasMerchant && hasCategories) || (hasMerchant && hasDescription) ||
-                (hasDescription && hasCategories)) {
-            basePriority = PriorityLevel.DATA_PARTIAL.getValue();
-        } else if (hasMerchant || hasDescription || hasCategories) {
-            basePriority = PriorityLevel.DATA_MINIMAL.getValue();
-        } else {
-            return PriorityLevel.NONE.getValue();
-        }
-
-        // Now check for specific rule matches to boost priority
-        String merchantName = transaction.getMerchantName();
-        String categoryId = transaction.getCategoryId();
-        String categoryName = null;
-
-        // Try to get category name if we have a category ID
-        if (hasCategoryId) {
-            Optional<CategoryEntity> categoryOpt = getCategoryEntityById(categoryId);
-            if (categoryOpt.isPresent()) {
-                categoryName = categoryOpt.get().getName();
-            }
-        }
-
-        // Check for special case combinations
-        if (hasMerchant && hasCategoryId && hasAmount) {
-            // Check Flex Finance special case
-            if ("Flex Finance".equals(merchantName)) {
-                BigDecimal flexValue = SPECIAL_AMOUNTS_RULES.get("Flex Finance");
-                if (flexValue != null && transaction.getAmount().compareTo(flexValue) == 0) {
-                    return PriorityLevel.MERCHANT_AMOUNT_CATEGORY.getValue();
-                }
-            }
-        }
-
-        // Check merchant + category combinations
-        if (hasMerchant && hasCategoryId) {
-            Map<String, CategoryType> merchantCategories = MERCHANT_CATEGORY_RULES.get(merchantName);
-            if (merchantCategories != null && merchantCategories.containsKey(categoryId)) {
-                return PriorityLevel.MERCHANT_CATEGORY.getValue();
-            }
-        }
-
-        // Check description + category combinations
-        if (hasDescription && hasCategoryId) {
-            for (Map.Entry<String, Map<String, String>> entry : TRANSACTION_DESCRIPTION_MAPPING.entrySet()) {
-                if (transaction.getDescription().contains(entry.getKey())) {
-                    Map<String, String> categoryMapping = entry.getValue();
-                    if (categoryMapping.containsKey(categoryId)) {
-                        return PriorityLevel.TRANSACTION_DESCRIPTION_CATEGORY.getValue();
-                    }
-                }
-            }
-        }
-        // Check merchant-only rules
-        if (hasMerchant) {
-            if (MERCHANT_SUBSCRIPTIONS.containsKey(merchantName) ||
-                    MERCHANT_UTILITIES.containsKey(merchantName)) {
-                return PriorityLevel.MERCHANT_ONLY.getValue();
-            }
-        }
-
-        // Check category ID + name combinations
-        if (hasCategoryId && categoryName != null) {
-            Map<String, CategoryType> categoryRules = CATEGORY_ID_RULES.get(categoryName);
-            if (categoryRules != null && categoryRules.containsKey(categoryId)) {
-                return PriorityLevel.CATEGORY_ID_NAME.getValue();
-            }
-        }
-
-        // Check category name only mappings
-        if (categoryName != null && CATEGORY_NAME_MAPPING.containsKey(categoryName)) {
-            return PriorityLevel.CATEGORY_NAME_ONLY.getValue();
-        }
-
-        // If no specific rule matched, return the base priority
-        return basePriority;
-    }
-
-    protected void loadUserCategoryRules(Long userId)
+    protected List<TransactionRule> loadUserCategoryRules(Long userId)
     {
         List<TransactionRuleEntity> categoryRuleEntities = transactionRuleService.findByUserId(userId);
         if(!categoryRuleEntities.isEmpty()) {
             List<TransactionRule> categoryRulesForUser = transactionRuleService.getConvertedCategoryRules(categoryRuleEntities);
             if(!categoryRulesForUser.isEmpty()) {
-                this.systemCategoryRules.addAll(categoryRulesForUser);
+                this.userCategoryRules.addAll(categoryRulesForUser);
             }
         }
-
+        return new ArrayList<>();
     }
-
-    protected abstract Boolean matchesRule(S transaction, CategoryRule categoryRule);
 
     protected String getCategoryNameById(String categoryId) {
         if (categoryId == null) {

@@ -194,61 +194,62 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
         {
             return Optional.empty();
         }
-
-        loadTransactionRules();
-        // Check for user-defined rules first
-        if (userCategoryRules != null && !userCategoryRules.isEmpty()) {
-            for (UserCategoryRule userRule : userCategoryRules) {
-                if (userRule.isActive() && matchesUserRule(transaction, userRule)) {
-                    RecurringTransactionRule matchedRule = createTransactionRule(
-                            transaction,
-                            userRule.getCategoryName(),
-                            "",
-                            PriorityLevel.USER_DEFINED.getValue()
-                    );
-                    addMatchedRecurringTransactions(matchedRule, userRule.getCategoryName());
-                    return Optional.of(matchedRule);
-                }
-            }
-        }
-
-        // Apply appropriate rules based on priority level
-        CategoryType matchedCategory = matchRulesByPriority(transaction, priority);
-
-        // Create rule based on matched category
-        if (matchedCategory != null && matchedCategory != CategoryType.UNCATEGORIZED) {
-            RecurringTransactionRule matchedRule = createTransactionRule(
-                    transaction,
-                    matchedCategory.name(),
-                    "",
-                    priority
-            );
-            addMatchedRecurringTransactions(matchedRule, matchedCategory.name());
-            return Optional.of(matchedRule);
-        }
-
-        // Fall back to Plaid category if available
-        String plaidCategory = getTransactionCategory(transaction);
-        if (!UNCATEGORIZED.equals(plaidCategory)) {
-            RecurringTransactionRule plaidRule = createTransactionRule(
-                    transaction,
-                    plaidCategory,
-                    "",
-                    priority
-            );
-            addMatchedRecurringTransactions(plaidRule, plaidCategory);
-            return Optional.of(plaidRule);
-        }
-
-        // If no match found, return uncategorized
-        RecurringTransactionRule uncategorizedRule = createTransactionRule(
-                transaction,
-                UNCATEGORIZED,
-                "",
-                priority
-        );
-        addUnmatchedRecurringTransaction(uncategorizedRule);
-        return Optional.of(uncategorizedRule);
+//
+//        loadTransactionRules();
+//        // Check for user-defined rules first
+//        if (userCategoryRules != null && !userCategoryRules.isEmpty()) {
+//            for (UserCategoryRule userRule : userCategoryRules) {
+//                if (userRule.isActive() && matchesUserRule(transaction, userRule)) {
+//                    RecurringTransactionRule matchedRule = createTransactionRule(
+//                            transaction,
+//                            userRule.getCategoryName(),
+//                            "",
+//                            PriorityLevel.USER_DEFINED.getValue()
+//                    );
+//                    addMatchedRecurringTransactions(matchedRule, userRule.getCategoryName());
+//                    return Optional.of(matchedRule);
+//                }
+//            }
+//        }
+//
+//        // Apply appropriate rules based on priority level
+//        CategoryType matchedCategory = matchRulesByPriority(transaction, priority);
+//
+//        // Create rule based on matched category
+//        if (matchedCategory != null && matchedCategory != CategoryType.UNCATEGORIZED) {
+//            RecurringTransactionRule matchedRule = createTransactionRule(
+//                    transaction,
+//                    matchedCategory.name(),
+//                    "",
+//                    priority
+//            );
+//            addMatchedRecurringTransactions(matchedRule, matchedCategory.name());
+//            return Optional.of(matchedRule);
+//        }
+//
+//        // Fall back to Plaid category if available
+//        String plaidCategory = getTransactionCategory(transaction);
+//        if (!UNCATEGORIZED.equals(plaidCategory)) {
+//            RecurringTransactionRule plaidRule = createTransactionRule(
+//                    transaction,
+//                    plaidCategory,
+//                    "",
+//                    priority
+//            );
+//            addMatchedRecurringTransactions(plaidRule, plaidCategory);
+//            return Optional.of(plaidRule);
+//        }
+//
+//        // If no match found, return uncategorized
+//        RecurringTransactionRule uncategorizedRule = createTransactionRule(
+//                transaction,
+//                UNCATEGORIZED,
+//                "",
+//                priority
+//        );
+//        addUnmatchedRecurringTransaction(uncategorizedRule);
+//        return Optional.of(uncategorizedRule);
+        return null;
 
     }
 

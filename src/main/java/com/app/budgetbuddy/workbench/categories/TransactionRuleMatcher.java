@@ -2,22 +2,16 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
-import com.app.budgetbuddy.exceptions.TransactionRuleException;
+import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.TransactionService;
-import com.app.budgetbuddy.services.UserDetailsLoginService;
 import com.app.budgetbuddy.workbench.PlaidCategoryManager;
-import com.app.budgetbuddy.workbench.TransactionPatternBuilder;
-import com.plaid.client.request.PlaidApi;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.util.Pair;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 
@@ -25,28 +19,28 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.app.budgetbuddy.workbench.TransactionPatternBuilder.buildPattern;
-
 @Service
 @Getter
 @Setter
 @Slf4j
-public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<Transaction, TransactionRule>
+public class TransactionRuleMatcher extends AbstractTransactionMatcher<Transaction, TransactionRule>
 {
-
     private Map<TransactionRule, String> matchedTransactions = new HashMap<>();
     private List<TransactionRule> unmatchedRules = new ArrayList<>();
     private final Map<Integer, List<TransactionRule>> groupedRulesByPriority = new HashMap<>();
+    private final TransactionCategorizer transactionCategorizer;
     private final List<String> defaultPriorityOrders = new ArrayList<>();
     private final TransactionService transactionService;
     private Map<Integer, List<Transaction>> groupTransactionsByRuleType = new HashMap<>();
     private final AtomicInteger transactionCounter = new AtomicInteger(0);
-    private Logger LOGGER = LoggerFactory.getLogger(TransactionCategoryRuleMatcher.class);
+    private Logger LOGGER = LoggerFactory.getLogger(TransactionRuleMatcher.class);
 
     @Autowired
-    public TransactionCategoryRuleMatcher(TransactionRuleService transactionRuleService, CategoryService categoryService, PlaidCategoryManager plaidCategoryManager, TransactionService transactionService)
+    public TransactionRuleMatcher(TransactionRuleService transactionRuleService, CategoryService categoryService, PlaidCategoryManager plaidCategoryManager,
+                                  TransactionCategorizer transactionCategorizer, TransactionService transactionService, AccountRepository accountRepository)
     {
-        super(transactionRuleService, categoryService, plaidCategoryManager);
+        super(transactionRuleService, categoryService, plaidCategoryManager, accountRepository);
+        this.transactionCategorizer = transactionCategorizer;
         this.transactionService = transactionService;
     }
 
@@ -122,33 +116,22 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
     }
 
 
-    public Map<String, Pair<TransactionRule, List<Transaction>>> categorizeTransactions(final List<Transaction> uncategorizedTransactions)
+    public Map<String, TransactionRule> categorizeTransactions(final List<Transaction> uncategorizedTransactions)
     {
         Map<Integer, List<Transaction>> transactionsByPriority = groupTransactionsByPriority(uncategorizedTransactions);
-        Map<String, Pair<TransactionRule, List<Transaction>>> categorizedTransactions = new HashMap<>();
+        Map<String, TransactionRule> categorizedTransactions = new HashMap<>();
         for(Map.Entry<Integer, List<Transaction>> entry : transactionsByPriority.entrySet())
         {
             int priority = entry.getKey();
             List<Transaction> transactions = entry.getValue();
             for(Transaction transaction : transactions)
             {
+                String transactionId = transaction.getTransactionId();
                 Optional<TransactionRule> transactionRuleOptional = categorizeTransaction(transaction, priority);
                 if(transactionRuleOptional.isPresent())
                 {
                     TransactionRule transactionRule = transactionRuleOptional.get();
-                    String categoryName = transactionRule.getMatchedCategory();
-                    if(categorizedTransactions.containsKey(categoryName))
-                    {
-                        Pair<TransactionRule, List<Transaction>> existingPair = categorizedTransactions.get(categoryName);
-                        existingPair.getSecond().add(transaction);
-                    }
-                    else
-                    {
-                        List<Transaction> transactionsList = new ArrayList<>();
-                        transactionsList.add(transaction);
-                        Pair<TransactionRule, List<Transaction>> newPair = Pair.of(transactionRule, transactionsList);
-                        categorizedTransactions.put(categoryName, newPair);
-                    }
+                    categorizedTransactions.putIfAbsent(transactionId, transactionRule);
                 }
             }
         }
@@ -570,21 +553,20 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         {
             log.warn("No System category rules found. Using direct categorization");
         }
-        if(userCategoryRules != null && !userCategoryRules.isEmpty())
+        Long userId = getUserIdByAccountId(transaction.getAccountId());
+        List<TransactionRule> transactionRules = loadUserCategoryRules(userId);
+        if(transactionRules != null && !transactionRules.isEmpty())
         {
-            for(UserCategoryRule userCategoryRule : userCategoryRules)
+            CategorizationStrategy userStrategy = transactionCategorizer.getUserRulesStrategy();
+            CategoryType userRuleCategory = userStrategy.categorizeWithUserRules(transaction, transactionRules);
+            if(userRuleCategory != null && userRuleCategory != CategoryType.UNCATEGORIZED)
             {
-                if(userCategoryRule.isActive() && matchesUserRule(transaction, userCategoryRule))
-                {
-
-                    String matchedCategory = userCategoryRule.getCategoryName();
-                    TransactionRule transactionRule = createTransactionRule(transaction,
-                            userCategoryRule.getCategoryName(),
-                            PriorityLevel.USER_DEFINED.getValue());
-                    transactionRuleService.create(transactionRule);
-                    addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
-                    return Optional.of(transactionRule);
-                }
+                log.info("Transaction #{}: Matched user rule for category: {}",
+                        currentCount, userRuleCategory);
+                TransactionRule transactionRule = createTransactionRule(transaction, userRuleCategory.name(), PriorityLevel.USER_DEFINED.getValue());
+                transactionRuleService.create(transactionRule);
+                addMatchedTransactionRule(transactionRule.getMatchedCategory(), transactionRule);
+                return Optional.of(transactionRule);
             }
         }
 
@@ -621,16 +603,4 @@ public class TransactionCategoryRuleMatcher extends AbstractTransactionMatcher<T
         return Optional.of(uncategorizedRule);
     }
 
-    @Override
-    public Boolean matchesRule(TransactionRule transaction, CategoryRule categoryRule)
-    {
-        if (transaction == null || categoryRule == null) {
-            return false;
-        }
-        boolean matches = matchesMerchantPatternRule(transaction, categoryRule) ||
-                matchesDescriptionPatternRule(transaction, categoryRule) ||
-                matchesCategoryPatternRule(transaction, categoryRule);
-        log.info("Matches: " + matches);
-        return matches;
-    }
 }
