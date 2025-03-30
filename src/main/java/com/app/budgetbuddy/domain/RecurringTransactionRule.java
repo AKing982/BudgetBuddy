@@ -19,11 +19,11 @@ public class RecurringTransactionRule extends TransactionRule
     private Boolean isActive;
     private BigDecimal recurringAmount;
 
-    public RecurringTransactionRule(String transactionId, String descriptionPattern, String merchantPattern, int priority, List<String> categories, String matchedCategory, String plaidCategory, String transactionType, boolean isSystemRule, boolean isRecurring, String frequency, Boolean isActive, BigDecimal recurringAmount) {
-        super(transactionId, descriptionPattern, merchantPattern, priority, categories, matchedCategory, plaidCategory, transactionType, isSystemRule);
+    public RecurringTransactionRule(String transactionId, String descriptionPattern, String merchantPattern, int priority, List<String> categories, String matchedCategory, String plaidCategory, String transactionType, boolean isSystemRule, boolean isActive, boolean isRecurring, String frequency, Boolean isActive1, BigDecimal recurringAmount) {
+        super(transactionId, descriptionPattern, merchantPattern, priority, categories, matchedCategory, plaidCategory, transactionType, isSystemRule, isActive);
         this.isRecurring = isRecurring;
         this.frequency = frequency;
-        this.isActive = isActive;
+        this.isActive = isActive1;
         this.recurringAmount = recurringAmount;
     }
 

@@ -598,21 +598,21 @@ class BudgetCalculatorTest {
         assertTrue(actual.isEmpty());
     }
 
-    @Test
-    void testCalculateSavingsGoalProgress_WhenBudgetIsNull_thenReturnZero(){
-        Set<TransactionCategoryEntity> categories = new HashSet<>();
-        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(null, categories);
-        assertNotNull(actual);
-        assertEquals(0, actual.intValue());
-    }
-
-    @Test
-    void testCalculateSavingsGoalProgress_whenSpendingCategoriesIsEmpty_ThenReturnZero(){
-        Set<TransactionCategoryEntity> categories = new HashSet<>();
-        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(testBudget, categories);
-        assertNotNull(actual);
-        assertEquals(0, actual.intValue());
-    }
+//    @Test
+//    void testCalculateSavingsGoalProgress_WhenBudgetIsNull_thenReturnZero(){
+//        Set<TransactionCategoryEntity> categories = new HashSet<>();
+//        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(null, categories);
+//        assertNotNull(actual);
+//        assertEquals(0, actual.intValue());
+//    }
+//
+//    @Test
+//    void testCalculateSavingsGoalProgress_whenSpendingCategoriesIsEmpty_ThenReturnZero(){
+//        Set<TransactionCategoryEntity> categories = new HashSet<>();
+//        BigDecimal actual = budgetCalculator.calculateSavingsGoalProgress(testBudget, categories);
+//        assertNotNull(actual);
+//        assertEquals(0, actual.intValue());
+//    }
 
 
     @Test

@@ -83,11 +83,11 @@ public class CategoryRuleEngine
             }));
 
             // 3. Process recurring transactions using priority-based categorization
-            Map<String, Pair<RecurringTransactionRule, List<RecurringTransaction>>> categorizedRecurringTransactions =
+            Map<String, RecurringTransactionRule> categorizedRecurringTransactions =
                     recurringTransactionCategoryRuleMatcher.categorizeRecurringTransactions(recurringTransactions);
 
             // 4. Extract user and system rules from categorized transactions
-            Map<String, UserCategoryRule> userCategorized = combineCategorizedTransactionUserRules(
+            Map<String, TransactionRule> userCategorized = combineCategorizedTransactionUserRules(
                     extractUserRulesFromCategorizedTransactions(categorizedRegularTransactions, userId),
                     extractUserRulesFromCategorizedRecurringTransactions(categorizedRecurringTransactions, userId));
 
@@ -159,9 +159,9 @@ public class CategoryRuleEngine
     }
 
     // Extract user rules from regular transactions
-    private Map<String, UserCategoryRule> extractUserRulesFromCategorizedTransactions(
+    private Map<String, TransactionRule> extractUserRulesFromCategorizedTransactions(
             Map<String, TransactionRule> categorizedTransactions, Long userId) {
-        Map<String, UserCategoryRule> userRules = new HashMap<>();
+        Map<String, TransactionRule> userRules = new HashMap<>();
 
         for (Map.Entry<String, TransactionRule> entry : categorizedTransactions.entrySet()) {
             String transactionId = entry.getKey();
@@ -171,8 +171,7 @@ public class CategoryRuleEngine
             if (rule.getPriority() == PriorityLevel.USER_DEFINED.getValue()) {
                 // Convert to UserCategoryRule
                 String category = rule.getMatchedCategory();
-                UserCategoryRule userRule = convertToUserCategoryRule(rule, category, userId);
-                userRules.put(transactionId, userRule);
+                userRules.put(transactionId, rule);
             }
         }
 
@@ -180,28 +179,20 @@ public class CategoryRuleEngine
     }
 
     private Map<String, TransactionRule> extractSystemRulesFromCategorizedRecurringTransactions(
-            Map<String, Pair<RecurringTransactionRule, List<RecurringTransaction>>> categorizedTransactions) {
+            Map<String, RecurringTransactionRule> categorizedTransactions) {
         Map<String, TransactionRule> systemRules = new HashMap<>();
 
-        for (Map.Entry<String, Pair<RecurringTransactionRule, List<RecurringTransaction>>> entry : categorizedTransactions.entrySet()) {
-            String category = entry.getKey();
-            RecurringTransactionRule rule = entry.getValue().getFirst();
-            List<RecurringTransaction> transactions = entry.getValue().getSecond();
+        for (Map.Entry<String, RecurringTransactionRule> entry : categorizedTransactions.entrySet()) {
+            String transactionId = entry.getKey();
+            RecurringTransactionRule rule = entry.getValue();
 
             // Check if rule was from system rules (priority would NOT be USER_DEFINED.getValue())
             if (rule.getPriority() != PriorityLevel.USER_DEFINED.getValue()) {
-                // Convert to CategoryRule
-                CategoryRule categoryRule = convertToCategoryRule(rule, category);
 
                 // Add frequency information for recurring transactions
                 if (rule.getFrequency() != null) {
-                    categoryRule.setFrequency(rule.getFrequency());
-                    categoryRule.setRecurring(true);
-                }
-
-                // Add to map with first transaction ID as key
-                if (!transactions.isEmpty()) {
-                    systemRules.put(transactions.get(0).getTransactionId(), rule);
+                    rule.setFrequency(rule.getFrequency());
+                    rule.setRecurring(true);
                 }
             }
         }
@@ -210,9 +201,9 @@ public class CategoryRuleEngine
     }
 
 
-    private Map<String, UserCategoryRule> extractUserRulesFromCategorizedRecurringTransactions(
+    private Map<String, RecurringTransactionRule> extractUserRulesFromCategorizedRecurringTransactions(
             Map<String, RecurringTransactionRule> categorizedTransactions, Long userId) {
-        Map<String, UserCategoryRule> userRules = new HashMap<>();
+        Map<String, RecurringTransactionRule> userRules = new HashMap<>();
 
 //        for (Map.Entry<String, RecurringTransactionRule> entry : categorizedTransactions.entrySet())
 //        {
@@ -232,7 +223,7 @@ public class CategoryRuleEngine
 //            }
 //        }
 //        return userRules;
-        return null;
+        return userRules;
     }
 
     public List<TransactionCategory> createTransactionCategories(final Map<String, TransactionRule> categorizedTransactions)
@@ -329,8 +320,8 @@ public class CategoryRuleEngine
         return combinedCategoryRules;
     }
 
-    private Map<String, UserCategoryRule> combineCategorizedTransactionUserRules(final Map<String, UserCategoryRule> categorizedRecurringTransactionsUserRules, final Map<String, UserCategoryRule> categorizedTransactionUserRules){
-        Map<String, UserCategoryRule> combinedUserCategoryRules = new HashMap<>(categorizedRecurringTransactionsUserRules);
+    private Map<String, TransactionRule> combineCategorizedTransactionUserRules(final Map<String, TransactionRule> categorizedRecurringTransactionsUserRules, final Map<String, RecurringTransactionRule> categorizedTransactionUserRules){
+        Map<String, TransactionRule> combinedUserCategoryRules = new HashMap<>(categorizedRecurringTransactionsUserRules);
         combinedUserCategoryRules.putAll(categorizedTransactionUserRules);
         return combinedUserCategoryRules;
     }
@@ -431,7 +422,7 @@ public class CategoryRuleEngine
     }
 
 
-    private void saveNewRules(final Map<String, UserCategoryRule> userCategorized)
+    private void saveNewRules(final Map<String, TransactionRule> userCategorized)
     {
 
         try
@@ -445,7 +436,7 @@ public class CategoryRuleEngine
 
     }
 
-    private void generateSummary(Map<String, UserCategoryRule> userCategorized,
+    private void generateSummary(Map<String, TransactionRule> userCategorized,
                                  Map<String, TransactionRule> systemCategorized) {
         log.info("Categorization Summary:");
         log.info("Original User Rules: {}", userCategorized.size());

@@ -22,23 +22,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class CategoryRuleEngineTest {
-
-    @Mock
-    private CategoryRuleCreator categoryRuleCreator;
-
-    @Mock
-    private TransactionCategorizer transactionCategorizer;
-
-    @Mock
-    private TransactionLoaderService transactionLoaderService;
-
-    @InjectMocks
-    private CategoryRuleEngine categoryRuleEngine;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+//
+//    @Mock
+//    private CategoryRuleCreator categoryRuleCreator;
+//
+//    @Mock
+//    private TransactionCategorizer transactionCategorizer;
+//
+//    @Mock
+//    private TransactionLoaderService transactionLoaderService;
+//
+//    @InjectMocks
+//    private CategoryRuleEngine categoryRuleEngine;
+//
+//    @BeforeEach
+//    void setUp() {
+//        MockitoAnnotations.openMocks(this);
+//    }
 
 //    @Test
 //    void testGetCategorizedTransactionsWithSystemRules_whenTransactionsIsEmpty(){

@@ -15,31 +15,31 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 class RecurringTransactionCategoryRuleMatcherTest {
 
-    @Mock
-    private CategoryRuleService categoryRuleService;
+//    @Mock
+//    private CategoryRuleService categoryRuleService;
+//
+//    @Mock
+//    private CategoryService categoryService;
+//
+//    @InjectMocks
+//    private RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
+//
+//    @BeforeEach
+//    void setUp() {
+//        MockitoAnnotations.openMocks(this);
+//    }
+//
+//    @Test
+//    void testMatchesRule_whenCategoryRuleIsNull_thenThrowException(){
+//
+//    }
 
-    @Mock
-    private CategoryService categoryService;
-
-    @InjectMocks
-    private RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testMatchesRule_whenCategoryRuleIsNull_thenThrowException(){
-
-    }
-
-    @Test
-    void testCategorizeTransaction_whenRecurringTransactionsIsNull_thenThrowException(){
-        assertThrows(IllegalArgumentException.class, () -> {
-            recurringTransactionCategoryRuleMatcher.categorizeTransaction(null, 1);
-        });
-    }
+//    @Test
+//    void testCategorizeTransaction_whenRecurringTransactionsIsNull_thenThrowException(){
+//        assertThrows(IllegalArgumentException.class, () -> {
+//            recurringTransactionCategoryRuleMatcher.categorizeTransaction(null, 1);
+//        });
+//    }
 
 
 

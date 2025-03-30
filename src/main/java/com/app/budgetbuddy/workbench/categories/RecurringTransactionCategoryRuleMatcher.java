@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.categories;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
+import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import com.app.budgetbuddy.workbench.TransactionPatternBuilder;
@@ -27,9 +28,9 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
     private Map<Integer, List<RecurringTransaction>> groupRecurringTransactionsByPriority = new HashMap<>();
 
     @Autowired
-    public RecurringTransactionCategoryRuleMatcher(TransactionRuleService transactionRuleService, CategoryService categoryService, PlaidCategoryManager plaidCategoryManager)
+    public RecurringTransactionCategoryRuleMatcher(TransactionRuleService transactionRuleService, CategoryService categoryService, PlaidCategoryManager plaidCategoryManager, AccountRepository accountRepository)
     {
-        super(transactionRuleService, categoryService,  plaidCategoryManager);
+        super(transactionRuleService, categoryService,  plaidCategoryManager, accountRepository);
     }
 
     @Override
@@ -154,37 +155,28 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
         return groupRecurringTransactionsByPriority;
     }
 
-    public Map<String, Pair<RecurringTransactionRule, List<RecurringTransaction>>> categorizeRecurringTransactions(List<RecurringTransaction> uncategorizedTransactions)
+    public Map<String, RecurringTransactionRule> categorizeRecurringTransactions(List<RecurringTransaction> uncategorizedTransactions)
     {
-        Map<Integer, List<RecurringTransaction>> transactionsByPriority = groupRecurringTransactionsByPriority(uncategorizedTransactions);
-        Map<String, Pair<RecurringTransactionRule, List<RecurringTransaction>>> categorizedTransactions = new HashMap<>();
-        for(Map.Entry<Integer, List<RecurringTransaction>> entry : transactionsByPriority.entrySet())
-        {
-            int priority = entry.getKey();
-            List<RecurringTransaction> transactions = entry.getValue();
-            for(RecurringTransaction transaction : transactions)
-            {
-                Optional<RecurringTransactionRule> transactionRuleOptional = categorizeTransaction(transaction, priority);
-                if(transactionRuleOptional.isPresent())
-                {
-                   RecurringTransactionRule transactionRule = transactionRuleOptional.get();
-                    String categoryName = transactionRule.getMatchedCategory();
-                    if(categorizedTransactions.containsKey(categoryName))
-                    {
-                        Pair<RecurringTransactionRule, List<RecurringTransaction>> existingPair = categorizedTransactions.get(categoryName);
-                        existingPair.getSecond().add(transaction);
-                    }
-                    else
-                    {
-                        List<RecurringTransaction> transactionsList = new ArrayList<>();
-                        transactionsList.add(transaction);
-                        Pair<RecurringTransactionRule, List<RecurringTransaction>> newPair = Pair.of(transactionRule, transactionsList);
-                        categorizedTransactions.put(categoryName, newPair);
-                    }
-                }
-            }
-        }
-        return categorizedTransactions;
+//        Map<Integer, List<RecurringTransaction>> transactionsByPriority = groupRecurringTransactionsByPriority(uncategorizedTransactions);
+//        Map<String, RecurringTransactionRule> categorizedTransactions = new HashMap<>();
+//        for(Map.Entry<Integer, List<RecurringTransaction>> entry : transactionsByPriority.entrySet())
+//        {
+//            int priority = entry.getKey();
+//            List<RecurringTransaction> transactions = entry.getValue();
+//            for(RecurringTransaction transaction : transactions)
+//            {
+//                String transactionId = transaction.getTransactionId();
+//                Optional<RecurringTransactionRule> transactionRuleOptional = categorizeTransaction(transaction, priority);
+//                if(transactionRuleOptional.isPresent())
+//                {
+//                   RecurringTransactionRule transactionRule = transactionRuleOptional.get();
+//                   String categoryName = transactionRule.getMatchedCategory();
+//
+//                }
+//            }
+//        }
+//        return categorizedTransactions;
+        return null;
     }
 
     @Override
@@ -292,20 +284,6 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
         }
 
         return rule;
-    }
-
-    @Override
-    public Boolean matchesRule(RecurringTransactionRule transaction, CategoryRule categoryRule) {
-
-        if (transaction == null || categoryRule == null) {
-            return false;
-        }
-
-        return matchesMerchantPatternRule(transaction, categoryRule) ||
-                matchesDescriptionPatternRule(transaction, categoryRule) ||
-                matchesCategoryPatternRule(transaction, categoryRule) ||
-                matchOnFrequency(categoryRule.getFrequency(), transaction.getFrequency()) ||
-                matchOnRecurring(categoryRule.isRecurring(), transaction.isRecurring());
     }
 
     private boolean matchOnFrequency(String ruleFrequency, String transactionFrequency){

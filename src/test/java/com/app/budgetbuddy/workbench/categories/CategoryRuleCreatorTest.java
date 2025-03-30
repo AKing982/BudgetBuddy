@@ -14,20 +14,20 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 class CategoryRuleCreatorTest {
 
-    @Mock
-    private CategoryRuleService categoryRuleService;
-
-    @Mock
-    private CategoryService categoryService;
-
-    @InjectMocks
-    private CategoryRuleCreator categoryRuleCreator;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
-
+//    @Mock
+//    private CategoryRuleService categoryRuleService;
+//
+//    @Mock
+//    private CategoryService categoryService;
+//
+//    @InjectMocks
+//    private CategoryRuleCreator categoryRuleCreator;
+//
+//    @BeforeEach
+//    void setUp() {
+//        MockitoAnnotations.initMocks(this);
+//    }
+//
 
 
     @AfterEach

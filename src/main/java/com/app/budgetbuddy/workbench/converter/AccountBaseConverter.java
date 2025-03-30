@@ -18,7 +18,14 @@ public class AccountBaseConverter
         accountEntity.setAccountName(accountBase.getName());
         accountEntity.setSubtype(AccountSubType.fromString(accountBase.getSubtype()));
         accountEntity.setType(AccountType.fromString(accountBase.getType()));
-        accountEntity.setMask(accountBase.getMask());
+        if(accountBase.getMask() == null)
+        {
+            accountEntity.setMask("");
+        }
+        else
+        {
+            accountEntity.setMask(accountBase.getMask());
+        }
         accountEntity.setOfficialName(accountBase.getOfficialName());
         accountEntity.setUser(userEntity);
         return accountEntity;

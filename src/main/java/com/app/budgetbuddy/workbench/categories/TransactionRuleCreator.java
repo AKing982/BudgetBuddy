@@ -258,9 +258,14 @@ public class TransactionRuleCreator {
         return newRules;
     }
 
-    public void saveUserDefinedRules(final Map<String, UserCategoryRule> userDefinedRules)
+    public void saveUserDefinedRules(final Map<String, TransactionRule> userDefinedRules)
     {
-
+        for(Map.Entry<String, TransactionRule> entry : userDefinedRules.entrySet())
+        {
+            String transactionId = entry.getKey();
+            TransactionRule rule = entry.getValue();
+            transactionRuleService.create(rule);
+        }
     }
 
     public void saveSystemDefinedRules(final Map<String, TransactionRule> systemDefinedRules)
