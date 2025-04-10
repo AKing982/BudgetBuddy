@@ -22,19 +22,19 @@ import java.util.stream.Collectors;
 @Slf4j
 public class BudgetCategoryBuilder
 {
-    private BudgetCategoryService transactionCategoryService;
+    private BudgetCategoryService budgetCategoryService;
     private CategoryService categoryService;
     private BudgetCalculations budgetCalculator;
     private BudgetCategoryConverter transactionCategoryConverter;
     private Logger LOGGER = LoggerFactory.getLogger(BudgetCategoryBuilder.class);
 
     @Autowired
-    public BudgetCategoryBuilder(BudgetCategoryService transactionCategoryService,
+    public BudgetCategoryBuilder(BudgetCategoryService budgetCategoryService,
                                  CategoryService categoryService,
                                  BudgetCalculations budgetCalculator,
                                  BudgetCategoryConverter transactionCategoryConverter)
     {
-        this.transactionCategoryService = transactionCategoryService;
+        this.budgetCategoryService = budgetCategoryService;
         this.categoryService = categoryService;
         this.budgetCalculator = budgetCalculator;
         this.transactionCategoryConverter = transactionCategoryConverter;
@@ -155,9 +155,8 @@ public class BudgetCategoryBuilder
 //        return new ArrayList<>(uniqueCategories);
     }
 
-    private BudgetCategory createTransactionCategory(
+    private BudgetCategory createBudgetCategory(
             Long subBudgetId,
-            String categoryId,
             String categoryName,
             DateRange dateRange,
             List<Transaction> transactions,
@@ -174,7 +173,6 @@ public class BudgetCategoryBuilder
         BudgetCategory newCategory = new BudgetCategory();
         newCategory.setSubBudgetId(subBudgetId);
         newCategory.setCategoryName(categoryName);
-        newCategory.setCategoryId(categoryId);
         newCategory.setBudgetActual(budgetActualSpendingAmount);
         newCategory.setBudgetedAmount(budgetAmount);
         newCategory.setStartDate(dateRange.getStartDate());
@@ -188,9 +186,9 @@ public class BudgetCategoryBuilder
         return newCategory;
     }
 
-    public List<BudgetCategory> initializeTransactionCategories(final SubBudget budget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryDesignators, final SubBudgetGoals subBudgetGoals)
+    public List<BudgetCategory> initializeBudgetCategories(final SubBudget budget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryDesignators, final SubBudgetGoals subBudgetGoals)
     {
-        if(budget == null || categoryDesignators == null || categoryDesignators.isEmpty()){
+        if(budget == null || budgetSchedule == null || categoryDesignators == null){
             return Collections.emptyList();
         }
         categoryDesignators.forEach((categoryDesignator -> {
@@ -205,18 +203,18 @@ public class BudgetCategoryBuilder
         categorySpendingList.forEach(categorySpending -> {
             LOGGER.info("Category Spending: " + categorySpending.toString());
         });
-        List<BudgetCategoryCriteria> categoryBudgets = createCategoryBudgets(
+        List<BudgetCategoryCriteria> categoryBudgetCriteriaList = createCategoryBudgetCriteriaList(
                 budget,
                 budgetSchedule,
                 categorySpendingList,
                 subBudgetGoals
         );
-        categoryBudgets.forEach(categoryPeriod -> {
+        categoryBudgetCriteriaList.forEach(categoryPeriod -> {
             LOGGER.info("Category Period: " + categoryPeriod.toString());
         });
 
         // 4. Build final transaction categories
-        return buildTransactionCategoryList(categoryBudgets);
+        return buildBudgetCategoryList(categoryBudgetCriteriaList);
     }
 
     private Double getBudgetOverSpending(final BigDecimal budgetActualAmount, final BigDecimal budgetAmount)
@@ -273,38 +271,37 @@ public class BudgetCategoryBuilder
      *
      */
     //TODO: Re
-    public List<BudgetCategory> buildTransactionCategoryList(final List<BudgetCategoryCriteria> categoryBudgets)
+    public List<BudgetCategory> buildBudgetCategoryList(final List<BudgetCategoryCriteria> categoryBudgets)
     {
         if(categoryBudgets == null || categoryBudgets.isEmpty())
         {
             return Collections.emptyList();
         }
         Set<BudgetCategoryCriteria> categoryBudgetSet = new LinkedHashSet<>(categoryBudgets);
-        Set<BudgetCategory> transactionCategories = new HashSet<>();
-        for(BudgetCategoryCriteria categoryBudget : categoryBudgetSet)
+        Set<BudgetCategory> budgetCategories = new HashSet<>();
+        for(BudgetCategoryCriteria budgetCategoryCriteria : categoryBudgetSet)
         {
-            if(categoryBudget == null)
+            if(budgetCategoryCriteria == null)
             {
                 continue;
             }
-            SubBudget subBudget = categoryBudget.getBudget();
-            List<DateRange> categoryDateRanges = categoryBudget.getCategoryDateRanges();
+            SubBudget subBudget = budgetCategoryCriteria.getBudget();
+            List<DateRange> categoryDateRanges = budgetCategoryCriteria.getCategoryDateRanges();
             for(DateRange categoryDateRange : categoryDateRanges)
             {
                 validateDateRange(categoryDateRange);
-
-                BigDecimal budgetedAmount = categoryBudget.getBudgetAmount(categoryDateRange);
-                BigDecimal budgetActualAmount = categoryBudget.getActualAmount(categoryDateRange);
+                BigDecimal budgetedAmount = budgetCategoryCriteria.getBudgetAmount(categoryDateRange);
+                BigDecimal budgetActualAmount = budgetCategoryCriteria.getActualAmount(categoryDateRange);
+                log.info("Budgeted Amount: {}", budgetedAmount);
+                log.info("Budget Actual Amount: {}", budgetActualAmount);
                 if(budgetedAmount.compareTo(BigDecimal.ZERO) > 0 || budgetActualAmount.compareTo(BigDecimal.ZERO) > 0)
                 {
-                    String categoryName = categoryBudget.getCategory();
-                    String categoryId = categoryBudget.getCategoryId();
+                    String categoryName = budgetCategoryCriteria.getCategory();
                     Double budgetOverSpendingAmount = getBudgetOverSpending(budgetActualAmount, budgetedAmount);
                     boolean isOverSpentOnBudget = isBudgetOverSpending(budgetOverSpendingAmount);
                     Long subBudgetId = subBudget.getId();
-                    BudgetCategory transactionCategory = createTransactionCategory(
+                    BudgetCategory budgetCategory = createBudgetCategory(
                             subBudgetId,
-                            categoryId,
                             categoryName,
                             categoryDateRange,
                             List.of(),
@@ -313,13 +310,13 @@ public class BudgetCategoryBuilder
                             budgetOverSpendingAmount,
                             isOverSpentOnBudget
                     );
-                    LOGGER.info("Transaction Category: {}", transactionCategory.toString());
-                    transactionCategories.add(transactionCategory);
+                    LOGGER.info("Budget Category: {}", budgetCategory.toString());
+                    budgetCategories.add(budgetCategory);
                 }
             }
         }
-        LOGGER.info("Transaction Categories Size: {}", transactionCategories.size());
-        return new ArrayList<>(transactionCategories);
+        LOGGER.info("Budget Categories Size: {}", budgetCategories.size());
+        return new ArrayList<>(budgetCategories);
     }
 
     private void validateDateRange(final DateRange dateRange)
@@ -359,7 +356,7 @@ public class BudgetCategoryBuilder
 
     //TODO: Retest this method
     //TODO: Implement method using SubBudgetGoals by using SubBudgetId to fetch any SubBudgetGoals from the database
-    public List<BudgetCategoryCriteria> createCategoryBudgets(final SubBudget budget, final BudgetSchedule budgetSchedule, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final SubBudgetGoals subBudgetGoals)
+    public List<BudgetCategoryCriteria> createCategoryBudgetCriteriaList(final SubBudget budget, final BudgetSchedule budgetSchedule, final List<CategoryPeriodSpending> categoryPeriodSpendingList, final SubBudgetGoals subBudgetGoals)
     {
         if(budget == null || budgetSchedule == null || categoryPeriodSpendingList == null || subBudgetGoals == null)
         {
@@ -460,6 +457,11 @@ public class BudgetCategoryBuilder
     {
         return categoryPeriodSpendingList.stream()
                 .collect(Collectors.groupingBy(CategoryPeriodSpending::getCategoryName));
+    }
+
+    public List<BudgetCategory> saveBudgetCategories(List<BudgetCategory> budgetCategories)
+    {
+        return budgetCategoryService.saveAll(budgetCategories);
     }
 
 

@@ -2,29 +2,40 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.entities.BudgetCategoryEntity;
+import com.app.budgetbuddy.entities.CategoryEntity;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
+import com.app.budgetbuddy.exceptions.BudgetCategoryException;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetCategoryRepository;
+import com.app.budgetbuddy.repositories.CategoryRepository;
+import com.app.budgetbuddy.repositories.SubBudgetRepository;
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 public class BudgetCategoryServiceImpl implements BudgetCategoryService
 {
     private final BudgetCategoryRepository budgetCategoryRepository;
     private final BudgetCategoryConverter transactionCategoryConverter;
+    private final SubBudgetRepository subBudgetRepository;
+    private final CategoryRepository categoryRepository;
 
     @Autowired
     public BudgetCategoryServiceImpl(BudgetCategoryRepository budgetCategoryRepository,
-                                          BudgetCategoryConverter transactionCategoryConverter)
+                                     BudgetCategoryConverter transactionCategoryConverter,
+                                     SubBudgetRepository subBudgetRepository,
+                                     CategoryRepository categoryRepository)
     {
         this.budgetCategoryRepository = budgetCategoryRepository;
         this.transactionCategoryConverter = transactionCategoryConverter;
+        this.subBudgetRepository = subBudgetRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
@@ -83,7 +94,6 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         for(BudgetCategoryEntity budgetCategoryEntity : budgetCategoryEntities){
             BudgetCategory budgetCategory = new BudgetCategory();
             budgetCategory.setId(budgetCategoryEntity.getId());
-            budgetCategory.setCategoryId(budgetCategoryEntity.getCategory().getId());
             budgetCategory.setSubBudgetId(budgetCategoryEntity.getSubBudget().getId());
             budgetCategory.setCategoryName(budgetCategoryEntity.getCategory().getName());
             budgetCategory.setBudgetedAmount(budgetCategoryEntity.getBudgetedAmount());
@@ -101,6 +111,49 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
             transactionCategoryList.add(budgetCategory);
         }
         return transactionCategoryList;
+    }
+
+    private BudgetCategoryEntity convertBudgetCategoryToEntity(BudgetCategory budgetCategory)
+    {
+        BudgetCategoryEntity budgetCategoryEntity = new BudgetCategoryEntity();
+        budgetCategoryEntity.setId(budgetCategory.getId());
+        budgetCategoryEntity.setIsactive(budgetCategory.getIsActive());
+        budgetCategoryEntity.setOverspendingAmount(budgetCategory.getOverSpendingAmount());
+        budgetCategoryEntity.setStartDate(budgetCategory.getStartDate());
+        budgetCategoryEntity.setEndDate(budgetCategory.getEndDate());
+        budgetCategoryEntity.setSubBudget(getSubBudgetEntityById(budgetCategory.getSubBudgetId()));
+        budgetCategoryEntity.setBudgetedAmount(budgetCategory.getBudgetedAmount());
+        budgetCategoryEntity.setActual(budgetCategory.getBudgetActual());
+        budgetCategoryEntity.setCreatedat(LocalDateTime.now());
+        budgetCategoryEntity.setIsOverSpent(budgetCategory.isOverSpent());
+        return budgetCategoryEntity;
+    }
+
+
+    private SubBudgetEntity getSubBudgetEntityById(Long subBudgetId)
+    {
+        return subBudgetRepository.findById(subBudgetId).orElse(null);
+    }
+
+    @Override
+    public List<BudgetCategory> saveAll(List<BudgetCategory> budgetCategories)
+    {
+        if(budgetCategories.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategories.stream()
+                    .map(this::convertBudgetCategoryToEntity)
+                    .distinct()
+                    .toList();
+
+            budgetCategoryRepository.saveAll(budgetCategoryEntities);
+            return budgetCategories;
+        }catch(DataAccessException e){
+            return Collections.emptyList();
+        }
     }
 
     @Override

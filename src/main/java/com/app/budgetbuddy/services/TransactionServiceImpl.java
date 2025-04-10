@@ -25,6 +25,8 @@ import javax.xml.crypto.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -279,7 +281,26 @@ public class TransactionServiceImpl implements TransactionService
         return Optional.empty();
     }
 
-
+    @Override
+    public Map<String, Transaction> getTransactionsMap(List<String> transactionIds)
+    {
+        Map<String, Transaction> transactionMap = new HashMap<>();
+        if(transactionIds.isEmpty())
+        {
+            return new HashMap<>();
+        }
+        for(String transactionId : transactionIds)
+        {
+            Optional<Transaction> transactionOptional = findTransactionById(transactionId);
+            if(transactionOptional.isEmpty())
+            {
+                log.warn("Skipping TransactionId: {}", transactionId);
+                continue;
+            }
+            transactionMap.put(transactionId, transactionOptional.get());
+        }
+        return transactionMap;
+    }
 
     private TransactionsEntity convertPlaidTransactionToEntity(PlaidTransaction plaidTransaction){
         TransactionsEntity transactionsEntity = new TransactionsEntity();
@@ -423,7 +444,7 @@ public class TransactionServiceImpl implements TransactionService
                 return Optional.empty();
             }
             TransactionsEntity transactionsEntity1 = transactionsEntity.get();
-            return Optional.ofNullable(transactionEntityToModelConverter.convert(transactionsEntity1));
+            return Optional.of(transactionEntityToModelConverter.convert(transactionsEntity1));
         }catch(DataAccessException e){
             LOGGER.error("There was an error retrieving transaction from the database: {}", e.getMessage());
             return Optional.empty();

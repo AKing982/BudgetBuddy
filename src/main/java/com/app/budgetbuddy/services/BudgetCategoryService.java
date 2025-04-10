@@ -18,5 +18,7 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
 
     List<BudgetCategory> getBudgetCategoryListByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate);
 
+    List<BudgetCategory> saveAll(List<BudgetCategory> budgetCategories);
+
     Integer getTotalBudgetAmountSumByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
 }

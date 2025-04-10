@@ -118,35 +118,6 @@ public class SubBudgetBuilderService
                     BudgetSchedule budgetSchedule = budgetScheduleOptional.get();
                     newSubBudget.setBudgetSchedule(List.of(budgetSchedule));
                 }
-//                SubBudget subBudget = SubBudget.buildSubBudget(
-//                        true,  // isActive
-//                        monthlyAllocation,  // allocatedAmount
-//                        monthlySavingsTarget,  // savingsTarget
-//                        BigDecimal.ZERO,  // savingsAmount
-//                        budget,  // budget
-//                        BigDecimal.ZERO,  // spentOnBudget
-//                        subBudgetName,  // budgetName
-//                        startDate,
-//                        endDate
-//                );
-//                subBudget.setYear(year);
-//                Optional<SubBudgetEntity> subBudgetEntity = subBudgetService.saveSubBudget(subBudget);
-//                if(subBudgetEntity.isEmpty())
-//                {
-//                    log.error("Failed to create sub budget");
-//                    return Collections.emptyList();
-//                }
-//                SubBudgetEntity subBudgetEntity1 = subBudgetEntity.get();
-//                Long subBudgetId = subBudgetEntity1.getId();
-//                subBudget.setId(subBudgetId);
-//                Optional<BudgetSchedule> budgetScheduleOptional = budgetScheduleEngine.createMonthSubBudgetSchedule(subBudget);
-//                if(budgetScheduleOptional.isEmpty())
-//                {
-//                    log.error("Failed to create month sub budget schedule");
-//                    continue;
-//                }
-//                BudgetSchedule budgetSchedule = budgetScheduleOptional.get();
-//                subBudget.setBudgetSchedule(List.of(budgetSchedule));
                 subBudgets.add(newSubBudget);
             }
             return subBudgets;

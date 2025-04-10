@@ -1,8 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +9,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class CategoryTransactions
 {
    private String categoryId;
@@ -34,6 +33,11 @@ public class CategoryTransactions
       this.transactions = transactions;
    }
 
+   public static CategoryTransactions build(String categoryName, List<Transaction> transactions)
+   {
+      return new CategoryTransactions(categoryName, transactions);
+   }
+
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -41,6 +45,7 @@ public class CategoryTransactions
       CategoryTransactions that = (CategoryTransactions) o;
       return Objects.equals(categoryId, that.categoryId) && Objects.equals(categoryName, that.categoryName) && Objects.equals(transactions, that.transactions);
    }
+
 
    @Override
    public int hashCode() {

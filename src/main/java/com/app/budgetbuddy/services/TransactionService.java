@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface TransactionService extends ServiceModel<TransactionsEntity>
@@ -37,6 +38,9 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     List<TransactionsEntity> getTransactionsByAccountId(String accountId);
     List<TransactionsEntity> getTransactionsByDescription(String description);
     Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId);
+
+    Map<String, Transaction> getTransactionsMap(List<String> transactionIds);
+
     Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName);
 
     void updateTransactionCategorizationFlag(String transactionId);

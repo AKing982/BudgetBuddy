@@ -28,7 +28,6 @@ public class BudgetCategoryConverter implements Converter<BudgetCategory, Budget
         userBudgetCategoryEntity.setActual(userBudgetCategory.getBudgetActual());
         userBudgetCategoryEntity.setStartDate(userBudgetCategory.getStartDate());
         userBudgetCategoryEntity.setEndDate(userBudgetCategory.getEndDate());
-        userBudgetCategoryEntity.setCategory(getCategoryById(userBudgetCategory.getCategoryId()));
         return userBudgetCategoryEntity;
     }
 

@@ -3,6 +3,7 @@ package com.app.budgetbuddy.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Table(name= "transactionCategories")
@@ -30,6 +31,9 @@ public class TransactionCategoryEntity
 
     @Column(name="categorized_by", nullable=false)
     private String categorizedBy;
+
+    @Column(name="categorized_date", nullable=false)
+    private LocalDate categorized_date;
 
     @Column(name="rule_priority")
     private int rulePriority;

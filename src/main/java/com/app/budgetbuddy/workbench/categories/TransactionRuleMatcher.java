@@ -169,11 +169,7 @@ public class TransactionRuleMatcher extends AbstractTransactionMatcher<Transacti
             }
             CategoryEntity categoryEntity = categoryEntityOptional.get();
             String categoryDescription = categoryEntity.getDescription();
-            CategoryType matchedCategory = merchantCategoryDescriptionMatch.get(categoryDescription);
-            if(matchedCategory != CategoryType.UNCATEGORIZED)
-            {
-                return matchedCategory;
-            }
+            return merchantCategoryDescriptionMatch.get(categoryDescription);
         }
         return CategoryType.UNCATEGORIZED;
     }

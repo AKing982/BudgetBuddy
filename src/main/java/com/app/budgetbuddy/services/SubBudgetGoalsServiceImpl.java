@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.GoalStatus;
+import com.app.budgetbuddy.domain.SubBudgetGoals;
 import com.app.budgetbuddy.entities.SubBudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.SubBudgetGoalsRepository;
@@ -72,6 +74,36 @@ public class SubBudgetGoalsServiceImpl implements SubBudgetGoalsService
         {
             log.error("There was an error finding the sub budget goals with id {}: ", id, e);
             return Optional.empty();
+        }
+    }
+
+    private SubBudgetGoals convertSubBudgetGoalEntity(SubBudgetGoalsEntity subBudgetGoalsEntity)
+    {
+        SubBudgetGoals subBudgetGoals = new SubBudgetGoals();
+        subBudgetGoals.setStatus(GoalStatus.valueOf(subBudgetGoalsEntity.getMonthlyStatus()));
+        subBudgetGoals.setGoalScore(subBudgetGoalsEntity.getGoalScore());
+        subBudgetGoals.setRemaining(subBudgetGoalsEntity.getRemainingAmount());
+        subBudgetGoals.setSavingsTarget(subBudgetGoalsEntity.getMonthlySavingsTarget());
+        subBudgetGoals.setSubBudgetId(subBudgetGoalsEntity.getSubBudgetEntity().getId());
+        subBudgetGoals.setContributedAmount(subBudgetGoalsEntity.getMonthlyContributed());
+        subBudgetGoals.setGoalId(subBudgetGoalsEntity.getId());
+        return subBudgetGoals;
+    }
+
+    @Override
+    public SubBudgetGoals getSubBudgetGoalsEntitiesBySubBudgetId(final Long subBudgetId)
+    {
+        try
+        {
+            Optional<SubBudgetGoalsEntity> subBudgetGoalsOptional = subBudgetGoalsRepository.findSubBudgetGoalEntitiesBySubBudgetId(subBudgetId);
+            if(subBudgetGoalsOptional.isEmpty())
+            {
+                throw new RuntimeException("No such sub budget goals with id " + subBudgetId);
+            }
+            return convertSubBudgetGoalEntity(subBudgetGoalsOptional.get());
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the sub budget goals by sub-budget id {}: ", subBudgetId, e);
+            throw new DataAccessException("There was an error fetching the sub budget goals", e);
         }
     }
 }

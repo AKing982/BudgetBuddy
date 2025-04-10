@@ -173,7 +173,7 @@ public class TransactionCategoryRunner
 
         return existingCategories.stream()
                 .anyMatch(category ->
-                        category.getCategory().getId().equals(budgetCategory.getCategoryId()) &&
+                        category.getCategory().getName().equals(budgetCategory.getCategoryName()) &&
                                 category.getBudgetedAmount().equals(budgetCategory.getBudgetedAmount()));
     }
 
@@ -417,7 +417,7 @@ public class TransactionCategoryRunner
         entity.setIsOverSpent(transactionCategory.isOverSpent());
         entity.setOverspendingAmount(transactionCategory.getOverSpendingAmount());
         // Set Category Entity
-        log.info("Finding category with id: {}", transactionCategory.getCategoryId());
+        log.info("Finding category with name: {}", transactionCategory.getCategoryName());
         CategoryEntity categoryEntity = categoryService.findCategoryById(transactionCategory.getCategoryName())  // Try using the "name" as ID first
                 .orElseGet(() -> {
                     // If it's not an ID, then try as a name

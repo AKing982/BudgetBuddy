@@ -1,10 +1,6 @@
 package com.app.budgetbuddy.workbench.budget;
 
-import com.app.budgetbuddy.config.JacksonConfig;
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.exceptions.CategoryPeriodCriteriaException;
-import com.app.budgetbuddy.exceptions.DateRangeException;
-import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
@@ -12,52 +8,48 @@ import com.app.budgetbuddy.workbench.categories.TransactionRuleService;
 
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 @Slf4j
 class BudgetCategoryBuilderTest {
 
-    @Mock
+    @MockBean
     private BudgetCategoryService userBudgetCategoryService;
 
-    @Mock
+    @MockBean
     private TransactionRuleService categoryRuleService;
 
-    @Mock
+    @MockBean
     private CategoryService categoryService;
 
-    @Mock
+    @MockBean
     private BudgetCalculations budgetCalculator;
 
-    @Mock
+    @MockBean
     private CategoryRuleEngine categoryRuleEngine;
 
-    @Mock
+    @MockBean
     private BudgetCategoryConverter userBudgetCategoryConverter;
 
-    @Spy
-    @InjectMocks
+    @Autowired
     private BudgetCategoryBuilder budgetCategoryBuilder;
 
     private Budget budget;
@@ -94,12 +86,6 @@ class BudgetCategoryBuilderTest {
         budgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
         budgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
         budgetSchedule.setTotalPeriods(5);
-
-
-
-
-
-        MockitoAnnotations.openMocks(this); // Initialize mocks
     }
 
     private List<SubBudget> generateTestSubBudgets(){
@@ -255,7 +241,7 @@ class BudgetCategoryBuilderTest {
        BudgetSchedule budgetSchedule = new BudgetSchedule();
        List<CategoryPeriodSpending> categoryPeriodSpendings = Arrays.asList(new CategoryPeriodSpending());
        SubBudgetGoals subBudgetGoals1 = new SubBudgetGoals();
-       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgets(null, budgetSchedule, categoryPeriodSpendings, subBudgetGoals1);
+       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(null, budgetSchedule, categoryPeriodSpendings, subBudgetGoals1);
        assertEquals(0, actual.size());
    }
 
@@ -264,7 +250,7 @@ class BudgetCategoryBuilderTest {
        SubBudget subBudget = new SubBudget();
        List<CategoryPeriodSpending> categoryPeriodSpendings = Arrays.asList(new CategoryPeriodSpending());
        SubBudgetGoals subBudgetGoals1 = new SubBudgetGoals();
-       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgets(subBudget, null, categoryPeriodSpendings, subBudgetGoals1);
+       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, null, categoryPeriodSpendings, subBudgetGoals1);
        assertEquals(0, actual.size());
    }
 
@@ -274,148 +260,136 @@ class BudgetCategoryBuilderTest {
        SubBudget subBudget = new SubBudget();
        SubBudgetGoals subBudgetGoals1 = new SubBudgetGoals();
 
-       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgets(subBudget, budgetSchedule, null, subBudgetGoals1);
+       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, budgetSchedule, null, subBudgetGoals1);
        assertEquals(0, actual.size());
    }
 
-//   @Test
-//   void testCreateCategoryBudgets_whenJanuaryBudget_thenReturnJanuaryCategoryBudgets()
-//   {
-//       SubBudget subBudget = new SubBudget();
-//       subBudget.setBudget(budget);
-//       subBudget.setBudgetSchedule(List.of(budgetSchedule));
-//       subBudget.setActive(true);
-//       subBudget.setYear(2025);
-//       subBudget.setId(1L);
-//       subBudget.setStartDate(LocalDate.of(2025, 1, 1));
-//       subBudget.setEndDate(LocalDate.of(2025, 1, 31));
-//       subBudget.setSubBudgetName("January Budget");
-//       subBudget.setSpentOnBudget(BigDecimal.valueOf(2782));
-//       subBudget.setSubSavingsAmount(BigDecimal.valueOf(50));
-//       subBudget.setSubSavingsTarget(BigDecimal.valueOf(200));
-//       subBudget.setAllocatedAmount(BigDecimal.valueOf(3260));
-//
-//       SubBudgetGoals subBudgetGoals = new SubBudgetGoals();
-//       subBudgetGoals.setContributedAmount(BigDecimal.valueOf(76));
-//       subBudgetGoals.setSubBudgetId(1L);
-//       subBudgetGoals.setGoalId(1L);
-//       subBudgetGoals.setGoalScore(BigDecimal.valueOf(0.36));
-//       subBudgetGoals.setStatus(GoalStatus.IN_PROGRESS);
-//       subBudgetGoals.setSavingsTarget(BigDecimal.valueOf(208));
-//       subBudgetGoals.setRemaining(BigDecimal.valueOf(132));
-//
-//       BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
-//       januaryBudgetSchedule.setTotalPeriods(5);
-//       januaryBudgetSchedule.setSubBudgetId(1L);
-//       januaryBudgetSchedule.setStatus("ACTIVE");
-//       januaryBudgetSchedule.setScheduleRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
-//       januaryBudgetSchedule.setPeriodType(Period.MONTHLY);
-//       januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
-//       januaryBudgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
-//       januaryBudgetSchedule.setBudgetScheduleId(1L);
-//       januaryBudgetSchedule.setBudgetScheduleRanges(generateJanuaryBudgetScheduleRanges());
-//
-//       // Setup CategoryPeriodSpending (derived from expected CategoryBudgets)
-//       List<CategoryPeriodSpending> spendingList = new ArrayList<>();
-//       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(79),
-//               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7))));
-//       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(75),
-//               new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14))));
-//       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(81),
-//               new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21))));
-//       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(86),
-//               new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28))));
-//       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(82),
-//               new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31))));
-//       spendingList.add(new CategoryPeriodSpending("Rent", BigDecimal.valueOf(1200),
-//               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 15))));
-//       spendingList.add(new CategoryPeriodSpending("Rent", BigDecimal.valueOf(707),
-//               new DateRange(LocalDate.of(2025, 1, 16), LocalDate.of(2025, 1, 31))));
-//
-//       List<BudgetCategoryCriteria> expectedCategoryBudgets = new ArrayList<>();
-//       BudgetCategoryCriteria groceryBudget = new BudgetCategoryCriteria();
-//       groceryBudget.setCategory("Groceries");
-//       groceryBudget.setBudget(subBudget);
-//       groceryBudget.setBudgetSchedule(januaryBudgetSchedule);
-//       groceryBudget.setActive(true);
-//       groceryBudget.setCategoryDateRanges(Arrays.asList(
-//               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)),
-//               new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)),
-//               new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025,  1, 21)),
-//               new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)),
-//               new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31))
-//       ));
-//       List<BudgetPeriodAmount> groceryBudgetAmounts = new ArrayList<>();
-//       BudgetPeriodAmount groceryWeek1 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)), BigDecimal.valueOf(66), BigDecimal.valueOf(79));
-//       BudgetPeriodAmount groceryWeek2 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)), BigDecimal.valueOf(66), BigDecimal.valueOf(75));
-//       BudgetPeriodAmount groceryWeek3 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21)), BigDecimal.valueOf(66), BigDecimal.valueOf(81));
-//       BudgetPeriodAmount groceryWeek4 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)), BigDecimal.valueOf(66), BigDecimal.valueOf(86));
-//       BudgetPeriodAmount groceryWeek5 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31)), BigDecimal.valueOf(66), BigDecimal.valueOf(82));
-//       groceryBudgetAmounts.add(groceryWeek1);
-//       groceryBudgetAmounts.add(groceryWeek2);
-//       groceryBudgetAmounts.add(groceryWeek3);
-//       groceryBudgetAmounts.add(groceryWeek4);
-//       groceryBudgetAmounts.add(groceryWeek5);
-//       groceryBudget.setPeriodAmounts(groceryBudgetAmounts);
-//
-//       BudgetCategoryCriteria rentBudget = new BudgetCategoryCriteria();
-//       rentBudget.setCategory("Rent");
-//       rentBudget.setBudget(subBudget);
-//       rentBudget.setBudgetSchedule(januaryBudgetSchedule);
-//       rentBudget.setActive(true);
-//       rentBudget.setCategoryDateRanges(Arrays.asList(
-//               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 15)),
-//               new DateRange(LocalDate.of(2025, 1, 16), LocalDate.of(2025, 1, 31))
-//       ));
-//       List<BudgetPeriodAmount> rentBudgetAmounts = new ArrayList<>();
-//       BudgetPeriodAmount rentWeek1 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 15)), BigDecimal.valueOf(1404), BigDecimal.valueOf(1200));
-//       BudgetPeriodAmount rentWeek2 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 16), LocalDate.of(2025, 1, 31)), BigDecimal.valueOf(504), BigDecimal.valueOf(707));
-//       rentBudgetAmounts.add(rentWeek1);
-//       rentBudgetAmounts.add(rentWeek2);
-//       rentBudget.setPeriodAmounts(rentBudgetAmounts);
-//       expectedCategoryBudgets.add(rentBudget);
-//       expectedCategoryBudgets.add(groceryBudget);
-//
-//       Mockito.when(budgetCalculator.determineCategoryBudget("Rent", BigDecimal.valueOf(3260)))
-//               .thenReturn(new BigDecimal("1907"));
-//
-//       Mockito.when(budgetCalculator.determineCategoryBudget("Groceries", BigDecimal.valueOf(3260)))
-//               .thenReturn(new BigDecimal("326"));
-//
-//       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createBudgetCategoryCriterias(subBudget, januaryBudgetSchedule, spendingList, subBudgetGoals);
-//       assertNotNull(actual, "Result should not be null");
-//       assertEquals(expectedCategoryBudgets.size(), actual.size());
-//
-//       BudgetCategoryCriteria actualGrocery = actual.stream()
-//               .filter(cb -> cb.getCategory().equals("Groceries"))
-//               .findFirst()
-//               .orElseThrow(() -> new AssertionError("Groceries CategoryBudget not found"));
-//       assertEquals(groceryBudget.getCategory(), actualGrocery.getCategory());
-//       assertEquals(groceryBudget.getCategoryDateRanges(), actualGrocery.getCategoryDateRanges());
-//       assertEquals(groceryBudget.getPeriodAmounts().size(), actualGrocery.getPeriodAmounts().size());
-//       for (int i = 0; i < groceryBudget.getPeriodAmounts().size(); i++) {
-//           BudgetPeriodAmount expectedPA = groceryBudget.getPeriodAmounts().get(i);
-//           BudgetPeriodAmount actualPA = actualGrocery.getPeriodAmounts().get(i);
-//           assertEquals(expectedPA.getDateRange(), actualPA.getDateRange(), "DateRange mismatch for Groceries");
-//           assertEquals(expectedPA.getBudgeted(), actualPA.getBudgeted(), "Budgeted amount mismatch for Groceries");
-//           assertEquals(expectedPA.getActual(), actualPA.getActual(), "Actual amount mismatch for Groceries");
-//       }
-//
-//       BudgetCategoryCriteria actualRent = actual.stream()
-//               .filter(cb -> cb.getCategory().equals("Rent"))
-//               .findFirst()
-//               .orElseThrow(() -> new AssertionError("Rent CategoryBudget not found"));
-//       assertEquals(rentBudget.getCategory(), actualRent.getCategory());
-//       assertEquals(rentBudget.getCategoryDateRanges(), actualRent.getCategoryDateRanges());
-//       assertEquals(rentBudget.getPeriodAmounts().size(), actualRent.getPeriodAmounts().size());
-//       for (int i = 0; i < rentBudget.getPeriodAmounts().size(); i++) {
-//           BudgetPeriodAmount expectedPA = rentBudget.getPeriodAmounts().get(i);
-//           BudgetPeriodAmount actualPA = actualRent.getPeriodAmounts().get(i);
-//           assertEquals(expectedPA.getDateRange(), actualPA.getDateRange(), "DateRange mismatch for Rent");
-//           assertEquals(expectedPA.getBudgeted(), actualPA.getBudgeted(), "Budgeted amount mismatch for Rent");
-//           assertEquals(expectedPA.getActual(), actualPA.getActual(), "Actual amount mismatch for Rent");
-//       }
-//   }
+   @Test
+   void testCreateCategoryBudgets_whenJanuaryBudget_thenReturnJanuaryCategoryBudgets()
+   {
+       SubBudget subBudget = getAprilSubBudget(1, 31, "January Budget");
+
+       SubBudgetGoals subBudgetGoals = new SubBudgetGoals();
+       subBudgetGoals.setContributedAmount(BigDecimal.valueOf(76));
+       subBudgetGoals.setSubBudgetId(1L);
+       subBudgetGoals.setGoalId(1L);
+       subBudgetGoals.setGoalScore(BigDecimal.valueOf(0.36));
+       subBudgetGoals.setStatus(GoalStatus.IN_PROGRESS);
+       subBudgetGoals.setSavingsTarget(BigDecimal.valueOf(208));
+       subBudgetGoals.setRemaining(BigDecimal.valueOf(132));
+
+       BudgetSchedule januaryBudgetSchedule = new BudgetSchedule();
+       januaryBudgetSchedule.setTotalPeriods(5);
+       januaryBudgetSchedule.setSubBudgetId(1L);
+       januaryBudgetSchedule.setStatus("ACTIVE");
+       januaryBudgetSchedule.setScheduleRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
+       januaryBudgetSchedule.setPeriodType(Period.MONTHLY);
+       januaryBudgetSchedule.setStartDate(LocalDate.of(2025, 1, 1));
+       januaryBudgetSchedule.setEndDate(LocalDate.of(2025, 1, 31));
+       januaryBudgetSchedule.setBudgetScheduleId(1L);
+       januaryBudgetSchedule.setBudgetScheduleRanges(generateJanuaryBudgetScheduleRanges());
+
+       // Setup CategoryPeriodSpending (derived from expected CategoryBudgets)
+       List<CategoryPeriodSpending> spendingList = new ArrayList<>();
+       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(79),
+               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7))));
+       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(75),
+               new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14))));
+       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(81),
+               new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21))));
+       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(86),
+               new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28))));
+       spendingList.add(new CategoryPeriodSpending("Groceries", BigDecimal.valueOf(82),
+               new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31))));
+       spendingList.add(new CategoryPeriodSpending("Rent", BigDecimal.valueOf(1200),
+               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 15))));
+       spendingList.add(new CategoryPeriodSpending("Rent", BigDecimal.valueOf(707),
+               new DateRange(LocalDate.of(2025, 1, 16), LocalDate.of(2025, 1, 31))));
+
+       List<BudgetCategoryCriteria> expectedCategoryBudgets = new ArrayList<>();
+       BudgetCategoryCriteria groceryBudget = new BudgetCategoryCriteria();
+       groceryBudget.setCategory("Groceries");
+       groceryBudget.setBudget(subBudget);
+       groceryBudget.setBudgetSchedule(januaryBudgetSchedule);
+       groceryBudget.setActive(true);
+       groceryBudget.setCategoryDateRanges(Arrays.asList(
+               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)),
+               new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)),
+               new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025,  1, 21)),
+               new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)),
+               new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31))
+       ));
+       List<BudgetPeriodAmount> groceryBudgetAmounts = new ArrayList<>();
+       BudgetPeriodAmount groceryWeek1 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)), BigDecimal.valueOf(66), BigDecimal.valueOf(79));
+       BudgetPeriodAmount groceryWeek2 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)), BigDecimal.valueOf(66), BigDecimal.valueOf(75));
+       BudgetPeriodAmount groceryWeek3 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21)), BigDecimal.valueOf(66), BigDecimal.valueOf(81));
+       BudgetPeriodAmount groceryWeek4 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)), BigDecimal.valueOf(66), BigDecimal.valueOf(86));
+       BudgetPeriodAmount groceryWeek5 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31)), BigDecimal.valueOf(66), BigDecimal.valueOf(82));
+       groceryBudgetAmounts.add(groceryWeek1);
+       groceryBudgetAmounts.add(groceryWeek2);
+       groceryBudgetAmounts.add(groceryWeek3);
+       groceryBudgetAmounts.add(groceryWeek4);
+       groceryBudgetAmounts.add(groceryWeek5);
+       groceryBudget.setPeriodAmounts(groceryBudgetAmounts);
+
+       BudgetCategoryCriteria rentBudget = new BudgetCategoryCriteria();
+       rentBudget.setCategory("Rent");
+       rentBudget.setBudget(subBudget);
+       rentBudget.setBudgetSchedule(januaryBudgetSchedule);
+       rentBudget.setActive(true);
+       rentBudget.setCategoryDateRanges(Arrays.asList(
+               new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 15)),
+               new DateRange(LocalDate.of(2025, 1, 16), LocalDate.of(2025, 1, 31))
+       ));
+       List<BudgetPeriodAmount> rentBudgetAmounts = new ArrayList<>();
+       BudgetPeriodAmount rentWeek1 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 15)), BigDecimal.valueOf(1404), BigDecimal.valueOf(1200));
+       BudgetPeriodAmount rentWeek2 = new BudgetPeriodAmount(new DateRange(LocalDate.of(2025, 1, 16), LocalDate.of(2025, 1, 31)), BigDecimal.valueOf(504), BigDecimal.valueOf(707));
+       rentBudgetAmounts.add(rentWeek1);
+       rentBudgetAmounts.add(rentWeek2);
+       rentBudget.setPeriodAmounts(rentBudgetAmounts);
+       expectedCategoryBudgets.add(rentBudget);
+       expectedCategoryBudgets.add(groceryBudget);
+
+       Mockito.when(budgetCalculator.determineCategoryBudget("Rent", BigDecimal.valueOf(3260)))
+               .thenReturn(new BigDecimal("1907"));
+
+       Mockito.when(budgetCalculator.determineCategoryBudget("Groceries", BigDecimal.valueOf(3260)))
+               .thenReturn(new BigDecimal("326"));
+
+       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, januaryBudgetSchedule, spendingList, subBudgetGoals);
+       assertNotNull(actual, "Result should not be null");
+       assertEquals(expectedCategoryBudgets.size(), actual.size());
+
+       BudgetCategoryCriteria actualGrocery = actual.stream()
+               .filter(cb -> cb.getCategory().equals("Groceries"))
+               .findFirst()
+               .orElseThrow(() -> new AssertionError("Groceries CategoryBudget not found"));
+       assertEquals(groceryBudget.getCategory(), actualGrocery.getCategory());
+       assertEquals(groceryBudget.getCategoryDateRanges(), actualGrocery.getCategoryDateRanges());
+       assertEquals(groceryBudget.getPeriodAmounts().size(), actualGrocery.getPeriodAmounts().size());
+       for (int i = 0; i < groceryBudget.getPeriodAmounts().size(); i++) {
+           BudgetPeriodAmount expectedPA = groceryBudget.getPeriodAmounts().get(i);
+           BudgetPeriodAmount actualPA = actualGrocery.getPeriodAmounts().get(i);
+           assertEquals(expectedPA.getDateRange(), actualPA.getDateRange(), "DateRange mismatch for Groceries");
+           assertEquals(expectedPA.getBudgeted(), actualPA.getBudgeted(), "Budgeted amount mismatch for Groceries");
+           assertEquals(expectedPA.getActual(), actualPA.getActual(), "Actual amount mismatch for Groceries");
+       }
+
+       BudgetCategoryCriteria actualRent = actual.stream()
+               .filter(cb -> cb.getCategory().equals("Rent"))
+               .findFirst()
+               .orElseThrow(() -> new AssertionError("Rent CategoryBudget not found"));
+       assertEquals(rentBudget.getCategory(), actualRent.getCategory());
+       assertEquals(rentBudget.getCategoryDateRanges(), actualRent.getCategoryDateRanges());
+       assertEquals(rentBudget.getPeriodAmounts().size(), actualRent.getPeriodAmounts().size());
+       for (int i = 0; i < rentBudget.getPeriodAmounts().size(); i++) {
+           BudgetPeriodAmount expectedPA = rentBudget.getPeriodAmounts().get(i);
+           BudgetPeriodAmount actualPA = actualRent.getPeriodAmounts().get(i);
+           assertEquals(expectedPA.getDateRange(), actualPA.getDateRange(), "DateRange mismatch for Rent");
+           assertEquals(expectedPA.getBudgeted(), actualPA.getBudgeted(), "Budgeted amount mismatch for Rent");
+           assertEquals(expectedPA.getActual(), actualPA.getActual(), "Actual amount mismatch for Rent");
+       }
+   }
 
    @Test
    void testBuildBudgetPeriodAmounts_whenCategoryIsEmpty_thenReturnEmptyCollection(){
@@ -523,29 +497,198 @@ class BudgetCategoryBuilderTest {
        assertTrue(actual.isEmpty());
     }
 
-
-    private void verifyTransactionCategory(List<BudgetCategory> categories, String categoryId,
-                                           String categoryName, LocalDate startDate, LocalDate endDate, Double budgeted, Double actual,
-                                           boolean isOverspent) {
-
-        BudgetCategory matchingCategory = categories.stream()
-                .filter(tc -> tc.getCategoryId().equals(categoryId) &&
-                        tc.getStartDate().equals(startDate) &&
-                        tc.getEndDate().equals(endDate))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError(
-                        String.format("No category found with ID: %s and date range: %s - %s",
-                                categoryId, startDate, endDate)));
-
-
-        assertEquals(categoryId, matchingCategory.getCategoryId(), "Category ID mismatch");
-        assertEquals(categoryName, matchingCategory.getCategoryName(), "Category name mismatch");
-        assertEquals(startDate, matchingCategory.getStartDate(), "Start date mismatch");
-        assertEquals(endDate, matchingCategory.getEndDate(), "End date mismatch");
-        assertEquals(budgeted, matchingCategory.getBudgetedAmount(), "Budget amount mismatch");
-        assertEquals(actual, matchingCategory.getBudgetActual(), "Actual amount mismatch");
-        assertEquals(isOverspent, matchingCategory.isOverSpent(), "Overspent flag mismatch");
+    @Test
+    void testInitializeBudgetCategories_whenSubBudgetIsNull_thenReturnEmptyList(){
+        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+        categoryTransactions.add(new CategoryTransactions());
+        List<BudgetCategory> actual = budgetCategoryBuilder.initializeBudgetCategories(null, budgetSchedule, categoryTransactions, subBudgetGoals);
+        assertTrue(actual.isEmpty());
     }
+
+    @Test
+    void testInitializeBudgetCategories_whenBudgetScheduleIsNull_thenReturnEmptyList(){
+        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+        categoryTransactions.add(new CategoryTransactions());
+
+        SubBudget subBudget = getAprilSubBudget(1, 31, "January Budget");
+
+        List<BudgetCategory> actual = budgetCategoryBuilder.initializeBudgetCategories(subBudget, null, categoryTransactions, subBudgetGoals);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testInitializeBudgetCategories_whenCategoryTransactionsIsNull_thenReturnEmptyList(){
+        SubBudget subBudget = getAprilSubBudget(1, 31, "January Budget");
+
+        List<BudgetCategory> actual = budgetCategoryBuilder.initializeBudgetCategories(subBudget, budgetSchedule, null, subBudgetGoals);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testInitializeBudgetCategories_whenAprilData_thenReturnBudgetCategories()
+    {
+        List<BudgetCategory> expectedBudgetCategories = new ArrayList<>();
+        SubBudget subBudget = getAprilSubBudget(4, 30, "April Budget");
+
+        BudgetSchedule aprilBudgetSchedule = getAprilBudgetSchedule();
+
+        createGroceryAndOtherBudgetCategories(expectedBudgetCategories);
+
+        SubBudgetGoals aprilSubBudgetGoals = getAprilSubBudgetGoals();
+
+        List<CategoryTransactions> aprilCategoryTransactions = createGroceryAndOtherCategoryTransactions();
+
+        Mockito.when(budgetCalculator.determineCategoryBudget("Groceries", BigDecimal.valueOf(3260)))
+                .thenReturn(BigDecimal.valueOf(326));
+
+        Mockito.when(budgetCalculator.determineCategoryBudget("Other", BigDecimal.valueOf(3260)))
+                .thenReturn(BigDecimal.valueOf(50));
+
+        List<BudgetCategory> actual = budgetCategoryBuilder.initializeBudgetCategories(subBudget, aprilBudgetSchedule, aprilCategoryTransactions, aprilSubBudgetGoals);
+        assertEquals(expectedBudgetCategories.size(), actual.size());
+        for (int i = 0; i < expectedBudgetCategories.size(); i++) {
+            BudgetCategory expectedBudgetCategory = expectedBudgetCategories.get(i);
+            BudgetCategory actualBudgetCategory = actual.get(i);
+            assertEquals(expectedBudgetCategory.getCategoryName(), actualBudgetCategory.getCategoryName());
+            assertEquals(expectedBudgetCategory.getBudgetedAmount(), actualBudgetCategory.getBudgetedAmount());
+            assertEquals(expectedBudgetCategory.getBudgetActual(), actualBudgetCategory.getBudgetActual());
+            assertEquals(expectedBudgetCategory.getSubBudgetId(), actualBudgetCategory.getSubBudgetId());
+            assertEquals(expectedBudgetCategory.getIsActive(), actualBudgetCategory.getIsActive());
+            assertEquals(expectedBudgetCategory.getStartDate(), actualBudgetCategory.getStartDate());
+            assertEquals(expectedBudgetCategory.getEndDate(), actualBudgetCategory.getEndDate());
+            assertEquals(expectedBudgetCategory.getTransactions().size(), actualBudgetCategory.getTransactions().size());
+            assertEquals(expectedBudgetCategory.getId(), actualBudgetCategory.getId());
+            assertEquals(expectedBudgetCategory.getOverSpendingAmount(), actualBudgetCategory.getOverSpendingAmount());
+        }
+    }
+
+    private SubBudgetGoals getAprilSubBudgetGoals()
+    {
+        SubBudgetGoals subBudgetGoals = new SubBudgetGoals();
+        subBudgetGoals.setId(4L);
+        subBudgetGoals.setGoalScore(BigDecimal.valueOf(100));
+        subBudgetGoals.setRemaining(BigDecimal.valueOf(2433.00));
+        subBudgetGoals.setSavingsTarget(BigDecimal.valueOf(208.33));
+        subBudgetGoals.setStatus(GoalStatus.IN_PROGRESS);
+        subBudgetGoals.setGoalId(1L);
+        return subBudgetGoals;
+    }
+
+    private List<CategoryTransactions> createGroceryAndOtherCategoryTransactions()
+    {
+        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+        CategoryTransactions groceryCategoryTransaction = new CategoryTransactions();
+        groceryCategoryTransaction.setCategoryName("Groceries");
+
+        Transaction wincoTransaction = new Transaction();
+        wincoTransaction.setTransactionId("e11112345");
+        wincoTransaction.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        wincoTransaction.setDescription("PIN Purchase WINCO FOODS");
+        wincoTransaction.setMerchantName("Winco Foods");
+        wincoTransaction.setName("Winco Foods");
+        wincoTransaction.setPending(false);
+        wincoTransaction.setPosted(LocalDate.of(2025, 4, 2));
+        wincoTransaction.setAmount(BigDecimal.valueOf(45.84));
+        groceryCategoryTransaction.setTransactions(List.of(wincoTransaction));
+
+        CategoryTransactions otherCategoryTransaction = new CategoryTransactions();
+        Transaction parkingTransaction = new Transaction();
+        parkingTransaction.setAmount(BigDecimal.valueOf(12.84));
+        parkingTransaction.setCategories(List.of("Parking", "Travel"));
+        parkingTransaction.setDescription("Purchase THEPARKINGSPOT-ECW401");
+        parkingTransaction.setMerchantName("Theparkingspot Ec");
+        parkingTransaction.setName("Theparkingspot Ec");
+        parkingTransaction.setPending(false);
+        parkingTransaction.setTransactionId("e444222223");
+        parkingTransaction.setPosted(LocalDate.of(2025, 4, 3));
+        otherCategoryTransaction.setTransactions(List.of(parkingTransaction));
+        otherCategoryTransaction.setCategoryName("Other");
+        categoryTransactions.add(otherCategoryTransaction);
+        categoryTransactions.add(groceryCategoryTransaction);
+        return categoryTransactions;
+    }
+
+    private static void createGroceryAndOtherBudgetCategories(List<BudgetCategory> expectedBudgetCategories) {
+        BudgetCategory groceryCategory = new BudgetCategory();
+        groceryCategory.setCategoryName("Groceries");
+        groceryCategory.setStartDate(LocalDate.of(2025, 4, 1));
+        groceryCategory.setEndDate(LocalDate.of(2025, 4, 7));
+        groceryCategory.setSubBudgetId(4L);
+        groceryCategory.setIsActive(true);
+        groceryCategory.setOverSpent(false);
+        groceryCategory.setOverSpendingAmount(0.0);
+        groceryCategory.setBudgetedAmount(150.0);
+        groceryCategory.setBudgetActual(147.0);
+        expectedBudgetCategories.add(groceryCategory);
+
+        BudgetCategory otherCategory = new BudgetCategory();
+        otherCategory.setCategoryName("Other");
+        otherCategory.setStartDate(LocalDate.of(2025, 4, 1));
+        otherCategory.setEndDate(LocalDate.of(2025, 4, 7));
+        otherCategory.setSubBudgetId(4L);
+        otherCategory.setIsActive(true);
+        otherCategory.setOverSpent(false);
+        otherCategory.setOverSpendingAmount(0.0);
+        otherCategory.setBudgetedAmount(97.0);
+        otherCategory.setBudgetActual(12.0);
+        expectedBudgetCategories.add(otherCategory);
+    }
+
+    private @NotNull SubBudget getAprilSubBudget(int month, int dayOfMonth, String April_Budget) {
+        SubBudget subBudget = new SubBudget();
+        subBudget.setBudget(budget);
+
+        subBudget.setBudgetSchedule(List.of(getAprilBudgetSchedule()));
+        subBudget.setActive(true);
+        subBudget.setYear(2025);
+        subBudget.setId(4L);
+        subBudget.setStartDate(LocalDate.of(2025, month, 1));
+        subBudget.setEndDate(LocalDate.of(2025, month, dayOfMonth));
+        subBudget.setSubBudgetName(April_Budget);
+        subBudget.setSpentOnBudget(BigDecimal.valueOf(2782));
+        subBudget.setSubSavingsAmount(BigDecimal.valueOf(50));
+        subBudget.setSubSavingsTarget(BigDecimal.valueOf(200));
+        subBudget.setAllocatedAmount(BigDecimal.valueOf(3260));
+        subBudget.setAllocatedAmount(BigDecimal.valueOf(3260));
+        subBudget.setSpentOnBudget(BigDecimal.valueOf(1630));
+        return subBudget;
+    }
+
+    private static @NotNull BudgetSchedule getAprilBudgetSchedule() {
+        BudgetSchedule aprilBudgetSchedule = new BudgetSchedule();
+        aprilBudgetSchedule.setBudgetScheduleId(4L);
+        aprilBudgetSchedule.setStartDate(LocalDate.of(2025, 4, 1));
+        aprilBudgetSchedule.setEndDate(LocalDate.of(2025, 4, 30));
+        aprilBudgetSchedule.setPeriodType(Period.MONTHLY);
+        aprilBudgetSchedule.setTotalPeriods(4);
+        aprilBudgetSchedule.setScheduleRange(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 30)));
+        aprilBudgetSchedule.setCreatedDate(LocalDateTime.now());
+        aprilBudgetSchedule.setStatus("Active");
+        return aprilBudgetSchedule;
+    }
+
+//    private void verifyTransactionCategory(List<BudgetCategory> categories, String categoryId,
+//                                           String categoryName, LocalDate startDate, LocalDate endDate, Double budgeted, Double actual,
+//                                           boolean isOverspent) {
+//
+//        BudgetCategory matchingCategory = categories.stream()
+//                .filter(tc -> tc.getCategoryId().equals(categoryId) &&
+//                        tc.getStartDate().equals(startDate) &&
+//                        tc.getEndDate().equals(endDate))
+//                .findFirst()
+//                .orElseThrow(() -> new AssertionError(
+//                        String.format("No category found with ID: %s and date range: %s - %s",
+//                                categoryId, startDate, endDate)));
+//
+//
+//        assertEquals(categoryId, matchingCategory.getCategoryId(), "Category ID mismatch");
+//        assertEquals(categoryName, matchingCategory.getCategoryName(), "Category name mismatch");
+//        assertEquals(startDate, matchingCategory.getStartDate(), "Start date mismatch");
+//        assertEquals(endDate, matchingCategory.getEndDate(), "End date mismatch");
+//        assertEquals(budgeted, matchingCategory.getBudgetedAmount(), "Budget amount mismatch");
+//        assertEquals(actual, matchingCategory.getBudgetActual(), "Actual amount mismatch");
+//        assertEquals(isOverspent, matchingCategory.isOverSpent(), "Overspent flag mismatch");
+//    }
 
     private List<BudgetScheduleRange> generateJanuaryBudgetScheduleRanges(){
         List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();

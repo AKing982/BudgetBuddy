@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +35,13 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     @Override
     public Collection<TransactionCategoryEntity> findAll()
     {
-        return List.of();
+        try
+        {
+            return transactionCategoryRepository.findAll();
+        }catch(DataAccessException e){
+            log.error("There was an error while trying to find all transaction categories", e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
@@ -48,8 +56,14 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
-    public void delete(TransactionCategoryEntity transactionCategorizationEntity) {
-
+    public void delete(TransactionCategoryEntity transactionCategorizationEntity)
+    {
+        try
+        {
+            transactionCategoryRepository.delete(transactionCategorizationEntity);
+        }catch(DataAccessException e){
+            log.error("There was an error while deleting the TransactionCategory entity", e);
+        }
     }
 
     @Override
@@ -74,6 +88,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
         transactionCategoryEntity.setRecurring(transactionCategory.isRecurring());
         transactionCategoryEntity.setRulePriority(transactionCategory.getPriority());
         transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
+        transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorized_date());
         Optional<TransactionsEntity> transactionsEntityOptional = findTransactionEntityById(transactionCategory.getTransactionId());
         if(transactionsEntityOptional.isEmpty()){
             throw new TransactionsNotFoundException("Transaction Not Found: " + transactionCategory.getTransactionId());
@@ -81,6 +96,42 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
         TransactionsEntity transactionsEntity = transactionsEntityOptional.get();
         transactionCategoryEntity.setTransaction(transactionsEntity);
         return transactionCategoryEntity;
+    }
+
+    @Override
+    public TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity)
+    {
+        TransactionCategory transactionCategory = new TransactionCategory();
+        transactionCategory.setMatchedCategory(transactionCategoryEntity.getMatchedCategory());
+        transactionCategory.setPlaidCategory(transactionCategoryEntity.getPlaidCategory());
+        transactionCategory.setRecurring(transactionCategoryEntity.isRecurring());
+        transactionCategory.setTransactionId(transactionCategoryEntity.getTransaction().getId());
+        transactionCategory.setCategorizedBy(transactionCategoryEntity.getCategorizedBy());
+        transactionCategory.setCategorized_date(transactionCategoryEntity.getCategorized_date());
+        transactionCategory.setPriority(transactionCategory.getPriority());
+        return transactionCategory;
+    }
+
+    @Override
+    public List<TransactionCategory> getTransactionCategoriesBetweenStartAndEndDates(final LocalDate startDate, final LocalDate endDate, final Long userId)
+    {
+        try
+        {
+            List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryRepository.findTransactionCategoriesBetweenStartAndEndDates(startDate, endDate, userId);
+            if(transactionCategoryEntities.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            return transactionCategoryEntities.stream()
+                    .map(this::convertFromEntity)
+                    .distinct()
+                    .toList();
+
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error while getting the TransactionCategory entity", e);
+            return Collections.emptyList();
+        }
     }
 
     private Optional<TransactionsEntity> findTransactionEntityById(String id)
