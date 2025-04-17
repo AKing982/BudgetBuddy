@@ -82,8 +82,14 @@
             <mxPoint x="160" y="860" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="to13rogB0ipz4x7v3aLK-26" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="160" y="830" width="120" height="60" as="geometry" />
+        <mxCell id="to13rogB0ipz4x7v3aLK-27" value="Is the user logged in?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="160" y="785" width="170" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="to13rogB0ipz4x7v3aLK-28" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="to13rogB0ipz4x7v3aLK-27">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="680" as="sourcePoint" />
+            <mxPoint x="370" y="860" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
