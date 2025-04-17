@@ -115,7 +115,7 @@
             <mxPoint x="440" y="1100" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="to13rogB0ipz4x7v3aLK-36" value="Load Transaction categories for the current date" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="to13rogB0ipz4x7v3aLK-36" value="Load Transaction categories for the current date that have not been processed" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="440" y="1070" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="to13rogB0ipz4x7v3aLK-37" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="to13rogB0ipz4x7v3aLK-34">
@@ -133,8 +133,17 @@
             <mxPoint x="610" y="1100" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="to13rogB0ipz4x7v3aLK-40" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="to13rogB0ipz4x7v3aLK-40" value="Run the budget category builder process" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="610" y="1070" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="to13rogB0ipz4x7v3aLK-41" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="to13rogB0ipz4x7v3aLK-40">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="580" y="1040" as="sourcePoint" />
+            <mxPoint x="770" y="1100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="to13rogB0ipz4x7v3aLK-42" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="770" y="1070" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
