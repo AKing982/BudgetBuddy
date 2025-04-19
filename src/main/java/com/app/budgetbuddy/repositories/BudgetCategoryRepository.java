@@ -15,7 +15,7 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.budget.user.id =:id")
     List<BudgetCategoryEntity> findAllByUserId(@Param("id") Long id);
 
-    @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.budget.user.id =:id AND u.isactive = true")
+    @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.budget.user.id =:id AND u.active = true")
     List<BudgetCategoryEntity> findActiveCategoriesByUser(@Param("id") Long userId);
 
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id")

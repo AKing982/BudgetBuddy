@@ -12,6 +12,8 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class TransactionRule
 {
+    private String categoryId;
+    private String categoryName;
     private String transactionId;
     private String descriptionPattern;
     private String merchantPattern;

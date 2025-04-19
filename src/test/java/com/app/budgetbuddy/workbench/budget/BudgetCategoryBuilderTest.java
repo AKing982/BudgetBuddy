@@ -562,6 +562,553 @@ class BudgetCategoryBuilderTest {
         }
     }
 
+    @Test
+    void testGetCategorySpendingByCategoryTransactions_whenCategoryTransactionsIsNull_thenReturnEmptyList(){
+       List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
+       budgetScheduleRanges.add(new BudgetScheduleRange());
+       List<CategoryPeriodSpending> actual = budgetCategoryBuilder.getCategorySpendingByCategoryTransactions(null, budgetScheduleRanges);
+       assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testGetCategorySpendingByCategoryTransactions_whenBudgetScheduleRangesIsNull_thenReturnEmptyList()
+    {
+       List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+       categoryTransactions.add(new CategoryTransactions());
+       List<CategoryPeriodSpending> actual = budgetCategoryBuilder.getCategorySpendingByCategoryTransactions(categoryTransactions, null);
+       assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testGetCategorySpendingByCategoryTransactions_whenCategoryTransactionsIsEmpty_thenReturnEmptyList(){
+       List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
+       budgetScheduleRanges.add(new BudgetScheduleRange());
+       List<CategoryPeriodSpending> actual = budgetCategoryBuilder.getCategorySpendingByCategoryTransactions(new ArrayList<>(), budgetScheduleRanges);
+       assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testGetCategorySpendingByCategoryTransactions_whenBudgetScheduleRangesIsEmpty_thenReturnEmptyList(){
+       List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+       categoryTransactions.add(new CategoryTransactions());
+       List<CategoryPeriodSpending> actual = budgetCategoryBuilder.getCategorySpendingByCategoryTransactions(categoryTransactions, new ArrayList<>());
+       assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testGetCategorySpendingByCategoryTransactions_whenAprilCategoryTransactions_thenReturnCategoryPeriodSpending()
+    {
+        List<CategoryTransactions> aprilCategoryTransactions = createAprilCategoryTransactions();
+        List<BudgetScheduleRange> aprilBudgetScheduleRanges = createAprilBudgetScheduleRanges();
+        List<CategoryPeriodSpending> expectedCategoryPeriodSpendings = new ArrayList<>();
+
+        // Week 1: April 1-7
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Groceries",
+                new BigDecimal("124.16"),
+                new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7))
+        ));
+
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Other",
+                new BigDecimal("12.84"),
+                new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7))
+        ));
+
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Rent",
+                new BigDecimal("1200.00"),
+                new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7))
+        ));
+
+        // Week 2: April 8-14
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Groceries",
+                new BigDecimal("119.64"),
+                new DateRange(LocalDate.of(2025, 4, 8), LocalDate.of(2025, 4, 14))
+        ));
+
+        // Week 3: April 15-21
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Groceries",
+                new BigDecimal("94.27"),
+                new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21))
+        ));
+
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Other",
+                new BigDecimal("35.67"),
+                new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21))
+        ));
+
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Rent",
+                new BigDecimal("707.00"),
+                new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21))
+        ));
+
+        // Week 4: April 22-28
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Groceries",
+                new BigDecimal("51.49"),
+                new DateRange(LocalDate.of(2025, 4, 22), LocalDate.of(2025, 4, 28))
+        ));
+
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Other",
+                new BigDecimal("6.45"),
+                new DateRange(LocalDate.of(2025, 4, 22), LocalDate.of(2025, 4, 28))
+        ));
+
+        // Week 5: April 29-30
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Groceries",
+                new BigDecimal("68.15"),
+                new DateRange(LocalDate.of(2025, 4, 29), LocalDate.of(2025, 4, 30))
+        ));
+
+        // Execute the method and get actual results
+        List<CategoryPeriodSpending> actualCategoryPeriodSpendings =
+                budgetCategoryBuilder.getCategorySpendingByCategoryTransactions(aprilCategoryTransactions, aprilBudgetScheduleRanges);
+
+        // Assert results
+        assertNotNull(actualCategoryPeriodSpendings, "Result should not be null");
+        assertEquals(expectedCategoryPeriodSpendings.size(), actualCategoryPeriodSpendings.size(),
+                "Expected and actual CategoryPeriodSpending counts should match");
+
+//        // Sort both lists for consistent comparison
+        Comparator<CategoryPeriodSpending> comparator = Comparator
+                .comparing((CategoryPeriodSpending cps) -> cps.getDateRange() != null ?
+                                cps.getDateRange().getStartDate() : null,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(CategoryPeriodSpending::getCategoryName,
+                        Comparator.nullsLast(Comparator.naturalOrder()));
+
+        expectedCategoryPeriodSpendings.sort(comparator);
+        actualCategoryPeriodSpendings.sort(comparator);
+
+        // Verify each CategoryPeriodSpending object
+        for (int i = 0; i < expectedCategoryPeriodSpendings.size(); i++) {
+            CategoryPeriodSpending expected = expectedCategoryPeriodSpendings.get(i);
+            CategoryPeriodSpending actual = actualCategoryPeriodSpendings.get(i);
+
+            assertEquals(expected.getCategoryName(), actual.getCategoryName(),
+                    "Category name mismatch for period " + expected.getDateRange());
+
+            assertEquals(0, expected.getActualSpending().compareTo(actual.getActualSpending()),
+                    "Actual spending mismatch for " + expected.getCategoryName() + " in period " + expected.getDateRange());
+
+            assertEquals(expected.getDateRange().getStartDate(), actual.getDateRange().getStartDate(),
+                    "Start date mismatch for " + expected.getCategoryName());
+
+            assertEquals(expected.getDateRange().getEndDate(), actual.getDateRange().getEndDate(),
+                    "End date mismatch for " + expected.getCategoryName());
+        }
+    }
+
+    @Test
+    void testGetCategorySpendingByCategoryTransactions_whenTransactionsIsEmptyForCategory_thenReturnCategoryPeriodSpending()
+    {
+        List<CategoryTransactions> categoryTransactions = createAprilCategoryTransactionsWithCategoryAndNoTransactions();
+        List<BudgetScheduleRange> aprilBudgetScheduleRanges = createAprilBudgetScheduleRanges();
+        // Define expected results - note that Groceries category should not appear as it has no transactions
+        List<CategoryPeriodSpending> expectedCategoryPeriodSpendings = new ArrayList<>();
+
+        // Week 1: April 1-7
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Other",
+                new BigDecimal("12.84"),
+                new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7))
+        ));
+
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Rent",
+                new BigDecimal("1200.00"),
+                new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7))
+        ));
+
+        // Week 3: April 15-21
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Other",
+                new BigDecimal("35.67"),
+                new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21))
+        ));
+
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Rent",
+                new BigDecimal("707.00"),
+                new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21))
+        ));
+
+        // Week 4: April 22-28
+        expectedCategoryPeriodSpendings.add(new CategoryPeriodSpending(
+                "Other",
+                new BigDecimal("6.45"),
+                new DateRange(LocalDate.of(2025, 4, 22), LocalDate.of(2025, 4, 28))
+        ));
+
+        // Execute the method and get actual results
+        List<CategoryPeriodSpending> actualCategoryPeriodSpendings =
+                budgetCategoryBuilder.getCategorySpendingByCategoryTransactions(categoryTransactions, aprilBudgetScheduleRanges);
+
+        // Assert results
+        assertNotNull(actualCategoryPeriodSpendings, "Result should not be null");
+        assertEquals(expectedCategoryPeriodSpendings.size(), actualCategoryPeriodSpendings.size(),
+                "Expected and actual CategoryPeriodSpending counts should match");
+
+        // Sort both lists for consistent comparison
+        Comparator<CategoryPeriodSpending> comparator = Comparator
+                .comparing((CategoryPeriodSpending cps) -> cps.getDateRange().getStartDate())
+                .thenComparing(CategoryPeriodSpending::getCategoryName);
+
+        expectedCategoryPeriodSpendings.sort(comparator);
+        actualCategoryPeriodSpendings.sort(comparator);
+
+        // Verify each CategoryPeriodSpending object
+        for (int i = 0; i < expectedCategoryPeriodSpendings.size(); i++) {
+            CategoryPeriodSpending expected = expectedCategoryPeriodSpendings.get(i);
+            CategoryPeriodSpending actual = actualCategoryPeriodSpendings.get(i);
+
+            assertEquals(expected.getCategoryName(), actual.getCategoryName(),
+                    "Category name mismatch for period " + expected.getDateRange());
+
+            assertEquals(0, expected.getActualSpending().compareTo(actual.getActualSpending()),
+                    "Actual spending mismatch for " + expected.getCategoryName() + " in period " + expected.getDateRange());
+
+            assertEquals(expected.getDateRange().getStartDate(), actual.getDateRange().getStartDate(),
+                    "Start date mismatch for " + expected.getCategoryName());
+
+            assertEquals(expected.getDateRange().getEndDate(), actual.getDateRange().getEndDate(),
+                    "End date mismatch for " + expected.getCategoryName());
+        }
+
+        // Verify that no CategoryPeriodSpending exists for the Groceries category (which has no transactions)
+        boolean hasGroceryCategory = actualCategoryPeriodSpendings.stream()
+                .anyMatch(cps -> cps.getCategoryName().equals("Groceries"));
+
+        assertFalse(hasGroceryCategory, "Should not have any CategoryPeriodSpending for Groceries category");
+    }
+
+    private List<CategoryTransactions> createAprilCategoryTransactionsWithCategoryAndNoTransactions()
+    {
+        List<CategoryTransactions> aprilCategoryTransactions = new ArrayList<>();
+
+        CategoryTransactions groceryCategoryTransaction = new CategoryTransactions();
+        groceryCategoryTransaction.setCategoryName("Groceries");
+        groceryCategoryTransaction.setTransactions(List.of());
+
+        // Other category transactions
+        CategoryTransactions otherCategoryTransaction = new CategoryTransactions();
+        otherCategoryTransaction.setCategoryName("Other");
+
+        List<Transaction> otherTransactions = new ArrayList<>();
+
+        Transaction parkingTransaction = new Transaction();
+        parkingTransaction.setAmount(BigDecimal.valueOf(12.84));
+        parkingTransaction.setCategories(List.of("Parking", "Travel"));
+        parkingTransaction.setDescription("Purchase THEPARKINGSPOT-ECW401");
+        parkingTransaction.setMerchantName("Theparkingspot Ec");
+        parkingTransaction.setName("Theparkingspot Ec");
+        parkingTransaction.setPending(false);
+        parkingTransaction.setTransactionId("e88889012");
+        parkingTransaction.setPosted(LocalDate.of(2025, 4, 3));
+        otherTransactions.add(parkingTransaction);
+
+        Transaction amazonTransaction = new Transaction();
+        amazonTransaction.setAmount(BigDecimal.valueOf(35.67));
+        amazonTransaction.setCategories(List.of("Online Marketplaces", "Shopping"));
+        amazonTransaction.setDescription("Purchase AMAZON.COM*AB12CD34E");
+        amazonTransaction.setMerchantName("Amazon");
+        amazonTransaction.setName("Amazon");
+        amazonTransaction.setPending(false);
+        amazonTransaction.setTransactionId("e99990123");
+        amazonTransaction.setPosted(LocalDate.of(2025, 4, 17));
+        otherTransactions.add(amazonTransaction);
+
+        Transaction coffeeTransaction = new Transaction();
+        coffeeTransaction.setAmount(BigDecimal.valueOf(6.45));
+        coffeeTransaction.setCategories(List.of("Coffee Shop", "Food and Drink"));
+        coffeeTransaction.setDescription("Purchase STARBUCKS #1234");
+        coffeeTransaction.setMerchantName("Starbucks");
+        coffeeTransaction.setName("Starbucks");
+        coffeeTransaction.setPending(false);
+        coffeeTransaction.setTransactionId("e10101234");
+        coffeeTransaction.setPosted(LocalDate.of(2025, 4, 22));
+        otherTransactions.add(coffeeTransaction);
+
+        otherCategoryTransaction.setTransactions(otherTransactions);
+
+        // Rent transactions (1st and 16th of the month)
+        CategoryTransactions rentCategoryTransaction = new CategoryTransactions();
+        rentCategoryTransaction.setCategoryName("Rent");
+
+        List<Transaction> rentTransactions = new ArrayList<>();
+
+        Transaction rentTransaction1 = new Transaction();
+        rentTransaction1.setAmount(BigDecimal.valueOf(1200.00));
+        rentTransaction1.setCategories(List.of("Rent", "Housing"));
+        rentTransaction1.setDescription("ACH Payment PROPERTY MGMT");
+        rentTransaction1.setMerchantName("Vista Apartments");
+        rentTransaction1.setName("Vista Apartments");
+        rentTransaction1.setPending(false);
+        rentTransaction1.setTransactionId("e11112345");
+        rentTransaction1.setPosted(LocalDate.of(2025, 4, 1));
+        rentTransactions.add(rentTransaction1);
+
+        Transaction rentTransaction2 = new Transaction();
+        rentTransaction2.setAmount(BigDecimal.valueOf(707.00));
+        rentTransaction2.setCategories(List.of("Rent", "Housing"));
+        rentTransaction2.setDescription("ACH Payment PROPERTY MGMT");
+        rentTransaction2.setMerchantName("Vista Apartments");
+        rentTransaction2.setName("Vista Apartments");
+        rentTransaction2.setPending(false);
+        rentTransaction2.setTransactionId("e12122345");
+        rentTransaction2.setPosted(LocalDate.of(2025, 4, 16));
+        rentTransactions.add(rentTransaction2);
+
+        rentCategoryTransaction.setTransactions(rentTransactions);
+
+        // Add all category transactions to the list
+        aprilCategoryTransactions.add(groceryCategoryTransaction);
+        aprilCategoryTransactions.add(otherCategoryTransaction);
+        aprilCategoryTransactions.add(rentCategoryTransaction);
+        return aprilCategoryTransactions;
+    }
+
+    private List<CategoryTransactions> createAprilCategoryTransactions()
+    {
+        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+
+        // Grocery transactions for the entire month
+        CategoryTransactions groceryCategoryTransaction = new CategoryTransactions();
+        groceryCategoryTransaction.setCategoryName("Groceries");
+
+        List<Transaction> groceryTransactions = new ArrayList<>();
+
+        // Week 1
+        Transaction wincoTransaction1 = new Transaction();
+        wincoTransaction1.setTransactionId("e11112345");
+        wincoTransaction1.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        wincoTransaction1.setDescription("PIN Purchase WINCO FOODS");
+        wincoTransaction1.setMerchantName("Winco Foods");
+        wincoTransaction1.setName("Winco Foods");
+        wincoTransaction1.setPending(false);
+        wincoTransaction1.setPosted(LocalDate.of(2025, 4, 2));
+        wincoTransaction1.setAmount(BigDecimal.valueOf(45.84));
+        groceryTransactions.add(wincoTransaction1);
+
+        Transaction targetTransaction = new Transaction();
+        targetTransaction.setTransactionId("e22223456");
+        targetTransaction.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        targetTransaction.setDescription("Purchase TARGET STORES");
+        targetTransaction.setMerchantName("Target");
+        targetTransaction.setName("Target");
+        targetTransaction.setPending(false);
+        targetTransaction.setPosted(LocalDate.of(2025, 4, 5));
+        targetTransaction.setAmount(BigDecimal.valueOf(78.32));
+        groceryTransactions.add(targetTransaction);
+
+        // Week 2
+        Transaction safewayTransaction = new Transaction();
+        safewayTransaction.setTransactionId("e33334567");
+        safewayTransaction.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        safewayTransaction.setDescription("Purchase SAFEWAY #1234");
+        safewayTransaction.setMerchantName("Safeway");
+        safewayTransaction.setName("Safeway");
+        safewayTransaction.setPending(false);
+        safewayTransaction.setPosted(LocalDate.of(2025, 4, 9));
+        safewayTransaction.setAmount(BigDecimal.valueOf(56.71));
+        groceryTransactions.add(safewayTransaction);
+
+        Transaction wincoTransaction2 = new Transaction();
+        wincoTransaction2.setTransactionId("e44445678");
+        wincoTransaction2.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        wincoTransaction2.setDescription("PIN Purchase WINCO FOODS");
+        wincoTransaction2.setMerchantName("Winco Foods");
+        wincoTransaction2.setName("Winco Foods");
+        wincoTransaction2.setPending(false);
+        wincoTransaction2.setPosted(LocalDate.of(2025, 4, 12));
+        wincoTransaction2.setAmount(BigDecimal.valueOf(62.93));
+        groceryTransactions.add(wincoTransaction2);
+
+        // Week 3
+        Transaction wholeFoodsTransaction = new Transaction();
+        wholeFoodsTransaction.setTransactionId("e55556789");
+        wholeFoodsTransaction.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        wholeFoodsTransaction.setDescription("Purchase WHOLE FOODS #981");
+        wholeFoodsTransaction.setMerchantName("Whole Foods");
+        wholeFoodsTransaction.setName("Whole Foods");
+        wholeFoodsTransaction.setPending(false);
+        wholeFoodsTransaction.setPosted(LocalDate.of(2025, 4, 18));
+        wholeFoodsTransaction.setAmount(BigDecimal.valueOf(94.27));
+        groceryTransactions.add(wholeFoodsTransaction);
+
+        // Week 4
+        Transaction krogerTransaction = new Transaction();
+        krogerTransaction.setTransactionId("e66667890");
+        krogerTransaction.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        krogerTransaction.setDescription("Purchase KROGER #765");
+        krogerTransaction.setMerchantName("Kroger");
+        krogerTransaction.setName("Kroger");
+        krogerTransaction.setPending(false);
+        krogerTransaction.setPosted(LocalDate.of(2025, 4, 24));
+        krogerTransaction.setAmount(BigDecimal.valueOf(51.49));
+        groceryTransactions.add(krogerTransaction);
+
+        Transaction targetTransaction2 = new Transaction();
+        targetTransaction2.setTransactionId("e77778901");
+        targetTransaction2.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+        targetTransaction2.setDescription("Purchase TARGET STORES");
+        targetTransaction2.setMerchantName("Target");
+        targetTransaction2.setName("Target");
+        targetTransaction2.setPending(false);
+        targetTransaction2.setPosted(LocalDate.of(2025, 4, 29));
+        targetTransaction2.setAmount(BigDecimal.valueOf(68.15));
+        groceryTransactions.add(targetTransaction2);
+
+        groceryCategoryTransaction.setTransactions(groceryTransactions);
+
+        // Other category transactions
+        CategoryTransactions otherCategoryTransaction = new CategoryTransactions();
+        otherCategoryTransaction.setCategoryName("Other");
+
+        List<Transaction> otherTransactions = new ArrayList<>();
+
+        Transaction parkingTransaction = new Transaction();
+        parkingTransaction.setAmount(BigDecimal.valueOf(12.84));
+        parkingTransaction.setCategories(List.of("Parking", "Travel"));
+        parkingTransaction.setDescription("Purchase THEPARKINGSPOT-ECW401");
+        parkingTransaction.setMerchantName("Theparkingspot Ec");
+        parkingTransaction.setName("Theparkingspot Ec");
+        parkingTransaction.setPending(false);
+        parkingTransaction.setTransactionId("e88889012");
+        parkingTransaction.setPosted(LocalDate.of(2025, 4, 3));
+        otherTransactions.add(parkingTransaction);
+
+        Transaction amazonTransaction = new Transaction();
+        amazonTransaction.setAmount(BigDecimal.valueOf(35.67));
+        amazonTransaction.setCategories(List.of("Online Marketplaces", "Shopping"));
+        amazonTransaction.setDescription("Purchase AMAZON.COM*AB12CD34E");
+        amazonTransaction.setMerchantName("Amazon");
+        amazonTransaction.setName("Amazon");
+        amazonTransaction.setPending(false);
+        amazonTransaction.setTransactionId("e99990123");
+        amazonTransaction.setPosted(LocalDate.of(2025, 4, 17));
+        otherTransactions.add(amazonTransaction);
+
+        Transaction coffeeTransaction = new Transaction();
+        coffeeTransaction.setAmount(BigDecimal.valueOf(6.45));
+        coffeeTransaction.setCategories(List.of("Coffee Shop", "Food and Drink"));
+        coffeeTransaction.setDescription("Purchase STARBUCKS #1234");
+        coffeeTransaction.setMerchantName("Starbucks");
+        coffeeTransaction.setName("Starbucks");
+        coffeeTransaction.setPending(false);
+        coffeeTransaction.setTransactionId("e10101234");
+        coffeeTransaction.setPosted(LocalDate.of(2025, 4, 22));
+        otherTransactions.add(coffeeTransaction);
+
+        otherCategoryTransaction.setTransactions(otherTransactions);
+
+        // Rent transactions (1st and 16th of the month)
+        CategoryTransactions rentCategoryTransaction = new CategoryTransactions();
+        rentCategoryTransaction.setCategoryName("Rent");
+
+        List<Transaction> rentTransactions = new ArrayList<>();
+
+        Transaction rentTransaction1 = new Transaction();
+        rentTransaction1.setAmount(BigDecimal.valueOf(1200.00));
+        rentTransaction1.setCategories(List.of("Rent", "Housing"));
+        rentTransaction1.setDescription("ACH Payment PROPERTY MGMT");
+        rentTransaction1.setMerchantName("Vista Apartments");
+        rentTransaction1.setName("Vista Apartments");
+        rentTransaction1.setPending(false);
+        rentTransaction1.setTransactionId("e11112345");
+        rentTransaction1.setPosted(LocalDate.of(2025, 4, 1));
+        rentTransactions.add(rentTransaction1);
+
+        Transaction rentTransaction2 = new Transaction();
+        rentTransaction2.setAmount(BigDecimal.valueOf(707.00));
+        rentTransaction2.setCategories(List.of("Rent", "Housing"));
+        rentTransaction2.setDescription("ACH Payment PROPERTY MGMT");
+        rentTransaction2.setMerchantName("Vista Apartments");
+        rentTransaction2.setName("Vista Apartments");
+        rentTransaction2.setPending(false);
+        rentTransaction2.setTransactionId("e12122345");
+        rentTransaction2.setPosted(LocalDate.of(2025, 4, 16));
+        rentTransactions.add(rentTransaction2);
+
+        rentCategoryTransaction.setTransactions(rentTransactions);
+
+        // Add all category transactions to the list
+        categoryTransactions.add(groceryCategoryTransaction);
+        categoryTransactions.add(otherCategoryTransaction);
+        categoryTransactions.add(rentCategoryTransaction);
+
+        return categoryTransactions;
+    }
+
+    private List<BudgetScheduleRange> createAprilBudgetScheduleRanges()
+    {
+        List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
+        BudgetScheduleRange budgetScheduleRange1 = new BudgetScheduleRange();
+        budgetScheduleRange1.setBudgetScheduleId(4L);
+        budgetScheduleRange1.setId(15L);
+        budgetScheduleRange1.setStartRange(LocalDate.of(2025, 4, 1));
+        budgetScheduleRange1.setEndRange(LocalDate.of(2025, 4, 7));
+        budgetScheduleRange1.setBudgetedAmount(BigDecimal.valueOf(598.050));
+        budgetScheduleRange1.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)));
+        budgetScheduleRange1.setSingleDate(false);
+        budgetScheduleRange1.setRangeType("Week");
+        budgetScheduleRange1.setSpentOnRange(BigDecimal.valueOf(0));
+
+        BudgetScheduleRange budgetScheduleRange2 = new BudgetScheduleRange();
+        budgetScheduleRange2.setId(16L);
+        budgetScheduleRange2.setBudgetScheduleId(4L);
+        budgetScheduleRange2.setStartRange(LocalDate.of(2025, 4, 8));
+        budgetScheduleRange2.setEndRange(LocalDate.of(2025, 4, 14));
+        budgetScheduleRange2.setSingleDate(false);
+        budgetScheduleRange2.setRangeType("Week");
+        budgetScheduleRange2.setSpentOnRange(BigDecimal.valueOf(0));
+        budgetScheduleRange2.setBudgetedAmount(BigDecimal.valueOf(598.050));
+
+        BudgetScheduleRange budgetScheduleRange3 = new BudgetScheduleRange();
+        budgetScheduleRange3.setId(17L);
+        budgetScheduleRange3.setBudgetScheduleId(4L);
+        budgetScheduleRange3.setStartRange(LocalDate.of(2025, 4, 15));
+        budgetScheduleRange3.setEndRange(LocalDate.of(2025, 4, 21));
+        budgetScheduleRange3.setSingleDate(false);
+        budgetScheduleRange3.setRangeType("Week");
+        budgetScheduleRange3.setSpentOnRange(BigDecimal.valueOf(0));
+        budgetScheduleRange3.setBudgetedAmount(BigDecimal.valueOf(598.050));
+
+        BudgetScheduleRange budgetScheduleRange4 = new BudgetScheduleRange();
+        budgetScheduleRange4.setId(18L);
+        budgetScheduleRange4.setBudgetScheduleId(4L);
+        budgetScheduleRange4.setStartRange(LocalDate.of(2025, 4, 22));
+        budgetScheduleRange4.setEndRange(LocalDate.of(2025, 4, 28));
+        budgetScheduleRange4.setSingleDate(false);
+        budgetScheduleRange4.setRangeType("Week");
+        budgetScheduleRange4.setSpentOnRange(BigDecimal.valueOf(0));
+        budgetScheduleRange4.setBudgetedAmount(BigDecimal.valueOf(598.050));
+
+        BudgetScheduleRange budgetScheduleRange5 = new BudgetScheduleRange();
+        budgetScheduleRange5.setId(19L);
+        budgetScheduleRange5.setBudgetScheduleId(4L);
+        budgetScheduleRange5.setStartRange(LocalDate.of(2025, 4, 29));
+        budgetScheduleRange5.setEndRange(LocalDate.of(2025, 4, 30));
+        budgetScheduleRange5.setSingleDate(false);
+        budgetScheduleRange5.setRangeType("Week");
+        budgetScheduleRange5.setSpentOnRange(BigDecimal.valueOf(0));
+        budgetScheduleRange5.setBudgetedAmount(BigDecimal.valueOf(598.050));
+
+        budgetScheduleRanges.add(budgetScheduleRange1);
+        budgetScheduleRanges.add(budgetScheduleRange2);
+        budgetScheduleRanges.add(budgetScheduleRange3);
+        budgetScheduleRanges.add(budgetScheduleRange4);
+        budgetScheduleRanges.add(budgetScheduleRange5);
+        return budgetScheduleRanges;
+    }
+
     private SubBudgetGoals getAprilSubBudgetGoals()
     {
         SubBudgetGoals subBudgetGoals = new SubBudgetGoals();

@@ -11,7 +11,8 @@ public class CategoryIdStrategy implements CategorizationStrategy
 {
 
     @Override
-    public CategoryType categorize(Transaction transaction) {
+    public CategoryType categorize(Transaction transaction)
+    {
         return null;
     }
 }

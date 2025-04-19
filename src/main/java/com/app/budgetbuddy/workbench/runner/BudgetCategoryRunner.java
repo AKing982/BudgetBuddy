@@ -18,10 +18,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -142,20 +139,22 @@ public class BudgetCategoryRunner
                 log.warn("Skipping Blank category....");
                 continue;
             }
+            Map<String, List<Transaction>> categoryTransactionMap = new HashMap<>();
             List<TransactionCategory> transactionCategoriesInGroup = getTransactionCategoriesGrouped(category, transactionCategories);
             if(transactionCategoriesInGroup.isEmpty())
             {
                 return Collections.emptyList();
             }
-            List<Transaction> transactions = getTransactionsFromTransactionCategories(transactionCategoriesInGroup);
-            if(transactions.isEmpty())
-            {
-                categoryTransactions.add(new CategoryTransactions(category, new ArrayList<>()));
-            }
-            else
-            {
-                categoryTransactions.add(new CategoryTransactions(category, transactions));
-            }
+
+//            List<Transaction> transactions = getTransactionsFromTransactionCategories(transactionCategoriesInGroup);
+//            if(transactions.isEmpty())
+//            {
+//                categoryTransactions.add(new CategoryTransactions(category, new ArrayList<>()));
+//            }
+//            else
+//            {
+//                categoryTransactions.add(new CategoryTransactions(category, transactions));
+//            }
         }
         return categoryTransactions;
     }
@@ -249,7 +248,7 @@ public class BudgetCategoryRunner
 
         Long userId = 1L;
         LocalDate startDate = LocalDate.now().withDayOfMonth(1);
-        LocalDate endDate = LocalDate.now().plusDays(24);
+        LocalDate endDate = LocalDate.now().withDayOfMonth(30);
         // Create transaction template
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);

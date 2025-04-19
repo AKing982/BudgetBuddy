@@ -26,6 +26,11 @@ public class DateRange implements Comparable<DateRange>
         this.endDate = endDate;
     }
 
+    public static DateRange createDateRange(LocalDate startDate, LocalDate endDate)
+    {
+        return new DateRange(startDate, endDate);
+    }
+
     public List<DateRange> splitByPeriod(Period period){
         switch(period)
         {

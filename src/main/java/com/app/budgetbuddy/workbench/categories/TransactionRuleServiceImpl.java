@@ -81,9 +81,10 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     @Override
     public void createAll(final List<TransactionRule> transactionRules) {
         try {
-            transactionRules.stream()
+            List<TransactionRuleEntity> transactionRules1 = transactionRules.stream()
                     .map(this::create)
-                    .map(transactionRuleRepository::save);
+                    .toList();
+            transactionRuleRepository.saveAll(transactionRules1);
         } catch (DataException e) {
             log.error("Error creating multiple category rules", e);
         }

@@ -3,7 +3,9 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.*;
+import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,31 +31,35 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@Slf4j
 class BudgetSetupEngineTest
 {
-    @Mock
+    @MockBean
     private BudgetBuilderService budgetBuilderService;
 
-    @Mock
+    @MockBean
     private SubBudgetBuilderService subBudgetBuilderService;
 
-    @Mock
+    @MockBean
     private SubBudgetOverviewService subBudgetOverviewService;
 
-    @Mock
+    @MockBean
     private BudgetHealthService<SubBudget> budgetHealthService;
 
-    @Mock
+    @MockBean
     private AbstractBudgetStatisticsService<SubBudget> abstractBudgetStatisticsService;
 
-    @Mock
+    @MockBean
     private MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
 
-    @Mock
+    @MockBean
     private AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService;
 
-    @InjectMocks
+    @MockBean
+    private BudgetCategoryThreadService budgetCategoryThreadService;
+
+    @Autowired
     private BudgetSetupEngine budgetSetupEngine;
 
     private Budget budget;
@@ -124,7 +133,7 @@ class BudgetSetupEngineTest
                 .budgetGoals(budgetGoals)
                 .build();
 
-        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, abstractBudgetStatisticsService);
+        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, abstractBudgetStatisticsService, budgetCategoryThreadService);
     }
 
     @Test

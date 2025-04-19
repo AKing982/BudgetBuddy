@@ -194,12 +194,10 @@ public class BudgetCategoryBuilder
         categoryDesignators.forEach((categoryDesignator -> {
             LOGGER.info("Category Designator: " + categoryDesignator.toString());
         }));
-        LocalDate budgetStartDate = budgetSchedule.getStartDate();
-        LocalDate budgetEndDate = budgetSchedule.getEndDate();
-        DateRange budgetDateRange = new DateRange(budgetStartDate, budgetEndDate);
-        List<DateRange> budgetWeeks = budgetDateRange.splitIntoWeeks();
+
+        List<BudgetScheduleRange> budgetScheduleRanges = budgetSchedule.getBudgetScheduleRanges();
         // 3. Create CategoryPeriods with properly categorized transactions
-        List<CategoryPeriodSpending> categorySpendingList = getCategorySpendingByCategoryDesignator(categoryDesignators, budgetWeeks);
+        List<CategoryPeriodSpending> categorySpendingList = getCategorySpendingByCategoryTransactions(categoryDesignators, budgetScheduleRanges);
         categorySpendingList.forEach(categorySpending -> {
             LOGGER.info("Category Spending: " + categorySpending.toString());
         });
@@ -233,36 +231,72 @@ public class BudgetCategoryBuilder
         return budgetOverSpendingAmount > 0.0;
     }
 
-    public List<CategoryPeriodSpending> getCategorySpendingByCategoryDesignator(final List<CategoryTransactions> categoryDesignators, final List<DateRange> budgetDateRanges)
+    public List<CategoryPeriodSpending> getCategorySpendingByCategoryTransactions(final List<CategoryTransactions> categoryDesignators, final List<BudgetScheduleRange> budgetScheduleRanges)
     {
-        List<CategoryPeriodSpending> categorySpendingList = new ArrayList<>();
-        for(CategoryTransactions categoryTransaction : categoryDesignators)
+        if(categoryDesignators == null || budgetScheduleRanges == null)
         {
-            String categoryName = categoryTransaction.getCategoryName();
-            List<Transaction> sortedTransactions = categoryTransaction.getTransactions().stream()
-                    .sorted(Comparator.comparing(Transaction::getPosted))
-                    .toList();
-
-            // Get the Budget Date Ranges
-            for(DateRange budgetWeek : budgetDateRanges)
+            return Collections.emptyList();
+        }
+        if(categoryDesignators.isEmpty() || budgetScheduleRanges.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        log.info("Budget Schedule size: {}", budgetScheduleRanges.size());
+        List<CategoryPeriodSpending> categoryPeriodSpendingList = new ArrayList<>();
+        long startTime = System.currentTimeMillis();
+        for(CategoryTransactions categoryTransactions : categoryDesignators)
+        {
+            String categoryName = categoryTransactions.getCategoryName();
+            List<Transaction> sortedTransactions = getSortedTransactions(categoryTransactions.getTransactions());
+            for(BudgetScheduleRange budgetScheduleRange : budgetScheduleRanges)
             {
-                LocalDate budgetWeekStart = budgetWeek.getStartDate();
-                LocalDate budgetWeekEnd = budgetWeek.getEndDate();
-                List<Transaction> transactionsForWeek = sortedTransactions.stream()
-                        .filter(tx -> !tx.getPosted().isBefore(budgetWeekStart) && !tx.getPosted().isAfter(budgetWeekEnd))
-                        .toList();
-
-                BigDecimal totalSpending = transactionsForWeek.stream()
-                        .map(Transaction::getAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                if(totalSpending.compareTo(BigDecimal.ZERO) != 0) {
-                    CategoryPeriodSpending categoryPeriodSpending = new CategoryPeriodSpending(categoryName, totalSpending, budgetWeek);
-                    categorySpendingList.add(categoryPeriodSpending);
+                LocalDate budgetScheduleStart = budgetScheduleRange.getStartRange();
+                LocalDate budgetScheduleEnd = budgetScheduleRange.getEndRange();
+                log.info("Budget Week: start={}, end={}", budgetScheduleStart, budgetScheduleEnd);
+                List<Transaction> transactionsForWeek = filterTransactionsForWeek(sortedTransactions, budgetScheduleStart, budgetScheduleEnd);
+                if(transactionsForWeek.isEmpty())
+                {
+                    log.debug("No Transactions found for week start={}, end={}", budgetScheduleStart, budgetScheduleEnd);
+                    continue;
+                }
+                log.info("Transactions for week size: {}", transactionsForWeek.size());
+                BigDecimal totalTransactionSpendingForBudgetScheduleRange = getTotalTransactionSpending(transactionsForWeek);
+                DateRange budgetScheduleDateRange = budgetScheduleRange.getBudgetDateRange();
+                if(budgetScheduleDateRange == null)
+                {
+                    DateRange dateRange = DateRange.createDateRange(budgetScheduleStart, budgetScheduleEnd);
+                    CategoryPeriodSpending categoryPeriodSpending = new CategoryPeriodSpending(categoryName, totalTransactionSpendingForBudgetScheduleRange, dateRange);
+                    categoryPeriodSpendingList.add(categoryPeriodSpending);
+                }
+                else
+                {
+                    CategoryPeriodSpending categoryPeriodSpending = new CategoryPeriodSpending(categoryName, totalTransactionSpendingForBudgetScheduleRange, budgetScheduleDateRange);
+                    categoryPeriodSpendingList.add(categoryPeriodSpending);
                 }
             }
         }
-        return categorySpendingList;
+        long endTime = System.currentTimeMillis();
+        log.info("Total time: {} ms", (endTime - startTime));
+        return categoryPeriodSpendingList;
+    }
+
+    private List<Transaction> filterTransactionsForWeek(final List<Transaction> transactions, final LocalDate budgetStartDate, final LocalDate budgetEndDate)
+    {
+        return transactions.stream()
+                .filter(tx -> !tx.getPosted().isBefore(budgetStartDate) && !tx.getPosted().isAfter(budgetEndDate))
+                .toList();
+    }
+
+    private BigDecimal getTotalTransactionSpending(List<Transaction> transactions)
+    {
+        return transactions.stream()
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private List<Transaction> getSortedTransactions(List<Transaction> transactions)
+    {
+        return transactions.stream().sorted(Comparator.comparing(Transaction::getPosted)).toList();
     }
 
     /**

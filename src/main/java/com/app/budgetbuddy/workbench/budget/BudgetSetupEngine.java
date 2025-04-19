@@ -6,14 +6,19 @@ import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
 import com.app.budgetbuddy.entities.SubBudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
+import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Component
@@ -24,17 +29,20 @@ public class BudgetSetupEngine
     private final SubBudgetBuilderService subBudgetBuilderService;
     private final MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
     private final AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService;
+    private final BudgetCategoryThreadService budgetCategoryThreadService;
 
     @Autowired
     public BudgetSetupEngine(BudgetBuilderService budgetBuilderService,
                              SubBudgetBuilderService subBudgetBuilderService,
                              MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder,
-                             AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService)
+                             AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService,
+                             BudgetCategoryThreadService budgetCategoryThreadService)
     {
         this.budgetBuilderService = budgetBuilderService;
         this.subBudgetBuilderService = subBudgetBuilderService;
         this.monthlyBudgetGoalsBuilder = monthlyBudgetGoalsBuilder;
         this.subBudgetStatisticsService = subBudgetStatisticsService;
+        this.budgetCategoryThreadService = budgetCategoryThreadService;
     }
 
     private int getPreviousBudgetYear(int currentBudgetYear)
@@ -153,7 +161,8 @@ public class BudgetSetupEngine
         return subBudgetStatisticsService.saveBudgetStats(budgetStatsList);
     }
 
-    public List<BudgetStats> createBudgetStatistics(final List<SubBudget> subBudgets) {
+    public List<BudgetStats> createBudgetStatistics(final List<SubBudget> subBudgets)
+    {
         if (subBudgets == null || subBudgets.isEmpty())
         {
             log.warn("SubBudgets list is null or empty—returning empty list");

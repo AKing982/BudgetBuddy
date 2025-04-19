@@ -32,16 +32,10 @@ public class ThreadConfig
         threadPoolTaskExecutor.setKeepAliveSeconds(keepAliveSeconds);
         threadPoolTaskExecutor.setQueueCapacity(queueCapacity);
         threadPoolTaskExecutor.setThreadNamePrefix(threadNamePrefix);
+        threadPoolTaskExecutor.initialize();
         return threadPoolTaskExecutor;
     }
 
-//    @PreDestroy
-//    public void shutdownTaskExecutor() {
-//        if (threadPoolTaskExecutor() != null) {
-//            log.info("Shutting down Task Executor...");
-//            threadPoolTaskExecutor().shutdown();
-//        }
-//    }
 
     @Bean
     public ScheduledExecutorService scheduledExecutorService(){

@@ -23,7 +23,7 @@ public class BudgetCategoryConverter implements Converter<BudgetCategory, Budget
     public BudgetCategoryEntity convert(BudgetCategory userBudgetCategory) {
         BudgetCategoryEntity userBudgetCategoryEntity = new BudgetCategoryEntity();
         userBudgetCategoryEntity.setId(userBudgetCategory.getId());
-        userBudgetCategoryEntity.setIsactive(true);
+        userBudgetCategoryEntity.setActive(true);
         userBudgetCategoryEntity.setBudgetedAmount(userBudgetCategory.getBudgetedAmount());
         userBudgetCategoryEntity.setActual(userBudgetCategory.getBudgetActual());
         userBudgetCategoryEntity.setStartDate(userBudgetCategory.getStartDate());

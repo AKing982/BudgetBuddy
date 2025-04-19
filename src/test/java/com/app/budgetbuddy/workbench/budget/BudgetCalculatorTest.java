@@ -109,8 +109,8 @@ class BudgetCalculatorTest {
         userBudgetCategory.setStartDate(LocalDate.of(2024, 6, 1));
         userBudgetCategory.setEndDate(LocalDate.of(2024, 6, 30));
         userBudgetCategory.setId(1L);
-        userBudgetCategory.setCategory(createCategory("Groceries", "Groceries"));
-        userBudgetCategory.setIsactive(true);
+        userBudgetCategory.setCategoryName("Groceries");
+        userBudgetCategory.setActive(true);
 
         userBudgetCategory2 = new BudgetCategoryEntity();
         userBudgetCategory2.setBudgetedAmount(150.00);
@@ -118,8 +118,8 @@ class BudgetCalculatorTest {
         userBudgetCategory2.setStartDate(LocalDate.of(2024, 6, 1));
         userBudgetCategory2.setEndDate(LocalDate.of(2024, 6, 30));
         userBudgetCategory2.setId(2L);
-        userBudgetCategory2.setIsactive(true);
-        userBudgetCategory2.setCategory(createCategory("Subscriptions", "Subscriptions"));
+        userBudgetCategory2.setActive(true);
+        userBudgetCategory2.setCategoryName("Subscriptions");
 
         userBudgetCategory3 = new BudgetCategoryEntity();
         userBudgetCategory3.setBudgetedAmount(1200.00);
@@ -127,8 +127,8 @@ class BudgetCalculatorTest {
         userBudgetCategory3.setStartDate(LocalDate.of(2024, 6, 1));
         userBudgetCategory3.setEndDate(LocalDate.of(2024, 6, 30));
         userBudgetCategory3.setId(3L);
-        userBudgetCategory3.setCategory(createCategory("Rent", "Rent"));
-        userBudgetCategory3.setIsactive(true);
+        userBudgetCategory3.setCategoryName("Rent");
+        userBudgetCategory3.setActive(true);
 
         testBudget = new Budget();
         testBudget.setActual(new BigDecimal("400.00"));

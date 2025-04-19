@@ -173,47 +173,47 @@ public class TransactionCategoryRunner
 
         return existingCategories.stream()
                 .anyMatch(category ->
-                        category.getCategory().getName().equals(budgetCategory.getCategoryName()) &&
+                        category.getCategoryName().equals(budgetCategory.getCategoryName()) &&
                                 category.getBudgetedAmount().equals(budgetCategory.getBudgetedAmount()));
     }
 
-    public void batchSaveTransactionCategories(final List<BudgetCategory> transactionCategories){
-        if (transactionCategories == null || transactionCategories.isEmpty()) {
-            log.warn("No transaction categories to save");
-            return;
-        }
+//    public void batchSaveTransactionCategories(final List<BudgetCategory> transactionCategories){
+//        if (transactionCategories == null || transactionCategories.isEmpty()) {
+//            log.warn("No transaction categories to save");
+//            return;
+//        }
+//
+//
+//        try {
+//            for (BudgetCategory category : transactionCategories) {
+//                if (!checkIfTransactionCategoryExists(category)) {
+//                    saveCreatedTransactionCategory(category);
+//                } else {
+//                    log.info("Transaction category already exists: {}", category.getCategoryName());
+//                }
+//            }
+//        } catch (Exception e) {
+//            log.error("Error batch saving transaction categories: ", e);
+//            throw e;
+//        }
+//    }
 
-
-        try {
-            for (BudgetCategory category : transactionCategories) {
-                if (!checkIfTransactionCategoryExists(category)) {
-                    saveCreatedTransactionCategory(category);
-                } else {
-                    log.info("Transaction category already exists: {}", category.getCategoryName());
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error batch saving transaction categories: ", e);
-            throw e;
-        }
-    }
-
-    public void saveCreatedTransactionCategory(BudgetCategory transactionCategory){
-        if (transactionCategory == null) {
-            log.warn("Cannot save null transaction category");
-            return;
-        }
-
-        try {
-            log.info("Transaction Category: {}", transactionCategory.toString());
-            BudgetCategoryEntity entity = convertToEntity(transactionCategory);
-            budgetCategoryService.save(entity);
-            log.info("Saved transaction category: {}", transactionCategory.getCategoryName());
-        } catch (Exception e) {
-            log.error("Error saving transaction category: {}", transactionCategory.getCategoryName(), e);
-            throw e;
-        }
-    }
+//    public void saveCreatedTransactionCategory(BudgetCategory transactionCategory){
+//        if (transactionCategory == null) {
+//            log.warn("Cannot save null transaction category");
+//            return;
+//        }
+//
+//        try {
+//            log.info("Transaction Category: {}", transactionCategory.toString());
+//            BudgetCategoryEntity entity = convertToEntity(transactionCategory);
+//            budgetCategoryService.save(entity);
+//            log.info("Saved transaction category: {}", transactionCategory.getCategoryName());
+//        } catch (Exception e) {
+//            log.error("Error saving transaction category: {}", transactionCategory.getCategoryName(), e);
+//            throw e;
+//        }
+//    }
 
     //TODO: Unit test this method
     public List<BudgetCategory> createNewRecurringTransactionCategories(final List<RecurringTransaction> recurringTransactions, final SubBudget budget, BudgetSchedule budgetSchedule, final LocalDate startDate, final LocalDate endDate){
@@ -406,40 +406,40 @@ public class TransactionCategoryRunner
 //        }
 //    }
 
-    private BudgetCategoryEntity convertToEntity(BudgetCategory transactionCategory) {
-        // Implement conversion logic or use a converter service
-        BudgetCategoryEntity entity = new BudgetCategoryEntity();
-        entity.setBudgetedAmount(transactionCategory.getBudgetedAmount());
-        entity.setActual(transactionCategory.getBudgetActual());
-        entity.setStartDate(transactionCategory.getStartDate());
-        entity.setEndDate(transactionCategory.getEndDate());
-        entity.setIsactive(transactionCategory.getIsActive());
-        entity.setIsOverSpent(transactionCategory.isOverSpent());
-        entity.setOverspendingAmount(transactionCategory.getOverSpendingAmount());
-        // Set Category Entity
-        log.info("Finding category with name: {}", transactionCategory.getCategoryName());
-        CategoryEntity categoryEntity = categoryService.findCategoryById(transactionCategory.getCategoryName())  // Try using the "name" as ID first
-                .orElseGet(() -> {
-                    // If it's not an ID, then try as a name
-                    return categoryService.findCategoryByName(transactionCategory.getCategoryName())
-                            .orElseThrow(() -> new IllegalStateException(
-                                    "Could not find category for: " + transactionCategory.getCategoryName()));
-                });
-        entity.setCategory(categoryEntity);
-
-        // Set Budget Entity
-        SubBudgetEntity budgetEntity = subBudgetService.findById(transactionCategory.getSubBudgetId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Could not find budget with ID: " + transactionCategory.getSubBudgetId()));
-        entity.setSubBudget(budgetEntity);
-        // Set required transaction ID - use first transaction ID if available
-//        if (transactionCategory.getTransactionIds() != null && !transactionCategory.getTransactionIds().isEmpty()) {
-//            entity.setTransactions(Set.of(transactionCategory.getTransactionIds().get(0)));
-//        }else{
-//            throw new RuntimeException("No transaction IDs specified");
-//        }
-
-        // Set other fields as needed
-        return entity;
-    }
+//    private BudgetCategoryEntity convertToEntity(BudgetCategory transactionCategory) {
+//        // Implement conversion logic or use a converter service
+//        BudgetCategoryEntity entity = new BudgetCategoryEntity();
+//        entity.setBudgetedAmount(transactionCategory.getBudgetedAmount());
+//        entity.setActual(transactionCategory.getBudgetActual());
+//        entity.setStartDate(transactionCategory.getStartDate());
+//        entity.setEndDate(transactionCategory.getEndDate());
+//        entity.setActive(transactionCategory.getIsActive());
+//        entity.setIsOverSpent(transactionCategory.isOverSpent());
+//        entity.setOverspendingAmount(transactionCategory.getOverSpendingAmount());
+//        // Set Category Entity
+//        log.info("Finding category with name: {}", transactionCategory.getCategoryName());
+//        CategoryEntity categoryEntity = categoryService.findCategoryById(transactionCategory.getCategoryName())  // Try using the "name" as ID first
+//                .orElseGet(() -> {
+//                    // If it's not an ID, then try as a name
+//                    return categoryService.findCategoryByName(transactionCategory.getCategoryName())
+//                            .orElseThrow(() -> new IllegalStateException(
+//                                    "Could not find category for: " + transactionCategory.getCategoryName()));
+//                });
+//        entity.setCategoryName();
+//
+//        // Set Budget Entity
+//        SubBudgetEntity budgetEntity = subBudgetService.findById(transactionCategory.getSubBudgetId())
+//                .orElseThrow(() -> new IllegalStateException(
+//                        "Could not find budget with ID: " + transactionCategory.getSubBudgetId()));
+//        entity.setSubBudget(budgetEntity);
+//        // Set required transaction ID - use first transaction ID if available
+////        if (transactionCategory.getTransactionIds() != null && !transactionCategory.getTransactionIds().isEmpty()) {
+////            entity.setTransactions(Set.of(transactionCategory.getTransactionIds().get(0)));
+////        }else{
+////            throw new RuntimeException("No transaction IDs specified");
+////        }
+//
+//        // Set other fields as needed
+//        return entity;
+//    }
 }

@@ -44,6 +44,9 @@ public class TransactionCategoryEntity
     @Column(name="created_at")
     private LocalDateTime createdAt;
 
+    @Column(name="isProcessed", columnDefinition = "false")
+    private boolean isProcessed;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

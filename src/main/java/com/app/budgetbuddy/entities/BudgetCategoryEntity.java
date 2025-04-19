@@ -33,9 +33,9 @@ public class BudgetCategoryEntity
     @JoinColumn(name="sub_budgetId")
     private SubBudgetEntity subBudget;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="categoryid")
-    private CategoryEntity category;
+    @Column(name="category_name")
+    @NotNull
+    private String categoryName;
 
     @Column(name="budgetedAmount")
     @NotNull
@@ -45,8 +45,8 @@ public class BudgetCategoryEntity
     @NotNull
     private Double actual;
 
-    @Column(name="isactive")
-    private Boolean isactive;
+    @Column(name="active")
+    private boolean active;
 
     @Column(name="startDate")
     private LocalDate startDate;

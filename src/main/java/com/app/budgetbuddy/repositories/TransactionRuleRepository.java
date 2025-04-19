@@ -14,6 +14,6 @@ public interface TransactionRuleRepository extends JpaRepository<TransactionRule
     @Query("SELECT c FROM TransactionRuleEntity c WHERE c.user.id =:id")
     List<TransactionRuleEntity> findAllByUser(@Param("id") Long userId);
 
-    @Query("SELECT c FROM TransactionRuleEntity c WHERE c.user.id IS NULL")
+    @Query("SELECT c FROM TransactionRuleEntity c WHERE c.isSystemRule = true")
     List<TransactionRuleEntity> findAllByUserIsNull();
 }

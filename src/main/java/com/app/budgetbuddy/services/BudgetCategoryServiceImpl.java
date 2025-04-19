@@ -95,12 +95,12 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
             BudgetCategory budgetCategory = new BudgetCategory();
             budgetCategory.setId(budgetCategoryEntity.getId());
             budgetCategory.setSubBudgetId(budgetCategoryEntity.getSubBudget().getId());
-            budgetCategory.setCategoryName(budgetCategoryEntity.getCategory().getName());
+            budgetCategory.setCategoryName(budgetCategory.getCategoryName());
             budgetCategory.setBudgetedAmount(budgetCategoryEntity.getBudgetedAmount());
             budgetCategory.setBudgetActual(budgetCategoryEntity.getActual());
             budgetCategory.setEndDate(budgetCategoryEntity.getEndDate());
             budgetCategory.setStartDate(budgetCategoryEntity.getStartDate());
-            budgetCategory.setIsActive(budgetCategoryEntity.getIsactive());
+            budgetCategory.setIsActive(budgetCategoryEntity.isActive());
             budgetCategory.setOverSpendingAmount(budgetCategoryEntity.getOverspendingAmount());
             // Fix the isOverSpent handling
             budgetCategory.setOverSpent(
@@ -117,7 +117,7 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     {
         BudgetCategoryEntity budgetCategoryEntity = new BudgetCategoryEntity();
         budgetCategoryEntity.setId(budgetCategory.getId());
-        budgetCategoryEntity.setIsactive(budgetCategory.getIsActive());
+        budgetCategoryEntity.setActive(budgetCategory.getIsActive());
         budgetCategoryEntity.setOverspendingAmount(budgetCategory.getOverSpendingAmount());
         budgetCategoryEntity.setStartDate(budgetCategory.getStartDate());
         budgetCategoryEntity.setEndDate(budgetCategory.getEndDate());

@@ -38,6 +38,9 @@ public class TransactionRuleEntity {
     @Column(name="isRecurring")
     private boolean isRecurring;
 
+    @Column(name="isSystemRule")
+    private boolean isSystemRule;
+
     @Column(name="isActive")
     private boolean isActive;
 
