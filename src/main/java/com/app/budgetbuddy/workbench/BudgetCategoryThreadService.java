@@ -35,27 +35,33 @@ public class BudgetCategoryThreadService
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
 
-
-    public void runCreateAsyncOperationForCurrentDate(final SubBudget subBudget, final List<CategoryTransactions> categoryTransactions)
+    public CompletableFuture<Boolean> runCreateAsyncOperationForCurrentDate(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions)
     {
         final LocalDate currentDate = LocalDate.now();
         try
         {
             log.info("Starting budget category thread for current date {}", currentDate);
-
+            CompletableFuture<List<BudgetCategory>> budgetCategoriesFuture = createAsyncBudgetCategoriesByCurrentDate(currentDate, subBudget, budgetSchedule, categoryTransactions);
+            List<BudgetCategory> budgetCategories = budgetCategoriesFuture.get();
+            if(!budgetCategories.isEmpty())
+            {
+                return CompletableFuture.completedFuture(true);
+            }
+            return CompletableFuture.completedFuture(false);
         }catch(Exception e){
-            log.error("Failed to run create operation for date: {}", e);
+            log.error("Failed to run create operation for date: ", e);
+            return CompletableFuture.completedFuture(false);
         }
     }
 
-    public void runNormalBudgetCategorySetupOperation(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions)
+    public CompletableFuture<Boolean> runNormalBudgetCategorySetupOperation(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions)
     {
-
+        return null;
     }
 
-    public void runUpdateAsyncOperationForCurrentDate(final LocalDate currentDate, final List<BudgetCategory> existingBudgetCategories, final SubBudget subBudget, final List<CategoryTransactions> categoryTransactions)
+    public CompletableFuture<Boolean> runUpdateAsyncOperationForCurrentDate(final LocalDate currentDate, final List<BudgetCategory> existingBudgetCategories, final SubBudget subBudget, final List<CategoryTransactions> categoryTransactions)
     {
-
+        return null;
     }
 
     public CompletableFuture<List<BudgetCategory>> saveAsyncBudgetCategories(final List<BudgetCategory> budgetCategories)

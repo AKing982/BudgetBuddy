@@ -1,10 +1,12 @@
 package com.app.budgetbuddy.workbench.budget;
 
+
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DateRangeException;
 import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
+import com.app.budgetbuddy.domain.DateRange;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Component
 @Slf4j
@@ -41,46 +44,64 @@ public class BudgetCategoryBuilder
     }
 
     /**
-   Pseudocode:
-   1. Validate inputs
-      - Check if categoryPeriods and existingTransactionCategories are null
-      - Return empty list if either is null
+     Pseudocode:
+     1. Validate inputs
+     - Check if categoryPeriods and existingTransactionCategories are null
+     - Return empty list if either is null
 
-   2. Update existing transaction categories that overlap with new period
-      - For each categoryPeriod:
-        - Get start/end dates
-        - Find matching existing categories within that date range
-        - Update fields: actual amount, budget amount, transactions
-        - Recalculate overspending
+     2. Update existing transaction categories that overlap with new period
+     - For each categoryPeriod:
+     - Get start/end dates
+     - Find matching existing categories within that date range
+     - Update fields: actual amount, budget amount, transactions
+     - Recalculate overspending
 
-   3. Add new transaction categories for non-overlapping periods
-      - For each categoryPeriod without a match:
-        - Create new TransactionCategory
-        - Set fields from CategoryPeriod
-        - Add transactions
-        - Calculate initial overspending
+     3. Add new transaction categories for non-overlapping periods
+     - For each categoryPeriod without a match:
+     - Create new TransactionCategory
+     - Set fields from CategoryPeriod
+     - Add transactions
+     - Calculate initial overspending
 
-   4. Remove obsolete transaction categories
-      - Find existing categories outside new date ranges
-      - Mark as inactive or remove
+     4. Remove obsolete transaction categories
+     - Find existing categories outside new date ranges
+     - Mark as inactive or remove
 
-   Edge Cases:
-   - Partial period overlaps
-   - Multiple transactions in same period
-   - Zero budget/actual amounts
-   - Date range mismatches
-   - Duplicate transactions
-   - Missing transactions
-   - Categories changing names
-   - Null transaction lists
-   - Zero-length periods
-   - Future dated transactions
-   **/
-    public List<BudgetCategory> updateTransactionCategories(final List<BudgetCategoryCriteria> categoryBudgets, final List<BudgetCategory> existingBudgetCategories)
+     Edge Cases:
+     - Partial period overlaps
+     - Multiple transactions in same period
+     - Zero budget/actual amounts
+     - Date range mismatches
+     - Duplicate transactions
+     - Missing transactions
+     - Categories changing names
+     - Null transaction lists
+     - Zero-length periods
+     - Future dated transactions
+     **/
+    public List<BudgetCategory> updateBudgetCategories(final List<BudgetCategoryCriteria> categoryBudgets, final List<BudgetCategory> existingBudgetCategories)
     {
         if(categoryBudgets == null || existingBudgetCategories == null)
         {
             return Collections.emptyList();
+        }
+        Set<BudgetCategory> budgetCategories = new HashSet<>();
+        log.info("Updating Budget Categories.");
+        if(existingBudgetCategories.isEmpty())
+        {
+            log.warn("No Existing Budget Categories found for updating.");
+            return Collections.emptyList();
+        }
+        else
+        {
+            for(BudgetCategory budgetCategory : existingBudgetCategories)
+            {
+                for(BudgetCategoryCriteria categoryCriteria : categoryBudgets)
+                {
+                    List<DateRange> categoryCriteriaDateRange = categoryCriteria.getCategoryDateRanges();
+
+                }
+            }
         }
 
 //        Set<TransactionCategory> uniqueCategories = new LinkedHashSet<>(existingTransactionCategories);
@@ -153,6 +174,11 @@ public class BudgetCategoryBuilder
 //        }
         return null;
 //        return new ArrayList<>(uniqueCategories);
+    }
+
+    public List<BudgetCategory> updateBudgetCategoriesByDate(List<BudgetCategoryCriteria> categoryBudgets, final List<BudgetCategory> existingBudgetCategories, LocalDate currentDate)
+    {
+        return null;
     }
 
     private BudgetCategory createBudgetCategory(

@@ -493,7 +493,7 @@ class BudgetCategoryBuilderTest {
        List<BudgetCategoryCriteria> categoryPeriods = new ArrayList<>();
        categoryPeriods.add(new BudgetCategoryCriteria("Groceries", List.of(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 7)))));
 
-       List<BudgetCategory> actual = budgetCategoryBuilder.updateTransactionCategories(categoryPeriods, null);
+       List<BudgetCategory> actual = budgetCategoryBuilder.updateBudgetCategories(categoryPeriods, null);
        assertTrue(actual.isEmpty());
     }
 
@@ -788,6 +788,55 @@ class BudgetCategoryBuilderTest {
 
         assertFalse(hasGroceryCategory, "Should not have any CategoryPeriodSpending for Groceries category");
     }
+
+    @Test
+    void testCreateBudgetCategoriesByCurrentDate_whenSubBudgetIsNull_thenReturnEmptyCollection(){
+       BudgetSchedule budgetSchedule1 = new BudgetSchedule();
+       List<CategoryTransactions> categoryTransactions = createAprilCategoryTransactionsWithCategoryAndNoTransactions();
+       List<BudgetCategory> actual = budgetCategoryBuilder.createBudgetCategoriesByCurrentDate(null, budgetSchedule1, categoryTransactions);
+       assertNotNull(actual, "Result should not be null");
+       assertTrue(actual.isEmpty(), "Result should not be empty");
+    }
+
+    @Test
+    void testCreateBudgetCategoriesByCurrentDate_whenBudgetScheduleIsNull_thenReturnEmptyCollection(){
+       SubBudget subBudget = new SubBudget();
+       List<CategoryTransactions> categoryTransactions = createAprilCategoryTransactionsWithCategoryAndNoTransactions();
+       List<BudgetCategory> actual = budgetCategoryBuilder.createBudgetCategoriesByCurrentDate(subBudget, null, categoryTransactions);
+       assertNotNull(actual, "Result should not be null");
+       assertTrue(actual.isEmpty(), "Result should not be empty");
+    }
+
+    @Test
+    void testCreateBudgetCategoriesByCurrentDate_whenAprilBudgetAndCurrentDateAndNoExistingBudgetCategories_thenReturnBudgetCategories()
+    {
+       SubBudget subBudget = getAprilSubBudget();
+       BudgetSchedule aprilBudgetSchedule = new BudgetSchedule();
+       List<CategoryTransactions> categoryTransactions = createAprilCategoryTransactions();
+
+       List<BudgetCategory> expectedBudgetCategories = new ArrayList<>();
+
+
+    }
+
+
+    private SubBudget getAprilSubBudget(){
+       SubBudget subBudget = new SubBudget();
+       subBudget.setStartDate(LocalDate.of(2025, 4, 1));
+       subBudget.setEndDate(LocalDate.of(2025, 4, 30));
+       subBudget.setSubBudgetName("April Budget");
+       subBudget.setYear(2025);
+       subBudget.setBudget(budget);
+
+       BudgetSchedule budgetSchedule = getAprilBudgetSchedule();
+       subBudget.setBudgetSchedule(List.of(budgetSchedule));
+       subBudget.setActive(true);
+       subBudget.setAllocatedAmount(BigDecimal.valueOf(3250));
+       subBudget.setSpentOnBudget(BigDecimal.valueOf(1342));
+       subBudget.setSubSavingsTarget(BigDecimal.valueOf(250));
+       subBudget.setSubSavingsAmount(BigDecimal.valueOf(120));
+       return subBudget;
+   }
 
     private List<CategoryTransactions> createAprilCategoryTransactionsWithCategoryAndNoTransactions()
     {

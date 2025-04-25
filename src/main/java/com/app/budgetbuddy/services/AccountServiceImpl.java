@@ -4,6 +4,7 @@ import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.repositories.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,36 +16,47 @@ public class AccountServiceImpl implements AccountService
     private final AccountRepository accountRepository;
 
     @Autowired
-    public AccountServiceImpl(AccountRepository accountRepository){
+    public AccountServiceImpl(AccountRepository accountRepository)
+    {
         this.accountRepository = accountRepository;
     }
 
     @Override
-    public Collection<AccountEntity> findAll() {
+    @Transactional
+    public Collection<AccountEntity> findAll()
+    {
         return accountRepository.findAll();
     }
 
     @Override
-    public void save(AccountEntity accountEntity) {
+    @Transactional
+    public void save(AccountEntity accountEntity)
+    {
         accountRepository.save(accountEntity);
     }
 
     @Override
-    public void delete(AccountEntity accountEntity) {
+    @Transactional
+    public void delete(AccountEntity accountEntity)
+    {
         accountRepository.delete(accountEntity);
     }
 
     @Override
+    @Transactional
     public Optional<AccountEntity> findById(Long id) {
         return accountRepository.findById(id);
     }
 
     @Override
-    public Optional<AccountEntity> findByAccountId(String accountId) {
+    @Transactional
+    public Optional<AccountEntity> findByAccountId(String accountId)
+    {
         return accountRepository.findByAccountId(accountId);
     }
 
     @Override
+    @Transactional
     public List<AccountEntity> findByUser(Long userId) {
         return accountRepository.findByUserId(userId);
     }

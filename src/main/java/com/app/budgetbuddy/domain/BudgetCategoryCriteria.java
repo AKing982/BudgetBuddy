@@ -1,6 +1,5 @@
 package com.app.budgetbuddy.domain;
 
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

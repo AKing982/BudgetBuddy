@@ -200,6 +200,33 @@ class BudgetCategoryThreadServiceTest
         assertTrue(actual.isEmpty());
     }
 
+    @Test
+    void testCreateAsyncBudgetCategoriesByCurrentDate_whenValidParams_thenReturnBudgetCategoryList() throws Exception
+    {
+        LocalDate currentDate = LocalDate.now();
+        SubBudget subBudget = createTestSubBudget();
+        BudgetSchedule budgetSchedule = createTestBudgetSchedule();
+        List<CategoryTransactions> categoryTransactions = createTestCategoryTransactions();
+        List<BudgetCategory> expectedBudgetCategories = createTestBudgetCategories();
+
+        CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByCurrentDate(currentDate, subBudget, budgetSchedule, categoryTransactions);
+        List<BudgetCategory> actual = future.get(5, TimeUnit.SECONDS);
+        assertNotNull(actual);
+        assertEquals(expectedBudgetCategories.size(), actual.size());
+        for(int i = 0; i < expectedBudgetCategories.size(); i++) {
+            BudgetCategory expected = expectedBudgetCategories.get(i);
+            BudgetCategory actualCategory = actual.get(i);
+            assertEquals(expected.getId(), actualCategory.getId(), "ID should match");
+            assertEquals(expected.getCategoryName(), actualCategory.getCategoryName(), "Category name should match");
+            assertEquals(expected.getSubBudgetId(), actualCategory.getSubBudgetId(), "SubBudget ID should match");
+            assertEquals(expected.getBudgetedAmount(), actualCategory.getBudgetedAmount(), "Budgeted amount should match");
+            assertEquals(expected.getBudgetActual(), actualCategory.getBudgetActual(), "Budget actual should match");
+            assertEquals(expected.getStartDate(), actualCategory.getStartDate(), "Start date should match");
+            assertEquals(expected.getEndDate(), actualCategory.getEndDate(), "End date should match");
+            assertEquals(expected.getIsActive(), actualCategory.getIsActive(), "Active status should match");
+        }
+    }
+
 
     // Helper methods to create test data
     private SubBudget createTestSubBudget() {

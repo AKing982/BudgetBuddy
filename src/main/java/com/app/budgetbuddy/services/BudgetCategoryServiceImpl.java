@@ -11,6 +11,7 @@ import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
@@ -92,25 +93,54 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategoryRepository.findByBudgetIdAndDateRange(budgetId, startDate, endDate);
         List<BudgetCategory> transactionCategoryList = new ArrayList<>();
         for(BudgetCategoryEntity budgetCategoryEntity : budgetCategoryEntities){
-            BudgetCategory budgetCategory = new BudgetCategory();
-            budgetCategory.setId(budgetCategoryEntity.getId());
-            budgetCategory.setSubBudgetId(budgetCategoryEntity.getSubBudget().getId());
-            budgetCategory.setCategoryName(budgetCategory.getCategoryName());
-            budgetCategory.setBudgetedAmount(budgetCategoryEntity.getBudgetedAmount());
-            budgetCategory.setBudgetActual(budgetCategoryEntity.getActual());
-            budgetCategory.setEndDate(budgetCategoryEntity.getEndDate());
-            budgetCategory.setStartDate(budgetCategoryEntity.getStartDate());
-            budgetCategory.setIsActive(budgetCategoryEntity.isActive());
-            budgetCategory.setOverSpendingAmount(budgetCategoryEntity.getOverspendingAmount());
-            // Fix the isOverSpent handling
-            budgetCategory.setOverSpent(
-                    budgetCategoryEntity.getIsOverSpent() != null ?
-                            budgetCategoryEntity.getIsOverSpent() :
-                            false
-            );
+            BudgetCategory budgetCategory = convertEntityToModel(budgetCategoryEntity);
             transactionCategoryList.add(budgetCategory);
         }
         return transactionCategoryList;
+    }
+
+    private BudgetCategory convertEntityToModel(BudgetCategoryEntity budgetCategoryEntity)
+    {
+        BudgetCategory budgetCategory = new BudgetCategory();
+        budgetCategory.setId(budgetCategoryEntity.getId());
+        budgetCategory.setSubBudgetId(budgetCategoryEntity.getSubBudget().getId());
+        budgetCategory.setCategoryName(budgetCategory.getCategoryName());
+        budgetCategory.setBudgetedAmount(budgetCategoryEntity.getBudgetedAmount());
+        budgetCategory.setBudgetActual(budgetCategoryEntity.getActual());
+        budgetCategory.setEndDate(budgetCategoryEntity.getEndDate());
+        budgetCategory.setStartDate(budgetCategoryEntity.getStartDate());
+        budgetCategory.setIsActive(budgetCategoryEntity.isActive());
+        budgetCategory.setOverSpendingAmount(budgetCategoryEntity.getOverspendingAmount());
+        // Fix the isOverSpent handling
+        budgetCategory.setOverSpent(
+                budgetCategoryEntity.getIsOverSpent() != null ?
+                        budgetCategoryEntity.getIsOverSpent() :
+                        false
+        );
+        return budgetCategory;
+    }
+
+    @Override
+    public List<BudgetCategory> getBudgetCategoriesByDate(Long subBudgetId, LocalDate currentDate, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategoryRepository.findBudgetCategoriesByDate(subBudgetId, currentDate, startDate, endDate);
+            if(budgetCategoryEntities == null || budgetCategoryEntities.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            else
+            {
+                return budgetCategoryEntities.stream()
+                        .map(this::convertEntityToModel)
+                        .distinct()
+                        .toList();
+            }
+        }catch(DataAccessException e)
+        {
+            return Collections.emptyList();
+        }
     }
 
     private BudgetCategoryEntity convertBudgetCategoryToEntity(BudgetCategory budgetCategory)
@@ -128,7 +158,6 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         budgetCategoryEntity.setIsOverSpent(budgetCategory.isOverSpent());
         return budgetCategoryEntity;
     }
-
 
     private SubBudgetEntity getSubBudgetEntityById(Long subBudgetId)
     {
