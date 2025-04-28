@@ -48,7 +48,7 @@
             <mxPoint x="130" y="110" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="h8AmV_yoxcW9ySd2zvX5-1" value="Schedule Transaction Sync every hour" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="h8AmV_yoxcW9ySd2zvX5-1" value="Schedule Transaction/Recurring Sync every hour" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="130" y="80" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="h8AmV_yoxcW9ySd2zvX5-2" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="h8AmV_yoxcW9ySd2zvX5-1">
@@ -57,7 +57,7 @@
             <mxPoint x="300" y="110" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="h8AmV_yoxcW9ySd2zvX5-3" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="h8AmV_yoxcW9ySd2zvX5-3" value="Start TransactionRefresh Thread" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="300" y="80" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
