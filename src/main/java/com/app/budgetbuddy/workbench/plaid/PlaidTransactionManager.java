@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.plaid;
 
 import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.RecurringTransactionDTO;
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
@@ -27,6 +28,7 @@ import retrofit2.Response;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +46,8 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                                    TransactionService transactionService,
                                    TransactionConverter transactionConverter,
                                    RecurringTransactionService recurringTransactionService,
-                                   RecurringTransactionConverter recurringTransactionConverter) {
+                                   RecurringTransactionConverter recurringTransactionConverter)
+    {
         super(plaidLinkService, plaidApi);
         this.transactionService = transactionService;
         this.transactionConverter = transactionConverter;
@@ -166,11 +169,9 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         if (request == null) {
             throw new IllegalArgumentException("TransactionsRecurringGetRequest cannot be null");
         }
-
         int attempts = 0;
         int MAX_ATTEMPTS = 3;
         Response<TransactionsRecurringGetResponse> response = null;
-
         do {
             Call<TransactionsRecurringGetResponse> call = plaidApi.transactionsRecurringGet(request);
             response = call.execute();
@@ -226,18 +227,57 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 .options(options);
     }
 
-    public TransactionsSyncResponse getResyncedTransactionsResponseWithRetry(TransactionsSyncRequest transactionsSyncRequest) throws IOException {
-        return null;
+    public TransactionsSyncResponse syncTransactionsForUser(final Long userId, final String cursor) throws IOException
+    {
+        Optional<PlaidLinkEntity> plaidLinkEntityOptional = plaidLinkService.findPlaidLinkByUserID(userId);
+        if(plaidLinkEntityOptional.isEmpty())
+        {
+            throw new PlaidLinkException("Plaid link not found");
+        }
+        PlaidLinkEntity plaidLinkEntity = plaidLinkEntityOptional.get();
+        String accessToken = getPlaidAccessToken(plaidLinkEntity);
+        TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
+                .accessToken(accessToken)
+                .cursor(cursor);
+        Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
+        Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();
+        if(response.isSuccessful() && response.body() != null)
+        {
+            return response.body();
+        }
+        else
+        {
+            throw new IOException("Failed to sync transactions for user ID " + userId);
+        }
     }
 
-    public List<TransactionsEntity> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList){
+    public List<Transaction> saveTransactions(List<Transaction> transactions)
+    {
+        if(transactions == null || transactions.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            transactionService.saveAll(transactions);
+            return transactions;
+        }catch(Exception e)
+        {
+            return Collections.emptyList();
+        }
+    }
+
+    public List<TransactionsEntity> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList)
+    {
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
-        if(transactionList.isEmpty()){
+        if(transactionList.isEmpty())
+        {
             throw new TransactionsNotFoundException("Transactions not found.");
         }
-
-        for(PlaidTransaction transaction : transactionList){
-            if(transaction != null){
+        for(PlaidTransaction transaction : transactionList)
+        {
+            if(transaction != null)
+            {
                 TransactionsEntity transactionsEntity = transactionConverter.convert(transaction);
                 validateTransactionParameterForNulls(transactionsEntity);
                 transactionService.save(transactionsEntity);

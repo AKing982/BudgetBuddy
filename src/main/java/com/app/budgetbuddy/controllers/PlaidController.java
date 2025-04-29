@@ -379,7 +379,8 @@ public class PlaidController {
                 .map(transactionDTOConverter::convert)
                 .toList();
         LOGGER.info("Converted Transactions: {}", transactionsList);
-        try {
+        try
+        {
             List<TransactionsEntity> savedTransactions = plaidTransactionManager.saveTransactionsToDatabase(transactionsList);
 
             List<TransactionResponse> transactionResponses = createTransactionResponseFromEntities(savedTransactions);
@@ -418,6 +419,40 @@ public class PlaidController {
         {
             log.error("Error creating update link token for user {}: {}", userId, e.getMessage());
             return ResponseEntity.internalServerError().body("Plaid API error: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("transactions/sync")
+    public ResponseEntity<?> syncTransactions(@RequestParam Long userId,
+                                              @RequestParam(value="cursor", required=false) String cursor)
+    {
+        if(userId < 1L || cursor.isEmpty())
+        {
+            return ResponseEntity.badRequest().build();
+        }
+        try
+        {
+            TransactionsSyncResponse syncResponse = plaidTransactionManager.syncTransactionsForUser(userId, cursor);
+            return ResponseEntity.ok(syncResponse);
+        }catch(IOException e){
+            log.error("There was an error syncing the transactions for user: {}", userId, e);
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("recurring/sync")
+    public ResponseEntity<?> syncRecurringTransactionsForUser(@RequestParam Long userId){
+        if(userId == null || userId < 1L)
+        {
+            return ResponseEntity.badRequest().build();
+        }
+        try
+        {
+            TransactionsRecurringGetResponse transactionsRecurringGetResponse = plaidTransactionManager.getRecurringTransactionsForUser(userId);
+            return ResponseEntity.ok(transactionsRecurringGetResponse);
+        }catch(IOException e){
+            log.error("There was an error syncing the recurring transactions for user: {}", userId, e);
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
 

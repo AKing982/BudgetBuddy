@@ -39,8 +39,14 @@ public class ThreadConfig
 
     @Bean
     public ThreadPoolTaskScheduler threadPoolTaskScheduler(){
-        return new ThreadPoolTaskScheduler();
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(5); // Or however many threads you want
+        scheduler.setThreadNamePrefix("TransactionSync-");
+        scheduler.initialize();
+        return scheduler;
     }
+
+
 
     @Bean
     public ScheduledExecutorService scheduledExecutorService(){
