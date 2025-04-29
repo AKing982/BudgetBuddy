@@ -117,6 +117,8 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         CATEGORY_NAME_MAPPING.put("Utilities", "Utilities");
         CATEGORY_NAME_MAPPING.put("Payment", "Payment");
         CATEGORY_NAME_MAPPING.put("Golf", "Other");
+        CATEGORY_NAME_MAPPING.put("Withdrawal", "Withdrawal");
+        CATEGORY_NAME_MAPPING.put("Credit", "Transfer");
     }
 
     static {
@@ -156,6 +158,14 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         Map<String, String> amexPurchaseMap = new HashMap<>();
         amexPurchaseMap.put("16001000", "Payment");
 
+        Map<String, String> depositTransferMap = new HashMap<>();
+        depositTransferMap.put("21005000", "Transfer");
+
+        Map<String, String> jetbrainsPurchaseMap = new HashMap<>();
+        jetbrainsPurchaseMap.put("12009000", "Subscription");
+
+        TRANSACTION_DESCRIPTION_MAPPING.put("PIN Purchase JETBRAINS AMERI", jetbrainsPurchaseMap);
+        TRANSACTION_DESCRIPTION_MAPPING.put("Deposit Transfer", depositTransferMap);
         TRANSACTION_DESCRIPTION_MAPPING.put("Amazon Prime", amazonPrimeMap);
         TRANSACTION_DESCRIPTION_MAPPING.put("Purchase WL *Steam Purchase", steamPurchasesMap);
         TRANSACTION_DESCRIPTION_MAPPING.put("Steam Games", steamPurchasesMap);

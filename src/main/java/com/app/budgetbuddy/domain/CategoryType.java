@@ -19,6 +19,8 @@ public enum CategoryType
     COFFEE("Coffee"),
     TRIP("Trip"),
     UNCATEGORIZED("Uncategorized"),
+    WITHDRAWAL("Withdrawal"),
+    TRANSFER("Transfer"),
     PET("Pet");
 
     private String type;

@@ -157,7 +157,6 @@ public class CategoryRuleEngine
         for (Map.Entry<String, TransactionRule> entry : categorizedTransactions.entrySet()) {
             String transactionId = entry.getKey();
             TransactionRule rule = entry.getValue();
-
             // Check if rule was from user rules (priority would be USER_DEFINED.getValue())
             if (rule.getPriority() == PriorityLevel.USER_DEFINED.getValue()) {
                 // Convert to UserCategoryRule
