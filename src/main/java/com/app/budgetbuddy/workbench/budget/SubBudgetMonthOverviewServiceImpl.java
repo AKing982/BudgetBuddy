@@ -48,21 +48,19 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             log.warn("Invalid parameters provided to loadIncomeCategories");
             return Optional.empty();
         }
-
         final String incomeQuery = """
         SELECT tc
         FROM BudgetCategoryEntity tc
-        JOIN tc.category c
-        WHERE (c.id = '21009000' OR c.name LIKE :payrollPattern)
+        WHERE tc.categoryName =:catName
         AND tc.subBudget.id = :subBudgetId
         AND tc.startDate >= :startDate
         AND tc.endDate <= :endDate
-        AND tc.isactive = true
+        AND tc.active = true
         """;
         try
         {
             List<Object[]> incomeCategories = entityManager.createQuery(incomeQuery, Object[].class)
-                    .setParameter("payrollPattern", "%Payroll%")
+                    .setParameter("catName", "Income")
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
@@ -81,17 +79,14 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
     private IncomeCategory mapToIncomeCategory(List<Object[]> results) {
         BigDecimal totalBudgeted = BigDecimal.ZERO;
         BigDecimal totalActual = BigDecimal.ZERO;
-
         // Aggregate totals
         for (Object[] result : results) {
             BudgetCategoryEntity tc = (BudgetCategoryEntity) result[0];
             totalBudgeted = totalBudgeted.add(BigDecimal.valueOf(tc.getBudgetedAmount()));
             totalActual = totalActual.add(BigDecimal.valueOf(tc.getActual()));
         }
-
         // Get first record for date range (assuming all records are in same month)
         BudgetCategoryEntity firstTc = (BudgetCategoryEntity) results.get(0)[0];
-
         return new IncomeCategory(
                 totalBudgeted,
                 totalActual,
@@ -133,27 +128,23 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                             SUM(tc.actual) as totalSpent,
                             (SUM(tc.budgetedAmount) - SUM(tc.actual)) as remaining
                             FROM BudgetCategoryEntity tc
-                            JOIN tc.category c
-                            WHERE (c.id <> '21009000' AND c.name NOT LIKE :payrollPattern)
+                            WHERE (tc.categoryName <> :catName)
                                 AND tc.subBudget.id = :subBudgetId
                                 AND tc.startDate >= :startDate
                                 AND tc.endDate <= :endDate
-                                AND tc.isactive = true""";
+                                AND tc.active = true""";
         try
         {
             Object[] expenseCategories = entityManager.createQuery(expenseCategoryQuery, Object[].class)
-                    .setParameter("payrollPattern", "%Payroll%")
+                    .setParameter("catName", "Income")
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .getSingleResult();
-
             if(expenseCategories[0] == null)
             {
                 return Optional.empty();
             }
-
-
             BigDecimal budgeted = BigDecimal.valueOf((Double) expenseCategories[0]);
             BigDecimal actual = BigDecimal.valueOf((Double) expenseCategories[1]);
 
@@ -180,20 +171,19 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         {
             return Optional.empty();
         }
-
         final String savingsCategoryQuery = """
-    SELECT bg.targetAmount,
-        SUM(tc.budgetedAmount - tc.actual) as totalSaved 
-    FROM BudgetCategoryEntity tc
-    JOIN tc.subBudget sb
-    JOIN sb.budget b
-    LEFT JOIN b.budgetGoals bg
-    WHERE tc.subBudget.id = :subBudgetId
-    AND tc.startDate >= :startDate
-    AND tc.endDate <= :endDate
-    AND tc.isactive = true
-    GROUP BY bg.targetAmount
-    """;
+        SELECT bg.targetAmount,
+            SUM(tc.budgetedAmount - tc.actual) as totalSaved
+        FROM BudgetCategoryEntity tc
+        JOIN tc.subBudget sb
+        JOIN sb.budget b
+        LEFT JOIN b.budgetGoals bg
+        WHERE tc.subBudget.id = :subBudgetId
+        AND tc.startDate >= :startDate
+        AND tc.endDate <= :endDate
+        AND tc.active = true
+        GROUP BY bg.targetAmount
+        """;
 
         try {
             Object[] result = entityManager.createQuery(savingsCategoryQuery, Object[].class)
@@ -236,28 +226,25 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Collections.emptyList();
         }
         final String topExpensesQuery = """
-        SELECT tc.category.id,
-               tc.category.name,
+        SELECT tc.categoryName,
                tc.budgetedAmount,
                tc.actual,
                (tc.budgetedAmount - tc.actual) as remaining
         FROM BudgetCategoryEntity tc
-        JOIN tc.category c
         WHERE tc.subBudget.id = :budgetId
             AND tc.startDate >= :startDate
             AND tc.endDate <= :endDate
-            AND tc.isactive = true
-            AND (c.id <> '21009000' AND c.name NOT LIKE :payrollPattern)
+            AND tc.active = true
+            AND (tc.categoryName <> :catName)
         ORDER BY tc.actual DESC
         """;
-
         try
         {
             List<Object[]> results = entityManager.createQuery(topExpensesQuery, Object[].class)
                     .setParameter("budgetId", budgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
-                    .setParameter("payrollPattern", "%Payroll%")
+                    .setParameter("catName", "Income")
                     .setMaxResults(5)
                     .getResultList();
 

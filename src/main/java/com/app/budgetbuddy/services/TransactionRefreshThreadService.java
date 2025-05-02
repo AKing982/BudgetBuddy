@@ -1,26 +1,28 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.RecurringTransaction;
+import com.app.budgetbuddy.domain.RecurringTransactionResponse;
+import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import com.app.budgetbuddy.workbench.categories.TransactionCategoryBuilder;
 import com.app.budgetbuddy.workbench.converter.TransactionBaseToModelConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.plaid.client.model.Transaction;
+import com.plaid.client.model.TransactionsRecurringGetResponse;
 import com.plaid.client.model.TransactionsSyncResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 public class TransactionRefreshThreadService
 {
     private final PlaidTransactionManager plaidTransactionManager;
+    private final RecurringTransactionService recurringTransactionService;
     private final TransactionBaseToModelConverter transactionBaseToModelConverter;
     private final CategoryRuleEngine categoryRuleEngine;
     private final TransactionCategoryBuilder transactionCategoryBuilder;
@@ -37,6 +40,7 @@ public class TransactionRefreshThreadService
 
     @Autowired
     public TransactionRefreshThreadService(PlaidTransactionManager plaidTransactionManager,
+                                           RecurringTransactionService recurringTransactionService,
                                            TransactionBaseToModelConverter transactionBaseToModelConverter,
                                            CategoryRuleEngine categoryRuleEngine,
                                            TransactionCategoryBuilder transactionCategoryBuilder,
@@ -44,6 +48,7 @@ public class TransactionRefreshThreadService
                                            ThreadPoolTaskScheduler threadPoolTaskScheduler)
     {
         this.plaidTransactionManager = plaidTransactionManager;
+        this.recurringTransactionService = recurringTransactionService;
         this.transactionBaseToModelConverter = transactionBaseToModelConverter;
         this.categoryRuleEngine = categoryRuleEngine;
         this.transactionCategoryBuilder = transactionCategoryBuilder;
@@ -58,69 +63,25 @@ public class TransactionRefreshThreadService
                 .collect(Collectors.toList());
     }
 
-    public void startTransactionSyncThread(final Long userId, final String cursor) throws IOException
+    public void startTransactionSyncThread(final Long userId, final List<com.app.budgetbuddy.domain.Transaction> transactions, final String cursor) throws IOException
     {
         if(userId == null || cursor.isEmpty())
         {
             log.warn("User Id is null or cursor is empty");
             return;
         }
-        try
-        {
-            CompletableFuture.runAsync(() -> {
-                List<com.app.budgetbuddy.domain.Transaction> convertedTransactionList = new ArrayList<>();
-                // 1. Sync the transactions
-                try
-                {
-                    TransactionsSyncResponse transactionsSyncResponse = plaidTransactionManager.syncTransactionsForUser(userId, cursor);
-                    List<Transaction> plaidTransactionList = transactionsSyncResponse.getAdded();
-                    // Convert the Plaid Transactions to Transaction Objects
-                    convertedTransactionList.addAll(convertBaseTransactionList(plaidTransactionList));
-                }catch(Exception e){
-                    log.error("Unable to sync transactions for user " + userId + ": " + e.getMessage());
-                }
-                // 2. Store the Transactions
-                plaidTransactionManager.saveTransactions(convertedTransactionList);
-
-                // 3. Categorize the Transactions
-                if(categoryRuleEngine.processTransactionsForUser(convertedTransactionList, new ArrayList<>(), userId)) {
-
-                    log.info("Transaction Categorization has been successfully completed.");
-                }
-            }, threadPoolTaskScheduler.getScheduledExecutor())
-                    .thenRunAsync(() -> {
-                        // Now safely build Transaction Categories after categorization
-                        // Fetch transactions, create transaction categories, save them
-
-                        // 4.1 Fetch the transactions from the database
-
-                        // 4.2 Create the Transaction Categories using the transactions
-
-                        // 4.3 Store the transaction categories
-
-                        log.info("Building transaction categories for user {}", userId);
-                    }, threadPoolTaskScheduler.getScheduledExecutor())
-                            .thenRunAsync(() -> {
-                                // 6. Build/Update the Budget categories for new transactions
-
-                            }, threadPoolTaskScheduler.getScheduledExecutor());
-
-        }catch(CompletionException ex)
-        {
-            log.error("There was an error running the transaction sync thread: " + ex.getMessage());
-            throw ex;
-        }
-    }
-
-    private void buildTransactionCategories(Long userId)
-    {
-        try {
-            log.info("Building transaction categories for user {}", userId);
-//            transactionCategoryBuilder.buildTransactionCategoriesForUser(userId);
-        } catch (Exception ex) {
-            log.error("Error building transaction categories: {}", ex.getMessage());
-            throw new RuntimeException(ex);
-        }
+        Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
+        CompletableFuture.runAsync(() -> syncAndStoreTransactions(userId, cursor), executor)
+                .thenRunAsync(() -> categorizeTransactions(userId, transactions, new ArrayList<>()), executor)
+                .thenRunAsync(() -> buildBudgetCategories(userId), executor)
+                .exceptionally(ex -> {
+                    log.error("Transaction Refresh pipeline failed", ex);
+                    try {
+                        throw ex;
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     private void buildBudgetCategories(Long userId)
@@ -150,6 +111,23 @@ public class TransactionRefreshThreadService
         }
     }
 
+    private void syncAndStoreRecurringTransactions(final Long userId) throws IOException
+    {
+        log.info("Syncing recurring transactions for user {}", userId);
+        try
+        {
+            TransactionsRecurringGetResponse recurringTransactionResponse = plaidTransactionManager.getRecurringTransactionsForUser(userId);
+            var inputStreams = recurringTransactionResponse.getInflowStreams();
+            var outflowStreams = recurringTransactionResponse.getOutflowStreams();
+            recurringTransactionService.createRecurringTransactionEntitiesFromStream(outflowStreams, inputStreams, userId);
+            log.info("Synced recurring transactions for user {}", userId);
+
+        }catch(IOException ex){
+            log.error("Error syncing recurring transactions: {}", ex.getMessage());
+            throw ex;
+        }
+    }
+
     private void syncAndStoreTransactions(final Long userId, final String cursor)
     {
         try
@@ -164,21 +142,25 @@ public class TransactionRefreshThreadService
         }
     }
 
-    public void startRecurringTransactionSyncThread(final Long userId)
+    public void startRecurringTransactionSyncThread(final Long userId, final List<RecurringTransaction> recurringTransactions) throws IOException
     {
+        Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
         CompletableFuture.runAsync(() -> {
-            // 1. Sync the recurring transactions
-
-            // 2. Store the recurring Transactions
-
-            // 3. Categorize the recurring Transactions
-
-            // 4. Build the Transaction Categories
-
-            // 5. Store the Transaction Categories
-
-            // 6. Build/Update the Budget categories for new transactions
-
-        }, threadPoolTaskScheduler.getScheduledExecutor());
+                    try {
+                        syncAndStoreRecurringTransactions(userId);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executor)
+                .thenRunAsync(() -> categorizeTransactions(userId, new ArrayList<>(), recurringTransactions), executor)
+                .thenRunAsync(() -> buildBudgetCategories(userId), executor)
+                .exceptionally(ex -> {
+                    log.error("Recurring Transaction Refresh pipeline failed", ex);
+                    try {
+                        throw ex;
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 }

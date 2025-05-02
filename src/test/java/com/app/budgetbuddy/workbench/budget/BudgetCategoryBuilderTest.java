@@ -241,7 +241,7 @@ class BudgetCategoryBuilderTest {
        BudgetSchedule budgetSchedule = new BudgetSchedule();
        List<CategoryPeriodSpending> categoryPeriodSpendings = Arrays.asList(new CategoryPeriodSpending());
        SubBudgetGoals subBudgetGoals1 = new SubBudgetGoals();
-       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(null, budgetSchedule, categoryPeriodSpendings, subBudgetGoals1);
+       List<MonthlyBudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(null, budgetSchedule, categoryPeriodSpendings, subBudgetGoals1);
        assertEquals(0, actual.size());
    }
 
@@ -250,7 +250,7 @@ class BudgetCategoryBuilderTest {
        SubBudget subBudget = new SubBudget();
        List<CategoryPeriodSpending> categoryPeriodSpendings = Arrays.asList(new CategoryPeriodSpending());
        SubBudgetGoals subBudgetGoals1 = new SubBudgetGoals();
-       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, null, categoryPeriodSpendings, subBudgetGoals1);
+       List<MonthlyBudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, null, categoryPeriodSpendings, subBudgetGoals1);
        assertEquals(0, actual.size());
    }
 
@@ -260,7 +260,7 @@ class BudgetCategoryBuilderTest {
        SubBudget subBudget = new SubBudget();
        SubBudgetGoals subBudgetGoals1 = new SubBudgetGoals();
 
-       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, budgetSchedule, null, subBudgetGoals1);
+       List<MonthlyBudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, budgetSchedule, null, subBudgetGoals1);
        assertEquals(0, actual.size());
    }
 
@@ -306,10 +306,10 @@ class BudgetCategoryBuilderTest {
        spendingList.add(new CategoryPeriodSpending("Rent", BigDecimal.valueOf(707),
                new DateRange(LocalDate.of(2025, 1, 16), LocalDate.of(2025, 1, 31))));
 
-       List<BudgetCategoryCriteria> expectedCategoryBudgets = new ArrayList<>();
-       BudgetCategoryCriteria groceryBudget = new BudgetCategoryCriteria();
+       List<MonthlyBudgetCategoryCriteria> expectedCategoryBudgets = new ArrayList<>();
+       MonthlyBudgetCategoryCriteria groceryBudget = new MonthlyBudgetCategoryCriteria();
        groceryBudget.setCategory("Groceries");
-       groceryBudget.setBudget(subBudget);
+       groceryBudget.setSubBudget(subBudget);
        groceryBudget.setBudgetSchedule(januaryBudgetSchedule);
        groceryBudget.setActive(true);
        groceryBudget.setCategoryDateRanges(Arrays.asList(
@@ -332,9 +332,9 @@ class BudgetCategoryBuilderTest {
        groceryBudgetAmounts.add(groceryWeek5);
        groceryBudget.setPeriodAmounts(groceryBudgetAmounts);
 
-       BudgetCategoryCriteria rentBudget = new BudgetCategoryCriteria();
+       MonthlyBudgetCategoryCriteria rentBudget = new MonthlyBudgetCategoryCriteria();
        rentBudget.setCategory("Rent");
-       rentBudget.setBudget(subBudget);
+       rentBudget.setSubBudget(subBudget);
        rentBudget.setBudgetSchedule(januaryBudgetSchedule);
        rentBudget.setActive(true);
        rentBudget.setCategoryDateRanges(Arrays.asList(
@@ -356,11 +356,11 @@ class BudgetCategoryBuilderTest {
        Mockito.when(budgetCalculator.determineCategoryBudget("Groceries", BigDecimal.valueOf(3260)))
                .thenReturn(new BigDecimal("326"));
 
-       List<BudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, januaryBudgetSchedule, spendingList, subBudgetGoals);
+       List<MonthlyBudgetCategoryCriteria> actual = budgetCategoryBuilder.createCategoryBudgetCriteriaList(subBudget, januaryBudgetSchedule, spendingList, subBudgetGoals);
        assertNotNull(actual, "Result should not be null");
        assertEquals(expectedCategoryBudgets.size(), actual.size());
 
-       BudgetCategoryCriteria actualGrocery = actual.stream()
+       MonthlyBudgetCategoryCriteria actualGrocery = actual.stream()
                .filter(cb -> cb.getCategory().equals("Groceries"))
                .findFirst()
                .orElseThrow(() -> new AssertionError("Groceries CategoryBudget not found"));
@@ -375,7 +375,7 @@ class BudgetCategoryBuilderTest {
            assertEquals(expectedPA.getActual(), actualPA.getActual(), "Actual amount mismatch for Groceries");
        }
 
-       BudgetCategoryCriteria actualRent = actual.stream()
+       MonthlyBudgetCategoryCriteria actualRent = actual.stream()
                .filter(cb -> cb.getCategory().equals("Rent"))
                .findFirst()
                .orElseThrow(() -> new AssertionError("Rent CategoryBudget not found"));
@@ -490,8 +490,8 @@ class BudgetCategoryBuilderTest {
 
     @Test
     void testUpdateTransactionCategories_whenExistingTransactionCategoriesIsNull_thenReturnEmptyList(){
-       List<BudgetCategoryCriteria> categoryPeriods = new ArrayList<>();
-       categoryPeriods.add(new BudgetCategoryCriteria("Groceries", List.of(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 7)))));
+       List<MonthlyBudgetCategoryCriteria> categoryPeriods = new ArrayList<>();
+       categoryPeriods.add(new MonthlyBudgetCategoryCriteria("Groceries", List.of(new DateRange(LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 7)))));
 
        List<BudgetCategory> actual = budgetCategoryBuilder.updateBudgetCategories(categoryPeriods, null);
        assertTrue(actual.isEmpty());

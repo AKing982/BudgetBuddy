@@ -60,7 +60,7 @@ public class BudgetRunner
             return new ArrayList<>();
         }
         Budget budget = budgetOptional.get();
-        log.info("Found Budget: {}", budget.toString());
+        log.info("Found Budget: {}", budget);
         Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, startDate, endDate);
         if(subBudgetOptional.isEmpty())
         {

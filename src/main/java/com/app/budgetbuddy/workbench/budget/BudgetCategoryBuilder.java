@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@Deprecated
 public class BudgetCategoryBuilder
 {
     private BudgetCategoryService budgetCategoryService;

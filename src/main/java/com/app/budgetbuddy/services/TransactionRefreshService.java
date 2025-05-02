@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.RecurringTransaction;
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.UserLogEntity;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +11,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -18,6 +22,8 @@ public class TransactionRefreshService
 {
     private final TransactionRefreshThreadService transactionRefreshThreadService;
     private final UserLogService userLogService;
+    private List<Transaction> transactionList = new ArrayList<>();
+    private List<RecurringTransaction> recurringTransactionList = new ArrayList<>();
     private Long currentUserId;
     private String cursor;
 
@@ -38,8 +44,10 @@ public class TransactionRefreshService
             if(userLogService.isUserActive(userId))
             {
                 String cursor = getCursor();
-                transactionRefreshThreadService.startTransactionSyncThread(userId, cursor);
-                transactionRefreshThreadService.startRecurringTransactionSyncThread(userId);
+                List<Transaction> transactions = getTransactionList();
+                List<RecurringTransaction> recurringTransactions = getRecurringTransactionList();
+                transactionRefreshThreadService.startTransactionSyncThread(userId, transactions, cursor);
+                transactionRefreshThreadService.startRecurringTransactionSyncThread(userId, recurringTransactions);
             }
             else
             {

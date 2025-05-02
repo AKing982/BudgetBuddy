@@ -7,6 +7,7 @@ public enum CategoryType
     RESTAURANTS("Restaurants"),
     ORDER_OUT("Order Out"),
     PAYROLL("Payroll"),
+    INCOME("Income"),
     PAYMENT("Payment"),
     SUBSCRIPTION("Subscription"),
     RENT("Rent"),
