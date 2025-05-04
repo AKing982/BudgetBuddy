@@ -17,12 +17,10 @@ import java.util.List;
 @Slf4j
 public class DailyBudgetCategoryBuilderService extends AbstractBudgetCategoryBuilder<DailyBudgetCategoryCriteria>
 {
-
     @Autowired
     public DailyBudgetCategoryBuilderService(BudgetCategoryService budgetCategoryService,
                                              BudgetCalculations budgetCalculations,
-                                             BudgetEstimatorService budgetEstimatorService,
-                                             SubBudgetGoalsService subBudgetGoalsService)
+                                             SubBudgetGoalsService subBudgetGoalsService, BudgetEstimatorService budgetEstimatorService)
     {
         super(budgetCategoryService, budgetCalculations, budgetEstimatorService, subBudgetGoalsService);
     }
@@ -51,24 +49,56 @@ public class DailyBudgetCategoryBuilderService extends AbstractBudgetCategoryBui
         }
         List<BudgetCategory> budgetCategories = new ArrayList<>();
         SubBudget subBudget = dailyBudgetCategoryCriteria.getSubBudget();
-//        List<DailyCategorySpending> dailyCategorySpendings = dailyBudgetCategoryCriteria.getCategorySpendingByDate();
-//        if(dailyCategorySpendings == null || dailyCategorySpendings.isEmpty())
-//        {
-//            return Collections.emptyList();
-//        }
-//        CategoryBudgetAmount[] categoryBudgetAmount = getBudgetEstimatorService().calculateBudgetCategoryAmount(subBudget);
-//        for(DailyCategorySpending dailyCategorySpending : dailyCategorySpendings)
-//        {
-//            String categorySpendingName = dailyCategorySpending.getCategory();
-//            BigDecimal categorySpendingAmount = dailyCategorySpending.getCategorySpending();
-//            List<Transaction> transactions = dailyCategorySpending.getTransactions();
-//            LocalDate currentDate = dailyCategorySpending.getCurrentDate();
-//            DateRange dailyRange = DateRange.createDateRange(currentDate, currentDate);
-//            BigDecimal budgetAmountForCategory = getBudgetEstimatorService().getBudgetCategoryAmountByCategory(categorySpendingName, categoryBudgetAmount);
-////            BudgetCategory budgetCategory = createBudgetCategory(subBudgetId, categorySpendingName, dailyRange, transactions, )
-//        }
-//        return null;
-        return null;
+        LocalDate monthStart = subBudget.getStartDate();
+        LocalDate monthEnd = subBudget.getEndDate();
+        LocalDate monthMiddle = monthStart.plusDays(14);
+        Long subBudgetId = subBudget.getId();
+        List<DailyCategorySpending> dailyCategorySpendings = dailyBudgetCategoryCriteria.getCategorySpendingByDate();
+        if(dailyCategorySpendings == null || dailyCategorySpendings.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        CategoryBudgetAmount[] categoryBudgetAmounts = getBudgetEstimatorService().calculateBudgetCategoryAmount(subBudget);
+        for(DailyCategorySpending dailyCategorySpending : dailyCategorySpendings)
+        {
+            String categorySpendingName = dailyCategorySpending.getCategory();
+            double categorySpendingAmount = dailyCategorySpending.getCategorySpending().doubleValue();
+            List<Transaction> transactions = dailyCategorySpending.getTransactions();
+            LocalDate currentDate = dailyCategorySpending.getCurrentDate();
+            DateRange dateRange = new DateRange();
+            if(categorySpendingName.equals("Rent"))
+            {
+                setDateRangeByMonthParameters(monthStart, monthMiddle, monthEnd, currentDate, dateRange);
+            }
+            else
+            {
+                dateRange.setStartDate(currentDate);
+                dateRange.setEndDate(currentDate);
+            }
+            log.info("Category Budget Amounts: {}", categoryBudgetAmounts.length);
+            log.info("Category spending name: {}", categorySpendingName);
+            BigDecimal categoryAmount = getBudgetEstimatorService().getBudgetCategoryAmountByCategory(categorySpendingName, categoryBudgetAmounts);
+            double budgetAmountForCategory = categoryAmount.doubleValue();
+            BudgetCategory budgetCategory = createBudgetCategory(subBudgetId, categorySpendingName, dateRange, transactions, categorySpendingAmount, budgetAmountForCategory,  0.0, false);
+            budgetCategories.add(budgetCategory);
+        }
+        return budgetCategories;
+    }
+
+    private void setDateRangeByMonthParameters(LocalDate monthStart, LocalDate middleMonth, LocalDate monthEnd, LocalDate currentDate, DateRange dateRange)
+    {
+        // If current date is in the first two weeks
+        if(currentDate.isBefore(middleMonth))
+        {
+            dateRange.setStartDate(currentDate);
+            dateRange.setEndDate(middleMonth);
+        }
+        // else if the current date is in the last two weeks
+        else if(currentDate.isAfter(middleMonth) || currentDate.isBefore(monthEnd))
+        {
+            dateRange.setStartDate(currentDate);
+            dateRange.setEndDate(monthEnd);
+        }
     }
 
     @Override
