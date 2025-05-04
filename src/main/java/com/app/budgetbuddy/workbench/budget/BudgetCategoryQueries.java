@@ -1,9 +1,12 @@
 package com.app.budgetbuddy.workbench.budget;
 
+import com.app.budgetbuddy.domain.CategoryDateInfo;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.workbench.Merchants;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,8 +18,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Getter
+@Setter
 @Slf4j
-public class BudgetCategoryQueries {
+public class BudgetCategoryQueries
+{
     @PersistenceContext
     private EntityManager entityManager;
     private final List<String> merchantNames;
@@ -30,6 +36,7 @@ public class BudgetCategoryQueries {
     private final String paypalDescription = "%PAYPAL INST XFER PAYPAL%";
     private final String categoryId = "16001000";
     private final String financeCategoryId = "18020004";
+    private CategoryDateInfo categoryDateInfo;
 
     @Autowired
     public BudgetCategoryQueries(EntityManager entityManager)
@@ -40,7 +47,13 @@ public class BudgetCategoryQueries {
                 .collect(Collectors.toList());
     }
 
-    public boolean userHasSubscriptions(final Long userId, final LocalDate startDate, final LocalDate endDate) {
+    public void initializeCategoryDateInfo(CategoryDateInfo categoryDateInfo)
+    {
+        this.categoryDateInfo = categoryDateInfo;
+    }
+
+    public boolean userHasSubscriptions()
+    {
         final String hasSubscriptionQuery = """
         SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END
         FROM TransactionsEntity t
@@ -51,23 +64,24 @@ public class BudgetCategoryQueries {
           AND t.category.id IN (:categoryIds)
           AND t.posted BETWEEN :startDate AND :endDate
     """;
-        try {
-
+        try
+        {
             return entityManager.createQuery(hasSubscriptionQuery, Boolean.class)
-                    .setParameter("userId", userId)
+                    .setParameter("userId", this.categoryDateInfo.getUserId())
                     .setParameter("merchantNames", merchantNames)
                     .setParameter("amountLimit", 100)
                     .setParameter("categoryIds", subscriptionCategoryIds)
-                    .setParameter("startDate", startDate)
-                    .setParameter("endDate", endDate)
+                    .setParameter("startDate", this.categoryDateInfo.getStartDate())
+                    .setParameter("endDate", this.categoryDateInfo.getEndDate())
                     .getSingleResult();
-        } catch (DataAccessException e) {
+        } catch (DataAccessException e)
+        {
             log.error("There was an error with running the query: ", e);
             return false;
         }
     }
 
-    public boolean userHasPayments(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    public boolean userHasPayments()
     {
         final String hasPaymentsQuery = """
                 SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END
@@ -79,10 +93,10 @@ public class BudgetCategoryQueries {
                 """;
         try {
             return entityManager.createQuery(hasPaymentsQuery, Boolean.class)
-                    .setParameter("userId", userId)
+                    .setParameter("userId", this.categoryDateInfo.getUserId())
                     .setParameter("description", paypalDescription)
-                    .setParameter("startDate", startDate)
-                    .setParameter("endDate", endDate)
+                    .setParameter("startDate", this.categoryDateInfo.getStartDate())
+                    .setParameter("endDate", this.categoryDateInfo.getEndDate())
                     .setParameter("categoryId", categoryId)
                     .getSingleResult();
         } catch (DataAccessException e) {
@@ -96,13 +110,19 @@ public class BudgetCategoryQueries {
         switch(category)
         {
             case "Rent":
-                return getCategoryAmount(userId, startDate, endDate, category);
-            case "Groceries":
+                return getRentTotal(userId, startDate, endDate).doubleValue();
+            case "Insurance":
+                return getInsuranceTotal(userId, startDate, endDate).doubleValue();
+            case "Subscriptions":
+                return getSubscriptionTotal(userId, startDate, endDate).doubleValue();
+            case "Utilities":
+                return getUtilitiesSpendingTotal(userId, startDate, endDate).doubleValue();
+            default: throw new RuntimeException("Invalid category: " + category);
         }
-        return 0.0;
     }
 
-    public boolean userHasRent(final Long userId, final LocalDate startDate, final LocalDate endDate) {
+    public boolean userHasRent()
+    {
         final String rentFirstHalfQuery = """
                 SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END
                 FROM TransactionsEntity t
@@ -113,10 +133,10 @@ public class BudgetCategoryQueries {
                 """;
         try {
             return entityManager.createQuery(rentFirstHalfQuery, Boolean.class)
-                    .setParameter("userId", userId)
+                    .setParameter("userId", this.categoryDateInfo.getUserId())
                     .setParameter("categoryId", financeCategoryId)
-                    .setParameter("startDate", startDate)
-                    .setParameter("endDate", endDate)
+                    .setParameter("startDate", this.categoryDateInfo.getStartDate())
+                    .setParameter("endDate", this.categoryDateInfo.getEndDate())
                     .getSingleResult();
         } catch (DataAccessException e) {
             log.error("There was an error query for user rent: ", e);
@@ -124,15 +144,12 @@ public class BudgetCategoryQueries {
         }
     }
 
-    public boolean userHasMortgage(Long userId) {
-        return false;
-    }
-
     public BigDecimal getSubscriptionTotal(Long userId, LocalDate startDate, LocalDate endDate) {
         return null;
     }
 
-    public BigDecimal getPaymentTotal(Long userId, LocalDate startDate, LocalDate endDate) {
+    public BigDecimal getPaymentTotal(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         final String paymentSpendingQuery = """
                  SELECT SUM(t.amount)
                  FROM TransactionsEntity t
@@ -141,10 +158,11 @@ public class BudgetCategoryQueries {
                  OR t.description LIKE :description) AND (t.posted BETWEEN :startDate AND :endDate)
                  AND a.user.id = :userId
                 """;
-        try {
-
+        try
+        {
             BigDecimal paymentTotal = getSpendingTotalResult(paymentSpendingQuery, userId, startDate, endDate, categoryId, paypalDescription);
-            if (paymentTotal.compareTo(BigDecimal.ZERO) < 0) {
+            if (paymentTotal.compareTo(BigDecimal.ZERO) < 0)
+            {
                 return BigDecimal.ZERO;
             }
             return paymentTotal;
@@ -174,7 +192,8 @@ public class BudgetCategoryQueries {
                 AND t.amount > 100 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
-        try {
+        try
+        {
             return entityManager.createQuery(rentQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("startDate", startDate)
@@ -197,7 +216,8 @@ public class BudgetCategoryQueries {
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
-        try {
+        try
+        {
             return entityManager.createQuery(insuranceQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("categoryId", "18030000")
@@ -211,7 +231,8 @@ public class BudgetCategoryQueries {
         }
     }
 
-    public BigDecimal getUtilitiesSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate) {
+    public BigDecimal getUtilitiesSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         final String utilitiesSpendingQuery = """
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
@@ -235,7 +256,8 @@ public class BudgetCategoryQueries {
         }
     }
 
-    public BigDecimal getGasSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate) {
+    public BigDecimal getGasSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         final String gasFuelSpendingQuery = """
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
@@ -259,7 +281,8 @@ public class BudgetCategoryQueries {
         }
     }
 
-    public BigDecimal getOrderOutTotal(Long userId, LocalDate startDate, LocalDate endDate) {
+    public BigDecimal getOrderOutTotal(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         final String orderOutSpendingQuery = """
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
@@ -268,7 +291,8 @@ public class BudgetCategoryQueries {
                 WHERE (c.id IN (:orderOutCatIds) OR c.name =:name) AND (t.posted BETWEEN :startDate AND :endDate)
                 AND a.user.id = :userId
                 """;
-        try {
+        try
+        {
             return entityManager.createQuery(orderOutSpendingQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("startDate", startDate)
@@ -276,13 +300,15 @@ public class BudgetCategoryQueries {
                     .setParameter("name", "Restaurants")
                     .setParameter("orderOutCatIds", orderOutCategoryIds)
                     .getSingleResult();
-        } catch (DataAccessException e) {
+        } catch (DataAccessException e)
+        {
             log.error("There was an error with running the query: ", e);
             return BigDecimal.ZERO;
         }
     }
 
-    public BigDecimal getGroceriesSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate) {
+    public BigDecimal getGroceriesSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         final String groceriesSpendingQuery = """
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
@@ -292,7 +318,8 @@ public class BudgetCategoryQueries {
                 AND (t.posted BETWEEN :startDate AND :endDate)
                 AND a.user.id = :userId
                 """;
-        try {
+        try
+        {
             return entityManager.createQuery(groceriesSpendingQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("startDate", startDate)

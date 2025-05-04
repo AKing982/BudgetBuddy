@@ -15,6 +15,7 @@ public class UserLogEntity
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="logId")
     private Long id;
 
     @NotNull
@@ -30,7 +31,7 @@ public class UserLogEntity
     @NotNull
     private LocalDateTime lastLogout;
 
-    @Column(name="sessionDuration")
+    @Column(name="session_duration")
     private int sessionDuration;
 
     @Column(name="loginAttempts")

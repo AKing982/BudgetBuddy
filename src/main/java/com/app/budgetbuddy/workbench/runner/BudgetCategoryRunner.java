@@ -5,7 +5,8 @@ import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.BudgetCategoryException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
+
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -32,7 +33,7 @@ public class BudgetCategoryRunner
     private TransactionCategoryService transactionCategoryService;
     private TransactionService transactionService;
     private RecurringTransactionService recurringTransactionService;
-    private BudgetCategoryBuilder budgetCategoryBuilder;
+    private BudgetCategoryBuilderFactory budgetCategoryBuilder;
 
     @Autowired
     public BudgetCategoryRunner(SubBudgetService subBudgetService,
@@ -40,7 +41,7 @@ public class BudgetCategoryRunner
                                 TransactionCategoryService transactionCategoryService,
                                 TransactionService transactionService,
                                 RecurringTransactionService recurringTransactionService,
-                                BudgetCategoryBuilder budgetCategoryBuilder) {
+                                BudgetCategoryBuilderFactory budgetCategoryBuilder) {
         this.subBudgetService = subBudgetService;
         this.subBudgetGoalsService = subBudgetGoalsService;
         this.transactionCategoryService = transactionCategoryService;
@@ -49,35 +50,35 @@ public class BudgetCategoryRunner
         this.budgetCategoryBuilder = budgetCategoryBuilder;
     }
 
-    public void runBudgetCategoryProcess(LocalDate startDate, LocalDate endDate, Long userId)
-    {
-        // Load the transaction categories from the database
-        List<TransactionCategory> transactionCategories = loadTransactionCategoriesForUser(startDate, endDate, userId);
-
-        // Create the Category Transactions
-        List<CategoryTransactions> categoryTransactions = createCategoryTransactions(transactionCategories);
-
-        // Load the sub budget for this period
-        SubBudget subBudget = loadSubBudget(userId, startDate, endDate);
-        log.info("Loading SubBudget: {}", subBudget);
-
-        // Load the budget schedule for this period
-        BudgetSchedule budgetSchedule = getBudgetScheduleFromSubBudget(subBudget);
-        log.info("Loading BudgetSchedule: {}", budgetSchedule);
-
-        // Load the SubBudget goals for this period
-        SubBudgetGoals subBudgetGoals = subBudgetGoalsService.getSubBudgetGoalsEntitiesBySubBudgetId(subBudget.getId());
-        log.info("Loading SubBudgetGoals: {}", subBudgetGoals);
-
-        // Create the BudgetCategories
-        List<BudgetCategory> budgetCategories1 = createBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
-        budgetCategories1.forEach((budgetCategory) -> {
-            log.info("Loading BudgetCategory: {}", budgetCategory);
-        });
-        budgetCategories.addAll(budgetCategories1);
-
-        saveBudgetCategories(budgetCategories1);
-    }
+//    public void runBudgetCategoryProcess(LocalDate startDate, LocalDate endDate, Long userId)
+//    {
+//        // Load the transaction categories from the database
+//        List<TransactionCategory> transactionCategories = loadTransactionCategoriesForUser(startDate, endDate, userId);
+//
+//        // Create the Category Transactions
+//        List<CategoryTransactions> categoryTransactions = createCategoryTransactions(transactionCategories);
+//
+//        // Load the sub budget for this period
+//        SubBudget subBudget = loadSubBudget(userId, startDate, endDate);
+//        log.info("Loading SubBudget: {}", subBudget);
+//
+//        // Load the budget schedule for this period
+//        BudgetSchedule budgetSchedule = getBudgetScheduleFromSubBudget(subBudget);
+//        log.info("Loading BudgetSchedule: {}", budgetSchedule);
+//
+//        // Load the SubBudget goals for this period
+//        SubBudgetGoals subBudgetGoals = subBudgetGoalsService.getSubBudgetGoalsEntitiesBySubBudgetId(subBudget.getId());
+//        log.info("Loading SubBudgetGoals: {}", subBudgetGoals);
+//
+//        // Create the BudgetCategories
+//        List<BudgetCategory> budgetCategories1 = createBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
+//        budgetCategories1.forEach((budgetCategory) -> {
+//            log.info("Loading BudgetCategory: {}", budgetCategory);
+//        });
+//        budgetCategories.addAll(budgetCategories1);
+//
+//        saveBudgetCategories(budgetCategories1);
+//    }
 
     public List<TransactionCategory> loadTransactionCategoriesForUser(final LocalDate startDate, final LocalDate endDate, final Long userId)
     {
@@ -183,30 +184,30 @@ public class BudgetCategoryRunner
         }
     }
 
-    /**
-     * Creates the initial Budget Categories
-     *
-     * @param subBudget
-     * @param budgetSchedule
-     * @param categoryTransactions
-     */
-    public List<BudgetCategory> createBudgetCategories(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions, final SubBudgetGoals subBudgetGoals)
-    {
-        if(subBudget == null || budgetSchedule == null || categoryTransactions == null || subBudgetGoals == null)
-        {
-            return Collections.emptyList();
-        }
-        try
-        {
-            List<BudgetCategory> budgetCategoriesList = budgetCategoryBuilder.initializeBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
-            log.info("Budget Categories size: {}", budgetCategoriesList.size());
-            return budgetCategoriesList;
-        }catch(BudgetCategoryException e)
-        {
-            log.error("There was an error building the budget categories: ", e);
-            return Collections.emptyList();
-        }
-    }
+//    /**
+//     * Creates the initial Budget Categories
+//     *
+//     * @param subBudget
+//     * @param budgetSchedule
+//     * @param categoryTransactions
+//     */
+//    public List<BudgetCategory> createBudgetCategories(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions, final SubBudgetGoals subBudgetGoals)
+//    {
+//        if(subBudget == null || budgetSchedule == null || categoryTransactions == null || subBudgetGoals == null)
+//        {
+//            return Collections.emptyList();
+//        }
+//        try
+//        {
+//            List<BudgetCategory> budgetCategoriesList = budgetCategoryBuilder.initializeBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
+//            log.info("Budget Categories size: {}", budgetCategoriesList.size());
+//            return budgetCategoriesList;
+//        }catch(BudgetCategoryException e)
+//        {
+//            log.error("There was an error building the budget categories: ", e);
+//            return Collections.emptyList();
+//        }
+//    }
 
     /**
      * Updates current user Budget Categories using new Transactions
@@ -220,62 +221,62 @@ public class BudgetCategoryRunner
     }
 
     /**
-     * Persists the User Budget Categories to the database
-     * @param userBudgetCategories
-     */
-    public void saveBudgetCategories(List<BudgetCategory> userBudgetCategories)
-    {
-        log.info("Budget Categories Size: {}", userBudgetCategories.size());
-        if(userBudgetCategories.isEmpty())
-        {
-            return;
-        }
-        budgetCategoryBuilder.saveBudgetCategories(userBudgetCategories);
-    }
+//     * Persists the User Budget Categories to the database
+//     * @param userBudgetCategories
+//     */
+//    public void saveBudgetCategories(List<BudgetCategory> userBudgetCategories)
+//    {
+//        log.info("Budget Categories Size: {}", userBudgetCategories.size());
+//        if(userBudgetCategories.isEmpty())
+//        {
+//            return;
+//        }
+//        budgetCategoryBuilder.saveBudgetCategories(userBudgetCategories);
+//    }
 
-    public static void main(String[] args)
-    {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        context.scan("com.app.budgetbuddy");
-        context.refresh();
-
-        BudgetCategoryRunner budgetCategoryRunner = context.getBean(BudgetCategoryRunner.class);
-
-        // Get transaction manager bean
-        PlatformTransactionManager transactionManager =
-                context.getBean(PlatformTransactionManager.class);
-
-
-        Long userId = 1L;
-        LocalDate startDate = LocalDate.now().withDayOfMonth(1);
-        LocalDate endDate = LocalDate.now().withDayOfMonth(30);
-        // Create transaction template
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-
-        try
-        {
-            System.out.println("Starting budget category process for user " + userId);
-            System.out.println("Date range: " + startDate + " to " + endDate);
-
-            transactionTemplate.execute(status -> {
-                try {
-                    budgetCategoryRunner.runBudgetCategoryProcess(startDate, endDate, userId);
-                    System.out.println("Budget category process completed successfully");
-                    return null;
-                } catch (Exception e) {
-                    status.setRollbackOnly();
-                    System.err.println("Error running budget category process: " + e.getMessage());
-                    e.printStackTrace();
-                    return null;
-                }
-            });
-
-
-            System.out.println("Budget category process completed successfully");
-        }catch(Exception e){
-            System.err.println("Error running budget category process: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//    public static void main(String[] args)
+//    {
+//        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+//        context.scan("com.app.budgetbuddy");
+//        context.refresh();
+//
+//        BudgetCategoryRunner budgetCategoryRunner = context.getBean(BudgetCategoryRunner.class);
+//
+//        // Get transaction manager bean
+//        PlatformTransactionManager transactionManager =
+//                context.getBean(PlatformTransactionManager.class);
+//
+//
+//        Long userId = 1L;
+//        LocalDate startDate = LocalDate.now().withDayOfMonth(1);
+//        LocalDate endDate = LocalDate.now().withDayOfMonth(30);
+//        // Create transaction template
+//        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+//        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+//
+//        try
+//        {
+//            System.out.println("Starting budget category process for user " + userId);
+//            System.out.println("Date range: " + startDate + " to " + endDate);
+//
+//            transactionTemplate.execute(status -> {
+//                try {
+//                    budgetCategoryRunner.runBudgetCategoryProcess(startDate, endDate, userId);
+//                    System.out.println("Budget category process completed successfully");
+//                    return null;
+//                } catch (Exception e) {
+//                    status.setRollbackOnly();
+//                    System.err.println("Error running budget category process: " + e.getMessage());
+//                    e.printStackTrace();
+//                    return null;
+//                }
+//            });
+//
+//
+//            System.out.println("Budget category process completed successfully");
+//        }catch(Exception e){
+//            System.err.println("Error running budget category process: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 }

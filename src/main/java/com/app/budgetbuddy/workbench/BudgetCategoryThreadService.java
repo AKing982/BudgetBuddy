@@ -3,7 +3,7 @@ package com.app.budgetbuddy.workbench;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.TransactionCategoryService;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -21,16 +21,16 @@ import java.util.concurrent.CompletionException;
 @Async
 public class BudgetCategoryThreadService
 {
-    private final BudgetCategoryBuilder budgetCategoryBuilder;
+    private final BudgetCategoryBuilderFactory budgetCategoryBuilderFactory;
     private final BudgetCategoryService budgetCategoryService;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
     @Autowired
-    public BudgetCategoryThreadService(BudgetCategoryBuilder budgetCategoryBuilder,
+    public BudgetCategoryThreadService(BudgetCategoryBuilderFactory budgetCategoryBuilderFactory,
                                        BudgetCategoryService budgetCategoryService,
                                        ThreadPoolTaskScheduler threadPoolTaskScheduler)
     {
-        this.budgetCategoryBuilder = budgetCategoryBuilder;
+        this.budgetCategoryBuilderFactory = budgetCategoryBuilderFactory;
         this.budgetCategoryService = budgetCategoryService;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
@@ -101,26 +101,26 @@ public class BudgetCategoryThreadService
         return null;
     }
 
-    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategories(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions, final SubBudgetGoals subBudgetGoals)
-    {
-        return CompletableFuture.supplyAsync(() -> {
-            try
-            {
-                log.info("Starting async budget category creation for SubBudget: {}, Schedule: {}", subBudget.getId(), budgetSchedule.getBudgetScheduleId());
-                // 3. Initialize the Budget Categories
-                List<BudgetCategory> createdBudgetCategories = budgetCategoryBuilder.initializeBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
-                createdBudgetCategories.forEach((budgetCategory -> {
-                    log.info("BudgetCategory: {}", budgetCategory);
-                }));
-                return createdBudgetCategories;
-
-            }catch(CompletionException e)
-            {
-                log.error("There was an error creating the budget categories for subBudget: {}", subBudget, e);
-                throw e;
-            }
-
-        }, threadPoolTaskScheduler.getScheduledExecutor());
-    }
+//    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategories(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions, final SubBudgetGoals subBudgetGoals)
+//    {
+//        return CompletableFuture.supplyAsync(() -> {
+//            try
+//            {
+//                log.info("Starting async budget category creation for SubBudget: {}, Schedule: {}", subBudget.getId(), budgetSchedule.getBudgetScheduleId());
+//                // 3. Initialize the Budget Categories
+//                List<BudgetCategory> createdBudgetCategories = budgetCategoryBuilder.initializeBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
+//                createdBudgetCategories.forEach((budgetCategory -> {
+//                    log.info("BudgetCategory: {}", budgetCategory);
+//                }));
+//                return createdBudgetCategories;
+//
+//            }catch(CompletionException e)
+//            {
+//                log.error("There was an error creating the budget categories for subBudget: {}", subBudget, e);
+//                throw e;
+//            }
+//
+//        }, threadPoolTaskScheduler.getScheduledExecutor());
+//    }
 
 }

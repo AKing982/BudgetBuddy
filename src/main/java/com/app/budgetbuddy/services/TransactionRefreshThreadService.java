@@ -3,7 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.RecurringTransactionResponse;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import com.app.budgetbuddy.workbench.categories.TransactionCategoryBuilder;
 import com.app.budgetbuddy.workbench.converter.TransactionBaseToModelConverter;
@@ -35,7 +35,7 @@ public class TransactionRefreshThreadService
     private final TransactionBaseToModelConverter transactionBaseToModelConverter;
     private final CategoryRuleEngine categoryRuleEngine;
     private final TransactionCategoryBuilder transactionCategoryBuilder;
-    private final BudgetCategoryBuilder budgetCategoryBuilder;
+    private final BudgetCategoryBuilderFactory budgetCategoryBuilderFactory;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
     @Autowired
@@ -44,7 +44,7 @@ public class TransactionRefreshThreadService
                                            TransactionBaseToModelConverter transactionBaseToModelConverter,
                                            CategoryRuleEngine categoryRuleEngine,
                                            TransactionCategoryBuilder transactionCategoryBuilder,
-                                           BudgetCategoryBuilder budgetCategoryBuilder,
+                                           BudgetCategoryBuilderFactory budgetCategoryBuilderFactory,
                                            ThreadPoolTaskScheduler threadPoolTaskScheduler)
     {
         this.plaidTransactionManager = plaidTransactionManager;
@@ -52,7 +52,7 @@ public class TransactionRefreshThreadService
         this.transactionBaseToModelConverter = transactionBaseToModelConverter;
         this.categoryRuleEngine = categoryRuleEngine;
         this.transactionCategoryBuilder = transactionCategoryBuilder;
-        this.budgetCategoryBuilder = budgetCategoryBuilder;
+        this.budgetCategoryBuilderFactory = budgetCategoryBuilderFactory;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
 

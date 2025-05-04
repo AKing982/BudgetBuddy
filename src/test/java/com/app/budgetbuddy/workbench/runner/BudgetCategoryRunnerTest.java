@@ -4,7 +4,8 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
+
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +44,7 @@ class BudgetCategoryRunnerTest {
     private BudgetCategoryService transactionCategoryService;
 
     @Mock
-    private BudgetCategoryBuilder transactionCategoryBuilder;
+    private BudgetCategoryBuilderFactory transactionCategoryBuilder;
 
     @InjectMocks
     private TransactionCategoryRunner transactionCategoryRunner;

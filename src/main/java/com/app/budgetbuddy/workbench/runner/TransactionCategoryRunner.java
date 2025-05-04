@@ -5,7 +5,7 @@ import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.BudgetPeriodException;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilder;
+import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +28,11 @@ public class TransactionCategoryRunner
     private final CategoryService categoryService;
     private final CategoryRuleEngine categoryRuleEngine;
     private final BudgetCategoryService budgetCategoryService;
-    private final BudgetCategoryBuilder budgetCategoryBuilder;
+    private final BudgetCategoryBuilderFactory budgetCategoryBuilder;
 
     @Autowired
     public TransactionCategoryRunner(BudgetCategoryService budgetCategoryService,
-                                     BudgetCategoryBuilder budgetCategoryBuilder,
+                                     BudgetCategoryBuilderFactory budgetCategoryBuilder,
                                      TransactionService transactionService,
                                      BudgetService budgetService,
                                      BudgetScheduleService budgetScheduleService,
@@ -347,21 +347,21 @@ public class TransactionCategoryRunner
         return null;
     }
 
-    private List<BudgetCategoryCriteria> createCategoryBudgetList(final SubBudget budget, final BudgetSchedule budgetSchedule, LocalDate budgetStartDate, LocalDate budgetEndDate, List<CategoryPeriodSpending> categoryPeriodSpendings, List<CategoryTransactions> categoryTransactions)
-    {
-//        if(categoryTransactions == null || categoryTransactions.isEmpty())
-//        {
-//            return Collections.emptyList();
-//        }
-//        try
-//        {
-//            return transactionCategoryBuilder.createCategoryBudgets(budget, budgetSchedule, budgetStartDate, budgetEndDate, categoryPeriodSpendings, categoryTransactions);
-//        }catch(Exception e){
-//            log.error("There was an error building the category budget list: ", e);
-//            return Collections.emptyList();
-//        }
-        return null;
-    }
+//    private List<BudgetCategoryCriteria> createCategoryBudgetList(final SubBudget budget, final BudgetSchedule budgetSchedule, LocalDate budgetStartDate, LocalDate budgetEndDate, List<CategoryPeriodSpending> categoryPeriodSpendings, List<CategoryTransactions> categoryTransactions)
+//    {
+////        if(categoryTransactions == null || categoryTransactions.isEmpty())
+////        {
+////            return Collections.emptyList();
+////        }
+////        try
+////        {
+////            return transactionCategoryBuilder.createCategoryBudgets(budget, budgetSchedule, budgetStartDate, budgetEndDate, categoryPeriodSpendings, categoryTransactions);
+////        }catch(Exception e){
+////            log.error("There was an error building the category budget list: ", e);
+////            return Collections.emptyList();
+////        }
+//        return null;
+//    }
 
     private List<DateRange> createBudgetDateRanges(LocalDate budgetStartDate, LocalDate budgetEndDate, Period period)
     {
