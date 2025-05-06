@@ -13,6 +13,6 @@ import java.util.List;
 public class CategorySpending
 {
     private String category;
-    private BigDecimal categorySpending;
+    private BigDecimal totalCategorySpending;
     private List<Transaction> transactions;
 }

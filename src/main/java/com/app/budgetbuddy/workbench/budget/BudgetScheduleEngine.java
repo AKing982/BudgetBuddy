@@ -246,7 +246,6 @@ public class BudgetScheduleEngine
                                 break;
                             }
                         }
-
                         if(!isBudgetScheduleFound)
                         {
                             BudgetSchedule newBudgetSchedule = getBudgetSchedule(startDate, endDate, subBudget);
@@ -259,12 +258,9 @@ public class BudgetScheduleEngine
                         newBudgetScheduleOptional.ifPresent(budgetSchedules::add);
                     }
                 }
-
                 currentStartDate = currentStartDate.plusMonths(1);
-
                 // ** Ensure the schedules are sorted properly **
                 budgetSchedules.sort(Comparator.comparing(BudgetSchedule::getStartDate).reversed());
-
             }
             return budgetSchedules;
         }catch(IllegalArgumentException e)

@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @EqualsAndHashCode
 @ToString
+@Deprecated
 public class BudgetPeriodAmount
 {
     private DateRange dateRange;

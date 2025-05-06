@@ -159,7 +159,8 @@ public class SubBudgetBuilderService
                 totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyAllocation, totalMonthsToSave);
                 subBudgetSavingsTarget = getTotalSubBudgetSavingsTarget(targetAmount, totalMonthsToSave, currentSavings, monthlyAllocation);
             }
-            else {
+            else
+            {
                 totalSubBudgetAmount = budgetCalculations.calculateTotalBudgetForSubBudget(budget, monthlyIncome.doubleValue(), totalMonthsToSave);
                 subBudgetSavingsTarget = budgetCalculations.calculateMonthlySubBudgetSavingsTargetAmount(monthlyIncome.doubleValue(), totalMonthsToSave, 0.0, 0.0);
             }
@@ -256,7 +257,8 @@ public class SubBudgetBuilderService
                 LocalDate monthStart = budgetMonth.getStartDate();
                 LocalDate monthEnd = budgetMonth.getEndDate();
                 Optional<SubBudget> monthSubBudget = createNewMonthSubBudget(budget, monthStart, monthEnd, incomeAmount, budgetGoals);
-                if (monthSubBudget.isEmpty()) {
+                if (monthSubBudget.isEmpty())
+                {
                     log.error("Failed to create sub-budget for {} - {}. Budget: {}, Goals: {}, Income: {}",
                             monthStart, monthEnd, budget, budgetGoals, incomeAmount);
                     throw new RuntimeException("Month Sub budget for: " + monthStart + " - " + monthEnd + " not found");

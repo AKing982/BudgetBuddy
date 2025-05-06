@@ -101,20 +101,25 @@ public class BudgetScheduleRangeBuilderService
             log.info("Saving BudgetScheduleRanges: {}", budgetScheduleRanges.toString());
             return budgetScheduleRanges;
 
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e)
+        {
             log.error("There was an error generating the budget schedule ranges: ", e);
             log.error("There was an issue with the budget schedule range: startDate={}, endDate={}", subBudgetStartDate, subBudgetEndDate);
             return budgetScheduleRanges;
         }
     }
 
-    public List<BudgetScheduleRange> getBudgetScheduleRangeByDate(final LocalDate startDate, final LocalDate endDate, final Long scheduleID) {
-        if (startDate == null || endDate == null) {
+    public List<BudgetScheduleRange> getBudgetScheduleRangeByDate(final LocalDate startDate, final LocalDate endDate, final Long scheduleID)
+    {
+        if (startDate == null || endDate == null)
+        {
             return Collections.emptyList();
         }
-        try {
+        try
+        {
             return budgetScheduleRangeService.getBudgetScheduleRangesByRangeAndScheduleId(startDate, endDate, scheduleID);
-        } catch (Exception e) {
+        } catch (Exception e)
+        {
             log.error("There was an error generating the budget schedule ranges: ", e);
             return Collections.emptyList();
         }

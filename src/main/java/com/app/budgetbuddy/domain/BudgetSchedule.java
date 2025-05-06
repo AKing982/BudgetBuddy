@@ -41,6 +41,25 @@ public class BudgetSchedule
         this.createdDate = LocalDateTime.now();
     }
 
+    public BudgetScheduleRange getBudgetScheduleRangeByDate(final LocalDate date)
+    {
+        BudgetScheduleRange budgetScheduleRange = new BudgetScheduleRange();
+        for(BudgetScheduleRange budgetWeek : budgetScheduleRanges)
+        {
+            LocalDate weekStart = budgetWeek.getStartRange();
+            LocalDate weekEnd = budgetWeek.getEndRange();
+            if(date.isAfter(weekStart) && date.isBefore(weekEnd))
+            {
+                budgetScheduleRange = budgetWeek;
+            }
+            else
+            {
+                throw new RuntimeException("No Budget Schedule Range found for date: " + date);
+            }
+        }
+        return budgetScheduleRange;
+    }
+
     public void initializeBudgetDateRanges()
     {
         DateRange scheduleRange = getScheduleRange();

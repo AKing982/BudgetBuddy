@@ -12,6 +12,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
+@Deprecated
 public class CategoryPeriodSpending
 {
     private String categoryId;
