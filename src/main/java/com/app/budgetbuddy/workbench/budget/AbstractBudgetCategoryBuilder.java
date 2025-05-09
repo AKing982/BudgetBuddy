@@ -12,7 +12,7 @@ import java.util.List;
 
 @Slf4j
 @Data
-public abstract class AbstractBudgetCategoryBuilder<T extends BudgetCategoryCriteriaBase>
+public abstract class AbstractBudgetCategoryBuilder<T extends BudgetCategoryCriteriaBase, S extends CategorySpending>
 {
     protected final BudgetCategoryService budgetCategoryService;
     protected final BudgetCalculations budgetCalculations;
@@ -30,9 +30,9 @@ public abstract class AbstractBudgetCategoryBuilder<T extends BudgetCategoryCrit
         this.subBudgetGoalsService = subBudgetGoalsService;
     }
 
-    protected abstract List<BudgetCategory> initializeBudgetCategories(final SubBudget subBudget, final List<CategoryTransactions> categoryTransactions);
+    public abstract List<BudgetCategory> initializeBudgetCategories(final SubBudget subBudget, final List<TransactionsByCategory> TransactionsByCategory);
 
-    protected abstract List<BudgetCategory> buildBudgetCategoryList(final List<T> budgetCriteria);
+    public abstract List<BudgetCategory> buildBudgetCategoryList(final List<T> budgetCriteria);
 
     protected BudgetCategory createBudgetCategory(
             Long subBudgetId,
@@ -59,9 +59,13 @@ public abstract class AbstractBudgetCategoryBuilder<T extends BudgetCategoryCrit
         return newCategory;
     }
 
-    protected abstract List<BudgetCategory> updateBudgetCategories(List<T> budgetCriteria, List<BudgetCategory> existingBudgetCategories);
+    public abstract List<T> createCategoryBudgetCriteriaList(final SubBudget budget, final List<S> CategorySpendingList, final SubBudgetGoals subBudgetGoals);
 
-    protected Double getBudgetOverSpending(final BigDecimal budgetActualAmount, final BigDecimal budgetAmount)
+    public abstract List<BudgetCategory> updateBudgetCategories(List<T> budgetCriteria, List<BudgetCategory> existingBudgetCategories);
+
+    public abstract List<S> getCategorySpending(List<TransactionsByCategory> transactionsByCategory, List<BudgetScheduleRange> budgetDateRanges);
+
+    public Double getBudgetOverSpending(final BigDecimal budgetActualAmount, final BigDecimal budgetAmount)
     {
         double budgetActual = Double.parseDouble(budgetActualAmount.toString());
         double budgeted = Double.parseDouble(budgetAmount.toString());

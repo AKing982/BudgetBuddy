@@ -14,6 +14,8 @@ import java.util.Optional;
 public interface SubBudgetRepository extends JpaRepository<SubBudgetEntity, Long>
 {
     @Query("SELECT sb FROM SubBudgetEntity sb WHERE sb.budget.user.id =:uId AND sb.startDate =:beginDate AND sb.endDate =:endDate")
-    Optional<SubBudgetEntity> findSubBudgetEntityByIdAndDate(@Param("uId") Long userId, @Param("beginDate")LocalDate beginDate, @Param("endDate")LocalDate endDate);
+    Optional<SubBudgetEntity> findSubBudgetEntityByIdAndDateRange(@Param("uId") Long userId, @Param("beginDate")LocalDate beginDate, @Param("endDate")LocalDate endDate);
 
+    @Query("SELECT sb FROM SubBudgetEntity sb JOIN sb.budget b WHERE b.user.id =:userId AND :date BETWEEN sb.startDate AND sb.endDate")
+    Optional<SubBudgetEntity> findSubBudgetEntityByIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
 }

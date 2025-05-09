@@ -42,6 +42,8 @@ public interface RecurringTransactionsRepository extends JpaRepository<Recurring
     List<RecurringTransactionEntity> findTransactionsInDateRange(@Param("startDate") LocalDate startDate,
                                                            @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.user =:userId AND rt.active = true AND rt.firstDate <= :date AND (rt.lastDate IS NULL OR rt.lastDate >= :date)")
+    List<RecurringTransactionEntity> findRecurringTransactionEntitiesByUserAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
 
     @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.user.id = :userId AND " +
             "(:startDate BETWEEN rt.firstDate AND rt.lastDate OR " +

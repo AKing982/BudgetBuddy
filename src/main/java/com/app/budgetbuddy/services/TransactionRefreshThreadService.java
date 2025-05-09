@@ -1,27 +1,30 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.domain.RecurringTransaction;
-import com.app.budgetbuddy.domain.RecurringTransactionResponse;
-import com.app.budgetbuddy.entities.RecurringTransactionEntity;
+import com.app.budgetbuddy.domain.SubBudget;
+import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
 import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
 import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
 import com.app.budgetbuddy.workbench.categories.TransactionCategoryBuilder;
 import com.app.budgetbuddy.workbench.converter.TransactionBaseToModelConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
+import com.app.budgetbuddy.workbench.runner.BudgetCategoryRunner;
 import com.plaid.client.model.Transaction;
 import com.plaid.client.model.TransactionsRecurringGetResponse;
 import com.plaid.client.model.TransactionsSyncResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -34,8 +37,7 @@ public class TransactionRefreshThreadService
     private final RecurringTransactionService recurringTransactionService;
     private final TransactionBaseToModelConverter transactionBaseToModelConverter;
     private final CategoryRuleEngine categoryRuleEngine;
-    private final TransactionCategoryBuilder transactionCategoryBuilder;
-    private final BudgetCategoryBuilderFactory budgetCategoryBuilderFactory;
+    private final BudgetCategoryRunner budgetCategoryRunner;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
     @Autowired
@@ -43,37 +45,34 @@ public class TransactionRefreshThreadService
                                            RecurringTransactionService recurringTransactionService,
                                            TransactionBaseToModelConverter transactionBaseToModelConverter,
                                            CategoryRuleEngine categoryRuleEngine,
-                                           TransactionCategoryBuilder transactionCategoryBuilder,
-                                           BudgetCategoryBuilderFactory budgetCategoryBuilderFactory,
-                                           ThreadPoolTaskScheduler threadPoolTaskScheduler)
-    {
+                                           BudgetCategoryRunner budgetCategoryRunner,
+                                           @Qualifier("taskScheduler1") ThreadPoolTaskScheduler threadPoolTaskScheduler) {
         this.plaidTransactionManager = plaidTransactionManager;
         this.recurringTransactionService = recurringTransactionService;
         this.transactionBaseToModelConverter = transactionBaseToModelConverter;
         this.categoryRuleEngine = categoryRuleEngine;
-        this.transactionCategoryBuilder = transactionCategoryBuilder;
-        this.budgetCategoryBuilderFactory = budgetCategoryBuilderFactory;
+        this.budgetCategoryRunner = budgetCategoryRunner;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
 
-    private List<com.app.budgetbuddy.domain.Transaction> convertBaseTransactionList(List<Transaction> transactionList)
-    {
+    private List<com.app.budgetbuddy.domain.Transaction> convertBaseTransactionList(List<Transaction> transactionList) {
         return transactionList.stream()
                 .map(transactionBaseToModelConverter::convert)
                 .collect(Collectors.toList());
     }
 
-    public void startTransactionSyncThread(final Long userId, final List<com.app.budgetbuddy.domain.Transaction> transactions, final String cursor) throws IOException
+    public void startTransactionSyncThread(final SubBudget subBudget, final LocalDate date, final List<com.app.budgetbuddy.domain.Transaction> transactions, final String cursor) throws IOException
     {
-        if(userId == null || cursor.isEmpty())
+        if(subBudget == null || cursor == null)
         {
-            log.warn("User Id is null or cursor is empty");
+            log.warn("SubBudget is null or cursor is empty");
             return;
         }
+        Long userId = subBudget.getBudget().getUserId();
         Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
         CompletableFuture.runAsync(() -> syncAndStoreTransactions(userId, cursor), executor)
                 .thenRunAsync(() -> categorizeTransactions(userId, transactions, new ArrayList<>()), executor)
-                .thenRunAsync(() -> buildBudgetCategories(userId), executor)
+                .thenRunAsync(() -> buildBudgetCategories(userId, date, subBudget), executor)
                 .exceptionally(ex -> {
                     log.error("Transaction Refresh pipeline failed", ex);
                     try {
@@ -84,19 +83,25 @@ public class TransactionRefreshThreadService
                 });
     }
 
-    private void buildBudgetCategories(Long userId)
+    private void buildBudgetCategories(final Long userId, final LocalDate date, final SubBudget subBudget)
     {
         try
         {
             log.info("Building budget categories for user {}", userId);
-//            budgetCategoryBuilder.buildBudgetCategoriesForUser(userId);
+            List<BudgetCategory> budgetCategoriesForDate = budgetCategoryRunner.runBudgetCategoryProcessForDate(date, subBudget);
+            boolean budgetCategoriesSaved = budgetCategoryRunner.saveBudgetCategories(budgetCategoriesForDate);
+            if(budgetCategoriesSaved)
+            {
+                log.info("Budget Categories were successfully saved to the database");
+            }
+            log.info("Successfully ran budget categories for user {}", userId);
+
         } catch (Exception ex)
         {
             log.error("Error building budget categories: {}", ex.getMessage());
             throw new RuntimeException(ex);
         }
     }
-
 
     private void categorizeTransactions(final Long userId, final List<com.app.budgetbuddy.domain.Transaction> transactionList, final List<RecurringTransaction> recurringTransactions)
     {
@@ -142,8 +147,9 @@ public class TransactionRefreshThreadService
         }
     }
 
-    public void startRecurringTransactionSyncThread(final Long userId, final List<RecurringTransaction> recurringTransactions) throws IOException
+    public void startRecurringTransactionSyncThread(final LocalDate date, final SubBudget subBudget, final List<RecurringTransaction> recurringTransactions) throws IOException
     {
+        Long userId = subBudget.getBudget().getUserId();
         Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
         CompletableFuture.runAsync(() -> {
                     try {
@@ -153,7 +159,7 @@ public class TransactionRefreshThreadService
                     }
                 }, executor)
                 .thenRunAsync(() -> categorizeTransactions(userId, new ArrayList<>(), recurringTransactions), executor)
-                .thenRunAsync(() -> buildBudgetCategories(userId), executor)
+                .thenRunAsync(() -> buildBudgetCategories(userId, date, subBudget), executor)
                 .exceptionally(ex -> {
                     log.error("Recurring Transaction Refresh pipeline failed", ex);
                     try {

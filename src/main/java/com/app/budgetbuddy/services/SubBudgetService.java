@@ -12,7 +12,7 @@ public interface SubBudgetService extends ServiceModel<SubBudgetEntity>
     Optional<SubBudget> getSubBudgetsByUserIdAndDate(Long userId, LocalDate startDate, LocalDate endDate);
     Optional<SubBudgetEntity> saveSubBudget(SubBudget subBudget);
     Optional<SubBudget> findSubBudgetById(Long id);
-
+    Optional<SubBudget> findSubBudgetByUserIdAndDate(Long userId, LocalDate date);
     Optional<SubBudgetEntity> updateSubBudget(SubBudget subBudget);
 
 }

@@ -10,39 +10,30 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
 @Builder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class BudgetScheduleRange
 {
     private Long id;
     private Long budgetScheduleId;
-    private LocalDate startRange;
-    private LocalDate endRange;
-    private BigDecimal budgetedAmount;
     private BigDecimal spentOnRange;
+    private BigDecimal budgetedAmount;
     private DateRange budgetDateRange;
     private String rangeType;
+    private boolean isActive;
+    private LocalDate startRange;
+    private LocalDate endRange;
     private boolean isSingleDate;
 
-    public BudgetScheduleRange(Long budgetScheduleId, LocalDate startRange, LocalDate endRange, BigDecimal budgetedAmount, BigDecimal spentOnRange, String rangeType, boolean isSingleDate) {
-        this.budgetScheduleId = budgetScheduleId;
-        this.startRange = startRange;
-        this.endRange = endRange;
-        this.budgetedAmount = budgetedAmount;
-        this.spentOnRange = spentOnRange;
-        this.budgetDateRange = new DateRange(startRange, endRange);
-        this.rangeType = rangeType;
-        this.isSingleDate = isSingleDate;
-    }
-
-    public BudgetScheduleRange(Long id, Long budgetScheduleId, LocalDate startRange, LocalDate endRange, BigDecimal budgetedAmount, BigDecimal spentOnRange, DateRange budgetDateRange, String rangeType, boolean isSingleDate) {
+    public BudgetScheduleRange(BigDecimal spentOnRange, String rangeType, boolean isActive, LocalDate startDate, LocalDate endDate, Long id, Long budgetScheduleId, BigDecimal budgetedAmount, DateRange budgetDateRange) {
         this.id = id;
         this.budgetScheduleId = budgetScheduleId;
-        this.startRange = startRange;
-        this.endRange = endRange;
         this.budgetedAmount = budgetedAmount;
-        this.spentOnRange = spentOnRange;
         this.budgetDateRange = budgetDateRange;
+        this.startRange = startDate;
+        this.endRange = endDate;
+        this.isActive = isActive;
+        this.spentOnRange = spentOnRange;
         this.rangeType = rangeType;
-        this.isSingleDate = isSingleDate;
     }
 
     @Override
@@ -50,11 +41,11 @@ public class BudgetScheduleRange
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BudgetScheduleRange that = (BudgetScheduleRange) o;
-        return Objects.equals(budgetScheduleId, that.budgetScheduleId) && Objects.equals(startRange, that.startRange) && Objects.equals(endRange, that.endRange) && Objects.equals(budgetedAmount, that.budgetedAmount) && Objects.equals(spentOnRange, that.spentOnRange) && Objects.equals(rangeType, that.rangeType);
+        return Objects.equals(id, that.id) && Objects.equals(budgetScheduleId, that.budgetScheduleId) && Objects.equals(budgetedAmount, that.budgetedAmount) && Objects.equals(budgetDateRange, that.budgetDateRange);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(budgetScheduleId, startRange, endRange, budgetedAmount, spentOnRange, rangeType);
+        return Objects.hash(id, budgetScheduleId, budgetedAmount, budgetDateRange);
     }
 }

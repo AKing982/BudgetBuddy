@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -94,7 +95,7 @@ public class SubBudgetServiceImpl implements SubBudgetService
         try
         {
 
-            Optional<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntityByIdAndDate(userId, startDate, endDate);
+            Optional<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntityByIdAndDateRange(userId, startDate, endDate);
             if(subBudgetEntities.isEmpty())
             {
                 return Optional.empty();
@@ -141,6 +142,7 @@ public class SubBudgetServiceImpl implements SubBudgetService
     }
 
     @Override
+    @Transactional
     public Optional<SubBudget> findSubBudgetById(Long id)
     {
         if(id == null || id <= 0)
@@ -164,6 +166,21 @@ public class SubBudgetServiceImpl implements SubBudgetService
     }
 
     @Override
+    @Transactional
+    public Optional<SubBudget> findSubBudgetByUserIdAndDate(Long userId, LocalDate date)
+    {
+        try
+        {
+            Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findSubBudgetEntityByIdAndDate(userId, date);
+            return Optional.of(subBudgetEntityConverter.convert(subBudgetEntityOptional.get()));
+        }catch(DataAccessException e){
+            log.error("There was an error getting the sub-budget from the database: ", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<SubBudgetEntity> updateSubBudget(SubBudget subBudget)
     {
         return Optional.empty();

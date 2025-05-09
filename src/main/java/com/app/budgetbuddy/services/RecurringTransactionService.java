@@ -36,6 +36,7 @@ public interface RecurringTransactionService extends ServiceModel<RecurringTrans
     BigDecimal getTotalRecurringExpensesForPeriod(Long userId, LocalDate startDate, LocalDate endDate);
     List<RecurringTransaction> findIncomeRecurringTransactionByCategoryAndUserId(String categoryName, String categoryId, Long userId, LocalDate startDate, LocalDate endDate);
 
+    List<RecurringTransaction> getRecurringTransactionsForDate(Long userId, LocalDate date);
     List<RecurringTransaction> getRecurringTransactions(Long userId, LocalDate startDate, LocalDate endDate);
     List<RecurringTransactionEntity> createRecurringTransactions(final List<RecurringTransactionDTO> outflowing, final List<RecurringTransactionDTO> inflowing);
     Optional<RecurringTransactionEntity> findByIdAndCategoryId(Long id, String categoryId);

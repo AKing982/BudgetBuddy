@@ -387,17 +387,17 @@ class DailyBudgetCategoryBuilderServiceTest
 
     @Test
     void testGetCategorySpendingByDate_whenDateIsNull_thenReturnEmptyList(){
-        List<CategoryTransactions> categoryTransactionsList = new ArrayList<>();
-        CategoryTransactions categoryTransactions = new CategoryTransactions();
-        categoryTransactionsList.add(categoryTransactions);
+        List<TransactionsByCategory> transactionsByCategoryList = new ArrayList<>();
+        TransactionsByCategory transactionsByCategory = new TransactionsByCategory();
+        transactionsByCategoryList.add(transactionsByCategory);
 
-        List<DailyCategorySpending> actual = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(null, categoryTransactionsList);
+        List<DailyCategorySpending> actual = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(null, transactionsByCategoryList);
         assertNotNull(actual);
         assertEquals(0, actual.size());
     }
 
     @Test
-    void testGetCategorySpendingByDate_whenCategoryTransactionsIsNull_thenReturnEmptyList(){
+    void testGetCategorySpendingByDate_whenTransactionsByCategoryIsNull_thenReturnEmptyList(){
         LocalDate currentDate = LocalDate.of(2025, 4, 1);
         List<DailyCategorySpending> actual = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(currentDate, null);
         assertNotNull(actual);
@@ -405,10 +405,10 @@ class DailyBudgetCategoryBuilderServiceTest
     }
 
     @Test
-    void testGetCategorySpendingByDate_whenValidDateAndCategoryTransactions_thenReturnDailyCategorySpendingList()
+    void testGetCategorySpendingByDate_whenValidDateAndTransactionsByCategory_thenReturnDailyCategorySpendingList()
     {
         LocalDate currentDate = LocalDate.of(2025, 4, 1);
-        List<CategoryTransactions> categoryTransactionsList = new ArrayList<>();
+        List<TransactionsByCategory> transactionsByCategoryList = new ArrayList<>();
 
         // Create rent transactions
         List<Transaction> rentTransactions = new ArrayList<>();
@@ -419,8 +419,8 @@ class DailyBudgetCategoryBuilderServiceTest
         rentTransaction.setMerchantName("Apartment Complex");
         rentTransaction.setDescription("Monthly Rent");
         rentTransactions.add(rentTransaction);
-        CategoryTransactions rentCategory = new CategoryTransactions("Rent", rentTransactions);
-        categoryTransactionsList.add(rentCategory);
+        TransactionsByCategory rentCategory = new TransactionsByCategory("Rent", rentTransactions);
+        transactionsByCategoryList.add(rentCategory);
 
         // Create grocery transactions
         List<Transaction> groceryTransactions = new ArrayList<>();
@@ -440,8 +440,8 @@ class DailyBudgetCategoryBuilderServiceTest
         groceryTransaction2.setDescription("Additional Items");
         groceryTransactions.add(groceryTransaction2);
 
-        CategoryTransactions groceryCategory = new CategoryTransactions( "Groceries", groceryTransactions);
-        categoryTransactionsList.add(groceryCategory);
+        TransactionsByCategory groceryCategory = new TransactionsByCategory( "Groceries", groceryTransactions);
+        transactionsByCategoryList.add(groceryCategory);
 
         // Expected results
         List<DailyCategorySpending> expected = new ArrayList<>();
@@ -461,7 +461,7 @@ class DailyBudgetCategoryBuilderServiceTest
         expected.add(grocerySpending);
 
         // Call the method under test
-        List<DailyCategorySpending> actual = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(currentDate, categoryTransactionsList);
+        List<DailyCategorySpending> actual = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(currentDate, transactionsByCategoryList);
 
         // Assertions
         assertNotNull(actual);
@@ -497,7 +497,7 @@ class DailyBudgetCategoryBuilderServiceTest
     void testGetCategorySpendingByDate_whenCategoryNameIsEmpty_thenSkipCategoryAndLog_thenReturnDailyCategorySpendingList()
     {
         LocalDate currentDate = LocalDate.of(2025, 4, 1);
-        List<CategoryTransactions> categoryTransactionsList = new ArrayList<>();
+        List<TransactionsByCategory> transactionsByCategoryList = new ArrayList<>();
         Transaction rentTransaction = new Transaction();
         rentTransaction.setAmount(BigDecimal.valueOf(1200));
         rentTransaction.setDate(currentDate);
@@ -512,10 +512,10 @@ class DailyBudgetCategoryBuilderServiceTest
         groceryTransaction1.setMerchantName("Grocery Store");
         groceryTransaction1.setDescription("Weekly Groceries");
 
-        CategoryTransactions groceryEmptyCategoryTransactions = new CategoryTransactions("", List.of(groceryTransaction1));
-        CategoryTransactions rentCategory = new CategoryTransactions("Rent", List.of(rentTransaction));
-        categoryTransactionsList.add(rentCategory);
-        categoryTransactionsList.add(groceryEmptyCategoryTransactions);
+        TransactionsByCategory groceryEmptyTransactionsByCategory = new TransactionsByCategory("", List.of(groceryTransaction1));
+        TransactionsByCategory rentCategory = new TransactionsByCategory("Rent", List.of(rentTransaction));
+        transactionsByCategoryList.add(rentCategory);
+        transactionsByCategoryList.add(groceryEmptyTransactionsByCategory);
 
         List<DailyCategorySpending> expected = new ArrayList<>();
         DailyCategorySpending rentCategorySpending = new DailyCategorySpending();
@@ -525,7 +525,7 @@ class DailyBudgetCategoryBuilderServiceTest
         rentCategorySpending.setTransactions(List.of(rentTransaction));
         expected.add(rentCategorySpending);
 
-        List<DailyCategorySpending> actual = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(currentDate, categoryTransactionsList);
+        List<DailyCategorySpending> actual = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(currentDate, transactionsByCategoryList);
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
         for (int i = 0; i < expected.size(); i++) {
@@ -543,7 +543,6 @@ class DailyBudgetCategoryBuilderServiceTest
         SubBudget subBudget = testSubBudget;
         BudgetScheduleRange aprilFirstWeek = new BudgetScheduleRange();
         aprilFirstWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)));
-        aprilFirstWeek.setSingleDate(false);
         aprilFirstWeek.setStartRange(LocalDate.of(2025, 4, 1));
         aprilFirstWeek.setEndRange(LocalDate.of(2025, 4, 7));
         aprilFirstWeek.setRangeType("Week");
@@ -627,7 +626,6 @@ class DailyBudgetCategoryBuilderServiceTest
         // Create budget week for April 1-7, 2025
         BudgetScheduleRange aprilFirstWeek = new BudgetScheduleRange();
         aprilFirstWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)));
-        aprilFirstWeek.setSingleDate(false);
         aprilFirstWeek.setStartRange(LocalDate.of(2025, 4, 1));
         aprilFirstWeek.setEndRange(LocalDate.of(2025, 4, 7));
         aprilFirstWeek.setRangeType("Week");

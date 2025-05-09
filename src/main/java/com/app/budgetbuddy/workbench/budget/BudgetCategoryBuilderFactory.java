@@ -17,12 +17,12 @@ public class BudgetCategoryBuilderFactory
         this.monthlyService = monthlyService;
     }
 
-    public AbstractBudgetCategoryBuilder<?> getBudgetCategoryBuilder(String period)
-    {
-        return switch (period) {
-            case "Daily" -> dailyService;
-            case "Monthly" -> monthlyService;
-            default -> throw new IllegalArgumentException("Invalid period: " + period);
-        };
-    }
+//    public AbstractBudgetCategoryBuilder<?, ?, ?> getBudgetCategoryBuilder(String period)
+//    {
+//        return switch (period) {
+//            case "Daily" -> dailyService;
+//            case "Monthly" -> monthlyService;
+//            default -> throw new IllegalArgumentException("Invalid period: " + period);
+//        };
+//    }
 }

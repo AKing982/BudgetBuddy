@@ -35,7 +35,6 @@ public class BudgetScheduleRangeUtil
                         .spentOnRange(firstWeek.getSpentOnRange().add(secondWeek.getSpentOnRange()))
                         .budgetDateRange(new DateRange(firstWeek.getStartRange(), secondWeek.getEndRange()))
                         .rangeType("BIWEEKLY")
-                        .isSingleDate(false)
                         .build();
 
                 budgetScheduleRanges.add(biWeeklySchedule);

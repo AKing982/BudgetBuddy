@@ -222,7 +222,6 @@ class SubBudgetBuilderServiceTest
             assertEquals(expectedRange.getBudgetedAmount(), actualRange.getBudgetedAmount(), "Budgeted amount mismatch");
             assertEquals(expectedRange.getSpentOnRange(), actualRange.getSpentOnRange(), "Spent amount mismatch");
             assertEquals(expectedRange.getRangeType(), actualRange.getRangeType(), "Range type mismatch");
-            assertEquals(expectedRange.isSingleDate(), actualRange.isSingleDate(), "Single date flag mismatch");
         }
     }
 
@@ -341,7 +340,6 @@ class SubBudgetBuilderServiceTest
             assertEquals(expectedRange.getBudgetedAmount(), actualRange.getBudgetedAmount(), "Budgeted amount mismatch");
             assertEquals(expectedRange.getSpentOnRange(), actualRange.getSpentOnRange(), "Spent amount mismatch");
             assertEquals(expectedRange.getRangeType(), actualRange.getRangeType(), "Range type mismatch");
-            assertEquals(expectedRange.isSingleDate(), actualRange.isSingleDate(), "Single date flag mismatch");
         }
     }
 
@@ -959,11 +957,10 @@ class SubBudgetBuilderServiceTest
         januaryFirstWeek.setEndRange(LocalDate.of(2025, 1, 7));
         januaryFirstWeek.setSpentOnRange(BigDecimal.ZERO);
         januaryFirstWeek.setRangeType("Week");
-        januaryFirstWeek.setSingleDate(false);
+
 
         BudgetScheduleRange januarySecondWeek = new BudgetScheduleRange();
         januarySecondWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)));
-        januarySecondWeek.setSingleDate(false);
         januarySecondWeek.setBudgetedAmount(new BigDecimal("120"));
         januarySecondWeek.setStartRange(LocalDate.of(2025, 1, 8));
         januarySecondWeek.setEndRange(LocalDate.of(2025, 1, 14));
@@ -976,10 +973,9 @@ class SubBudgetBuilderServiceTest
         januaryThirdWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 22)));
         januaryThirdWeek.setRangeType("Week");
         januaryThirdWeek.setSpentOnRange(BigDecimal.ZERO);
-        januaryThirdWeek.setSingleDate(false);
+
 
         BudgetScheduleRange januaryFourthWeek = new BudgetScheduleRange();
-        januaryFourthWeek.setSingleDate(false);
         januaryFourthWeek.setStartRange(LocalDate.of(2025, 1, 23));
         januaryFourthWeek.setEndRange(LocalDate.of(2025, 1, 31));
         januaryFourthWeek.setSpentOnRange(BigDecimal.ZERO);
@@ -1001,11 +997,11 @@ class SubBudgetBuilderServiceTest
         januaryFirstWeek.setEndRange(LocalDate.of(2025, 1, 7));
         januaryFirstWeek.setSpentOnRange(new BigDecimal("95"));
         januaryFirstWeek.setRangeType("Week");
-        januaryFirstWeek.setSingleDate(false);
+
 
         BudgetScheduleRange januarySecondWeek = new BudgetScheduleRange();
         januarySecondWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)));
-        januarySecondWeek.setSingleDate(false);
+
         januarySecondWeek.setBudgetedAmount(new BigDecimal("120"));
         januarySecondWeek.setStartRange(LocalDate.of(2025, 1, 8));
         januarySecondWeek.setEndRange(LocalDate.of(2025, 1, 14));
@@ -1018,10 +1014,8 @@ class SubBudgetBuilderServiceTest
         januaryThirdWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 22)));
         januaryThirdWeek.setRangeType("Week");
         januaryThirdWeek.setSpentOnRange(new BigDecimal("85"));
-        januaryThirdWeek.setSingleDate(false);
 
         BudgetScheduleRange januaryFourthWeek = new BudgetScheduleRange();
-        januaryFourthWeek.setSingleDate(false);
         januaryFourthWeek.setStartRange(LocalDate.of(2025, 1, 23));
         januaryFourthWeek.setEndRange(LocalDate.of(2025, 1, 31));
         januaryFourthWeek.setSpentOnRange(new BigDecimal("85"));

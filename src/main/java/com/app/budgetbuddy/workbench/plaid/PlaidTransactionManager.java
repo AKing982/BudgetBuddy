@@ -55,7 +55,8 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         this.recurringTransactionConverter = recurringTransactionConverter;
     }
 
-    public TransactionsGetRequest createTransactionRequest(String accessToken, LocalDate startDate, LocalDate endDate){
+    public TransactionsGetRequest createTransactionRequest(String accessToken, LocalDate startDate, LocalDate endDate)
+    {
         LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
         LOGGER.info("Creating Transaction Request for date range: " + startDate + " - " + endDate);
         if(accessToken.isEmpty()){

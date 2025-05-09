@@ -1,18 +1,12 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.exceptions.BudgetBuildException;
-import com.app.budgetbuddy.exceptions.BudgetCategoryException;
-import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.*;
 
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
+import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -21,218 +15,129 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletionException;
 
 @Service
 @Slf4j
 public class BudgetCategoryRunner
 {
-    private List<BudgetCategory> budgetCategories = new ArrayList<>();
-    private SubBudgetService subBudgetService;
-    private SubBudgetGoalsService subBudgetGoalsService;
-    private TransactionCategoryService transactionCategoryService;
-    private TransactionService transactionService;
-    private RecurringTransactionService recurringTransactionService;
-    private BudgetCategoryBuilderFactory budgetCategoryBuilder;
+    private TransactionsByCategoryService transactionsByCategoryService;
+    private BudgetCategoryThreadService budgetCategoryThreadService;
 
     @Autowired
-    public BudgetCategoryRunner(SubBudgetService subBudgetService,
-                                SubBudgetGoalsService subBudgetGoalsService,
-                                TransactionCategoryService transactionCategoryService,
-                                TransactionService transactionService,
-                                RecurringTransactionService recurringTransactionService,
-                                BudgetCategoryBuilderFactory budgetCategoryBuilder) {
-        this.subBudgetService = subBudgetService;
-        this.subBudgetGoalsService = subBudgetGoalsService;
-        this.transactionCategoryService = transactionCategoryService;
-        this.transactionService = transactionService;
-        this.recurringTransactionService = recurringTransactionService;
-        this.budgetCategoryBuilder = budgetCategoryBuilder;
+    public BudgetCategoryRunner(TransactionsByCategoryService transactionsByCategoryService,
+                                BudgetCategoryThreadService budgetCategoryThreadService)
+    {
+        this.transactionsByCategoryService = transactionsByCategoryService;
+        this.budgetCategoryThreadService = budgetCategoryThreadService;
     }
 
-//    public void runBudgetCategoryProcess(LocalDate startDate, LocalDate endDate, Long userId)
-//    {
-//        // Load the transaction categories from the database
-//        List<TransactionCategory> transactionCategories = loadTransactionCategoriesForUser(startDate, endDate, userId);
-//
-//        // Create the Category Transactions
-//        List<CategoryTransactions> categoryTransactions = createCategoryTransactions(transactionCategories);
-//
-//        // Load the sub budget for this period
-//        SubBudget subBudget = loadSubBudget(userId, startDate, endDate);
-//        log.info("Loading SubBudget: {}", subBudget);
-//
-//        // Load the budget schedule for this period
-//        BudgetSchedule budgetSchedule = getBudgetScheduleFromSubBudget(subBudget);
-//        log.info("Loading BudgetSchedule: {}", budgetSchedule);
-//
-//        // Load the SubBudget goals for this period
-//        SubBudgetGoals subBudgetGoals = subBudgetGoalsService.getSubBudgetGoalsEntitiesBySubBudgetId(subBudget.getId());
-//        log.info("Loading SubBudgetGoals: {}", subBudgetGoals);
-//
-//        // Create the BudgetCategories
-//        List<BudgetCategory> budgetCategories1 = createBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
-//        budgetCategories1.forEach((budgetCategory) -> {
-//            log.info("Loading BudgetCategory: {}", budgetCategory);
-//        });
-//        budgetCategories.addAll(budgetCategories1);
-//
-//        saveBudgetCategories(budgetCategories1);
-//    }
-
-    public List<TransactionCategory> loadTransactionCategoriesForUser(final LocalDate startDate, final LocalDate endDate, final Long userId)
+    private List<TransactionsByCategory> getTransactionsByCategoryListByMonth(final SubBudget subBudget)
     {
-        if(startDate == null || endDate == null || userId == null)
+        LocalDate startDate = subBudget.getStartDate();
+        LocalDate endDate = subBudget.getEndDate();
+        Long userID = subBudget.getBudget().getUserId();
+        try
         {
+            CompletableFuture<List<TransactionsByCategory>> future = transactionsByCategoryService.fetchTransactionsByCategoryList(userID, startDate, endDate);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching transactions by category list", e);
             return Collections.emptyList();
         }
-        return transactionCategoryService.getTransactionCategoriesBetweenStartAndEndDates(startDate, endDate, userId);
     }
 
-    private List<Transaction> getTransactionsFromTransactionCategories(final List<TransactionCategory> transactionCategories)
-    {
-        List<Transaction> transactions = new ArrayList<>();
-        for(TransactionCategory transactionCategory : transactionCategories)
-        {
-            String transactionId = transactionCategory.getTransactionId();
-            Optional<Transaction> optionalTransaction = transactionService.findTransactionById(transactionId);
-            if(optionalTransaction.isEmpty())
-            {
-                continue;
-            }
-            Transaction transaction = optionalTransaction.get();
-            transactions.add(transaction);
-        }
-        return transactions;
-    }
-
-    private BudgetSchedule getBudgetScheduleFromSubBudget(final SubBudget subBudget)
-    {
-        List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-        if(budgetSchedules.isEmpty())
-        {
-            throw new BudgetBuildException("Sub budget budget has no schedule");
-        }
-        return budgetSchedules.get(0);
-    }
-
-    private List<String> getMatchedCategoriesByTransactionCategories(final List<TransactionCategory> transactionCategories)
-    {
-        return transactionCategories
-                .stream()
-                .map(TransactionCategory::getMatchedCategory)
-                .distinct()
-                .toList();
-    }
-
-    public List<CategoryTransactions> createCategoryTransactions(final List<TransactionCategory> transactionCategories)
-    {
-        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
-        List<String> uniqueCategories = getMatchedCategoriesByTransactionCategories(transactionCategories);
-        if(uniqueCategories.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        for(String category : uniqueCategories)
-        {
-            if(category == null || category.isEmpty())
-            {
-                log.warn("Skipping Blank category....");
-                continue;
-            }
-            Map<String, List<Transaction>> categoryTransactionMap = new HashMap<>();
-            List<TransactionCategory> transactionCategoriesInGroup = getTransactionCategoriesGrouped(category, transactionCategories);
-            if(transactionCategoriesInGroup.isEmpty())
-            {
-                return Collections.emptyList();
-            }
-
-//            List<Transaction> transactions = getTransactionsFromTransactionCategories(transactionCategoriesInGroup);
-//            if(transactions.isEmpty())
-//            {
-//                categoryTransactions.add(new CategoryTransactions(category, new ArrayList<>()));
-//            }
-//            else
-//            {
-//                categoryTransactions.add(new CategoryTransactions(category, transactions));
-//            }
-        }
-        return categoryTransactions;
-    }
-
-    private List<TransactionCategory> getTransactionCategoriesGrouped(final String category, final List<TransactionCategory> transactionCategories)
-    {
-        return transactionCategories
-                .stream()
-                .filter(tc -> category.equals(tc.getMatchedCategory()))
-                .toList();
-    }
-
-    private SubBudget loadSubBudget(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    private List<BudgetCategory> getExistingBudgetCategoriesByMonth(final SubBudget subBudget)
     {
         try
         {
-            Optional<SubBudget> subBudgetOptional = subBudgetService.getSubBudgetsByUserIdAndDate(userId, startDate, endDate);
-            if(subBudgetOptional.isEmpty())
-            {
-                throw new RuntimeException("Sub budget not found");
-            }
-            return subBudgetOptional.get();
-        }catch(DataAccessException e){
-            log.error("There was an error fetching the sub budget for start date {} and end date {} and userId {}", startDate, endDate, userId, e);
-            throw new DataAccessException("There was an error fetching the sub budget");
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.fetchExistingBudgetCategoriesForMonth(subBudget);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching the existing budget categories for month {}", subBudget, e);
+            return Collections.emptyList();
         }
     }
 
-//    /**
-//     * Creates the initial Budget Categories
-//     *
-//     * @param subBudget
-//     * @param budgetSchedule
-//     * @param categoryTransactions
-//     */
-//    public List<BudgetCategory> createBudgetCategories(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions, final SubBudgetGoals subBudgetGoals)
-//    {
-//        if(subBudget == null || budgetSchedule == null || categoryTransactions == null || subBudgetGoals == null)
-//        {
-//            return Collections.emptyList();
-//        }
-//        try
-//        {
-//            List<BudgetCategory> budgetCategoriesList = budgetCategoryBuilder.initializeBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
-//            log.info("Budget Categories size: {}", budgetCategoriesList.size());
-//            return budgetCategoriesList;
-//        }catch(BudgetCategoryException e)
-//        {
-//            log.error("There was an error building the budget categories: ", e);
-//            return Collections.emptyList();
-//        }
-//    }
-
-    /**
-     * Updates current user Budget Categories using new Transactions
-     * @param newTransactions
-     * @param budget
-     * @param budgetPeriod
-     */
-    public void updateBudgetCategories(List<Transaction> newTransactions, Budget budget, BudgetPeriod budgetPeriod)
+    private List<TransactionsByCategory> getTransactionsByCategoryListByDate(final SubBudget subBudget, final LocalDate date)
     {
-
+        Long userId = subBudget.getBudget().getUserId();
+        try
+        {
+            CompletableFuture<List<TransactionsByCategory>> future = transactionsByCategoryService.fetchTransactionsByCategoryListByDate(userId, date);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching transactions by category list by date", e);
+            return Collections.emptyList();
+        }
     }
 
-    /**
-//     * Persists the User Budget Categories to the database
-//     * @param userBudgetCategories
-//     */
-//    public void saveBudgetCategories(List<BudgetCategory> userBudgetCategories)
-//    {
-//        log.info("Budget Categories Size: {}", userBudgetCategories.size());
-//        if(userBudgetCategories.isEmpty())
-//        {
-//            return;
-//        }
-//        budgetCategoryBuilder.saveBudgetCategories(userBudgetCategories);
-//    }
+    public List<BudgetCategory> runBudgetCategoryProcessForMonth(final SubBudget subBudget)
+    {
+        try
+        {
+            List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByMonth(subBudget);
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(subBudget, transactionsByCategoryList);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching budget category list", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<BudgetCategory> runBudgetCategoryUpdateProcessForMonth(final SubBudget subBudget)
+    {
+        try
+        {
+            List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByMonth(subBudget);
+            List<BudgetCategory> existingBudgetCategories = getExistingBudgetCategoriesByMonth(subBudget);
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.updateAsyncBudgetCategoriesByMonth(subBudget, transactionsByCategoryList, existingBudgetCategories);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error updating the budget category list for month: {}", subBudget, e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<BudgetCategory> runBudgetCategoryProcessForDate(final LocalDate date, final SubBudget subBudget)
+    {
+        try
+        {
+            List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByDate(subBudget, date);
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByCurrentDate(date, subBudget, transactionsByCategoryList);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error processing the budget categories for date {}", date, e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<BudgetCategory> runBudgetCategoryUpdateProcessForDate(final LocalDate date, final SubBudget subBudget)
+    {
+        try
+        {
+            List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByDate(subBudget, date);
+            List<BudgetCategory> existingBudgetCategories = getExistingBudgetCategoriesByMonth(subBudget);
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.updateAsyncBudgetCategoriesByCurrentDate(existingBudgetCategories, date, subBudget, transactionsByCategoryList);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error updating the budget category list for date {}", date, e);
+            return Collections.emptyList();
+        }
+    }
+
+    public boolean saveBudgetCategories(List<BudgetCategory> budgetCategories)
+    {
+        try
+        {
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.saveAsyncBudgetCategories(budgetCategories);
+            List<BudgetCategory> budgetCategoriesList = future.join();
+            return !budgetCategoriesList.isEmpty();
+        }catch(CompletionException e){
+            log.error("There was an error saving the budget categories", e);
+            return false;
+        }
+    }
 
 //    public static void main(String[] args)
 //    {

@@ -250,7 +250,6 @@ class BudgetScheduleEngineTest {
                     .budgetedAmount(new BigDecimal("750")) // 3000/4
                     .spentOnRange(BigDecimal.ZERO)
                     .rangeType("WEEKLY")
-                    .isSingleDate(false)
                     .budgetDateRange(new DateRange(weekStart, weekEnd))
                     .build();
             febRanges.add(range);
@@ -282,7 +281,6 @@ class BudgetScheduleEngineTest {
                     .budgetedAmount(new BigDecimal("600")) // 3000/5
                     .spentOnRange(BigDecimal.ZERO)
                     .rangeType("WEEKLY")
-                    .isSingleDate(false)
                     .budgetDateRange(new DateRange(weekStart, weekEnd))
                     .build();
             marchRanges.add(range);
@@ -342,7 +340,6 @@ class BudgetScheduleEngineTest {
                     .budgetedAmount(weeklyAmount)
                     .spentOnRange(BigDecimal.ZERO)
                     .rangeType("WEEKLY")
-                    .isSingleDate(false)
                     .build();
             range.setBudgetDateRange(new DateRange(range.getStartRange(), range.getEndRange()));
             ranges.add(range);
@@ -452,7 +449,6 @@ class BudgetScheduleEngineTest {
                     .budgetedAmount(new BigDecimal("815")) // 3260/4
                     .spentOnRange(BigDecimal.ZERO)
                     .rangeType("WEEKLY")
-                    .isSingleDate(false)
                     .build();
 
             // Set the budgetDateRange
@@ -553,7 +549,6 @@ class BudgetScheduleEngineTest {
                     .budgetedAmount(new BigDecimal("652")) // 3260/5
                     .spentOnRange(BigDecimal.ZERO)
                     .rangeType("WEEKLY")
-                    .isSingleDate(false)
                     .build();
             range.setBudgetDateRange(new DateRange(range.getStartRange(), range.getEndRange()));
             januaryRanges.add(range);
@@ -570,7 +565,6 @@ class BudgetScheduleEngineTest {
                     .budgetedAmount(new BigDecimal("815")) // 3260/4
                     .spentOnRange(BigDecimal.ZERO)
                     .rangeType("WEEKLY")
-                    .isSingleDate(false)
                     .build();
             range.setBudgetDateRange(new DateRange(range.getStartRange(), range.getEndRange()));
             februaryRanges.add(range);
@@ -1084,11 +1078,9 @@ class BudgetScheduleEngineTest {
         januaryFirstWeek.setEndRange(LocalDate.of(2025, 1, 7));
         januaryFirstWeek.setSpentOnRange(new BigDecimal("95"));
         januaryFirstWeek.setRangeType("Week");
-        januaryFirstWeek.setSingleDate(false);
 
         BudgetScheduleRange januarySecondWeek = new BudgetScheduleRange();
         januarySecondWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)));
-        januarySecondWeek.setSingleDate(false);
         januarySecondWeek.setBudgetedAmount(new BigDecimal("120"));
         januarySecondWeek.setStartRange(LocalDate.of(2025, 1, 8));
         januarySecondWeek.setEndRange(LocalDate.of(2025, 1, 14));
@@ -1101,10 +1093,8 @@ class BudgetScheduleEngineTest {
         januaryThirdWeek.setBudgetDateRange(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 22)));
         januaryThirdWeek.setRangeType("Week");
         januaryThirdWeek.setSpentOnRange(new BigDecimal("85"));
-        januaryThirdWeek.setSingleDate(false);
 
         BudgetScheduleRange januaryFourthWeek = new BudgetScheduleRange();
-        januaryFourthWeek.setSingleDate(false);
         januaryFourthWeek.setStartRange(LocalDate.of(2025, 1, 23));
         januaryFourthWeek.setEndRange(LocalDate.of(2025, 1, 31));
         januaryFourthWeek.setSpentOnRange(new BigDecimal("85"));

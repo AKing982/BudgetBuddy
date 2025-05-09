@@ -82,7 +82,6 @@ class WeeklyBudgetPeriodCategoryHandlerTest {
                 .spentOnRange(new BigDecimal("195.00"))
                 .budgetDateRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 7)))
                 .rangeType("WEEKLY")
-                .isSingleDate(false)
                 .build());
 
         // Week 2: Jan 8-14
@@ -94,7 +93,7 @@ class WeeklyBudgetPeriodCategoryHandlerTest {
                 .spentOnRange(new BigDecimal("270.00"))
                 .budgetDateRange(new DateRange(LocalDate.of(2025, 1, 8), LocalDate.of(2025, 1, 14)))
                 .rangeType("WEEKLY")
-                .isSingleDate(false)
+
                 .build());
 
         // Week 3: Jan 15-21
@@ -106,7 +105,6 @@ class WeeklyBudgetPeriodCategoryHandlerTest {
                 .spentOnRange(new BigDecimal("305.00"))
                 .budgetDateRange(new DateRange(LocalDate.of(2025, 1, 15), LocalDate.of(2025, 1, 21)))
                 .rangeType("WEEKLY")
-                .isSingleDate(false)
                 .build());
 
         // Week 4: Jan 22-28
@@ -118,7 +116,6 @@ class WeeklyBudgetPeriodCategoryHandlerTest {
                 .spentOnRange(new BigDecimal("255.00"))
                 .budgetDateRange(new DateRange(LocalDate.of(2025, 1, 22), LocalDate.of(2025, 1, 28)))
                 .rangeType("WEEKLY")
-                .isSingleDate(false)
                 .build());
 
         // Week 5: Jan 29-31 (partial week)
@@ -130,9 +127,7 @@ class WeeklyBudgetPeriodCategoryHandlerTest {
                 .spentOnRange(new BigDecimal("135.00"))
                 .budgetDateRange(new DateRange(LocalDate.of(2025, 1, 29), LocalDate.of(2025, 1, 31)))
                 .rangeType("WEEKLY")
-                .isSingleDate(false)
                 .build());
-
 
         budgetSchedule = BudgetSchedule.builder()
                 .budgetScheduleId(1L)

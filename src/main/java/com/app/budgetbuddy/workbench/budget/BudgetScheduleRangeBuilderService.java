@@ -90,7 +90,6 @@ public class BudgetScheduleRangeBuilderService
                 range.setBudgetedAmount(weeklyBudget);
                 range.setSpentOnRange(weeklySpent);
                 range.setRangeType("Week");
-                range.setSingleDate(false);
                 range.setBudgetDateRange(weekRange);
                 List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
                 BudgetSchedule budgetSchedule = budgetSchedules.get(0);

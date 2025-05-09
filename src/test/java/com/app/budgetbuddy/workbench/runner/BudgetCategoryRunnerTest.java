@@ -46,8 +46,8 @@ class BudgetCategoryRunnerTest {
     @Mock
     private BudgetCategoryBuilderFactory transactionCategoryBuilder;
 
-    @InjectMocks
-    private TransactionCategoryRunner transactionCategoryRunner;
+//    @InjectMocks
+//    private TransactionCategoryRunner transactionCategoryRunner;
 
     private Budget testBudget;
 

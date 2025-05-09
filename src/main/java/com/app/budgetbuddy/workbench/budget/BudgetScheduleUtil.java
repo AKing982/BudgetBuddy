@@ -45,7 +45,6 @@ public class BudgetScheduleUtil
             budgetScheduleRange.setEndRange(budgetScheduleRangeEntity.getRangeEnd());
             budgetScheduleRange.setRangeType(budgetScheduleRangeEntity.getRangeType());
             budgetScheduleRange.setSpentOnRange(budgetScheduleRangeEntity.getSpentOnRange());
-            budgetScheduleRange.setSingleDate(false);
             budgetScheduleRanges.add(budgetScheduleRange);
         }
         return new ArrayList<>(budgetScheduleRanges);

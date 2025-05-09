@@ -1,11 +1,14 @@
 package com.app.budgetbuddy.workbench;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.BudgetCategoryService;
-import com.app.budgetbuddy.services.TransactionCategoryService;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
+import com.app.budgetbuddy.workbench.budget.DailyBudgetCategoryBuilderService;
+import com.app.budgetbuddy.workbench.budget.MonthlyBudgetCategoryBuilderService;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
@@ -21,63 +24,93 @@ import java.util.concurrent.CompletionException;
 @Async
 public class BudgetCategoryThreadService
 {
-    private final BudgetCategoryBuilderFactory budgetCategoryBuilderFactory;
+    private final DailyBudgetCategoryBuilderService dailyBudgetCategoryBuilderService;
+    private final MonthlyBudgetCategoryBuilderService monthlyBudgetCategoryBuilderService;
     private final BudgetCategoryService budgetCategoryService;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
     @Autowired
-    public BudgetCategoryThreadService(BudgetCategoryBuilderFactory budgetCategoryBuilderFactory,
+    public BudgetCategoryThreadService(DailyBudgetCategoryBuilderService dailyBudgetCategoryBuilderService,
+                                       MonthlyBudgetCategoryBuilderService monthlyBudgetCategoryBuilderService,
                                        BudgetCategoryService budgetCategoryService,
-                                       ThreadPoolTaskScheduler threadPoolTaskScheduler)
-    {
-        this.budgetCategoryBuilderFactory = budgetCategoryBuilderFactory;
+                                       @Qualifier("taskScheduler1") ThreadPoolTaskScheduler threadPoolTaskScheduler) {
+        this.dailyBudgetCategoryBuilderService = dailyBudgetCategoryBuilderService;
+        this.monthlyBudgetCategoryBuilderService = monthlyBudgetCategoryBuilderService;
         this.budgetCategoryService = budgetCategoryService;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
 
-    public CompletableFuture<Boolean> runCreateAsyncOperationForCurrentDate(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions)
-    {
-        final LocalDate currentDate = LocalDate.now();
-        try
-        {
-            log.info("Starting budget category thread for current date {}", currentDate);
-            CompletableFuture<List<BudgetCategory>> budgetCategoriesFuture = createAsyncBudgetCategoriesByCurrentDate(currentDate, subBudget, budgetSchedule, categoryTransactions);
-            List<BudgetCategory> budgetCategories = budgetCategoriesFuture.get();
-            if(!budgetCategories.isEmpty())
-            {
-                return CompletableFuture.completedFuture(true);
-            }
-            return CompletableFuture.completedFuture(false);
-        }catch(Exception e){
-            log.error("Failed to run create operation for date: ", e);
-            return CompletableFuture.completedFuture(false);
-        }
-    }
-
-    public CompletableFuture<Boolean> runNormalBudgetCategorySetupOperation(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions)
-    {
-        return null;
-    }
-
-    public CompletableFuture<Boolean> runUpdateAsyncOperationForCurrentDate(final LocalDate currentDate, final List<BudgetCategory> existingBudgetCategories, final SubBudget subBudget, final List<CategoryTransactions> categoryTransactions)
-    {
-        return null;
-    }
-
-    public CompletableFuture<List<BudgetCategory>> saveAsyncBudgetCategories(final List<BudgetCategory> budgetCategories)
+    public CompletableFuture<List<BudgetCategory>> fetchExistingBudgetCategoriesForMonth(final SubBudget subBudget)
     {
         return CompletableFuture.supplyAsync(() -> {
             try
             {
-                if(budgetCategories == null || budgetCategories.isEmpty())
-                {
+                Long subBudgetId = subBudget.getId();
+                LocalDate startDate = subBudget.getStartDate();
+                LocalDate endDate = subBudget.getEndDate();
+                return budgetCategoryService.getBudgetCategoryListByBudgetIdAndDateRange(subBudgetId, startDate, endDate);
+            }catch(DataAccessException e){
+                log.error("There was an error retrieving the existing budget categories for month {}", subBudget, e);
+                return Collections.emptyList();
+            }
+        }, threadPoolTaskScheduler.getScheduledExecutor());
+    }
+
+    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategoriesByMonth(final SubBudget subBudget, final List<TransactionsByCategory> categoryTransactions)
+    {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (subBudget == null || categoryTransactions == null) {
                     return Collections.emptyList();
                 }
-                else
-                {
+                SubBudgetGoals subBudgetGoals = subBudget.getSubBudgetGoals();
+                BudgetSchedule monthBudgetSchedule = subBudget.getBudgetSchedule().get(0);
+                List<BudgetScheduleRange> budgetScheduleRanges = monthBudgetSchedule.getBudgetScheduleRanges();
+                List<MonthlyCategorySpending> monthlyCategorySpending = monthlyBudgetCategoryBuilderService.getCategorySpending(categoryTransactions, budgetScheduleRanges);
+                List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteria = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, subBudgetGoals);
+                return monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(monthlyBudgetCategoryCriteria);
+            } catch (CompletionException e) {
+                log.error("There was an error creating the budget categories for month: {}", subBudget, e.getCause());
+                return Collections.emptyList();
+            }
+        }, threadPoolTaskScheduler.getScheduledExecutor());
+    }
+
+    public CompletableFuture<List<BudgetCategory>> updateAsyncBudgetCategoriesByMonth(final SubBudget subBudget, final List<TransactionsByCategory> categoryTransactions, final List<BudgetCategory> existingBudgetCategories)
+    {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (subBudget == null || categoryTransactions == null) {
+                    return Collections.emptyList();
+                }
+                BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
+                SubBudgetGoals subBudgetGoals = subBudget.getSubBudgetGoals();
+                List<BudgetScheduleRange> budgetScheduleRanges = budgetSchedule.getBudgetScheduleRanges();
+                List<MonthlyCategorySpending> monthlyCategorySpending = monthlyBudgetCategoryBuilderService.getCategorySpending(categoryTransactions, budgetScheduleRanges);
+                List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteria = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, subBudgetGoals);
+                List<BudgetCategory> updatedBudgetCategories = monthlyBudgetCategoryBuilderService.updateBudgetCategories(monthlyBudgetCategoryCriteria, existingBudgetCategories);
+                if (updatedBudgetCategories.isEmpty()) {
+                    log.warn("No Budget categories have been updated for the month: {}", subBudget);
+                    return Collections.emptyList();
+                }
+                return updatedBudgetCategories;
+            } catch (CompletionException e) {
+                log.error("There was an error updating the budget categories for month: {}", subBudget, e.getCause());
+                return Collections.emptyList();
+            }
+
+        }, threadPoolTaskScheduler.getScheduledExecutor());
+    }
+
+    public CompletableFuture<List<BudgetCategory>> saveAsyncBudgetCategories(final List<BudgetCategory> budgetCategories) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (budgetCategories == null || budgetCategories.isEmpty()) {
+                    return Collections.emptyList();
+                } else {
                     return budgetCategoryService.saveAll(budgetCategories);
                 }
-            }catch(CompletionException e){
+            } catch (CompletionException e) {
                 log.error("There was an error saving the budget categories to the server: ", e);
                 return Collections.emptyList();
             }
@@ -85,42 +118,57 @@ public class BudgetCategoryThreadService
         }, threadPoolTaskScheduler.getScheduledExecutor());
     }
 
-    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategoriesByCurrentDate(final LocalDate currentDate, final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions)
+    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategoriesByCurrentDate(final LocalDate currentDate, final SubBudget subBudget, final List<TransactionsByCategory> categoryTransactions)
     {
         return CompletableFuture.supplyAsync(() -> {
-            if(categoryTransactions.isEmpty())
+            try
             {
+                if(categoryTransactions.isEmpty())
+                {
+                    return Collections.emptyList();
+                }
+                BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
+                BudgetScheduleRange budgetWeekWithDate = budgetSchedule.getBudgetScheduleRangeByDate(currentDate);
+                List<DailyCategorySpending> categorySpendingForDate = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(currentDate, categoryTransactions);
+                DailyBudgetCategoryCriteria dailyBudgetCategoryCriteria = dailyBudgetCategoryBuilderService.createDailyBudgetCriteria(subBudget, budgetWeekWithDate, currentDate, categorySpendingForDate);
+                List<BudgetCategory> dailyBudgetCategories = dailyBudgetCategoryBuilderService.buildDailyBudgetCategoryList(dailyBudgetCategoryCriteria);
+                if(dailyBudgetCategories.isEmpty())
+                {
+                    log.warn("No budget categories have been created for the current date: {}", currentDate);
+                    return Collections.emptyList();
+                }
+                return dailyBudgetCategories;
+            }catch(CompletionException e){
+                log.error("There was an error creating the budget categories for date: {}", currentDate);
                 return Collections.emptyList();
             }
-            return null;
         }, threadPoolTaskScheduler.getScheduledExecutor());
     }
 
-    public CompletableFuture<List<BudgetCategory>> updateAsyncBudgetCategoriesByCurrentDate(final List<BudgetCategory> existingBudgetCategories, final LocalDate currentDate, final SubBudget subBudget, final List<CategoryTransactions> categoryTransactions)
+    public CompletableFuture<List<BudgetCategory>> updateAsyncBudgetCategoriesByCurrentDate(final List<BudgetCategory> existingBudgetCategories, final LocalDate currentDate, final SubBudget subBudget, final List<TransactionsByCategory> transactionsByCategoryList)
     {
-        return null;
+        return CompletableFuture.supplyAsync(() -> {
+            try
+            {
+                if(currentDate == null || subBudget == null || transactionsByCategoryList == null)
+                {
+                    return Collections.emptyList();
+                }
+                BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
+                BudgetScheduleRange budgetWeekWithDate = budgetSchedule.getBudgetScheduleRangeByDate(currentDate);
+                List<DailyCategorySpending> dailyCategorySpending = dailyBudgetCategoryBuilderService.getCategorySpendingByDate(currentDate, transactionsByCategoryList);
+                DailyBudgetCategoryCriteria dailyBudgetCategoryCriteria = dailyBudgetCategoryBuilderService.createDailyBudgetCriteria(subBudget, budgetWeekWithDate, currentDate, dailyCategorySpending);
+                List<BudgetCategory> updatedBudgetCategories = dailyBudgetCategoryBuilderService.updateBudgetCategoriesByDate(dailyBudgetCategoryCriteria, existingBudgetCategories);
+                if (updatedBudgetCategories.isEmpty()) {
+                    log.warn("No budget categories have been updated for the current date: {}", currentDate);
+                    return Collections.emptyList();
+                }
+                return updatedBudgetCategories;
+            }catch(CompletionException e){
+                log.error("There was an error updating the budget categories for date: {}", currentDate);
+                return Collections.emptyList();
+            }
+        }, threadPoolTaskScheduler.getScheduledExecutor());
     }
-
-//    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategories(final SubBudget subBudget, final BudgetSchedule budgetSchedule, final List<CategoryTransactions> categoryTransactions, final SubBudgetGoals subBudgetGoals)
-//    {
-//        return CompletableFuture.supplyAsync(() -> {
-//            try
-//            {
-//                log.info("Starting async budget category creation for SubBudget: {}, Schedule: {}", subBudget.getId(), budgetSchedule.getBudgetScheduleId());
-//                // 3. Initialize the Budget Categories
-//                List<BudgetCategory> createdBudgetCategories = budgetCategoryBuilder.initializeBudgetCategories(subBudget, budgetSchedule, categoryTransactions, subBudgetGoals);
-//                createdBudgetCategories.forEach((budgetCategory -> {
-//                    log.info("BudgetCategory: {}", budgetCategory);
-//                }));
-//                return createdBudgetCategories;
-//
-//            }catch(CompletionException e)
-//            {
-//                log.error("There was an error creating the budget categories for subBudget: {}", subBudget, e);
-//                throw e;
-//            }
-//
-//        }, threadPoolTaskScheduler.getScheduledExecutor());
-//    }
 
 }

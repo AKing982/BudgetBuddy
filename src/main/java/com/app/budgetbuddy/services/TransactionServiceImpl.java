@@ -420,6 +420,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<Transaction> getTransactionsByDate(LocalDate date, Long userId)
     {
         try

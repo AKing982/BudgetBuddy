@@ -250,7 +250,8 @@ public class BudgetSetupEngine
         }
     }
 
-    public List<SubBudget> createNewMonthlySubBudgetsForUser(final Budget budget, final BudgetGoals budgetGoals) {
+    public List<SubBudget> createNewMonthlySubBudgetsForUser(final Budget budget, final BudgetGoals budgetGoals)
+    {
         if (budget == null || budgetGoals == null)
         {
             log.warn("Missing Budget or BudgetGoals... returning empty subBudgets");

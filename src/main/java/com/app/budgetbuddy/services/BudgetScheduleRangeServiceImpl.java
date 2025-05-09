@@ -94,7 +94,6 @@ public class BudgetScheduleRangeServiceImpl implements BudgetScheduleRangeServic
                 budgetScheduleRange.setRangeType(budgetScheduleRangeEntity.getRangeType());
                 budgetScheduleRange.setStartRange(budgetScheduleRangeEntity.getRangeStart());
                 budgetScheduleRange.setEndRange(budgetScheduleRangeEntity.getRangeEnd());
-                budgetScheduleRange.setSingleDate(false);
                 budgetScheduleRange.setSpentOnRange(budgetScheduleRangeEntity.getSpentOnRange());
                 budgetScheduleRange.setBudgetedAmount(budgetScheduleRangeEntity.getBudgetedAmount());
                 budgetScheduleRange.setBudgetScheduleId(budgetScheduleRange.getBudgetScheduleId());

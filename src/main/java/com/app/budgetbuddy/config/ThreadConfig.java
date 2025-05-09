@@ -37,7 +37,7 @@ public class ThreadConfig
         return threadPoolTaskExecutor;
     }
 
-    @Bean
+    @Bean(name="taskScheduler1")
     public ThreadPoolTaskScheduler threadPoolTaskScheduler(){
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(5); // Or however many threads you want

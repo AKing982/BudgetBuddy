@@ -106,42 +106,42 @@ class MonthlyBudgetCategoryBuilderServiceTest
         BudgetScheduleRange budgetScheduleRange = new BudgetScheduleRange();
         budgetScheduleRanges.add(budgetScheduleRange);
 
-        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getMonthlyCategorySpending(null, budgetScheduleRanges);
+        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getCategorySpending(null, budgetScheduleRanges);
         assertEquals(0, actual.size());
         assertTrue(actual.isEmpty());
     }
 
     @Test
     void testGetMonthlyCategorySpending_whenBudgetScheduleRangeIsNull_thenReturnEmptyList(){
-        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
-        CategoryTransactions categoryTransaction = new CategoryTransactions();
-        categoryTransactions.add(categoryTransaction);
+        List<TransactionsByCategory> transactionsByCategory = new ArrayList<>();
+        TransactionsByCategory categoryTransaction = new TransactionsByCategory();
+        transactionsByCategory.add(categoryTransaction);
 
-        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getMonthlyCategorySpending(categoryTransactions, null);
+        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getCategorySpending(transactionsByCategory, null);
         assertEquals(0, actual.size());
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testGetMonthlyCategorySpending_CategoryTransactionsListEmpty_thenReturnEmptyList(){
-        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+    void testGetMonthlyCategorySpending_TransactionsByCategoryListEmpty_thenReturnEmptyList(){
+        List<TransactionsByCategory> transactionsByCategory = new ArrayList<>();
         List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
         BudgetScheduleRange budgetScheduleRange = new BudgetScheduleRange();
         budgetScheduleRanges.add(budgetScheduleRange);
 
-        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getMonthlyCategorySpending(categoryTransactions, budgetScheduleRanges);
+        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getCategorySpending(transactionsByCategory, budgetScheduleRanges);
         assertEquals(0, actual.size());
         assertTrue(actual.isEmpty());
     }
 
     @Test
     void testGetMonthlyCategorySpending_whenBudgetScheduleRangesIsEmpty_thenReturnEmptyList(){
-        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
-        CategoryTransactions categoryTransaction = new CategoryTransactions();
-        categoryTransactions.add(categoryTransaction);
+        List<TransactionsByCategory> transactionsByCategory = new ArrayList<>();
+        TransactionsByCategory categoryTransaction = new TransactionsByCategory();
+        transactionsByCategory.add(categoryTransaction);
 
         List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
-        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getMonthlyCategorySpending(categoryTransactions, budgetScheduleRanges);
+        List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getCategorySpending(transactionsByCategory, budgetScheduleRanges);
         assertEquals(0, actual.size());
         assertTrue(actual.isEmpty());
     }
@@ -149,7 +149,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
     @Test
     void testGetMonthlyCategorySpending_whenAprilCategorySpending_thenReturnCategorySpending()
     {
-        List<CategoryTransactions> aprilCategoryTransactions = createAprilCategoryTransactions();
+        List<TransactionsByCategory> aprilTransactionsByCategory = createAprilTransactionsByCategory();
         List<BudgetScheduleRange> aprilBudgetScheduleRanges = createAprilBudgetScheduleRanges();
 
         // Expected results
@@ -161,10 +161,10 @@ class MonthlyBudgetCategoryBuilderServiceTest
         groceriesSpending.setTotalCategorySpending(BigDecimal.valueOf(457.70)); // Total of all grocery transactions
 
         // Set up weekly transactions for groceries
-        List<Transaction> groceryTransactions = aprilCategoryTransactions.stream()
+        List<Transaction> groceryTransactions = aprilTransactionsByCategory.stream()
                 .filter(ct -> "Groceries".equals(ct.getCategoryName()))
                 .findFirst()
-                .map(CategoryTransactions::getTransactions)
+                .map(TransactionsByCategory::getTransactions)
                 .orElse(Collections.emptyList());
         groceriesSpending.setTransactions(groceryTransactions);
 
@@ -185,10 +185,10 @@ class MonthlyBudgetCategoryBuilderServiceTest
         rentSpending.setTotalCategorySpending(BigDecimal.valueOf(1907.00)); // Total of all rent transactions
 
         // Set up transactions for rent
-        List<Transaction> rentTransactions = aprilCategoryTransactions.stream()
+        List<Transaction> rentTransactions = aprilTransactionsByCategory.stream()
                 .filter(ct -> "Rent".equals(ct.getCategoryName()))
                 .findFirst()
-                .map(CategoryTransactions::getTransactions)
+                .map(TransactionsByCategory::getTransactions)
                 .orElse(Collections.emptyList());
         rentSpending.setTransactions(rentTransactions);
 
@@ -206,10 +206,10 @@ class MonthlyBudgetCategoryBuilderServiceTest
         otherSpending.setTotalCategorySpending(BigDecimal.valueOf(55.0)); // Total of all other transactions
 
         // Set up transactions for other
-        List<Transaction> otherTransactions = aprilCategoryTransactions.stream()
+        List<Transaction> otherTransactions = aprilTransactionsByCategory.stream()
                 .filter(ct -> "Other".equals(ct.getCategoryName()))
                 .findFirst()
-                .map(CategoryTransactions::getTransactions)
+                .map(TransactionsByCategory::getTransactions)
                 .orElse(Collections.emptyList());
         otherSpending.setTransactions(otherTransactions);
 
@@ -224,7 +224,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
 
         // Call the method under test
         List<MonthlyCategorySpending> actualMonthlyCategorySpending =
-                monthlyBudgetCategoryBuilderService.getMonthlyCategorySpending(aprilCategoryTransactions, aprilBudgetScheduleRanges);
+                monthlyBudgetCategoryBuilderService.getCategorySpending(aprilTransactionsByCategory, aprilBudgetScheduleRanges);
 
         // Assertions
         assertNotNull(actualMonthlyCategorySpending);
@@ -258,7 +258,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
     @Test
     void testGetMonthlyCategorySpending_whenGroceryTransactionListIsEmpty_thenSkipAndReturnOtherMonthlyCategorySpending()
     {
-        List<CategoryTransactions> categoryTransactions = createAprilCategoryTransactionsWithCategoryAndNoTransactions();
+        List<TransactionsByCategory> transactionsByCategory = createAprilTransactionsByCategoryWithCategoryAndNoTransactions();
         List<BudgetScheduleRange> budgetScheduleRanges = createAprilBudgetScheduleRanges();
 
         List<MonthlyCategorySpending> expected = new ArrayList<>();
@@ -266,10 +266,10 @@ class MonthlyBudgetCategoryBuilderServiceTest
         MonthlyCategorySpending otherCategorySpending = new MonthlyCategorySpending();
         otherCategorySpending.setCategory("Other");
         otherCategorySpending.setTotalCategorySpending(BigDecimal.valueOf(55.0));
-        List<Transaction> otherTransactions = categoryTransactions.stream()
+        List<Transaction> otherTransactions = transactionsByCategory.stream()
                 .filter(ct -> "Other".equals(ct.getCategoryName()))
                 .findFirst()
-                .map(CategoryTransactions::getTransactions)
+                .map(TransactionsByCategory::getTransactions)
                 .orElse(Collections.emptyList());
        otherCategorySpending.setTransactions(otherTransactions);
 
@@ -282,10 +282,10 @@ class MonthlyBudgetCategoryBuilderServiceTest
        MonthlyCategorySpending rentCategorySpending = new MonthlyCategorySpending();
        rentCategorySpending.setCategory("Rent");
        rentCategorySpending.setTotalCategorySpending(BigDecimal.valueOf(1907.0));
-        List<Transaction> rentTransactions = categoryTransactions.stream()
+        List<Transaction> rentTransactions = transactionsByCategory.stream()
                 .filter(ct -> "Rent".equals(ct.getCategoryName()))
                 .findFirst()
-                .map(CategoryTransactions::getTransactions)
+                .map(TransactionsByCategory::getTransactions)
                 .orElse(Collections.emptyList());
        rentCategorySpending.setTransactions(rentTransactions);
 
@@ -297,7 +297,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
        expected.add(otherCategorySpending);
        expected.add(rentCategorySpending);
 
-       List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getMonthlyCategorySpending(categoryTransactions, budgetScheduleRanges);
+       List<MonthlyCategorySpending> actual = monthlyBudgetCategoryBuilderService.getCategorySpending(transactionsByCategory, budgetScheduleRanges);
        assertNotNull(actual);
        for(int i = 0; i < expected.size(); i++) {
            MonthlyCategorySpending actualSpending = actual.get(i);
@@ -625,7 +625,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
         MonthlyCategorySpending monthlyCategorySpending1 = new MonthlyCategorySpending();
         monthlyCategorySpending.add(monthlyCategorySpending1);
 
-        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createMonthlyCategoryBudgetCriteriaList(null, monthlyCategorySpending, subBudgetGoals);
+        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(null, monthlyCategorySpending, subBudgetGoals);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -634,7 +634,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
     void testCreateMonthlyCategoryBudgetCriteriaList_whenMonthlyCategorySpendingIsNull_thenReturnEmptyList()
     {
         SubBudget subBudget = testSubBudget;
-        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createMonthlyCategoryBudgetCriteriaList(subBudget, null, subBudgetGoals);
+        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(subBudget, null, subBudgetGoals);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -646,7 +646,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
         List<MonthlyCategorySpending> monthlyCategorySpending = new ArrayList<>();
         MonthlyCategorySpending monthlyCategorySpending1 = new MonthlyCategorySpending();
         monthlyCategorySpending.add(monthlyCategorySpending1);
-        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createMonthlyCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, null);
+        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, null);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -696,7 +696,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
         rentBudgetCategoryCriteria.setMonthlyCategorySpending(rentSpending);
         expected.add(rentBudgetCategoryCriteria);
 
-        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createMonthlyCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, subBudgetGoals);
+        List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, subBudgetGoals);
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
         expected.sort(Comparator.comparing(MonthlyBudgetCategoryCriteria::getCategory));
@@ -727,7 +727,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
     @Test
     void testInitializeBudgetCategories_whenAprilSubBudget_thenReturnBudgetCategories(){
         SubBudget subBudget = testSubBudget;
-        List<CategoryTransactions> categoryTransactions = createAprilCategoryTransactionsGroceriesAndRent();
+        List<TransactionsByCategory> categoryTransactions = createAprilTransactionsByCategoryGroceriesAndRent();
 
         List<BudgetCategory> expected = new ArrayList<>();
         expected.addAll(createGroceryBudgetCategoriesForApril(subBudget));
@@ -753,11 +753,11 @@ class MonthlyBudgetCategoryBuilderServiceTest
 
     }
 
-    private List<CategoryTransactions> createAprilCategoryTransactionsGroceriesAndRent(){
-        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+    private List<TransactionsByCategory> createAprilTransactionsByCategoryGroceriesAndRent(){
+        List<TransactionsByCategory> transactionsByCategory = new ArrayList<>();
 
         // Grocery transactions for the entire month
-        CategoryTransactions groceryCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory groceryCategoryTransaction = new TransactionsByCategory();
         groceryCategoryTransaction.setCategoryName("Groceries");
 
         List<Transaction> groceryTransactions = getAprilGroceriesTransactions();
@@ -765,17 +765,17 @@ class MonthlyBudgetCategoryBuilderServiceTest
         groceryCategoryTransaction.setTransactions(groceryTransactions);
 
         // Rent transactions (1st and 16th of the month)
-        CategoryTransactions rentCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory rentCategoryTransaction = new TransactionsByCategory();
         rentCategoryTransaction.setCategoryName("Rent");
 
         List<Transaction> rentTransactions = getRentTransactionsForApril();
         rentCategoryTransaction.setTransactions(rentTransactions);
 
         // Add all category transactions to the list
-        categoryTransactions.add(groceryCategoryTransaction);
-        categoryTransactions.add(rentCategoryTransaction);
+        transactionsByCategory.add(groceryCategoryTransaction);
+        transactionsByCategory.add(rentCategoryTransaction);
 
-        return categoryTransactions;
+        return transactionsByCategory;
     }
 
     private Transaction createGroceryTransaction(BigDecimal amount, LocalDate date)
@@ -1064,16 +1064,16 @@ class MonthlyBudgetCategoryBuilderServiceTest
         return subBudget;
     }
 
-    private List<CategoryTransactions> createAprilCategoryTransactionsWithCategoryAndNoTransactions()
+    private List<TransactionsByCategory> createAprilTransactionsByCategoryWithCategoryAndNoTransactions()
     {
-        List<CategoryTransactions> aprilCategoryTransactions = new ArrayList<>();
+        List<TransactionsByCategory> aprilTransactionsByCategory = new ArrayList<>();
 
-        CategoryTransactions groceryCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory groceryCategoryTransaction = new TransactionsByCategory();
         groceryCategoryTransaction.setCategoryName("Groceries");
         groceryCategoryTransaction.setTransactions(List.of());
 
         // Other category transactions
-        CategoryTransactions otherCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory otherCategoryTransaction = new TransactionsByCategory();
         otherCategoryTransaction.setCategoryName("Other");
 
         List<Transaction> otherTransactions = new ArrayList<>();
@@ -1083,17 +1083,17 @@ class MonthlyBudgetCategoryBuilderServiceTest
         otherCategoryTransaction.setTransactions(otherTransactions);
 
         // Rent transactions (1st and 16th of the month)
-        CategoryTransactions rentCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory rentCategoryTransaction = new TransactionsByCategory();
         rentCategoryTransaction.setCategoryName("Rent");
 
         List<Transaction> rentTransactions = getRentTransactionsForApril();
         rentCategoryTransaction.setTransactions(rentTransactions);
 
         // Add all category transactions to the list
-        aprilCategoryTransactions.add(groceryCategoryTransaction);
-        aprilCategoryTransactions.add(otherCategoryTransaction);
-        aprilCategoryTransactions.add(rentCategoryTransaction);
-        return aprilCategoryTransactions;
+        aprilTransactionsByCategory.add(groceryCategoryTransaction);
+        aprilTransactionsByCategory.add(otherCategoryTransaction);
+        aprilTransactionsByCategory.add(rentCategoryTransaction);
+        return aprilTransactionsByCategory;
     }
 
     private List<Transaction> getRentTransactionsForApril(){
@@ -1244,12 +1244,12 @@ class MonthlyBudgetCategoryBuilderServiceTest
         return groceryTransactions;
     }
 
-    private List<CategoryTransactions> createAprilCategoryTransactions()
+    private List<TransactionsByCategory> createAprilTransactionsByCategory()
     {
-        List<CategoryTransactions> categoryTransactions = new ArrayList<>();
+        List<TransactionsByCategory> transactionsByCategory = new ArrayList<>();
 
         // Grocery transactions for the entire month
-        CategoryTransactions groceryCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory groceryCategoryTransaction = new TransactionsByCategory();
         groceryCategoryTransaction.setCategoryName("Groceries");
 
         List<Transaction> groceryTransactions = getAprilGroceriesTransactions();
@@ -1257,7 +1257,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
         groceryCategoryTransaction.setTransactions(groceryTransactions);
 
         // Other category transactions
-        CategoryTransactions otherCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory otherCategoryTransaction = new TransactionsByCategory();
         otherCategoryTransaction.setCategoryName("Other");
 
         List<Transaction> otherTransactions = getOtherTransactions();
@@ -1265,18 +1265,18 @@ class MonthlyBudgetCategoryBuilderServiceTest
         otherCategoryTransaction.setTransactions(otherTransactions);
 
         // Rent transactions (1st and 16th of the month)
-        CategoryTransactions rentCategoryTransaction = new CategoryTransactions();
+        TransactionsByCategory rentCategoryTransaction = new TransactionsByCategory();
         rentCategoryTransaction.setCategoryName("Rent");
 
         List<Transaction> rentTransactions = getRentTransactionsForApril();
         rentCategoryTransaction.setTransactions(rentTransactions);
 
         // Add all category transactions to the list
-        categoryTransactions.add(groceryCategoryTransaction);
-        categoryTransactions.add(otherCategoryTransaction);
-        categoryTransactions.add(rentCategoryTransaction);
+        transactionsByCategory.add(groceryCategoryTransaction);
+        transactionsByCategory.add(otherCategoryTransaction);
+        transactionsByCategory.add(rentCategoryTransaction);
 
-        return categoryTransactions;
+        return transactionsByCategory;
     }
 
     private List<Transaction> getOtherTransactions()
@@ -1327,7 +1327,6 @@ class MonthlyBudgetCategoryBuilderServiceTest
         budgetScheduleRange1.setEndRange(LocalDate.of(2025, 4, 7));
         budgetScheduleRange1.setBudgetedAmount(BigDecimal.valueOf(598.050));
         budgetScheduleRange1.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)));
-        budgetScheduleRange1.setSingleDate(false);
         budgetScheduleRange1.setRangeType("Week");
         budgetScheduleRange1.setSpentOnRange(BigDecimal.valueOf(0));
 
@@ -1336,7 +1335,6 @@ class MonthlyBudgetCategoryBuilderServiceTest
         budgetScheduleRange2.setBudgetScheduleId(4L);
         budgetScheduleRange2.setStartRange(LocalDate.of(2025, 4, 8));
         budgetScheduleRange2.setEndRange(LocalDate.of(2025, 4, 14));
-        budgetScheduleRange2.setSingleDate(false);
         budgetScheduleRange2.setRangeType("Week");
         budgetScheduleRange2.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 8), LocalDate.of(2025, 4, 14)));
         budgetScheduleRange2.setSpentOnRange(BigDecimal.valueOf(0));
@@ -1347,7 +1345,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
         budgetScheduleRange3.setBudgetScheduleId(4L);
         budgetScheduleRange3.setStartRange(LocalDate.of(2025, 4, 15));
         budgetScheduleRange3.setEndRange(LocalDate.of(2025, 4, 21));
-        budgetScheduleRange3.setSingleDate(false);
+
         budgetScheduleRange3.setRangeType("Week");
         budgetScheduleRange3.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21)));
         budgetScheduleRange3.setSpentOnRange(BigDecimal.valueOf(0));
@@ -1358,7 +1356,6 @@ class MonthlyBudgetCategoryBuilderServiceTest
         budgetScheduleRange4.setBudgetScheduleId(4L);
         budgetScheduleRange4.setStartRange(LocalDate.of(2025, 4, 22));
         budgetScheduleRange4.setEndRange(LocalDate.of(2025, 4, 28));
-        budgetScheduleRange4.setSingleDate(false);
         budgetScheduleRange4.setRangeType("Week");
         budgetScheduleRange4.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 22), LocalDate.of(2025, 4, 28)));
         budgetScheduleRange4.setSpentOnRange(BigDecimal.valueOf(0));
@@ -1369,7 +1366,6 @@ class MonthlyBudgetCategoryBuilderServiceTest
         budgetScheduleRange5.setBudgetScheduleId(4L);
         budgetScheduleRange5.setStartRange(LocalDate.of(2025, 4, 29));
         budgetScheduleRange5.setEndRange(LocalDate.of(2025, 4, 30));
-        budgetScheduleRange5.setSingleDate(false);
         budgetScheduleRange5.setBudgetDateRange(new DateRange(LocalDate.of(2025, 4, 29), LocalDate.of(2025, 4, 30)));
         budgetScheduleRange5.setRangeType("Week");
         budgetScheduleRange5.setSpentOnRange(BigDecimal.valueOf(0));

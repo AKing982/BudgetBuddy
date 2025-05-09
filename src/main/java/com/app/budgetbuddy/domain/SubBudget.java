@@ -11,6 +11,7 @@ import java.util.Objects;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder
 public class SubBudget
 {
@@ -24,6 +25,7 @@ public class SubBudget
     private LocalDate startDate;
     private LocalDate endDate;
     private int year;
+    private SubBudgetGoals subBudgetGoals;
     private List<BudgetSchedule> budgetSchedule;
     private List<ControlledBudgetCategory> controlledBudgetCategory;
     private boolean isActive;

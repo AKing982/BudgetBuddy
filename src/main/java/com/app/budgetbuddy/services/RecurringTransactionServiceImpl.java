@@ -16,6 +16,7 @@ import com.plaid.client.model.TransactionStream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -219,6 +220,24 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         }catch(DataAccessException e){
             log.error("There was an error accessing the recurring transactions: ",e);
             return List.of();
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<RecurringTransaction> getRecurringTransactionsForDate(Long userId, LocalDate date)
+    {
+        if(userId == null || date == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<RecurringTransactionEntity> recurringTransactionEntities = recurringTransactionsRepository.findRecurringTransactionEntitiesByUserAndDate(userId, date);
+            return convertRecurringTransactionEntities(recurringTransactionEntities);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the recurring transactions from the database.", e);
+            return Collections.emptyList();
         }
     }
 

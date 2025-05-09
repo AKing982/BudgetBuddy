@@ -74,7 +74,7 @@ public class BudgetSchedule
                         .startRange(weekRange.getStartDate())
                         .endRange(weekRange.getEndDate())
                         .budgetDateRange(weekRange) // if you want to store the original DateRange
-                        .rangeType("WEEKLY")        // or derive from your `Period`
+//                        .rangeType("WEEKLY")        // or derive from your `Period`
                         // .budgetedAmount(...)      // set if you have a known budget amount for each range
                         // .spentOnRange(...)        // maybe default to 0
                         .build();

@@ -15,31 +15,39 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class DailyBudgetCategoryBuilderService extends AbstractBudgetCategoryBuilder<DailyBudgetCategoryCriteria>
+public class DailyBudgetCategoryBuilderService
 {
+    private BudgetCategoryService budgetCategoryService;
+    private BudgetCalculations budgetCalculations;
+    private SubBudgetGoalsService subBudgetGoalsService;
+    private BudgetEstimatorService budgetEstimatorService;
+
     @Autowired
     public DailyBudgetCategoryBuilderService(BudgetCategoryService budgetCategoryService,
                                              BudgetCalculations budgetCalculations,
                                              SubBudgetGoalsService subBudgetGoalsService, BudgetEstimatorService budgetEstimatorService)
     {
-        super(budgetCategoryService, budgetCalculations, budgetEstimatorService, subBudgetGoalsService);
+        this.budgetCategoryService = budgetCategoryService;
+        this.subBudgetGoalsService = subBudgetGoalsService;
+        this.budgetCalculations = budgetCalculations;
+        this.budgetEstimatorService = budgetEstimatorService;
     }
 
-    public List<DailyCategorySpending> getCategorySpendingByDate(final LocalDate date, final List<CategoryTransactions> categoryTransactions)
+    public List<DailyCategorySpending> getCategorySpendingByDate(final LocalDate date, final List<TransactionsByCategory> categoryTransactions)
     {
         if(date == null || categoryTransactions == null || categoryTransactions.isEmpty())
         {
             return Collections.emptyList();
         }
         List<DailyCategorySpending> dailyCategorySpendingList = new ArrayList<>();
-        for(CategoryTransactions categoryTransaction : categoryTransactions)
+        for(TransactionsByCategory transactionsByCategory : categoryTransactions)
         {
-            String category = categoryTransaction.getCategoryName();
+            String category = transactionsByCategory.getCategoryName();
             if(category.isEmpty())
             {
                 continue;
             }
-            List<Transaction> transactions = categoryTransaction.getTransactions();
+            List<Transaction> transactions = transactionsByCategory.getTransactions();
             BigDecimal categorySpending = transactions.stream()
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -78,25 +86,29 @@ public class DailyBudgetCategoryBuilderService extends AbstractBudgetCategoryBui
         return dailyBudgetCategoryCriteria;
     }
 
-    @Override
-    protected List<BudgetCategory> initializeBudgetCategories(final SubBudget subBudget, final List<CategoryTransactions> categoryTransactions)
-    {
-        LocalDate currentDate = LocalDate.now();
-        List<DailyCategorySpending> dailyCategorySpendingList = getCategorySpendingByDate(currentDate, categoryTransactions);
-        if(dailyCategorySpendingList == null || dailyCategorySpendingList.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        List<BudgetCategory> budgetCategories = new ArrayList<>();
-        List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-        if(budgetSchedules.size() == 1)
-        {
-            BudgetSchedule budgetSchedule = budgetSchedules.get(0);
-            BudgetScheduleRange budgetScheduleRange = budgetSchedule.getBudgetScheduleRangeByDate(currentDate);
-            DailyBudgetCategoryCriteria dailyBudgetCategoryCriteria = createDailyBudgetCriteria(subBudget, budgetScheduleRange, currentDate, dailyCategorySpendingList);
-            budgetCategories.addAll(buildDailyBudgetCategoryList(dailyBudgetCategoryCriteria));
-        }
-        return budgetCategories;
+    private BudgetCategory createBudgetCategory(
+            Long subBudgetId,
+            String categoryName,
+            DateRange dateRange,
+            List<Transaction> transactions,
+            Double budgetActualSpendingAmount,
+            Double budgetAmount,
+            Double overSpendingAmount,
+            boolean isOverSpending) {
+
+        BudgetCategory newCategory = new BudgetCategory();
+        newCategory.setSubBudgetId(subBudgetId);
+        newCategory.setCategoryName(categoryName);
+        newCategory.setBudgetActual(budgetActualSpendingAmount);
+        newCategory.setBudgetedAmount(budgetAmount);
+        newCategory.setStartDate(dateRange.getStartDate());
+        newCategory.setEndDate(dateRange.getEndDate());
+        newCategory.setTransactions(transactions);
+        newCategory.setIsActive(true);
+        newCategory.setOverSpent(isOverSpending);
+        newCategory.setOverSpendingAmount(overSpendingAmount);
+
+        return newCategory;
     }
 
     public List<BudgetCategory> buildDailyBudgetCategoryList(final DailyBudgetCategoryCriteria dailyBudgetCategoryCriteria)
@@ -164,13 +176,6 @@ public class DailyBudgetCategoryBuilderService extends AbstractBudgetCategoryBui
         }
     }
 
-    @Override
-    protected List<BudgetCategory> buildBudgetCategoryList(final List<DailyBudgetCategoryCriteria> budgetCriteria)
-    {
-        // This method is not implemented
-        return List.of();
-    }
-
     public List<BudgetCategory> updateBudgetCategoriesByDate(final DailyBudgetCategoryCriteria dailyBudgetCriteria, final List<BudgetCategory> existingBudgetCategories)
     {
         if(dailyBudgetCriteria == null)
@@ -207,11 +212,5 @@ public class DailyBudgetCategoryBuilderService extends AbstractBudgetCategoryBui
         return budgetCategories;
     }
 
-    @Override
-    protected List<BudgetCategory> updateBudgetCategories(final List<DailyBudgetCategoryCriteria> dailyBudgetCriteria, final List<BudgetCategory> existingBudgetCategories)
-    {
-        // This method is not implemented for Daily
-        return List.of();
-    }
 
 }

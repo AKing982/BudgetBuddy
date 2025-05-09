@@ -26,13 +26,12 @@ public class BudgetCategoryQueries
     @PersistenceContext
     private EntityManager entityManager;
     private final List<String> merchantNames;
-    private final List<String> subscriptionCategoryIds = List.of(
-            "17018000", "18020004", "17000000", "19013000", "19019000", "18061000", "22009000"
-    );
-    private final List<String> utilitiesMerchants = List.of("Enb Gas Ut", "Conservice LLC", "Pacific Power");
-    private final List<String> gasMerchants = List.of("Maverik", "Chevron", "Sinclair");
-    private final List<String> groceriesMerchants = List.of("Smith's", "Walmart", "Winco Foods", "Harmons");
-    private final List<String> orderOutCategoryIds = List.of("13005000", "13005032");
+    private final String[] subscriptionCategoryIds = new String[]{
+            "17018000", "18020004", "17000000", "19013000", "19019000", "18061000", "22009000"};
+    private final String[] utilitiesMerchants = new String[]{"Enb Gas Ut", "Conservice LLC", "Pacific Power"};
+    private final String[] gasMerchants = new String[]{"Maverik", "Chevron", "Sinclair"};
+    private final String[] groceriesMerchants = new String[]{"Smith's", "Walmart", "Winco Foods", "Harmons"};
+    private final String[] orderOutCategoryIds = new String[]{"13005000", "13005032"};
     private final String paypalDescription = "%PAYPAL INST XFER PAYPAL%";
     private final String categoryId = "16001000";
     private final String financeCategoryId = "18020004";

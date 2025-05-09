@@ -312,7 +312,7 @@ public class BudgetCalculations {
 
     private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions,
                                                                        final DateRange categoryDateRange,
-                                                                       final CategoryTransactions categoryDesignator) {
+                                                                       final TransactionsByCategory categoryDesignator) {
         return transactions.stream()
                 .filter(transaction -> transaction.getDate() != null &&
                         transaction.getDate().isAfter(categoryDateRange.getStartDate().minusDays(1)) &&
