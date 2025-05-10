@@ -91,12 +91,4 @@ public class BudgetController
             return ResponseEntity.internalServerError().body(null);
         }
     }
-
-    @GetMapping("/budget-data/{userId}")
-    public ResponseEntity<?> fetchBudgetDataForUser(@PathVariable Long userId,
-                                                    @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
-                                                    @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate){
-        return null;
-    }
-
 }

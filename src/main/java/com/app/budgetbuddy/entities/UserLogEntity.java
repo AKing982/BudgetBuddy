@@ -1,8 +1,7 @@
 package com.app.budgetbuddy.entities;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
@@ -11,6 +10,9 @@ import java.time.LocalDateTime;
 @Table(name="userLogs")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class UserLogEntity
 {
     @Id

@@ -220,14 +220,15 @@ public class PlaidController {
         try
         {
             boolean isLinked = plaidLink.isPresent();
-            boolean requiresUpdate = plaidLinkService.checkIfPlaidRequiresUpdate(userId);
-
+            PlaidLinkEntity plaidLinkEntity = plaidLink.get();
+            boolean requiresUpdate = plaidLinkEntity.isRequiresUpdate();
             if(requiresUpdate) {
                 LOGGER.info("Plaid Link Token requires update... marking plaid link token for update");
                 plaidLinkService.markPlaidAsNeedingUpdate(userId);
             }
 
             PlaidLinkStatus status = new PlaidLinkStatus(isLinked, requiresUpdate);
+            log.info("Plaid Link Status: {}", status);
             return ResponseEntity.ok(status);
         }catch(PlaidLinkException e){
             log.error("There was an error fetching the Plaid Link Status: ", e);

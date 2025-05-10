@@ -2,21 +2,6 @@ import axios from "axios";
 import {apiUrl} from "../config/api";
 import {Transaction} from "../utils/Items";
 
-// interface Transaction {
-//     transactionId: string;
-//     accountId: string;
-//     amount: number;
-//     categories: string[];
-//     categoryId: string;
-//     posted: Date | string;
-//     name: string;
-//     merchantName: string;
-//     pending: boolean;
-//     logoURL: string;
-//     authorizedDate: Date | string;
-//     transactionType: string;
-// }
-
 class TransactionService {
     private static instance: TransactionService;
 
@@ -72,10 +57,6 @@ class TransactionService {
             }
             throw error;
         }
-    }
-
-    public async updateTransactionCategory(transactionId: string, categoryId: string, newCategory: string){
-
     }
 
     public async fetchTransactionsByUserId(userId: number): Promise<Transaction[]>

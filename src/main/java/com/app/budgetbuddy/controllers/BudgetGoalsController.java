@@ -40,19 +40,4 @@ public class BudgetGoalsController
             return ResponseEntity.internalServerError().body(null);
         }
     }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<BudgetGoalsEntity> getBudgetGoalById(@PathVariable("id") Long id){
-        return null;
-    }
-
-    @GetMapping("/")
-    public List<BudgetGoalsEntity> getAllBudgetGoals(){
-        return null;
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<BudgetGoalsEntity> updateBudgetGoal(@PathVariable("id") Long id, @RequestBody BudgetGoalsRequest budgetGoals){
-        return null;
-    }
 }

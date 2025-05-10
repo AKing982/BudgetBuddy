@@ -46,6 +46,16 @@ export interface Transaction {
     posted: string | null;          // LocalDate, optional
 }
 
+export interface UserLog
+{
+    id: number;
+    userId: number;
+    lastLogin: number;
+    lastLogout: number;
+    sessionDuration: number;
+    loginAttempts: number;
+    isActive: boolean;
+}
 
 export interface BudgetRegistration
 {

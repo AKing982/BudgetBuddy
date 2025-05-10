@@ -25,6 +25,7 @@ import {be} from "date-fns/locale";
 import BudgetService from "../services/BudgetService";
 import TransactionRunnerService from "../services/TransactionRunnerService";
 import TransactionCategoryRunnerService from "../services/TransactionCategoryRunnerService";
+import UserLogService from "../services/UserLogService";
 
 
 interface LoginFormData {
@@ -98,8 +99,7 @@ const LoginForm: React.FC = () => {
     const budgetService = BudgetService.getInstance();
     const transactionRunnerService = TransactionRunnerService.getInstance();
     const plaidService = PlaidService.getInstance();
-    const transactionCategoryRunnerService = TransactionCategoryRunnerService.getInstance();
-
+    const userLogService = UserLogService.getInstance();
     const navigate = useNavigate();
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,8 +239,11 @@ const LoginForm: React.FC = () => {
             sessionStorage.setItem('userId', String(userId));
             console.log('Is Authenticated: ', true);
 
+            // Create user log for this login session
+            await handleUserLogCreation(userId);
             const plaidService = PlaidService.getInstance();
             const plaidStatus = await handlePlaidLinkVerification(userId);
+            console.log('Plaid Status: ', plaidStatus);
             if (!plaidStatus) {
                 console.error('Error: Failed to verify Plaid link status');
                 return;
@@ -282,15 +285,6 @@ const LoginForm: React.FC = () => {
             } else {
                 // Case 3: Link exists and is up-to-date
                 console.log('Plaid linked and up-to-date, syncing transactions...');
-                await transactionRunnerService.syncTransactions(userId);
-                console.log('Transaction sync completed');
-
-                const result = await transactionCategoryRunnerService.processCurrentMonthTransactionCategories(userId);
-                if (!result.success) {
-                    console.error('Error processing transaction categories: ', result.error);
-                } else {
-                    console.log('Transaction categories processed for user: ', userId);
-                }
                 navigate('/dashboard');
             }
         } catch (error) {
@@ -300,6 +294,26 @@ const LoginForm: React.FC = () => {
         }
     };
 
+    const handleUserLogCreation = async (userId: number) => {
+        try {
+            // Current time for the login timestamp
+            const currentTime = new Date();
+
+            // Create a new user log with login information
+            // We set lastLogout to the same time temporarily (will be updated on logout)
+            await userLogService.saveUserLog(
+                userId,                // userId
+                0,                     // sessionDuration (will be calculated on logout)
+                1,                     // loginAttempts (new session)
+                currentTime,           // lastLogin
+                currentTime,           // lastLogout (placeholder, updated on actual logout)
+            );
+
+            console.log('User log created successfully for user ID:', userId);
+        } catch (error) {
+            console.error('Error creating user log:', error);
+        }
+    }
 
     const handleRegister = () => {
         navigate('/register');
@@ -360,7 +374,8 @@ const LoginForm: React.FC = () => {
     }
 
     const openUpdateMode = async (userId: number) => {
-        try {
+        try
+        {
             console.log('UserID: ', userId);
             const accessToken = await plaidService.getAccessTokenForUser(userId);
             if(!accessToken){
@@ -375,23 +390,51 @@ const LoginForm: React.FC = () => {
 
             // Use the Plaid React hook to open update mode
             setLinkToken(linkToken);
+            const waitForPlaidReady = (timeoutMs = 60000) => {
+                return new Promise<void>((resolve, reject) => {
+                    // If already ready, resolve immediately
+                    if (ready) {
+                        resolve();
+                        return;
+                    }
 
+                    // Set a timeout for the maximum wait time
+                    const timeout = setTimeout(() => {
+                        clearInterval(checkInterval);
+                        reject(new Error("Timed out waiting for Plaid to be ready"));
+                    }, timeoutMs);
+
+                    // Check periodically if Plaid is ready
+                    const checkInterval = setInterval(() => {
+                        if (ready) {
+                            clearTimeout(timeout);
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 200); // Check every 200ms
+                });
+            };
+
+            // Wait for Plaid to be ready with a generous timeout
+            await waitForPlaidReady();
+            console.log("Plaid is ready, opening update mode...");
+            open();
             // Ensure Plaid is ready before opening update mode
-            let attempts = 0;
-            const maxAttempts = 10;
-
-            while (!ready && attempts < maxAttempts) {
-                console.warn(`Waiting for Plaid to be ready... (${attempts + 1}/${maxAttempts})`);
-                await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms before checking again
-                attempts++;
-            }
-
-            if (ready) {
-                console.log("Opening Plaid update mode...");
-                open();
-            } else {
-                console.error("Plaid did not become ready in time. Update mode not opened.");
-            }
+            // let attempts = 0;
+            // const maxAttempts = 10;
+            //
+            // while (!ready && attempts < maxAttempts) {
+            //     console.warn(`Waiting for Plaid to be ready... (${attempts + 1}/${maxAttempts})`);
+            //     await new Promise((resolve) => setTimeout(resolve, 1500)); // Wait 500ms before checking again
+            //     attempts++;
+            // }
+            //
+            // if (ready) {
+            //     console.log("Opening Plaid update mode...");
+            //     open();
+            // } else {
+            //     console.error("Plaid did not become ready in time. Update mode not opened.");
+            // }
         } catch (error) {
             console.error("Error opening Plaid update mode:", error);
         }
@@ -403,14 +446,8 @@ const LoginForm: React.FC = () => {
         try
         {
             const plaidService = PlaidService.getInstance();
-            const recurringTransactionService = new RecurringTransactionService();
-
-            const loginService = new LoginService();
-            const username: string | null = sessionStorage.getItem('username');
             const userId = Number(sessionStorage.getItem('userId'));
-
             const response = await plaidService.exchangePublicToken(publicToken, userId);
-
             const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
 
             // setTimeout(async() => {
@@ -453,33 +490,33 @@ const LoginForm: React.FC = () => {
                         .toISOString().split('T')[0];
                     const endDate = new Date().toISOString().split('T')[0];
 
-                    const savedTransactions = await plaidService.fetchAndSaveTransactions(
-                        beginningPreviousMonth,
-                        endDate,
-                        userId
-                    );
-                    if (!savedTransactions) {
-                        throw new Error('Failed to save transactions');
-                    }
-                    console.log('Saved Transactions:', savedTransactions);
-
-                    // Save recurring transactions
-                    const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
-                    if (!savedRecurringTransactions) {
-                        throw new Error('Failed to save recurring transactions');
-                    }
-                    console.log('Saved Recurring Transactions:', savedRecurringTransactions);
+                    // const savedTransactions = await plaidService.fetchAndSaveTransactions(
+                    //     beginningPreviousMonth,
+                    //     endDate,
+                    //     userId
+                    // );
+                    // if (!savedTransactions) {
+                    //     throw new Error('Failed to save transactions');
+                    // }
+                    // console.log('Saved Transactions:', savedTransactions);
+                    //
+                    // // Save recurring transactions
+                    // const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
+                    // if (!savedRecurringTransactions) {
+                    //     throw new Error('Failed to save recurring transactions');
+                    // }
+                    // console.log('Saved Recurring Transactions:', savedRecurringTransactions);
 
                     // Sync everything
-                    await transactionRunnerService.syncTransactions(userId);
-                    console.log('Initial Transaction Sync completed');
+                    // await transactionRunnerService.syncTransactions(userId);
+                    // console.log('Initial Transaction Sync completed');
 
-                    // Process categories
-                    const processingResult = await transactionCategoryRunnerService
-                        .processCurrentMonthTransactionCategories(userId);
-                    if (!processingResult.success) {
-                        throw new Error(`Failed to process categories: ${processingResult.error}`);
-                    }
+                    // // Process categories
+                    // const processingResult = await transactionCategoryRunnerService
+                    //     .processCurrentMonthTransactionCategories(userId);
+                    // if (!processingResult.success) {
+                    //     throw new Error(`Failed to process categories: ${processingResult.error}`);
+                    // }
 
                     resolve();
                 } catch (error) {

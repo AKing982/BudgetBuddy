@@ -46,6 +46,4 @@ public class BudgetScheduleRangeEntity
     @Column(name="rangeType")
     @NotNull
     private String rangeType;
-
-
 }
