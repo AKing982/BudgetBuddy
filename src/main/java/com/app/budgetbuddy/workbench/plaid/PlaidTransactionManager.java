@@ -217,10 +217,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 .accessToken(accessToken);
     }
 
-    public TransactionsRefreshResponse getTransactionRefreshResponse(TransactionsRefreshRequest request) throws IOException {
-        return null;
-    }
-
     private TransactionsSyncRequest createSyncRequest(String accessToken, String cursor, TransactionsSyncRequestOptions options){
         return new TransactionsSyncRequest()
                 .accessToken(accessToken)

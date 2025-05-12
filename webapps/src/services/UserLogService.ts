@@ -66,8 +66,8 @@ class UserLogService
                 userId: userId,
                 sessionDuration: sessionDuration,
                 loginAttempts: loginAttempts,
-                lastLogin: lastLogin.getTime(),
-                lastLogout: lastLogout.getTime(),
+                lastLogin: lastLogin.toISOString().slice(0, 19),
+                lastLogout: lastLogout.toISOString().slice(0, 19),
                 isActive: true
             };
 

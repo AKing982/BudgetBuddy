@@ -44,8 +44,8 @@ import java.util.Optional;
 @RequestMapping(value="/api/plaid")
 @CrossOrigin(origins="http://localhost:3000")
 @Slf4j
-public class PlaidController {
-
+public class PlaidController
+{
     private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
     private PlaidLinkService plaidLinkService;
     private PlaidAccountManager plaidAccountManager;
@@ -220,6 +220,11 @@ public class PlaidController {
         try
         {
             boolean isLinked = plaidLink.isPresent();
+            if(!isLinked)
+            {
+                PlaidLinkStatus unlinkedStatus = new PlaidLinkStatus(false, false);
+                return ResponseEntity.ok(unlinkedStatus);
+            }
             PlaidLinkEntity plaidLinkEntity = plaidLink.get();
             boolean requiresUpdate = plaidLinkEntity.isRequiresUpdate();
             if(requiresUpdate) {

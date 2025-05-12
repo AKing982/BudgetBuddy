@@ -288,7 +288,8 @@ class PlaidService {
         return parsedDate;
     }
 
-    public async fetchAndSaveTransactions(startDate: string, endDate: string, userId: number) {
+    public async fetchAndSaveTransactions(startDate: string, endDate: string, userId: number)
+    {
         try
         {
             const transactions = await this.getTransactions(startDate, endDate, userId);

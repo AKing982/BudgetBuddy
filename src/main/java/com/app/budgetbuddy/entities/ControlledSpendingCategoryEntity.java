@@ -37,7 +37,7 @@ public class ControlledSpendingCategoryEntity
     @Column(name="isfixedexpense")
     private Boolean isFixedExpense;
 
-    @Column(name="isactive")
+    @Column(name= "active")
     private Boolean isActive;
 
     @Column(name="priority")

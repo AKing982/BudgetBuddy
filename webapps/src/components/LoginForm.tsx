@@ -248,9 +248,7 @@ const LoginForm: React.FC = () => {
                 console.error('Error: Failed to verify Plaid link status');
                 return;
             }
-
             console.log('Plaid Link Status: ', plaidStatus);
-
             // Handle Plaid linking or updating - ENHANCED LOGIC
             if (!plaidStatus.isLinked) {
                 if (plaidStatus.requiresLinkUpdate) {
@@ -261,16 +259,13 @@ const LoginForm: React.FC = () => {
                     // Case 2: No link exists, need to create new one
                     console.log('Plaid not linked, creating link token...');
                     const linkResponse = await plaidService.createLinkToken();
-
                     // Enhanced error handling and logging for link token
                     if (!linkResponse || !linkResponse.linkToken) {
                         console.error('Failed to create link token:', linkResponse);
                         return;
                     }
-
                     console.log('Link token created successfully:', linkResponse.linkToken);
                     setLinkToken(linkResponse.linkToken);
-
                     // Add a small delay to ensure state updates before opening
                     setTimeout(() => {
                         if (plaidLinkRef.current) {
@@ -489,34 +484,32 @@ const LoginForm: React.FC = () => {
                     const beginningPreviousMonth = new Date(currentYear, previousMonth, 1)
                         .toISOString().split('T')[0];
                     const endDate = new Date().toISOString().split('T')[0];
+                    const savedTransactions = await plaidService.fetchAndSaveTransactions(
+                        beginningPreviousMonth,
+                        endDate,
+                        userId
+                    );
+                    if (!savedTransactions) {
+                        throw new Error('Failed to save transactions');
+                    }
+                    console.log('Saved Transactions:', savedTransactions);
 
-                    // const savedTransactions = await plaidService.fetchAndSaveTransactions(
-                    //     beginningPreviousMonth,
-                    //     endDate,
-                    //     userId
-                    // );
-                    // if (!savedTransactions) {
-                    //     throw new Error('Failed to save transactions');
-                    // }
-                    // console.log('Saved Transactions:', savedTransactions);
-                    //
-                    // // Save recurring transactions
-                    // const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
-                    // if (!savedRecurringTransactions) {
-                    //     throw new Error('Failed to save recurring transactions');
-                    // }
-                    // console.log('Saved Recurring Transactions:', savedRecurringTransactions);
+                    // Save recurring transactions
+                    const savedRecurringTransactions = await recurringTransactionService.addRecurringTransactions();
+                    if (!savedRecurringTransactions) {
+                        throw new Error('Failed to save recurring transactions');
+                    }
+                    console.log('Saved Recurring Transactions:', savedRecurringTransactions);
 
-                    // Sync everything
-                    // await transactionRunnerService.syncTransactions(userId);
-                    // console.log('Initial Transaction Sync completed');
+                ///    Sync everything
+                //     await transactionRunnerService.syncTransactions(userId);
+                    console.log('Initial Transaction Sync completed');
 
-                    // // Process categories
-                    // const processingResult = await transactionCategoryRunnerService
-                    //     .processCurrentMonthTransactionCategories(userId);
-                    // if (!processingResult.success) {
-                    //     throw new Error(`Failed to process categories: ${processingResult.error}`);
-                    // }
+                    // Process categories
+                    const processingResult = await transactionCategoryRunnerService.processCurrentMonthTransactionCategories(userId);
+                    if (!processingResult.success) {
+                        throw new Error(`Failed to process categories: ${processingResult.error}`);
+                    }
 
                     resolve();
                 } catch (error) {

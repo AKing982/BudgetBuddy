@@ -14,7 +14,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Configuration
@@ -32,6 +35,23 @@ public class JacksonConfig
         mapper.enable(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN);
         mapper.registerModule(new JavaTimeModule());
         return mapper;
+    }
+
+    @Bean
+    public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
+        return builder -> {
+            builder.deserializerByType(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
+                @Override
+                public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                    if (p.getValueAsString().matches("\\d+")) {
+                        long timestamp = p.getValueAsLong();
+                        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+                    }
+                    // Fall back to default parsing
+                    return LocalDateTime.parse(p.getValueAsString());
+                }
+            });
+        };
     }
 
 //

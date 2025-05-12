@@ -121,6 +121,7 @@ public class UserLogServiceImpl implements UserLogService
             LocalDateTime lastLogout = userLogRequest.lastLogout();
             int sessionDuration = userLogRequest.sessionDuration();
             int loginAttempts = userLogRequest.loginAttempts();
+            boolean isActive = userLogRequest.isActive();
             // Get the latest user log for the user
             Optional<UserLogEntity> userLogEntityOpt = userLogRepository.findByUserIdAndId(userLogId, userId);
             if(userLogEntityOpt.isEmpty())
@@ -132,6 +133,7 @@ public class UserLogServiceImpl implements UserLogService
             userLogEntity.setLastLogin(lastLogin);
             userLogEntity.setSessionDuration(sessionDuration);
             userLogEntity.setLoginAttempts(loginAttempts);
+            userLogEntity.setActive(isActive);
             Optional<UserLogEntity> updatedUserLog = userLogRepository.updateUserLogEntity(userLogEntity, userId);
             log.info("User Log: {} has been updated successfully.", userLogEntity);
             return updatedUserLog;
@@ -161,11 +163,13 @@ public class UserLogServiceImpl implements UserLogService
             LocalDateTime lastLogout = userLogRequest.lastLogout();
             int sessionDuration = userLogRequest.sessionDuration();
             int loginAttempts = userLogRequest.loginAttempts();
+            boolean isActive = userLogRequest.isActive();
             UserLogEntity userLogEntity = UserLogEntity.builder()
                     .loginAttempts(loginAttempts)
                     .sessionDuration(sessionDuration)
                     .lastLogin(lastLogin)
                     .lastLogout(lastLogout)
+                    .isActive(isActive)
                     .user(userEntity).build();
             userLogRepository.save(userLogEntity);
             log.info("Successfully saved User Log: {}", userLogEntity);
