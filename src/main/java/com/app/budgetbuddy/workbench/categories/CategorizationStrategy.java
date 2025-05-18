@@ -2,7 +2,6 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.CategoryType;
 import com.app.budgetbuddy.domain.Transaction;
-import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.domain.TransactionRule;
 
 import java.util.List;

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.categories;
 
+import com.app.budgetbuddy.domain.RecurringTransactionRule;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.domain.TransactionRule;
@@ -8,10 +9,8 @@ import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.services.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -29,7 +28,7 @@ public class TransactionCategoryBuilder
         this.transactionService = transactionService;
     }
 
-    public List<TransactionCategory> createTransactionCategories(final Map<String, TransactionRule> categorizedTransactions)
+    public List<TransactionCategory> createTransactionCategories(final Map<String, ? extends TransactionRule> categorizedTransactions)
     {
         if(categorizedTransactions == null || categorizedTransactions.isEmpty())
         {
@@ -44,7 +43,7 @@ public class TransactionCategoryBuilder
             return Collections.emptyList();
         }
         // Process each category group
-        for (Map.Entry<String, TransactionRule> entry : categorizedTransactions.entrySet())
+        for (Map.Entry<String, ? extends TransactionRule> entry : categorizedTransactions.entrySet())
         {
             String transactionId = entry.getKey();
             TransactionRule transactionRule = entry.getValue();

@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -160,7 +161,7 @@ public class BudgetCategoryQueries
         try
         {
             BigDecimal paymentTotal = getSpendingTotalResult(paymentSpendingQuery, userId, startDate, endDate, categoryId, paypalDescription);
-            if (paymentTotal.compareTo(BigDecimal.ZERO) < 0)
+            if (paymentTotal.compareTo(BigDecimal.ZERO) < 0 || paymentTotal.compareTo(BigDecimal.ZERO) == 0)
             {
                 return BigDecimal.ZERO;
             }
@@ -193,12 +194,13 @@ public class BudgetCategoryQueries
                 """;
         try
         {
-            return entityManager.createQuery(rentQuery, BigDecimal.class)
+            BigDecimal rentTotal = entityManager.createQuery(rentQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .setParameter("categoryId", "18020004")
                     .getSingleResult();
+            return Objects.requireNonNullElse(rentTotal, BigDecimal.ZERO);
         } catch (DataAccessException e) {
             log.error("There was an error with running the query: ", e);
             return BigDecimal.ZERO;
@@ -217,13 +219,14 @@ public class BudgetCategoryQueries
                 """;
         try
         {
-            return entityManager.createQuery(insuranceQuery, BigDecimal.class)
+            BigDecimal insuranceTotal = entityManager.createQuery(insuranceQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("categoryId", "18030000")
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .setParameter("name", "Insurance")
                     .getSingleResult();
+            return Objects.requireNonNullElse(insuranceTotal, BigDecimal.ZERO);
         } catch (DataAccessException e) {
             log.error("There was an error retrieving the insurance total spending: ", e);
             return BigDecimal.ZERO;
@@ -241,14 +244,18 @@ public class BudgetCategoryQueries
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
-        try {
-            return entityManager.createQuery(utilitiesSpendingQuery, BigDecimal.class)
+        try
+        {
+            List<String> utilMerchantsList = Arrays.asList(utilitiesMerchants);
+            BigDecimal utilitiesTotal = entityManager.createQuery(utilitiesSpendingQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .setParameter("name", "Utilities")
-                    .setParameter("utilMerchants", utilitiesMerchants)
+                    .setParameter("utilMerchants", utilMerchantsList)
                     .getSingleResult();
+            return Objects.requireNonNullElse(utilitiesTotal, BigDecimal.ZERO);
+
         } catch (DataAccessException e) {
             log.error("There was an error with running the query: ", e);
             return BigDecimal.ZERO;
@@ -267,13 +274,14 @@ public class BudgetCategoryQueries
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
         try {
-            return entityManager.createQuery(gasFuelSpendingQuery, BigDecimal.class)
+            BigDecimal gasTotal = entityManager.createQuery(gasFuelSpendingQuery, BigDecimal.class)
                     .setParameter("userId", userId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .setParameter("name", "Gas Stations")
                     .setParameter("gasMerchants", gasMerchants)
                     .getSingleResult();
+            return Objects.requireNonNullElse(gasTotal, BigDecimal.ZERO);
         } catch (DataAccessException e) {
             log.error("There was an error with running the query: ", e);
             return BigDecimal.ZERO;

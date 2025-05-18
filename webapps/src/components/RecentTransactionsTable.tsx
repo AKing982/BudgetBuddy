@@ -92,38 +92,38 @@ const RecentTransactionsTable: React.FC = () => {
         return { start, end };
     };
 
-    useEffect(() => {
-        if (!selectedMonth) {
-            setSelectedMonth(getCurrentMonth());
-            return;
-        }
-
-        const fetchData = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const userId = Number(sessionStorage.getItem('userId'));
-                if (isNaN(userId)) {
-                    throw new Error('Invalid user ID');
-                }
-                const { start, end } = getMonthRange(selectedMonth);
-                const fetchTransactions = await transactionService.fetchTransactionsByUserAndDateRange(userId, start, end);
-                setPlaidTransactions(fetchTransactions);
-                console.log('Transactions for', selectedMonth, ':', fetchTransactions);
-            } catch (error) {
-                console.error('Error fetching transactions:', error);
-                setError('Failed to load transactions. Please try again later.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        const timer = setTimeout(() => {
-            fetchData();
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [selectedMonth]);
+    // useEffect(() => {
+    //     if (!selectedMonth) {
+    //         setSelectedMonth(getCurrentMonth());
+    //         return;
+    //     }
+    //
+    //     const fetchData = async () => {
+    //         setIsLoading(true);
+    //         setError(null);
+    //         try {
+    //             const userId = Number(sessionStorage.getItem('userId'));
+    //             if (isNaN(userId)) {
+    //                 throw new Error('Invalid user ID');
+    //             }
+    //             const { start, end } = getMonthRange(selectedMonth);
+    //             const fetchTransactions = await transactionService.fetchTransactionsByUserAndDateRange(userId, start, end);
+    //             setPlaidTransactions(fetchTransactions);
+    //             console.log('Transactions for', selectedMonth, ':', fetchTransactions);
+    //         } catch (error) {
+    //             console.error('Error fetching transactions:', error);
+    //             setError('Failed to load transactions. Please try again later.');
+    //         } finally {
+    //             setIsLoading(false);
+    //         }
+    //     };
+    //
+    //     const timer = setTimeout(() => {
+    //         fetchData();
+    //     }, 1000);
+    //
+    //     return () => clearTimeout(timer);
+    // }, [selectedMonth]);
 
     const handleSeeMore = () => {
         setVisibleCount(prev => prev + 10);

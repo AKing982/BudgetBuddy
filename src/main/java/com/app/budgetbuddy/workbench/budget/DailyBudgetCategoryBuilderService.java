@@ -153,6 +153,7 @@ public class DailyBudgetCategoryBuilderService
             log.info("Category Budget Amounts: {}", categoryBudgetAmounts.length);
             log.info("Category spending name: {}", categorySpendingName);
             BigDecimal categoryAmount = budgetEstimatorService.getBudgetCategoryAmountByCategory(categorySpendingName, categoryBudgetAmounts);
+            log.info("Category amount {} for category {}", categoryAmount, categorySpendingName);
             double budgetAmountForCategory = categoryAmount.doubleValue();
             BudgetCategory budgetCategory = createBudgetCategory(subBudgetId, categorySpendingName, dateRange, transactions, categorySpendingAmount, budgetAmountForCategory,  0.0, false);
             budgetCategories.add(budgetCategory);

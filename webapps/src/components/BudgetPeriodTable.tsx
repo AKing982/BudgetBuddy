@@ -122,10 +122,9 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
 
         setIsLoadingData(true);
         try {
-            const userId = 1; // Replace with actual user ID from your auth system
+            const userId : number = Number(sessionStorage.getItem('userId'));
             const currentDate = selectedDate;
             const mappedPeriod = PERIOD_MAPPING[period];
-
 
             const subBudgetStartDate = new Date(
                 subBudget.startDate[0],

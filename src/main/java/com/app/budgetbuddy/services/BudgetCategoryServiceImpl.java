@@ -147,6 +147,7 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     {
         BudgetCategoryEntity budgetCategoryEntity = new BudgetCategoryEntity();
         budgetCategoryEntity.setId(budgetCategory.getId());
+        budgetCategoryEntity.setCategoryName(budgetCategory.getCategoryName());
         budgetCategoryEntity.setActive(budgetCategory.getIsActive());
         budgetCategoryEntity.setOverspendingAmount(budgetCategory.getOverSpendingAmount());
         budgetCategoryEntity.setStartDate(budgetCategory.getStartDate());

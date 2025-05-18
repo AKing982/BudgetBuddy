@@ -57,6 +57,7 @@ public class BudgetPeriodQueries
         }
         try
         {
+            log.info("Getting budget period query data for userId: {}", userId);
             SubBudget subBudget = subBudgetOptional.get();
             List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
             BudgetSchedule budgetSchedule = budgetSchedules.get(0);
@@ -90,18 +91,16 @@ public class BudgetPeriodQueries
         {
 
             final String dateBudgetQuery = """
-                    SELECT DISTINCT tc.category.id,
-                   tc.category.name,
-                   tc.budgetedAmount,
-                   tc.actual as actualSpent,
-                   tc.budgetedAmount - tc.actual as remainingAmount
-            FROM TransactionCategoryEntity tc
-            JOIN tc.category c
-            JOIN tc.subBudget sb
-            WHERE tc.startDate <= :date
-           AND tc.endDate >= :date
-            AND tc.subBudget.id = :budgetId
-            AND tc.isactive = true""";
+                    SELECT DISTINCT bc.categoryName,
+                   bc.budgetedAmount,
+                   bc.actual as actualSpent,
+                   bc.budgetedAmount - bc.actual as remainingAmount
+            FROM BudgetCategoryEntity bc
+            JOIN bc.subBudget sb
+            WHERE bc.startDate <= :date
+           AND bc.endDate >= :date
+            AND bc.subBudget.id = :budgetId
+            AND bc.active = true""";
             List<Object[]> results = entityManager.createQuery(dateBudgetQuery, Object[].class)
                     .setParameter("date", date)
                     .setParameter("budgetId", subBudgetId)
@@ -109,16 +108,26 @@ public class BudgetPeriodQueries
 
             return results.stream()
                     .map(row -> {
-                        String categoryName = (String) row[1];
-                        BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-                        BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+                        // Use proper indices and add safe conversion
+                        String categoryName = getCategoryDisplayName((String) row[0]);
+
+                        BigDecimal budgeted = (row[1] instanceof Number) ?
+                                BigDecimal.valueOf(((Number) row[1]).doubleValue()) : BigDecimal.ZERO;
+
+                        // Handle potential null in actual amount
+                        BigDecimal actual = (row[2] != null && row[2] instanceof Number) ?
+                                BigDecimal.valueOf(((Number) row[2]).doubleValue()) : BigDecimal.ZERO;
+
+                        // Calculate remaining if you need it
+                        BigDecimal remaining = (row[3] instanceof Number) ?
+                                BigDecimal.valueOf(((Number) row[3]).doubleValue()) : budgeted.subtract(actual);
 
                         return new BudgetPeriodCategory(
                                 categoryName,
                                 budgeted,
                                 actual,
                                 new DateRange(date, date),
-                                BudgetStatus.GOOD
+                                determineBudgetStatus(budgeted, actual) // You might have a method like this
                         );
                     })
                     .collect(Collectors.toList());
@@ -129,6 +138,73 @@ public class BudgetPeriodQueries
             log.error("Error getting daily budget data for date: {} and budget: {}",
                     date,subBudget.getId(), e);
             return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Converts a category string to its proper display name using the CategoryType enum
+     *
+     * @param categoryStr The category string to convert
+     * @return The formatted category name from the enum, or the original string if not found
+     */
+    private String getCategoryDisplayName(String categoryStr) {
+        if (categoryStr == null || categoryStr.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // Try to parse the string as a CategoryType enum
+            CategoryType categoryType = CategoryType.valueOf(categoryStr.toUpperCase());
+            return categoryType.getType(); // Assuming you have a getter for the 'type' field
+        } catch (IllegalArgumentException e) {
+            // If the string is not a valid enum value, format it as title case instead
+            return formatCategoryName(categoryStr);
+        }
+    }
+
+    /**
+     * Formats a category string with proper title case (as a fallback)
+     */
+    private String formatCategoryName(String category) {
+        if (category == null || category.isEmpty()) {
+            return "";
+        }
+
+        // Replace underscores with spaces
+        String spacedCategory = category.replace('_', ' ');
+
+        // Split into words
+        String[] words = spacedCategory.split("\\s+");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                // Capitalize first letter, lowercase the rest
+                result.append(word.substring(0, 1).toUpperCase())
+                        .append(word.substring(1).toLowerCase())
+                        .append(" ");
+            }
+        }
+
+        // Trim trailing space and return
+        return result.toString().trim();
+    }
+
+    // You might have a method like this to determine budget status
+    private BudgetStatus determineBudgetStatus(BigDecimal budgeted, BigDecimal actual) {
+        if (budgeted.compareTo(BigDecimal.ZERO) <= 0) {
+            return BudgetStatus.GOOD; // Default if no budget
+        }
+
+        // Calculate percentage spent
+        BigDecimal percentSpent = actual.multiply(new BigDecimal("100")).divide(budgeted, 2, RoundingMode.HALF_UP);
+
+        if (percentSpent.compareTo(new BigDecimal("80")) > 0) {
+            return BudgetStatus.OVER_BUDGET;
+        } else if (percentSpent.compareTo(new BigDecimal("50")) > 0) {
+            return BudgetStatus.WARNING;
+        } else {
+            return BudgetStatus.GOOD;
         }
     }
 }

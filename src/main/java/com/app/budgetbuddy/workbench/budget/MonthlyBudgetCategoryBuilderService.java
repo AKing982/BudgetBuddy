@@ -84,6 +84,8 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
             return Collections.emptyList();
         }
         Set<BudgetCategory> budgetCategories = new HashSet<>();
+        // Use a Map to prevent duplicates
+        Map<String, BudgetCategory> uniqueBudgetCategories = new HashMap<>();
         for(MonthlyBudgetCategoryCriteria monthlyCriteria : budgetCriteria)
         {
             SubBudget subBudget = monthlyCriteria.getSubBudget();
@@ -113,23 +115,31 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
                 //TODO: We need the total spent for the category during the week, not total spent during week from all categories
                 List<Transaction> transactionsForWeek = filterTransactionsByBudgetWeek(transactions, budgetWeekStart, budgetWeekEnd);
                 DateRange currentWeekRange = new DateRange(budgetWeekStart, budgetWeekEnd);
-                BudgetCategory budgetCategory = createBudgetCategory(
-                        subBudgetId,
-                        categoryName,
-                        currentWeekRange,
-                        transactionsForWeek,
-                        //TODO: For the budget category actual spent, use the total spent during the budget week that was stored alongside the category week
-                        Double.valueOf(String.valueOf(categorySpendingForWeek)),
-                        //TODO: For the budget category budgeted amount for the category, use budgeted amount for the category not the budgeted amount for the budget schedule range
-                        budgetedAmountForCategory.doubleValue(),
-                        0.0,
-                        false
-                );
-                log.info("Budget Category: {}", budgetCategory.toString());
-                budgetCategories.add(budgetCategory);
+                log.info("Budget Amount for Category {}", budgetedAmountForCategory.doubleValue());
+                log.info("Category Spending: {}", categorySpendingForWeek.doubleValue());
+                String uniqueKey = categoryName + "_" +
+                        budgetWeekStart.toString() + "_" +
+                        budgetWeekEnd.toString();
+                if(!uniqueBudgetCategories.containsKey(uniqueKey))
+                {
+                    BudgetCategory budgetCategory = createBudgetCategory(
+                            subBudgetId,
+                            categoryName,
+                            currentWeekRange,
+                            transactionsForWeek,
+                            //TODO: For the budget category actual spent, use the total spent during the budget week that was stored alongside the category week
+                            Math.abs(Double.valueOf(String.valueOf(categorySpendingForWeek))),
+                            //TODO: For the budget category budgeted amount for the category, use budgeted amount for the category not the budgeted amount for the budget schedule range
+                            budgetedAmountForCategory.doubleValue(),
+                            0.0,
+                            false
+                    );
+                    log.info("Budget Category: {}", budgetCategory.toString());
+                    uniqueBudgetCategories.put(uniqueKey, budgetCategory);
+                }
             }
         }
-        return new ArrayList<>(budgetCategories);
+        return new ArrayList<>(uniqueBudgetCategories.values());
     }
 
     @Override
@@ -291,7 +301,11 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
     private BigDecimal getTotalTransactionSpending(List<Transaction> transactions)
     {
         return transactions.stream()
-                .map(Transaction::getAmount)
+                .map(transaction -> {
+                    BigDecimal amount = transaction.getAmount();
+                    // Convert negative amounts to positive
+                    return amount.compareTo(BigDecimal.ZERO) < 0 ? amount.negate() : amount;
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 

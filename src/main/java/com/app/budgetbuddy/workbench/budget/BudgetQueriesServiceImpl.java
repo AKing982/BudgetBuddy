@@ -299,13 +299,12 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
     @Override
     public BigDecimal getTotalSpentOnBudget(Long budgetId, LocalDate startDate, LocalDate endDate) {
         final String totalSpentQuery = """
-           SELECT SUM(tc.actual) as totalSpent
-           FROM TransactionCategoryEntity tc
-           JOIN tc.category c
-           WHERE tc.startDate >= :startDate
-           AND tc.endDate <= :endDate
-           AND tc.subBudget.id = :budgetId
-           AND tc.isactive = true AND (c.id <> '21009000' AND c.name NOT LIKE '%Payroll')
+           SELECT SUM(bc.actual) as totalSpent
+           FROM BudgetCategoryEntity bc
+           WHERE bc.startDate >= :startDate
+           AND bc.endDate <= :endDate
+           AND bc.subBudget.id = :budgetId
+           AND bc.active = true AND bc.categoryName NOT LIKE '%Payroll'
            """;
 
         try

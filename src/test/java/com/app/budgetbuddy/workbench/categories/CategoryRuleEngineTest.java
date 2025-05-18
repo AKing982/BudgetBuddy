@@ -11,6 +11,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.core.AutoConfigureCache;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,25 +24,26 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
-class CategoryRuleEngineTest {
-//
-//    @Mock
-//    private CategoryRuleCreator categoryRuleCreator;
-//
-//    @Mock
-//    private TransactionCategorizer transactionCategorizer;
-//
-//    @Mock
-//    private TransactionLoaderService transactionLoaderService;
-//
-//    @InjectMocks
-//    private CategoryRuleEngine categoryRuleEngine;
-//
-//    @BeforeEach
-//    void setUp() {
-//        MockitoAnnotations.openMocks(this);
-//    }
+@SpringBootTest
+class CategoryRuleEngineTest
+{
+
+    @MockBean
+    private TransactionCategoryBuilder transactionCategoryBuilder;
+
+    @MockBean
+    private RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
+
+    @MockBean
+    private TransactionLoaderService transactionLoaderService;
+
+    @Autowired
+    private CategoryRuleEngine categoryRuleEngine;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
 //    @Test
 //    void testGetCategorizedTransactionsWithSystemRules_whenTransactionsIsEmpty(){
@@ -46,11 +51,11 @@ class CategoryRuleEngineTest {
 //        Map<Transaction, CategoryRule> categorizedTransactionsSystemRules = categoryRuleEngine.getCategorizedTransactionsWithSystemRules(transactionList);
 //        assertTrue(categorizedTransactionsSystemRules.isEmpty());
 //    }
-
-    @Test
-    void testGetCategorizedTransactionsWithSystemRules_whenTransactionsIsNotEmpty(){
-
-    }
+//
+//    @Test
+//    void testGetCategorizedTransactionsWithSystemRules_whenTransactionsIsNotEmpty(){
+//
+//    }
 
     private Transaction createTransaction(String description, String merchantName, List<String> categories, String categoryId){
         Transaction transaction = new Transaction(

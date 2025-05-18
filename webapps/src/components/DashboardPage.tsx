@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     AppBar,
     Toolbar,
@@ -46,9 +46,20 @@ const DashboardPage: React.FC = () => {
     const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
     const plaidService = PlaidService.getInstance();
 
+    // Add this useEffect hook to set the document title
+    useEffect(() => {
+        document.title = "Dashboard";
+
+        // Optional: Return a cleanup function to reset the title when component unmounts
+        return () => {
+            document.title = "Dashboard";
+        };
+    }, []); // Empty dependency array means this runs once when component mounts
+
     const getResponsiveSpacing = () => {
         return isMdUp ? 1 : 1;
     }
+
 
     const spacing = getResponsiveSpacing();
 
@@ -122,24 +133,24 @@ const DashboardPage: React.FC = () => {
                                         <SpendingTracker />
                                     </Grid>
 
-                                    {/* Transactions Table */}
-                                    <Grid item xs={12}>
-                                        <RecentTransactionsTable />
-                                    </Grid>
+                                    {/*/!* Transactions Table *!/*/}
+                                    {/*<Grid item xs={12}>*/}
+                                    {/*    <RecentTransactionsTable />*/}
+                                    {/*</Grid>*/}
                                 </Grid>
                             </Grid>
 
                             {/* Right Sidebar */}
-                            <Grid item xs={12} lg={3}>
-                                <Grid container spacing={spacing}>
-                                    <Grid item xs={12}>
-                                        <AccountSummary />
-                                    </Grid>
-                                    <Grid item xs={12} lg={12}>
-                                        <PaymentCharges />
-                                    </Grid>
-                                </Grid>
-                            </Grid>
+                            {/*<Grid item xs={12} lg={3}>*/}
+                            {/*    <Grid container spacing={spacing}>*/}
+                            {/*        <Grid item xs={12}>*/}
+                            {/*            <AccountSummary />*/}
+                            {/*        </Grid>*/}
+                            {/*        <Grid item xs={12} lg={12}>*/}
+                            {/*            <PaymentCharges />*/}
+                            {/*        </Grid>*/}
+                            {/*    </Grid>*/}
+                            {/*</Grid>*/}
                         </Grid>
                     </Box>
                 </Grid>
@@ -147,45 +158,6 @@ const DashboardPage: React.FC = () => {
         </Box>
     );
 
-    //
-    // return (
-    //     <Box sx={{ display: 'flex', bgcolor: '#F3F4F6', minHeight: '100vh' }}>
-    //         <Sidebar />
-    //         <Box component="main" sx={{ flexGrow: 0, p: { xs: 1, sm: 3, md: 3 } }}>
-    //             <Grid container spacing={1}>
-    //                 {/* Main Content Area */}
-    //                 <Grid item xs={12} md={7}>
-    //                     <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 1 }}>
-    //                         Good morning, Alexander
-    //                     </Typography>
-    //                     <Grid container spacing={spacing}>
-    //                         {/* Expense Spending Tracker */}
-    //                         <Grid item xs={12}>
-    //                             <SpendingTracker />
-    //                         </Grid>
-    //
-    //                         {/* Transactions Table */}
-    //                         <Grid item xs={12}>
-    //                             <RecentTransactionsTable />
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //
-    //                 {/* Right Sidebar */}
-    //                 <Grid item xs={12} md={3}>
-    //                     <Grid container spacing={1}>
-    //                         <Grid item xs={12}>
-    //                             <AccountSummary />
-    //                         </Grid>
-    //                         <Grid item xs={12}>
-    //                             <PaymentCharges />
-    //                         </Grid>
-    //                     </Grid>
-    //                 </Grid>
-    //             </Grid>
-    //         </Box>
-    //     </Box>
-    // );
 };
 
 export default DashboardPage;

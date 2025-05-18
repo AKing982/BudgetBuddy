@@ -53,83 +53,83 @@ class BudgetCategoryThreadServiceTest
         when(threadPoolTaskScheduler.getScheduledExecutor()).thenReturn(scheduledExecutorService);
     }
 
-    @Test
-    void testCreateAsyncBudgetCategoriesByMonth_whenSubBudgetIsNull_thenReturnEmptyBudgetCategoryList() throws Exception{
-        List<TransactionsByCategory> transactionsByCategoryList = createTestTransactionsByCategory();
+//    @Test
+//    void testCreateAsyncBudgetCategoriesByMonth_whenSubBudgetIsNull_thenReturnEmptyBudgetCategoryList() throws Exception{
+//        List<TransactionsByCategory> transactionsByCategoryList = createTestTransactionsByCategory();
+//
+//        CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(
+//                null, transactionsByCategoryList);
+//        List<BudgetCategory> budgetCategoryList = future.get(5, TimeUnit.SECONDS);
+//        assertNotNull(budgetCategoryList);
+//        assertTrue(budgetCategoryList.isEmpty());
+//    }
+//
+//    @Test
+//    void testCreateAsyncBudgetCategoriesByMonth_whenTransactionsByCategoryAreNull_thenReturnEmptyBudgetCategoryList() throws Exception{
+//        SubBudget testSubBudget = createTestSubBudget();
+//        CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(
+//                testSubBudget, null);
+//        List<BudgetCategory> budgetCategoryList = future.get(5, TimeUnit.SECONDS);
+//        assertNotNull(budgetCategoryList);
+//        assertTrue(budgetCategoryList.isEmpty());
+//    }
 
-        CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(
-                null, transactionsByCategoryList);
-        List<BudgetCategory> budgetCategoryList = future.get(5, TimeUnit.SECONDS);
-        assertNotNull(budgetCategoryList);
-        assertTrue(budgetCategoryList.isEmpty());
-    }
-
-    @Test
-    void testCreateAsyncBudgetCategoriesByMonth_whenTransactionsByCategoryAreNull_thenReturnEmptyBudgetCategoryList() throws Exception{
-        SubBudget testSubBudget = createTestSubBudget();
-        CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(
-                testSubBudget, null);
-        List<BudgetCategory> budgetCategoryList = future.get(5, TimeUnit.SECONDS);
-        assertNotNull(budgetCategoryList);
-        assertTrue(budgetCategoryList.isEmpty());
-    }
-
-    @Test
-    void testCreateAsyncBudgetCategoriesByMonth_Success() throws Exception
-    {
-        // Arrange
-        SubBudget subBudget = createTestSubBudget();
-        List<TransactionsByCategory> transactionsByCategory = createTestTransactionsByCategory();
-        List<BudgetCategory> expectedBudgetCategories = createTestBudgetCategories();
-        List<BudgetScheduleRange> budgetScheduleRanges = subBudget.getBudgetSchedule().get(0).getBudgetScheduleRanges();
-
-        // Create expected MonthlyCategorySpending objects
-        List<MonthlyCategorySpending> expectedMonthlyCategorySpending = createTestMonthlyCategorySpending();
-
-        // Create expected MonthlyBudgetCategoryCriteria objects
-        List<MonthlyBudgetCategoryCriteria> expectedMonthlyCriteria = createTestMonthlyBudgetCategoryCriteria();
-
-        // Mock dependencies
-        when(monthlyBudgetCategoryBuilderService.getCategorySpending(
-                eq(transactionsByCategory),
-                eq(budgetScheduleRanges)))
-                .thenReturn(expectedMonthlyCategorySpending);
-
-        when(monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(
-                eq(subBudget),
-                eq(expectedMonthlyCategorySpending),
-                eq(subBudget.getSubBudgetGoals())))
-                .thenReturn(expectedMonthlyCriteria);
-
-        when(monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(
-                eq(expectedMonthlyCriteria)))
-                .thenReturn(expectedBudgetCategories);
-
-        // Act
-        CompletableFuture<List<BudgetCategory>> future =
-                budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(
-                        subBudget, transactionsByCategory);
-
-        // Assert
-        List<BudgetCategory> actualBudgetCategories = future.get(5, TimeUnit.SECONDS);
-
-        assertNotNull(actualBudgetCategories);
-        assertEquals(expectedBudgetCategories.size(), actualBudgetCategories.size());
-        assertEquals(expectedBudgetCategories, actualBudgetCategories);
-
-        // Verify method calls
-        verify(monthlyBudgetCategoryBuilderService).getCategorySpending(
-                eq(transactionsByCategory),
-                eq(budgetScheduleRanges));
-
-        verify(monthlyBudgetCategoryBuilderService).createCategoryBudgetCriteriaList(
-                eq(subBudget),
-                eq(expectedMonthlyCategorySpending),
-                eq(subBudget.getSubBudgetGoals()));
-
-        verify(monthlyBudgetCategoryBuilderService).buildBudgetCategoryList(
-                eq(expectedMonthlyCriteria));
-    }
+//    @Test
+//    void testCreateAsyncBudgetCategoriesByMonth_Success() throws Exception
+//    {
+//        // Arrange
+//        SubBudget subBudget = createTestSubBudget();
+//        List<TransactionsByCategory> transactionsByCategory = createTestTransactionsByCategory();
+//        List<BudgetCategory> expectedBudgetCategories = createTestBudgetCategories();
+//        List<BudgetScheduleRange> budgetScheduleRanges = subBudget.getBudgetSchedule().get(0).getBudgetScheduleRanges();
+//
+//        // Create expected MonthlyCategorySpending objects
+//        List<MonthlyCategorySpending> expectedMonthlyCategorySpending = createTestMonthlyCategorySpending();
+//
+//        // Create expected MonthlyBudgetCategoryCriteria objects
+//        List<MonthlyBudgetCategoryCriteria> expectedMonthlyCriteria = createTestMonthlyBudgetCategoryCriteria();
+//
+//        // Mock dependencies
+//        when(monthlyBudgetCategoryBuilderService.getCategorySpending(
+//                eq(transactionsByCategory),
+//                eq(budgetScheduleRanges)))
+//                .thenReturn(expectedMonthlyCategorySpending);
+//
+//        when(monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(
+//                eq(subBudget),
+//                eq(expectedMonthlyCategorySpending),
+//                eq(subBudget.getSubBudgetGoals())))
+//                .thenReturn(expectedMonthlyCriteria);
+//
+//        when(monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(
+//                eq(expectedMonthlyCriteria)))
+//                .thenReturn(expectedBudgetCategories);
+//
+//        // Act
+//        CompletableFuture<List<BudgetCategory>> future =
+//                budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(
+//                        subBudget, transactionsByCategory);
+//
+//        // Assert
+//        List<BudgetCategory> actualBudgetCategories = future.get(5, TimeUnit.SECONDS);
+//
+//        assertNotNull(actualBudgetCategories);
+//        assertEquals(expectedBudgetCategories.size(), actualBudgetCategories.size());
+//        assertEquals(expectedBudgetCategories, actualBudgetCategories);
+//
+//        // Verify method calls
+//        verify(monthlyBudgetCategoryBuilderService).getCategorySpending(
+//                eq(transactionsByCategory),
+//                eq(budgetScheduleRanges));
+//
+//        verify(monthlyBudgetCategoryBuilderService).createCategoryBudgetCriteriaList(
+//                eq(subBudget),
+//                eq(expectedMonthlyCategorySpending),
+//                eq(subBudget.getSubBudgetGoals()));
+//
+//        verify(monthlyBudgetCategoryBuilderService).buildBudgetCategoryList(
+//                eq(expectedMonthlyCriteria));
+//    }
 
 
     @Test

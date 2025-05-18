@@ -56,19 +56,27 @@ public class BudgetCategoryThreadService
         }, threadPoolTaskScheduler.getScheduledExecutor());
     }
 
-    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategoriesByMonth(final SubBudget subBudget, final List<TransactionsByCategory> categoryTransactions)
+    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategoriesByMonth(final SubBudget subBudget, final SubBudgetGoals subBudgetGoals, final List<TransactionsByCategory> categoryTransactions)
     {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (subBudget == null || categoryTransactions == null) {
+                if (subBudget == null || categoryTransactions == null)
+                {
                     return Collections.emptyList();
                 }
-                SubBudgetGoals subBudgetGoals = subBudget.getSubBudgetGoals();
+                log.info("SubBudgetGoals: {}", subBudgetGoals);
                 BudgetSchedule monthBudgetSchedule = subBudget.getBudgetSchedule().get(0);
+                log.info("Budget Schedule: {}", monthBudgetSchedule);
                 List<BudgetScheduleRange> budgetScheduleRanges = monthBudgetSchedule.getBudgetScheduleRanges();
                 List<MonthlyCategorySpending> monthlyCategorySpending = monthlyBudgetCategoryBuilderService.getCategorySpending(categoryTransactions, budgetScheduleRanges);
                 List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteria = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, subBudgetGoals);
-                return monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(monthlyBudgetCategoryCriteria);
+                List<BudgetCategory> monthlyBudgetCategories = monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(monthlyBudgetCategoryCriteria);
+                saveAsyncBudgetCategories(monthlyBudgetCategories);
+                log.info("Successfully built monthly budget categories.");
+                monthlyBudgetCategories.forEach((monthlyBudgetCategory) -> {
+                    log.info("Budget Category: {}", monthlyBudgetCategory);
+                });
+                return monthlyBudgetCategories;
             } catch (CompletionException e) {
                 log.error("There was an error creating the budget categories for month: {}", subBudget, e.getCause());
                 return Collections.emptyList();
@@ -105,9 +113,12 @@ public class BudgetCategoryThreadService
     public CompletableFuture<List<BudgetCategory>> saveAsyncBudgetCategories(final List<BudgetCategory> budgetCategories) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (budgetCategories == null || budgetCategories.isEmpty()) {
+                if (budgetCategories == null || budgetCategories.isEmpty())
+                {
+                    log.info("Budget Categories list is empty....");
                     return Collections.emptyList();
                 } else {
+                    log.info("Budget Categories list: {}", budgetCategories);
                     return budgetCategoryService.saveAll(budgetCategories);
                 }
             } catch (CompletionException e) {

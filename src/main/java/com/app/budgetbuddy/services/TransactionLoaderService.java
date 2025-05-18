@@ -21,7 +21,8 @@ public class TransactionLoaderService
     private final RecurringTransactionLoader recurringTransactionLoader;
 
     @Autowired
-    public TransactionLoaderService(TransactionLoader transactionLoader, RecurringTransactionLoader recurringTransactionLoader){
+    public TransactionLoaderService(TransactionLoader transactionLoader, RecurringTransactionLoader recurringTransactionLoader)
+    {
         this.transactionLoader = transactionLoader;
         this.recurringTransactionLoader = recurringTransactionLoader;
     }

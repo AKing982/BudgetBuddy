@@ -6,11 +6,7 @@ import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -21,15 +17,18 @@ import java.util.concurrent.CompletionException;
 @Slf4j
 public class BudgetCategoryRunner
 {
-    private TransactionsByCategoryService transactionsByCategoryService;
-    private BudgetCategoryThreadService budgetCategoryThreadService;
+    private final TransactionsByCategoryService transactionsByCategoryService;
+    private final BudgetCategoryThreadService budgetCategoryThreadService;
+    private final SubBudgetGoalsService subBudgetGoalsService;
 
     @Autowired
     public BudgetCategoryRunner(TransactionsByCategoryService transactionsByCategoryService,
-                                BudgetCategoryThreadService budgetCategoryThreadService)
+                                BudgetCategoryThreadService budgetCategoryThreadService,
+                                SubBudgetGoalsService subBudgetGoalsService)
     {
         this.transactionsByCategoryService = transactionsByCategoryService;
         this.budgetCategoryThreadService = budgetCategoryThreadService;
+        this.subBudgetGoalsService = subBudgetGoalsService;
     }
 
     private List<TransactionsByCategory> getTransactionsByCategoryListByMonth(final SubBudget subBudget)
@@ -77,7 +76,10 @@ public class BudgetCategoryRunner
         try
         {
             List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByMonth(subBudget);
-            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(subBudget, transactionsByCategoryList);
+            Long subBudgetId = subBudget.getId();
+            SubBudgetGoals subBudgetGoals1 = subBudgetGoalsService.getSubBudgetGoalsEntitiesBySubBudgetId(subBudgetId);
+            log.info("Starting Thread for async budget category creation");
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(subBudget, subBudgetGoals1, transactionsByCategoryList);
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error fetching budget category list", e);

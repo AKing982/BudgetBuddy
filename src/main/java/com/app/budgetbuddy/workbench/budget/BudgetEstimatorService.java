@@ -40,10 +40,14 @@ public class BudgetEstimatorService
         for(CategoryBudgetAmount categoryBudgetAmount : categoryBudgetAmounts)
         {
             String categoryName = categoryBudgetAmount.getCategory();
-            BigDecimal budgetAmount = categoryBudgetAmount.getBudgetAmount();
-            if(categoryName.equals(category))
+            log.info("Category {}", categoryName);
+            // For case-insensitive comparison, use equalsIgnoreCase
+            if(categoryName.equalsIgnoreCase(category))
             {
-                return budgetAmount;
+                BigDecimal budgetAmount = categoryBudgetAmount.getBudgetAmount();
+                log.info("Budget Amount {}", budgetAmount);
+                // Ensure budgetAmount is not null
+                return budgetAmount != null ? budgetAmount : BigDecimal.ZERO;
             }
         }
         return BigDecimal.ZERO;

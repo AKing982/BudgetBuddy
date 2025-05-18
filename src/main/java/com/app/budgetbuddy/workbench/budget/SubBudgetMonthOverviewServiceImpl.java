@@ -59,12 +59,18 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         """;
         try
         {
-            List<Object[]> incomeCategories = entityManager.createQuery(incomeQuery, Object[].class)
+            List<BudgetCategoryEntity> incomeCategories = entityManager.createQuery(incomeQuery, BudgetCategoryEntity.class)
                     .setParameter("catName", "Income")
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .getResultList();
+            if(incomeCategories == null || incomeCategories.isEmpty())
+            {
+                log.info("No income categories found for subBudgetId {} between {} and {}",
+                        subBudgetId, startDate, endDate);
+                return Optional.empty();
+            }
 
             IncomeCategory incomeCategory = mapToIncomeCategory(incomeCategories);
             return Optional.of(incomeCategory);
@@ -76,17 +82,20 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         }
     }
 
-    private IncomeCategory mapToIncomeCategory(List<Object[]> results) {
+    // Updated mapping method to work with entity list directly
+    private IncomeCategory mapToIncomeCategory(List<BudgetCategoryEntity> results) {
         BigDecimal totalBudgeted = BigDecimal.ZERO;
         BigDecimal totalActual = BigDecimal.ZERO;
+
         // Aggregate totals
-        for (Object[] result : results) {
-            BudgetCategoryEntity tc = (BudgetCategoryEntity) result[0];
+        for (BudgetCategoryEntity tc : results) {
             totalBudgeted = totalBudgeted.add(BigDecimal.valueOf(tc.getBudgetedAmount()));
             totalActual = totalActual.add(BigDecimal.valueOf(tc.getActual()));
         }
+
         // Get first record for date range (assuming all records are in same month)
-        BudgetCategoryEntity firstTc = (BudgetCategoryEntity) results.get(0)[0];
+        BudgetCategoryEntity firstTc = results.get(0);
+
         return new IncomeCategory(
                 totalBudgeted,
                 totalActual,
@@ -250,22 +259,80 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
 
 
             return results.stream()
-                    .map(result -> new ExpenseCategory(
-                            (String) result[1],
-                            BigDecimal.valueOf((Double) result[2]),  // budgetedAmount
-                            BigDecimal.valueOf((Double) result[3]),  // actual
-                            BigDecimal.valueOf((Double) result[4]),  // remaining
-                            true,                                    // isActive
-                            startDate,
-                            endDate
-                    ))
+                    .map(result -> {
+                        // Add proper null checks and conversions
+                        String categoryName = getCategoryDisplayName(String.valueOf(result[0]));
+                        Double budgetedAmount = (result[1] instanceof Number) ? ((Number) result[1]).doubleValue() : 0.0;
+                        Double actual = (result[2] instanceof Number) ? ((Number) result[2]).doubleValue() : 0.0;
+                        Double remaining = (result[3] instanceof Number) ? ((Number) result[3]).doubleValue() : 0.0;
+
+                        return new ExpenseCategory(
+                                categoryName,
+                                BigDecimal.valueOf(budgetedAmount),
+                                BigDecimal.valueOf(actual),
+                                BigDecimal.valueOf(remaining),
+                                true,
+                                startDate,
+                                endDate
+                        );
+                    })
                     .collect(Collectors.toList());
+
         } catch (Exception e)
         {
             log.error("Error loading top expense categories for budgetId {} between {} and {}: {}",
                     budgetId, startDate, endDate, e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * Converts a category string to its proper display name using the CategoryType enum
+     *
+     * @param categoryStr The category string to convert
+     * @return The formatted category name from the enum, or the original string if not found
+     */
+    private String getCategoryDisplayName(String categoryStr) {
+        if (categoryStr == null || categoryStr.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // Try to parse the string as a CategoryType enum
+            CategoryType categoryType = CategoryType.valueOf(categoryStr.toUpperCase());
+            return categoryType.getType(); // Assuming you have a getter for the 'type' field
+        } catch (IllegalArgumentException e) {
+            // If the string is not a valid enum value, format it as title case instead
+            return formatCategoryName(categoryStr);
+        }
+    }
+
+    /**
+     * Formats a category string with proper title case (as a fallback)
+     */
+    private String formatCategoryName(String category) {
+        if (category == null || category.isEmpty()) {
+            return "";
+        }
+
+        // Replace underscores with spaces
+        String spacedCategory = category.replace('_', ' ');
+
+        // Split into words
+        String[] words = spacedCategory.split("\\s+");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                // Capitalize first letter, lowercase the rest
+                result.append(word.substring(0, 1).toUpperCase())
+                        .append(word.substring(1).toLowerCase())
+                        .append(" ");
+            }
+        }
+
+        // Trim trailing space and return
+        return result.toString().trim();
     }
 
 }

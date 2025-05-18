@@ -53,6 +53,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> findAll()
     {
         try
@@ -66,6 +67,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public void save(TransactionsEntity transactionsEntity) {
         if(transactionsEntity == null){
             throw new NullPointerException("transactionsEntity is null");
@@ -75,6 +77,7 @@ public class TransactionServiceImpl implements TransactionService
 
 
     @Override
+    @Transactional
     public void delete(TransactionsEntity transactionsEntity) {
         if(transactionsEntity == null){
             throw new NullPointerException("transactionsEntity is null");
@@ -89,6 +92,7 @@ public class TransactionServiceImpl implements TransactionService
 
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByAmountBetween(BigDecimal startAmount, BigDecimal endAmount) {
         if(startAmount == null || endAmount == null){
             throw new IllegalArgumentException("startAmount is null");
@@ -108,6 +112,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByAmount(BigDecimal amount)
     {
         validateTransactionAmount(amount);
@@ -133,11 +138,13 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<String> findTransactionIdsByIds(List<String> transactionIds) {
         return transactionRepository.findTransactionIdsByIds(transactionIds);
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> convertPlaidTransactionsToEntities(List<PlaidTransaction> plaidTransactions) {
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         for(PlaidTransaction transaction : plaidTransactions){
@@ -148,6 +155,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> createAndSaveTransactions(List<Transaction> transactions) {
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         for(Transaction transaction : transactions){
@@ -159,12 +167,14 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public void saveAll(List<Transaction> transactions) {
         createAndSaveTransactions(transactions);
     }
 
     @Override
-    public List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions) {
+    public List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions)
+    {
         List<Transaction> transactions = new ArrayList<>();
         for(com.plaid.client.model.Transaction plaidTransaction : plaidTransactions){
             Transaction transaction1 = new Transaction(
@@ -189,8 +199,11 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public List<Transaction> getTransactionsByCategory(String categoryId) {
-        if(categoryId.isEmpty()){
+    @Transactional
+    public List<Transaction> getTransactionsByCategory(String categoryId)
+    {
+        if(categoryId.isEmpty())
+        {
             return List.of();
         }
         try
@@ -204,7 +217,9 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Optional<TransactionsEntity> getTransactionById(String id) {
+    @Transactional
+    public Optional<TransactionsEntity> getTransactionById(String id)
+    {
         try
         {
             return transactionRepository.findTransactionByTransactionId(id);
@@ -215,27 +230,22 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId) {
+    @Transactional
+    public Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId)
+    {
         return transactionRepository.findTransactionByIdAndCategoryId(id, categoryId);
     }
 
     @Override
-    public List<String> getCategoriesForTransaction(Long id, String categoryId) {
-        return List.of();
-    }
-
-    @Override
-    public Collection<TransactionsEntity> loadTransactionsForUser(Long userId) {
-        return transactionRepository.findTransactionsByUser(userId);
-    }
-
-    @Override
-    public List<TransactionsEntity> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
+    @Transactional
+    public List<TransactionsEntity> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate)
+    {
         Collection<TransactionsEntity> transactionsEntities = transactionRepository.findTransactionsByDateRange(startDate, endDate);
         return transactionsEntities.stream().toList();
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsForUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
         if(startDate == null || endDate == null){
             throw new NullPointerException("StartDate is null");
@@ -245,11 +255,13 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByPendingTrue() {
         return transactionRepository.findByPendingTrue();
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByAuthorizedDate(LocalDate date) {
         if(date == null){
             throw new NullPointerException("date is null");
@@ -258,6 +270,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByAccountId(String accountId) {
         if(accountId.isEmpty()){
             throw new IllegalArgumentException("accountId is empty");
@@ -266,6 +279,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByDescription(String description) {
         if(description == null){
             throw new NullPointerException("description is null");
@@ -274,6 +288,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId) {
         if(transactionId == null){
             throw new NullPointerException("TransactionId is null");
@@ -336,11 +351,6 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName) {
-        return List.of();
-    }
-
-    @Override
     @Transactional
     public void updateTransactionCategorizationFlag(String transactionId)
     {
@@ -353,13 +363,11 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Double getTransactionFrequency(String transactionId) {
-        return 0.0;
-    }
-
-    @Override
-    public List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount) {
-        if(startAmount == null || endAmount == null){
+    @Transactional
+    public List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount)
+    {
+        if(startAmount == null || endAmount == null)
+        {
             throw new IllegalArgumentException("StartAmount or endAmount is null");
         }
         try
@@ -374,7 +382,9 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public List<Transaction> getPendingTransactionsForUser(Long userId) {
+    @Transactional
+    public List<Transaction> getPendingTransactionsForUser(Long userId)
+    {
         if(userId <= 1L){
             return List.of();
         }
@@ -389,7 +399,9 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public List<Transaction> getRecentTransactionsForUser(Long userId, int limit) {
+    @Transactional
+    public List<Transaction> getRecentTransactionsForUser(Long userId, int limit)
+    {
         Pageable pageLimit = PageRequest.of(0, limit);
         try
         {
@@ -404,7 +416,9 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate) {
+    @Transactional
+    public List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         try
         {
             List<TransactionsEntity> transactions = transactionRepository.findTransactionsByUserIdAndDateRange(userId, startDate, endDate);
@@ -434,6 +448,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public Optional<Transaction> findTransactionById(String transactionId)
     {
         try

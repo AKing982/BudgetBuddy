@@ -60,12 +60,12 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ open, onClose }) => {
 
     const menuItems = [
         { text: 'Dashboard', icon: <DashboardIcon /> },
-        { text: 'Recurring', icon: <RecurringIcon /> },
-        { text: 'Spending', icon: <SpendingIcon /> },
+        // { text: 'Recurring', icon: <RecurringIcon /> },
+        // { text: 'Spending', icon: <SpendingIcon /> },
         { text: 'Budgets', icon: <BudgetsIcon /> },
-        { text: 'Net Worth', icon: <NetWorthIcon /> },
+        // { text: 'Net Worth', icon: <NetWorthIcon /> },
         { text: 'Transactions', icon: <TransactionsIcon /> },
-        { text: 'Credit Score', icon: <CreditScoreIcon /> },
+        // { text: 'Credit Score', icon: <CreditScoreIcon /> },
     ];
 
     const drawerContent = (

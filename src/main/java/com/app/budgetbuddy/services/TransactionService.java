@@ -29,8 +29,6 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
 
     Optional<TransactionsEntity> getTransactionById(String id);
     Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId);
-    List<String> getCategoriesForTransaction(Long id, String categoryId);
-    Collection<TransactionsEntity> loadTransactionsForUser(Long userId);
     List<TransactionsEntity> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate);
     List<TransactionsEntity> getTransactionsForUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     Collection<TransactionsEntity> getTransactionsByPendingTrue();
@@ -40,12 +38,8 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Optional<TransactionsEntity> getTransactionByTransactionId(String transactionId);
 
     Map<String, Transaction> getTransactionsMap(List<String> transactionIds);
-
-    Collection<TransactionsEntity> getTransactionsByMerchantName(String merchantName);
-
     void updateTransactionCategorizationFlag(String transactionId);
 
-    Double getTransactionFrequency(String transactionId);
     List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount);
     List<Transaction> getPendingTransactionsForUser(Long userId);
     List<Transaction> getTransactionsByCategory(String categoryId);

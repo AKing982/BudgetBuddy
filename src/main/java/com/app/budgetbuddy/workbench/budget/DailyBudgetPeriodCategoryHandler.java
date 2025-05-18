@@ -50,17 +50,15 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
             for(LocalDate date : dailyDates)
             {
                 List<Object[]> results = entityManager.createQuery("""
-                    SELECT DISTINCT tc.category.id AS categoryId,
-                           c.name AS categoryName,
-                           tc.budgetedAmount,
-                           COALESCE(tc.actual, 0) AS actualSpent,
-                           (tc.budgetedAmount - COALESCE(tc.actual, 0)) AS remainingAmount
-                    FROM BudgetCategoryEntity tc
-                    JOIN CategoryEntity c ON tc.category.id = c.id
-                    WHERE tc.startDate <= :date
-                      AND tc.endDate >= :date
-                      AND tc.subBudget.id = :budgetId
-                      AND tc.isactive = true
+                    SELECT DISTINCT categoryName,
+                           bc.budgetedAmount,
+                           COALESCE(bc.actual, 0) AS actualSpent,
+                           (bc.budgetedAmount - COALESCE(bc.actual, 0)) AS remainingAmount
+                    FROM BudgetCategoryEntity bc
+                    WHERE bc.startDate <= :date
+                      AND bc.endDate >= :date
+                      AND bc.subBudget.id = :budgetId
+                      AND bc.active = true
                 """, Object[].class)
                         .setParameter("date", date)
                         .setParameter("budgetId", subBudgetId)
@@ -68,9 +66,9 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
 
                 results.stream()
                         .map(row -> {
-                            String categoryName = (String) row[1];
-                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[2]);
-                            BigDecimal actual = BigDecimal.valueOf((Double) row[3]);
+                            String categoryName = getCategoryDisplayName((String) row[0]);
+                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[1]);
+                            BigDecimal actual = BigDecimal.valueOf((Double) row[2]);
 
                             return new BudgetPeriodCategory(
                                     categoryName,
@@ -89,6 +87,55 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
             log.error("Error retrieving daily budget period categories for SubBudget ID: {}", budgetSchedule.getBudgetScheduleId(), e);
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * Converts a category string to its proper display name using the CategoryType enum
+     *
+     * @param categoryStr The category string to convert
+     * @return The formatted category name from the enum, or the original string if not found
+     */
+    private String getCategoryDisplayName(String categoryStr) {
+        if (categoryStr == null || categoryStr.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // Try to parse the string as a CategoryType enum
+            CategoryType categoryType = CategoryType.valueOf(categoryStr.toUpperCase());
+            return categoryType.getType(); // Assuming you have a getter for the 'type' field
+        } catch (IllegalArgumentException e) {
+            // If the string is not a valid enum value, format it as title case instead
+            return formatCategoryName(categoryStr);
+        }
+    }
+
+    /**
+     * Formats a category string with proper title case (as a fallback)
+     */
+    private String formatCategoryName(String category) {
+        if (category == null || category.isEmpty()) {
+            return "";
+        }
+
+        // Replace underscores with spaces
+        String spacedCategory = category.replace('_', ' ');
+
+        // Split into words
+        String[] words = spacedCategory.split("\\s+");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                // Capitalize first letter, lowercase the rest
+                result.append(word.substring(0, 1).toUpperCase())
+                        .append(word.substring(1).toLowerCase())
+                        .append(" ");
+            }
+        }
+
+        // Trim trailing space and return
+        return result.toString().trim();
     }
 
     private BudgetStatus determineCategoryStatus(BigDecimal budgeted, BigDecimal actual) {

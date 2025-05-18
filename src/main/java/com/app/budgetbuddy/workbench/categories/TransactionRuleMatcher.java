@@ -502,18 +502,6 @@ public class TransactionRuleMatcher extends AbstractTransactionMatcher<Transacti
         return CategoryType.UNCATEGORIZED;
     }
 
-    private TransactionCategory createTransactionCategory(final String transactionId, final String category, final String plaidCategory, final int priority, final boolean isRecurring, final String categorizedBy)
-    {
-        return TransactionCategory.builder()
-                .transactionId(transactionId)
-                .matchedCategory(category)
-                .plaidCategory(plaidCategory)
-                .priority(priority)
-                .isRecurring(isRecurring)
-                .categorizedBy(categorizedBy)
-                .build();
-    }
-
     private TransactionRule createTransactionRule(Transaction transaction, String category, int priority) {
         TransactionRule transactionRule = new TransactionRule();
         transactionRule.setCategories(transaction.getCategories());

@@ -3,13 +3,11 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.SubBudget;
-import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
-import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
-import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
-import com.app.budgetbuddy.workbench.categories.TransactionCategoryBuilder;
+import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.workbench.converter.TransactionBaseToModelConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.app.budgetbuddy.workbench.runner.BudgetCategoryRunner;
+import com.app.budgetbuddy.workbench.runner.CategoryRuleRunner;
 import com.plaid.client.model.Transaction;
 import com.plaid.client.model.TransactionsRecurringGetResponse;
 import com.plaid.client.model.TransactionsSyncResponse;
@@ -36,7 +34,7 @@ public class TransactionRefreshThreadService
     private final PlaidTransactionManager plaidTransactionManager;
     private final RecurringTransactionService recurringTransactionService;
     private final TransactionBaseToModelConverter transactionBaseToModelConverter;
-    private final CategoryRuleEngine categoryRuleEngine;
+    private final CategoryRuleRunner categoryRuleRunner;
     private final BudgetCategoryRunner budgetCategoryRunner;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
@@ -44,13 +42,13 @@ public class TransactionRefreshThreadService
     public TransactionRefreshThreadService(PlaidTransactionManager plaidTransactionManager,
                                            RecurringTransactionService recurringTransactionService,
                                            TransactionBaseToModelConverter transactionBaseToModelConverter,
-                                           CategoryRuleEngine categoryRuleEngine,
+                                           CategoryRuleRunner categoryRuleRunner,
                                            BudgetCategoryRunner budgetCategoryRunner,
                                            @Qualifier("taskScheduler1") ThreadPoolTaskScheduler threadPoolTaskScheduler) {
         this.plaidTransactionManager = plaidTransactionManager;
         this.recurringTransactionService = recurringTransactionService;
         this.transactionBaseToModelConverter = transactionBaseToModelConverter;
-        this.categoryRuleEngine = categoryRuleEngine;
+        this.categoryRuleRunner = categoryRuleRunner;
         this.budgetCategoryRunner = budgetCategoryRunner;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
@@ -108,7 +106,12 @@ public class TransactionRefreshThreadService
         try
         {
             log.info("Categorizing transactions for user {}", userId);
-            categoryRuleEngine.processTransactionsForUser(transactionList, recurringTransactions, userId);
+            List<TransactionCategory> transactionCategories = categoryRuleRunner.runTransactionCategorization(transactionList);
+            if(transactionCategories.isEmpty())
+            {
+                log.info("No transaction categories were found for user {}", userId);
+            }
+            log.info("Successfully categorized {} transactions", transactionCategories.size());
         } catch (Exception ex)
         {
             log.error("Error categorizing transactions: {}", ex.getMessage());

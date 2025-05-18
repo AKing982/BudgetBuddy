@@ -1,31 +1,21 @@
 package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.exceptions.DataAccessException;
-import com.app.budgetbuddy.exceptions.DataException;
-import com.app.budgetbuddy.services.TransactionLoaderService;
-import com.app.budgetbuddy.workbench.RecurringTransactionLoader;
 import com.app.budgetbuddy.workbench.RecurringTransactionLoaderImpl;
 import com.app.budgetbuddy.workbench.TransactionDataLoaderImpl;
-import com.app.budgetbuddy.workbench.TransactionLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class CategoryRuleEngine
 {
-    private final TransactionRuleCreator transactionRuleCreator;
     private final TransactionRuleMatcher transactionRuleMatcher;
     private final TransactionCategoryBuilder transactionCategoryBuilder;
     private final RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher;
@@ -35,188 +25,53 @@ public class CategoryRuleEngine
     private Map<String, UserCategoryRule> categorizedRecurringTransactionsUserRules = new HashMap<>();
 
     @Autowired
-    public CategoryRuleEngine(TransactionRuleCreator transactionRuleCreator,
-                              TransactionRuleMatcher transactionRuleMatcher,
+    public CategoryRuleEngine(TransactionRuleMatcher transactionRuleMatcher,
                               TransactionCategoryBuilder transactionCategoryBuilder,
                               RecurringTransactionCategoryRuleMatcher recurringTransactionCategoryRuleMatcher)
     {
-        this.transactionRuleCreator = transactionRuleCreator;
         this.transactionRuleMatcher = transactionRuleMatcher;
         this.transactionCategoryBuilder = transactionCategoryBuilder;
         this.recurringTransactionCategoryRuleMatcher = recurringTransactionCategoryRuleMatcher;
     }
 
-    public Boolean processTransactionsForUser(final List<Transaction> transactions, final List<RecurringTransaction> recurringTransactions, final Long userId)
+    public List<TransactionCategory> categorizeTransactions(final List<Transaction> transactions)
     {
-        log.info("Transaction Count before processing: {}", transactions.size());
+        if(transactions == null || transactions.isEmpty())
+        {
+            return Collections.emptyList();
+        }
         try
         {
-            log.info("Starting transaction categorization for user {}", userId);
-
-            // 1. Group transactions by priority level for efficient processing
-            Map<Integer, List<Transaction>> regularTransactionsByPriority = transactionRuleMatcher.groupTransactionsByPriority(transactions);
-
-            Map<Integer, List<RecurringTransaction>> recurringTransactionsByPriority =
-                    recurringTransactionCategoryRuleMatcher.groupRecurringTransactionsByPriority(recurringTransactions);
-
-            // 2. Process regular transactions using priority-based categorization
-            Map<String, TransactionRule> categorizedRegularTransactions =
-                    processCategorizedTransactionsByPriority(regularTransactionsByPriority);
-
-            categorizedRegularTransactions.forEach((category, pair) -> {
-                log.info("Categorized Regular Transaction: {} with {} transactions",
-                        category, pair);
-            });
-
-            List<TransactionCategory> transactionCategories = createTransactionCategories(categorizedRegularTransactions);
-            transactionCategories.forEach((transactionCategory -> {
-                log.info("Converted Transaction Category: {}", transactionCategory);
-            }));
-
-            // 3. Process recurring transactions using priority-based categorization
-            Map<String, RecurringTransactionRule> categorizedRecurringTransactions =
-                    recurringTransactionCategoryRuleMatcher.categorizeRecurringTransactions(recurringTransactions);
-
-            // 4. Extract user and system rules from categorized transactions
-            Map<String, TransactionRule> userCategorized = combineCategorizedTransactionUserRules(
-                    extractUserRulesFromCategorizedTransactions(categorizedRegularTransactions, userId),
-                    extractUserRulesFromCategorizedRecurringTransactions(categorizedRecurringTransactions, userId));
-
-            Map<String, TransactionRule> systemCategorized = combineCategorizedTransactions(
-                    extractSystemRulesFromCategorizedTransactions(categorizedRegularTransactions),
-                    extractSystemRulesFromCategorizedRecurringTransactions(categorizedRecurringTransactions));
-
-
-            // 5. Generate and save rules
-            saveNewRules(userCategorized);
-
-            // 6. Log summary
-            generateSummary(userCategorized, systemCategorized);
-
-            return true;
-        } catch (Exception e) {
-            log.error("There was an error processing transactions for user {}: ", userId, e);
-            return false;
+            Map<String, TransactionRule> categorizedTransactions = transactionRuleMatcher.categorizeTransactions(transactions);
+            return createTransactionCategories(categorizedTransactions);
+        }catch(Exception e){
+            log.error("There was an error categorizing transactions", e);
+            return Collections.emptyList();
         }
     }
 
-    /**
-     * Process transactions by priority level and categorize them
-     * @param transactionsByPriority Map of priority levels to transaction lists
-     * @return Map of categories to their rules and matched transactions
-     */
-    private Map<String, TransactionRule> processCategorizedTransactionsByPriority(
-            Map<Integer, List<Transaction>> transactionsByPriority) {
-
-        Map<String, TransactionRule> categorizedTransactions = new HashMap<>();
-
-        // Process transactions by priority group (highest to lowest)
-        log.info("Priorities: {}", transactionsByPriority.keySet());
-        List<Integer> priorityLevels = new ArrayList<>(transactionsByPriority.keySet());
-
-        for (Integer priority : priorityLevels) {
-            List<Transaction> transactionsInGroup = transactionsByPriority.get(priority);
-            log.info("Processing {} transactions with priority {}", transactionsInGroup.size(), priority);
-
-            // Categorize this group of transactions
-            Map<String, TransactionRule> groupResult =
-                    transactionRuleMatcher.categorizeTransactions(transactionsInGroup);
-
-            // Merge results
-            categorizedTransactions.putAll(groupResult);
-        }
-
-        return categorizedTransactions;
-    }
-
-    // Extract system rules from regular transactions
-    private Map<String, TransactionRule> extractSystemRulesFromCategorizedTransactions(
-            Map<String, TransactionRule> categorizedTransactions) {
-        Map<String, TransactionRule> systemRules = new HashMap<>();
-
-        for (Map.Entry<String, TransactionRule> entry : categorizedTransactions.entrySet()) {
-            String transactionId = entry.getKey();
-            TransactionRule rule = entry.getValue();
-
-            // Check if rule was from system rules (priority would NOT be USER_DEFINED.getValue())
-            if (rule.getPriority() != PriorityLevel.USER_DEFINED.getValue()) {
-                // Convert to CategoryRule
-                // Add to map with first transaction ID as key
-                systemRules.put(transactionId, rule);
-            }
-        }
-
-        return systemRules;
-    }
-
-    // Extract user rules from regular transactions
-    private Map<String, TransactionRule> extractUserRulesFromCategorizedTransactions(
-            Map<String, TransactionRule> categorizedTransactions, Long userId) {
-        Map<String, TransactionRule> userRules = new HashMap<>();
-
-        for (Map.Entry<String, TransactionRule> entry : categorizedTransactions.entrySet()) {
-            String transactionId = entry.getKey();
-            TransactionRule rule = entry.getValue();
-            // Check if rule was from user rules (priority would be USER_DEFINED.getValue())
-            if (rule.getPriority() == PriorityLevel.USER_DEFINED.getValue()) {
-                // Convert to UserCategoryRule
-                userRules.put(transactionId, rule);
-            }
-        }
-
-        return userRules;
-    }
-
-    private Map<String, TransactionRule> extractSystemRulesFromCategorizedRecurringTransactions(
-            Map<String, RecurringTransactionRule> categorizedTransactions) {
-        Map<String, TransactionRule> systemRules = new HashMap<>();
-
-        for (Map.Entry<String, RecurringTransactionRule> entry : categorizedTransactions.entrySet()) {
-            String transactionId = entry.getKey();
-            RecurringTransactionRule rule = entry.getValue();
-
-            // Check if rule was from system rules (priority would NOT be USER_DEFINED.getValue())
-            if (rule.getPriority() != PriorityLevel.USER_DEFINED.getValue()) {
-
-                // Add frequency information for recurring transactions
-                if (rule.getFrequency() != null) {
-                    rule.setFrequency(rule.getFrequency());
-                    rule.setRecurring(true);
-                }
-            }
-        }
-
-        return systemRules;
-    }
-
-
-    private Map<String, RecurringTransactionRule> extractUserRulesFromCategorizedRecurringTransactions(
-            Map<String, RecurringTransactionRule> categorizedTransactions, Long userId) {
-        Map<String, RecurringTransactionRule> userRules = new HashMap<>();
-
-//        for (Map.Entry<String, RecurringTransactionRule> entry : categorizedTransactions.entrySet())
-//        {
-//            String category = entry.getKey();
-//            RecurringTransactionRule rule = entry.getValue().getFirst();
-//            List<RecurringTransaction> transactions = entry.getValue().getSecond();
-//
-//            // Check if rule was from user rules (priority would be USER_DEFINED.getValue())
-//            if (rule.getPriority() == PriorityLevel.USER_DEFINED.getValue()) {
-//                // Convert to UserCategoryRule
-//                UserCategoryRule userRule = convertToUserCategoryRule(rule, category, userId);
-//
-//                // Add to map with first transaction ID as key
-//                if (!transactions.isEmpty()) {
-//                    userRules.put(transactions.get(0).getTransactionId(), userRule);
-//                }
-//            }
-//        }
-//        return userRules;
-        return userRules;
-    }
-
-    public List<TransactionCategory> createTransactionCategories(final Map<String, TransactionRule> categorizedTransactions)
+    public List<TransactionCategory> categorizeRecurringTransactions(final List<RecurringTransaction> recurringTransactions)
     {
+        if(recurringTransactions == null || recurringTransactions.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            Map<String, RecurringTransactionRule> categorizedRecurringTransactions = recurringTransactionCategoryRuleMatcher.categorizeRecurringTransactions(recurringTransactions);
+            return createTransactionCategories(categorizedRecurringTransactions);
+        }catch(Exception e){
+            log.error("There was an error categorizing recurring transactions", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<TransactionCategory> createTransactionCategories(final Map<String, ? extends TransactionRule> categorizedTransactions)
+    {
+        if(categorizedTransactions == null || categorizedTransactions.isEmpty())
+        {
+            return Collections.emptyList();
+        }
         try
         {
             return transactionCategoryBuilder.createTransactionCategories(categorizedTransactions);
@@ -225,50 +80,6 @@ public class CategoryRuleEngine
             log.error("There was an error creating the transaction categories: ", e);
             return Collections.emptyList();
         }
-    }
-
-
-    private Map<String, TransactionRule> combineCategorizedTransactions(final Map<String, TransactionRule> categorizedTransactionSystemRules, final Map<String, TransactionRule> categorizedRecurringTransactionSystemRules) {
-        Map<String, TransactionRule> combinedCategoryRules = new HashMap<>(categorizedTransactionSystemRules);
-        combinedCategoryRules.putAll(categorizedRecurringTransactionSystemRules);
-        // Add the category rules
-        return combinedCategoryRules;
-    }
-
-    private Map<String, TransactionRule> combineCategorizedTransactionUserRules(final Map<String, TransactionRule> categorizedRecurringTransactionsUserRules, final Map<String, RecurringTransactionRule> categorizedTransactionUserRules){
-        Map<String, TransactionRule> combinedUserCategoryRules = new HashMap<>(categorizedRecurringTransactionsUserRules);
-        combinedUserCategoryRules.putAll(categorizedTransactionUserRules);
-        return combinedUserCategoryRules;
-    }
-
-
-    private void processCategorizedTransactions(
-            Map<String, List<String>> categorizedTransactions,
-            Map<String, ? extends CategoryRule> userCategorizedRules,
-            Map<String, ? extends CategoryRule> systemCategorizedRules
-    ) {
-        // Add user-defined categorized transactions
-        userCategorizedRules.forEach((transactionId, rule) ->
-                categorizedTransactions.computeIfAbsent(rule.getCategoryName(), key -> new ArrayList<>()).add(transactionId));
-
-        // Add system-defined categorized transactions, only if not already categorized
-        systemCategorizedRules.forEach((transactionId, rule) ->
-                categorizedTransactions.computeIfAbsent(rule.getCategoryName(), key -> new ArrayList<>()).add(transactionId));
-    }
-
-
-    private void saveNewRules(final Map<String, TransactionRule> userCategorized)
-    {
-
-        try
-        {
-            // Save the User Categorized Rules
-            transactionRuleCreator.saveUserDefinedRules(userCategorized);
-
-        }catch(DataException ex){
-            log.error("Unable to save Category Rules: ", ex);
-        }
-
     }
 
     private void generateSummary(Map<String, TransactionRule> userCategorized,
@@ -324,18 +135,21 @@ public class CategoryRuleEngine
             System.out.println("Beginning categorization process...");
             long startTime = System.currentTimeMillis();
 
-//            // Add user rules to categorizer
-//            categoryRuleEngine.categoryRuleCreator.addUserCategoryRules(userCategoryRules);
-//            categoryRuleEngine.categoryRuleCreator.addUserCategoryRulesRecurring(userCategoryRules);
+            // Process regular transactions
+            List<TransactionCategory> categorizedTransactions = categoryRuleEngine.categorizeTransactions(transactions);
 
-            // Process transactions using priority-based categorization
-            boolean success = categoryRuleEngine.processTransactionsForUser(transactions, recurringTransactions, userId);
+            // Process recurring transactions
+            List<TransactionCategory> categorizedRecurringTransactions = categoryRuleEngine.categorizeRecurringTransactions(recurringTransactions);
 
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
 
+            boolean success = !categorizedTransactions.isEmpty() || !categorizedRecurringTransactions.isEmpty();
+
             // Print results
             System.out.println("Processing completed in " + duration + "ms: " + (success ? "Success" : "Failed"));
+            System.out.println("Categorized " + categorizedTransactions.size() + " regular transactions");
+            System.out.println("Categorized " + categorizedRecurringTransactions.size() + " recurring transactions");
 
             // Print categorization summary
             printCategorizationSummary(categoryRuleEngine);

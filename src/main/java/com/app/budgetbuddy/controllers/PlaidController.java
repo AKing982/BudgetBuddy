@@ -69,6 +69,8 @@ public class PlaidController
         this.recurringTransactionService = recurringTransactionService;
     }
 
+
+
     @PostMapping("/create_link_token")
     public ResponseEntity<?> createLinkToken(@RequestBody String userId) throws IOException {
         if (userId.isEmpty()) {

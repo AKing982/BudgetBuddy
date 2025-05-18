@@ -1,5 +1,9 @@
 package com.app.budgetbuddy.domain;
 
+import lombok.Getter;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Getter
 public enum CategoryType
 {
     GAS("Gas"),

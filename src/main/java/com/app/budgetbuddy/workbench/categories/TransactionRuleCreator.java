@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class TransactionRuleCreator {
+@Deprecated
+public class TransactionRuleCreator
+{
     private final TransactionRuleService transactionRuleService;
     private final CategoryService categoryService;
     private final List<UserCategoryRule> userDefinedRulesTransactions = new ArrayList<>();

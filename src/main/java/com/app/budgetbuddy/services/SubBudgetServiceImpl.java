@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.*;
 
 import static com.app.budgetbuddy.workbench.budget.BudgetUtil.*;
@@ -95,9 +96,10 @@ public class SubBudgetServiceImpl implements SubBudgetService
         try
         {
 
-            Optional<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntityByIdAndDateRange(userId, startDate, endDate);
+            Optional<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntityByUserIdAndDates(userId, startDate, endDate);
             if(subBudgetEntities.isEmpty())
             {
+                log.info("No SubBudget found");
                 return Optional.empty();
             }
             SubBudgetEntity subBudgetEntity = subBudgetEntities.get();
@@ -171,7 +173,11 @@ public class SubBudgetServiceImpl implements SubBudgetService
     {
         try
         {
-            Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findSubBudgetEntityByIdAndDate(userId, date);
+            log.info("UserId: {}, date {}", userId, date);
+            // Get the month from the date
+            Long month = (long) date.getMonth().getValue();
+            log.info("Month: {}", month);
+            Optional<SubBudgetEntity> subBudgetEntityOptional = subBudgetRepository.findSubBudgetEntityByIdAndDate(month, date, userId);
             return Optional.of(subBudgetEntityConverter.convert(subBudgetEntityOptional.get()));
         }catch(DataAccessException e){
             log.error("There was an error getting the sub-budget from the database: ", e);
@@ -186,6 +192,18 @@ public class SubBudgetServiceImpl implements SubBudgetService
         return Optional.empty();
     }
 
+    @Override
+    public Optional<SubBudget> findSubBudgetByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            Optional<SubBudgetEntity> optionalSubBudgetEntity = subBudgetRepository.findSubBudgetEntityByIdAndDateRange(userId, startDate, endDate);
+            return optionalSubBudgetEntity.map(subBudgetEntityConverter::convert);
+        }catch(DataAccessException e){
+            log.error("There was an error getting the sub-budget by userId {}", userId);
+            return Optional.empty();
+        }
+    }
 
     private SubBudgetEntity convertSubBudgetToEntity(SubBudget subBudget)
     {

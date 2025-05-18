@@ -58,20 +58,19 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
 
             log.info("Getting to BiWeekly Budget Query");
             final String biWeeklyBudgetQuery = """
-            SELECT DISTINCT tc.category.name,
-                   SUM(tc.budgetedAmount) as totalBudgeted,
-                   SUM(COALESCE(tc.actual, 0)) as actualSpent,
-                   SUM(tc.budgetedAmount - COALESCE(tc.actual, 0)) as remainingAmount
-            FROM BudgetCategoryEntity tc
-            JOIN tc.category c
-            WHERE tc.subBudget.id = :budgetId
-            AND tc.isactive = true
+            SELECT DISTINCT bc.categoryName,
+                   SUM(bc.budgetedAmount) as totalBudgeted,
+                   SUM(COALESCE(bc.actual, 0)) as actualSpent,
+                   SUM(bc.budgetedAmount - COALESCE(bc.actual, 0)) as remainingAmount
+            FROM BudgetCategoryEntity bc
+            WHERE bc.subBudget.id = :budgetId
+            AND bc.active = true
             AND (
-                (tc.startDate >= :firstPeriodStart AND tc.endDate <= :firstPeriodEnd)
+                (bc.startDate >= :firstPeriodStart AND bc.endDate <= :firstPeriodEnd)
                 OR
-                (tc.startDate >= :secondPeriodStart AND tc.endDate <= :secondPeriodEnd)
+                (bc.startDate >= :secondPeriodStart AND bc.endDate <= :secondPeriodEnd)
             )
-            GROUP BY c.name
+            GROUP BY categoryName
             """;
             BudgetScheduleRange firstBiWeekRange = biWeeklyRanges.get(0);
             log.info("First BiWeek Range: start={}, end={}", firstBiWeekRange.getStartRange(), firstBiWeekRange.getEndRange());
@@ -86,7 +85,7 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
                     .getResultList();
                     results.stream()
                         .map(row -> {
-                            String categoryName = (String) row[0];  // First column: category.name
+                            String categoryName = getCategoryDisplayName((String) row[0]);  // First column: category.name
                             BigDecimal budgeted = BigDecimal.valueOf((Double) row[1]);  // Second column: totalBudgeted
                             BigDecimal actual = BigDecimal.valueOf((Double) row[2]);    // Third column: actualSpent
                             BigDecimal remaining = BigDecimal.valueOf((Double) row[3]); // Fourth column: remainingAmount
@@ -128,6 +127,55 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
         {
             return BudgetStatus.GOOD;
         }
+    }
+
+    /**
+     * Converts a category string to its proper display name using the CategoryType enum
+     *
+     * @param categoryStr The category string to convert
+     * @return The formatted category name from the enum, or the original string if not found
+     */
+    private String getCategoryDisplayName(String categoryStr) {
+        if (categoryStr == null || categoryStr.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // Try to parse the string as a CategoryType enum
+            CategoryType categoryType = CategoryType.valueOf(categoryStr.toUpperCase());
+            return categoryType.getType(); // Assuming you have a getter for the 'type' field
+        } catch (IllegalArgumentException e) {
+            // If the string is not a valid enum value, format it as title case instead
+            return formatCategoryName(categoryStr);
+        }
+    }
+
+    /**
+     * Formats a category string with proper title case (as a fallback)
+     */
+    private String formatCategoryName(String category) {
+        if (category == null || category.isEmpty()) {
+            return "";
+        }
+
+        // Replace underscores with spaces
+        String spacedCategory = category.replace('_', ' ');
+
+        // Split into words
+        String[] words = spacedCategory.split("\\s+");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                // Capitalize first letter, lowercase the rest
+                result.append(word.substring(0, 1).toUpperCase())
+                        .append(word.substring(1).toLowerCase())
+                        .append(" ");
+            }
+        }
+
+        // Trim trailing space and return
+        return result.toString().trim();
     }
 
     private List<DateRange> buildBiWeeklyDateRanges(BudgetScheduleRange biWeekRange1, BudgetScheduleRange biWeekRange2)

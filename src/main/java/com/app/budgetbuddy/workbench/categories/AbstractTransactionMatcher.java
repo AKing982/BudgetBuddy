@@ -119,6 +119,13 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         CATEGORY_NAME_MAPPING.put("Golf", "Other");
         CATEGORY_NAME_MAPPING.put("Withdrawal", "Withdrawal");
         CATEGORY_NAME_MAPPING.put("Credit", "Transfer");
+        CATEGORY_NAME_MAPPING.put("Food and Drink", "Order Out");
+        CATEGORY_NAME_MAPPING.put("Fast Food", "Order Out");
+        CATEGORY_NAME_MAPPING.put("Coffee Shop", "Coffee");
+        CATEGORY_NAME_MAPPING.put("Travel", "Trip");
+        CATEGORY_NAME_MAPPING.put("Airlines and Aviation Services", "Trip");
+        CATEGORY_NAME_MAPPING.put("Taxi", "Trip");
+        CATEGORY_NAME_MAPPING.put("Transfer", "Transfer");
     }
 
     static {
@@ -140,6 +147,53 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
 
         MERCHANT_MAPPING.put("Jetbrains Americas Inc", jetbrainsMap);
         MERCHANT_MAPPING.put("Enb Gas Ut", enbridgeGasMap);
+    }
+
+    static {
+        // Fast food specific mappings
+        Map<String, CategoryType> mcDonaldsRules = new HashMap<>();
+        mcDonaldsRules.put("13005032", CategoryType.ORDER_OUT);
+        MERCHANT_CATEGORY_RULES.put("McDonald's", mcDonaldsRules);
+
+        // Coffee shop specific mappings
+        Map<String, CategoryType> starbucksRules = new HashMap<>();
+        starbucksRules.put("13005043", CategoryType.COFFEE);
+        MERCHANT_CATEGORY_RULES.put("Starbucks", starbucksRules);
+
+        // SparkFun/FUN - looks miscategorized as restaurant in logs
+        Map<String, CategoryType> sparkFunRules = new HashMap<>();
+        sparkFunRules.put("13005000", CategoryType.OTHER);  // Override Plaid category
+        MERCHANT_CATEGORY_RULES.put("SparkFun", sparkFunRules);
+        MERCHANT_CATEGORY_RULES.put("FUN", sparkFunRules);
+
+        // Uber mappings
+        Map<String, CategoryType> uberRules = new HashMap<>();
+        uberRules.put("22016000", CategoryType.TRIP);
+        MERCHANT_CATEGORY_RULES.put("Uber", uberRules);
+    }
+
+    static {
+        // Add new category name mappings
+        CATEGORY_NAME_MAPPING.put("Fast Food", "Order Out");
+        CATEGORY_NAME_MAPPING.put("Coffee Shop", "Coffee");
+        CATEGORY_NAME_MAPPING.put("Taxi", "Transportation");
+    }
+
+    static {
+        // Add category ID mappings for the specific IDs seen in logs
+        Map<String, CategoryType> fastFoodIdMap = new HashMap<>();
+        fastFoodIdMap.put("13005032", CategoryType.ORDER_OUT);
+        CATEGORY_ID_RULES.put("Fast Food", fastFoodIdMap);
+
+        Map<String, CategoryType> coffeeShopIdMap = new HashMap<>();
+        coffeeShopIdMap.put("13005043", CategoryType.COFFEE);
+        CATEGORY_ID_RULES.put("Coffee Shop", coffeeShopIdMap);
+
+        Map<String, CategoryType> taxiIdMap = new HashMap<>();
+        taxiIdMap.put("22016000", CategoryType.TRIP);
+        CATEGORY_ID_RULES.put("Taxi", taxiIdMap);
+
+
     }
 
     static {
@@ -192,7 +246,13 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
 
     protected CategoryType matchCategoryIdOnlyRules(T transaction)
     {
-        return null;
+        String categoryId = transaction.getCategoryId();
+        Map<String, CategoryType> categoryMerchantRules = MERCHANT_CATEGORY_RULES.get(categoryId);
+        if(categoryMerchantRules != null && categoryMerchantRules.containsKey(categoryId))
+        {
+            return categoryMerchantRules.get(categoryId);
+        }
+        return CategoryType.UNCATEGORIZED;
     }
 
     protected CategoryType matchWithoutCategoryDescriptionRules(T transaction)
@@ -211,7 +271,26 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         }
         CategoryEntity category = categoryOptional.get();
         String categoryName = category.getName();
-        return null;
+
+        // First match on categoryId
+        Map<String, CategoryType> categoryRules = CATEGORY_ID_RULES.get(categoryId);
+        if(categoryRules != null && categoryRules.containsKey(categoryId))
+        {
+            return categoryRules.get(categoryId);
+        }
+
+        // Check by merchant name and category Id
+        Map<String, CategoryType> merchantCategoryRules = MERCHANT_CATEGORY_RULES.get(merchantName);
+        if(merchantCategoryRules != null && merchantCategoryRules.containsKey(categoryId))
+        {
+            return merchantCategoryRules.get(categoryId);
+        }
+
+        if(MERCHANT_SUBSCRIPTIONS.containsKey(merchantName))
+        {
+            return CategoryType.SUBSCRIPTION;
+        }
+        return CategoryType.UNCATEGORIZED;
     }
 
     protected abstract CategoryType matchRulesByPriority(final T transaction, final int priority);
