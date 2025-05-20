@@ -91,6 +91,7 @@ public class SubBudgetServiceImpl implements SubBudgetService
     }
 
     @Override
+    @Transactional
     public Optional<SubBudget> getSubBudgetsByUserIdAndDate(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try
@@ -193,6 +194,7 @@ public class SubBudgetServiceImpl implements SubBudgetService
     }
 
     @Override
+    @Transactional
     public Optional<SubBudget> findSubBudgetByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try

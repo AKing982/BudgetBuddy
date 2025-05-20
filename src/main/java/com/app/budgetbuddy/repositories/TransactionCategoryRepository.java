@@ -17,4 +17,10 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
 
     @Query("SELECT tc FROM TransactionCategoryEntity tc WHERE tc.id =:id AND tc.categorized_date BETWEEN :start AND :end")
     List<TransactionCategoryEntity> findTransactionCategoryByStartAndEndDates(@Param("start") Long start, @Param("end") Long end, @Param("id") String transactionId);
+
+    @Query("SELECT tc FROM TransactionCategoryEntity tc " +
+            "JOIN tc.transaction t " +
+            "WHERE t.id IN :transactionIds " +
+            "ORDER BY tc.id")
+    List<TransactionCategoryEntity> findTransactionCategoryByTransactionIds(@Param("transactionIds") List<String> transactionIds);
 }

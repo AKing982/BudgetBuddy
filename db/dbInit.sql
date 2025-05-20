@@ -1,0 +1,386 @@
+SELECT 'CREATE DATABASE budgetbuddyapp'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname='budgetbuddyapp');
+
+SELECT 'Creating Users Table' as log_message;
+
+CREATE TABLE Users
+(
+    id SERIAL PRIMARY KEY,
+    firstName VARCHAR(30) NOT NULL,
+    lastName VARCHAR(30) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(20) UNIQUE NOT NULL,
+    hashCombine VARCHAR(60) NOT NULL,
+    isActive BOOLEAN DEFAULT TRUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT 'Creating PlaidLink Table' as log_message;
+
+CREATE TABLE PlaidLink
+(
+    id SERIAL PRIMARY KEY,
+    userID INT NOT NULL,
+    access_token VARCHAR(255) NOT NULL,
+    item_id VARCHAR(255) NOT NULL,
+    institution_name VARCHAR(255),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    requiresUpdate BOOLEAN,
+    FOREIGN KEY (userID) REFERENCES Users(id),
+    UNIQUE(userID, item_id)
+);
+
+SELECT 'Creating PlaidCursors Table' as log_message;
+
+CREATE TABLE PlaidCursors
+(
+    id SERIAL PRIMARY KEY,
+    userId INT NOT NULL,
+    item_id VARCHAR(225) NOT NULL,
+    added_cursor VARCHAR(255) NOT NULL,
+    modified_cursor VARCHAR(255) NOT NULL,
+    removed_cursor VARCHAR(255) NOT NULL,
+    historical_cursor VARCHAR(255) NOT NULL,
+    last_sync_timestamp DATE,
+    cursor_sync_successful BOOLEAN,
+    last_sync_status VARCHAR(255) NOT NULL,
+    last_error_message VARCHAR(255) NOT NULL,
+
+    FOREIGN KEY (userId) REFERENCES Users(id)
+);
+
+SELECT 'Creating Accounts Table' as log_message;
+
+CREATE TABLE Accounts
+(
+    accountId VARCHAR(255) PRIMARY KEY,
+    userId INT NOT NULL,
+    accountName VARCHAR(50) NOT NULL,
+    officialName VARCHAR(50),
+    balance DECIMAL(10, 3) NOT NULL,
+    type VARCHAR(20),
+    subType VARCHAR(50),
+    mask VARCHAR(4) NOT NULL,
+    FOREIGN KEY (userId) REFERENCES Users(id)
+);
+
+SELECT 'Creating Categories Table' as log_message;
+
+CREATE TABLE Categories
+(
+    categoryId VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(225) NOT NULL,
+    description TEXT,
+    type VARCHAR(20),
+    icon VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    is_custom BOOLEAN DEFAULT FALSE,
+    createdby BIGINT,
+    createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT 'Creating Transactions Table' as log_message;
+
+CREATE TABLE Transactions
+(
+    transactionId VARCHAR(255) PRIMARY KEY,
+    acctId VARCHAR(255) NOT NULL,
+    amount DECIMAL(10, 3) NOT NULL,
+    description VARCHAR(50),
+    posted Date NOT NULL,
+    currencycode VARCHAR(5),
+    categoryId VARCHAR(50),
+    merchantName VARCHAR(75),
+    pending BOOLEAN,
+    authorizeddate Date,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    logo VARCHAR(100),
+    isSystemCategorized BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (acctId) REFERENCES Accounts(accountId),
+    FOREIGN KEY (categoryId) REFERENCES Categories(categoryid)
+);
+
+CREATE TYPE transaction_type AS ENUM('outflowStreams', 'inflowStreams');
+
+
+SELECT 'Creating RecurringTransactions Table' as log_message;
+
+CREATE TABLE RecurringTransactions
+(
+    rId SERIAL PRIMARY KEY,
+    userId INT NOT NULL,
+    accountId VARCHAR(50) NOT NULL,
+    streamId VARCHAR(50) NOT NULL,
+    categoryId VARCHAR(50) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    merchantName VARCHAR(255) NOT NULL,
+    firstDate Date NOT NULL,
+    lastDate Date NOT NULL,
+    frequency VARCHAR(50),
+    averageAmount DECIMAL(10, 3) NOT NULL,
+    lastAmount DECIMAL(10, 3) NOT NULL,
+    active BOOLEAN DEFAULT TRUE,
+    type VARCHAR(25),
+    FOREIGN KEY (userId) REFERENCES Users(id),
+    FOREIGN KEY (accountId) REFERENCES Accounts(accountId),
+    FOREIGN KEY (categoryId) REFERENCES Categories(categoryId)
+);
+
+SELECT 'Creating Budgets Table' as log_message;
+
+CREATE TABLE Budgets
+(
+    budgetId SERIAL PRIMARY KEY,
+    userid INT NOT NULL,
+    budgetName VARCHAR(225),
+    budgetDescription VARCHAR(225),
+    totalBudgetAmount DECIMAL(10, 2) NOT NULL,
+    budgetActualAmount DECIMAL(10, 2) NOT NULL,
+    actualSavingsAllocation DECIMAL(10, 2),
+    savingsProgress DECIMAL(10, 3),
+    totalMonthsToSave INT,
+    budgetMode VARCHAR(50),
+    periodType VARCHAR(50),
+    monthlyIncome DECIMAL(10, 2) NOT NULL,
+    startDate Date NOT NULL,
+    endDate Date NOT NULL,
+    year INT,
+    budgetPeriod VARCHAR(50),
+    createdDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    lastUpdatedDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (userid) REFERENCES Users(id)
+);
+
+SELECT 'Creating UserLogs Table' as log_message;
+
+CREATE TABLE UserLogs
+(
+    logId SERIAL PRIMARY KEY,
+    userId INT NOT NULL,
+    lastLogin DATE,
+    lastLogout DATE,
+    loginAttempts INT,
+    session_duration INT,
+    isActive boolean default FALSE,
+    FOREIGN KEY (userId) REFERENCES Users(id)
+);
+
+SELECT 'Creating SubBudgets Table' as log_message;
+
+CREATE TABLE SubBudgets
+(
+    id SERIAL PRIMARY KEY,
+    budgetId INT NOT NULL,
+    subBudgetName VARCHAR(255),
+    allocatedAmount DECIMAL(10, 2),
+    spentOnBudget DECIMAL(10, 2),
+    subSavingsTarget DECIMAL(10, 2),
+    subSavingsAmount DECIMAL(10, 2),
+    startDate DATE,
+    endDate DATE,
+    year INT NOT NULL,
+    isActive boolean DEFAULT TRUE,
+    FOREIGN KEY (budgetId) REFERENCES budgets(budgetId)
+);
+
+SELECT 'Creating BudgetSchedules Table' as log_message;
+
+CREATE TABLE BudgetSchedules
+(
+    id SERIAL PRIMARY KEY,
+    sub_budgetid INT NOT NULL,
+    startDate DATE NOT NULL,
+    endDate DATE NOT NULL,
+    scheduleRange VARCHAR(67),
+    totalPeriods INT,
+    periodType VARCHAR(50) NOT NULL,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    createdDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (sub_budgetid) REFERENCES SubBudgets(id)
+);
+
+SELECT 'Creating BudgetScheduleRanges Table' as log_message;
+
+CREATE TABLE BudgetScheduleRanges
+(
+    id SERIAL PRIMARY KEY,
+    scheduleId BIGINT NOT NULL,
+    rangeStart DATE NOT NULL,
+    rangeEnd DATE NOT NULL,
+    totalDays INT NOT NULL,
+    budgetedAmount DECIMAL(10, 3) NOT NULL,
+    spentOnRange DECIMAL(10, 3) NOT NULL,
+    rangeType VARCHAR(50),
+
+    FOREIGN KEY (scheduleId) REFERENCES BudgetSchedules(id)
+);
+
+
+SELECT 'Creating Budget Statistics Table' as log_message;
+
+CREATE TABLE BudgetStatistics
+(
+    id SERIAL PRIMARY KEY,
+    subBudgetId INT NOT NULL,
+    totalBudget DECIMAL(10, 2),
+    totalSpent DECIMAL(10, 2),
+    averageSpendingPerDay DECIMAL(10, 2),
+    healthScore DECIMAL(10, 2),
+
+    FOREIGN KEY (subBudgetId) REFERENCES SubBudgets(id)
+);
+
+SELECT 'Creating budget_schedule_mapping Table' as log_message;
+
+CREATE TABLE budget_schedule_mapping (
+                                         budgetId BIGINT NOT NULL,
+                                         scheduleId BIGINT NOT NULL,
+                                         PRIMARY KEY (budgetId, scheduleId),
+                                         FOREIGN KEY (budgetId) REFERENCES budgets(budgetId),
+                                         FOREIGN KEY (scheduleId) REFERENCES budgetSchedules(id)
+);
+
+SELECT 'Creating sub_budget_mapping Table' as log_message;
+
+CREATE TABLE sub_budget_mapping
+(
+    budgetId BIGINT NOT NULL,
+    subBudgetId BIGINT NOT NULL,
+    PRIMARY KEY (budgetId, subBudgetId),
+    FOREIGN KEY (budgetId) REFERENCES budgets(budgetId),
+    FOREIGN KEY (subBudgetId) REFERENCES SubBudgets(id)
+);
+
+SELECT 'Creating sub_budget_schedule_mapping Table' as log_message;
+
+CREATE TABLE sub_budget_schedule_mapping
+(
+    subBudgetId BIGINT NOT NULL,
+    scheduleId BIGINT NOT NULL,
+    PRIMARY KEY (subBudgetId, scheduleId),
+    FOREIGN KEY (subBudgetId) REFERENCES subBudgets(id),
+    FOREIGN KEY (scheduleId) REFERENCES budgetSchedules(id)
+);
+
+SELECT 'Creating ControlledSpendingCategories Table' as log_message;
+
+CREATE TABLE ControlledSpendingCategories
+(
+    id SERIAL PRIMARY KEY,
+    budgetId INT NOT NULL,
+    categoryName VARCHAR(100) NOT NULL,
+    allocatedAmount DECIMAL(10, 2),
+    monthlySpendingLimit DECIMAL(10, 2),
+    currentSpending DECIMAL(10, 2),
+    isFixedExpense BOOLEAN DEFAULT FALSE,
+    isActive BOOLEAN DEFAULT TRUE,
+    priority INT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (budgetId) REFERENCES Budgets(budgetId)
+);
+
+SELECT 'Creating TransactionRules Table' as log_message;
+
+CREATE TABLE TransactionRules
+(
+    id BIGSERIAL PRIMARY KEY,
+    userId INT,
+    category VARCHAR(225),
+    merchantPattern VARCHAR(255),
+    descriptionPattern VARCHAR(255),
+    priority INT,
+    frequency VARCHAR(50),
+    transaction_type VARCHAR(50),
+    isRecurring BOOLEAN DEFAULT FALSE,
+    isActive BOOLEAN DEFAULT TRUE,
+    isSystemRule BOOLEAN,
+    FOREIGN KEY (userId) REFERENCES Users(id)
+);
+
+SELECT 'Creating BudgetCategories Table' as log_message;
+
+CREATE TABLE BudgetCategories
+(
+    id BIGSERIAL PRIMARY KEY,
+    sub_budgetId INT NOT NULL,
+    category_name VARCHAR(50) NOT NULL,
+    budgetedAmount DECIMAL(10, 2),
+    actual DECIMAL(10, 2),
+    active BOOLEAN DEFAULT TRUE,
+    startDate DATE,
+    endDate DATE,
+    overspendingAmount DECIMAL(10, 2),
+    isOverSpent BOOLEAN DEFAULT FALSE,
+    createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (sub_budgetid) REFERENCES SubBudgets(id)
+);
+
+SELECT 'Creating TransactionCategories Table' as log_message;
+
+CREATE TABLE TransactionCategories
+(
+    id BIGSERIAL PRIMARY KEY,
+    transaction_id VARCHAR(255) NOT NULL,
+    matched_category VARCHAR(255) NOT NULL,
+    plaid_category VARCHAR(255) NOT NULL,
+    categorized_by VARCHAR(50) DEFAULT 'SYSTEM',
+    rule_priority INT,
+    isRecurring BOOLEAN DEFAULT FALSE,
+    categorized_date DATE,
+    isProcessed BOOLEAN,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transaction_id) REFERENCES Transactions(transactionId)
+);
+
+SELECT 'Creating TransactionCategories_Transactions Table' as log_message;
+
+CREATE TABLE TransactionCategories_Transactions (
+                                                    transactionCategory_id BIGINT,
+                                                    transaction_id VARCHAR(255),
+                                                    PRIMARY KEY (transactionCategory_id, transaction_id),
+                                                    FOREIGN KEY (transactionCategory_id) REFERENCES TransactionCategories(id),
+                                                    FOREIGN KEY (transaction_id) REFERENCES Transactions(transactionId)
+);
+
+
+SELECT 'Creating BudgetGoals Table' as log_message;
+
+CREATE TABLE BudgetGoals
+(
+    budget_goals_id SERIAL PRIMARY KEY,
+    budgetId INT NOT NULL,
+    goalName VARCHAR(255) NOT NULL,
+    goalDescription VARCHAR(255),
+    goalType VARCHAR(50) NOT NULL,
+    targetAmount DECIMAL(10, 2),
+    monthlyAllocation DECIMAL(10, 2),
+    currentSavings DECIMAL(10, 2),
+    savingsFrequency VARCHAR(50),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'In Progress',
+    FOREIGN KEY (budgetId) REFERENCES Budgets(budgetId)
+);
+
+SELECT 'Creating SubBudgetGoals Table' as log_message;
+
+CREATE TABLE SubBudgetGoals
+(
+    id SERIAL PRIMARY KEY,
+    goalId INT NOT NULL,
+    subBudgetId INT NOT NULL,
+    monthlySavingsTarget DECIMAL(10, 2),
+    monthlyContributed DECIMAL(10, 2),
+    goalScore DECIMAL(10, 2),
+    remainingAmount DECIMAL(10, 2),
+    monthlyStatus VARCHAR(50),
+
+    FOREIGN KEY (goalId) REFERENCES BudgetGoals(budget_goals_id),
+    FOREIGN KEY (subBudgetId) REFERENCES SubBudgets(id)
+);

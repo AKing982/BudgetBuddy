@@ -14,5 +14,6 @@ public interface TransactionCategoryService extends ServiceModel<TransactionCate
 
     TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity);
 
+    List<TransactionCategory> getTransactionCategoryListByTransactionIds(List<String> transactionIds);
     List<TransactionCategory> getTransactionCategoriesBetweenStartAndEndDates(LocalDate startDate, LocalDate endDate, Long userId);
 }

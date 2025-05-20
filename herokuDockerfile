@@ -1,0 +1,31 @@
+# Build the React frontend
+FROM node:16 AS frontend-build
+WORKDIR /app/frontend
+COPY webapps/package*.json ./
+RUN npm install
+COPY webapps/ ./
+RUN npm run build
+
+# Build the Spring Boot backend
+FROM maven:3.8-openjdk-17 AS backend-build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Final image
+FROM openjdk:17-slim
+WORKDIR /app
+COPY --from=backend-build /app/target/*.jar app.jar
+COPY --from=frontend-build /app/frontend/build ./static
+COPY application-prod.properties ./application-prod.properties
+
+# Set environment variables for production
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV PORT=8080
+
+# Expose the application port
+EXPOSE $PORT
+
+# Run the application
+CMD ["sh", "-c", "java -Dspring.profiles.active=prod -Dserver.port=${PORT} -jar /app/app.jar"]

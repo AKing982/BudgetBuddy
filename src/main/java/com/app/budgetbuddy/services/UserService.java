@@ -13,4 +13,6 @@ public interface UserService extends ServiceModel<UserEntity>
     Long findUserIdByEmail(String email);
     Long findUserIdByUsername(String username);
     Long findMaxUserId();
+
+    void resetPassword(String email, String newPassword);
 }

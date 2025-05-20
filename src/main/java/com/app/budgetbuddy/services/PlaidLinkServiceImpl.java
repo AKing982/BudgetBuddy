@@ -65,6 +65,7 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     }
 
     @Override
+    @Transactional
     public Optional<PlaidLinkEntity> findPlaidLinkByUserID(Long userID) {
         return plaidLinkRepository.findPlaidLinkByUserId(userID);
     }
@@ -75,6 +76,7 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     }
 
     @Override
+    @Transactional
     public PlaidLinkStatus checkPlaidLinkStatus(Long userId)
     {
         Optional<PlaidLinkEntity> plaidLink = plaidLinkRepository.findPlaidLinkByUserId(userId);

@@ -36,7 +36,6 @@ import BudgetSummary from "./BudgetSummary";
 import BudgetProgressSummary from "./BudgetProgressSummary";
 import BudgetRunnerService, { BudgetRunnerResult } from "../services/BudgetRunnerService";
 import {
-    BudgetCategoryStats,
     BudgetPeriodCategory,
     BudgetStats,
     DateRangeInput,
@@ -238,7 +237,6 @@ const BudgetPage: React.FC = () => {
             backgroundSize: '40px 40px'
         }}>
             <Sidebar />
-
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 {/* Header with title and month navigation */}
                 <Grow in={animateIn} timeout={600}>

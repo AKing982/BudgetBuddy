@@ -61,7 +61,7 @@ public class BudgetCategoryQueries
         WHERE a.user.id = :userId
           AND t.merchantName IN (:merchantNames)
           AND t.amount < :amountLimit
-          AND t.category.id IN (:categoryIds)
+          AND t.category.id IN :categoryIds
           AND t.posted BETWEEN :startDate AND :endDate
     """;
         try
@@ -70,7 +70,7 @@ public class BudgetCategoryQueries
                     .setParameter("userId", this.categoryDateInfo.getUserId())
                     .setParameter("merchantNames", merchantNames)
                     .setParameter("amountLimit", 100)
-                    .setParameter("categoryIds", subscriptionCategoryIds)
+                    .setParameter("categoryIds", Arrays.asList(subscriptionCategoryIds))
                     .setParameter("startDate", this.categoryDateInfo.getStartDate())
                     .setParameter("endDate", this.categoryDateInfo.getEndDate())
                     .getSingleResult();

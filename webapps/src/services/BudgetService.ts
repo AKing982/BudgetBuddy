@@ -5,6 +5,7 @@ import {DebtPayoffData} from "../components/DebtPayoffQuestions";
 import {SpendingControlData} from "../components/SpendingControlQuestions";
 import LoginService from "./LoginService";
 import {BudgetType} from "../domain/BudgetType";
+import {BudgetStats} from "../utils/Items";
 
 
 export interface Budget {
@@ -64,8 +65,6 @@ interface BudgetQuestions {
     spendingControlData?: SpendingControlData;
 }
 
-
-
 class BudgetService {
     private static instance: BudgetService;
     private loginService: LoginService = new LoginService();
@@ -81,10 +80,6 @@ class BudgetService {
         return BudgetService.instance;
     }
 
-    public async fetchUserBudget(userId: number) : Promise<null> {
-        return null;
-    }
-
     private calculateNumberOfMonths(startDate: Date, endDate: Date) : number {
         if(!startDate || !endDate){
             throw new Error('Invalid StartDate or EndDate found');
@@ -95,7 +90,8 @@ class BudgetService {
         return yearDifference * 12 + monthDifference;
     }
 
-    public calculateTotalBudgetAmount(budgetType: string, startDate: Date, endDate: Date, targetAmount: number, monthlyIncome: number, currentSavings: number, monthlyAllocation: number) : number {
+    public calculateTotalBudgetAmount(budgetType: string, startDate: Date, endDate: Date, targetAmount: number, monthlyIncome: number, currentSavings: number, monthlyAllocation: number) : number
+    {
         console.log('Target Amount: ', targetAmount);
         console.log('Current Savings: ', currentSavings);
         if(targetAmount < 0) throw new Error('Invalid Target Amount has been entered');
@@ -136,6 +132,36 @@ class BudgetService {
         }
         return totalBudgetAmount;
     };
+
+    public calculateDailySpendingAmount(date: string, userId: number) : number
+    {
+        return 0.0;
+    }
+
+    // public calculateSpendingBudgetStatistics(budgetAmount: number, startDate: string, endDate: string) : BudgetSpendingStatistics[]
+    // {
+    //     return 0;
+    // }
+    //
+    // public async fetchBudgetOverviewCategories(userId: number, startDate: string, endDate: string) : Promise<BudgetCategory[]>
+    // {
+    //     return null;
+    // }
+    //
+    // public async fetchTopExpenseBudgetCategories(userId: number, startDate: string, endDate: string) : Promise<BudgetCategory[]>
+    // {
+    //     return null;
+    // }
+    //
+    // public async fetchBudgetStatistics(userId: number, startDate: string, endDate: string) : Promise<BudgetStats[]>
+    // {
+    //     return null;
+    // }
+    //
+    // public async fetchBudgetPeriodCategories(userId: number, startDate: string, endDate: string) : Promise<BudgetCategory[]>
+    // {
+    //     return null;
+    // }
 
     public async createBudgetRequest(budgetData: BudgetQuestions): Promise<BudgetCreateRequest> {
         if (!budgetData) {
@@ -181,7 +207,8 @@ class BudgetService {
         return income;
     }
 
-    private getTargetAmount(budgetQuestions: BudgetQuestions) : number {
+    private getTargetAmount(budgetQuestions: BudgetQuestions) : number
+    {
         if(!budgetQuestions){
             return 0;
         }

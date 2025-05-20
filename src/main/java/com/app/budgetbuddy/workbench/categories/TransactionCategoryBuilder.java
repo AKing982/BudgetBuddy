@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.RecurringTransactionRule;
-import com.app.budgetbuddy.domain.Transaction;
-import com.app.budgetbuddy.domain.TransactionCategory;
-import com.app.budgetbuddy.domain.TransactionRule;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.services.TransactionService;
@@ -37,6 +34,7 @@ public class TransactionCategoryBuilder
         List<TransactionCategory> allTransactionCategories = new ArrayList<>();
         log.info("Creating Transaction Categories");
         List<String> transactionIds = new ArrayList<>(categorizedTransactions.keySet());
+        Map<String, Set<String>> existingCategories = fetchExistingCategories(transactionIds);
         Map<String, Transaction> transactionsMap = transactionService.getTransactionsMap(transactionIds);
         if(transactionsMap == null)
         {
@@ -54,6 +52,15 @@ public class TransactionCategoryBuilder
             if(transaction == null)
             {
                 log.debug("Transaction not found for Id: {}", transactionId);
+                continue;
+            }
+            String matchedCategory = transactionRule.getMatchedCategory();
+            if(matchedCategory.equals("UNCATEGORIZED"))
+            {
+                continue;
+            }
+            if (isDuplicateCategory(existingCategories, transactionId, matchedCategory)) {
+                log.info("Skipping duplicate category {} for transaction {}", matchedCategory, transactionId);
                 continue;
             }
             log.info("Priority: {}", transactionRule.getPriority());
@@ -79,6 +86,45 @@ public class TransactionCategoryBuilder
             saveTransactionCategories(allTransactionCategories);
         }
         return allTransactionCategories;
+    }
+
+    /**
+     * Check if this transaction+category combination already exists
+     */
+    private boolean isDuplicateCategory(Map<String, Set<String>> existingCategories,
+                                        String transactionId, String category) {
+        Set<String> categories = existingCategories.get(transactionId);
+        return categories != null && categories.contains(category);
+    }
+
+    /**
+     * Add to our local cache of existing categories
+     */
+    private void addToExistingCategories(Map<String, Set<String>> existingCategories,
+                                         String transactionId, String category) {
+        existingCategories
+                .computeIfAbsent(transactionId, k -> new HashSet<>())
+                .add(category);
+    }
+
+    /**
+     * Fetch existing transaction categories to avoid duplicates
+     */
+    private Map<String, Set<String>> fetchExistingCategories(List<String> transactionIds) {
+        Map<String, Set<String>> existingCategories = new HashMap<>();
+        try {
+            List<TransactionCategory> existingTransactionCategories =
+                    transactionCategoryService.getTransactionCategoryListByTransactionIds(transactionIds);
+
+            for (TransactionCategory tc : existingTransactionCategories) {
+                existingCategories
+                        .computeIfAbsent(tc.getTransactionId(), k -> new HashSet<>())
+                        .add(tc.getMatchedCategory());
+            }
+        } catch (Exception e) {
+            log.error("Error fetching existing transaction categories: ", e);
+        }
+        return existingCategories;
     }
 
     public void saveTransactionCategories(final List<TransactionCategory> transactionCategories)

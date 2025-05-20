@@ -9,5 +9,10 @@ WORKDIR /app
 RUN apt-get update
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+#ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# Set a default profile if none is provided
+ENV SPRING_PROFILES_ACTIVE=default
+
+# Use the environment variable in the entrypoint
+ENTRYPOINT ["sh", "-c", "java -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar /app/app.jar"]
 

@@ -1,4 +1,4 @@
-import React, {FormEvent, useCallback, useRef, useState} from 'react';
+import React, {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import {
     Alert,
     Avatar,
@@ -27,6 +27,7 @@ import {be} from "date-fns/locale";
 import BudgetService from "../services/BudgetService";
 import TransactionRunnerService from "../services/TransactionRunnerService";
 import TransactionCategoryRunnerService from "../services/TransactionCategoryRunnerService";
+import UserService from '../services/UserService';
 import UserLogService from "../services/UserLogService";
 import PlaidImportService from "../services/PlaidImportService";
 
@@ -134,41 +135,6 @@ const theme = createTheme({
     },
 });
 
-// const theme = createTheme({
-//     palette: {
-//         background: {
-//             default: '#f5e6d3', // Beige background
-//         },
-//         primary: {
-//             main: '#800000', // Maroon for primary color (buttons)
-//         },
-//     },
-//     components: {
-//         MuiButton: {
-//             styleOverrides: {
-//                 root: {
-//                     borderRadius: 0, // Flat buttons
-//                     textTransform: 'none', // Prevents all-caps text
-//                 },
-//                 contained: {
-//                     boxShadow: 'none', // Removes default shadow for a flatter look
-//                     '&:hover': {
-//                         boxShadow: 'none', // Keeps it flat on hover
-//                     },
-//                 },
-//                 outlined: {
-//                     borderColor: '#800000', // Maroon border for outlined button
-//                     color: '#800000', // Maroon text for outlined button
-//                     '&:hover': {
-//                         borderColor: '#600000', // Darker on hover
-//                         backgroundColor: 'rgba(128, 0, 0, 0.04)', // Slight background change on hover
-//                     },
-//                 },
-//             },
-//         },
-//     },
-// });
-
 const LoginForm: React.FC = () => {
     const [formData, setFormData] = useState<LoginFormData>({
         email: '',
@@ -176,7 +142,7 @@ const LoginForm: React.FC = () => {
     });
     const [formErrors, setFormErrors] = useState<FormErrors>({});
     const [loginError, setLoginError] = useState<string | null>(null);
-
+    const [fullName, setFullName] = useState<string>('');
     const [linkToken, setLinkToken] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const plaidLinkRef = useRef<PlaidLinkRef>(null);
@@ -187,6 +153,7 @@ const LoginForm: React.FC = () => {
     const plaidService = PlaidService.getInstance();
 
     const userLogService = UserLogService.getInstance();
+    const userService = UserService.getInstance();
     const navigate = useNavigate();
 
 
@@ -196,6 +163,31 @@ const LoginForm: React.FC = () => {
             ...prevData,
             [name]: value,
         }));
+    };
+
+    const fetchUserEmailById = async(userId: number) : Promise<string> => {
+        try
+        {
+            const response = await userService.findEmailByUserId(userId);
+            return response;
+        }catch(error){
+            console.error('Error fetching email: ', error);
+            throw new Error(`Failed to fetch email: ${error}`);
+        }
+    }
+
+    const fetchUserFullNameById = async (userId: number): Promise<string> => {
+        try {
+            const storedUserId = Number(sessionStorage.getItem('userId'));
+            console.log('UserId: ', storedUserId);
+            const response = await userService.findFirstAndLastNameByUserId(storedUserId);
+            console.log('Name response: ', response);
+            return response;
+        } catch (error) {
+            console.error("Error fetching name: ", error);
+            // Return a fallback value or re-throw the error to maintain the Promise<string> return type
+            throw new Error(`Failed to fetch user name: ${error}`);
+        }
     };
 
     const { open, ready } = usePlaidLink({
@@ -254,6 +246,10 @@ const LoginForm: React.FC = () => {
 
             console.log('UserID: ', userId);
             sessionStorage.setItem('userId', String(userId));
+            let userFullName = await fetchUserFullNameById(userId);
+            let userEmail = await fetchUserEmailById(userId);
+            sessionStorage.setItem('fullName', userFullName);
+            sessionStorage.setItem('email', userEmail);
             console.log('Is Authenticated: ', true);
 
             // Create user log for this login session

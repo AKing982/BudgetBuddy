@@ -12,6 +12,12 @@ services:
       - REACT_APP_API_URL=http://localhost:8080
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
   backend:
     build:
@@ -19,26 +25,51 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/budgetbuddyapp
+      - SPRING_MAIL_HOST=mailhog
+      - SPRING_MAIL_PORT=1025
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=false
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=false
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - ./application-docker.properties:/app/application-docker.properties
     depends_on:
       db:
         condition: service_healthy
+      mailhog:
+        condition: service_started
+    command: ["java", "-Dspring.profiles.active=docker", "-jar", "/app/app.jar"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
   db:
     image: postgres:12
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       - POSTGRES_DB=budgetbuddyapp
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=pass
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./db/create-database.sh:/docker-entrypoint-initdb.d/create-database.sh
+      - ./db/dbInit.sql:/docker-entrypoint-initdb.d/dbInit.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  mailhog:
+    image:  mailhog/mailhog
+    ports:
+      - "1026:1025"
+      - "8025:8025"
+    restart: unless-stopped
 
 volumes:
   postgres-data:

@@ -28,7 +28,7 @@ public class BudgetEntity {
     @Column(name="budgetId")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="userid")
     private UserEntity user;
 

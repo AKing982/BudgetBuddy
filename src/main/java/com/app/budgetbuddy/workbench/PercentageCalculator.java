@@ -11,212 +11,144 @@ import java.util.Scanner;
 @Service
 public class PercentageCalculator
 {
-    private static double[] INCOME_BRACKETS = {
-            1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, Double.MAX_VALUE
-    };
+    private static final double MIN_INCOME = 0.0;
+    private static final double MAX_INCOME = 10000.0;
 
-    private static final BigDecimal[] GROCERY_PERCENTAGES = {
-            BigDecimal.valueOf(0.12),  // < 1000
-            BigDecimal.valueOf(0.11),  // 1000-1999
-            BigDecimal.valueOf(0.10),  // 2000-2999
-            BigDecimal.valueOf(0.10),  // 3000-3999
-            BigDecimal.valueOf(0.09), // 4000-4999
-            BigDecimal.valueOf(0.07),  // 5000-5999
-            BigDecimal.valueOf(0.065), // 6000-6999
-            BigDecimal.valueOf(0.06),  // 7000-7999
-            BigDecimal.valueOf(0.06),  // 8000-8999
-            BigDecimal.valueOf(0.055), // 9000-9999
-            BigDecimal.valueOf(0.05)   // >= 10000
-    };
+    // GROCERY: High percentage at low income, decreasing as income increases
+    private static final BigDecimal GROCERY_SLOPE = BigDecimal.valueOf(-0.000007);  // Decrease by 0.7% per $1000
+    private static final BigDecimal GROCERY_INTERCEPT = BigDecimal.valueOf(0.12);   // Start at 12% for low income
 
-    private static final BigDecimal[] OTHER_PURCHASES = {
-            BigDecimal.valueOf(0.03),
-            BigDecimal.valueOf(0.04),
-            BigDecimal.valueOf(0.04),
-            BigDecimal.valueOf(0.04),
-            BigDecimal.valueOf(0.05),
-            BigDecimal.valueOf(0.06),
-            BigDecimal.valueOf(0.07),
-            BigDecimal.valueOf(0.08),
-            BigDecimal.valueOf(0.09),
-            BigDecimal.valueOf(0.09),
-            BigDecimal.valueOf(0.10)
-    };
+    // OTHER_PURCHASES: Low percentage at low income, increasing as income increases
+    private static final BigDecimal OTHER_PURCHASES_SLOPE = BigDecimal.valueOf(0.000007);  // Increase by 0.7% per $1000
+    private static final BigDecimal OTHER_PURCHASES_INTERCEPT = BigDecimal.valueOf(0.03);  // Start at 3% for low income
 
-    private static final BigDecimal[] RENT_PERCENTAGES = {
-            BigDecimal.valueOf(0.70),  // < 1000
-            BigDecimal.valueOf(0.55),  // 1000-1999
-            BigDecimal.valueOf(0.50),  // 2000-2999
-            BigDecimal.valueOf(0.60),  // 3000-3999
-            BigDecimal.valueOf(0.40),  // 4000-4999
-            BigDecimal.valueOf(0.38),  // 5000-5999
-            BigDecimal.valueOf(0.36),  // 6000-6999
-            BigDecimal.valueOf(0.34),  // 7000-7999
-            BigDecimal.valueOf(0.32),  // 8000-8999
-            BigDecimal.valueOf(0.31),  // 9000-9999
-            BigDecimal.valueOf(0.30)   // >= 10000
-    };
+    // RENT: High percentage at low income, decreasing as income increases
+    private static final BigDecimal RENT_SLOPE = BigDecimal.valueOf(-0.004);        // Decrease by 4% per $1000
+    private static final BigDecimal RENT_INTERCEPT = BigDecimal.valueOf(0.70);      // Start at 70% for low income
 
-    // Utilities percentages for each bracket
-    private static final BigDecimal[] UTILITIES_PERCENTAGES = {
-            BigDecimal.valueOf(0.05),  // < 1000
-            BigDecimal.valueOf(0.06),  // 1000-1999
-            BigDecimal.valueOf(0.055),  // 2000-2999
-            BigDecimal.valueOf(0.05),  // 3000-3999
-            BigDecimal.valueOf(0.05),  // 4000-4999
-            BigDecimal.valueOf(0.045),  // 5000-5999
-            BigDecimal.valueOf(0.04), // 6000-6999
-            BigDecimal.valueOf(0.04),  // 7000-7999
-            BigDecimal.valueOf(0.035), // 8000-8999
-            BigDecimal.valueOf(0.035),  // 9000-9999
-            BigDecimal.valueOf(0.035)   // >= 10000
-    };
+    // UTILITIES: Slight decrease as income increases
+    private static final BigDecimal UTILITIES_SLOPE = BigDecimal.valueOf(-0.000015); // Decrease by 0.15% per $1000
+    private static final BigDecimal UTILITIES_INTERCEPT = BigDecimal.valueOf(0.06);  // Start at 6% for low income
 
-    private static final BigDecimal[] ORDER_OUT_PERCENTAGES = {
-            BigDecimal.valueOf(0.03),  // < 1000
-            BigDecimal.valueOf(0.04),  // 1000-1999
-            BigDecimal.valueOf(0.05),  // 2000-2999
-            BigDecimal.valueOf(0.06),  // 3000-3999
-            BigDecimal.valueOf(0.07), // 4000-4999
-            BigDecimal.valueOf(0.08),  // 5000-5999
-            BigDecimal.valueOf(0.09), // 6000-6999
-            BigDecimal.valueOf(0.10),  // 7000-7999
-            BigDecimal.valueOf(0.10), // 8000-8999
-            BigDecimal.valueOf(0.10),  // 9000-9999
-            BigDecimal.valueOf(0.10)  // >= 10000
-    };
+    // ORDER_OUT: Increases as income increases
+    private static final BigDecimal ORDER_OUT_SLOPE = BigDecimal.valueOf(0.000007);  // Increase by 0.7% per $1000
+    private static final BigDecimal ORDER_OUT_INTERCEPT = BigDecimal.valueOf(0.03);  // Start at 3% for low income
 
-    private static final BigDecimal[] SUBSCRIPTION_PERCENTAGES = {
-            BigDecimal.valueOf(0.10),  // < 1000
-            BigDecimal.valueOf(0.08),  // 1000-1999
-            BigDecimal.valueOf(0.06), // 2000-2999
-            BigDecimal.valueOf(0.05),  // 3000-3999
-            BigDecimal.valueOf(0.04),  // 4000-4999
-            BigDecimal.valueOf(0.03),  // 5000-5999
-            BigDecimal.valueOf(0.025),  // 6000-6999
-            BigDecimal.valueOf(0.02), // 7000-7999
-            BigDecimal.valueOf(0.015), // 8000-8999
-            BigDecimal.valueOf(0.012),  // 9000-9999
-            BigDecimal.valueOf(0.01)   // >= 10000
-    };
+    // SUBSCRIPTION: Decreases as income increases
+    private static final BigDecimal SUBSCRIPTION_SLOPE = BigDecimal.valueOf(-0.000009); // Decrease by 0.9% per $1000
+    private static final BigDecimal SUBSCRIPTION_INTERCEPT = BigDecimal.valueOf(0.10);  // Start at 10% for low income
 
-    private static final BigDecimal[] GAS_FUEL_PERCENTAGES = {
-            BigDecimal.valueOf(0.01),
-            BigDecimal.valueOf(0.015),
-            BigDecimal.valueOf(0.02),
-            BigDecimal.valueOf(0.02),
-            BigDecimal.valueOf(0.02),
-            BigDecimal.valueOf(0.02),
-            BigDecimal.valueOf(0.018),
-            BigDecimal.valueOf(0.018),
-            BigDecimal.valueOf(0.015),
-            BigDecimal.valueOf(0.015),
-    };
+    // GAS_FUEL: Slight increase then decrease
+    private static final BigDecimal GAS_FUEL_SLOPE = BigDecimal.valueOf(0.0000005);  // Very slight increase per $1000
+    private static final BigDecimal GAS_FUEL_INTERCEPT = BigDecimal.valueOf(0.01);   // Start at 1% for low income
 
-    private static final BigDecimal[] INSURANCE_PERCENTAGES = {
-            BigDecimal.valueOf(0.10),
-            BigDecimal.valueOf(0.08),
-            BigDecimal.valueOf(0.07),
-            BigDecimal.valueOf(0.06),
-            BigDecimal.valueOf(0.05),
-            BigDecimal.valueOf(0.04),
-            BigDecimal.valueOf(0.035),
-            BigDecimal.valueOf(0.03),
-            BigDecimal.valueOf(0.025),
-            BigDecimal.valueOf(0.02),
-            BigDecimal.valueOf(0.015),
-    };
+    // INSURANCE: Decreases as income increases
+    private static final BigDecimal INSURANCE_SLOPE = BigDecimal.valueOf(-0.000008);  // Decrease by 0.8% per $1000
+    private static final BigDecimal INSURANCE_INTERCEPT = BigDecimal.valueOf(0.10);   // Start at 10% for low income
 
-    private static final BigDecimal[] PAYMENTS_PERCENTAGES = {
-            BigDecimal.valueOf(0.20),
-            BigDecimal.valueOf(0.17),
-            BigDecimal.valueOf(0.15),
-            BigDecimal.valueOf(0.13),
-            BigDecimal.valueOf(0.12),
-            BigDecimal.valueOf(0.11),
-            BigDecimal.valueOf(0.10),
-            BigDecimal.valueOf(0.09),
-            BigDecimal.valueOf(0.08),
-            BigDecimal.valueOf(0.07),
-            BigDecimal.valueOf(0.06),
-    };
+    // PAYMENTS: Decreases as income increases
+    private static final BigDecimal PAYMENTS_SLOPE = BigDecimal.valueOf(-0.000014);   // Decrease by 1.4% per $1000
+    private static final BigDecimal PAYMENTS_INTERCEPT = BigDecimal.valueOf(0.20);    // Start at 20% for low income
 
-    private static final BigDecimal[] SAVINGS_PERCENTAGES = {
-            BigDecimal.valueOf(0.05),
-            BigDecimal.valueOf(0.08),
-            BigDecimal.valueOf(0.10),
-            BigDecimal.valueOf(0.12),
-            BigDecimal.valueOf(0.13),
-            BigDecimal.valueOf(0.14),
-            BigDecimal.valueOf(0.15),
-            BigDecimal.valueOf(0.16),
-            BigDecimal.valueOf(0.17),
-            BigDecimal.valueOf(0.18),
-            BigDecimal.valueOf(0.19)
-    };
+    // SAVINGS: Increases as income increases
+    private static final BigDecimal SAVINGS_SLOPE = BigDecimal.valueOf(0.000014);     // Increase by 1.4% per $1000
+    private static final BigDecimal SAVINGS_INTERCEPT = BigDecimal.valueOf(0.05);     // Start at 5% for low income
 
-    public BigDecimal getPercentageByIncome(final double incomeAmount, final BigDecimal[] percentages)
-    {
-        if(incomeAmount == 0 || percentages == null)
-        {
+    // TRIPS: Increases as income increases (luxury that becomes more affordable)
+    private static final BigDecimal TRIPS_SLOPE = BigDecimal.valueOf(0.000008);       // Increase by 0.8% per $1000
+    private static final BigDecimal TRIPS_INTERCEPT = BigDecimal.valueOf(0.01);       // Start at 1% for low income
+
+    // HAIRCUT: Slight increase as income increases (more premium services)
+    private static final BigDecimal HAIRCUT_SLOPE = BigDecimal.valueOf(0.000002);     // Increase by 0.2% per $1000
+    private static final BigDecimal HAIRCUT_INTERCEPT = BigDecimal.valueOf(0.01);     // Start at 1% for low income
+
+    // COFFEE: Slight increase as income increases (more premium coffee)
+    private static final BigDecimal COFFEE_SLOPE = BigDecimal.valueOf(0.000003);      // Increase by 0.3% per $1000
+    private static final BigDecimal COFFEE_INTERCEPT = BigDecimal.valueOf(0.01);      // Start at 1% for low income
+
+
+    /**
+     * Calculates a percentage based on income using linear scaling
+     * @param incomeAmount The monthly income
+     * @param slope The rate of change of percentage per dollar of income
+     * @param intercept The base percentage at minimum income
+     * @return The calculated percentage as a BigDecimal
+     */
+    public BigDecimal calculateLinearPercentage(final double incomeAmount,
+                                                final BigDecimal slope,
+                                                final BigDecimal intercept) {
+        if (incomeAmount <= MIN_INCOME) {
+            return intercept;
+        }
+
+        // Apply constraints to income for calculation
+        double calculationIncome = Math.min(incomeAmount, MAX_INCOME);
+
+        // Calculate percentage using linear function: percentage = slope * income + intercept
+        BigDecimal incomeEffect = slope.multiply(BigDecimal.valueOf(calculationIncome));
+        BigDecimal percentage = intercept.add(incomeEffect);
+
+        // Ensure percentage is between 0 and 1
+        if (percentage.compareTo(BigDecimal.ZERO) < 0) {
             return BigDecimal.ZERO;
+        } else if (percentage.compareTo(BigDecimal.ONE) > 0) {
+            return BigDecimal.ONE;
         }
-        int bracketIndex = 0;
-        while(bracketIndex < INCOME_BRACKETS.length && incomeAmount >= INCOME_BRACKETS[bracketIndex])
-        {
-            bracketIndex++;
-        }
-        return percentages[bracketIndex];
+
+        return percentage.setScale(4, RoundingMode.HALF_UP);
     }
 
-    public BigDecimal getPaymentsPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, PAYMENTS_PERCENTAGES);
+    public BigDecimal getPaymentsPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, PAYMENTS_SLOPE, PAYMENTS_INTERCEPT);
     }
 
-    public BigDecimal getInsurancePercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, INSURANCE_PERCENTAGES);
+    public BigDecimal getInsurancePercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, INSURANCE_SLOPE, INSURANCE_INTERCEPT);
     }
 
-    public BigDecimal getGroceryPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, GROCERY_PERCENTAGES);
+    public BigDecimal getGroceryPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, GROCERY_SLOPE, GROCERY_INTERCEPT);
     }
 
-    public BigDecimal getGasFuelPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, GAS_FUEL_PERCENTAGES);
+    public BigDecimal getGasFuelPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, GAS_FUEL_SLOPE, GAS_FUEL_INTERCEPT);
     }
 
-    public BigDecimal getRentPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, RENT_PERCENTAGES);
+    public BigDecimal getRentPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, RENT_SLOPE, RENT_INTERCEPT);
     }
 
-    public BigDecimal getUtilitiesPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, UTILITIES_PERCENTAGES);
+    public BigDecimal getUtilitiesPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, UTILITIES_SLOPE, UTILITIES_INTERCEPT);
     }
 
-    public BigDecimal getOrderOutPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, ORDER_OUT_PERCENTAGES);
+    public BigDecimal getOrderOutPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, ORDER_OUT_SLOPE, ORDER_OUT_INTERCEPT);
     }
 
-    public BigDecimal getSubscriptionPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, SUBSCRIPTION_PERCENTAGES);
+    public BigDecimal getSubscriptionPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, SUBSCRIPTION_SLOPE, SUBSCRIPTION_INTERCEPT);
     }
 
     public BigDecimal getSavingsPercentage(double incomeAmount)
     {
-        return getPercentageByIncome(incomeAmount, SAVINGS_PERCENTAGES);
+        return calculateLinearPercentage(incomeAmount, SAVINGS_SLOPE, SAVINGS_INTERCEPT);
     }
 
-    public BigDecimal getOtherPurchasesPercentage(double incomeAmount)
-    {
-        return getPercentageByIncome(incomeAmount, OTHER_PURCHASES);
+    public BigDecimal getOtherPurchasesPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, OTHER_PURCHASES_SLOPE, OTHER_PURCHASES_INTERCEPT);
+    }
+
+    public BigDecimal getTripsPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, TRIPS_SLOPE, TRIPS_INTERCEPT);
+    }
+
+    public BigDecimal getHaircutPercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, HAIRCUT_SLOPE, HAIRCUT_INTERCEPT);
+    }
+
+    public BigDecimal getCoffeePercentage(double incomeAmount) {
+        return calculateLinearPercentage(incomeAmount, COFFEE_SLOPE, COFFEE_INTERCEPT);
     }
 
     public BigDecimal estimateCategoryPercentage(final double incomeAmount, final String category)
@@ -242,13 +174,18 @@ public class PercentageCalculator
                 return getSavingsPercentage(incomeAmount);
             case "Other":
                 return getOtherPurchasesPercentage(incomeAmount);
+            case "Trip":
+                return getTripsPercentage(incomeAmount);
+            case "Haircut":
+                return getHaircutPercentage(incomeAmount);
+            case "Coffee":
+                return getCoffeePercentage(incomeAmount);
             default:
                 throw new RuntimeException("Invalid category: " + category);
         }
     }
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         PercentageCalculator calculator = new PercentageCalculator();
 
@@ -273,7 +210,7 @@ public class PercentageCalculator
         // Define categories by priority
         String[] primaryCategories = {"Rent", "Utilities", "Groceries", "Insurance", "Gas"};
         String[] savingsCategory = {"Savings"};
-        String[] extraCategories = {"Order Out", "Subscription", "Payments", "Other"};
+        String[] extraCategories = {"Order Out", "Subscription", "Payments", "Other", "Trips", "Haircut", "Coffee"};
 
         BigDecimal total = BigDecimal.ZERO;
 

@@ -113,6 +113,26 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
+    public List<TransactionCategory> getTransactionCategoryListByTransactionIds(List<String> transactionIds)
+    {
+        if(transactionIds.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<TransactionCategoryEntity> transactionCategoryEntities = transactionCategoryRepository.findTransactionCategoryByTransactionIds(transactionIds);
+            return transactionCategoryEntities.stream()
+                    .map(this::convertFromEntity)
+                    .distinct()
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the transaction categories: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     public List<TransactionCategory> getTransactionCategoriesBetweenStartAndEndDates(final LocalDate startDate, final LocalDate endDate, final Long userId)
     {
         try

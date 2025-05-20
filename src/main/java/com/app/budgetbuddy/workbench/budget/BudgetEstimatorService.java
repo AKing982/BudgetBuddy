@@ -21,7 +21,7 @@ public class BudgetEstimatorService
     private final BudgetCategoryQueries budgetCategoryQueries;
     private final PercentageCalculator percentageCalculator;
     private final String[] categories = new String[]{"Rent", "Utilities", "Insurance",
-            "Gas", "Groceries", "Payments", "Subscription", "Savings", "Order Out", "Other"};
+            "Gas", "Groceries", "Payments", "Subscription", "Savings", "Order Out", "Coffee","Other", "Trip", "Haircut"};
 
     @Autowired
     public BudgetEstimatorService(BudgetCategoryQueries budgetCategoryQueries,
@@ -81,6 +81,7 @@ public class BudgetEstimatorService
             log.info("Remaining Budget: {}", remainingBudgetAmount);
             // Does the user have rent?
             // Does the user have mortgage?
+            //TODO: Add test cases to check if the user has rent, utilities, or insurance
             if(category.equals("Rent") || category.equals("Utilities") || category.equals("Insurance"))
             {
                 double categoryAmount = budgetCategoryQueries.getCategoryAmount(userId, budgetStart, budgetEnd, category);
@@ -105,6 +106,17 @@ public class BudgetEstimatorService
                         continue;
                     }
                 }
+                if(category.equals("Subscription"))
+                {
+                    boolean hasSubscriptions = budgetCategoryQueries.userHasSubscriptions();
+                    if(!hasSubscriptions)
+                    {
+                        CategoryBudgetAmount subscriptionBudgetAmountZero = new CategoryBudgetAmount("Subscriptions", BigDecimal.ZERO);
+                        categoryBudgetAmounts[i] = subscriptionBudgetAmountZero;
+                        log.warn("User has no subscriptions, setting zero budget for subscription category");
+                        continue;
+                    }
+                }
                 if(category.equals("Savings"))
                 {
                     double savingsPercentage = percentageCalculator.estimateCategoryPercentage(budgetAmount, "Savings").doubleValue();
@@ -124,6 +136,7 @@ public class BudgetEstimatorService
                         continue;
                     }
                 }
+                //TODO: Add test cases to check if the user can allocate to Trip, Coffee, Order out, etc...
                 else
                 {
                     double categoryPercentage = percentageCalculator.estimateCategoryPercentage(budgetAmount, category).doubleValue();

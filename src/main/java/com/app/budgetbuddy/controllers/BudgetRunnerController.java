@@ -29,7 +29,8 @@ public class BudgetRunnerController
    @GetMapping("/period")
    public ResponseEntity<List<BudgetRunnerResult>> getBudgetsByDateRange(@RequestParam Long userId,
                                                                          @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
-                                                                         @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate){
+                                                                         @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate)
+   {
        try
        {
            List<BudgetRunnerResult> results = budgetRunner.runBudgetProcess(userId, startDate, endDate);

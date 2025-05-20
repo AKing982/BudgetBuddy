@@ -34,6 +34,7 @@ import {
 import {useLocation, useNavigate} from "react-router-dom";
 import SidebarMenu from "./SidebarMenu";
 import BudgetService, {Budget} from "../services/BudgetService";
+import UserService from '../services/UserService';
 import {BudgetType} from "../domain/BudgetType";
 import Tooltip from '@mui/material/Tooltip';
 
@@ -51,11 +52,14 @@ const Sidebar: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<string>('');
     const [showSettingsMenu, setShowSettingsMenu] = useState<boolean>(false);
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+    const [username, setUserName] = useState<string>('');
     const [budgetType, setBudgetType] = useState<BudgetType>();
     const budgetService = BudgetService.getInstance();
     const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
-
+    const userService = UserService.getInstance();
+    const userFullName = sessionStorage.getItem('fullName');
+    const userEmail = sessionStorage.getItem('email');
 
     const fetchBudgetTypeFromBudget = (budget: Budget[]): BudgetType => {
         if(budget.length === 0){
@@ -76,6 +80,7 @@ const Sidebar: React.FC = () => {
         }
 
     }
+
 
     useEffect(() => {
         const fetchBudgetType = async () => {
@@ -241,7 +246,7 @@ const Sidebar: React.FC = () => {
                 </Avatar>
                 <Box sx={{ ml: 1.5 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Alexander Smith
+                        {userFullName}
                     </Typography>
                     <Typography variant="caption" sx={{
                         color: 'text.secondary',
@@ -320,10 +325,10 @@ const Sidebar: React.FC = () => {
                         borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`
                     }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            Alexander Smith
+                            {userFullName}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            alexander.smith@example.com
+                            {userEmail}
                         </Typography>
                     </Box>
                     <MenuItem onClick={handleSettingsClose} sx={{ py: 1.5 }}>

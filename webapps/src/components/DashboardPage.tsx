@@ -36,15 +36,18 @@ import AccountSummary from "./AccountSummary";
 import PaymentCharges from "./PaymentCharges";
 import Sidebar from "./Sidebar";
 import PlaidService from "../services/PlaidService";
+import UserService from '../services/UserService';
 
 
 const DashboardPage: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+    const userFullName = sessionStorage.getItem('fullName');
     const navigate = useNavigate();
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
     const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
     const plaidService = PlaidService.getInstance();
+    const userService = UserService.getInstance();
 
     // Add this useEffect hook to set the document title
     useEffect(() => {
@@ -55,6 +58,7 @@ const DashboardPage: React.FC = () => {
             document.title = "Dashboard";
         };
     }, []); // Empty dependency array means this runs once when component mounts
+
 
     const getResponsiveSpacing = () => {
         return isMdUp ? 1 : 1;
@@ -125,7 +129,7 @@ const DashboardPage: React.FC = () => {
                             {/* Main Content Area */}
                             <Grid item xs={12} lg={5}>
                                 <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#111827', mb: 2 }}>
-                                    Good morning, Alexander
+                                    Good morning, {userFullName}
                                 </Typography>
                                 <Grid container spacing={spacing}>
                                     {/* Expense Spending Tracker */}

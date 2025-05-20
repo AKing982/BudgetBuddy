@@ -19,31 +19,31 @@ import java.util.Properties;
 @EnableTransactionManagement
 public class JpaConfig
 {
-//    @Value("${spring.datasource.url}")
-//    private String dbUrl;
-//
-//    @Value("${spring.datasource.username}")
-//    private String username;
-//
-//    @Value("${spring.datasource.password}")
-//    private String password;
-//
-//    @Value("${spring.datasource.driver-class-name}")
-//    private String driverClassName;
+    @Value("${spring.datasource.url}")
+    private String dbUrl;
 
-//    @Value("${spring.jpa.hibernate.ddl-auto}")
-//    private String hibernateDdlAuto;
-//
-//    @Value("${spring.jpa.properties.hibernate.dialect}")
-//    private String hibernateDialect;
+    @Value("${spring.datasource.username}")
+    private String username;
+
+    @Value("${spring.datasource.password}")
+    private String password;
+
+    @Value("${spring.datasource.driver-class-name}")
+    private String driverClassName;
+
+    @Value("${spring.jpa.hibernate.ddl-auto}")
+    private String hibernateDdlAuto;
+
+    @Value("${spring.jpa.properties.hibernate.dialect}")
+    private String hibernateDialect;
 
     @Bean
     public DataSource dataSource(){
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://localhost:5432/budgetbuddydb");
-        dataSource.setUsername("postgres");
-        dataSource.setPassword("pass");
+        dataSource.setDriverClassName(driverClassName);
+        dataSource.setUrl(dbUrl);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
         return dataSource;
     }
 
