@@ -8,6 +8,7 @@ import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
 import com.app.budgetbuddy.workbench.converter.SubBudgetEntityConverter;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -204,6 +205,44 @@ public class SubBudgetServiceImpl implements SubBudgetService
         }catch(DataAccessException e){
             log.error("There was an error getting the sub-budget by userId {}", userId);
             return Optional.empty();
+        }
+    }
+
+    @Override
+    public List<SubBudget> findSubBudgetsByUserId(Long userId)
+    {
+        if(userId < 1)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntitiesByUserId(userId);
+            return subBudgetEntities.stream()
+                    .map(subBudgetEntityConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the subBudgets for userId {}: {}", userId, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public List<SubBudget> findSubBudgetsByUserIdAndLimit(Long userId, int numOfMonths, int year)
+    {
+        if(userId < 1 || numOfMonths < 1)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntitiesByUserIdAndLimit(userId, numOfMonths, year);
+            return subBudgetEntities.stream()
+                    .map(subBudgetEntityConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the subBudgets by userId {} and limit {}: {}", userId, numOfMonths, e.getMessage());
+            return Collections.emptyList();
         }
     }
 

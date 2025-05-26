@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.repositories.BudgetScheduleRepository;
 import com.app.budgetbuddy.services.BudgetScheduleRangeService;
+import com.app.budgetbuddy.workbench.subBudget.HistoricalSubBudgetService;
 import jakarta.persistence.Embeddable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,6 +29,9 @@ class BudgetScheduleRangeBuilderServiceTest
 
     @Mock
     private BudgetScheduleRepository budgetScheduleRepository;
+
+    @Mock
+    private HistoricalSubBudgetService historicalSubBudgetService;
 
     @InjectMocks
     private BudgetScheduleRangeBuilderService budgetScheduleRangeBuilderService;
@@ -50,7 +55,7 @@ class BudgetScheduleRangeBuilderServiceTest
         budget.setSavingsAmountAllocated(BigDecimal.ZERO);
         budget.setBudgetAmount(new BigDecimal("39120"));
         budget.setActual(new BigDecimal("1609"));
-        budgetScheduleRangeBuilderService = new BudgetScheduleRangeBuilderService(budgetScheduleRangeService, budgetScheduleRepository);
+        budgetScheduleRangeBuilderService = new BudgetScheduleRangeBuilderService(budgetScheduleRangeService, budgetScheduleRepository, historicalSubBudgetService);
     }
 
     @Test
@@ -121,9 +126,40 @@ class BudgetScheduleRangeBuilderServiceTest
             assertEquals(expectedBudgetScheduleRange.getBudgetDateRange().getStartDate(), actualBudgetScheduleRange.getBudgetDateRange().getStartDate());
             assertEquals(expectedBudgetScheduleRange.getBudgetDateRange().getEndDate(), actualBudgetScheduleRange.getBudgetDateRange().getEndDate());
         }
-
-
     }
+
+//    @Test
+//    void testCreateBudgetedAmountForWeeklyRanges_whenWeeklyRangesIsNull_thenReturnZero(){
+//        BigDecimal subBudgetAmount = new BigDecimal("3260");
+//        Map<DateRange, BigDecimal> actual = budgetScheduleRangeBuilderService.createBudgetedAmountForWeeklyRanges(null, subBudgetAmount);
+//        assertEquals(BigDecimal.ZERO, actual);
+//    }
+//
+//    @Test
+//    void testCreateBudgetedAmountForWeeklyRanges_whenWeeklyRangesIsEmpty_thenReturnZero(){
+//        BigDecimal subBudgetAmount = new BigDecimal("3260");
+//        List<DateRange> weeklyRanges = new ArrayList<>();
+//        Map<DateRange, BigDecimal> actual = budgetScheduleRangeBuilderService.createBudgetedAmountForWeeklyRanges(weeklyRanges, subBudgetAmount);
+//        assertEquals(BigDecimal.ZERO, actual);
+//    }
+//
+//    @Test
+//    void testCreateBudgetedAmountForWeeklyRanges_whenSubBudgetAmountIsNull_thenReturnZero(){
+//        List<DateRange> weeklyRanges = new ArrayList<>();
+//        weeklyRanges.add(new DateRange(LocalDate.of(2025, 5, 1), LocalDate.of(2025, 5, 31)));
+//        Map<DateRange, BigDecimal> actual = budgetScheduleRangeBuilderService.createBudgetedAmountForWeeklyRanges(weeklyRanges, null);
+//        assertEquals(BigDecimal.ZERO, actual);
+//    }
+//
+//    @Test
+//    void testCreateBudgetedAmountForWeeklyRanges_whenSubBudgetAmountIsZero_thenReturnZero(){
+//        List<DateRange> weeklyRanges = new ArrayList<>();
+//        weeklyRanges.add(new DateRange(LocalDate.of(2025, 5, 1), LocalDate.of(2025, 5, 31)));
+//        BigDecimal subBudgetAmount = new BigDecimal("0");
+//        Map<DateRange, BigDecimal> actual = budgetScheduleRangeBuilderService.createBudgetedAmountForWeeklyRanges(weeklyRanges, subBudgetAmount);
+//        assertEquals(BigDecimal.ZERO, actual);
+//    }
+
 
     private List<BudgetScheduleRange> generateJanuaryBudgetScheduleRanges(){
         List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();

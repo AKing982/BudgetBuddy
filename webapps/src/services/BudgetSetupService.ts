@@ -1,6 +1,7 @@
 import axios, {AxiosInstance} from "axios";
 import {BudgetMode, BudgetRegistration} from "../utils/Items";
 import DateRange from "../domain/DateRange";
+import {apiUrl} from "../config/api";
 
 
 class BudgetSetupService {
@@ -8,8 +9,10 @@ class BudgetSetupService {
     private static axios: AxiosInstance;
 
     constructor() {
+        // const baseURL = process.env.NODE_ENV === 'production'
+        //     ? 'http://localhost:8080/api/budgetSetup/'
+        //     : '/api/budgetSetup/';
         BudgetSetupService.axios = axios.create({
-            baseURL: 'http://localhost:8080/api/budgetSetup/',
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -25,6 +28,7 @@ class BudgetSetupService {
 
     public async startBudgetSetupProcess(budgetRegistration: BudgetRegistration): Promise<boolean> {
         let userId = budgetRegistration.userId;
+
         try {
 
             const transformedRegistration = {
@@ -34,10 +38,12 @@ class BudgetSetupService {
                     endDate: dateRange.endDate.toISOString().split('T')[0]
                 }))
             };
+            // Log the exact data being sent
+            console.log('Sending budget setup request with payload:', JSON.stringify(transformedRegistration, null, 2));
 
             console.log('Budget DateRanges: ', budgetRegistration.budgetDateRanges);
             // Ensure userId is set in the budgetRegistration
-            const response = await BudgetSetupService.axios.post('/setup', transformedRegistration);
+            const response = await BudgetSetupService.axios.post(`${apiUrl}/budgetSetup/setup`, transformedRegistration);
             if (response.status === 200) {
                 console.log(`Budget setup completed successfully for user ${userId}`);
                 return true;

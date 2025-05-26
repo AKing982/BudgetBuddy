@@ -37,6 +37,9 @@ import BudgetService, {Budget} from "../services/BudgetService";
 import UserService from '../services/UserService';
 import {BudgetType} from "../domain/BudgetType";
 import Tooltip from '@mui/material/Tooltip';
+import UserLogService from "../services/UserLogService";
+import {UserLog} from "../utils/Items";
+import SessionService from "../services/SessionService";
 
 interface MenuItem {
     text: string;
@@ -60,6 +63,7 @@ const Sidebar: React.FC = () => {
     const userService = UserService.getInstance();
     const userFullName = sessionStorage.getItem('fullName');
     const userEmail = sessionStorage.getItem('email');
+    const userLogService = UserLogService.getInstance();
 
     const fetchBudgetTypeFromBudget = (budget: Budget[]): BudgetType => {
         if(budget.length === 0){
@@ -81,7 +85,6 @@ const Sidebar: React.FC = () => {
 
     }
 
-
     useEffect(() => {
         const fetchBudgetType = async () => {
             try
@@ -98,7 +101,6 @@ const Sidebar: React.FC = () => {
         };
         fetchBudgetType();
     })
-
 
     const getBudgetPath = () => {
         switch (budgetType) {
@@ -162,16 +164,36 @@ const Sidebar: React.FC = () => {
         setNotificationsAnchorEl(null);
     };
 
-    const handleLogout = () => {
-        // Clear session storage
-        sessionStorage.clear();
-        // Navigate to login page
-        navigate('/');
-        // Close settings menu
-        handleSettingsClose();
+    const handleLogout = async () => {
+        try {
+            const sessionService = SessionService.getInstance();
+
+            // 1. Invalidate session on backend (this will also handle session logging)
+            await sessionService.invalidateSession();
+
+            // 2. Clear all client-side storage
+            sessionStorage.clear();
+            localStorage.clear();
+
+            // 3. Close any open menus
+            handleSettingsClose();
+            handleNotificationsClose();
+
+            // 4. Navigate to login page
+            navigate('/');
+
+            console.log('Logout completed successfully');
+        } catch (error) {
+            console.error('Error during logout:', error);
+
+            // Even if backend logout fails, clear local data and redirect
+            sessionStorage.clear();
+            localStorage.clear();
+            handleSettingsClose();
+            handleNotificationsClose();
+            navigate('/');
+        }
     };
-
-
 
     return (
         <Box

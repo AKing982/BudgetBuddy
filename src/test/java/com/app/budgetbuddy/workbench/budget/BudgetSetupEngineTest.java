@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
+import com.app.budgetbuddy.workbench.TransactionImportService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -52,6 +53,9 @@ class BudgetSetupEngineTest
 
     @MockBean
     private MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
+
+    @MockBean
+    private TransactionImportService transactionImportService;
 
     @MockBean
     private AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService;
@@ -133,7 +137,7 @@ class BudgetSetupEngineTest
                 .budgetGoals(budgetGoals)
                 .build();
 
-        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, abstractBudgetStatisticsService, budgetCategoryThreadService);
+        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, transactionImportService, abstractBudgetStatisticsService, budgetCategoryThreadService);
     }
 
     @Test
@@ -429,6 +433,7 @@ class BudgetSetupEngineTest
         BigDecimal previousIncomeAmount = new BigDecimal("39000");
         final String previousBudgetName = "2024 Budget Savings Plan";
         final Long userId = 1L;
+        final int previousYear = 2025-1;
 
         // Set current year to 0, so previous year is -1 (negative)
         Budget currentYearBudget = budget;
@@ -437,7 +442,7 @@ class BudgetSetupEngineTest
         currentYearBudget.setEndDate(LocalDate.of(0, 12, 31));
 
         // Act
-        Optional<Budget> actual = budgetSetupEngine.createPreviousYearBudget(previousIncomeAmount, previousBudgetName, currentYearBudget);
+        Optional<Budget> actual = budgetSetupEngine.createPreviousYearBudget(previousIncomeAmount, previousBudgetName, previousYear, currentYearBudget);
 
         // Assert
         assertNotNull(actual, "Result should not be null");

@@ -40,7 +40,8 @@ public class TransactionEntityToModelConverter implements Converter<Transactions
                     transactionsEntity.getId(),
                     transactionsEntity.getAuthorizedDate(),
                     transactionsEntity.getLogoUrl(),
-                    transactionsEntity.getPosted()
+                    transactionsEntity.getPosted(),
+                    transactionsEntity.isIssystemCategorized()
             );
         }catch(Exception e) {
             log.error("There was an error while converting the TransactionsEntity", e);

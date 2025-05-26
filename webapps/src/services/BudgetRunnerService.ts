@@ -21,7 +21,6 @@ class BudgetRunnerService {
 
     constructor(){
         BudgetRunnerService.axios = axios.create({
-            baseURL: 'http://localhost:8080/api/budgetRunner',
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -97,7 +96,7 @@ class BudgetRunnerService {
             const formattedStartDate = this.formatDate(startDate);
             const formattedEndDate = this.formatDate(endDate);
 
-            const response = await BudgetRunnerService.axios.get<BudgetRunnerResult[]>('/period', {  // Remove trailing slash
+            const response = await BudgetRunnerService.axios.get<BudgetRunnerResult[]>(`${apiUrl}/budgetRunner/period`, {  // Remove trailing slash
                 params: {
                     userId,
                     startDate: formattedStartDate,

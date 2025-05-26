@@ -1,4 +1,5 @@
 import {User} from "lucide-react";
+import {apiUrl} from "../config/api";
 
 class UserService {
     private baseURL: string = 'http://localhost:8080/api/users';
@@ -21,7 +22,7 @@ class UserService {
             throw new Error("Invalid UserId: " + userId);
         }
         try {
-            const response = await fetch(`${this.baseURL}/${userId}/email`, {
+            const response = await fetch(`${apiUrl}/users/${userId}/email`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ class UserService {
             throw new Error("Invalid UserId: " + userId);
         }
         try {
-            const response = await fetch(`${this.baseURL}/${userId}/name`, {
+            const response = await fetch(`${apiUrl}/users/${userId}/name`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -78,7 +79,7 @@ class UserService {
             throw new Error("Invalid UserId: " + userId);
         }
         try {
-            const response = await fetch(`${this.baseURL}/${userId}/find-name`, {
+            const response = await fetch(`${apiUrl}/${userId}/find-name`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

@@ -50,8 +50,8 @@ export interface UserLog
 {
     id: number;
     userId: number;
-    lastLogin: number;
-    lastLogout: number;
+    lastLogin?: string;
+    lastLogout?: string;
     sessionDuration: number;
     loginAttempts: number;
     isActive: boolean;

@@ -40,6 +40,8 @@ public class Transaction {
     @JsonDeserialize(using = LocalDateDeserializer.class)
     private LocalDate posted;
 
+    private boolean isSystemCategorized;
+
     public Transaction(
             @JsonProperty("accountId") String accountId,
             @JsonProperty("amount") BigDecimal amount,
@@ -54,7 +56,8 @@ public class Transaction {
             @JsonProperty("transactionId") String transactionId,
             @JsonProperty("authorizedDate") LocalDate authorizedDate,
             @JsonProperty("logoURL") String logoUrl,
-            @JsonProperty("posted") LocalDate posted) {
+            @JsonProperty("posted") LocalDate posted,
+            @JsonProperty("isSystemCategorized") boolean isSystemCategorized) {
         this.accountId = accountId;
         this.amount = amount;
         this.isoCurrencyCode = isoCurrencyCode;
@@ -69,6 +72,7 @@ public class Transaction {
         this.authorizedDate = authorizedDate;
         this.logoUrl = logoUrl;
         this.posted = posted;
+        this.isSystemCategorized = isSystemCategorized;
     }
 
     public Transaction(){

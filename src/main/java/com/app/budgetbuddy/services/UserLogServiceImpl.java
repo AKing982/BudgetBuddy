@@ -21,6 +21,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
+@Deprecated
 public class UserLogServiceImpl implements UserLogService
 {
     private final UserLogRepository userLogRepository;

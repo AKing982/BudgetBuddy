@@ -191,7 +191,8 @@ public class TransactionServiceImpl implements TransactionService
                     plaidTransaction.getTransactionId(),
                     plaidTransaction.getAuthorizedDate(),
                     plaidTransaction.getLogoUrl(),
-                    plaidTransaction.getDate()
+                    plaidTransaction.getDate(),
+                    false
             );
             transactions.add(transaction1);
         }

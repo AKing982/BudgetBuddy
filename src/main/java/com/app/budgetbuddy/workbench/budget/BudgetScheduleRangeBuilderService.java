@@ -7,6 +7,7 @@ import com.app.budgetbuddy.exceptions.BudgetScheduleException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BudgetScheduleRepository;
 import com.app.budgetbuddy.services.BudgetScheduleRangeService;
+import com.app.budgetbuddy.workbench.subBudget.HistoricalSubBudgetService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -26,19 +24,80 @@ public class BudgetScheduleRangeBuilderService
 {
     private final BudgetScheduleRangeService budgetScheduleRangeService;
     private final BudgetScheduleRepository budgetScheduleRepository;
+    private final HistoricalSubBudgetService historicalSubBudgetService;
+    private final String WEEK = "Week";
 
     @Autowired
     public BudgetScheduleRangeBuilderService(BudgetScheduleRangeService budgetScheduleRangeService,
-                                             BudgetScheduleRepository budgetScheduleRepository)
+                                             BudgetScheduleRepository budgetScheduleRepository,
+                                             HistoricalSubBudgetService historicalSubBudgetService)
     {
         this.budgetScheduleRangeService = budgetScheduleRangeService;
         this.budgetScheduleRepository = budgetScheduleRepository;
+        this.historicalSubBudgetService = historicalSubBudgetService;
+    }
+
+    private Map<DateRange, BigDecimal> createWeeklySpendingAmounts(final Long userId, final LocalDate monthStart, final LocalDate monthEnd)
+    {
+        if(userId == null || monthStart == null || monthEnd == null)
+        {
+            return Collections.emptyMap();
+        }
+        Map<DateRange, BigDecimal> spendingAmounts = new HashMap<>();
+        try
+        {
+            int numberOfMonthsSinceStartDate = getNumberOfMonthsSinceBudgetStartDate(monthStart);
+            if(numberOfMonthsSinceStartDate > 0)
+            {
+                spendingAmounts.putAll(historicalSubBudgetService.getTotalWeeklySpending(numberOfMonthsSinceStartDate, userId, monthStart, monthEnd));
+            }
+            return spendingAmounts;
+        }catch(BudgetScheduleException e){
+            log.error("There was an error creating the weekly spending amounts: {} ", e.getMessage());
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<DateRange, BigDecimal> createBudgetedAmountForWeeklyRanges(final Long userId, final LocalDate monthStart, final LocalDate monthEnd, final BigDecimal subBudgetAmount)
+    {
+        if(monthStart == null || monthEnd == null || subBudgetAmount == null)
+        {
+            return Collections.emptyMap();
+        }
+        if(subBudgetAmount.compareTo(BigDecimal.ZERO) == 0)
+        {
+            return Collections.emptyMap();
+        }
+        Map<DateRange, BigDecimal> weeklyBudgetedAmounts = new HashMap<>();
+        try
+        {
+            int numberOfMonthsSinceStartDate = getNumberOfMonthsSinceBudgetStartDate(monthStart);
+            if(numberOfMonthsSinceStartDate > 0)
+            {
+                weeklyBudgetedAmounts.putAll(historicalSubBudgetService.getWeeklyBudgetedAmounts(numberOfMonthsSinceStartDate, userId, monthStart, monthEnd, subBudgetAmount));
+            }
+            return weeklyBudgetedAmounts;
+        }catch(BudgetScheduleException e)
+        {
+            log.error("There was an error calculating the budgeted amount: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
+    }
+
+    private int getNumberOfMonthsSinceBudgetStartDate(final LocalDate startDate)
+    {
+        int currentMonth = startDate.getMonthValue();
+        int currentYear = startDate.getYear();
+        int beginMonth = LocalDate.of(currentYear, 1, 1).getMonthValue();
+        return currentMonth - beginMonth;
     }
 
     public List<BudgetScheduleRange> createBudgetScheduleRangesBySubBudget(final SubBudget subBudget)
     {
+        //TODO: Revise the BudgetScheduleRange logic to include more realistic budgeted amounts based on historical spending
         List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
-        if (subBudget == null || subBudget.getStartDate() == null || subBudget.getEndDate() == null) {
+        if(subBudget == null || subBudget.getStartDate() == null || subBudget.getEndDate() == null)
+        {
             return budgetScheduleRanges;
         }
         log.info("BudgetSchedules size: {}", subBudget.getBudgetSchedule().size());
@@ -46,50 +105,28 @@ public class BudgetScheduleRangeBuilderService
         log.info("SubBudgetStartDate: {}", subBudgetStartDate);
         LocalDate subBudgetEndDate = subBudget.getEndDate();
         log.info("SubBudgetEndDate: {}", subBudgetEndDate);
-        Budget budget = subBudget.getBudget();
+        Long userId = subBudget.getBudget().getUserId();
         try
         {
-
-            // Check if sub-budget spans a single month
-            if (!subBudgetStartDate.getMonth().equals(subBudgetEndDate.getMonth()) ||
-                    subBudgetStartDate.getYear() != subBudgetEndDate.getYear()) {
-                throw new IllegalArgumentException("SubBudget must span exactly one month: start=" +
-                        subBudgetStartDate + ", end=" + subBudgetEndDate);
-            }
-
-            // Ensure sub-budget is within parent budget's range
-            LocalDate budgetStartDate = budget.getStartDate();
-            LocalDate budgetEndDate = budget.getEndDate();
-            if (subBudgetStartDate.isBefore(budgetStartDate) || subBudgetEndDate.isAfter(budgetEndDate)) {
-                throw new IllegalArgumentException("SubBudget must be within parent budget range: " +
-                        "subBudgetStart=" + subBudgetStartDate + ", subBudgetEnd=" + subBudgetEndDate +
-                        ", budgetStart=" + budgetStartDate + ", budgetEnd=" + budgetEndDate);
-            }
-
             // Create a DateRange for the sub-budget's month
             DateRange monthDateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
-
             // Split into weekly ranges
             List<DateRange> weeklyRanges = monthDateRange.splitIntoWeeks();
             log.info("WeeklyRanges: {}", weeklyRanges.toString());
-
-            // Determine budget per week
             BigDecimal totalBudget = subBudget.getAllocatedAmount();
-            BigDecimal totalSpent = subBudget.getSpentOnBudget();
-            int numWeeks = weeklyRanges.size();
-
-            BigDecimal weeklyBudget = totalBudget.divide(BigDecimal.valueOf(numWeeks), RoundingMode.HALF_UP);
-            BigDecimal weeklySpent = totalSpent.divide(BigDecimal.valueOf(numWeeks), RoundingMode.HALF_UP);
-
+            Map<DateRange, BigDecimal> weeklyBudgetAmounts = createBudgetedAmountForWeeklyRanges(userId, subBudgetStartDate, subBudgetEndDate, totalBudget);
+            Map<DateRange, BigDecimal> weeklyTotalSpending = createWeeklySpendingAmounts(userId, subBudgetStartDate, subBudgetEndDate);
             // Convert DateRanges to BudgetScheduleRange
-            for (DateRange weekRange : weeklyRanges)
+            for(DateRange weekRange : weeklyRanges)
             {
+                BigDecimal weeklyBudget = weeklyBudgetAmounts.get(weekRange);
+                BigDecimal weeklySpending = weeklyTotalSpending.get(weekRange);
                 BudgetScheduleRange range = new BudgetScheduleRange();
                 range.setStartRange(weekRange.getStartDate());
                 range.setEndRange(weekRange.getEndDate());
                 range.setBudgetedAmount(weeklyBudget);
-                range.setSpentOnRange(weeklySpent);
-                range.setRangeType("Week");
+                range.setSpentOnRange(weeklySpending);
+                range.setRangeType(WEEK);
                 range.setBudgetDateRange(weekRange);
                 List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
                 BudgetSchedule budgetSchedule = budgetSchedules.get(0);
@@ -97,7 +134,7 @@ public class BudgetScheduleRangeBuilderService
                 saveBudgetScheduleRange(range);
                 budgetScheduleRanges.add(range);
             }
-            log.info("Saving BudgetScheduleRanges: {}", budgetScheduleRanges.toString());
+            log.info("Saving BudgetScheduleRanges: {}", budgetScheduleRanges);
             return budgetScheduleRanges;
 
         } catch (IllegalArgumentException e)

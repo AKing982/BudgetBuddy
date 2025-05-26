@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -25,65 +27,57 @@ public class TransactionCategoryBuilder
         this.transactionService = transactionService;
     }
 
+    public Map<String, Set<TransactionRule>> groupTransactionRulesByMatchedCategory(final Map<String, ? extends TransactionRule> categorizedTransactions)
+    {
+        Map<String, Set<TransactionRule>> transactionRulesByMatchedCategory = new HashMap<>();
+        if(categorizedTransactions == null || categorizedTransactions.isEmpty())
+        {
+            return transactionRulesByMatchedCategory;
+        }
+        for(Map.Entry<String, ? extends TransactionRule> entry : categorizedTransactions.entrySet())
+        {
+            TransactionRule transactionRule = entry.getValue();
+            String matchedCategory = transactionRule.getMatchedCategory();
+            transactionRulesByMatchedCategory.computeIfAbsent(matchedCategory, k -> new HashSet<>()).add(transactionRule);
+        }
+        return transactionRulesByMatchedCategory;
+    }
+
     public List<TransactionCategory> createTransactionCategories(final Map<String, ? extends TransactionRule> categorizedTransactions)
     {
         if(categorizedTransactions == null || categorizedTransactions.isEmpty())
         {
             return Collections.emptyList();
         }
-        List<TransactionCategory> allTransactionCategories = new ArrayList<>();
-        log.info("Creating Transaction Categories");
+        Map<String, Set<TransactionRule>> groupedTransactionRulesByMatchedCategory = groupTransactionRulesByMatchedCategory(categorizedTransactions);
         List<String> transactionIds = new ArrayList<>(categorizedTransactions.keySet());
-        Map<String, Set<String>> existingCategories = fetchExistingCategories(transactionIds);
-        Map<String, Transaction> transactionsMap = transactionService.getTransactionsMap(transactionIds);
-        if(transactionsMap == null)
+        List<TransactionCategory> allTransactionCategories = new ArrayList<>();
+        Map<String, Transaction> transactionMap = transactionService.getTransactionsMap(transactionIds);
+        log.info("Creating Transaction Categories");
+        for(Map.Entry<String, Set<TransactionRule>> entry : groupedTransactionRulesByMatchedCategory.entrySet())
         {
-            return Collections.emptyList();
-        }
-        // Process each category group
-        for (Map.Entry<String, ? extends TransactionRule> entry : categorizedTransactions.entrySet())
-        {
-            String transactionId = entry.getKey();
-            TransactionRule transactionRule = entry.getValue();
-            log.info("Transaction Rule: {}", transactionRule);
-            log.info("Fetching Transaction with Id: {}", transactionId);
-            Transaction transaction = transactionsMap.get(transactionId);
-            log.info("Transaction: {}", transaction);
-            if(transaction == null)
+            String matchedCategory = entry.getKey();
+            Set<TransactionRule> transactionRules = entry.getValue();
+            for(TransactionRule transactionRule : transactionRules)
             {
-                log.debug("Transaction not found for Id: {}", transactionId);
-                continue;
+                String transactionId = transactionRule.getTransactionId();
+                Transaction transaction = transactionMap.get(transactionId);
+                List<String> plaidCategories = transaction.getCategories();
+                boolean isSystemRule = transactionRule.isSystemRule();
+                String categorizedBy = isSystemRule ? "SYSTEM" : "USER_RULE";
+                int priority = transactionRule.getPriority();
+                TransactionCategory transactionCategory = TransactionCategory.builder()
+                        .categorized_date(LocalDate.now())
+                        .categorizedBy(categorizedBy)
+                        .createdAt(LocalDateTime.now())
+                        .isRecurring(false)
+                        .matchedCategory(matchedCategory)
+                        .priority(priority)
+                        .plaidCategory(plaidCategories.get(0))
+                        .transactionId(transactionId)
+                        .build();
+                allTransactionCategories.add(transactionCategory);
             }
-            String matchedCategory = transactionRule.getMatchedCategory();
-            if(matchedCategory.equals("UNCATEGORIZED"))
-            {
-                continue;
-            }
-            if (isDuplicateCategory(existingCategories, transactionId, matchedCategory)) {
-                log.info("Skipping duplicate category {} for transaction {}", matchedCategory, transactionId);
-                continue;
-            }
-            log.info("Priority: {}", transactionRule.getPriority());
-            String plaidCategory = "";
-            List<String> plaidCategories = transaction.getCategories();
-            if(plaidCategories.get(0) != null)
-            {
-                plaidCategory = plaidCategories.get(0);
-            }
-            else
-            {
-                plaidCategory = plaidCategories.get(1);
-            }
-            String categorizedBy = transactionRule.isSystemRule() ? "SYSTEM" : "USER_RULE";
-            TransactionCategory transactionCategory = TransactionCategory.build(transactionId, transactionRule.getMatchedCategory(), plaidCategory, categorizedBy, transactionRule.getPriority(), false);
-            log.info("TransactionCategory: {}", transactionCategory);
-            log.info("========================================================");
-            allTransactionCategories.add(transactionCategory);
-        }
-        log.info("Created {} Transaction Categories", allTransactionCategories.size());
-        if(!allTransactionCategories.isEmpty())
-        {
-            saveTransactionCategories(allTransactionCategories);
         }
         return allTransactionCategories;
     }

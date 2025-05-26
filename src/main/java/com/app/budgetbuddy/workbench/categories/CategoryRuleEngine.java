@@ -114,8 +114,8 @@ public class CategoryRuleEngine
         RecurringTransactionLoaderImpl recurringTransactionLoader = context.getBean(RecurringTransactionLoaderImpl.class);
 
         // Set up date range for test data (last 3 months)
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusMonths(3);
+        LocalDate endDate = LocalDate.of(2025, 1, 31);
+        LocalDate startDate = LocalDate.of(2025, 1, 1);
         Long userId = 1L;
 
         System.out.println("Loading transactions for user " + userId + " from " + startDate + " to " + endDate);

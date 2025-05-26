@@ -1,4 +1,5 @@
 import ForgotPassword from "../components/ForgotPassword";
+import {apiUrl} from "../config/api";
 
 class ForgotPasswordService
 {
@@ -24,7 +25,7 @@ class ForgotPasswordService
     public async requestValidationCode(email: string): Promise<string>
     {
         try {
-            const response = await fetch(`${this.baseUrl}/generate-code?email=${encodeURIComponent(email)}`, {
+            const response = await fetch(`${apiUrl}/forgot-password/generate-code?email=${encodeURIComponent(email)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -44,7 +45,7 @@ class ForgotPasswordService
 
     public async requestPasswordReset(email: string, newPassword: string): Promise<void> {
         try {
-            const response = await fetch(`${this.baseUrl}/password?email=${encodeURIComponent(email)}&newPassword=${encodeURIComponent(newPassword)}`, {
+            const response = await fetch(`${apiUrl}/forgot-password/password?email=${encodeURIComponent(email)}&newPassword=${encodeURIComponent(newPassword)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

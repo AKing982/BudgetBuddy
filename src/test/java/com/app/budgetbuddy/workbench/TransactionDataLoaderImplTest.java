@@ -205,7 +205,8 @@ class TransactionDataLoaderImplTest {
                 "transaction123",
                 LocalDate.of(2024, 9, 30),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30)
+                LocalDate.of(2024, 9, 30),
+                false
         );
         return transaction;
     }
@@ -225,7 +226,8 @@ class TransactionDataLoaderImplTest {
                 "transaction123",
                 LocalDate.of(2024, 11, 13),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 11, 13)
+                LocalDate.of(2024, 11, 13),
+                false
         );
         return transaction;
     }
@@ -245,7 +247,8 @@ class TransactionDataLoaderImplTest {
                 "transaction123",
                 LocalDate.of(2024, 11, 12),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 11, 12)
+                LocalDate.of(2024, 11, 12),
+                false
         );
         return transaction;
     }

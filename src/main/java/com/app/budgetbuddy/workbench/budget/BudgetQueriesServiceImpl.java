@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@Deprecated
 public class BudgetQueriesServiceImpl implements BudgetQueriesService
 {
     private EntityManager entityManager;

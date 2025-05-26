@@ -258,33 +258,17 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
             }
 
             List<String> categories = (categoryName != null) ? List.of(categoryName) : new ArrayList<>();
+            RecurringTransaction recurringTransaction = RecurringTransaction.builder()
+                    .streamId(recurringTransactionEntity.getStreamId())
+                    .firstDate(recurringTransactionEntity.getFirstDate())
+                    .lastDate(recurringTransactionEntity.getLastDate())
+                    .frequency(recurringTransactionEntity.getFrequency())
+                    .averageAmount(recurringTransactionEntity.getAverageAmount())
+                    .lastAmount(recurringTransactionEntity.getLastAmount())
+                    .active(recurringTransactionEntity.isActive())
+                    .type(recurringTransactionEntity.getType())
+                    .build();
 
-            RecurringTransaction recurringTransaction = new RecurringTransaction(
-                    recurringTransactionEntity.getAccount().getId().toString(),
-                    recurringTransactionEntity.getAverageAmount(),
-                    "USD", // Assuming currency is fixed as "USD". Replace with dynamic mapping if required.
-
-                    categories,
-                    recurringTransactionEntity.getCategory() != null ?
-                            recurringTransactionEntity.getCategory().getId().toString() : null,
-                    recurringTransactionEntity.getLastDate(), // Use `lastDate` as the transaction date
-                    recurringTransactionEntity.getDescription(),
-                    recurringTransactionEntity.getMerchantName(),
-                    recurringTransactionEntity.getMerchantName(), // Assuming `name` is the same as `merchantName`
-                    false, // Assuming `pending` is false for recurring transactions
-                    recurringTransactionEntity.getStreamId(),
-                    recurringTransactionEntity.getLastDate(), // Use `lastDate` as authorized date
-                    null, // Assuming `logoUrl` is not available in the entity
-                    recurringTransactionEntity.getLastDate(), // Use `lastDate` as posted date
-                    recurringTransactionEntity.getStreamId(),
-                    recurringTransactionEntity.getFirstDate(),
-                    recurringTransactionEntity.getLastDate(),
-                    recurringTransactionEntity.getFrequency(),
-                    recurringTransactionEntity.getAverageAmount(),
-                    recurringTransactionEntity.getLastAmount(),
-                    recurringTransactionEntity.isActive(),
-                    recurringTransactionEntity.getType()
-            );
             recurringTransactions.add(recurringTransaction);
         }
         return recurringTransactions;

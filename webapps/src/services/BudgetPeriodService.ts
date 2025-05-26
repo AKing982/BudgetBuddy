@@ -2,6 +2,7 @@ import axios from 'axios';
 import {Period} from '../config/Types';
 import {BudgetCategoryResponse} from '../config/Types';
 import BudgetCategoriesService from "./BudgetCategoriesService";
+import {apiUrl} from "../config/api";
 
 const API_BASE_URL = 'http://localhost:8080/api/budgetPeriod';
 class BudgetPeriodService
@@ -19,7 +20,7 @@ class BudgetPeriodService
    {
         try
         {
-            const response = await axios.get(`${API_BASE_URL}/daily`, {
+            const response = await axios.get(`${apiUrl}/budgetPeriod/daily`, {
                 params: {
                     userId,
                     date
@@ -38,7 +39,7 @@ class BudgetPeriodService
    {
        try
        {
-           const response = await axios.get(`${API_BASE_URL}/period`, {
+           const response = await axios.get(`${apiUrl}/budgetPeriod/period`, {
                params: {
                    userId,
                    period,

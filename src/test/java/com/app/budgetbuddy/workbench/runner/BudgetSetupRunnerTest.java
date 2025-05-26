@@ -92,12 +92,15 @@ class BudgetSetupRunnerTest
         try (MockedStatic<LocalDate> mockedLocalDate = Mockito.mockStatic(LocalDate.class, Mockito.CALLS_REAL_METHODS)) {
             mockedLocalDate.when(LocalDate::now).thenReturn(currentDate);
 
+            int currentYear = LocalDate.EPOCH.getYear();
+            int previousYear = currentYear - 1;
             // Mock budget creation
             when(budgetSetupEngine.createNewBudget(budgetRegistration))
                     .thenReturn(Optional.of(currentBudget));
             when(budgetSetupEngine.createPreviousYearBudget(
                     budgetRegistration.getPreviousIncomeAmount(),
                     budgetRegistration.getPreviousBudgetName(),
+                    previousYear,
                     currentBudget))
                     .thenReturn(Optional.of(previousYearBudget));
 
@@ -192,6 +195,7 @@ class BudgetSetupRunnerTest
             verify(budgetSetupEngine).createPreviousYearBudget(
                     budgetRegistration.getPreviousIncomeAmount(),
                     budgetRegistration.getPreviousBudgetName(),
+                    previousYear,
                     currentBudget);
             verify(budgetSetupEngine).createNewMonthlySubBudgetsForUser(currentBudget, budgetRegistration.getBudgetGoals());
             verify(budgetSetupEngine).createSubBudgetTemplatesForYear(2022, previousYearBudget, budgetRegistration.getBudgetGoals());
@@ -214,12 +218,15 @@ class BudgetSetupRunnerTest
         try (MockedStatic<LocalDate> mockedLocalDate = Mockito.mockStatic(LocalDate.class, Mockito.CALLS_REAL_METHODS)) {
             mockedLocalDate.when(LocalDate::now).thenReturn(currentDate);
 
+            int currentYear = LocalDate.EPOCH.getYear();
+            int previousYear = currentYear - 1;
             // Mock budget creation
             when(budgetSetupEngine.createNewBudget(budgetRegistration))
                     .thenReturn(Optional.of(currentBudget));
             when(budgetSetupEngine.createPreviousYearBudget(
                     budgetRegistration.getPreviousIncomeAmount(),
                     budgetRegistration.getPreviousBudgetName(),
+                    previousYear,
                     currentBudget))
                     .thenReturn(Optional.of(previousYearBudget));
 
@@ -293,6 +300,7 @@ class BudgetSetupRunnerTest
             verify(budgetSetupEngine).createPreviousYearBudget(
                     budgetRegistration.getPreviousIncomeAmount(),
                     budgetRegistration.getPreviousBudgetName(),
+                    previousYear,
                     currentBudget);
             verify(budgetSetupEngine).createNewMonthlySubBudgetsForUser(currentBudget, budgetRegistration.getBudgetGoals());
             verify(budgetSetupEngine).createSubBudgetTemplatesForYear(2022, previousYearBudget, budgetRegistration.getBudgetGoals());

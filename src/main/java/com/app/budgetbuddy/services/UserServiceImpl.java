@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.Registration;
+import com.app.budgetbuddy.domain.User;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.UserNotFoundException;
@@ -93,6 +94,39 @@ public class UserServiceImpl implements UserService
     @Transactional
     public Long findMaxUserId() {
         return userRepository.findMaxId();
+    }
+
+    @Override
+    @Transactional
+    public Optional<User> getUserById(Long id)
+    {
+        if(id < 1)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            Optional<UserEntity> userEntity = userRepository.findById(id);
+            if(userEntity.isEmpty())
+            {
+                return Optional.empty();
+            }
+            UserEntity user = userEntity.get();
+            return Optional.of(convertUserEntity(user));
+        }catch(DataAccessException e){
+            log.error("There was an error getting the user id from the database", e);
+            return Optional.empty();
+        }
+    }
+
+    private User convertUserEntity(UserEntity userEntity)
+    {
+        User user = new User();
+        user.setFirstName(userEntity.getFirstName());
+        user.setLastName(userEntity.getLastName());
+        user.setUsername(userEntity.getUsername());
+        user.setPassword(userEntity.getPassword());
+        return user;
     }
 
     @Override

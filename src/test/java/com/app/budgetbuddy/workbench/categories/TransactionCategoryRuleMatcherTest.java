@@ -438,7 +438,8 @@ class TransactionRuleMatcherTest {
                 "transaction123",
                 LocalDate.of(2024, 9, 30),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30)
+                LocalDate.of(2024, 9, 30),
+                false
         );
         return transaction;
     }
@@ -458,7 +459,8 @@ class TransactionRuleMatcherTest {
                 "transaction123",
                 LocalDate.of(2024, 9, 30),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30)
+                LocalDate.of(2024, 9, 30),
+                false
         );
         return transaction;
     }
@@ -927,7 +929,8 @@ class TransactionRuleMatcherTest {
                 "transaction123",
                 LocalDate.of(2024, 10, 1),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 10, 1)
+                LocalDate.of(2024, 10, 1),
+                false
         );
         return transaction;
     }
@@ -947,7 +950,8 @@ class TransactionRuleMatcherTest {
                 "transaction123",
                 LocalDate.of(2024, 9, 30),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30)
+                LocalDate.of(2024, 9, 30),
+                false
         );
         return transaction;
     }

@@ -495,7 +495,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     const handleSubmit = async () => {
         try {
 
-            const userId = await loginService.fetchMaximumUserId();
+            // let userId: number = await loginService.fetchMaximumUserId();
+            let userId = 1;
             const currentDate = new Date();
             const startDate: [number, number, number] = [
                 currentDate.getFullYear(),

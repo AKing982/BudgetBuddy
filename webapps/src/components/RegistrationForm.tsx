@@ -322,6 +322,10 @@ const RegistrationForm: React.FC = () => {
             const request = createRegistrationRequest(formData);
             const response = await registerUser(request);
 
+            const userId = response.id;
+            console.log('UserId', userId);
+            sessionStorage.setItem('userId', userId);
+
             // If successful, proceed to the budget questionnaire
             setActiveStep(1);
             setShowBudgetQuestionnaire(true);

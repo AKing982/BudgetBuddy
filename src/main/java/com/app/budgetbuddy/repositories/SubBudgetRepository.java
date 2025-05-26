@@ -19,7 +19,12 @@ public interface SubBudgetRepository extends JpaRepository<SubBudgetEntity, Long
     @Query("SELECT sb FROM SubBudgetEntity sb JOIN sb.budget b WHERE b.user.id =:uId AND sb.startDate =:start AND sb.endDate =:end")
     Optional<SubBudgetEntity> findSubBudgetEntityByUserIdAndDates(@Param("uId") Long userId, @Param("start") LocalDate startDate, @Param("end") LocalDate endDate);
 
-
     @Query("SELECT sb FROM SubBudgetEntity sb JOIN sb.budget b WHERE sb.id =:id AND :date BETWEEN sb.startDate AND sb.endDate AND b.user.id =:uId")
     Optional<SubBudgetEntity> findSubBudgetEntityByIdAndDate(@Param("id") Long id, @Param("date") LocalDate date, @Param("uId") Long userId);
+
+    @Query("SELECT sb FROM SubBudgetEntity sb JOIN sb.budget b WHERE b.user.id =:uId")
+    List<SubBudgetEntity> findSubBudgetEntitiesByUserId(@Param("uId") Long userId);
+
+    @Query("SELECT sb FROM SubBudgetEntity sb JOIN sb.budget b WHERE b.user.id =:uId AND sb.year =:year ORDER BY sb.startDate LIMIT :numMonths")
+    List<SubBudgetEntity> findSubBudgetEntitiesByUserIdAndLimit(@Param("uId") Long userId, @Param("year") int year, @Param("numMonths") Integer numMonths);
 }

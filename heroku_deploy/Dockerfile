@@ -4,6 +4,10 @@ WORKDIR /app
 COPY webapps/package.json ./
 RUN npm install
 COPY webapps/ ./
+
+# Set the API URL for production
+ENV REACT_APP_API_URL=/api
+
 RUN npm run build
 
 # Build the Spring Boot backend
@@ -21,11 +25,15 @@ RUN apt-get update && apt-get install -y curl
 # Copy backend jar
 COPY --from=backend-build /app/target/*.jar app.jar
 
+COPY db/ /app/db/
+
 # Copy frontend static files
-COPY --from=frontend-build /app/build ./static
+COPY --from=frontend-build /app/build/* /app/static/
+
+COPY --from=frontend-build /app/build/static /app/static/static
 
 # Copy Heroku-specific properties
-COPY heroku-deploy/application-heroku.properties ./application-heroku.properties
+COPY src/main/resources/application-heroku.properties ./application-heroku.properties
 
 # Set environment variables
 ENV SPRING_PROFILES_ACTIVE=heroku
@@ -35,4 +43,4 @@ ENV PORT=8080
 EXPOSE $PORT
 
 # Start the application with Heroku's dynamic port
-CMD ["sh", "-c", "java -Dspring.profiles.active=heroku -Dserver.port=${PORT} -jar /app/app.jar"]
+CMD ["sh", "-c", "java -Dspring.profiles.active=heroku -Dserver.port=${PORT} -Xmx450m -Xms150m -XX:+UseG1GC -XX:+UseStringDeduplication -jar /app/app.jar"]

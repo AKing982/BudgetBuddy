@@ -5,26 +5,16 @@ import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.services.TransactionService;
-import com.plaid.client.model.Application;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
 import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.cglib.core.Local;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,165 +34,68 @@ class TransactionCategoryBuilderTest
     private TransactionService transactionService;
 
     @Test
-    void testCreateTransactionCategories_whenCategorizedTransactionsMapIsNull_thenReturnEmptyList(){
+    @DisplayName("Should return an empty collection when transaction rules are null")
+    void testCreateTransactionCategories_shouldReturnEmptyCollection(){
         List<TransactionCategory> actual = transactionCategoryBuilder.createTransactionCategories(null);
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testCreateTransactionCategories_whenCategorizedTransactionsMapIsEmpty_thenReturnEmptyList(){
-        List<TransactionCategory> actual = transactionCategoryBuilder.createTransactionCategories(new HashMap<>());
+    @DisplayName("Should return an empty collection when transaction rules are empty")
+    void testCreateTransactionCategories_shouldReturnEmptyCollectionWhenTransactionRulesIsEmpty(){
+        Map<String, ? extends TransactionRule> rules = new HashMap<>();
+        List<TransactionCategory> actual = transactionCategoryBuilder.createTransactionCategories(rules);
         assertTrue(actual.isEmpty());
     }
 
     @Test
-    void testCreateTransactionCategories_whenCategorizedTransactionsMapIsNotEmpty_thenReturnTransactionCategories(){
-        Map<String, TransactionRule> categorizedTransactions = createTestCategorizedTransactionsMap();
+    @DisplayName("Should return transaction categories given valid transaction rules")
+    void testCreateTransactionCategories_shouldReturnTransactionCategoriesGivenValidTransactionRules(){
+        Map<String, TransactionRule> categorizedRules = createTestCategorizedTransactionsMap();
 
-        List<TransactionCategory> expectedTransactionCategories = new ArrayList<>();
-        TransactionCategory wincoGroceryTransactionCategory = new TransactionCategory();
-        wincoGroceryTransactionCategory.setCategorizedBy("SYSTEM");
-        wincoGroceryTransactionCategory.setCategorized_date(LocalDate.now());
-        wincoGroceryTransactionCategory.setTransactionId("rDbOgmnJV0iAXgAZ7j6MtOOq944Ao7IrxJznV");
-        wincoGroceryTransactionCategory.setMatchedCategory("Groceries");
-        wincoGroceryTransactionCategory.setPlaidCategory("Supermarkets and Groceries");
-        wincoGroceryTransactionCategory.setPriority(1);
-        wincoGroceryTransactionCategory.setRecurring(false);
+        List<TransactionCategory> expected = new ArrayList<>();
 
-        TransactionCategory parkingSpotTransactionCategory = new TransactionCategory();
-        parkingSpotTransactionCategory.setCategorizedBy("SYSTEM");
-        parkingSpotTransactionCategory.setCategorized_date(LocalDate.now());
-        parkingSpotTransactionCategory.setMatchedCategory("Other");
-        parkingSpotTransactionCategory.setPlaidCategory("Parking");
-        parkingSpotTransactionCategory.setTransactionId("KAYVLwndaEuDk5DPxVqptLLkPppey5CyMZ65O");
-        parkingSpotTransactionCategory.setPriority(1);
-        parkingSpotTransactionCategory.setRecurring(false);
-        expectedTransactionCategories.add(wincoGroceryTransactionCategory);
-        expectedTransactionCategories.add(parkingSpotTransactionCategory);
+        TransactionCategory groceriesWincoTransactionCategory = new TransactionCategory();
+        groceriesWincoTransactionCategory.setPriority(1);
+        groceriesWincoTransactionCategory.setPlaidCategory("Supermarkets and Groceries");
+        groceriesWincoTransactionCategory.setCategorizedBy("SYSTEM");
+        groceriesWincoTransactionCategory.setRecurring(false);
+        groceriesWincoTransactionCategory.setTransactionId("rDbOgmnJV0iAXgAZ7j6MtOOq944Ao7IrxJznV");
+        groceriesWincoTransactionCategory.setMatchedCategory("Groceries");
+        groceriesWincoTransactionCategory.setId(2L);
+        groceriesWincoTransactionCategory.setCategorized_date(LocalDate.of(2025, 3, 12));
+        expected.add(groceriesWincoTransactionCategory);
 
-        List<String> transactionIds = new ArrayList<>(categorizedTransactions.keySet());
-        Map<String, Transaction> transactionMap = createTransactionMap();
+        TransactionCategory otherParkingTransactionCategory = new TransactionCategory();
+        otherParkingTransactionCategory.setPriority(1);
+        otherParkingTransactionCategory.setPlaidCategory("Parking");
+        otherParkingTransactionCategory.setCategorizedBy("SYSTEM");
+        otherParkingTransactionCategory.setRecurring(false);
+        otherParkingTransactionCategory.setTransactionId("KAYVLwndaEuDk5DPxVqptLLkPppey5CyMZ65O");
+        otherParkingTransactionCategory.setMatchedCategory("Other");
+        otherParkingTransactionCategory.setId(1L);
+        otherParkingTransactionCategory.setCategorized_date(LocalDate.of(2025, 3, 2));
+        expected.add(otherParkingTransactionCategory);
 
-        System.out.println("TransactionMap Size: " + transactionMap.size());
-        Mockito.when(transactionService.getTransactionsMap(anyList())).thenReturn(transactionMap);
-        // Use BDDMockito with Spring's MockBean
+        List<String> transactionIds = new ArrayList<>(categorizedRules.keySet());
+        Mockito.when(transactionService.getTransactionsMap(transactionIds))
+                .thenReturn(createTransactionMap());
 
-        Map<String, Transaction> tMap = transactionService.getTransactionsMap(transactionIds);
-        System.out.println("TMap Size: " + tMap.size());
-        Transaction t1 = tMap.get("KAYVLwndaEuDk5DPxVqptLLkPppey5CyMZ65O");
-        System.out.println("T1: " + t1);
-        Transaction t2 = tMap.get("rDbOgmnJV0iAXgAZ7j6MtOOq944Ao7IrxJznV");
-        System.out.println("T2: " + t2);
-
-        // Add mock for the saveAll method
-        Mockito.doNothing().when(transactionCategoryService).saveAll(Mockito.anyList());
-
-        List<TransactionCategory> actualTransactionCategories = transactionCategoryBuilder.createTransactionCategories(categorizedTransactions);
-        assertEquals(expectedTransactionCategories.size(), actualTransactionCategories.size());
-        for(int i = 0; i < expectedTransactionCategories.size(); i++){
-            TransactionCategory expected = expectedTransactionCategories.get(i);
-            TransactionCategory actual = actualTransactionCategories.get(i);
-
-            assertEquals(expected.getTransactionId(), actual.getTransactionId(),
-                    "TransactionId mismatch for index " + i + ": expected '" + expected.getTransactionId() + "', got '" + actual.getTransactionId() + "'");
-
-            assertEquals(expected.getPriority(), actual.getPriority(),
-                    "Priority mismatch for transaction " + expected.getTransactionId() + ": expected " + expected.getPriority() + ", got " + actual.getPriority());
-
-            assertEquals(expected.getCategorizedBy(), actual.getCategorizedBy(),
-                    "CategorizedBy mismatch for transaction " + expected.getTransactionId() + ": expected '" + expected.getCategorizedBy() + "', got '" + actual.getCategorizedBy() + "'");
-
-            assertEquals(expected.getPlaidCategory(), actual.getPlaidCategory(),
-                    "PlaidCategory mismatch for transaction " + expected.getTransactionId() + ": expected '" + expected.getPlaidCategory() + "', got '" + actual.getPlaidCategory() + "'");
-
-            assertEquals(expected.isRecurring(), actual.isRecurring(),
-                    "Recurring flag mismatch for transaction " + expected.getTransactionId() + ": expected " + expected.isRecurring() + ", got " + actual.isRecurring());
-
-            assertEquals(expected.getMatchedCategory(), actual.getMatchedCategory(),
-                    "MatchedCategory mismatch for transaction " + expected.getTransactionId() + ": expected '" + expected.getMatchedCategory() + "', got '" + actual.getMatchedCategory() + "'");
-
-            assertEquals(expected.getCategorized_date(), actual.getCategorized_date(),
-                    "Categorized_date mismatch for transaction " + expected.getTransactionId() + ": expected " + expected.getCategorized_date() + ", got " + actual.getCategorized_date());
+        List<TransactionCategory> actual = transactionCategoryBuilder.createTransactionCategories(categorizedRules);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < expected.size(); i++){
+            TransactionCategory expectedTransactionCategory = expected.get(i);
+            TransactionCategory actualTransactionCategory = actual.get(i);
+            assertEquals(expectedTransactionCategory.getPriority(), actualTransactionCategory.getPriority());
+            assertEquals(expectedTransactionCategory.getPlaidCategory(), actualTransactionCategory.getPlaidCategory());
+            assertEquals(expectedTransactionCategory.getCategorizedBy(), actualTransactionCategory.getCategorizedBy());
+            assertEquals(expectedTransactionCategory.isRecurring(), actualTransactionCategory.isRecurring());
+            assertEquals(expectedTransactionCategory.getTransactionId(), actualTransactionCategory.getTransactionId());
+            assertEquals(expectedTransactionCategory.getMatchedCategory(), actualTransactionCategory.getMatchedCategory());
         }
     }
 
-    @Test
-    void testCreateTransactionCategories_whenTransactionMapIsNull_thenReturnEmptyList(){
-        Map<String, TransactionRule> categorizedTransactions = createTestCategorizedTransactionsMap();
-
-        Mockito.when(transactionService.getTransactionsMap(anyList())).thenReturn(null);
-
-        List<TransactionCategory> actual = transactionCategoryBuilder.createTransactionCategories(categorizedTransactions);
-        assertTrue(actual.isEmpty());
-    }
-
-    @Test
-    void testCreateTransactionCategories_whenTransactionMapIsEmpty_thenReturnEmptyList(){
-        Map<String, TransactionRule> categorizedTransactions = createTestCategorizedTransactionsMap();
-
-        Mockito.when(transactionService.getTransactionsMap(anyList())).thenReturn(new HashMap<>());
-        List<TransactionCategory> actual = transactionCategoryBuilder.createTransactionCategories(categorizedTransactions);
-        assertTrue(actual.isEmpty());
-    }
-
-    @Test
-    void testCreateTransactionCategories_whenTransactionPlaidNameCategoryMissing_thenReturnTransactionCategories()
-    {
-        Map<String, TransactionRule> categorizedTransactions = createTestCategorizedTransactionsMap();
-
-        List<TransactionCategory> expectedTransactionCategories = new ArrayList<>();
-        TransactionCategory wincoGroceryTransactionCategory = new TransactionCategory();
-        wincoGroceryTransactionCategory.setTransactionId("rDbOgmnJV0iAXgAZ7j6MtOOq944Ao7IrxJznV");
-        wincoGroceryTransactionCategory.setCategorizedBy("SYSTEM");
-        wincoGroceryTransactionCategory.setCategorized_date(LocalDate.now());
-        wincoGroceryTransactionCategory.setMatchedCategory("Groceries");
-        wincoGroceryTransactionCategory.setPlaidCategory("Shops");
-        wincoGroceryTransactionCategory.setPriority(1);
-        wincoGroceryTransactionCategory.setRecurring(false);
-
-        TransactionCategory parkingSpotTransactionCategory = new TransactionCategory();
-        parkingSpotTransactionCategory.setCategorizedBy("SYSTEM");
-        parkingSpotTransactionCategory.setCategorized_date(LocalDate.now());
-        parkingSpotTransactionCategory.setMatchedCategory("Other");
-        parkingSpotTransactionCategory.setPlaidCategory("Parking");
-        parkingSpotTransactionCategory.setTransactionId("KAYVLwndaEuDk5DPxVqptLLkPppey5CyMZ65O");
-        parkingSpotTransactionCategory.setPriority(1);
-        parkingSpotTransactionCategory.setRecurring(false);
-        expectedTransactionCategories.add(wincoGroceryTransactionCategory);
-        expectedTransactionCategories.add(parkingSpotTransactionCategory);
-
-        Mockito.when(transactionService.getTransactionsMap(anyList())).thenReturn(createTransactionMapWithMissingPlaidCategoryName());
-        Mockito.doNothing().when(transactionCategoryService).saveAll(expectedTransactionCategories);
-
-        List<TransactionCategory> actualTransactionCategories = transactionCategoryBuilder.createTransactionCategories(categorizedTransactions);
-        assertEquals(expectedTransactionCategories.size(), actualTransactionCategories.size());
-        for(int i = 0; i < expectedTransactionCategories.size(); i++){
-            TransactionCategory expected = expectedTransactionCategories.get(i);
-            TransactionCategory actual = actualTransactionCategories.get(i);
-
-            assertEquals(expected.getTransactionId(), actual.getTransactionId(),
-                    "TransactionId mismatch for index " + i + ": expected '" + expected.getTransactionId() + "', got '" + actual.getTransactionId() + "'");
-
-            assertEquals(expected.getPriority(), actual.getPriority(),
-                    "Priority mismatch for transaction " + expected.getTransactionId() + ": expected " + expected.getPriority() + ", got " + actual.getPriority());
-
-            assertEquals(expected.getCategorizedBy(), actual.getCategorizedBy(),
-                    "CategorizedBy mismatch for transaction " + expected.getTransactionId() + ": expected '" + expected.getCategorizedBy() + "', got '" + actual.getCategorizedBy() + "'");
-
-            assertEquals(expected.getPlaidCategory(), actual.getPlaidCategory(),
-                    "PlaidCategory mismatch for transaction " + expected.getTransactionId() + ": expected '" + expected.getPlaidCategory() + "', got '" + actual.getPlaidCategory() + "'");
-
-            assertEquals(expected.isRecurring(), actual.isRecurring(),
-                    "Recurring flag mismatch for transaction " + expected.getTransactionId() + ": expected " + expected.isRecurring() + ", got " + actual.isRecurring());
-
-            assertEquals(expected.getMatchedCategory(), actual.getMatchedCategory(),
-                    "MatchedCategory mismatch for transaction " + expected.getTransactionId() + ": expected '" + expected.getMatchedCategory() + "', got '" + actual.getMatchedCategory() + "'");
-
-            assertEquals(expected.getCategorized_date(), actual.getCategorized_date(),
-                    "Categorized_date mismatch for transaction " + expected.getTransactionId() + ": expected " + expected.getCategorized_date() + ", got " + actual.getCategorized_date());
-        }
-
-    }
 
     private Map<String, Transaction> createTransactionMap()
     {

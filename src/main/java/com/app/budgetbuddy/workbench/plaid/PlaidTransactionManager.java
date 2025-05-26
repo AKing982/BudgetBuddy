@@ -72,6 +72,13 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         return createRequest(accessToken, startDate, endDate);
     }
 
+    public List<Transaction> fetchPlaidTransactionsByDateRange(Long userId, LocalDate startDate, LocalDate endDate) throws IOException
+    {
+        TransactionsGetResponse transactionsGetResponse = getTransactionsForUser(userId, startDate, endDate);
+        List<com.plaid.client.model.Transaction> plaidTransactions = transactionsGetResponse.getTransactions();
+        return transactionService.convertPlaidTransactions(plaidTransactions);
+    }
+
     public TransactionsGetResponse getTransactionsForUser(Long userId, LocalDate startDate, LocalDate endDate) throws IOException {
         PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
         String accessToken = getPlaidAccessToken(plaidLink);

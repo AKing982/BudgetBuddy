@@ -98,6 +98,26 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     static {
+        MERCHANT_SUBSCRIPTIONS.put("American Express", "Payment");
+        MERCHANT_SUBSCRIPTIONS.put("Comcast Xfinity", "Utilities");
+        MERCHANT_SUBSCRIPTIONS.put("Exxon Mobil", "Gas");
+        MERCHANT_SUBSCRIPTIONS.put("Netflix", "Subscription");
+        MERCHANT_SUBSCRIPTIONS.put("Kroger", "Groceries");
+        MERCHANT_SUBSCRIPTIONS.put("Chiptole Mexican Grill", "Order Out");
+        MERCHANT_SUBSCRIPTIONS.put("Target", "Groceries");
+        MERCHANT_SUBSCRIPTIONS.put("Macy's", "Other");
+        MERCHANT_SUBSCRIPTIONS.put("Whole Foods Market", "Groceries");
+        MERCHANT_SUBSCRIPTIONS.put("Buffalo Wild Wings", "Order Out");
+        MERCHANT_SUBSCRIPTIONS.put("Chevron", "Gas");
+        MERCHANT_SUBSCRIPTIONS.put("First National Bank", "Payment");
+        MERCHANT_SUBSCRIPTIONS.put("CVS Pharmacy", "Other");
+        MERCHANT_SUBSCRIPTIONS.put("Shell", "Gas");
+        MERCHANT_SUBSCRIPTIONS.put("McDonald's", "Order Out");
+        MERCHANT_SUBSCRIPTIONS.put("Walmart", "Groceries");
+
+    }
+
+    static {
         CATEGORY_NAME_MAPPING.put("Gas Stations", "Gas");
         CATEGORY_NAME_MAPPING.put("Supermarkets and Groceries", "Groceries");
         CATEGORY_NAME_MAPPING.put("Restaurants", "Order Out");

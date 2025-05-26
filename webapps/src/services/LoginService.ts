@@ -13,7 +13,7 @@ class LoginService {
         console.log('Fetching UserId for username: ', user);
         try
         {
-            const response = await axios.get(`${apiUrl}/api/users/username`, {
+            const response = await axios.get(`${apiUrl}/users/username`, {
                 params: {
                     username: user
                 }
@@ -30,7 +30,7 @@ class LoginService {
     public async fetchMaximumUserId() : Promise<number> {
         try
         {
-            const response = await axios.get(`${apiUrl}/api/users/max-id`);
+            const response = await axios.get(`${apiUrl}/users/max-id`);
             return response.data;
 
         }catch(error){

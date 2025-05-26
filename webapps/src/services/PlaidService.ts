@@ -133,7 +133,8 @@ class PlaidService {
         }
         try
         {
-            const response = await axios.get(`${apiUrl}/api/plaid/${userId}/plaid-link`);
+            console.log('API URL:', apiUrl);
+            const response = await axios.get(`${apiUrl}/plaid/${userId}/plaid-link`);
             return response.data;
         }catch(error)
         {
@@ -161,7 +162,7 @@ class PlaidService {
         console.log('PlaidLinkRequest: ', request);
         try
         {
-            const response = await axios.post<PlaidLinkRequest>(`${apiUrl}/api/plaid/link`, {
+            const response = await axios.post<PlaidLinkRequest>(`${apiUrl}/plaid/link`, {
                 accessToken: accessToken,
                 itemID: itemID,
                 userID: userID
@@ -181,7 +182,7 @@ class PlaidService {
 
              let userId = sessionStorage.getItem('userId');
             // const linkTokenRequest = this.createLinkTokenRequest(userId);
-            const response = await axios.post<PlaidLinkToken>(`http://localhost:8080/api/plaid/create_link_token`, {
+            const response = await axios.post<PlaidLinkToken>(`${apiUrl}/plaid/create_link_token`, {
                userId: userId
             });
             return response.data;
@@ -206,7 +207,7 @@ class PlaidService {
 
         try
         {
-            const response = await axios.post<PlaidExchangeResponse>(`${apiUrl}/api/plaid/exchange_public_token`, {
+            const response = await axios.post<PlaidExchangeResponse>(`${apiUrl}/plaid/exchange_public_token`, {
                 userId: userId,
                 publicToken: publicToken
             });
@@ -227,7 +228,7 @@ class PlaidService {
         try
         {
             const userId = sessionStorage.getItem('userId');
-            const response = await PlaidService.axios.get(`http://localhost:8080/api/plaid/transactions/filtered`, {
+            const response = await PlaidService.axios.get(`${apiUrl}/plaid/transactions/filtered`, {
                 params: {
                     userId,
                     startDate,
@@ -250,7 +251,7 @@ class PlaidService {
         console.log('userId: ', userId);
         try
         {
-            const response = await axios.get<Transaction[]>(`${apiUrl}/api/plaid/transactions`, {
+            const response = await axios.get<Transaction[]>(`${apiUrl}/plaid/transactions`, {
                 params: {userId, startDate, endDate},
             });
             console.log('Response Data: ', response.data);
@@ -296,7 +297,7 @@ class PlaidService {
             console.log('Transaction received: ', transactions);
             const transactionRequest = this.createTransactionRequest(transactions);
             console.log('Transaction Request: ', transactionRequest);
-            const response = await axios.post<TransactionDTO[]>(`${apiUrl}/api/plaid/save-transactions`, {
+            const response = await axios.post<TransactionDTO[]>(`${apiUrl}/plaid/save-transactions`, {
                 transactions: transactionRequest
             });
             console.log('Response: ', response.data);
@@ -311,7 +312,7 @@ class PlaidService {
     public async fetchAccounts(userID: number) {
         try
         {
-            const response = await axios.get(`${apiUrl}/api/plaid/users/${userID}/accounts`);
+            const response = await axios.get(`${apiUrl}/plaid/users/${userID}/accounts`);
             return response.data;
         }catch(err)
         {
@@ -339,7 +340,7 @@ class PlaidService {
     public async fetchAndLinkPlaidAccounts(userID: number) {
         try
         {
-            const response = await axios.get<AccountResponse[]>(`${apiUrl}/api/plaid/users/${userID}/accounts`, {
+            const response = await axios.get<AccountResponse[]>(`${apiUrl}/plaid/users/${userID}/accounts`, {
                 params: {
                     userID: userID
                 }
@@ -347,7 +348,7 @@ class PlaidService {
             const accountData = response.data;
             const accountRequest = this.createAccountRequest(accountData, userID);
             console.log('Account Request: ', accountRequest);
-            const savedAccountsResponse = await axios.post(`${apiUrl}/api/plaid/save-accounts`, {
+            const savedAccountsResponse = await axios.post(`${apiUrl}/plaid/save-accounts`, {
                 userId: userID,
                 accounts: accountData
             });
@@ -382,7 +383,7 @@ class PlaidService {
     {
         try
         {
-            const response = await axios.get(`${apiUrl}/api/plaid/${userId}/access-token`);
+            const response = await axios.get(`${apiUrl}/plaid/${userId}/access-token`);
             console.log('Access Token response: ', response);
             return response.data;
         }catch(error)
@@ -396,7 +397,7 @@ class PlaidService {
     {
         try
         {
-            const response = await axios.post(`${apiUrl}/api/plaid/users/${userId}/mark-updated`);
+            const response = await axios.post(`${apiUrl}/plaid/users/${userId}/mark-updated`);
             console.log(`Successfully marked Plaid as updated for user ${userId}:`, response.data);
         }catch(error)
         {
@@ -414,7 +415,7 @@ class PlaidService {
         }
         try
         {
-            const response = await axios.post<{linkToken: string}>(`${apiUrl}/api/plaid/update_link_token`, {
+            const response = await axios.post<{linkToken: string}>(`${apiUrl}/plaid/update_link_token`, {
                 userId,
                 accessToken
             });
@@ -438,7 +439,7 @@ class PlaidService {
         }
         try
         {
-            const response = await axios.get(`${apiUrl}/api/plaid/users/${userId}/recurring-transactions`);
+            const response = await axios.get(`${apiUrl}/plaid/users/${userId}/recurring-transactions`);
             return response.data;
 
         }catch(error)

@@ -305,7 +305,7 @@ class BudgetService {
             if(!request){
                 throw new Error('Invalid budget request');
             }
-            return await axios.post(`${apiUrl}/api/budgets/`, {
+            return await axios.post(`${apiUrl}/budgets/`, {
                 userId: request.userId,
                 budgetName: request.budgetName,
                 budgetDescription: request.budgetDescription,

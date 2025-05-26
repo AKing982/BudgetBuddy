@@ -21,7 +21,7 @@ export async function authenticateUser(credentials: LoginCredentials) : Promise<
     try
     {
         const {username, password} = credentials;
-        const response = await axios.post<AuthenticationResponse>(`${apiUrl}/api/auth/`, {
+        const response = await axios.post<AuthenticationResponse>(`${apiUrl}/auth/`, {
             username,
             password
             });

@@ -14,7 +14,7 @@ export async function registerUser(registration: Registration) : Promise<any> {
     const {firstName, lastName, email, password, username} = registration;
     try
     {
-        const response = await axios.post(`${apiUrl}/api/register/`, registration);
+        const response = await axios.post(`${apiUrl}/register/`, registration);
         console.log('Response: ', response);
         return response;
     } catch (error)

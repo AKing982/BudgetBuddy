@@ -30,6 +30,12 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=false
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=false
       - SPRING_PROFILES_ACTIVE=docker
+      # Redis configuration
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_DATABASE=0
+      - SPRING_SESSION_STORE_TYPE=redis
+      - SPRING_SESSION_REDIS_NAMESPACE=app:session
     volumes:
       - ./application-docker.properties:/app/application-docker.properties
     depends_on:
@@ -64,6 +70,23 @@ services:
       retries: 5
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
   mailhog:
     image:  mailhog/mailhog
     ports:
@@ -73,6 +96,8 @@ services:
 
 volumes:
   postgres-data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

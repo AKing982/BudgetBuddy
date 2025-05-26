@@ -9,6 +9,8 @@ import java.util.List;
 @Getter
 @Setter
 @ToString(callSuper = true)
+@Builder(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class RecurringTransaction extends Transaction
 {
     private String streamId;
@@ -20,8 +22,8 @@ public class RecurringTransaction extends Transaction
     private Boolean active;
     private String type;
 
-    public RecurringTransaction(String accountId, BigDecimal amount, String isoCurrencyCode, List<String> categories, String categoryId, LocalDate date, String description, String merchantName, String name, Boolean pending, String transactionId, LocalDate authorizedDate, String logoUrl, LocalDate posted, String streamId, LocalDate firstDate, LocalDate lastDate, String frequency, BigDecimal averageAmount, BigDecimal lastAmount, Boolean active, String type) {
-        super(accountId, amount, isoCurrencyCode, categories, categoryId, date, description, merchantName, name, pending, transactionId, authorizedDate, logoUrl, posted);
+    public RecurringTransaction(String accountId, BigDecimal amount, String isoCurrencyCode, List<String> categories, String categoryId, LocalDate date, String description, String merchantName, String name, Boolean pending, String transactionId, LocalDate authorizedDate, String logoUrl, LocalDate posted, boolean isSystemCategorized, String streamId, LocalDate firstDate, LocalDate lastDate, String frequency, BigDecimal averageAmount, BigDecimal lastAmount, Boolean active, String type) {
+        super(accountId, amount, isoCurrencyCode, categories, categoryId, date, description, merchantName, name, pending, transactionId, authorizedDate, logoUrl, posted, isSystemCategorized);
         this.streamId = streamId;
         this.firstDate = firstDate;
         this.lastDate = lastDate;

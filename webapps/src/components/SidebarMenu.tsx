@@ -1,7 +1,7 @@
 import React from "react";
 import {useNavigate} from "react-router-dom";
 import { Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
-import UserLogService from "../services/UserLogService";
+import SessionService from "../services/SessionService";
 
 interface SidebarMenuItem {
     text: string;
@@ -15,7 +15,6 @@ interface SideBarMenuItemProps {
 
 const SidebarMenu: React.FC<SideBarMenuItemProps> = ({isOpen, onClose}) => {
     const navigate = useNavigate();
-    const userLogService = UserLogService.getInstance();
 
     const menuItems = [
         {text: 'Profile', path: '/profile'},
@@ -34,54 +33,29 @@ const SidebarMenu: React.FC<SideBarMenuItemProps> = ({isOpen, onClose}) => {
 
     const handleLogout = async () => {
         try {
-            // Get the current user ID from session storage
-            const userId = sessionStorage.getItem('userId');
+            const sessionService = SessionService.getInstance();
+            // 1. Invalidate session on backend (this will also handle session logging)
+            await sessionService.invalidateSession();
 
-            if (userId) {
-                // Get the active user log for this user
-                const activeUserLog = await userLogService.fetchActiveUserLogByUserId(Number(userId));
+            // 2. Clear all client-side storage
+            sessionStorage.clear();
+            localStorage.clear();
 
-                if (activeUserLog) {
-                    // Update the user log with logout information
-                    const currentTime = new Date();
-                    const loginTime = new Date(activeUserLog.lastLogin);
-
-                    // Calculate session duration in seconds
-                    const sessionDuration = Math.floor((currentTime.getTime() - loginTime.getTime()) / 1000);
-
-                    // Update the user log
-                    await userLogService.updateUserLog(activeUserLog.id, {
-                        lastLogout: currentTime.getTime(),
-                        sessionDuration: sessionDuration,
-                        isActive: false
-                    });
-
-                    console.log('User log updated on logout:', {
-                        userId: activeUserLog.userId,
-                        sessionDuration: sessionDuration,
-                        logoutTime: currentTime
-                    });
-                } else {
-                    console.warn('No active user log found for logout');
-                }
-
-                // Clear session storage
-                sessionStorage.clear();
-            }
-
-            // Navigate to login page
+            // 4. Navigate to login page
             navigate('/');
+            console.log('Logout completed successfully');
 
         } catch (error) {
             console.error('Error during logout:', error);
-            // Still navigate to login page even if there's an error
+
+            // Even if backend logout fails, clear local data and redirect
             sessionStorage.clear();
+            localStorage.clear();
             navigate('/');
         }
     };
 
     if (!isOpen) return null
-
 
     return (
         <Paper

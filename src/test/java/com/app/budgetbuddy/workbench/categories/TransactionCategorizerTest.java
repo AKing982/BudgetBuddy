@@ -278,7 +278,8 @@ class TransactionCategorizerTest {
                 "transaction123",
                 LocalDate.of(2024, 9, 30),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30)
+                LocalDate.of(2024, 9, 30),
+                false
         );
         return transaction;
     }
@@ -298,7 +299,8 @@ class TransactionCategorizerTest {
                 "transaction123",
                 LocalDate.of(2024, 9, 30),
                 "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30)
+                LocalDate.of(2024, 9, 30),
+                false
         );
         return transaction;
     }

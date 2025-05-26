@@ -2181,7 +2181,8 @@ class BudgetCategoryBuilderTest {
                 "txn-12345",                   // transactionId
                 LocalDate.of(2024, 11, 1),     // authorizedDate
                 "https://example.com/logo.png", // logoUrl
-                LocalDate.of(2024, 10, 2)      // posted
+                LocalDate.of(2024, 10, 2),
+                false
         );
     }
 
@@ -2200,7 +2201,8 @@ class BudgetCategoryBuilderTest {
                 "txn-12345",                   // transactionId
                 LocalDate.of(2024, 11, 6),     // authorizedDate
                 "https://example.com/logo.png", // logoUrl
-                LocalDate.of(2024, 10, 5)      // posted
+                LocalDate.of(2024, 10, 5),
+                false
         );
     }
 
@@ -2220,26 +2222,13 @@ class BudgetCategoryBuilderTest {
                 "txn-12345",                   // transactionId
                 LocalDate.of(2024, 11, 4),     // authorizedDate
                 "https://example.com/logo.png", // logoUrl
-                LocalDate.of(2024, 11, 5)      // posted
+                LocalDate.of(2024, 11, 5),  // posted
+                false
         );
     }
 
     private RecurringTransaction createAffirmRecurringTransaction() {
         return new RecurringTransaction(
-                "account-12345",                  // accountId
-                new BigDecimal("50.75"),          // amount
-                "USD",                            // isoCurrencyCode
-                List.of("Payments"),              // categories
-                "cat-005",                        // categoryId
-                LocalDate.of(2024, 11, 5),        // date
-                "Affirm Purchase",                // description
-                "Affirm",                         // merchantName
-                "Affirm Payment",                 // name
-                false,                            // pending
-                "txn-12345",                      // transactionId
-                LocalDate.of(2024, 11, 4),        // authorizedDate
-                "https://example.com/logo.png",   // logoUrl
-                LocalDate.of(2024, 11, 5),        // posted
                 "stream-12345",                   // streamId
                 LocalDate.of(2024, 10, 1),        // firstDate
                 LocalDate.of(2024, 12, 1),        // lastDate
@@ -2253,20 +2242,6 @@ class BudgetCategoryBuilderTest {
 
     private RecurringTransaction createRecurringTransactionExample(LocalDate posted, List<String> categories, String categoryId, String description, String merchant, String name, BigDecimal amount) {
         return new RecurringTransaction(
-                "account-12345",                  // accountId
-                amount,                           // amount
-                "USD",                            // isoCurrencyCode
-                categories,                       // categories
-                categoryId,                       // categoryId
-                posted,                           // date
-                description,                      // description
-                merchant,                         // merchantName
-                name,                             // name
-                false,                            // pending
-                "txn-12345",                      // transactionId
-                posted,                           // authorizedDate
-                "https://example.com/logo.png",   // logoUrl
-                posted,                           // posted
                 "stream-12345",                   // streamId
                 LocalDate.of(2024, 1, 1),         // firstDate
                 LocalDate.of(2024, 12, 31),       // lastDate
@@ -2274,7 +2249,7 @@ class BudgetCategoryBuilderTest {
                 new BigDecimal("100.00"),         // averageAmount
                 amount,                           // lastAmount
                 true,                             // active
-                "Bill"                            // type
+                "Bill"                            // type,
         );
     }
 

@@ -40,7 +40,7 @@ class TransactionService {
 
         try
         {
-            const response = await axios.get<Transaction[]>(`${apiUrl}/api/transaction/${userId}/by-date`, {
+            const response = await axios.get<Transaction[]>(`${apiUrl}/transaction/${userId}/by-date`, {
                 params:{
                     userId: userId,
                     startDate: startDate,
@@ -70,7 +70,7 @@ class TransactionService {
         }
         try
         {
-            const response = await axios.get<Transaction[]>(`${apiUrl}/api/transaction/${userId}`);
+            const response = await axios.get<Transaction[]>(`${apiUrl}/transaction/${userId}`);
             if(response.data.length === 0){
                 return [];
             }

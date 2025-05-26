@@ -30,6 +30,7 @@ import TransactionCategoryRunnerService from "../services/TransactionCategoryRun
 import UserService from '../services/UserService';
 import UserLogService from "../services/UserLogService";
 import PlaidImportService from "../services/PlaidImportService";
+import SessionService from "../services/SessionService";
 
 
 interface LoginFormData {
@@ -148,7 +149,7 @@ const LoginForm: React.FC = () => {
     const plaidLinkRef = useRef<PlaidLinkRef>(null);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-
+    let [loginAttempts, setLoginAttempts] = useState<number>(0);
     const plaidTransactionImport = PlaidImportService.getInstance();
     const plaidService = PlaidService.getInstance();
 
@@ -250,10 +251,37 @@ const LoginForm: React.FC = () => {
             let userEmail = await fetchUserEmailById(userId);
             sessionStorage.setItem('fullName', userFullName);
             sessionStorage.setItem('email', userEmail);
+
+            const sessionService = SessionService.getInstance();
+            const sessionData = {
+                userId: String(userId),
+                username: formData.email,
+                email: userEmail,
+                fullName: userFullName,
+                roles: ['USER'] // Add user roles if available
+            };
+
+            try {
+                const sessionResult = await sessionService.createSession(sessionData);
+                console.log('Session created successfully:', sessionResult);
+
+                // Store session info in sessionStorage for client-side access
+                sessionStorage.setItem('sessionId', sessionResult.sessionId);
+                sessionStorage.setItem('userId', String(userId));
+                sessionStorage.setItem('username', formData.email);
+                sessionStorage.setItem('fullName', userFullName);
+                sessionStorage.setItem('email', userEmail);
+                sessionStorage.setItem('sessionActive', 'true');
+
+            } catch (sessionError) {
+                console.error('Failed to create session:', sessionError);
+                // You might want to continue without session or handle this error
+            }
+
             console.log('Is Authenticated: ', true);
 
             // Create user log for this login session
-            await handleUserLogCreation(userId);
+            // await handleUserLogCreation(userId);
             const plaidService = PlaidService.getInstance();
             const plaidStatus = await handlePlaidLinkVerification(userId);
             console.log('Plaid Status: ', plaidStatus);
@@ -294,34 +322,40 @@ const LoginForm: React.FC = () => {
                 // Case 3: Link exists and is up-to-date
                 console.log('Plaid linked and up-to-date, syncing transactions...');
                 navigate('/dashboard');
+                loginAttempts = 0;
             }
         } catch (error) {
             console.error('Error in handleSubmit:', error);
             setIsAuthenticated(false); // Reset auth state on failure
             // Optionally notify user (e.g., setError('Login failed'))
+            // Clear any partial session data
+            sessionStorage.removeItem('sessionActive');
+            sessionStorage.removeItem('sessionId');
         }
     };
 
-    const handleUserLogCreation = async (userId: number) => {
-        try {
-            // Current time for the login timestamp
-            const currentTime = new Date();
-
-            // Create a new user log with login information
-            // We set lastLogout to the same time temporarily (will be updated on logout)
-            await userLogService.saveUserLog(
-                userId,                // userId
-                0,                     // sessionDuration (will be calculated on logout)
-                1,                     // loginAttempts (new session)
-                currentTime,           // lastLogin
-                currentTime,           // lastLogout (placeholder, updated on actual logout)
-            );
-
-            console.log('User log created successfully for user ID:', userId);
-        } catch (error) {
-            console.error('Error creating user log:', error);
-        }
-    }
+    // const handleUserLogCreation = async (userId: number) => {
+    //     try {
+    //         // Current time for the login timestamp
+    //         const currentTime = new Date();
+    //
+    //         // Create a new user log with login information
+    //         // We set lastLogout to the same time temporarily (will be updated on logout)
+    //         let sessionDuration = 0;
+    //         sessionStorage.setItem('sessionDuration', String(sessionDuration));
+    //         await userLogService.saveUserLog(
+    //             userId,                // userId
+    //             sessionDuration,                     // sessionDuration (will be calculated on logout)
+    //             loginAttempts,                     // loginAttempts (new session)
+    //             currentTime,           // lastLogin
+    //             currentTime,           // lastLogout (placeholder, updated on actual logout)
+    //         );
+    //
+    //         console.log('User log created successfully for user ID:', userId);
+    //     } catch (error) {
+    //         console.error('Error creating user log:', error);
+    //     }
+    // }
 
     const handleRegister = () => {
         navigate('/register');
@@ -443,7 +477,8 @@ const LoginForm: React.FC = () => {
             const plaidLinkResponse = await handlePlaidLinkSaveResponse(response);
 
             await new Promise<void>(async (resolve) => {
-                try {
+                try
+                {
                     // Link accounts
                     const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
                     console.log('Linked Accounts:', linkedAccounts);

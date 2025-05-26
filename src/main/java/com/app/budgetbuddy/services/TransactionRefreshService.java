@@ -24,21 +24,21 @@ import java.util.Optional;
 public class TransactionRefreshService
 {
     private final TransactionRefreshThreadService transactionRefreshThreadService;
-    private final UserLogService userLogService;
+    private final SessionManagementService sessionManagementService;
     private final SubBudgetService subBudgetService;
     private final TransactionService transactionService;
     private final RecurringTransactionService recurringTransactionService;
     private final PlaidCursorService plaidCursorService;
 
     @Autowired
-    public TransactionRefreshService(UserLogService userLogService,
+    public TransactionRefreshService(SessionManagementService sessionManagementService,
                                      SubBudgetService subBudgetService,
                                      TransactionService transactionService,
                                      RecurringTransactionService recurringTransactionService,
                                      PlaidCursorService plaidCursorService,
                                      TransactionRefreshThreadService transactionRefreshThreadService)
     {
-        this.userLogService = userLogService;
+        this.sessionManagementService = sessionManagementService;
         this.subBudgetService = subBudgetService;
         this.transactionService = transactionService;
         this.recurringTransactionService = recurringTransactionService;
@@ -55,7 +55,7 @@ public class TransactionRefreshService
 
     //TODO: Fix issue with how subBudget, userId and current date are configured through the setters
     //TODO: Consider cases when the user is signed out for multiple days, and we need to resync for those days
-    @Scheduled(fixedRate=3600000)
+    @Scheduled(fixedRate=360000)
     @Transactional(readOnly = true)
     public void scheduleTransactionRefreshForUser()
     {
@@ -70,7 +70,7 @@ public class TransactionRefreshService
                 return;
             }
             SubBudget subBudget = subBudgetOptional.get();
-            if(userLogService.isUserActive(userId))
+            if(sessionManagementService.isUserActive(userId))
             {
                 List<PlaidCursorEntity> userPlaidCursors = plaidCursorService.findByUserId(userId);
                 if(userPlaidCursors.isEmpty())

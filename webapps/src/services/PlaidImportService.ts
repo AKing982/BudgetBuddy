@@ -1,6 +1,7 @@
 import {Plaid} from "react-plaid-link";
 import PlaidService from "./PlaidService";
 import axios from "axios";
+import {apiUrl} from "../config/api";
 
 class PlaidImportService
 {
@@ -31,7 +32,7 @@ class PlaidImportService
 
             console.log("Importing Plaid Transactions");
             const response = await axios.post(
-                `${this.baseURL}/${userId}/import`,
+                `${apiUrl}/plaid-import/${userId}/import`,
                 null,
                 {
                     params: {

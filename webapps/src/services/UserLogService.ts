@@ -1,5 +1,6 @@
 import {UserLog} from "../utils/Items";
 import axios from "axios";
+import {apiUrl} from "../config/api";
 
 class UserLogService
 {
@@ -18,11 +19,23 @@ class UserLogService
         return UserLogService.instance;
     }
 
+    // Helper method to calculate session duration
+    public calculateSessionDuration(loginTime: string): number {
+        try {
+            const login = new Date(loginTime);
+            const logout = new Date();
+            return Math.floor((logout.getTime() - login.getTime()) / 1000); // Duration in seconds
+        } catch (error) {
+            console.error('Error calculating session duration:', error);
+            return 0;
+        }
+    }
+
     public async fetchUserLogById(id: number) : Promise<UserLog>
     {
         try
         {
-            const response = await axios.get(`${this.baseURL}/${id}`);
+            const response = await axios.get(`${apiUrl}/userLog/${id}`);
             return this.mapToUserLog(response.data);
         }catch(error)
         {
@@ -35,7 +48,7 @@ class UserLogService
     {
         try
         {
-            const response = await axios.get(`${this.baseURL}/active/${userId}`);
+            const response = await axios.get(`${apiUrl}/userLog/active/${userId}`);
             return this.mapToUserLog(response.data);
         }catch(error)
         {
@@ -49,7 +62,7 @@ class UserLogService
         try
         {
             const userLogRequest = this.prepareUserLogRequest(userLog);
-            const response = await axios.put(`${this.baseURL}/update/${id}`, userLogRequest);
+            const response = await axios.put(`${apiUrl}/userLog/update/${id}`, userLogRequest);
             return this.mapToUserLog(response.data);
         } catch (error) {
             console.error('Error updating user log:', error);
@@ -71,7 +84,7 @@ class UserLogService
                 isActive: true
             };
 
-            const response = await axios.post(`${this.baseURL}/save`, userLogRequest);
+            const response = await axios.post(`${apiUrl}/userLog/save`, userLogRequest);
             return this.mapToUserLog(response.data);
         } catch (error) {
             console.error('Error saving user log:', error);

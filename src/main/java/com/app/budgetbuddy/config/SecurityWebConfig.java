@@ -16,12 +16,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class SecurityWebConfig
 {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth").permitAll()
-                        .requestMatchers("/api/register").permitAll()
+                        // Allow all requests to /api/ and all its subpaths
+                        .requestMatchers("/api/**").permitAll()
+                        // Allow all other requests as well
                         .anyRequest().permitAll());
 
         return http.build();

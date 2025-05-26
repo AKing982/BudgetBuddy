@@ -6,7 +6,9 @@ import com.app.budgetbuddy.entities.BudgetGoalsEntity;
 import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
 import com.app.budgetbuddy.entities.SubBudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
+import com.app.budgetbuddy.exceptions.BudgetSetupException;
 import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
+import com.app.budgetbuddy.workbench.TransactionImportService;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,7 @@ public class BudgetSetupEngine
     private final BudgetBuilderService budgetBuilderService;
     private final SubBudgetBuilderService subBudgetBuilderService;
     private final MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
+    private final TransactionImportService transactionImportService;
     private final AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService;
     private final BudgetCategoryThreadService budgetCategoryThreadService;
 
@@ -35,14 +38,31 @@ public class BudgetSetupEngine
     public BudgetSetupEngine(BudgetBuilderService budgetBuilderService,
                              SubBudgetBuilderService subBudgetBuilderService,
                              MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder,
+                             TransactionImportService transactionImportService,
                              AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService,
                              BudgetCategoryThreadService budgetCategoryThreadService)
     {
         this.budgetBuilderService = budgetBuilderService;
         this.subBudgetBuilderService = subBudgetBuilderService;
         this.monthlyBudgetGoalsBuilder = monthlyBudgetGoalsBuilder;
+        this.transactionImportService = transactionImportService;
         this.subBudgetStatisticsService = subBudgetStatisticsService;
         this.budgetCategoryThreadService = budgetCategoryThreadService;
+    }
+
+    public List<Transaction> importPlaidTransactions(Long userId)
+    {
+        if(userId < 1)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            return transactionImportService.importMonthlyTransactions(userId);
+        }catch(BudgetSetupException e){
+            log.error("There was an error importing plaid transactions for userId {}: {}", userId, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private int getPreviousBudgetYear(int currentBudgetYear)
@@ -50,7 +70,7 @@ public class BudgetSetupEngine
         return currentBudgetYear - 1;
     }
 
-    public Optional<Budget> createPreviousYearBudget(final BigDecimal previousIncomeAmount, final String previousBudgetName, final Budget budget)
+    public Optional<Budget> createPreviousYearBudget(final BigDecimal previousIncomeAmount, final String previousBudgetName, final int previousYear, final Budget budget)
     {
         if(previousIncomeAmount == null || previousBudgetName == null || budget == null)
         {
@@ -58,25 +78,18 @@ public class BudgetSetupEngine
         }
         Long userId = budget.getUserId();
         int currentBudgetYear = budget.getBudgetYear();
-        int previousBudgetYear = getPreviousBudgetYear(currentBudgetYear);
-
-        // Return empty if the previous year calculation resulted in a negative or invalid year
-        if(previousBudgetYear <= 0)
-        {
-            return Optional.empty();
-        }
 
         try
         {
             Budget previousYearBudget = new Budget();
             // Set basic information
-            previousYearBudget.setBudgetYear(previousBudgetYear);
+            previousYearBudget.setBudgetYear(previousYear);
             previousYearBudget.setBudgetName(previousBudgetName);
             previousYearBudget.setUserId(userId);
 
             // Set date range for the previous year
-            LocalDate startDate = LocalDate.of(previousBudgetYear, 1, 1);
-            LocalDate endDate = LocalDate.of(previousBudgetYear, 12, 31);
+            LocalDate startDate = LocalDate.of(previousYear, 1, 1);
+            LocalDate endDate = LocalDate.of(previousYear, 12, 31);
             previousYearBudget.setStartDate(startDate);
             previousYearBudget.setEndDate(endDate);
 

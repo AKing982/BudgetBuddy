@@ -3,7 +3,6 @@ package com.app.budgetbuddy.workbench.converter;
 import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.entities.BudgetCategoryEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
-import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.services.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

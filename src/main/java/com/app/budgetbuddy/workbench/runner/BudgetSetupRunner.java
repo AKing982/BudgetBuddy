@@ -61,7 +61,7 @@ public class BudgetSetupRunner
             log.info("Previous Year Income: {}", previousYearIncome);
             String previousYearBudgetName = budgetRegistration.getPreviousBudgetName();
             log.info("Previous Year Budget Name: {}", previousYearBudgetName);
-            Budget previousYearBudget = budgetSetupEngine.createPreviousYearBudget(previousYearIncome, previousYearBudgetName, currentBudget)
+            Budget previousYearBudget = budgetSetupEngine.createPreviousYearBudget(previousYearIncome, previousYearBudgetName, previousYear, currentBudget)
                     .orElseThrow(() -> new RuntimeException("Failed to create previous year budget"));
             log.info("Previous Year Budget: {}", previousYearBudget.toString());
 
@@ -97,6 +97,10 @@ public class BudgetSetupRunner
             log.info("Creating Monthly Sub Budget goals for previous year {}", previousYear);
             List<MonthlyBudgetGoals> previousYearMonthlyBudgetGoals = budgetSetupEngine.createMonthlyBudgetGoalsForSubBudgets(previousYearBudgetGoal, previousYearSubBudgets);
             budgetSetupEngine.saveMonthlyBudgetGoals(previousYearMonthlyBudgetGoals);
+
+            log.info("Running the Transaction Import process for user {}", currentBudget.getUserId());
+            budgetSetupEngine.importPlaidTransactions(currentBudget.getUserId());
+
             return true;
         }catch(Exception e)
         {

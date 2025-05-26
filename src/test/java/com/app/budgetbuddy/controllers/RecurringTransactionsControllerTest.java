@@ -8,8 +8,6 @@ import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.RecurringTransactionEntity;
 import com.app.budgetbuddy.entities.UserEntity;
-import com.app.budgetbuddy.exceptions.RecurringTransactionsNotFoundException;
-import com.app.budgetbuddy.services.PlaidTransactionService;
 import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +16,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -41,9 +38,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(value=RecurringTransactionsController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
 @Testcontainers

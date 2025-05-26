@@ -233,7 +233,6 @@ public class PlaidController
                 LOGGER.info("Plaid Link Token requires update... marking plaid link token for update");
                 plaidLinkService.markPlaidAsNeedingUpdate(userId);
             }
-
             PlaidLinkStatus status = new PlaidLinkStatus(isLinked, requiresUpdate);
             log.info("Plaid Link Status: {}", status);
             return ResponseEntity.ok(status);

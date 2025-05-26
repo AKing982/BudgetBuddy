@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.Registration;
+import com.app.budgetbuddy.domain.User;
 import com.app.budgetbuddy.entities.UserEntity;
 
 import java.util.Optional;
@@ -13,6 +14,8 @@ public interface UserService extends ServiceModel<UserEntity>
     Long findUserIdByEmail(String email);
     Long findUserIdByUsername(String username);
     Long findMaxUserId();
+
+    Optional<User> getUserById(Long id);
 
     void resetPassword(String email, String newPassword);
 }
