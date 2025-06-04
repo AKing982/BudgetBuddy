@@ -2,8 +2,10 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.domain.SubBudget;
+import com.app.budgetbuddy.exceptions.BudgetCategoryException;
 import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.workbench.runner.BudgetCategoryRunner;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping(value="/api/budget-category-test")
 @CrossOrigin(value="http://localhost:3000")
+@Slf4j
 public class BudgetCategoryController
 {
     private final BudgetCategoryRunner budgetCategoryRunner;
@@ -30,8 +33,8 @@ public class BudgetCategoryController
 
     @GetMapping("/create")
     public ResponseEntity<List<BudgetCategory>> createBudgetCategories(@RequestParam Long userID,
-                                                                       @RequestParam(required = false)LocalDate startDate,
-                                                                       @RequestParam(required = false)LocalDate endDate)
+                                                                       @RequestParam(required = false) LocalDate startDate,
+                                                                       @RequestParam(required = false) LocalDate endDate)
     {
         // Find the SubBudget for this period
         Optional<SubBudget> subBudget = subBudgetService.findSubBudgetByUserIdAndDateRange(userID, startDate, endDate);
@@ -39,9 +42,15 @@ public class BudgetCategoryController
         {
             return ResponseEntity.notFound().build();
         }
-        SubBudget subBudget1 = subBudget.get();
-        List<BudgetCategory> createdBudgetCategories = budgetCategoryRunner.runBudgetCategoryProcessForMonth(subBudget1);
-        return ResponseEntity.ok(createdBudgetCategories);
+        try
+        {
+            SubBudget subBudget1 = subBudget.get();
+            List<BudgetCategory> createdBudgetCategories = budgetCategoryRunner.runBudgetCategoryProcessForMonth(subBudget1);
+            return ResponseEntity.ok(createdBudgetCategories);
+        }catch(BudgetCategoryException e){
+            log.error("There was an error creating the budget categories for {} to {}: {}", startDate, endDate, e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/create-date")
@@ -53,8 +62,14 @@ public class BudgetCategoryController
         {
             return ResponseEntity.notFound().build();
         }
-        SubBudget subBudget1 = subBudgetForDate.get();
-        List<BudgetCategory> budgetCategoriesForDate = budgetCategoryRunner.runBudgetCategoryProcessForDate(date, subBudget1);
-        return ResponseEntity.ok(budgetCategoriesForDate);
+        try
+        {
+            SubBudget subBudget1 = subBudgetForDate.get();
+            List<BudgetCategory> budgetCategoriesForDate = budgetCategoryRunner.runBudgetCategoryProcessForDate(date, subBudget1);
+            return ResponseEntity.ok(budgetCategoriesForDate);
+        }catch(BudgetCategoryException e){
+            log.error("There was an error with creating the budget categories for date {}", date, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

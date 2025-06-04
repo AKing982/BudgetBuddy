@@ -20,10 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,24 +58,25 @@ public class TransactionRefreshThreadService
 
     public void startTransactionSyncThread(final SubBudget subBudget, final LocalDate date, final List<com.app.budgetbuddy.domain.Transaction> transactions, final String cursor) throws IOException
     {
-        if(subBudget == null || cursor == null)
-        {
-            log.warn("SubBudget is null or cursor is empty");
-            return;
-        }
-        Long userId = subBudget.getBudget().getUserId();
-        Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
-        CompletableFuture.runAsync(() -> syncAndStoreTransactions(userId, cursor), executor)
-                .thenRunAsync(() -> categorizeTransactions(userId, transactions, new ArrayList<>()), executor)
-                .thenRunAsync(() -> buildBudgetCategories(userId, date, subBudget), executor)
-                .exceptionally(ex -> {
-                    log.error("Transaction Refresh pipeline failed", ex);
-                    try {
-                        throw ex;
-                    } catch (Throwable e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+//        if(subBudget == null || cursor == null)
+//        {
+//            log.warn("SubBudget is null or cursor is empty");
+//            return;
+//        }
+//        Long userId = subBudget.getBudget().getUserId();
+//        Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
+//        CompletableFuture.runAsync(() -> syncAndStoreTransactions(userId, cursor), executor)
+//                .thenRunAsync(() -> categorizeTransactions(userId, transactions, new ArrayList<>()), executor)
+//                .thenRunAsync(() -> buildBudgetCategories(userId, date, subBudget), executor)
+//                .exceptionally(ex -> {
+//                    log.error("Transaction Refresh pipeline failed", ex);
+//                    try {
+//                        throw ex;
+//                    } catch (Throwable e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                });
+        return;
     }
 
     private void buildBudgetCategories(final Long userId, final LocalDate date, final SubBudget subBudget)
@@ -152,24 +150,24 @@ public class TransactionRefreshThreadService
 
     public void startRecurringTransactionSyncThread(final LocalDate date, final SubBudget subBudget, final List<RecurringTransaction> recurringTransactions) throws IOException
     {
-        Long userId = subBudget.getBudget().getUserId();
-        Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
-        CompletableFuture.runAsync(() -> {
-                    try {
-                        syncAndStoreRecurringTransactions(userId);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }, executor)
-                .thenRunAsync(() -> categorizeTransactions(userId, new ArrayList<>(), recurringTransactions), executor)
-                .thenRunAsync(() -> buildBudgetCategories(userId, date, subBudget), executor)
-                .exceptionally(ex -> {
-                    log.error("Recurring Transaction Refresh pipeline failed", ex);
-                    try {
-                        throw ex;
-                    } catch (Throwable e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+//        Long userId = subBudget.getBudget().getUserId();
+//        Executor executor = threadPoolTaskScheduler.getScheduledExecutor();
+//        CompletableFuture.runAsync(() -> {
+//                    try {
+//                        syncAndStoreRecurringTransactions(userId);
+//                    } catch (IOException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }, executor)
+//                .thenRunAsync(() -> categorizeTransactions(userId, new ArrayList<>(), recurringTransactions), executor)
+//                .thenRunAsync(() -> buildBudgetCategories(userId, date, subBudget), executor)
+//                .exceptionally(ex -> {
+//                    log.error("Recurring Transaction Refresh pipeline failed", ex);
+//                    try {
+//                        throw ex;
+//                    } catch (Throwable e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                });
     }
 }

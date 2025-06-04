@@ -83,25 +83,6 @@ public class TransactionCategoryBuilder
     }
 
     /**
-     * Check if this transaction+category combination already exists
-     */
-    private boolean isDuplicateCategory(Map<String, Set<String>> existingCategories,
-                                        String transactionId, String category) {
-        Set<String> categories = existingCategories.get(transactionId);
-        return categories != null && categories.contains(category);
-    }
-
-    /**
-     * Add to our local cache of existing categories
-     */
-    private void addToExistingCategories(Map<String, Set<String>> existingCategories,
-                                         String transactionId, String category) {
-        existingCategories
-                .computeIfAbsent(transactionId, k -> new HashSet<>())
-                .add(category);
-    }
-
-    /**
      * Fetch existing transaction categories to avoid duplicates
      */
     private Map<String, Set<String>> fetchExistingCategories(List<String> transactionIds) {

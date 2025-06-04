@@ -1,6 +1,5 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.SubBudget;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.entities.PlaidCursorEntity;
@@ -16,6 +15,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -59,43 +59,59 @@ public class TransactionRefreshService
     @Transactional(readOnly = true)
     public void scheduleTransactionRefreshForUser()
     {
-        try
+        LocalDate today = LocalDate.now();
+        Set<Long> activeUsers = sessionManagementService.getActiveUsersBySessions();
+        for(Long userId : activeUsers)
         {
-            LocalDate currentDate = LocalDate.now();
-            Long userId = 1L;
-            Optional<SubBudget> subBudgetOptional = subBudgetService.findSubBudgetByUserIdAndDate(userId, currentDate);
-            if(subBudgetOptional.isEmpty())
+            List<PlaidCursorEntity> plaidCursorEntities = plaidCursorService.findByUserId(userId);
+            if(plaidCursorEntities.isEmpty())
             {
-                log.info("No sub budget found for user id {}", userId);
-                return;
+                // If no plaid cursors found for user, then assume the user hasn't synced transactions before
+                // And make the initial transaction sync and update the plaid cursor
+                //
+
             }
-            SubBudget subBudget = subBudgetOptional.get();
-            if(sessionManagementService.isUserActive(userId))
-            {
-                List<PlaidCursorEntity> userPlaidCursors = plaidCursorService.findByUserId(userId);
-                if(userPlaidCursors.isEmpty())
-                {
-                    log.info("No Plaid Cursors found for user id {}", userId);
-                }
-                List<Transaction> transactions = transactionService.getTransactionsByDate(currentDate, userId);
-                List<RecurringTransaction> recurringTransactions = recurringTransactionService.getRecurringTransactionsForDate(userId, currentDate);
-                processTransactionsWithCursor(transactions, subBudget, currentDate, userPlaidCursors);
-                if(recurringTransactions.isEmpty() && transactions.isEmpty())
-                {
-                    log.info("No Transactions/Recurring transactions to sync at this time...");
-                }
-                else if(transactions.isEmpty())
-                {
-                    transactionRefreshThreadService.startRecurringTransactionSyncThread(currentDate, subBudget, recurringTransactions);
-                }
-            }
-            else
-            {
-                log.info("User {} is not currently logged in and active.", userId);
-            }
-        }catch(IOException e){
-            log.error("There was an error running the transaction refresh: ", e);
+            // For the given userId, check for any new transactions from plaid that have not been categorized
+
+            // If there is a list of transactions that are new, run the transaction refresh process
         }
+//        try
+//        {
+//            LocalDate currentDate = LocalDate.now();
+//            Long userId = 1L;
+//            Optional<SubBudget> subBudgetOptional = subBudgetService.findSubBudgetByUserIdAndDate(userId, currentDate);
+//            if(subBudgetOptional.isEmpty())
+//            {
+//                log.info("No sub budget found for user id {}", userId);
+//                return;
+//            }
+//            SubBudget subBudget = subBudgetOptional.get();
+//            if(sessionManagementService.isUserActive(userId))
+//            {
+//                List<PlaidCursorEntity> userPlaidCursors = plaidCursorService.findByUserId(userId);
+//                if(userPlaidCursors.isEmpty())
+//                {
+//                    log.info("No Plaid Cursors found for user id {}", userId);
+//                }
+//                List<Transaction> transactions = transactionService.getTransactionsByDate(currentDate, userId);
+//                List<RecurringTransaction> recurringTransactions = recurringTransactionService.getRecurringTransactionsForDate(userId, currentDate);
+//                processTransactionsWithCursor(transactions, subBudget, currentDate, userPlaidCursors);
+//                if(recurringTransactions.isEmpty() && transactions.isEmpty())
+//                {
+//                    log.info("No Transactions/Recurring transactions to sync at this time...");
+//                }
+//                else if(transactions.isEmpty())
+//                {
+//                    transactionRefreshThreadService.startRecurringTransactionSyncThread(currentDate, subBudget, recurringTransactions);
+//                }
+//            }
+//            else
+//            {
+//                log.info("User {} is not currently logged in and active.", userId);
+//            }
+//        }catch(IOException e){
+//            log.error("There was an error running the transaction refresh: ", e);
+//        }
     }
 
     private boolean processTransactionsWithCursor(final List<Transaction> transactions, final SubBudget subBudget, final LocalDate currentDate, final List<PlaidCursorEntity> plaidCursorEntities)

@@ -1,15 +1,19 @@
 package com.app.budgetbuddy.services;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class SessionManagementService
 {
     private final RedisTemplate<String, String> redisTemplate;
@@ -34,6 +38,33 @@ public class SessionManagementService
         redisTemplate.expire(userSessionKey, Duration.ofMinutes(30));
 
         redisTemplate.opsForHash().put("spring:session:sessions:" + sessionId, sessionId, userID);
+    }
+
+    public Set<String> getAllActiveSessions()
+    {
+        return redisTemplate.opsForSet().members(USER_SESSION_PREFIX);
+    }
+
+    public Set<Long> getActiveUsersBySessions()
+    {
+        Set<String> sessions = getAllActiveSessions();
+        Set<Long> userIds = new HashSet<>();
+        try
+        {
+            for(String sessionId : sessions)
+            {
+                if(sessionId != null && sessionId.startsWith(USER_SESSION_PREFIX))
+                {
+                    String userIDAsString = sessionId.substring(USER_SESSION_PREFIX.length());
+                    Long userID = Long.parseLong(userIDAsString);
+                    userIds.add(userID);
+                }
+            }
+            return userIds;
+        }catch(NumberFormatException e){
+            log.error("There was an error retrieving the active users by sessions: ", e);
+            return Collections.emptySet();
+        }
     }
 
     // Get all active sessions for a user

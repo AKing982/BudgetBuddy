@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.ValidationCodeException;
 import com.app.budgetbuddy.services.EmailService;
 import com.app.budgetbuddy.services.UserService;
 import com.app.budgetbuddy.workbench.PasswordValidationServiceImpl;
@@ -49,20 +50,24 @@ public class ForgotPasswordController
     {
         // Generate a 6 digit code
         String validationCode = passwordValidationService.generateValidationCode();
+        try
+        {
+            // 3. Send an email to the user with the provided password
+            String fromEmail = "noreply@gmail.com";
+            emailService.sendEmailWithValidationCode(
+                    fromEmail,
+                    email,
+                    "Password Reset Code",
+                    "",
+                    "forgotPasswordTemplate",  // this should match the name of your template file without extension
+                    validationCode
+            );
 
-        // 3. Send an email to the user with the provided password
-        String fromEmail = "noreply@gmail.com";
-        emailService.sendEmailWithValidationCode(
-                fromEmail,
-                email,
-                "Password Reset Code",
-                "",
-                "forgotPasswordTemplate",  // this should match the name of your template file without extension
-                validationCode
-        );
-
-        return ResponseEntity.ok(validationCode);
+            return ResponseEntity.ok(validationCode);
+        }catch(ValidationCodeException e)
+        {
+            log.error("Error while sending validation code {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
-
-
 }

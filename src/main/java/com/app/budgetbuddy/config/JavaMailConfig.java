@@ -34,7 +34,8 @@ public class JavaMailConfig
     private boolean tlsEnable;
 
     @Bean
-    public JavaMailSender getJavaMailSender(){
+    public JavaMailSender getJavaMailSender()
+    {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost(host);
         mailSender.setPort(port);
@@ -49,7 +50,8 @@ public class JavaMailConfig
     }
 
     @Bean
-    public SimpleMailMessage templateSimpleMessage(){
+    public SimpleMailMessage templateSimpleMessage()
+    {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setText("Test email template");
         return message;
