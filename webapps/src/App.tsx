@@ -18,6 +18,8 @@ import DebtPaymentProgress from './components/DebtPaymentProgress';
 // import BudgetDebtPage from "./components/BudgetDebtPage";
 import SpendingOverview from "./components/SpendingOverview";
 import ForgotPassword from "./components/ForgotPassword";
+import BudgetPlanner from "./components/BudgetPlanner";
+import PBTemplate from "./components/PBTemplate";
 // import BudgetControlPage from "./components/BudgetControlPage";
 // import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
 
@@ -49,6 +51,8 @@ function App() {
                       <Route path="/debt-overview" element={<DebtOverview />}/>
                       <Route path="/debt-progress" element={<DebtPaymentProgress />}/>
                       <Route path="/forgot-password" element={<ForgotPassword />}/>
+                      <Route path="/budget-planner" element={<BudgetPlanner />}/>
+                      <Route path="/pb-template" element={<PBTemplate />}/>
                       {/*<Route path="/budget-debt" element={<BudgetDebtPage />}/>*/}
                       {/*<Route path="/budget-spending" element={<BudgetControlPage />}/>*/}
                       {/*<Route path="/budget-emergency" element={<BudgetEmergencyFundPage />}/>*/}

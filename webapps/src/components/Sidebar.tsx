@@ -29,7 +29,7 @@ import {
 import {
     Bell,
     Settings,
-    MessageSquare, Sparkles, HelpCircle, BellIcon, User, CreditCard, Shield, LogOut,
+    MessageSquare, Sparkles, HelpCircle, BellIcon, User, CreditCard, Shield, LogOut, Calculator,
 } from 'lucide-react';
 import {useLocation, useNavigate} from "react-router-dom";
 import SidebarMenu from "./SidebarMenu";
@@ -125,6 +125,7 @@ const Sidebar: React.FC = () => {
         // { text: 'Net Worth', icon: <TrendingUp />, path: '/net-worth' },
         { text: 'Transactions', icon: <Search /> , path: '/transactions'},
         // { text: 'Credit Score', icon: <CreditScore />, path: '/score' },
+        {text: 'BudgetPlanner', icon: <Calculator />, path: '/budget-planner'}
     ];
 
     useEffect(() => {
