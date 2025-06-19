@@ -66,6 +66,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ open, onClose }) => {
         // { text: 'Net Worth', icon: <NetWorthIcon /> },
         { text: 'Transactions', icon: <TransactionsIcon /> },
         // { text: 'Credit Score', icon: <CreditScoreIcon /> },
+        {text: 'Budget-Planner', icon: <BudgetsIcon />}
     ];
 
     const drawerContent = (

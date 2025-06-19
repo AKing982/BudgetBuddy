@@ -8,19 +8,31 @@ echo "spring.main.allow-bean-definition-overriding=true" >> src/main/resources/a
 
 # Set up SendGrid add-on and configure API key
 echo "Setting up SendGrid add-on in Heroku..."
-heroku addons:create sendgrid:starter --app budgetbuddy-app2 || echo "SendGrid add-on may already exist, continuing..."
+heroku addons:create sendgrid:essential --app budgetbuddy-app2 || echo "SendGrid add-on may already exist, continuing..."
 
 # Set up Redis add-on
-echo "Setting up Redis add-on in Heroku..."
-heroku addons:create heroku-redis:mini --app budgetbuddy-app2 || echo "Redis add-on may already exist, continuing..."
-
-# Wait for Redis to be ready
-echo "Waiting for Redis to be provisioned..."
-sleep 10
+echo "Checking Redis add-on..."
+if heroku addons --app budgetbuddy-app2 | grep -q redis; then
+    echo "Redis add-on already exists, skipping creation..."
+    # Get the existing Redis add-on name
+    REDIS_ADDON=$(heroku addons --app budgetbuddy-app2 | grep redis | awk '{print $1}' | head -1)
+    echo "Using existing Redis add-on: $REDIS_ADDON"
+else
+    echo "Setting up Redis add-on in Heroku..."
+    heroku addons:create heroku-redis:mini --app budgetbuddy-app2
+    # Get the newly created Redis add-on name
+    REDIS_ADDON=$(heroku addons --app budgetbuddy-app2 | grep redis | awk '{print $1}' | head -1)
+    echo "Waiting for Redis to be provisioned..."
+    sleep 15
+fi
 
 # Verify Redis add-on
 echo "Verifying Redis add-on..."
-heroku addons:info heroku-redis --app budgetbuddy-app2
+if [ -n "$REDIS_ADDON" ]; then
+    heroku addons:info $REDIS_ADDON --app budgetbuddy-app2
+else
+    echo "Could not determine Redis add-on name"
+fi
 
 # Build Docker image
 echo "Building Docker image..."
