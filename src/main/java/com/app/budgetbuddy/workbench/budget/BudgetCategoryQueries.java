@@ -207,7 +207,8 @@ public class BudgetCategoryQueries
         }
     }
 
-    public BigDecimal getInsuranceTotal(Long userId, LocalDate startDate, LocalDate endDate) {
+    public BigDecimal getInsuranceTotal(Long userId, LocalDate startDate, LocalDate endDate)
+    {
         final String insuranceQuery = """
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
