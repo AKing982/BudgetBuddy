@@ -12,7 +12,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
-public class BPWeekDetail
+public class BPWeekDetail implements Cloneable
 {
     private Long id;
     private Long template_detail_id;
@@ -38,5 +38,26 @@ public class BPWeekDetail
         this.savingsPercentage = savingsPercentage;
         this.budgetedPercentage = budgetedPercentage;
         this.accountBalance = accountBalance;
+    }
+
+    public void addCategoryDetail(BPCategoryDetail categoryDetail)
+    {
+        categoryDetails.add(categoryDetail);
+    }
+
+    public void removeCategoryDetail(BPCategoryDetail categoryDetail)
+    {
+        categoryDetails.remove(categoryDetail);
+    }
+
+    @Override
+    public BPWeekDetail clone()
+    {
+        try {
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            return (BPWeekDetail) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }

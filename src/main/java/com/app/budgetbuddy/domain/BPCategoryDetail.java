@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class BPCategoryDetail
+public class BPCategoryDetail implements Cloneable
 {
     private String category;
     private Long bp_week_detail_id;
@@ -30,5 +30,30 @@ public class BPCategoryDetail
         this.spendingPercent = spendingPercent;
         this.savingsPercent = savingsPercent;
         this.budgetedPercent = budgetedPercent;
+    }
+
+    public double calculateBudgetedPercent(BigDecimal budgetedAmount, BigDecimal plannedAmount)
+    {
+        return 0;
+    }
+
+    public double calculateSpendingPercent(BigDecimal actualSpending, BigDecimal plannedSpending)
+    {
+        return 0;
+    }
+
+    public double calculateSavingsPercent(BigDecimal actualSavings, BigDecimal plannedSavings)
+    {
+        return 0;
+    }
+
+    @Override
+    public BPCategoryDetail clone() {
+        try {
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            return (BPCategoryDetail) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }

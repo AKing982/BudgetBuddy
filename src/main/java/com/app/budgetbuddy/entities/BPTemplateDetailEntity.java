@@ -35,19 +35,4 @@ public class BPTemplateDetailEntity
 
     @OneToMany(mappedBy="template_detail", fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<BPWeekDetailEntity> weekDetails = new HashSet<>();
-
-    @Column(name="budget_goal_amount")
-    private BigDecimal budgetGoalAmount;
-
-    @Column(name="total_planned")
-    private BigDecimal totalPlanned;
-
-    @Column(name="total_spent")
-    private BigDecimal totalSpent;
-
-    @Column(name="percentage_saved")
-    private double percentageSaved;
-
-    @Column(name="spent_over_budget_percentage")
-    private double spentOverBudgetPercentage;
 }
