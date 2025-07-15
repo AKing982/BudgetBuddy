@@ -62,10 +62,6 @@ public class SubBudgetEntity
     @Column(name="isActive")
     private boolean isActive;
 
-//    @Column(name="createdDate")
-//    @Temporal(TemporalType.TIMESTAMP)
-//    private LocalDateTime createdDate;
-
     // One-to-Many Relationship: SubBudget → BudgetSchedules
     @OneToMany(mappedBy = "subBudget", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BudgetScheduleEntity> budgetSchedules = new HashSet<>();

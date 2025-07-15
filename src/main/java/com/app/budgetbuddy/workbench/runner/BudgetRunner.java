@@ -70,11 +70,11 @@ public class BudgetRunner
         SubBudget subBudget = subBudgetOptional.get();
         Long subBudgetId = subBudget.getId();
         List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-        if (budgetSchedules.isEmpty()) {
+        if(budgetSchedules.isEmpty())
+        {
             log.warn("No budget schedules found for SubBudget ID: {}", subBudget.getId());
             return Collections.emptyList();
         }
-
         BudgetSchedule budgetSchedule = budgetSchedules.get(0); // Pick the first available schedule
         log.info("Processing SubBudget ID: {} with Budget Schedule ID: {}", subBudgetId, budgetSchedule.getBudgetScheduleId());
 

@@ -39,6 +39,27 @@ public class BPWeekDetailEntity
     @Column(name="predicted_amount")
     private BigDecimal predictedAmount;
 
+    @Column(name="goal_amount")
+    private BigDecimal goalAmount;
+
+    @Column(name="goal_met_amount")
+    private BigDecimal goalMetAmount;
+
+    @Column(name="goal_remaining_amount")
+    private BigDecimal goalRemainingAmount;
+
+    @Column(name="goal_amount_percentage")
+    private double goalAmountPercentage;
+
+    @Column(name="goal_met_amount_percentage")
+    private double goalMetAmountPercentage;
+
+    @Column(name="goal_remaining_amount_percentage")
+    private double goalRemainingAmountPercentage;
+
+    @Column(name="remaining_amount", precision = 10, scale = 2)
+    private BigDecimal remainingAmount;
+
     @Column(name="spending_percent", precision = 10, scale = 2)
     private BigDecimal spendingPercent;
 
@@ -48,7 +69,7 @@ public class BPWeekDetailEntity
     @Column(name="budgeted_percent", precision = 10, scale = 2)
     private BigDecimal budgetedPercent;
 
-    @Column(name="account_balance")
+    @Column(name="balance")
     private BigDecimal accountBalance;
 
 }

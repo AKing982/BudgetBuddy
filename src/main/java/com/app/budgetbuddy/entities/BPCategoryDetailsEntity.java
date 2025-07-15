@@ -35,6 +35,30 @@ public class BPCategoryDetailsEntity
     @Column(name="predicted_amount")
     private BigDecimal predictedAmount;
 
+    @Column(name="actual_amount")
+    private BigDecimal actualAmount;
+
+    @Column(name="goal_amount")
+    private BigDecimal goalAmount;
+
+    @Column(name="goal_met_amount")
+    private BigDecimal goalMetAmount;
+
+    @Column(name="goal_remaining_amount")
+    private BigDecimal goalRemainingAmount;
+
+    @Column(name="goal_amount_percentage")
+    private double goalAmountPercentage;
+
+    @Column(name="goal_met_amount_percentage")
+    private double goalMetAmountPercentage;
+
+    @Column(name="goal_remaining_amount_percentage")
+    private double goalRemainingAmountPercentage;
+
+    @Column(name="remaining_amount", precision = 10, scale = 2)
+    private BigDecimal remainingAmount;
+
     @Column(name="spending_percent")
     private BigDecimal spendingPercent;
 

@@ -49,9 +49,11 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
         final String incomeQuery = """
-        SELECT tc
+        SELECT SUM(tc.budgetedAmount) as budgetedIncome,
+        SUM(tc.actual) as actualIncome,
+        (SUM(tc.budgetedAmount) - SUM(tc.actual)) as remainingIncome
         FROM BudgetCategoryEntity tc
-        WHERE tc.categoryName =:catName
+        WHERE (tc.categoryName =:catName OR tc.categoryName = "PAYROLL")
         AND tc.subBudget.id = :subBudgetId
         AND tc.startDate >= :startDate
         AND tc.endDate <= :endDate
@@ -133,7 +135,11 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
         final String expenseCategoryQuery = """
-                            SELECT SUM(tc.budgetedAmount) as totalBudgeted,
+                            SELECT SUM(CASE\s
+                                       WHEN tc.categoryName IN ('INCOME', 'PAYROLL')
+                                       THEN tc.budgetedAmount
+                                       ELSE 0
+                                   END) as totalBudgeted,
                             SUM(tc.actual) as totalSpent,
                             (SUM(tc.budgetedAmount) - SUM(tc.actual)) as remaining
                             FROM BudgetCategoryEntity tc

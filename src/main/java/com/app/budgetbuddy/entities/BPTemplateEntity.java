@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Set;
+
 @Entity
 @Table(name="bp_templates")
 @Getter
@@ -21,6 +23,10 @@ public class BPTemplateEntity
     @JoinColumn(name="sub_budgetid")
     private SubBudgetEntity subBudget;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="goalId")
+    private SubBudgetGoalsEntity subBudgetGoals;
+
     @Column(name="bp-template-type")
     @Enumerated(EnumType.STRING)
     private BPTemplateType bpTemplateType;
@@ -35,4 +41,7 @@ public class BPTemplateEntity
 
     @Column(name="isActive")
     private boolean active;
+
+    @Column(name="is_custom_template")
+    private boolean isCustomTemplate;
 }

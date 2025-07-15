@@ -10,26 +10,19 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class BPCategoryDetail implements Cloneable
+public abstract class BPCategoryDetail
 {
     private String category;
     private Long bp_week_detail_id;
-    private BigDecimal budgetedAmount;
     private BigDecimal plannedAmount;
-    private BigDecimal predictedAmount;
-    private BigDecimal spendingPercent;
-    private BigDecimal savingsPercent;
-    private BigDecimal budgetedPercent;
+    private BigDecimal actualAmount;
 
-    public BPCategoryDetail(String category, Long bp_week_detail_id, BigDecimal budgetedAmount, BigDecimal plannedAmount, BigDecimal predictedAmount, BigDecimal spendingPercent, BigDecimal savingsPercent, BigDecimal budgetedPercent) {
+    public BPCategoryDetail(String category, Long bp_week_detail_id, BigDecimal plannedAmount, BigDecimal actualAmount)
+    {
         this.category = category;
         this.bp_week_detail_id = bp_week_detail_id;
-        this.budgetedAmount = budgetedAmount;
         this.plannedAmount = plannedAmount;
-        this.predictedAmount = predictedAmount;
-        this.spendingPercent = spendingPercent;
-        this.savingsPercent = savingsPercent;
-        this.budgetedPercent = budgetedPercent;
+        this.actualAmount = actualAmount;
     }
 
     public double calculateBudgetedPercent(BigDecimal budgetedAmount, BigDecimal plannedAmount)
@@ -47,13 +40,4 @@ public class BPCategoryDetail implements Cloneable
         return 0;
     }
 
-    @Override
-    public BPCategoryDetail clone() {
-        try {
-            // TODO: copy mutable state here, so the clone can't change the internals of the original
-            return (BPCategoryDetail) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
-    }
 }

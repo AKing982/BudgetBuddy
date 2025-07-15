@@ -1,4 +1,4 @@
-package com.app.budgetbuddy.workbench;
+package com.app.budgetbuddy.workbench.budgetplanner;
 
 import com.app.budgetbuddy.domain.BPTemplateHeader;
 
