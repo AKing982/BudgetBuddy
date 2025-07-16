@@ -24,6 +24,7 @@ public class FourierSeries
 
     public void computeCoefficients()
     {
+        a0 = 0;
         for(double v : x)
         {
             a0 += v;

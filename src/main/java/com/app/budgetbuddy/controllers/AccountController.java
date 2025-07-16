@@ -16,7 +16,8 @@ import java.util.List;
 @RestController
 @RequestMapping(value="/api/accounts")
 @CrossOrigin(value="http://localhost:3000")
-public class AccountController {
+public class AccountController
+{
 
     private final AccountService accountService;
     private final Logger LOGGER = LoggerFactory.getLogger(AccountController.class);
