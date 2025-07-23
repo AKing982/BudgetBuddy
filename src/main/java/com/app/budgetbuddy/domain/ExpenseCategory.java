@@ -22,6 +22,7 @@ public class ExpenseCategory
     private boolean isActive;
     private LocalDate startDate;
     private LocalDate endDate;
+    private boolean isVariable;
 
     public ExpenseCategory(String category, BigDecimal budgetedExpenses, BigDecimal actualExpenses, BigDecimal remainingExpenses, boolean isActive, LocalDate startDate, LocalDate endDate) {
         this.category = category;

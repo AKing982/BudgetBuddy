@@ -9,6 +9,7 @@ import java.util.function.BiFunction;
 @Setter
 public class PartialDerivative
 {
+    private String equation;
     private double x;
     private double t;
     private int n;
@@ -16,6 +17,12 @@ public class PartialDerivative
     public PartialDerivative(double x, double t, int n)
     {
         this.x = x;
+        this.t = t;
+        this.n = n;
+    }
+
+    public PartialDerivative(double t, int n)
+    {
         this.t = t;
         this.n = n;
     }

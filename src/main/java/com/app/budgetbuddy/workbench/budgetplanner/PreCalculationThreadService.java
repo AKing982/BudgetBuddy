@@ -50,9 +50,4 @@ public class PreCalculationThreadService
     {
         return null;
     }
-
-
-
-
-
 }
