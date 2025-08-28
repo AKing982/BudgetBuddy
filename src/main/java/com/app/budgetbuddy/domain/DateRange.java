@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,6 +31,21 @@ public class DateRange implements Comparable<DateRange>
     public static DateRange createDateRange(LocalDate startDate, LocalDate endDate)
     {
         return new DateRange(startDate, endDate);
+    }
+
+    public int getISOWeekNumberBasedYear()
+    {
+        return startDate.get(WeekFields.ISO.weekOfWeekBasedYear());
+    }
+
+    public int getNumberOfWeeksBetweenStartAndEnd(LocalDate startDate, LocalDate endDate)
+    {
+        return (int) Math.ceil(ChronoUnit.WEEKS.between(startDate, endDate));
+    }
+
+    public int getNumberOfWeeksBetween()
+    {
+        return (int) Math.ceil(ChronoUnit.WEEKS.between(startDate, endDate));
     }
 
     public List<DateRange> splitByPeriod(Period period){
@@ -77,12 +94,31 @@ public class DateRange implements Comparable<DateRange>
         }
     }
 
-    public List<DateRange> splitIntoDays(){
+    public List<DateRange> splitIntoDays()
+    {
         List<DateRange> dateRanges = new ArrayList<>();
         LocalDate current = startDate;
         while(!current.isAfter(endDate)){
             dateRanges.add(new DateRange(current, current));
             current = current.plusDays(1);
+        }
+        return dateRanges;
+    }
+
+    public List<DateRange> splitIntoISOWeeks()
+    {
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate current = startDate.with(DayOfWeek.MONDAY);
+        LocalDate finalEnd = endDate.with(DayOfWeek.SUNDAY);
+        while(!current.isAfter(finalEnd)){
+            LocalDate rangeStart = current;
+            LocalDate rangeEnd = current.plusDays(6);
+            if(!rangeEnd.isBefore(startDate) && !rangeStart.isAfter(endDate)){
+                LocalDate clampedStart = rangeStart.isBefore(startDate) ? startDate : rangeStart;
+                LocalDate clampedEnd = rangeEnd.isAfter(endDate) ? endDate : rangeEnd;
+                dateRanges.add(new DateRange(clampedStart, clampedEnd));
+            }
+            current = current.plusWeeks(1);
         }
         return dateRanges;
     }

@@ -35,4 +35,14 @@ public enum CategoryType
         this.type = type;
     }
 
+    public static CategoryType getCategoryType(String category)
+    {
+        for (CategoryType ct : CategoryType.values()) {
+            if (ct.type.equalsIgnoreCase(category)) {
+                return ct;
+            }
+        }
+        throw new IllegalArgumentException("No matching CategoryType for input: " + category);
+    }
+
 }

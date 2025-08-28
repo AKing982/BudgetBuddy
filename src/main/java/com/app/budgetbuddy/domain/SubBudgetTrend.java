@@ -1,45 +1,48 @@
 package com.app.budgetbuddy.domain;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 @Setter
-public class SubBudgetTrend
+@NoArgsConstructor(access=AccessLevel.PUBLIC)
+public class SubBudgetTrend implements Comparable<SubBudgetTrend>
 {
     private Long subBudgetId;
-    private boolean isSavingsIncreasing;
-    private boolean isIncomeIncreasing;
-    private boolean isSpendingIncreasing;
+    private DateRange monthRange;
+    private double monthlySaved;
+    private double monthlyVariableExpenses;
+    private double monthlyFixedExpenses;
+    private double monthlyIncome;
+    private double monthlyGoalReached;
+    private double monthlyGoalAmount;
 
-    private double incomeTrendPercent;
-    private double savingsTrendPercent;
-    private double spendingTrendPercent;
-    private double goalTrendPercent;
-
-    public SubBudgetTrend(Long subBudgetId, double incomeTrendPercent, double savingsTrendPercent, double spendingTrendPercent, double goalTrendPercent)
+    public SubBudgetTrend(Long subBudgetId, DateRange monthRange, double monthlySaved, double monthlyVariableExpenses,
+                          double monthlyFixedExpenses,
+                          double monthlyIncome,
+                          double monthlyGoalReached,
+                          double monthlyGoalAmount)
     {
         this.subBudgetId = subBudgetId;
-        this.incomeTrendPercent = incomeTrendPercent;
-        this.savingsTrendPercent = savingsTrendPercent;
-        this.spendingTrendPercent = spendingTrendPercent;
-        this.goalTrendPercent = goalTrendPercent;
+        this.monthRange = monthRange;
+        this.monthlySaved = monthlySaved;
+        this.monthlyVariableExpenses = monthlyVariableExpenses;
+        this.monthlyFixedExpenses = monthlyFixedExpenses;
+        this.monthlyIncome = monthlyIncome;
+        this.monthlyGoalReached = monthlyGoalReached;
+        this.monthlyGoalAmount = monthlyGoalAmount;
     }
 
-    public boolean isSavingsIncreasing()
+    @Override
+    public int compareTo(@NotNull SubBudgetTrend o)
     {
-        return false;
-    }
-
-    public boolean isExpenseIncreasing()
-    {
-        return false;
-    }
-
-    public boolean isIncomeIncreasing()
-    {
-        return false;
+        return o.subBudgetId.compareTo(this.subBudgetId);
     }
 }
