@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 @Service
@@ -40,30 +41,32 @@ public class PreCalculationModelService
         return null;
     }
 
-    public Map<String, List<EntryCoordinates>> convertWeeklyPrecalculationEntriesToEntryCoordinates(final Map<WeekNumber, Map<EntryType, BigDecimal>> weeklyCategoryEntries)
+    public List<CategoryCoordinates> convertWeeklyPrecalculationEntriesToCategoryCoordinates(final Map<WeekNumber, List<PreCalculationEntry>> weeklyPrecalculationEntries, final SubBudgetGoals subBudgetGoals)
     {
-        if(weeklyCategoryEntries.isEmpty())
+        if(weeklyPrecalculationEntries.isEmpty())
         {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
-        Map<String, List<EntryCoordinates>> categoryCoordinates = new HashMap<>();
-        for(Map.Entry<WeekNumber, Map<EntryType, BigDecimal>> entry : weeklyCategoryEntries.entrySet())
+        List<CategoryCoordinates> categoryCoordinatesList = new ArrayList<>();
+        final int numberOfWeeks = weeklyPrecalculationEntries.size();
+        BigDecimal weeklySavingGoals = subBudgetGoals.getSavingsTarget().divide(BigDecimal.valueOf(numberOfWeeks)).setScale(2, RoundingMode.HALF_UP);
+        for(Map.Entry<WeekNumber, List<PreCalculationEntry>> entry : weeklyPrecalculationEntries.entrySet())
         {
             WeekNumber weekNumber = entry.getKey();
             int weekNumberInt = weekNumber.getWeekNumber();
-            Map<EntryType, BigDecimal> entryAmounts = entry.getValue();
-            for(Map.Entry<EntryType, BigDecimal> entryAmountEntry : entryAmounts.entrySet())
+            List<PreCalculationEntry> preCalculationEntries = entry.getValue();
+            for(PreCalculationEntry preCalculationEntry : preCalculationEntries)
             {
-                EntryType entryType = entryAmountEntry.getKey();
-                BigDecimal entryTypeAmount = entryAmountEntry.getValue();
-                if(entryType == EntryType.VARIABLE_EXPENSE || entryType == EntryType.FIXED_EXPENSE)
-                {
-                    double entryTypeAmountDouble = entryTypeAmount.doubleValue();
-                    Coordinate coordinate = new Coordinate(weekNumberInt, entryTypeAmountDouble, )
-                }
+                String category = preCalculationEntry.category();
+                BigDecimal budgeted = preCalculationEntry.budgeted();
+                BigDecimal actual = preCalculationEntry.actual();
+                BigDecimal saved = budgeted.subtract(actual);
+                double goalSaved = weeklySavingGoals.subtract(saved).doubleValue();
+                CategoryCoordinates categoryCoordinates = new CategoryCoordinates(category, weekNumberInt, actual.doubleValue(), saved.doubleValue(), goalSaved);
+                categoryCoordinatesList.add(categoryCoordinates);
             }
         }
-        return null;
+        return categoryCoordinatesList;
     }
 
     private BigDecimal getEntryTotal(EntryType entryType, BigDecimal totalSpending, BigDecimal totalBudgeted, BigDecimal totalSaved, BigDecimal totalsGoalsReached)
@@ -116,41 +119,47 @@ public class PreCalculationModelService
         return doubles;
     }
 
-    public List<CategoryMathModel> fitCategoryCoordinatesToMathModel(final Map<String, List<EntryCoordinates>> categoryCoordinates)
+    public List<CategoryMathModel> fitCategoryCoordinatesToMathModel(final List<CategoryCoordinates> categoryCoordinatesList)
     {
-        if(categoryCoordinates.isEmpty())
+        if(categoryCoordinatesList.isEmpty())
         {
             return Collections.emptyList();
         }
         List<CategoryMathModel> categoryMathModels = new ArrayList<>();
         long startTime = System.currentTimeMillis();
         log.debug("Start time: {}", startTime);
-        for(Map.Entry<String, List<EntryCoordinates>> entry : categoryCoordinates.entrySet())
+        for(CategoryCoordinates categoryCoordinates : categoryCoordinatesList)
         {
-            String category = entry.getKey();
-            List<EntryCoordinates> entryCoordinateList = entry.getValue();
-            for(EntryCoordinates entryCoordinates : entryCoordinateList)
-            {
-                List<Coordinate> coordinates = entryCoordinates.entryCoordinates();
-                double[] x_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.X);
-                double[] y_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.Y);
-                double[] z_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.Z);
-                double[] w_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.W);
-                Map<PositionType, List<AbstractMathModel>> models = fitMathModelsByCategoryCoordinates(category, x_coordinates, y_coordinates, z_coordinates, w_coordinates);
-                Map<PositionType, AbstractMathModel> bestModels = selectBestModelForPositionType(models);
-                if(bestModels.isEmpty())
-                {
-                    log.info("No models were found for category: {}", category);
-                    continue;
-                }
-                AbstractMathModel spendingModel = bestModels.get(PositionType.SPENDING);
-                AbstractMathModel budgetedModel = bestModels.get(PositionType.BUDGETED);
-                AbstractMathModel savedModel = bestModels.get(PositionType.SAVED);
-                AbstractMathModel goalsMetModel = bestModels.get(PositionType.GOALS_MET);
-                CategoryMathModel categoryMathModel = new CategoryMathModel(spendingModel, budgetedModel, savedModel, goalsMetModel, category);
-                categoryMathModels.add(categoryMathModel);
-            }
+            String category = categoryCoordinates.getCategory();
+            int weekNumber = categoryCoordinates.getX_week_number();
+
         }
+//        for(Map.Entry<String, List<EntryCoordinates>> entry : categoryCoordinates.entrySet())
+//        {
+//            String category = entry.getKey();
+//            List<EntryCoordinates> entryCoordinateList = entry.getValue();
+//            for(EntryCoordinates entryCoordinates : entryCoordinateList)
+//            {
+//                List<Coordinate> coordinates = entryCoordinates.entryCoordinates();
+//                double[] x_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.X);
+//                double[] y_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.Y);
+//                double[] z_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.Z);
+//                double[] w_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.W);
+//                Map<PositionType, List<AbstractMathModel>> models = fitMathModelsByCategoryCoordinates(category, x_coordinates, y_coordinates, z_coordinates, w_coordinates);
+//                Map<PositionType, AbstractMathModel> bestModels = selectBestModelForPositionType(models);
+//                if(bestModels.isEmpty())
+//                {
+//                    log.info("No models were found for category: {}", category);
+//                    continue;
+//                }
+//                AbstractMathModel spendingModel = bestModels.get(PositionType.SPENDING);
+//                AbstractMathModel budgetedModel = bestModels.get(PositionType.BUDGETED);
+//                AbstractMathModel savedModel = bestModels.get(PositionType.SAVED);
+//                AbstractMathModel goalsMetModel = bestModels.get(PositionType.GOALS_MET);
+//                CategoryMathModel categoryMathModel = new CategoryMathModel(spendingModel, budgetedModel, savedModel, goalsMetModel, category);
+//                categoryMathModels.add(categoryMathModel);
+//            }
+//        }
         long endTime = System.currentTimeMillis();
         log.debug("End time: {}", endTime);
         log.debug("Time taken: {} ms", endTime - startTime);
