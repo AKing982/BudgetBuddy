@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -90,33 +91,35 @@ public class PreCalculationModelService
         }
     }
 
-    private double[] convertCoordinatesToDoubles(List<Coordinate> coordinates, CoordinateType coordinateType)
+    private double[] convertCoordinatesToDoubles(List<CategoryCoordinates> coordinates, CoordinateType coordinateType)
     {
-        double[] doubles = new double[coordinates.size()];
-        for(Coordinate coordinate : coordinates)
+        if(coordinates.isEmpty())
         {
-            double x = coordinate.getX();
-            double y = coordinate.getY();
-            double z = coordinate.getZ();
-            double w = coordinate.getW();
-            if(coordinateType == CoordinateType.X)
-            {
-                doubles[coordinates.indexOf(coordinate)] = x;
-            }
-            else if(coordinateType == CoordinateType.Y)
-            {
-                doubles[coordinates.indexOf(coordinate)] = y;
-            }
-            else if(coordinateType == CoordinateType.Z)
-            {
-                doubles[coordinates.indexOf(coordinate)] = z;
-            }
-            else if (coordinateType == CoordinateType.W)
-            {
-                doubles[coordinates.indexOf(coordinate)] = w;
-            }
+            return new double[0];
+        }
+        double[] doubles = new double[coordinates.size()];
+        if(coordinateType == CoordinateType.X)
+        {
+            doubles = coordinates.stream().mapToDouble(CategoryCoordinates::getX).toArray();
+        }
+        else if(coordinateType == CoordinateType.Y)
+        {
+            doubles = coordinates.stream().mapToDouble(CategoryCoordinates::getY).toArray();
+        }
+        else if(coordinateType == CoordinateType.Z)
+        {
+            doubles = coordinates.stream().mapToDouble(CategoryCoordinates::getZ).toArray();
+        }
+        else if(coordinateType == CoordinateType.W)
+        {
+            doubles = coordinates.stream().mapToDouble(CategoryCoordinates::getW).toArray();
         }
         return doubles;
+    }
+
+    private Map<String, List<CategoryCoordinates>> groupCategoryCoordinatesByCategory(List<CategoryCoordinates> categoryCoordinatesList)
+    {
+        return categoryCoordinatesList.stream().collect(Collectors.groupingBy(CategoryCoordinates::getCategory));
     }
 
     public List<CategoryMathModel> fitCategoryCoordinatesToMathModel(final List<CategoryCoordinates> categoryCoordinatesList)
@@ -128,38 +131,33 @@ public class PreCalculationModelService
         List<CategoryMathModel> categoryMathModels = new ArrayList<>();
         long startTime = System.currentTimeMillis();
         log.debug("Start time: {}", startTime);
-        for(CategoryCoordinates categoryCoordinates : categoryCoordinatesList)
+        Map<String, List<CategoryCoordinates>> coordinatesByCategory = groupCategoryCoordinatesByCategory(categoryCoordinatesList);
+        for(Map.Entry<String, List<CategoryCoordinates>> entry : coordinatesByCategory.entrySet())
         {
-            String category = categoryCoordinates.getCategory();
-            int weekNumber = categoryCoordinates.getX_week_number();
-
+            String category = entry.getKey();
+            List<CategoryCoordinates> categoryCoordinates = entry.getValue();
+            double[] x_coordinates = convertCoordinatesToDoubles(categoryCoordinates, CoordinateType.X);
+            double[] y_coordinates = convertCoordinatesToDoubles(categoryCoordinates, CoordinateType.Y);
+            double[] z_coordinates = convertCoordinatesToDoubles(categoryCoordinates, CoordinateType.Z);
+            double[] w_coordinates = convertCoordinatesToDoubles(categoryCoordinates, CoordinateType.W);
+            Map<PositionType, List<AbstractMathModel>> models = fitMathModelsByCategoryCoordinates(category, x_coordinates, y_coordinates, z_coordinates, w_coordinates);
+            Map<PositionType, AbstractMathModel> bestModels = selectBestModelForPositionType(models);
+            // Debug what models were selected
+            for (Map.Entry<PositionType, AbstractMathModel> entry1 : bestModels.entrySet()) {
+                System.out.println(entry1.getKey() + " selected: " + (entry1.getValue() != null ? entry1.getValue().getClass().getSimpleName() : "null"));
+            }
+            if(bestModels.isEmpty())
+            {
+                log.info("No models were found for category: {}", category);
+                continue;
+            }
+            AbstractMathModel spendingModel = bestModels.get(PositionType.SPENDING);
+            AbstractMathModel budgetedModel = bestModels.get(PositionType.BUDGETED);
+            AbstractMathModel savedModel = bestModels.get(PositionType.LEFT_OVER);
+            AbstractMathModel goalsMetModel = bestModels.get(PositionType.GOALS_MET);
+            CategoryMathModel categoryMathModel = new CategoryMathModel(spendingModel, savedModel, goalsMetModel, budgetedModel, category);
+            categoryMathModels.add(categoryMathModel);
         }
-//        for(Map.Entry<String, List<EntryCoordinates>> entry : categoryCoordinates.entrySet())
-//        {
-//            String category = entry.getKey();
-//            List<EntryCoordinates> entryCoordinateList = entry.getValue();
-//            for(EntryCoordinates entryCoordinates : entryCoordinateList)
-//            {
-//                List<Coordinate> coordinates = entryCoordinates.entryCoordinates();
-//                double[] x_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.X);
-//                double[] y_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.Y);
-//                double[] z_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.Z);
-//                double[] w_coordinates = convertCoordinatesToDoubles(coordinates, CoordinateType.W);
-//                Map<PositionType, List<AbstractMathModel>> models = fitMathModelsByCategoryCoordinates(category, x_coordinates, y_coordinates, z_coordinates, w_coordinates);
-//                Map<PositionType, AbstractMathModel> bestModels = selectBestModelForPositionType(models);
-//                if(bestModels.isEmpty())
-//                {
-//                    log.info("No models were found for category: {}", category);
-//                    continue;
-//                }
-//                AbstractMathModel spendingModel = bestModels.get(PositionType.SPENDING);
-//                AbstractMathModel budgetedModel = bestModels.get(PositionType.BUDGETED);
-//                AbstractMathModel savedModel = bestModels.get(PositionType.SAVED);
-//                AbstractMathModel goalsMetModel = bestModels.get(PositionType.GOALS_MET);
-//                CategoryMathModel categoryMathModel = new CategoryMathModel(spendingModel, budgetedModel, savedModel, goalsMetModel, category);
-//                categoryMathModels.add(categoryMathModel);
-//            }
-//        }
         long endTime = System.currentTimeMillis();
         log.debug("End time: {}", endTime);
         log.debug("Time taken: {} ms", endTime - startTime);
@@ -378,7 +376,7 @@ public class PreCalculationModelService
 
     private boolean hasConstantValues(double[] coordinates)
     {
-        for(int i = 0; i < coordinates.length; i++)
+        for(int i = 0; i < coordinates.length - 1; i++)
         {
             if(coordinates[i] != coordinates[i + 1])
             {
