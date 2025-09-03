@@ -2,10 +2,13 @@ package com.app.budgetbuddy.workbench.budgetplanner;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.domain.math.*;
+import com.app.budgetbuddy.entities.PreCalculationCategoryEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidCoordinateLengthException;
 import com.app.budgetbuddy.exceptions.InvalidMathModelException;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.PreCalculationCategoryService;
+import com.app.budgetbuddy.services.SubBudgetGoalsService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,25 +24,38 @@ import java.util.stream.Collectors;
 public class PreCalculationModelService
 {
     private final PreCalculationCategoryService preCalculationCategoryService;
-    private final Map<String, ModelType> categoryModelTypeMap = new HashMap<>();
-    private final Map<WeekNumber, Map<String, BigDecimal>> weeklyCategorySpending = new HashMap<>();
+    private final SubBudgetGoalsService subBudgetGoalsService;
     private final List<CategoryMathModel> categoryMathModels = new ArrayList<>();
     private final List<PreCalculationCategory> preCalculationCategories = new ArrayList<>();
 
     @Autowired
-    public PreCalculationModelService(PreCalculationCategoryService preCalculationCategoryService)
+    public PreCalculationModelService(PreCalculationCategoryService preCalculationCategoryService,
+                                      SubBudgetGoalsService subBudgetGoalsService)
     {
         this.preCalculationCategoryService = preCalculationCategoryService;
+        this.subBudgetGoalsService = subBudgetGoalsService;
     }
 
-    public void savePreCalculationCategories(List<PreCalculationEntry> preCalculationCategories)
+    public void savePreCalculationCategories(List<PreCalculationCategory> preCalculationCategories)
     {
-
-    }
-
-    public List<CategoryMathModel> createCategoryMathModelForCategoriesByMonthly(final Map<MonthNumber, List<PreCalculationEntry>> monthlyPrecalculationEntries, final BudgetSchedule budgetSchedule, Long userId)
-    {
-        return null;
+        try
+        {
+            for(PreCalculationCategory preCalculationCategory : preCalculationCategories)
+            {
+                Optional<PreCalculationCategoryEntity> preCalculationCategoryEntity = preCalculationCategoryService.createPreCalculationCategoryEntity(preCalculationCategory);
+                if(preCalculationCategoryEntity.isEmpty())
+                {
+                    log.error("Error saving precalculation category: {}", preCalculationCategory);
+                    continue;
+                }
+                PreCalculationCategoryEntity preCalculationCategoryEntity1 = preCalculationCategoryEntity.get();
+                preCalculationCategoryService.save(preCalculationCategoryEntity1);
+                log.info("Saved precalculation category: {}", preCalculationCategoryEntity1);
+            }
+        }catch(DataAccessException e){
+            log.error("Error saving precalculation categories: {}", e.getMessage());
+            throw new DataAccessException("Error saving precalculation categories: " + e.getMessage());
+        }
     }
 
     public List<CategoryCoordinates> convertWeeklyPrecalculationEntriesToCategoryCoordinates(final Map<WeekNumber, List<PreCalculationEntry>> weeklyPrecalculationEntries, final SubBudgetGoals subBudgetGoals)
@@ -170,54 +186,22 @@ public class PreCalculationModelService
         {
             return Collections.emptyList();
         }
-        Map<WeekNumber, Map<EntryType, BigDecimal>> weeklyCategorySpending = new HashMap<>();
-//        for(Map.Entry<WeekNumber, List<PreCalculationEntry>> entry : weeklyPrecalculationEntries.entrySet())
-//        {
-//            WeekNumber weekNumber = entry.getKey();
-//            List<PreCalculationEntry> preCalculationEntries = entry.getValue();
-//            Map<EntryType, BigDecimal> categoryEntryAmountsThisWeek = new HashMap<>();
-//            for(PreCalculationEntry preCalculationEntry : preCalculationEntries)
-//            {
-//                EntryType entryType = preCalculationEntry.entryType();
-//                BigDecimal entryAmount = preCalculationEntry.actual();
-//                categoryEntryAmountsThisWeek.merge(entryType, entryAmount, BigDecimal::add);
-//            }
-//            weeklyCategorySpending.put(weekNumber, categoryEntryAmountsThisWeek);
-//        }
-//        Map<String, List<EntryCoordinates>> categoryCoordinates = convertWeeklyPrecalculationEntriesToCoordinates(weeklyCategorySpending);
-//
-//        // TODO: Once you have the coordinates for a category, use these coordinates to test against
-//        // TODO: Different mathematical models for each different entry type and determine the best model for each entry type
-//        List<CategoryMathModel> categoryMathModels = fitCategoryCoordinatesToMathModel(categoryCoordinates);
-
-
-//        for(Map.Entry<WeekNumber, List<PreCalculationEntry>> entry : weeklyPrecalculationEntries.entrySet())
-//        {
-//            WeekNumber weekNumber = entry.getKey();
-//            List<PreCalculationEntry> preCalculationEntries = entry.getValue();
-//            Map<String, BigDecimal> categorySpendingThisWeek = new HashMap<>();
-//            for(PreCalculationEntry preCalculationEntry : preCalculationEntries)
-//            {
-//                String category = preCalculationEntry.category();
-//                BigDecimal categorySpending = preCalculationEntry.actual();
-//                categorySpendingThisWeek.merge(category, categorySpending, BigDecimal::add);
-//            }
-//            // TODO: Determine the model type using the pre-calculation entry data
-//            weeklyCategorySpending.put(weekNumber, categorySpendingThisWeek);
-//        }
-//        // Once we obtain the category spending each week by week number
-//        // We will need to determine the coordinates for each category
-//        Map<String, List<Coordinate>> categoryCoordinates = convertWeeklyPrecalculationEntriesToCoordinates(weeklyCategorySpending);
-//        List<CategoryMathModel> categoryMathModels = fitCategoryCoordinatesToMathModel(categoryCoordinates);
-//        for(CategoryMathModel categoryMathModel : categoryMathModels)
-//        {
-//            String category = categoryMathModel.getCategory();
-//            AbstractMathModel mathModel = categoryMathModel.getMathModel();
-//            PreCalculationEntry preCalculationCategory = new PreCalculationEntry(category, mathModel);
-//            preCalculationCategories.add(preCalculationCategory);
-//        }
-//        return preCalculationCategories;
-        return null;
+        List<PreCalculationCategory> preCalculationCategories = new ArrayList<>();
+        Long subBudgetId = budgetSchedule.getSubBudgetId();
+        SubBudgetGoals subBudgetGoals = subBudgetGoalsService.getSubBudgetGoalsEntitiesBySubBudgetId(subBudgetId);
+        List<CategoryCoordinates> categoryCoordinatesList = convertWeeklyPrecalculationEntriesToCategoryCoordinates(weeklyPrecalculationEntries, subBudgetGoals);
+        List<CategoryMathModel> categoryMathModels = fitCategoryCoordinatesToMathModel(categoryCoordinatesList);
+        for(CategoryMathModel categoryMathModel : categoryMathModels)
+        {
+            String category = categoryMathModel.getCategory();
+            AbstractMathModel spendingModel = categoryMathModel.getSpendingModel();
+            AbstractMathModel savingsModel = categoryMathModel.getSavingsModel();
+            AbstractMathModel goalsReachedModel = categoryMathModel.getGoalsReachedModel();
+            AbstractMathModel allocatedAmountModel = categoryMathModel.getAllocatedAmountModel();
+            PreCalculationCategory preCalculationCategory = new PreCalculationCategory(category, spendingModel, savingsModel, goalsReachedModel, allocatedAmountModel);
+            preCalculationCategories.add(preCalculationCategory);
+        }
+        return preCalculationCategories;
     }
 
     private int getNumberOfParameters(ModelType modelType)

@@ -3,9 +3,13 @@ package com.app.budgetbuddy.entities;
 import com.app.budgetbuddy.domain.EntryType;
 import com.app.budgetbuddy.domain.ModelType;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Table(name="preCalculation_category_entities")
 @Entity
+@Getter
+@Setter
 public class PreCalculationCategoryEntity
 {
 

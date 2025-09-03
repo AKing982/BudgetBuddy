@@ -669,12 +669,12 @@ class PreCalculationModelServiceTest
         List<CategoryCoordinates> categoryCoordinatesList = new ArrayList<>();
 
         // Groceries - Variable expense with varying spending, savings, and goals
-        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 10, 78, 22, 1));    // Week 10: spent $78, saved $22, met 1 goal
-        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 11, 125, 0, 0));    // Week 11: spent $125, no savings, no goals met
-        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 12, 156, 0, 0));    // Week 12: overspent
-        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 13, 105, 15, 0));   // Week 13: spent $105, saved $15
-        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 14, 178, 0, 0));    // Week 14: overspent significantly
-        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 15, 98, 27, 1));    // Week 15: good week, met goal
+        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 10, 78, 72, 1));    // Week 10: spent $78, saved $22, met 1 goal
+        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 11, 125, 25, 1));    // Week 11: spent $125, no savings, no goals met
+        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 12, 156, -6, 0));    // Week 12: overspent
+        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 13, 105, 45, 1));   // Week 13: spent $105, saved $15
+        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 14, 178, -28, 0));    // Week 14: overspent significantly
+        categoryCoordinatesList.add(new CategoryCoordinates("Groceries", 15, 98, 52, 1));    // Week 15: good week, met goal
 
         // Rent - Fixed expense with some variability (partial payments?)
         categoryCoordinatesList.add(new CategoryCoordinates("Rent", 10, 1200, 0, 1));     // Week 10: full rent paid, goal met
@@ -683,7 +683,7 @@ class PreCalculationModelServiceTest
         categoryCoordinatesList.add(new CategoryCoordinates("Rent", 16, 707, 0, 0));      // Week 16: partial payment
 
         // Insurance - Fixed expense, consistent payment
-        categoryCoordinatesList.add(new CategoryCoordinates("Insurance", 10, 95.23, 0, 1)); // Week 10: insurance paid, goal met
+        categoryCoordinatesList.add(new CategoryCoordinates("Insurance", 10, 95.23, 0, 0)); // Week 10: insurance paid, goal met
 
         // Gas - Variable expense with decreasing trend
         categoryCoordinatesList.add(new CategoryCoordinates("Gas", 10, 40.23, 9.77, 0));   // Week 10: spent $40.23, saved $9.77
@@ -709,33 +709,36 @@ class PreCalculationModelServiceTest
         // Groceries - Variable expense with high volatility and non-linear patterns
         CategoryMathModel groceriesMathModel = new CategoryMathModel();
         groceriesMathModel.setCategory("Groceries");
-        PolynomialModel spendingPolynomialModel = new PolynomialModel(3);
+        QuadraticModel spendingPolynomialModel = new QuadraticModel();
         spendingPolynomialModel.fit(new double[]{10, 11, 12, 13, 14, 15}, new double[]{78, 125, 156, 105, 178, 98});
         groceriesMathModel.setSpendingModel(spendingPolynomialModel); // Volatile pattern needs higher-degree polynomial
         QuadraticModel savingsQuadraticModel = new QuadraticModel();
         savingsQuadraticModel.fit(new double[]{10, 11, 12, 13, 14, 15}, new double[]{72, 25, -6, 45, -28, 52});
         groceriesMathModel.setSavingsModel(savingsQuadraticModel); // Savings pattern has some curvature
 
-        PolynomialModel goalsReachedPolynomialModel = new PolynomialModel(3);
-        goalsReachedPolynomialModel.fit(new double[]{10, 11, 12, 13, 14, 15}, new double[]{32, 0, 0, 5, 0, 12});
+        QuadraticModel goalsReachedPolynomialModel = new QuadraticModel();
+        goalsReachedPolynomialModel.fit(new double[]{10, 11, 12, 13, 14, 15}, new double[]{1, 1, 0, 1, 0, 1});
         groceriesMathModel.setGoalsReachedModel(goalsReachedPolynomialModel); // Simple linear relationship for binary goals
         expectedCategoryMathModels.add(groceriesMathModel);
 
         // Rent - Fixed expense with alternating pattern
         CategoryMathModel rentMathModel = new CategoryMathModel();
         rentMathModel.setCategory("Rent");
-        ConstantModel rentConstantModel = new ConstantModel(1907);
-        rentMathModel.setSpendingModel(rentConstantModel); // Alternating pattern requires higher-degree polynomial
-        ConstantModel rentSavingsModel = new ConstantModel(0);
-        rentMathModel.setSavingsModel(rentSavingsModel); // Always 0, so linear (flat line)
-        ConstantModel rentGoalsReachedModel = new ConstantModel(0);
+        QuadraticModel spendingQuadraticModel = new QuadraticModel();
+        spendingQuadraticModel.fit(new double[]{10, 12, 14, 16}, new double[]{1200, 707, 1200, 707});
+        rentMathModel.setSpendingModel(spendingQuadraticModel); // Alternating pattern requires higher-degree polynomial
+        QuadraticModel rentSavingsQuadraticModel = new QuadraticModel();
+        rentSavingsQuadraticModel.fit(new double[]{10, 12, 14, 16}, new double[]{0, 0, 0, 0});
+        rentMathModel.setSavingsModel(rentSavingsQuadraticModel); // Always 0, so linear (flat line)
+        QuadraticModel rentGoalsReachedModel = new QuadraticModel();
+        rentGoalsReachedModel.fit(new double[]{10, 12, 14, 16}, new double[]{1, 0, 1, 0});
         rentMathModel.setGoalsReachedModel(rentGoalsReachedModel); // Quadratic to capture alternating goal achievement
         expectedCategoryMathModels.add(rentMathModel);
 
         // Insurance - Fixed expense, single data point
         CategoryMathModel insuranceMathModel = new CategoryMathModel();
         insuranceMathModel.setCategory("Insurance");
-        ConstantModel insuranceSpendingModel = new ConstantModel(79.23);
+        ConstantModel insuranceSpendingModel = new ConstantModel(95.23);
         insuranceMathModel.setSpendingModel(insuranceSpendingModel); // Single point, linear will create flat line
         insuranceMathModel.setSavingsModel(new ConstantModel(0)); // Always 0, linear flat line
         insuranceMathModel.setGoalsReachedModel(new ConstantModel(0)); // Always 1, linear flat line
@@ -785,156 +788,264 @@ class PreCalculationModelServiceTest
     }
 
 
-//    @Test
-//    void testConvertWeeklyPreCalculationEntriesToCategoryCoordinates_whenWeeklyCategoryEntriesIsEmpty_thenReturnEmptyList(){
-//        Map<WeekNumber, Map<EntryType, BigDecimal>> weeklyCategoryEntries = new HashMap<>();
-//        List<CategoryCoordinates> actual = preCalculationModelService.convertWeeklyPrecalculationEntriesToCategoryCoordinates(weeklyCategoryEntries);
-//        assertTrue(actual.isEmpty());
-//    }
+    @Test
+    void testConvertWeeklyPreCalculationEntriesToCategoryCoordinates_whenWeeklyCategoryEntriesIsEmpty_thenReturnEmptyList(){
+        Map<WeekNumber, List<PreCalculationEntry>> weeklyCategoryEntries = new HashMap<>();
+        List<CategoryCoordinates> actual = preCalculationModelService.convertWeeklyPrecalculationEntriesToCategoryCoordinates(weeklyCategoryEntries, subBudgetGoals);
+        assertTrue(actual.isEmpty());
+    }
 
+    @Test
+    void testConvertWeeklyPreCalculationEntriesToEntryCoordinates_whenWeeklyCategoryEntriesValid_thenReturnEntryCoordinatesByCategory(){
+        // Arrange
+        Map<WeekNumber, List<PreCalculationEntry>> weeklyPrecalculationEntries = new HashMap<>();
+        // Week 10 - March 1-7, 2025
+        List<PreCalculationEntry> week10Entries = new ArrayList<>();
+        DateRange week10Range = new DateRange(LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 7));
+        week10Entries.add(new PreCalculationEntry(
+                "Rent",
+                week10Range,
+                new BigDecimal("1200"), // budgeted
+                new BigDecimal("1200"), // actual
+                EntryType.FIXED_EXPENSE
+        ));
+        week10Entries.add(new PreCalculationEntry(
+                "Groceries",
+                week10Range,
+                new BigDecimal("150"), // budgeted
+                new BigDecimal("120"), // actual
+                EntryType.VARIABLE_EXPENSE
+        ));
+        weeklyPrecalculationEntries.put(new WeekNumber(10, 2025, week10Range), week10Entries);
 
-//    @Test
-//    void testConvertWeeklyPreCalculationEntriesToEntryCoordinates_whenWeeklyCategoryEntriesValid_thenReturnEntryCoordinatesByCategory(){
-//        Map<WeekNumber, Map<EntryType, BigDecimal>> weeklyCategoryEntries = new HashMap<>();
-//        Map<EntryType, BigDecimal> entryTypeBigDecimalMap = new HashMap<>();
-//        entryTypeBigDecimalMap.put(EntryType.FIXED_EXPENSE, new BigDecimal("100"));
-//        entryTypeBigDecimalMap.put(EntryType.VARIABLE_EXPENSE, new BigDecimal("200"));
-//        weeklyCategoryEntries.put(new WeekNumber(), entryTypeBigDecimalMap);
-//
-//        Map<String, List<EntryCoordinates>> expected = new HashMap<>();
-//        List<EntryCoordinates> rentEntryCoordinates = new ArrayList<>();
-//        List<Coordinate> rentCoordinates = new ArrayList<>();
-//        rentCoordinates.add(new Coordinate(10, 100, 0, 1));
-//        rentEntryCoordinates.add(new EntryCoordinates(EntryType.FIXED_EXPENSE, rentCoordinates));
-//        expected.put("Rent", rentEntryCoordinates);
-//
-//        List<EntryCoordinates> groceryEntryCoordinates = new ArrayList<>();
-//        List<Coordinate> groceryCoordinates = new ArrayList<>();
-//        groceryCoordinates.add(new Coordinate(10, 200, 0, 1));
-//        groceryEntryCoordinates.add(new EntryCoordinates(EntryType.VARIABLE_EXPENSE, groceryCoordinates));
-//
-//        expected.put("Groceries", groceryEntryCoordinates);
-//
-//        Map<String, List<EntryCoordinates>> actual = preCalculationModelService.convertWeeklyPrecalculationEntriesToEntryCoordinates(weeklyCategoryEntries);
-//        assertNotNull(actual);
-//        assertEquals(expected.size(), actual.size());
-//        for(Map.Entry<String, List<EntryCoordinates>> entry : expected.entrySet())
-//        {
-//            String category = entry.getKey();
-//            List<EntryCoordinates> expectedEntryCoordinates = entry.getValue();
-//            List<EntryCoordinates> actualEntryCoordinates = actual.get(category);
-//            assertEquals(expectedEntryCoordinates.size(), actualEntryCoordinates.size());
-//            for(int i = 0; i < expectedEntryCoordinates.size(); i++)
-//            {
-//                EntryCoordinates expectedEntryCoord = expectedEntryCoordinates.get(i);
-//                EntryCoordinates actualEntryCoord = actualEntryCoordinates.get(i);
-//                assertEquals(expectedEntryCoord.entry(), actualEntryCoord.entry());
-//                // Compare coordinates lists
-//                List<Coordinate> expectedCoords = expectedEntryCoord.entryCoordinates();
-//                List<Coordinate> actualCoords = actualEntryCoord.entryCoordinates();
-//
-//                assertEquals(expectedCoords.size(), actualCoords.size(),
-//                        "Coordinates list size mismatch for category: " + category + " at index: " + i);
-//
-//                // Compare each coordinate
-//                for(int j = 0; j < expectedCoords.size(); j++) {
-//                    Coordinate expectedCoord = expectedCoords.get(j);
-//                    Coordinate actualCoord = actualCoords.get(j);
-//
-//                    assertEquals(expectedCoord.getX(), actualCoord.getX(),
-//                            "X coordinate mismatch for " + category + " at coordinate index: " + j);
-//                    assertEquals(expectedCoord.getY(), actualCoord.getY(),
-//                            "Y coordinate mismatch for " + category + " at coordinate index: " + j);
-//                    assertEquals(expectedCoord.getZ(), actualCoord.getZ(),
-//                            "Z coordinate mismatch for " + category + " at coordinate index: " + j);
-//                    assertEquals(expectedCoord.getW(), actualCoord.getW(),
-//                            "W coordinate mismatch for " + category + " at coordinate index: " + j);
-//                }
-//            }
-//        }
-//    }
+        // Week 11 - March 8-14, 2025
+        List<PreCalculationEntry> week11Entries = new ArrayList<>();
+        DateRange week11Range = new DateRange(LocalDate.of(2025, 3, 8), LocalDate.of(2025, 3, 14));
+        week11Entries.add(new PreCalculationEntry(
+                "Groceries",
+                week11Range,
+                new BigDecimal("150"), // budgeted
+                new BigDecimal("135"), // actual
+                EntryType.VARIABLE_EXPENSE
+        ));
+        week11Entries.add(new PreCalculationEntry(
+                "Gas",
+                week11Range,
+                new BigDecimal("80"), // budgeted
+                new BigDecimal("75"), // actual
+                EntryType.VARIABLE_EXPENSE
+        ));
+        weeklyPrecalculationEntries.put(new WeekNumber(11, 2025, week11Range), week11Entries);
 
-//    @Test
-//    void testFitPreCalculationCategoriesByPreCalculationEntries_whenValidData_thenReturnPreCalculationCategories()
-//    {
-//        Map<WeekNumber, List<PreCalculationEntry>> weeklyPreCalculations = new HashMap<>();
-//        DateRange week1DateRange = new DateRange(LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 2));
-//        WeekNumber weekNumber1 = new WeekNumber(9, 2025, week1DateRange);
-//        PreCalculationEntry week1GasEntry = new PreCalculationEntry("Gas", week1DateRange, new BigDecimal("40.23"), new BigDecimal("23.45"), EntryType.VARIABLE_EXPENSE);
-//        PreCalculationEntry week1RentEntry = new PreCalculationEntry("Rent", week1DateRange, new BigDecimal("1200.0"), new BigDecimal("1200.0"), EntryType.FIXED_EXPENSE);
-//        PreCalculationEntry week1FoodEntry = new PreCalculationEntry("Groceries", week1DateRange, new BigDecimal("160"), new BigDecimal("145"), EntryType.FIXED_EXPENSE);
-//        List<PreCalculationEntry> week1PreCalculations = new ArrayList<>();
-//        week1PreCalculations.add(week1GasEntry);
-//        week1PreCalculations.add(week1RentEntry);
-//        week1PreCalculations.add(week1FoodEntry);
-//
-//        DateRange week2DateRange = new DateRange(LocalDate.of(2025, 3, 3), LocalDate.of(2025, 3, 9));
-//        WeekNumber weekNumber2 = new WeekNumber(10, 2025, week2DateRange);
-//        PreCalculationEntry week2GroceriesEntry = new PreCalculationEntry("Groceries", week2DateRange, new BigDecimal("160"), new BigDecimal("125.35"), EntryType.VARIABLE_EXPENSE);
-//        PreCalculationEntry week2PaymentsEntry = new PreCalculationEntry("Payments", week2DateRange, new BigDecimal("150.32"), new BigDecimal("90.60"), EntryType.FIXED_EXPENSE);
-//        PreCalculationEntry week2Subscriptions = new PreCalculationEntry("Subscriptions", week2DateRange, new BigDecimal("250"), new BigDecimal("50.02"), EntryType.FIXED_EXPENSE);
-//        PreCalculationEntry week2GasEntry = new PreCalculationEntry("Gas", week2DateRange, new BigDecimal("40.23"), new BigDecimal("35.02"), EntryType.VARIABLE_EXPENSE);
-//        List<PreCalculationEntry> week2PreCalculations = new ArrayList<>();
-//        week2PreCalculations.add(week2GroceriesEntry);
-//        week2PreCalculations.add(week2PaymentsEntry);
-//        week2PreCalculations.add(week2Subscriptions);
-//        week2PreCalculations.add(week2GasEntry);
-//
-//        DateRange week3DateRange = new DateRange(LocalDate.of(2025, 3, 10), LocalDate.of(2025, 3, 16));
-//        WeekNumber weekNumber3 = new WeekNumber(11, 2025, week3DateRange);
-//        PreCalculationEntry week3GroceriesEntry = new PreCalculationEntry("Groceries", week3DateRange, new BigDecimal("160"), new BigDecimal("115.23"), EntryType.VARIABLE_EXPENSE);
-//        PreCalculationEntry week3RentEntry = new PreCalculationEntry("Rent", week3DateRange, new BigDecimal("707.0"), new BigDecimal("707.0"), EntryType.FIXED_EXPENSE);
-//        PreCalculationEntry insuranceEntry = new PreCalculationEntry("Insurance", week3DateRange, new BigDecimal("95.23"), new BigDecimal("80.25"), EntryType.FIXED_EXPENSE);
-//        PreCalculationEntry week3GasEntry = new PreCalculationEntry("Gas", week3DateRange, new BigDecimal("40.23"), new BigDecimal("18.35"), EntryType.VARIABLE_EXPENSE);
-//        List<PreCalculationEntry> week3PreCalculations = new ArrayList<>();
-//        week3PreCalculations.add(week3GroceriesEntry);
-//        week3PreCalculations.add(week3RentEntry);
-//        week3PreCalculations.add(insuranceEntry);
-//        week3PreCalculations.add(week3GasEntry);
-//
-//        DateRange week4DateRange = new DateRange(LocalDate.of(2025, 3, 17), LocalDate.of(2025, 3, 23));
-//        WeekNumber weekNumber4 = new WeekNumber(12, 2025, week4DateRange);
-//        PreCalculationEntry week4GroceriesEntry = new PreCalculationEntry("Groceries", week4DateRange, new BigDecimal("160"), new BigDecimal("105.23"), EntryType.VARIABLE_EXPENSE);
-//        PreCalculationEntry week4GasEntry = new PreCalculationEntry("Gas", week4DateRange, new BigDecimal("40.23"), new BigDecimal("23.45"), EntryType.VARIABLE_EXPENSE);
-//        PreCalculationEntry paymentsEntry = new PreCalculationEntry("Payments", week4DateRange, new BigDecimal("150.32"), new BigDecimal("35.23"), EntryType.FIXED_EXPENSE);
-//        PreCalculationEntry subscriptionsEntry = new PreCalculationEntry("Subscriptions", week4DateRange, new BigDecimal("250"), new BigDecimal("65.23"), EntryType.FIXED_EXPENSE);
-//        List<PreCalculationEntry> week4PreCalculations = new ArrayList<>();
-//        week4PreCalculations.add(week4GroceriesEntry);
-//        week4PreCalculations.add(week4GasEntry);
-//        week4PreCalculations.add(paymentsEntry);
-//        week4PreCalculations.add(subscriptionsEntry);
-//
-//        weeklyPreCalculations.put(weekNumber1, week1PreCalculations);
-//        weeklyPreCalculations.put(weekNumber2, week2PreCalculations);
-//        weeklyPreCalculations.put(weekNumber3, week3PreCalculations);
-//        weeklyPreCalculations.put(weekNumber4, week4PreCalculations);
-//
-//        // Get the actual results from the service method
-//        List<PreCalculationCategory> actual = preCalculationModelService.createPreCalculationCategoriesForCategoriesByWeekly(weeklyPreCalculations, budgetSchedule, 1L);
-//
-//        assertNotNull(actual, "Result should not be null");
-//
-//        // Sort results by category name for consistent comparison
-//        actual.sort(Comparator.comparing(pc -> pc.mathModel().getClass().getSimpleName()));
-//
-//        // Verify we have the expected categories
-//        Set<String> expectedCategories = Set.of("Groceries", "Gas", "Rent", "Payments", "Subscriptions");
-//        Set<String> actualCategories = actual.stream()
-//                .map(PreCalculationCategory::category)
-//                .collect(Collectors.toSet());
-//
-//        assertEquals(expectedCategories.size(), actualCategories.size(), "Should have all expected categories");
-//        assertTrue(actualCategories.containsAll(expectedCategories), "All expected categories should be present");
-//
-//        // Verify each PreCalculationCategory has valid components
-//        for (PreCalculationCategory preCalcCategory : actual) {
-//            // Verify CategoryMathModel
-//            assertNotNull(preCalcCategory.mathModel(), "Math model should not be null");
-//            assertNotNull(preCalcCategory.category(), "Category name should not be null");
-//            assertNotNull(preCalcCategory.mathModel().getEquationString(), "Equation string should not be null");
-//        }
-//
-//    }
+        // Week 12 - March 15-21, 2025
+        List<PreCalculationEntry> week12Entries = new ArrayList<>();
+        DateRange week12Range = new DateRange(LocalDate.of(2025, 3, 15), LocalDate.of(2025, 3, 21));
+        week12Entries.add(new PreCalculationEntry(
+                "Groceries",
+                week12Range,
+                new BigDecimal("150"), // budgeted
+                new BigDecimal("160"), // actual (over budget)
+                EntryType.VARIABLE_EXPENSE
+        ));
+        week12Entries.add(new PreCalculationEntry(
+                "Entertainment",
+                week12Range,
+                new BigDecimal("100"), // budgeted
+                new BigDecimal("85"), // actual
+                EntryType.VARIABLE_EXPENSE
+        ));
+        weeklyPrecalculationEntries.put(new WeekNumber(12, 2025, week12Range), week12Entries);
+
+        // Week 13 - March 22-28, 2025
+        List<PreCalculationEntry> week13Entries = new ArrayList<>();
+        DateRange week13Range = new DateRange(LocalDate.of(2025, 3, 22), LocalDate.of(2025, 3, 28));
+        week13Entries.add(new PreCalculationEntry(
+                "Groceries",
+                week13Range,
+                new BigDecimal("150"), // budgeted
+                new BigDecimal("140"), // actual
+                EntryType.VARIABLE_EXPENSE
+        ));
+        week13Entries.add(new PreCalculationEntry(
+                "Gas",
+                week13Range,
+                new BigDecimal("80"), // budgeted
+                new BigDecimal("82"), // actual
+                EntryType.VARIABLE_EXPENSE
+        ));
+        week13Entries.add(new PreCalculationEntry(
+                "Utilities",
+                week13Range,
+                new BigDecimal("200"), // budgeted
+                new BigDecimal("180"), // actual
+                EntryType.FIXED_EXPENSE
+        ));
+        weeklyPrecalculationEntries.put(new WeekNumber(13, 2025, week13Range), week13Entries);
+
+        // Week 14 - March 29-31, 2025 (partial week)
+        List<PreCalculationEntry> week14Entries = new ArrayList<>();
+        DateRange week14Range = new DateRange(LocalDate.of(2025, 3, 29), LocalDate.of(2025, 3, 31));
+        week14Entries.add(new PreCalculationEntry(
+                "Groceries",
+                week14Range,
+                new BigDecimal("50"), // budgeted (partial week)
+                new BigDecimal("45"), // actual
+                EntryType.VARIABLE_EXPENSE
+        ));
+        weeklyPrecalculationEntries.put(new WeekNumber(14, 2025, week14Range), week14Entries);
+
+        // Create SubBudgetGoals - need to set this up for the calculation
+        // Assuming total savings target of $100 for 5 weeks = $20 per week
+        SubBudgetGoals subBudgetGoals = new SubBudgetGoals();
+        subBudgetGoals.setSavingsTarget(new BigDecimal("100.00")); // $100 total target
+
+        // Calculate weekly savings goal: $100 / 5 weeks = $20 per week
+        BigDecimal weeklySavingsGoal = new BigDecimal("20.00");
+
+        // Expected results - calculating based on the actual logic:
+        // saved = budgeted - actual
+        // goalSaved = weeklySavingGoals - saved (gap to reach weekly goal)
+        List<CategoryCoordinates> expected = new ArrayList<>();
+
+        // Week 10
+        expected.add(new CategoryCoordinates("Rent", 10, 1200, 0, 20.0)); // saved = 0, goalSaved = 20-0 = 20
+        expected.add(new CategoryCoordinates("Groceries", 10, 120, 30, -10.0)); // saved = 30, goalSaved = 20-30 = -10
+
+        // Week 11
+        expected.add(new CategoryCoordinates("Groceries", 11, 135, 15, 5.0)); // saved = 15, goalSaved = 20-15 = 5
+        expected.add(new CategoryCoordinates("Gas", 11, 75, 5, 15.0)); // saved = 5, goalSaved = 20-5 = 15
+
+        // Week 12
+        expected.add(new CategoryCoordinates("Groceries", 12, 160, -10, 30.0)); // saved = -10, goalSaved = 20-(-10) = 30
+        expected.add(new CategoryCoordinates("Entertainment", 12, 85, 15, 5.0)); // saved = 15, goalSaved = 20-15 = 5
+
+        // Week 13
+        expected.add(new CategoryCoordinates("Groceries", 13, 140, 10, 10.0)); // saved = 10, goalSaved = 20-10 = 10
+        expected.add(new CategoryCoordinates("Gas", 13, 82, -2, 22.0)); // saved = -2, goalSaved = 20-(-2) = 22
+        expected.add(new CategoryCoordinates("Utilities", 13, 180, 20, 0.0)); // saved = 20, goalSaved = 20-20 = 0
+
+        // Week 14
+        expected.add(new CategoryCoordinates("Groceries", 14, 45, 5, 15.0)); // saved = 5, goalSaved = 20-5 = 15
+
+        // Act
+        List<CategoryCoordinates> actual = preCalculationModelService
+                .convertWeeklyPrecalculationEntriesToCategoryCoordinates(weeklyPrecalculationEntries, subBudgetGoals);
+
+        // Assert
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+
+        // Sort both lists by week number, then by category name for consistent comparison
+        Comparator<CategoryCoordinates> comparator = Comparator
+                .comparing(CategoryCoordinates::getX) // Sort by week number first
+                .thenComparing(CategoryCoordinates::getCategory); // Then by category name
+
+        expected.sort(comparator);
+        actual.sort(comparator);
+
+        for (int i = 0; i < expected.size(); i++) {
+            CategoryCoordinates expectedCoord = expected.get(i);
+            CategoryCoordinates actualCoord = actual.get(i);
+
+            assertEquals(expectedCoord.getCategory(), actualCoord.getCategory(),
+                    "Category name mismatch at index: " + i);
+            assertEquals(expectedCoord.getX(), actualCoord.getX(),
+                    "X coordinate (week number) mismatch for " + expectedCoord.getCategory());
+            assertEquals(expectedCoord.getY(), actualCoord.getY(), 0.001,
+                    "Y coordinate (weekly spending) mismatch for " + expectedCoord.getCategory());
+            assertEquals(expectedCoord.getZ(), actualCoord.getZ(), 0.001,
+                    "Z coordinate (weekly savings) mismatch for " + expectedCoord.getCategory());
+            assertEquals(expectedCoord.getW(), actualCoord.getW(), 0.001,
+                    "W coordinate (weekly goal met) mismatch for " + expectedCoord.getCategory());
+
+            // Alternative: Use the equals method
+            // assertEquals(expectedCoord, actualCoord,
+            //         "CategoryCoordinates mismatch for " + expectedCoord.getCategory() + " at week " + expectedCoord.getX());
+        }
+
+    }
+
+    @Test
+    void testFitPreCalculationCategoriesByPreCalculationEntries_whenValidData_thenReturnPreCalculationCategories()
+    {
+        Map<WeekNumber, List<PreCalculationEntry>> weeklyPreCalculations = new HashMap<>();
+        DateRange week1DateRange = new DateRange(LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 2));
+        WeekNumber weekNumber1 = new WeekNumber(9, 2025, week1DateRange);
+        PreCalculationEntry week1GasEntry = new PreCalculationEntry("Gas", week1DateRange, new BigDecimal("40.23"), new BigDecimal("23.45"), EntryType.VARIABLE_EXPENSE);
+        PreCalculationEntry week1RentEntry = new PreCalculationEntry("Rent", week1DateRange, new BigDecimal("1200.0"), new BigDecimal("1200.0"), EntryType.FIXED_EXPENSE);
+        PreCalculationEntry week1FoodEntry = new PreCalculationEntry("Groceries", week1DateRange, new BigDecimal("160"), new BigDecimal("145"), EntryType.FIXED_EXPENSE);
+        List<PreCalculationEntry> week1PreCalculations = new ArrayList<>();
+        week1PreCalculations.add(week1GasEntry);
+        week1PreCalculations.add(week1RentEntry);
+        week1PreCalculations.add(week1FoodEntry);
+
+        DateRange week2DateRange = new DateRange(LocalDate.of(2025, 3, 3), LocalDate.of(2025, 3, 9));
+        WeekNumber weekNumber2 = new WeekNumber(10, 2025, week2DateRange);
+        PreCalculationEntry week2GroceriesEntry = new PreCalculationEntry("Groceries", week2DateRange, new BigDecimal("160"), new BigDecimal("125.35"), EntryType.VARIABLE_EXPENSE);
+        PreCalculationEntry week2PaymentsEntry = new PreCalculationEntry("Payments", week2DateRange, new BigDecimal("150.32"), new BigDecimal("90.60"), EntryType.FIXED_EXPENSE);
+        PreCalculationEntry week2Subscriptions = new PreCalculationEntry("Subscriptions", week2DateRange, new BigDecimal("250"), new BigDecimal("50.02"), EntryType.FIXED_EXPENSE);
+        PreCalculationEntry week2GasEntry = new PreCalculationEntry("Gas", week2DateRange, new BigDecimal("40.23"), new BigDecimal("35.02"), EntryType.VARIABLE_EXPENSE);
+        List<PreCalculationEntry> week2PreCalculations = new ArrayList<>();
+        week2PreCalculations.add(week2GroceriesEntry);
+        week2PreCalculations.add(week2PaymentsEntry);
+        week2PreCalculations.add(week2Subscriptions);
+        week2PreCalculations.add(week2GasEntry);
+
+        DateRange week3DateRange = new DateRange(LocalDate.of(2025, 3, 10), LocalDate.of(2025, 3, 16));
+        WeekNumber weekNumber3 = new WeekNumber(11, 2025, week3DateRange);
+        PreCalculationEntry week3GroceriesEntry = new PreCalculationEntry("Groceries", week3DateRange, new BigDecimal("160"), new BigDecimal("115.23"), EntryType.VARIABLE_EXPENSE);
+        PreCalculationEntry week3RentEntry = new PreCalculationEntry("Rent", week3DateRange, new BigDecimal("707.0"), new BigDecimal("707.0"), EntryType.FIXED_EXPENSE);
+        PreCalculationEntry insuranceEntry = new PreCalculationEntry("Insurance", week3DateRange, new BigDecimal("95.23"), new BigDecimal("80.25"), EntryType.FIXED_EXPENSE);
+        PreCalculationEntry week3GasEntry = new PreCalculationEntry("Gas", week3DateRange, new BigDecimal("40.23"), new BigDecimal("18.35"), EntryType.VARIABLE_EXPENSE);
+        List<PreCalculationEntry> week3PreCalculations = new ArrayList<>();
+        week3PreCalculations.add(week3GroceriesEntry);
+        week3PreCalculations.add(week3RentEntry);
+        week3PreCalculations.add(insuranceEntry);
+        week3PreCalculations.add(week3GasEntry);
+
+        DateRange week4DateRange = new DateRange(LocalDate.of(2025, 3, 17), LocalDate.of(2025, 3, 23));
+        WeekNumber weekNumber4 = new WeekNumber(12, 2025, week4DateRange);
+        PreCalculationEntry week4GroceriesEntry = new PreCalculationEntry("Groceries", week4DateRange, new BigDecimal("160"), new BigDecimal("105.23"), EntryType.VARIABLE_EXPENSE);
+        PreCalculationEntry week4GasEntry = new PreCalculationEntry("Gas", week4DateRange, new BigDecimal("40.23"), new BigDecimal("23.45"), EntryType.VARIABLE_EXPENSE);
+        PreCalculationEntry paymentsEntry = new PreCalculationEntry("Payments", week4DateRange, new BigDecimal("150.32"), new BigDecimal("35.23"), EntryType.FIXED_EXPENSE);
+        PreCalculationEntry subscriptionsEntry = new PreCalculationEntry("Subscriptions", week4DateRange, new BigDecimal("250"), new BigDecimal("65.23"), EntryType.FIXED_EXPENSE);
+        List<PreCalculationEntry> week4PreCalculations = new ArrayList<>();
+        week4PreCalculations.add(week4GroceriesEntry);
+        week4PreCalculations.add(week4GasEntry);
+        week4PreCalculations.add(paymentsEntry);
+        week4PreCalculations.add(subscriptionsEntry);
+
+        weeklyPreCalculations.put(weekNumber1, week1PreCalculations);
+        weeklyPreCalculations.put(weekNumber2, week2PreCalculations);
+        weeklyPreCalculations.put(weekNumber3, week3PreCalculations);
+        weeklyPreCalculations.put(weekNumber4, week4PreCalculations);
+
+        // Get the actual results from the service method
+        List<PreCalculationCategory> actual = preCalculationModelService.createPreCalculationCategoriesForCategoriesByWeekly(weeklyPreCalculations, budgetSchedule, 1L);
+
+        assertNotNull(actual, "Result should not be null");
+
+        // Sort results by category name for consistent comparison
+        actual.sort(Comparator.comparing(pc -> pc.mathModel().getClass().getSimpleName()));
+
+        // Verify we have the expected categories
+        Set<String> expectedCategories = Set.of("Groceries", "Gas", "Rent", "Payments", "Subscriptions");
+        Set<String> actualCategories = actual.stream()
+                .map(PreCalculationCategory::category)
+                .collect(Collectors.toSet());
+
+        assertEquals(expectedCategories.size(), actualCategories.size(), "Should have all expected categories");
+        assertTrue(actualCategories.containsAll(expectedCategories), "All expected categories should be present");
+
+        // Verify each PreCalculationCategory has valid components
+        for (PreCalculationCategory preCalcCategory : actual) {
+            // Verify CategoryMathModel
+            assertNotNull(preCalcCategory.mathModel(), "Math model should not be null");
+            assertNotNull(preCalcCategory.category(), "Category name should not be null");
+            assertNotNull(preCalcCategory.mathModel().getEquationString(), "Equation string should not be null");
+        }
+
+    }
 
 
 
