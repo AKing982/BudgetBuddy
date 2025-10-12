@@ -1,53 +1,89 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.0.7">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.2.5">
   <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
-    <mxGraphModel dx="3773" dy="2278" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2051" dy="2270" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-0" value="Start" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-0" value="Start" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="70" y="-1070" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-1" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-0">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-1" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-0" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="390" y="-510" as="sourcePoint" />
             <mxPoint x="130" y="-970" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-2" value="Query DB for new transactions for current date." style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-2" value="Query DB for new transactions for current date." style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="70" y="-970" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-3" value="If no new transactions on current date, then skip new categorizations" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-3" value="If no new transactions on current date, then skip new categorizations" style="rhombus;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="-42.5" y="-880" width="345" height="350" as="geometry" />
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-4" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-2" target="P16qLfPArKi5Of1Ckz9v-3">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-4" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-2" target="P16qLfPArKi5Of1Ckz9v-3" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="390" y="-510" as="sourcePoint" />
             <mxPoint x="440" y="-560" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-5" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-3">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-5" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-3" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="390" y="-510" as="sourcePoint" />
             <mxPoint x="370" y="-705" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-6" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-3">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-6" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-3" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="390" y="-510" as="sourcePoint" />
             <mxPoint x="130" y="-480" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-7" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-7" value="Recategorize existing transactions using custom rules" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="370" y="-735" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-8" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-8" value="Auto categorize the transactions" style="rounded=1;whiteSpace=wrap;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="70" y="-480" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-10" value="No" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-10" value="No" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="302.5" y="-740" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="P16qLfPArKi5Of1Ckz9v-11" value="Yes" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+        <mxCell id="P16qLfPArKi5Of1Ckz9v-11" value="Yes" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="140" y="-520" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-0" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="P16qLfPArKi5Of1Ckz9v-8">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="-310" as="sourcePoint" />
+            <mxPoint x="130" y="-360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-1" value="Do user rules existing for any transactions?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="25" y="-360" width="210" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-2" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="0dKgRVAENgBmlfXx-0_s-1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="-340" as="sourcePoint" />
+            <mxPoint x="320" y="-240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-3" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="0dKgRVAENgBmlfXx-0_s-1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="-310" as="sourcePoint" />
+            <mxPoint x="130" y="-70" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-4" value="Use system rules" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="320" y="-270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-5" value="Auto-categorize using user rules" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="70" y="-70" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-6" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="0dKgRVAENgBmlfXx-0_s-5">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="190" as="sourcePoint" />
+            <mxPoint x="130" y="40" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0dKgRVAENgBmlfXx-0_s-8" value="Did any&amp;nbsp;" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="45" y="40" width="170" height="190" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
