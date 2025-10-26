@@ -33,6 +33,6 @@ public class BPTemplateDetailEntity
     @Column(name="isSavingsFiftyThirtyTwentyApplied")
     private boolean isSavingsFiftyThirtyTwentyApplied;
 
-    @OneToMany(mappedBy = "bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<BPWeekDetailEntity> weekDetails = new HashSet<>();
+//    @OneToMany(mappedBy = "bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    private Set<BPWeekDetailEntity> weekDetails = new HashSet<>();
 }

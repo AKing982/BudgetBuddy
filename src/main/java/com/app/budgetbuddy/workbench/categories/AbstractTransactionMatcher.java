@@ -114,7 +114,6 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         MERCHANT_SUBSCRIPTIONS.put("Shell", "Gas");
         MERCHANT_SUBSCRIPTIONS.put("McDonald's", "Order Out");
         MERCHANT_SUBSCRIPTIONS.put("Walmart", "Groceries");
-
     }
 
     static {
@@ -212,8 +211,6 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         Map<String, CategoryType> taxiIdMap = new HashMap<>();
         taxiIdMap.put("22016000", CategoryType.TRIP);
         CATEGORY_ID_RULES.put("Taxi", taxiIdMap);
-
-
     }
 
     static {
@@ -290,7 +287,6 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
             return CategoryType.UNCATEGORIZED;
         }
         CategoryEntity category = categoryOptional.get();
-        String categoryName = category.getName();
 
         // First match on categoryId
         Map<String, CategoryType> categoryRules = CATEGORY_ID_RULES.get(categoryId);

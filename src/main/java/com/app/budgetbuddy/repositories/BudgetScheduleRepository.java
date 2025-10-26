@@ -40,6 +40,9 @@ public interface BudgetScheduleRepository extends JpaRepository<BudgetScheduleEn
             @Param("endDate") LocalDate endDate
     );
 
+    @Query("SELECT bs FROM BudgetScheduleEntity bs JOIN bs.subBudget sb JOIN sb.budget b WHERE :date BETWEEN bs.startDate AND bs.endDate AND bs.subBudget.budget.user.id =:userId")
+    Optional<BudgetScheduleEntity> findBudgetScheduleByUserIdAndCurrentDate(@Param("date") LocalDate date, @Param("userId") Long userId);
+
     @Modifying
     @Transactional
     @Query("UPDATE BudgetScheduleEntity e SET e.startDate = :startDate, e.endDate = :endDate, " +

@@ -13,19 +13,9 @@ public interface BudgetScheduleService extends ServiceModel<BudgetScheduleEntity
 {
     BudgetSchedule createBudgetScheduleByEntity(BudgetScheduleEntity budgetScheduleEntity);
 
-    BudgetSchedule createBudgetSchedule(Long budgetId, LocalDate budgetStartDate, LocalDate budgetEndDate, DateRange budgetDateRange, String status);
-
-    Optional<BudgetScheduleEntity> findByBudgetId(Long budgetId);
-
-    List<BudgetScheduleEntity> findByStatus(ScheduleStatus status);
-
-    List<BudgetScheduleEntity> findActiveSchedules(LocalDate date);
-
-    List<BudgetScheduleEntity> findByPeriodType(PeriodType periodType);
-
-    List<BudgetScheduleEntity> findSchedulesInDateRange(LocalDate startDate, LocalDate endDate);
-
     Optional<BudgetSchedule> findBudgetScheduleById(Long budgetScheduleId);
+
+    Optional<BudgetSchedule> findBudgetScheduleByUserIdAndCurrentDate(Long userId, LocalDate currentDate);
 
     void updateBudgetSchedule(BudgetSchedule budgetSchedule);
 
@@ -33,24 +23,7 @@ public interface BudgetScheduleService extends ServiceModel<BudgetScheduleEntity
 
     Optional<BudgetScheduleEntity> saveBudgetScheduleEntity(BudgetScheduleEntity budgetScheduleEntity);
 
-    BudgetScheduleEntity createSchedule(
-            BudgetEntity budget,
-            LocalDate startDate,
-            LocalDate endDate,
-            String scheduleRange,
-            Integer totalPeriodsInRange,
-            PeriodType periodType
-    );
-
     Optional<BudgetScheduleEntity> buildBudgetScheduleEntity(final BudgetSchedule budgetSchedule);
-
-    void updateScheduleStatus(Long scheduleId, ScheduleStatus newStatus);
-
-    void deleteSchedule(Long scheduleId);
-
-    boolean isScheduleActive(Long scheduleId);
-
-    List<BudgetScheduleEntity> getUpcomingSchedules(LocalDate fromDate, int limit);
 
     Optional<BudgetSchedule> getBudgetScheduleByDate(Long budgetId, LocalDate startDate, LocalDate endDate);
 

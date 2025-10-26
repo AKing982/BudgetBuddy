@@ -105,4 +105,11 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Modifying
     @Query("UPDATE TransactionsEntity t SET t.issystemCategorized = true WHERE t.id =:id")
     void updateIsSystemCategorized(@Param("id") String id);
+
+    @Modifying
+    @Query("UPDATE TransactionsEntity t SET t.amount =:amount, t.pending =:pending, t.logoUrl =:logo, t.posted =:posted WHERE t.id =:id")
+    Optional<TransactionsEntity> updateTransaction(@Param("id") String transactionId, @Param("amount") BigDecimal amount, @Param("pending") boolean pending, @Param("logo") String logo, @Param("posted") LocalDate posted);
+
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END FROM TransactionsEntity t WHERE t.id =:tId AND t.posted =:date")
+    boolean checkForTransactionCountOnDate(@Param("tId") String transactionId, @Param("date") LocalDate date);
 }

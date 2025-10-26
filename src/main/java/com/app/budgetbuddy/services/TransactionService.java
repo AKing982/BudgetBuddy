@@ -25,6 +25,9 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
 
     void saveAll(List<Transaction> transactions);
 
+    void saveTransactionsByDate(List<Transaction> transactions, LocalDate date);
+
+    boolean checkTransactionExistsByDate(String transactionId, LocalDate date);
     List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions);
 
     Optional<TransactionsEntity> getTransactionById(String id);
@@ -39,6 +42,8 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
 
     Map<String, Transaction> getTransactionsMap(List<String> transactionIds);
     void updateTransactionCategorizationFlag(String transactionId);
+
+    Optional<Transaction> modifyExistingTransaction(final Transaction modifiedTransaction);
 
     List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount);
     List<Transaction> getPendingTransactionsForUser(Long userId);

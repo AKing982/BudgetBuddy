@@ -242,6 +242,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         String accessToken = getPlaidAccessToken(plaidLinkEntity);
         TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
                 .accessToken(accessToken)
+                .count(500)
                 .cursor(cursor);
         Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
         Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();

@@ -87,44 +87,6 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
     }
 
     @Override
-    public BudgetSchedule createBudgetSchedule(Long budgetId, LocalDate budgetStartDate, LocalDate budgetEndDate, DateRange budgetDateRange, String status) {
-        return null;
-    }
-
-    @Override
-    public Optional<BudgetScheduleEntity> findByBudgetId(Long budgetId) {
-        return Optional.empty();
-    }
-
-    @Override
-    public List<BudgetScheduleEntity> findByStatus(ScheduleStatus status) {
-        return List.of();
-    }
-
-    @Override
-    public List<BudgetScheduleEntity> findActiveSchedules(LocalDate date) {
-        return List.of();
-    }
-
-    @Override
-    public List<BudgetScheduleEntity> findByPeriodType(PeriodType periodType) {
-        return List.of();
-    }
-
-    @Override
-    public List<BudgetScheduleEntity> findSchedulesInDateRange(LocalDate startDate, LocalDate endDate)
-    {
-        try
-        {
-            return budgetScheduleRepository.findSchedulesInDateRange(startDate, endDate);
-
-        }catch(DataAccessException e){
-            log.error("There was a problem finding all the budget schedules between {} and {}", startDate, endDate, e);
-            return Collections.emptyList();
-        }
-    }
-
-    @Override
     public Optional<BudgetSchedule> findBudgetScheduleById(Long budgetScheduleId)
     {
         try
@@ -138,6 +100,30 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
             return Optional.of(convertBudgetScheduleEntity(budgetScheduleEntity));
         }catch(DataAccessException e){
             log.error("There was a problem finding the budget schedule", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<BudgetSchedule> findBudgetScheduleByUserIdAndCurrentDate(Long userId, LocalDate currentDate)
+    {
+        if(userId == null || userId < 1)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            Optional<BudgetScheduleEntity> budgetScheduleEntityOptional = budgetScheduleRepository.findBudgetScheduleByUserIdAndCurrentDate(currentDate, userId);
+            if(budgetScheduleEntityOptional.isEmpty())
+            {
+                log.info("No Budget Schedule found for user {} on date {}", userId, currentDate);
+                return Optional.empty();
+            }
+            BudgetScheduleEntity budgetScheduleEntity = budgetScheduleEntityOptional.get();
+            BudgetSchedule budgetSchedule = convertBudgetScheduleEntity(budgetScheduleEntity);
+            return Optional.of(budgetSchedule);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the budget schedule for user {} on date {}: {}", userId, currentDate, e.getMessage());
             return Optional.empty();
         }
     }
@@ -250,33 +236,6 @@ public class BudgetScheduleServiceImpl implements BudgetScheduleService
             return Optional.empty();
         }
 
-    }
-
-    @Override
-    public BudgetScheduleEntity createSchedule(BudgetEntity budget, LocalDate startDate, LocalDate endDate, String scheduleRange, Integer totalPeriodsInRange, PeriodType periodType) {
-        return null;
-    }
-
-    @Override
-    public void updateScheduleStatus(Long scheduleId, ScheduleStatus newStatus) {
-
-    }
-
-    @Override
-    public void deleteSchedule(Long scheduleId)
-    {
-
-    }
-
-    @Override
-    public boolean isScheduleActive(Long scheduleId)
-    {
-        return false;
-    }
-
-    @Override
-    public List<BudgetScheduleEntity> getUpcomingSchedules(LocalDate fromDate, int limit) {
-        return List.of();
     }
 
     @Override

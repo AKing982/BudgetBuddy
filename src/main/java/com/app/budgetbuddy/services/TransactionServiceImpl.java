@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,12 +127,14 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByAmountGreaterThan(BigDecimal amount) {
         validateTransactionAmount(amount);
         return transactionRepository.findByAmountGreaterThan(amount);
     }
 
     @Override
+    @Transactional
     public List<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount) {
         validateTransactionAmount(amount);
         return transactionRepository.findByAmountLessThan(amount);
@@ -173,27 +176,60 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    @Transactional
+    public void saveTransactionsByDate(List<Transaction> transactions, LocalDate date)
+    {
+        if(transactions.isEmpty() || date == null)
+        {
+            return;
+        }
+        for(Transaction transaction : transactions)
+        {
+            // Check if the transaction already exists on this date
+            boolean transactionExists = checkTransactionExistsByDate(transaction.getTransactionId(), date);
+            if(!transactionExists)
+            {
+                // save the transaction to the database
+                save(transactionToEntityConverter.convert(transaction));
+            }
+            else
+            {
+                log.info("Transaction with id {} already exists on date {}", transaction.getTransactionId(), date);
+            }
+        }
+    }
+
+    @Override
+    public boolean checkTransactionExistsByDate(String transactionId, LocalDate date)
+    {
+        if(transactionId == null || date == null)
+        {
+            return false;
+        }
+        return false;
+    }
+
+    @Override
     public List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions)
     {
         List<Transaction> transactions = new ArrayList<>();
         for(com.plaid.client.model.Transaction plaidTransaction : plaidTransactions){
-            Transaction transaction1 = new Transaction(
-                    plaidTransaction.getAccountId(),
-                    BigDecimal.valueOf(plaidTransaction.getAmount()),
-                    plaidTransaction.getIsoCurrencyCode(),
-                    plaidTransaction.getCategory(),
-                    plaidTransaction.getCategoryId(),
-                    plaidTransaction.getDate(),
-                    plaidTransaction.getOriginalDescription(),
-                    plaidTransaction.getMerchantName(),
-                    plaidTransaction.getName(),
-                    plaidTransaction.getPending(),
-                    plaidTransaction.getTransactionId(),
-                    plaidTransaction.getAuthorizedDate(),
-                    plaidTransaction.getLogoUrl(),
-                    plaidTransaction.getDate(),
-                    false
-            );
+            Transaction transaction1 = Transaction.builder()
+                    .accountId(plaidTransaction.getAccountId())
+                    .amount(BigDecimal.valueOf(plaidTransaction.getAmount()))
+                    .categoryId(plaidTransaction.getCategoryId())
+                    .merchantName(plaidTransaction.getMerchantName())
+                    .categories(plaidTransaction.getCategory())
+                    .name(plaidTransaction.getName())
+                    .transactionId(plaidTransaction.getTransactionId())
+                    .authorizedDate(plaidTransaction.getAuthorizedDate())
+                    .posted(plaidTransaction.getDate())
+                    .logoUrl(plaidTransaction.getLogoUrl())
+                    .date(plaidTransaction.getDate())
+                    .description(plaidTransaction.getOriginalDescription())
+                    .isoCurrencyCode(plaidTransaction.getIsoCurrencyCode())
+                    .pending(plaidTransaction.getPending())
+                    .isSystemCategorized(false).build();
             transactions.add(transaction1);
         }
         return transactions;
@@ -360,6 +396,36 @@ public class TransactionServiceImpl implements TransactionService
             transactionRepository.updateIsSystemCategorized(transactionId);
         }catch(DataAccessException e){
             log.error("There was an error updating the isSystemCategorized flag for transactionId: {}", transactionId, e);
+        }
+    }
+
+    @Override
+    public Optional<Transaction> modifyExistingTransaction(Transaction modifiedTransaction)
+    {
+        if(modifiedTransaction == null)
+        {
+            return Optional.empty();
+        }
+        String transactionId = modifiedTransaction.getTransactionId();
+        try
+        {
+            BigDecimal modifiedAmount = modifiedTransaction.getAmount();
+            LocalDate modifiedPostedDate = modifiedTransaction.getPosted();
+            boolean isPending = modifiedTransaction.getPending();
+            String logoUrl = modifiedTransaction.getLogoUrl();
+            Optional<TransactionsEntity> updatedTransactionEntityOptional = transactionRepository.updateTransaction(transactionId, modifiedAmount, isPending, logoUrl, modifiedPostedDate);
+            if(updatedTransactionEntityOptional.isEmpty())
+            {
+                log.info("Transaction with id {} was not found", transactionId);
+                return Optional.empty();
+            }
+            TransactionsEntity updatedTransactionEntity = updatedTransactionEntityOptional.get();
+            Transaction convertedTransaction = transactionEntityToModelConverter.convert(updatedTransactionEntity);
+            return Optional.of(convertedTransaction);
+
+        }catch(DataAccessException e){
+            log.error("There was an error updating the transaction with id: {} ", transactionId, e);
+            return Optional.empty();
         }
     }
 

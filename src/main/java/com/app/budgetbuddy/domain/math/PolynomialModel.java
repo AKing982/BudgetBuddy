@@ -1,8 +1,6 @@
 package com.app.budgetbuddy.domain.math;
 
 import com.app.budgetbuddy.domain.ModelType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;

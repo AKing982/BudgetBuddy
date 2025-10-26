@@ -39,9 +39,9 @@ public class BPForecastingService
     {
         return null;
     }
-
-    public Map<PositionType, AbstractMathModel> loadCategoryMathModels()
-
-    public List<BPForecastCategory> forecastWeeklyCategories(Map<WeekNumber, >)
+//
+//    public Map<PositionType, AbstractMathModel> loadCategoryMathModels()
+//
+//    public List<BPForecastCategory> forecastWeeklyCategories(Map<WeekNumber, >)
 
 }

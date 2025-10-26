@@ -3,6 +3,7 @@ package com.app.budgetbuddy.entities;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -36,6 +37,9 @@ public class PlaidCursorEntity
 
     @Column(name="last_sync_timestamp", nullable=false)
     private LocalDateTime lastSyncTimestamp;
+
+    @Column(name="last_sync_date")
+    private LocalDate lastSyncDate;
 
     @Column(name="cursor_sync_successful")
     private boolean cursorSyncSuccessful;

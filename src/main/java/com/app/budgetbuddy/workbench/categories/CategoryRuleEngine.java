@@ -82,26 +82,6 @@ public class CategoryRuleEngine
         }
     }
 
-    private void generateSummary(Map<String, TransactionRule> userCategorized,
-                                 Map<String, TransactionRule> systemCategorized) {
-        log.info("Categorization Summary:");
-        log.info("Original User Rules: {}", userCategorized.size());
-        log.info("Original System Rules: {}", systemCategorized.size());
-        log.info("Total Original Rules: {}", userCategorized.size() + systemCategorized.size());
-
-        // Count unique consolidated rules
-        long uniqueUserRules = userCategorized.values().stream()
-                .distinct()
-                .count();
-        long uniqueSystemRules = systemCategorized.values().stream()
-                .distinct()
-                .count();
-
-        log.info("Consolidated User Rules: {}", uniqueUserRules);
-        log.info("Consolidated System Rules: {}", uniqueSystemRules);
-        log.info("Total Consolidated Rules: {}", uniqueUserRules + uniqueSystemRules);
-    }
-
     public static void main(String[] args) {
         // Initialize Spring Application Context
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();

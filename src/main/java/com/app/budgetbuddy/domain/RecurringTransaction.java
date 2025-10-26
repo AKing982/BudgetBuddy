@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.domain;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,7 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 @ToString(callSuper = true)
-@Builder(access = AccessLevel.PUBLIC)
+@SuperBuilder
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class RecurringTransaction extends Transaction
 {
