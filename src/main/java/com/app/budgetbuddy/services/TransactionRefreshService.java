@@ -179,11 +179,12 @@ public class TransactionRefreshService
             return;
         }
         PlaidLinkEntity plaidLinkEntity = plaidLinkEntityOptional.get();
+        UserEntity user = plaidLinkEntity.getUser();
         Optional<PlaidCursorEntity> plaidCursorEntityOptional = plaidCursorService.findByUserIdAndItemId(userId, plaidLinkEntity.getItemId());
         BudgetSchedule budgetSchedule = fetchBudgetScheduleByCurrentDate(userId, currentDate);
         if(plaidCursorEntityOptional.isEmpty())
         {
-            // If the plaid cursor entity is empty, then perform an initial sync for the user
+            // If the plaid cursor
             performInitialSync(plaidLinkEntity, budgetSchedule, currentDate);
             log.info("No Plaid Cursor found for user {}", userId);
             return;
@@ -194,18 +195,13 @@ public class TransactionRefreshService
         if(isUserActive)
         {
             // Was the user offline for several days?
-            // If yes, then perform an offline sync
-            // Else run the incremental sync
-            performIncrementalSync(plaidLinkEntity, plaidCursorEntity, currentDate);
+            double durationSinceLastLogout = sessionManagementService.getDurationSinceLastLogout(user);
+            if(durationSinceLastLogout >= 24)
+            {
+                performOfflineSync(plaidLinkEntity, plaidCursorEntity, currentDate);
+            }
+            performIncrementalSync(plaidLinkEntity, plaidCursorEntity);
         }
-        else
-        {
-            log.info("Skipping incremental sync for user {} as they are offline", userId);
-        }
-        // If the user is active, perform a sync
-        // Else if the user is offline, skip sync
-        // Else if the user was offline for several days and is now online, go ahead and run the offline sync
-
     }
 
     /**
@@ -221,13 +217,14 @@ public class TransactionRefreshService
         {
             return Optional.empty();
         }
-
         String itemId = plaidLinkEntity.getItemId();
         String plaidCursor = plaidCursorEntity.getAddedCursor();
         String nextCursor = "";
-        LocalDate currentDate = LocalDate.now();
         Long userId = plaidLinkEntity.getUser().getId();
+        List<Transaction> allAddedTransactions = new ArrayList<>();
         boolean hasMore = true;
+        int totalModified = 0;
+        int totalSyncedTransactions = 0;
         try
         {
             String accessToken = plaidLinkEntity.getAccessToken();
@@ -237,10 +234,10 @@ public class TransactionRefreshService
             }
             while(hasMore)
             {
-                TransactionsSyncResponse syncResponse = plaidTransactionManager.syncTransactionsForUser(userId, plaidCursor);
+                TransactionsSyncResponse syncResponse = plaidTransactionManager.syncTransactionsForUser(accessToken, plaidCursor, userId);
                 List<com.plaid.client.model.Transaction> addedPlaidTransactions = syncResponse.getAdded();
                 List<com.plaid.client.model.Transaction> modifiedPlaidTransactions = syncResponse.getModified();
-                
+                totalModified += modifiedPlaidTransactions.size();
                 if(addedPlaidTransactions.isEmpty() && modifiedPlaidTransactions.isEmpty())
                 {
                     log.info("No transactions were synced for user {}", userId);
@@ -248,11 +245,20 @@ public class TransactionRefreshService
                 }
                 List<Transaction> convertedAddedTransactions = transactionService.convertPlaidTransactions(addedPlaidTransactions);
                 List<Transaction> convertedModifiedTransactions = transactionService.convertPlaidTransactions(modifiedPlaidTransactions);
-                int totalSyncedTransactions = convertedAddedTransactions.size() + convertedModifiedTransactions.size();
-
+                totalSyncedTransactions += convertedAddedTransactions.size() + convertedModifiedTransactions.size();
+                syncModifiedTransactions(convertedModifiedTransactions, allAddedTransactions);
                 hasMore = syncResponse.getHasMore();
                 nextCursor = syncResponse.getNextCursor();
             }
+            PlaidCursorEntity updatedPlaidCursor = new PlaidCursorEntity();
+            updatedPlaidCursor.setAddedCursor(nextCursor);
+            updatedPlaidCursor.setItemId(itemId);
+            updatedPlaidCursor.setUser(plaidLinkEntity.getUser());
+            updatedPlaidCursor.setLastSyncTimestamp(LocalDateTime.now());
+            plaidCursorService.save(updatedPlaidCursor);
+
+            log.info("Incremental Sync complete for user {}", userId);
+            return createPlaidBooleanSyncByNewTransactions(allAddedTransactions, totalModified, totalSyncedTransactions);
 
         }catch(InvalidAccessTokenException e){
             log.error("There was an error fetching the access token for userId: {}", userId);
@@ -261,8 +267,22 @@ public class TransactionRefreshService
             log.error("There was an error with the sync response: {}" , e.getMessage());
             return Optional.empty();
         }
+    }
 
-        return Optional.empty();
+    private void syncModifiedTransactions(final List<Transaction> modifiedTransactions, List<Transaction> allTransactions)
+    {
+        for(Transaction transaction : modifiedTransactions)
+        {
+            String transactionId = transaction.getTransactionId();
+            Optional<Transaction> updatedTransactionOptional = transactionService.updateExistingTransaction(transaction);
+            if(updatedTransactionOptional.isEmpty())
+            {
+                log.info("No Transaction with id {} was updated ", transactionId);
+                continue;
+            }
+            Transaction updatedTransaction = updatedTransactionOptional.get();
+            allTransactions.add(updatedTransaction);
+        }
     }
 
     private PlaidBooleanSync createDefaultBooleanSync(UserEntity user)
@@ -335,7 +355,7 @@ public class TransactionRefreshService
                     {
                         String transactionId = modifiedTransaction.getTransactionId();
                         LocalDate modifiedTransactionDate = modifiedTransaction.getDate();
-                        Optional<Transaction> updatedTransactionOptional = transactionService.modifyExistingTransaction(modifiedTransaction);
+                        Optional<Transaction> updatedTransactionOptional = transactionService.updateExistingTransaction(modifiedTransaction);
                         if(updatedTransactionOptional.isEmpty())
                         {
                             log.info("No Transaction with id {} was updated ", transactionId);
@@ -391,6 +411,21 @@ public class TransactionRefreshService
                 transactionsByDate.computeIfAbsent(transactionDate, k -> new ArrayList<>()).add(transaction);
             }
         }
+    }
+
+    private Optional<PlaidBooleanSync> createPlaidBooleanSyncByNewTransactions(final List<Transaction> addedTransactions, final int totalModified, final int totalTransactionsSynced)
+    {
+        if(addedTransactions == null)
+        {
+            return Optional.empty();
+        }
+        PlaidBooleanSync plaidBooleanSync = new PlaidBooleanSync();
+        plaidBooleanSync.setTotalSyncedTransactions(totalTransactionsSynced);
+        plaidBooleanSync.setTotalModified(totalModified);
+        plaidBooleanSync.setSynced(true);
+        plaidBooleanSync.setRecurringTransactions(List.of());
+        plaidBooleanSync.setTransactions(addedTransactions);
+        return Optional.of(plaidBooleanSync);
     }
 
     private Optional<PlaidBooleanSync> createPlaidBooleanSyncByTransactionsMap(final Map<LocalDate, List<Transaction>> transactionsByDate, final int totalModified)

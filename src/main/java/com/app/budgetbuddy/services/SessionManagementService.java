@@ -1,11 +1,13 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.entities.UserEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -17,11 +19,14 @@ import java.util.stream.Collectors;
 public class SessionManagementService
 {
     private final RedisTemplate<String, String> redisTemplate;
+    private final UserLogService userLogService;
     private static final String USER_SESSION_PREFIX = "user:sessions:";
 
     @Autowired
-    public SessionManagementService(RedisTemplate<String, String> redisTemplate)
+    public SessionManagementService(RedisTemplate<String, String> redisTemplate,
+                                    UserLogService userLogService)
     {
+        this.userLogService = userLogService;
         this.redisTemplate = redisTemplate;
     }
 
@@ -43,6 +48,12 @@ public class SessionManagementService
     public Set<String> getAllActiveSessions()
     {
         return redisTemplate.opsForSet().members(USER_SESSION_PREFIX);
+    }
+
+    public double getDurationSinceLastLogout(UserEntity user)
+    {
+        Long userId = user.getId();
+        return userLogService.getDurationSinceLastLogout(userId);
     }
 
     public Set<Long> getActiveUsersBySessions()

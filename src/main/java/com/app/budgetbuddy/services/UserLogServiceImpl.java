@@ -21,7 +21,6 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-@Deprecated
 public class UserLogServiceImpl implements UserLogService
 {
     private final UserLogRepository userLogRepository;
@@ -81,6 +80,7 @@ public class UserLogServiceImpl implements UserLogService
     }
 
     @Override
+    @Transactional
     public Optional<UserLogEntity> findById(Long id)
     {
         try
@@ -108,6 +108,34 @@ public class UserLogServiceImpl implements UserLogService
     }
 
     @Override
+    @Transactional
+    public double getDurationSinceLastLogout(Long userId)
+    {
+        LocalDate currentDate = LocalDate.now();
+        try
+        {
+            Optional<UserLogEntity> userLogEntity = userLogRepository.findActiveUserById(userId);
+            if(userLogEntity.isEmpty())
+            {
+                return 0.0;
+            }
+            UserLogEntity userLog = userLogEntity.get();
+            LocalDateTime lastLogout = userLog.getLastLogout();
+            LocalDate lastLogoutDate = lastLogout.toLocalDate();
+            if(lastLogoutDate.isAfter(currentDate))
+            {
+                return 0.0;
+            }
+            long daysBetween = lastLogoutDate.until(currentDate).getDays();
+            return daysBetween * 24.0;
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the duration since last logout for user {}: ", userId, e);
+            return 0;
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<UserLogEntity> updateUserLog(Long userLogId, UserLogRequest userLogRequest)
     {
         if(userLogRequest == null)
@@ -145,6 +173,7 @@ public class UserLogServiceImpl implements UserLogService
     }
 
     @Override
+    @Transactional
     public Optional<UserLogEntity> saveUserLogRequest(UserLogRequest userLogRequest)
     {
         if(userLogRequest == null)

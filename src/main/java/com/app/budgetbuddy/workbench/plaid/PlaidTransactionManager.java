@@ -18,6 +18,7 @@ import com.google.gson.JsonParser;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import jakarta.transaction.InvalidTransactionException;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class PlaidTransactionManager extends AbstractPlaidManager
 {
     private Logger LOGGER = LoggerFactory.getLogger(PlaidTransactionManager.class);
@@ -173,8 +175,10 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         return callResponse.execute().body();
     }
 
-    private TransactionsRecurringGetResponse getRecurringTransactionsResponseWithRetry(TransactionsRecurringGetRequest request) throws IOException {
-        if (request == null) {
+    private TransactionsRecurringGetResponse getRecurringTransactionsResponseWithRetry(TransactionsRecurringGetRequest request) throws IOException
+    {
+        if (request == null)
+        {
             throw new IllegalArgumentException("TransactionsRecurringGetRequest cannot be null");
         }
         int attempts = 0;
@@ -229,6 +233,30 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 .accessToken(accessToken)
                 .cursor(cursor)
                 .options(options);
+    }
+
+    public TransactionsSyncResponse syncTransactionsForUser(final String accessToken, final String cursor, final Long userId) throws IOException
+    {
+        TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
+                .accessToken(accessToken)
+                .count(500)
+                .cursor(cursor);
+        try
+        {
+            Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
+            Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();
+            if(response.isSuccessful() && response.body() != null)
+            {
+                return response.body();
+            }
+            else
+            {
+                throw new IOException("Failed to sync transactions for user ID " + userId);
+            }
+        }catch(IOException e){
+            log.error("There was an error syncing the transactions for userId {}", userId);
+            throw e;
+        }
     }
 
     public TransactionsSyncResponse syncTransactionsForUser(final Long userId, final String cursor) throws IOException

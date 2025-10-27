@@ -10,6 +10,8 @@ public interface UserLogService extends ServiceModel<UserLogEntity>
     Optional<UserLogEntity> getActiveUserLogByUserId(Long userId);
     boolean isUserActive(Long userId);
 
+    double getDurationSinceLastLogout(Long userId);
+
     Optional<UserLogEntity> updateUserLog(Long userLogId, UserLogRequest userLogRequest);
     Optional<UserLogEntity> saveUserLogRequest(UserLogRequest userLogRequest);
 }

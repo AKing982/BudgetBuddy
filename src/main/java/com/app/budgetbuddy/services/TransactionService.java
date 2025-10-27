@@ -43,7 +43,7 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Map<String, Transaction> getTransactionsMap(List<String> transactionIds);
     void updateTransactionCategorizationFlag(String transactionId);
 
-    Optional<Transaction> modifyExistingTransaction(final Transaction modifiedTransaction);
+    Optional<Transaction> updateExistingTransaction(final Transaction modifiedTransaction);
 
     List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount);
     List<Transaction> getPendingTransactionsForUser(Long userId);

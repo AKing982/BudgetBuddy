@@ -400,7 +400,8 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public Optional<Transaction> modifyExistingTransaction(Transaction modifiedTransaction)
+    @Transactional
+    public Optional<Transaction> updateExistingTransaction(final Transaction modifiedTransaction)
     {
         if(modifiedTransaction == null)
         {
