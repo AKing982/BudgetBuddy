@@ -55,3 +55,4 @@ BudgetBuddy helps users manage their finances by forecasting spending patterns a
     mvn spring-boot:run 
 3. **Launch the App**
     - Visit http://localhost:3000 in your browser.
+    - Hosted Site: https://budgetbuddy-app2-30f69a583595.herokuapp.com/
