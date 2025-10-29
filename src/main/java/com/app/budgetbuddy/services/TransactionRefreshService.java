@@ -319,6 +319,7 @@ public class TransactionRefreshService
         Long userId = user.getId();
         boolean hasMore = true;
         int totalModifiedTransactionsDuringSync = 0;
+        int totalAdded = 0;
         Map<LocalDate, List<Transaction>> transactionsByDate = new HashMap<>();
         if(lastSyncDate.equals(currentDate))
         {
@@ -340,6 +341,7 @@ public class TransactionRefreshService
                 // Create a Transaction Sync Request
                 TransactionsSyncResponse syncResponse = plaidTransactionManager.syncTransactionsForUser(userId, plaidCursor);
                 List<com.plaid.client.model.Transaction> syncedTransactions = syncResponse.getAdded();
+                totalAdded += syncedTransactions.size();
                 List<com.plaid.client.model.Transaction> modifiedTransactions = syncResponse.getModified();
                 if(syncedTransactions.isEmpty())
                 {
@@ -363,19 +365,16 @@ public class TransactionRefreshService
                         }
                         Transaction updatedTransaction = updatedTransactionOptional.get();
                         // Add the updated transaction to the map
-                        if(!modifiedTransactionDate.isBefore(lastSyncDate) && !modifiedTransactionDate.isAfter(lastSyncDate))
+                        if(!modifiedTransactionDate.isBefore(lastSyncDate))
                         {
                             transactionsByDate.computeIfAbsent(modifiedTransactionDate, k -> new ArrayList<>()).add(updatedTransaction);
                         }
                     }
                 }
-                // For any modified transactions, we will need to first convert the modified transactions
-                // then search for those modified transactions using the transaction service in the database
-                // then update those transactions in the database using the modified data
-                convertTransactionsAndAddToMap(modifiedTransactions, transactionsByDate, lastSyncDate);
                 plaidCursor = syncResponse.getNextCursor();
                 hasMore = syncResponse.getHasMore();
             }
+            log.info("Transactions By Date Size: {}", transactionsByDate.size());
             PlaidCursorEntity updatedPlaidCursor = new PlaidCursorEntity();
             updatedPlaidCursor.setAddedCursor(plaidCursor);
             updatedPlaidCursor.setItemId(plaidLinkEntity.getItemId());
@@ -385,7 +384,7 @@ public class TransactionRefreshService
             saveSyncedTransactionsMap(transactionsByDate);
 
             log.info("Offline sync complete for user {}", user.getId());
-            return createPlaidBooleanSyncByTransactionsMap(transactionsByDate, totalModifiedTransactionsDuringSync);
+            return createPlaidBooleanSyncByTransactionsMap(transactionsByDate, totalModifiedTransactionsDuringSync, totalAdded);
 
         }catch(InvalidAccessTokenException e){
             log.error("There was an error fetching the access token for userId: {}", user.getId());
@@ -406,7 +405,7 @@ public class TransactionRefreshService
         {
             LocalDate transactionDate = transaction.getDate();
             log.info("Transaction Date: {}", transactionDate);
-            if(!transactionDate.isBefore(lastSyncDate) && !transactionDate.isAfter(lastSyncDate))
+            if(transactionDate.isAfter(lastSyncDate))
             {
                 transactionsByDate.computeIfAbsent(transactionDate, k -> new ArrayList<>()).add(transaction);
             }
@@ -428,16 +427,16 @@ public class TransactionRefreshService
         return Optional.of(plaidBooleanSync);
     }
 
-    private Optional<PlaidBooleanSync> createPlaidBooleanSyncByTransactionsMap(final Map<LocalDate, List<Transaction>> transactionsByDate, final int totalModified)
+    private Optional<PlaidBooleanSync> createPlaidBooleanSyncByTransactionsMap(final Map<LocalDate, List<Transaction>> transactionsByDate, final int totalModified, final int totalAdded)
     {
         if(transactionsByDate == null)
         {
             return Optional.empty();
         }
         List<Transaction> allTransactions = transactionsByDate.values().stream().flatMap(List::stream).toList();
-        int totalTransactionsSynced = allTransactions.size();
+        log.info("Transactions Size: {}", allTransactions.size());
         PlaidBooleanSync plaidBooleanSync = new PlaidBooleanSync();
-        plaidBooleanSync.setTotalSyncedTransactions(totalTransactionsSynced);
+        plaidBooleanSync.setTotalSyncedTransactions(totalAdded);
         plaidBooleanSync.setTotalModified(totalModified);
         plaidBooleanSync.setSynced(true);
         plaidBooleanSync.setRecurringTransactions(List.of());

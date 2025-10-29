@@ -25,9 +25,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -401,51 +399,81 @@ class TransactionRefreshServiceTest
         // Create modified transactions (pending -> posted with amount changes)
         List<com.plaid.client.model.Transaction> modifiedPlaidTransactions = new ArrayList<>();
 
-        // Gas station: was pending $100, now posted $87.43
-        com.plaid.client.model.Transaction gasModified = new com.plaid.client.model.Transaction()
+        com.plaid.client.model.Transaction gasModifiedPlaid = new com.plaid.client.model.Transaction()
                 .transactionId("tx_gas_001")
                 .accountId("test-account-id")
                 .amount(87.43)
-                .date(LocalDate.parse("2025-04-06"))
+                .date(LocalDate.parse("2025-04-05"))
                 .name("Shell Gas Station")
                 .merchantName("Shell")
-                .pending(false); // Changed from pending to posted
-        modifiedPlaidTransactions.add(gasModified);
+                .pending(false);
+        modifiedPlaidTransactions.add(gasModifiedPlaid);
 
         // Restaurant: tip added, was $50, now $60
-        com.plaid.client.model.Transaction restaurantModified = new com.plaid.client.model.Transaction()
+        com.plaid.client.model.Transaction restaurantModifiedPlaid = new com.plaid.client.model.Transaction()
                 .transactionId("tx_restaurant_001")
                 .accountId("test-account-id")
                 .amount(60.00)
-                .date(LocalDate.parse("2025-04-07"))
+                .date(LocalDate.parse("2025-04-05"))
                 .name("Local Restaurant")
                 .merchantName("Local Restaurant")
                 .pending(false);
-        modifiedPlaidTransactions.add(restaurantModified);
+        modifiedPlaidTransactions.add(restaurantModifiedPlaid);
 
         // Mock existing transactions in DB that need to be updated
         Transaction existingGasTransaction = new Transaction();
         existingGasTransaction.setTransactionId("tx_gas_001");
         existingGasTransaction.setAmount(BigDecimal.valueOf(100.00)); // Old pending amount
         existingGasTransaction.setPending(true); // Was pending
-        existingGasTransaction.setPosted(LocalDate.of(2025, 4, 6));
+        existingGasTransaction.setPosted(LocalDate.of(2025, 4, 5));
         existingGasTransaction.setName("Shell Gas Station");
-        existingGasTransaction.setDate(LocalDate.of(2025, 4, 6));
+        existingGasTransaction.setDate(LocalDate.of(2025, 4, 5));
         existingGasTransaction.setMerchantName("Shell");
 
         Transaction existingRestaurantTransaction = new Transaction();
         existingRestaurantTransaction.setTransactionId("tx_restaurant_001");
         existingRestaurantTransaction.setAmount(BigDecimal.valueOf(50.00)); // Old amount without tip
         existingRestaurantTransaction.setPending(false);
-        existingRestaurantTransaction.setDate(LocalDate.of(2025, 4, 7));
-        existingRestaurantTransaction.setPosted(LocalDate.of(2025, 4, 7));
+        existingRestaurantTransaction.setDate(LocalDate.of(2025, 4, 5));
+        existingRestaurantTransaction.setPosted(LocalDate.of(2025, 4, 5));
         existingRestaurantTransaction.setName("Local Restaurant");
         existingRestaurantTransaction.setMerchantName("Local Restaurant");
 
-        when(transactionService.findTransactionById("tx_gas_001"))
-                .thenReturn(Optional.of(existingGasTransaction));
-        when(transactionService.findTransactionById("tx_restaurant_001"))
-                .thenReturn(Optional.of(existingRestaurantTransaction));
+        // Gas station: was pending $100, now posted $87.43
+        Transaction gasModified = Transaction.builder()
+                .transactionId("tx_gas_001")
+                .accountId("test-account-id")
+                .amount(BigDecimal.valueOf(87.43))
+                .date(LocalDate.parse("2025-04-05"))
+                .name("Shell Gas Station")
+                .merchantName("Shell")
+                .pending(false)
+                .build();
+
+        // Restaurant: tip added, was $50, now $60
+        Transaction restaurantModified = Transaction.builder()
+                .transactionId("tx_restaurant_001")
+                .accountId("test-account-id")
+                .amount(BigDecimal.valueOf(60.00))
+                .date(LocalDate.parse("2025-04-05"))
+                .name("Local Restaurant")
+                .merchantName("Local Restaurant")
+                .pending(false)
+                .build();
+
+        when(transactionService.convertPlaidTransactions(eq(modifiedPlaidTransactions)))
+                .thenReturn(List.of(gasModified, restaurantModified));
+
+        when(transactionService.updateExistingTransaction(any(Transaction.class)))
+                .thenAnswer(invocation -> {
+                    Transaction arg = invocation.getArgument(0);
+                    if (arg.getTransactionId().equals("tx_gas_001")) {
+                        return Optional.of(gasModified);
+                    } else if (arg.getTransactionId().equals("tx_restaurant_001")) {
+                        return Optional.of(restaurantModified);
+                    }
+                    return Optional.empty();
+                });
 
         // Create some new transactions that occurred while offline
         List<com.plaid.client.model.Transaction> addedPlaidTransactions = new ArrayList<>();
@@ -454,7 +482,7 @@ class TransactionRefreshServiceTest
                 .transactionId("tx_coffee_001")
                 .accountId("test-account-id")
                 .amount(5.50)
-                .date(LocalDate.parse("2025-04-08"))
+                .date(LocalDate.parse("2025-04-06"))
                 .name("Coffee Shop")
                 .merchantName("Coffee Shop")
                 .pending(false);
@@ -479,16 +507,16 @@ class TransactionRefreshServiceTest
         Transaction newCoffeeTransaction = new Transaction();
         newCoffeeTransaction.setTransactionId("tx_coffee_001");
         newCoffeeTransaction.setAmount(BigDecimal.valueOf(5.50));
-        newCoffeeTransaction.setPosted(LocalDate.of(2025, 4, 8));
+        newCoffeeTransaction.setPosted(LocalDate.of(2025, 4, 6));
         newCoffeeTransaction.setName("Coffee Shop");
-        newCoffeeTransaction.setDate(LocalDate.of(2025, 4, 8));
+        newCoffeeTransaction.setDate(LocalDate.of(2025, 4, 6));
         newCoffeeTransaction.setMerchantName("Coffee Shop");
         newCoffeeTransaction.setPending(false);
 
         // Expected result
         PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
         expectedPlaidBooleanSync.setUserId(1L);
-        expectedPlaidBooleanSync.setTransactions(List.of(newCoffeeTransaction));
+        expectedPlaidBooleanSync.setTransactions(List.of(restaurantModified, gasModified, newCoffeeTransaction));
         expectedPlaidBooleanSync.setTotalSyncedTransactions(1); // 1 new transaction added
         expectedPlaidBooleanSync.setTotalModified(2); // 2 transactions modified
         expectedPlaidBooleanSync.setSynced(true);

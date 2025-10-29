@@ -6,7 +6,6 @@ import com.app.budgetbuddy.entities.PreCalculationCategoryEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidCoordinateLengthException;
 import com.app.budgetbuddy.exceptions.InvalidMathModelException;
-import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.services.PreCalculationCategoryService;
 import com.app.budgetbuddy.services.SubBudgetGoalsService;
 import lombok.extern.slf4j.Slf4j;
