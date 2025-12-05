@@ -2,6 +2,7 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 
 import java.math.BigDecimal;
@@ -25,6 +26,8 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
 
     void saveAll(List<Transaction> transactions);
 
+    void saveTransactionEntities(List<TransactionsEntity> transactionEntities);
+
     void saveTransactionsByDate(List<Transaction> transactions, LocalDate date);
 
     boolean checkTransactionExistsByDate(String transactionId, LocalDate date);
@@ -43,6 +46,7 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Map<String, Transaction> getTransactionsMap(List<String> transactionIds);
     void updateTransactionCategorizationFlag(String transactionId);
 
+    List<TransactionsEntity> convertTransactionCSVsToEntities(List<TransactionCSV> transactionCSVList);
     Optional<Transaction> updateExistingTransaction(final Transaction modifiedTransaction);
 
     List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount);

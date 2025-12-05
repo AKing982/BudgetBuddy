@@ -2,6 +2,7 @@ package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.entities.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,6 +27,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.id > 0")
     List<Long> findAllIds();
+
+    @Query("SELECT u FROM UserEntity u WHERE u.id =:id AND u.overrideUploadEnabled = true")
+    Optional<UserEntity> findUserByIdAndOverrideUploadEnabled(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.overrideUploadEnabled =:override WHERE u.id =:id")
+    void updateUserOverrideUploadEnabled(@Param("id") Long id, @Param("override") boolean override);
 
     @Query("SELECT max(u.id) FROM UserEntity u")
     Long findMaxId();

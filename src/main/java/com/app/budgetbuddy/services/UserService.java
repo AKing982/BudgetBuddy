@@ -15,6 +15,10 @@ public interface UserService extends ServiceModel<UserEntity>
     Long findUserIdByUsername(String username);
     Long findMaxUserId();
 
+    boolean doesUserHaveOverride(Long userId);
+
+    void updateUserOverrideAccess(Long userId, boolean overrideAccess);
+
     Optional<User> getUserById(Long id);
 
     void resetPassword(String email, String newPassword);

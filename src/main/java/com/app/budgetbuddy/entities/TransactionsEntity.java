@@ -61,6 +61,9 @@ public class TransactionsEntity
     @Column(name="createdat")
     private LocalDate createDate;
 
+    @Column(name="isCSVTransaction")
+    private boolean isCSVTransaction;
+
     @Column(name="issystemcategorized")
     private boolean issystemCategorized;
 

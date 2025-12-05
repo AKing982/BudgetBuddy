@@ -2,6 +2,7 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
@@ -173,6 +174,12 @@ public class TransactionServiceImpl implements TransactionService
     @Transactional
     public void saveAll(List<Transaction> transactions) {
         createAndSaveTransactions(transactions);
+    }
+
+    @Override
+    public void saveTransactionEntities(List<TransactionsEntity> transactionEntities)
+    {
+        transactionRepository.saveAll(transactionEntities);
     }
 
     @Override
@@ -400,6 +407,76 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
+    public List<TransactionsEntity> convertTransactionCSVsToEntities(final List<TransactionCSV> transactionCSVList)
+    {
+        if(transactionCSVList.isEmpty())
+        {
+            log.error("No Transaction CSV models were provided");
+            return Collections.emptyList();
+        }
+        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
+        for(TransactionCSV transactionCSV : transactionCSVList)
+        {
+            TransactionsEntity transactionsEntity = new TransactionsEntity();
+            int suffix = transactionCSV.getSuffix();
+            if(suffix == 9)
+            {
+                final Optional<String> acctIdOptional = accountRepository.findAccountIdByName("CHECKING");
+                if(acctIdOptional.isEmpty())
+                {
+                    log.error("No account found with name CHECKING");
+                    continue;
+                }
+                String acctId = acctIdOptional.get();
+                transactionsEntity.setAccount(fetchAccountById(acctId));
+                transactionsEntity.setAmount(transactionCSV.getTransactionAmount());
+                transactionsEntity.setDescription(transactionCSV.getExtendedDescription());
+                transactionsEntity.setMerchantName(getMerchantNameByExtendedDescription(transactionCSV.getExtendedDescription()));
+                transactionsEntity.setAuthorizedDate(transactionCSV.getElectronicTransactionDate());
+                transactionsEntity.setPosted(transactionCSV.getTransactionDate());
+                transactionsEntity.setPending(false);
+                transactionsEntity.setCSVTransaction(true);
+                transactionsEntity.setIssystemCategorized(false);
+                transactionsEntities.add(transactionsEntity);
+            }
+        }
+        return transactionsEntities;
+    }
+
+    private String getMerchantNameByExtendedDescription(String extendedDescription)
+    {
+        if(extendedDescription == null || extendedDescription.isEmpty())
+        {
+            return "";
+        }
+        String merchantName = extendedDescription.trim();
+        if(merchantName.contains("#"))
+        {
+            String[] splitDescription = merchantName.split("#");
+            return splitDescription[0].trim();
+        }
+        else if(merchantName.contains("*"))
+        {
+            String[] splitDescription = merchantName.split("\\*");
+            return splitDescription[0].trim();
+        }
+        else if(merchantName.contains(" "))
+        {
+            String[] splitDescription = merchantName.split(" ");
+            return splitDescription[0].trim();
+        }
+        else if(merchantName.contains(" - "))
+        {
+            return merchantName.split(" - ")[0].trim();
+        }
+        else if(merchantName.contains(","))
+        {
+            return merchantName.split(",")[0].trim();
+        }
+        return merchantName;
+    }
+
+    @Override
     @Transactional
     public Optional<Transaction> updateExistingTransaction(final Transaction modifiedTransaction)
     {
@@ -490,7 +567,8 @@ public class TransactionServiceImpl implements TransactionService
         try
         {
             List<TransactionsEntity> transactions = transactionRepository.findTransactionsByUserIdAndDateRange(userId, startDate, endDate);
-            if(transactions.isEmpty()){
+            if(transactions.isEmpty())
+            {
                 LOGGER.warn("No Transactions found for userId: " + userId + " for startDate: " + startDate + " and endDate: " + endDate);
                 return List.of();
             }

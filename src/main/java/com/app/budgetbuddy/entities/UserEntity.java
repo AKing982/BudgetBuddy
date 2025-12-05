@@ -37,10 +37,11 @@ public class UserEntity {
     @Column(name="hashCombine")
     private String password;
 
+    @Column(name="override_upload_enabled")
+    private boolean overrideUploadEnabled;
+
     @Column(name="createdat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;
-
-
 
 }

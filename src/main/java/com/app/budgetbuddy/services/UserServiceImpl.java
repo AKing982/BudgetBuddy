@@ -98,6 +98,32 @@ public class UserServiceImpl implements UserService
 
     @Override
     @Transactional
+    public boolean doesUserHaveOverride(Long userId)
+    {
+        try
+        {
+            Optional<UserEntity> userWithOverrideAccess = userRepository.findUserByIdAndOverrideUploadEnabled(userId);
+            return userWithOverrideAccess.map(UserEntity::isOverrideUploadEnabled).orElse(false);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the user override access: ", e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateUserOverrideAccess(Long userId, boolean overrideAccess)
+    {
+        try
+        {
+            userRepository.updateUserOverrideUploadEnabled(userId, overrideAccess);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the user override access: ", e);
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<User> getUserById(Long id)
     {
         if(id < 1)
