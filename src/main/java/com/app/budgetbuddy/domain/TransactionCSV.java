@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.domain;
 
 import lombok.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,7 +10,8 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor(access= AccessLevel.PUBLIC)
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
-public class TransactionCSV
+@ToString
+public class TransactionCSV implements Comparable<TransactionCSV>
 {
     private Long id;
     private String account;
@@ -18,7 +20,13 @@ public class TransactionCSV
     private LocalDate transactionDate;
     private BigDecimal transactionAmount;
     private String description;
+    private String merchantName;
     private String extendedDescription;
     private LocalDate electronicTransactionDate;
     private BigDecimal balance;
+
+    @Override
+    public int compareTo(@NotNull TransactionCSV o) {
+        return this.transactionDate.compareTo(o.transactionDate);
+    }
 }

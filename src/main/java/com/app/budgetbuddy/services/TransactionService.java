@@ -46,7 +46,7 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Map<String, Transaction> getTransactionsMap(List<String> transactionIds);
     void updateTransactionCategorizationFlag(String transactionId);
 
-    List<TransactionsEntity> convertTransactionCSVsToEntities(List<TransactionCSV> transactionCSVList);
+    List<TransactionsEntity> convertTransactionCSVsToEntities(List<TransactionCSV> transactionCSVList, Long userId);
     Optional<Transaction> updateExistingTransaction(final Transaction modifiedTransaction);
 
     List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount);

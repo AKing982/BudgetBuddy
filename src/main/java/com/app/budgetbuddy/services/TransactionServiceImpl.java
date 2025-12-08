@@ -4,11 +4,13 @@ import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.InvalidDataException;
 import com.app.budgetbuddy.repositories.AccountRepository;
+import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import com.app.budgetbuddy.workbench.converter.TransactionEntityToModelConverter;
@@ -36,6 +38,7 @@ public class TransactionServiceImpl implements TransactionService
 {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
+    private final CSVAccountRepository csvAccountRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionToEntityConverter transactionToEntityConverter;
     private final TransactionEntityToModelConverter transactionEntityToModelConverter;
@@ -44,11 +47,13 @@ public class TransactionServiceImpl implements TransactionService
     @Autowired
     public TransactionServiceImpl(TransactionRepository transactionRepository,
                                   AccountRepository accountRepository,
+                                  CSVAccountRepository csvAccountRepository,
                                   CategoryRepository categoryRepository,
                                   TransactionToEntityConverter transactionToEntityConverter,
                                   TransactionEntityToModelConverter transactionEntityToModelConverter){
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
+        this.csvAccountRepository = csvAccountRepository;
         this.categoryRepository = categoryRepository;
         this.transactionToEntityConverter = transactionToEntityConverter;
         this.transactionEntityToModelConverter = transactionEntityToModelConverter;
@@ -407,7 +412,7 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     @Override
-    public List<TransactionsEntity> convertTransactionCSVsToEntities(final List<TransactionCSV> transactionCSVList)
+    public List<TransactionsEntity> convertTransactionCSVsToEntities(final List<TransactionCSV> transactionCSVList, final Long userId)
     {
         if(transactionCSVList.isEmpty())
         {
@@ -419,16 +424,26 @@ public class TransactionServiceImpl implements TransactionService
         {
             TransactionsEntity transactionsEntity = new TransactionsEntity();
             int suffix = transactionCSV.getSuffix();
+            log.info("Suffix: {}", suffix);
             if(suffix == 9)
             {
-                final Optional<String> acctIdOptional = accountRepository.findAccountIdByName("CHECKING");
-                if(acctIdOptional.isEmpty())
+                // Is there a plaid account that matches this suffix e.g. an account name with CHECKING?
+                String accountId = accountRepository.findAccountIdByName("CHECKING").orElse("No Account Found");
+                if(accountId.isEmpty())
                 {
-                    log.error("No account found with name CHECKING");
-                    continue;
+                    log.error("No account found with suffix: {}", suffix);
+                    log.info("Fetching CSV Account with suffix: {}", suffix);
+                    Optional<CSVAccountEntity> csvAccountEntityOptional = csvAccountRepository.findBySuffixAndUserId(suffix, userId);
+                    if(csvAccountEntityOptional.isEmpty())
+                    {
+                        log.error("No CSV Account found with suffix: {}", suffix);
+                        continue;
+                    }
+                    CSVAccountEntity csvAccountEntity = csvAccountEntityOptional.get();
+
+
                 }
-                String acctId = acctIdOptional.get();
-                transactionsEntity.setAccount(fetchAccountById(acctId));
+                transactionsEntity.setAccount(fetchAccountById(accountId));
                 transactionsEntity.setAmount(transactionCSV.getTransactionAmount());
                 transactionsEntity.setDescription(transactionCSV.getExtendedDescription());
                 transactionsEntity.setMerchantName(getMerchantNameByExtendedDescription(transactionCSV.getExtendedDescription()));

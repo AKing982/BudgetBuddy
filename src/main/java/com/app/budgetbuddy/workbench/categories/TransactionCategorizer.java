@@ -10,6 +10,7 @@ import java.util.*;
 
 @Service
 @Slf4j
+@Deprecated
 public class TransactionCategorizer
 {
     private Map<Integer, CategorizationStrategy> strategies = new HashMap<>();

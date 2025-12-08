@@ -14,7 +14,7 @@ import {
     Chip,
     Skeleton,
     Stack,
-    LinearProgress
+    LinearProgress, Snackbar, Alert
 } from '@mui/material';
 import {
     ChevronLeft,
@@ -25,7 +25,7 @@ import {
     PieChart,
     TrendingUp,
     Award,
-    Download as DownloadIcon
+    Download as DownloadIcon, ImportIcon
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from './Sidebar';
@@ -35,6 +35,7 @@ import BudgetPeriodTable from './BudgetPeriodTable';
 import BudgetSummary from "./BudgetSummary";
 import BudgetProgressSummary from "./BudgetProgressSummary";
 import BudgetRunnerService, { BudgetRunnerResult } from "../services/BudgetRunnerService";
+import CsvUploadService  from "../services/CsvUploadService";
 import {
     BudgetPeriodCategory,
     BudgetStats,
@@ -43,6 +44,8 @@ import {
     ProcessedStats
 } from "../utils/Items";
 import DateRange from "../domain/DateRange";
+import CSVImportDialog from "./CSVImportDialog";
+import csvUploadService from "../services/CsvUploadService";
 
 interface DateArrays {
     startDate: [number, number, number];
@@ -65,9 +68,17 @@ const BudgetPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [animateIn, setAnimateIn] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const budgetRunnerService = BudgetRunnerService.getInstance();
     const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
     const userId = Number(sessionStorage.getItem('userId'));
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [snackBarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>()
+
+    const uploadService = new CsvUploadService();
+
     const theme = useTheme();
 
     const handlePreviousMonth = () => {
@@ -77,6 +88,59 @@ const BudgetPage: React.FC = () => {
     const handleNextMonth = () => {
         setCurrentMonth(prevMonth => addMonths(prevMonth, 1));
     };
+
+    const handleImportClick = () => {
+        setImportDialogOpen(true);
+    }
+
+    const handleImportClose = () => {
+        setImportDialogOpen(false);
+    }
+
+    const handleImportComplete = async (data: {file: File; startDate: string, endDate: string}) => {
+        try
+        {
+            console.log('Starting CSV import...');
+
+            // Show loading state
+            setIsLoading(true);
+            setError(null);
+
+            // Upload the CSV file
+            const result = await uploadService.uploadCsv({
+                userId: userId,
+                file: data.file,
+                startDate: data.startDate,
+                endDate: data.endDate
+            });
+
+            if (result.success) {
+                console.log('CSV import successful:', result.message);
+
+                // Close the dialog
+                setImportDialogOpen(false);
+
+                // Optional: Show success message
+                // You could add a snackbar or success notification here
+            } else {
+                setError(result.message || 'Import failed');
+            }
+        }catch(error){
+            console.error('Error importing CSV:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to import CSV file';
+
+            setSnackbarMessage(errorMessage);
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
+
+            setError(errorMessage);
+        }finally{
+            setIsLoading(false);
+        }
+
+        console.log('Import completed');
+        setImportDialogOpen(false);
+    }
 
     useEffect(() => {
         document.title = 'Budget Dashboard';
@@ -309,9 +373,28 @@ const BudgetPage: React.FC = () => {
                                 <ChevronRight />
                             </IconButton>
 
+                            {/*<Button*/}
+                            {/*    variant="outlined"*/}
+                            {/*    startIcon={<DownloadIcon size={18} />}*/}
+                            {/*    sx={{*/}
+                            {/*        ml: 1,*/}
+                            {/*        borderRadius: 2,*/}
+                            {/*        textTransform: 'none',*/}
+                            {/*        fontWeight: 600,*/}
+                            {/*        borderColor: alpha(theme.palette.divider, 0.8),*/}
+                            {/*        color: theme.palette.text.primary,*/}
+                            {/*        '&:hover': {*/}
+                            {/*            borderColor: theme.palette.primary.main,*/}
+                            {/*            backgroundColor: alpha(theme.palette.primary.main, 0.05)*/}
+                            {/*        }*/}
+                            {/*    }}*/}
+                            {/*>*/}
+                            {/*    Export*/}
+                            {/*</Button>*/}
                             <Button
                                 variant="outlined"
-                                startIcon={<DownloadIcon size={18} />}
+                                startIcon={<ImportIcon size={18} />}
+                                onClick={handleImportClick}
                                 sx={{
                                     ml: 1,
                                     borderRadius: 2,
@@ -323,10 +406,14 @@ const BudgetPage: React.FC = () => {
                                         borderColor: theme.palette.primary.main,
                                         backgroundColor: alpha(theme.palette.primary.main, 0.05)
                                     }
-                                }}
-                            >
-                                Export
+                                }}>
+                                Import
                             </Button>
+                            <CSVImportDialog
+                                open={importDialogOpen}
+                                onClose={handleImportClose}
+                                onImport={handleImportComplete}
+                                />
                         </Box>
                     </Box>
                 </Grow>
@@ -1043,6 +1130,16 @@ const BudgetPage: React.FC = () => {
                     </Grid>
                 </Grid>
             </Container>
+            <Snackbar
+                open={!!successMessage}
+                autoHideDuration={6000}
+                onClose={() => setSuccessMessage(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+                    {successMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

@@ -7,7 +7,7 @@ import {
     Container,
     createTheme,
     CssBaseline, Divider,
-    Grid,
+    Grid, IconButton,
     Link,
     Paper,
     TextField,
@@ -145,6 +145,7 @@ const LoginForm: React.FC = () => {
     const [loginError, setLoginError] = useState<string | null>(null);
     const [fullName, setFullName] = useState<string>('');
     const [linkToken, setLinkToken] = useState<string | null>(null);
+    const [overrideAccessClick, setOverrideAccessClick] = useState<boolean>(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const plaidLinkRef = useRef<PlaidLinkRef>(null);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -165,6 +166,11 @@ const LoginForm: React.FC = () => {
             [name]: value,
         }));
     };
+
+    const handleOverrideAccessOnClick = () => {
+        setOverrideAccessClick(prev => !prev);
+        console.log('Override Access Clicked: ', !overrideAccessClick);
+    }
 
     const fetchUserEmailById = async(userId: number) : Promise<string> => {
         try
@@ -279,50 +285,65 @@ const LoginForm: React.FC = () => {
             }
 
             console.log('Is Authenticated: ', true);
+            const isUserOverrideEnabled = await userService.fetchUserOverrideEnabled(userId);
+            console.log('Is User Override Enabled in DB: ', isUserOverrideEnabled);
+            if(isUserOverrideEnabled || overrideAccessClick)
+            {
+                console.log('Override Access Clicked: ', overrideAccessClick);
 
-            // Create user log for this login session
-            // await handleUserLogCreation(userId);
-            const plaidService = PlaidService.getInstance();
-            const plaidStatus = await handlePlaidLinkVerification(userId);
-            console.log('Plaid Status: ', plaidStatus);
-            if (!plaidStatus) {
-                console.error('Error: Failed to verify Plaid link status');
+                // Update the override_upload_enabled in the database
+                await userService.updateUserUploadEnabledAccess(userId, overrideAccessClick);
+                console.log('User override is enabled, navigating to dashboard...');
+                navigate('/dashboard');
                 return;
             }
-            console.log('Plaid Link Status: ', plaidStatus);
-            // Handle Plaid linking or updating - ENHANCED LOGIC
-            if (!plaidStatus.isLinked) {
-                if (plaidStatus.requiresLinkUpdate) {
-                    // Case 1: Link exists but needs update
-                    console.log('Plaid link requires update, opening update mode...');
-                    await openUpdateMode(userId);
-                } else {
-                    // Case 2: No link exists, need to create new one
-                    console.log('Plaid not linked, creating link token...');
-                    const linkResponse = await plaidService.createLinkToken();
-                    // Enhanced error handling and logging for link token
-                    if (!linkResponse || !linkResponse.linkToken) {
-                        console.error('Failed to create link token:', linkResponse);
-                        return;
-                    }
-                    console.log('Link token created successfully:', linkResponse.linkToken);
-                    setLinkToken(linkResponse.linkToken);
-                    // Add a small delay to ensure state updates before opening
-                    setTimeout(() => {
-                        if (plaidLinkRef.current) {
-                            console.log('Opening Plaid Link window...');
-                            plaidLinkRef.current.open();
-                        } else {
-                            console.error('Plaid Link reference is not available');
-                        }
-                    }, 500);
+            else
+            {
+                console.log('User override is disabled, navigating to Plaid Link...');
+                // Create user log for this login session
+                // await handleUserLogCreation(userId);
+                const plaidService = PlaidService.getInstance();
+                const plaidStatus = await handlePlaidLinkVerification(userId);
+                console.log('Plaid Status: ', plaidStatus);
+                if (!plaidStatus) {
+                    console.error('Error: Failed to verify Plaid link status');
+                    return;
                 }
-                // Note: Navigation waits until Plaid linking/updating completes (via callback)
-            } else {
-                // Case 3: Link exists and is up-to-date
-                console.log('Plaid linked and up-to-date, syncing transactions...');
-                navigate('/dashboard');
-                loginAttempts = 0;
+                console.log('Plaid Link Status: ', plaidStatus);
+                // Handle Plaid linking or updating - ENHANCED LOGIC
+                if (!plaidStatus.isLinked) {
+                    if (plaidStatus.requiresLinkUpdate) {
+                        // Case 1: Link exists but needs update
+                        console.log('Plaid link requires update, opening update mode...');
+                        await openUpdateMode(userId);
+                    } else {
+                        // Case 2: No link exists, need to create new one
+                        console.log('Plaid not linked, creating link token...');
+                        const linkResponse = await plaidService.createLinkToken();
+                        // Enhanced error handling and logging for link token
+                        if (!linkResponse || !linkResponse.linkToken) {
+                            console.error('Failed to create link token:', linkResponse);
+                            return;
+                        }
+                        console.log('Link token created successfully:', linkResponse.linkToken);
+                        setLinkToken(linkResponse.linkToken);
+                        // Add a small delay to ensure state updates before opening
+                        setTimeout(() => {
+                            if (plaidLinkRef.current) {
+                                console.log('Opening Plaid Link window...');
+                                plaidLinkRef.current.open();
+                            } else {
+                                console.error('Plaid Link reference is not available');
+                            }
+                        }, 500);
+                    }
+                    // Note: Navigation waits until Plaid linking/updating completes (via callback)
+                } else {
+                    // Case 3: Link exists and is up-to-date
+                    console.log('Plaid linked and up-to-date, syncing transactions...');
+                    navigate('/dashboard');
+                    loginAttempts = 0;
+                }
             }
         } catch (error) {
             console.error('Error in handleSubmit:', error);
@@ -561,6 +582,11 @@ const LoginForm: React.FC = () => {
                                         width: 56,
                                         height: 56
                                     }}
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent parent handlers
+                                        console.log('Clicked!');
+                                        handleOverrideAccessOnClick()
+                                    }}
                                 >
                                     <LockOutlined />
                                 </Avatar>
@@ -606,8 +632,12 @@ const LoginForm: React.FC = () => {
                                             width: 56,
                                             height: 56
                                         }}
+                                        onClick={(e) => {
+                                            console.log('Click event fired', e);
+                                            handleOverrideAccessOnClick()
+                                        }}
                                     >
-                                        <LockOutlined />
+                                            <LockOutlined />
                                     </Avatar>
                                     <Typography
                                         component="h1"

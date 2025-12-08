@@ -45,6 +45,57 @@ class UserService {
         }
     }
 
+    public async updateUserUploadEnabledAccess(userId: number, uploadEnabled: boolean) : Promise<string>
+    {
+        if(userId < 1)
+        {
+            throw new Error("Invalid UserId: " + userId);
+        }
+        try
+        {
+            const response = await fetch(`${apiUrl}/users/${userId}/override-enabled?overrideEnabled=${uploadEnabled}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server error response:', errorText);
+                throw new Error(`Server returned ${response.status}: ${errorText}`);
+            }
+            return response.text();
+        }catch(error){
+            console.error("There was an error updating the upload enabled status: ", error);
+            throw error;
+        }
+    }
+
+    public async fetchUserOverrideEnabled(userId: number) : Promise<boolean>
+    {
+        if(userId < 1)
+        {
+            throw new Error("Invalid UserId: " + userId);
+        }
+        try
+        {
+            const response = await fetch(`${apiUrl}/users/${userId}/override-enabled`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            if(!response.ok)
+            {
+                throw new Error(`Error fetching override enabled status: ${response.status}`);
+            }
+            return await response.json();
+        }catch(error){
+            console.error("There was an error fetching the override enabled status: ", error);
+            throw error;
+        }
+    }
+
     public async findFirstAndLastNameByUserId(userId: number) : Promise<string>
     {
         if(userId < 1){

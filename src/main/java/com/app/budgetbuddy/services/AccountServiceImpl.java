@@ -1,7 +1,9 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.AccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class AccountServiceImpl implements AccountService
 {
     private final AccountRepository accountRepository;
@@ -53,6 +56,29 @@ public class AccountServiceImpl implements AccountService
     public Optional<AccountEntity> findByAccountId(String accountId)
     {
         return accountRepository.findByAccountId(accountId);
+    }
+
+    @Override
+    @Transactional
+    public String findAccountIdByAccountName(String accountName)
+    {
+        if(accountName.isEmpty())
+        {
+            return "";
+        }
+        try
+        {
+            Optional<String> accountEntityOptional = accountRepository.findAccountIdByName(accountName);
+            if(accountEntityOptional.isEmpty())
+            {
+                log.info("No Account Id was found with the following account name: {}", accountName);
+                return "";
+            }
+            return accountEntityOptional.get();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the account id for the account name: ", e);
+            throw e;
+        }
     }
 
     @Override

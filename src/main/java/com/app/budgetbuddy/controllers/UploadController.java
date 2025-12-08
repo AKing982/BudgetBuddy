@@ -1,26 +1,30 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.AccountCSV;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.domain.UploadStatus;
-import com.app.budgetbuddy.entities.TransactionsEntity;
-import com.app.budgetbuddy.services.TransactionService;
-import com.app.budgetbuddy.services.UserService;
+import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.CSVAccountEntity;
+import com.app.budgetbuddy.entities.CSVTransactionEntity;
+import com.app.budgetbuddy.services.*;
 import com.univocity.parsers.common.record.Record;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.time.ZoneId;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/upload")
@@ -29,14 +33,20 @@ import java.util.Map;
 public class UploadController
 {
     private final UserService userService;
-    private final TransactionService transactionService;
+    private final AccountService accountService;
+    private final CSVUploaderService<TransactionCSV, AccountCSV, CSVAccountEntity> accountCSVUploaderService;
+    private final CSVTransactionService csvTransactionService;
 
     @Autowired
     public UploadController(UserService userService,
-                            TransactionService transactionService)
+                            AccountService accountService,
+                            @Qualifier("accountCSVUploaderServiceImpl") CSVUploaderService<TransactionCSV, AccountCSV, CSVAccountEntity> accountCSVUploaderService,
+                            CSVTransactionService csvTransactionService)
     {
         this.userService = userService;
-        this.transactionService = transactionService;
+        this.accountService = accountService;
+        this.accountCSVUploaderService = accountCSVUploaderService;
+        this.csvTransactionService = csvTransactionService;
     }
 
     @PostMapping("/{userId}/csv")
@@ -57,40 +67,59 @@ public class UploadController
             InputStream inputStream = file.getInputStream();
             CsvParserSettings settings = new CsvParserSettings();
             settings.setHeaderExtractionEnabled(true);
+            settings.getFormat().setLineSeparator("\n");
+            SimpleDateFormat formatter = new SimpleDateFormat("MM/d/yyyy");
             CsvParser parser = new CsvParser(settings);
+            boolean transactionsExistForDateRange = validateCSVTransactionExistForDateRange(userId, startDate, endDate);
+            if(transactionsExistForDateRange)
+            {
+                log.error("Transactions already exist for user {} between {} and {}", userId, startDate, endDate);
+                return ResponseEntity.status(409).body(new UploadStatus("Transactions already exist for the selected date range. Please choose a different date range or delete existing transactions first.", false));
+            }
             List<Record> parseAllRecords = parser.parseAllRecords(inputStream);
             parseAllRecords.forEach(record -> {
                 TransactionCSV transactionCSV = new TransactionCSV();
                 transactionCSV.setAccount(record.getString("Account"));
                 transactionCSV.setSuffix(Integer.parseInt(record.getString("Suffix")));
-                transactionCSV.setSequenceNo(Long.parseLong(record.getString("Sequence No")));
-                transactionCSV.setTransactionDate(convertDateToLocalDate(record.getDate("TransactionDate")));
-                transactionCSV.setTransactionAmount(record.getBigDecimal("Transaction Amount"));
+                transactionCSV.setSequenceNo(removeLeadingZeros(record.getString("Sequence Number")));
+                transactionCSV.setTransactionDate(convertDateToLocalDate(record.getString("Transaction Date"), formatter));
+                transactionCSV.setTransactionAmount(parseCurrency(record.getString("Transaction Amount")));
                 transactionCSV.setDescription(record.getString("Description"));
+                transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
+                transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(record.getString("Extended Description")));
                 transactionCSV.setExtendedDescription(record.getString("Extended Description"));
-                transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(record.getDate("Electronic Transaction Date")));
-                transactionCSV.setBalance(record.getBigDecimal("Balance"));
+                transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(record.getString("Electronic Transaction Date"), formatter));
+                transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
                 transactionCsvData.add(transactionCSV);
             });
+            if(transactionCsvData.isEmpty())
+            {
+                log.error("No transactions were parsed from the uploaded CSV file");
+                return ResponseEntity.badRequest().body(new UploadStatus("No transactions were parsed from the uploaded CSV file", false));
+            }
             log.info("Successfully parsed {} transactions from the uploaded CSV file", transactionCsvData.size());
-            List<TransactionCSV> filteredTransactionsByDateRange = transactionCsvData.stream()
-                    .filter(transactionCSV -> {
-                        LocalDate transactionDate = transactionCSV.getTransactionDate();
-                        return !transactionDate.isBefore(startDate) && !transactionDate.isAfter(endDate);
-                    })
-                    .sorted()
-                    .toList();
+            List<TransactionCSV> filteredTransactionsByDateRange = filterTransactionCSVByDateRange(transactionCsvData, startDate, endDate);
             log.info("Successfully filtered {} transactions by date range: start={}, end={}", startDate, endDate, filteredTransactionsByDateRange.size());
             // After filtering convert the Transaction CSV models to TransactionEntity models
-            List<TransactionsEntity> transactionsEntities = transactionService.convertTransactionCSVsToEntities(filteredTransactionsByDateRange);
-            log.info("Successfully converted {} Transaction CSV models to TransactionEntity models", filteredTransactionsByDateRange.size());
-            transactionService.saveTransactionEntities(transactionsEntities);
-            log.info("Successfully saved {} TransactionEntity models to the database", filteredTransactionsByDateRange.size());
-            if(filteredTransactionsByDateRange.isEmpty())
+            // Check if the user has any accounts with the indicated suffix's from the transaction CSVs
+            List<AccountEntity> userPlaidAccounts = accountService.findByUser(userId);
+            if(userPlaidAccounts.isEmpty())
             {
-                String message = "No Transactions by the date range start=" + startDate + ", end=" + endDate + ",";
-                return ResponseEntity.badRequest().body(new UploadStatus(message, false));
+                // Next step is to generate CSVAccounts
+                List<AccountCSV> accountCSVList = accountCSVUploaderService.createCSVList(filteredTransactionsByDateRange, userId);
+                List<CSVAccountEntity> csvAccountEntityList = accountCSVUploaderService.createEntityList(accountCSVList);
+                accountCSVUploaderService.saveEntities(csvAccountEntityList);
+                log.info("Successfully created {} CSVAccountEntities for user {}", csvAccountEntityList.size(), userId);
             }
+            log.info("Successfully converted {} Transaction CSV models to TransactionEntity models", filteredTransactionsByDateRange.size());
+            filteredTransactionsByDateRange.forEach(transactionCSV -> log.info("{}", transactionCSV));
+            List<CSVTransactionEntity> csvTransactionEntityList = csvTransactionService.createCSVTransactionEntities(filteredTransactionsByDateRange, userId);
+            if(csvTransactionEntityList.isEmpty())
+            {
+                log.error("No CSVTransactionEntities were created for user {} between {} and {}", userId, startDate, endDate);
+                return ResponseEntity.badRequest().body(new UploadStatus("No CSVTransactionEntities were created from the uploaded CSV file", false));
+            }
+            csvTransactionService.saveAllCSVTransactionEntities(csvTransactionEntityList);
         }
         else
         {
@@ -101,8 +130,105 @@ public class UploadController
         return ResponseEntity.ok(new UploadStatus("Successfully uploaded CSV file", true));
     }
 
-    private LocalDate convertDateToLocalDate(Date date)
+    private boolean validateCSVTransactionExistForDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
-        return LocalDate.ofInstant(date.toInstant(), java.time.ZoneId.systemDefault());
+        List<CSVTransactionEntity> transactionEntities = csvTransactionService.findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate);
+        return !transactionEntities.isEmpty();
+    }
+
+    private List<TransactionCSV> filterTransactionCSVByDateRange(List<TransactionCSV> transactionCSVList, LocalDate startDate, LocalDate endDate)
+    {
+        return transactionCSVList.stream()
+                .filter(transactionCSV -> {
+                    LocalDate transactionDate = transactionCSV.getTransactionDate();
+                    return !transactionDate.isBefore(startDate) && !transactionDate.isAfter(endDate);
+                })
+                .sorted(Comparator.comparing(TransactionCSV::getTransactionDate))
+                .toList();
+    }
+
+    private String getMerchantNameByExtendedDescription(String extendedDescription)
+    {
+        if(extendedDescription == null || extendedDescription.trim().isEmpty())
+        {
+            return "";
+        }
+        String merchantName = extendedDescription.trim();
+        if(merchantName.contains("#"))
+        {
+            return merchantName.split("#")[0].trim();
+        }
+        else if(merchantName.contains("*"))
+        {
+            return merchantName.split("\\*")[0].trim();
+        }
+        if(merchantName.toUpperCase().contains("TRANSFER") || merchantName.toUpperCase().contains("XFER"))
+        {
+            if(merchantName.toUpperCase().contains("INST XFER"))
+            {
+                return "PAYPAL";
+            }
+            return merchantName.split(" ")[0].trim();
+        }
+
+        if(merchantName.contains(" - "))
+        {
+            return merchantName.split(" - ")[0].trim();
+        }
+        if(merchantName.contains(","))
+        {
+            return merchantName.split(",")[0].trim();
+        }
+        return merchantName;
+    }
+
+    private Long removeLeadingZeros(String sequenceNumber)
+    {
+        String sanitized = sequenceNumber.replaceAll("^+0*", "");
+        sanitized = sanitized.split("\\.")[0];
+        try
+        {
+            return Long.parseLong(sanitized);
+        }catch(NumberFormatException e){
+            log.error("Error removing leading zeros from sequence number: {}", sequenceNumber, e);
+            throw new IllegalArgumentException("Error removing leading zeros from sequence number: " + sequenceNumber);
+        }
+    }
+
+    private BigDecimal parseCurrency(String currencyString)
+    {
+        if(currencyString == null || currencyString.trim().isEmpty())
+        {
+            return BigDecimal.ZERO;
+        }
+        String cleaned = currencyString.replaceAll("[$, \\s]", "");
+        try
+        {
+            return new BigDecimal(cleaned);
+        }catch(NumberFormatException e){
+            log.error("Error parsing currency string: {}", currencyString, e);
+            throw new IllegalArgumentException("Error parsing currency string: " + currencyString);
+        }
+    }
+
+    private LocalDate convertDateToLocalDate(String dateString, SimpleDateFormat formatter)
+    {
+        log.info("Date String: {}", dateString);
+        if(dateString == null || dateString.trim().isEmpty())
+        {
+            return null;
+        }
+        try
+        {
+
+            String normalizedDate = dateString.replace("-", "/");
+            Date date = formatter.parse(normalizedDate);
+            return date.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+        } catch (ParseException e) {
+            log.error("Error parsing date: {}", dateString, e);
+            throw new IllegalArgumentException("Error parsing date: " + dateString, e);
+        }
     }
 }

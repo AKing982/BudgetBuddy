@@ -1,0 +1,17 @@
+package com.app.budgetbuddy.repositories;
+
+import com.app.budgetbuddy.entities.CSVAccountEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface CSVAccountRepository extends JpaRepository<CSVAccountEntity, Long>
+{
+    Optional<CSVAccountEntity> findBySuffixAndUserId(int suffix, Long userId);
+
+    @Query("SELECT c FROM CSVAccountEntity c WHERE c.user.id =:userId")
+    Optional<CSVAccountEntity> findByUserId(Long userId);
+}

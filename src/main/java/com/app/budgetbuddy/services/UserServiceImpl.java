@@ -117,6 +117,7 @@ public class UserServiceImpl implements UserService
         try
         {
             userRepository.updateUserOverrideUploadEnabled(userId, overrideAccess);
+
         }catch(DataAccessException e){
             log.error("There was an error updating the user override access: ", e);
         }

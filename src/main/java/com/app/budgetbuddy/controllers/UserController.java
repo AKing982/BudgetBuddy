@@ -80,6 +80,32 @@ public class UserController {
         return ResponseEntity.status(200).body(userId);
     }
 
+    @PutMapping("/{id}/override-enabled")
+    public ResponseEntity<?> updateUserOverrideEnabled(@PathVariable Long id, @RequestParam boolean overrideEnabled)
+    {
+        userService.updateUserOverrideAccess(id, overrideEnabled);
+        if(overrideEnabled)
+        {
+            String message = String.format("User ID: %d has enabled override upload", id);
+            return ResponseEntity.ok(message);
+        }
+        String message = String.format("User ID: %d has disabled override upload", id);
+        return ResponseEntity.ok(message);
+    }
+
+    @GetMapping("/{id}/override-enabled")
+    public ResponseEntity<Boolean> isUserOverrideEnabled(@PathVariable Long id)
+    {
+        Optional<UserEntity> userEntityOptional = userService.findById(id);
+        if(userEntityOptional.isEmpty())
+        {
+            return ResponseEntity.notFound().build();
+        }
+        UserEntity userEntity = userEntityOptional.get();
+        boolean isOverrideEnabled = userEntity.isOverrideUploadEnabled();
+        return ResponseEntity.ok(isOverrideEnabled);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserEntity> findUserById(@PathVariable Long id){
         return ResponseEntity.badRequest().build();
