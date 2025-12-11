@@ -50,6 +50,21 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantMap.put("TACO BELL", CategoryType.ORDER_OUT);
         csvMerchantMap.put("THE UPS STORE", CategoryType.OTHER);
         csvMerchantMap.put("THE BREAK SPORTS", CategoryType.GROCERIES);
+        csvMerchantMap.put("ROCKYMTN/PACIFIC", CategoryType.ELECTRIC);
+        csvMerchantMap.put("APPLE COM", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("WM SUPERCENTER", CategoryType.GROCERIES);
+        csvMerchantMap.put("ITALIAN VILLAGE", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("WENDYS", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("AMEX PAYMENT", CategoryType.PAYMENT);
+        csvMerchantMap.put("SEZZLE", CategoryType.PAYMENT);
+        csvMerchantMap.put("AMAZON MKTPL", CategoryType.OTHER);
+        csvMerchantMap.put("NOODLES AND COMPANY", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("CONSERVICE", CategoryType.UTILITIES);
+        csvMerchantMap.put("HEROKU", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("MICROSOFT", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("Wal-Mart", CategoryType.GROCERIES);
+        csvMerchantMap.put("DUTCH BROS", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("WALGREENS", CategoryType.OTHER);
     }
 
     // Level 0 Merchant Transaction Amount Static Matching
@@ -66,19 +81,24 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         {
             return CategoryType.UNCATEGORIZED;
         }
-        String tAmountStr = transaction.getTransactionAmount().toString().replace("-", "");
-        double tAmountDouble = Double.parseDouble(tAmountStr);
-        BigDecimal transactionAmount = new BigDecimal(tAmountDouble);
+        BigDecimal transactionAmount = transaction.getTransactionAmount()
+                        .abs()
+                        .stripTrailingZeros();
         log.info("tAmountDouble: {}",transactionAmount);
         String merchantName = transaction.getMerchantName();
         String description = transaction.getDescription();
         MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
+        log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
+        boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
+        log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
         if(csvMerchantPriceMap.containsKey(key))
         {
+            log.info("Found Merchant Price Map key: {}", key);
             return csvMerchantPriceMap.get(key);
         }
         else if(csvMerchantMap.containsKey(merchantName))
         {
+            log.info("Found MerchantMap key: {}", merchantName);
             return csvMerchantMap.get(merchantName);
         }
         return null;
