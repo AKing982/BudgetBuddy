@@ -57,7 +57,7 @@ import {
 import Sidebar from "./Sidebar";
 import CategoryDropdown from "./CategoryDropdown";
 import TransactionService from '../services/TransactionService';
-import { Transaction } from "../utils/Items";
+import { Transaction, CSVTransaction } from "../utils/Items";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -73,6 +73,7 @@ const gradients = {
 
 const TransactionsPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [csvTransactions, setCsvTransactions] = useState<CSVTransaction[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -112,10 +113,15 @@ const TransactionsPage: React.FC = () => {
                 let userId = Number(sessionStorage.getItem('userId'));
                 let startDate = transactionService.getStartDate();
                 let endDate = new Date().toISOString().split('T')[0];
-                const response: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
-                setTransactions(response || []);
+                const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
+                const csvTransactionResponse: CSVTransaction[] = await transactionService.fetchCSVTransactionsByUserAndDateRange(userId, startDate, endDate);
+                console.log('CSV Transaction Response:', csvTransactionResponse);
+                setTransactions(transactionResponse || []);
+                setCsvTransactions(csvTransactionResponse);
             } catch(error) {
                 console.error('Error fetching transactions:', error);
+                setTransactions([]);
+                setCsvTransactions([]);
             } finally {
                 setIsLoading(false);
             }
@@ -164,6 +170,89 @@ const TransactionsPage: React.FC = () => {
             minimumFractionDigits: 2
         }).format(Math.abs(amount));
     };
+
+    const sortedCSVTransactions = useMemo(() => {
+        const sortableTransactions = [...csvTransactions];
+        if (sortConfig.key !== null) {
+            sortableTransactions.sort((a, b) => {
+                if (sortConfig.key === 'date') {
+                    const aDate = a.transactionDate || '';
+                    const bDate = b.transactionDate || '';
+                    if (sortConfig.direction === 'asc') {
+                        return new Date(aDate).getTime() - new Date(bDate).getTime();
+                    } else {
+                        return new Date(bDate).getTime() - new Date(aDate).getTime();
+                    }
+                } else if (sortConfig.key === 'amount') {
+                    if (sortConfig.direction === 'asc') {
+                        return a.transactionAmount - b.transactionAmount;
+                    } else {
+                        return b.transactionAmount - a.transactionAmount;
+                    }
+                } else if (sortConfig.key === 'name') {
+                    const aName = a.merchantName || '';
+                    const bName = b.merchantName || '';
+                    if (sortConfig.direction === 'asc') {
+                        return aName.localeCompare(bName);
+                    } else {
+                        return bName.localeCompare(aName);
+                    }
+                } else if (sortConfig.key === 'category') {
+                    const aCategory = a.category || '';
+                    const bCategory = b.category || '';
+                    if (sortConfig.direction === 'asc') {
+                        return aCategory.localeCompare(bCategory);
+                    } else {
+                        return bCategory.localeCompare(aCategory);
+                    }
+                }
+                return 0;
+            });
+        }
+        return sortableTransactions;
+    }, [csvTransactions, sortConfig]);
+
+    const filteredCSVTransactions = useMemo(() => {
+        let filtered = sortedCSVTransactions;
+
+        if (searchTerm.trim()) {
+            const searchTermLowerCase = searchTerm.toLowerCase().trim();
+            filtered = filtered.filter((transaction) => {
+                const description = transaction.transactionDescription?.toLowerCase() ?? '';
+                const merchantName = transaction.merchantName?.toLowerCase() ?? '';
+                const extendedDescription = transaction.extendedDescription?.toLowerCase() ?? '';
+                const category = transaction.category?.toLowerCase() ?? '';
+                const amount = transaction.transactionAmount?.toString() ?? '';
+                const date = transaction.transactionDate ? formatDate(null, transaction.transactionDate).toLowerCase() : '';
+
+                return description.includes(searchTermLowerCase) ||
+                    merchantName.includes(searchTermLowerCase) ||
+                    extendedDescription.includes(searchTermLowerCase) ||
+                    category.includes(searchTermLowerCase) ||
+                    amount.includes(searchTermLowerCase) ||
+                    date.includes(searchTermLowerCase);
+            });
+        }
+
+        if (activeFilters.categories.length > 0) {
+            filtered = filtered.filter(transaction =>
+                transaction.category && activeFilters.categories.includes(transaction.category)
+            );
+        }
+
+        if (activeFilters.type) {
+            filtered = filtered.filter(transaction => {
+                if (activeFilters.type === 'income') {
+                    return transaction.transactionAmount < 0;
+                } else if (activeFilters.type === 'expense') {
+                    return transaction.transactionAmount > 0;
+                }
+                return true;
+            });
+        }
+
+        return filtered;
+    }, [sortedCSVTransactions, searchTerm, activeFilters]);
 
     // Sort transactions
     const sortedTransactions = useMemo(() => {

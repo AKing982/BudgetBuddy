@@ -31,12 +31,14 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
     }
 
     @Override
+    @Transactional
     public Collection<CSVTransactionEntity> findAll()
     {
         return csvTransactionRepository.findAll();
     }
 
     @Override
+    @Transactional
     public void save(CSVTransactionEntity csvTransactionEntity)
     {
         csvTransactionRepository.save(csvTransactionEntity);
@@ -112,6 +114,29 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
     }
 
     @Override
+    @Transactional
+    public List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        List<CSVTransactionEntity> csvTransactionEntities = findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate);
+        List<TransactionCSV> transactionCSVList = new ArrayList<>();
+        for(CSVTransactionEntity csvTransactionEntity : csvTransactionEntities)
+        {
+            TransactionCSV transactionCSV = new TransactionCSV();
+            transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
+            transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
+            transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
+            transactionCSV.setDescription(csvTransactionEntity.getDescription());
+            transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
+            transactionCSV.setBalance(csvTransactionEntity.getBalance());
+            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
+            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
+            transactionCSVList.add(transactionCSV);
+        }
+        return transactionCSVList;
+    }
+
+    @Override
+    @Transactional
     public List<CSVTransactionEntity> findCSVTransactionEntitiesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         if(userId == null || startDate == null || endDate == null)

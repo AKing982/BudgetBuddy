@@ -1,6 +1,6 @@
 import axios from "axios";
 import {apiUrl} from "../config/api";
-import {Transaction} from "../utils/Items";
+import {CSVTransaction, Transaction} from "../utils/Items";
 
 class TransactionService {
     private static instance: TransactionService;
@@ -28,6 +28,31 @@ class TransactionService {
         const currentDate = new Date();
         currentDate.setMonth(currentDate.getDay() - 15);
         return currentDate.toISOString().split('T')[0];
+    }
+
+    public async fetchCSVTransactionsByUserAndDateRange(userId: number, startDate: string, endDate: string) : Promise<CSVTransaction[]>
+    {
+        if(userId < 1)
+        {
+            throw new Error('Invalid userId. UserId must be a positive number.');
+        }
+        if(!Number.isInteger(userId)){
+            throw new Error('Invalid userId. UserId must be an integer.');
+        }
+        try
+        {
+            const response = await axios.get(`${apiUrl}/transaction/${userId}/csv`, {
+                params:{
+                    userId: userId,
+                    startDate: startDate,
+                    endDate: endDate
+                }
+            });
+            return response.data;
+        }catch(error){
+            console.error('There was an error fetching transactions from the server: ', error);
+            throw error;
+        }
     }
 
     public async fetchTransactionsByUserAndDateRange(userId: number, startDate: string, endDate: string) {

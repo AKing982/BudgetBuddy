@@ -2,10 +2,13 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.AccountSubType;
 import com.app.budgetbuddy.domain.AccountType;
+import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.services.CSVTransactionService;
+import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
@@ -68,6 +71,12 @@ class TransactionControllerTest {
 
     @MockBean
     private TransactionService transactionService;
+
+    @MockBean
+    private CategoryService categoryService;
+
+    @MockBean
+    private CSVTransactionService csvTransactionService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -254,6 +263,53 @@ class TransactionControllerTest {
         assertThat(transactions).hasSize(1);
         assertThat(transactions.get(0).get("id")).isEqualTo(1);
         assertThat(transactions.get(0).get("amount")).isEqualTo(120);
+    }
+
+    @Test
+    void testGetCsvTransactionsForUser_whenUserIdInvalid() throws Exception{
+        Long userId = -1L;
+        mockMvc.perform(get("/api/transaction/{userId}/csv", userId)
+                        .param("startDate", "2024-06-01")
+                        .param("endDate", "2024-06-30")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetCsvTransactionsForUser_whenUserIdValid() throws Exception{
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2024, 11, 1);
+        LocalDate endDate = LocalDate.of(2024, 11, 30);
+        List<TransactionCSV> expectedTransactions = new ArrayList<>();
+        expectedTransactions.add(createTransactionCSV());
+
+        when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
+                .thenReturn(expectedTransactions);
+
+        mockMvc.perform(get("/api/transaction/{userId}/csv", userId)
+                .param("startDate", "2025-11-01")
+                .param("endDate", "2025-11-30")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    private TransactionCSV createTransactionCSV() {
+        return new TransactionCSV(
+                1L,
+                "12345678",
+                1,
+                1000L,
+                LocalDate.of(2024, 6, 15),
+                new BigDecimal("100.50"),
+                "Test Transaction",
+                "Test Merchant",
+                "Extended description",
+                LocalDate.of(2024, 6, 15),
+                new BigDecimal("1500.00")
+        );
     }
 
 

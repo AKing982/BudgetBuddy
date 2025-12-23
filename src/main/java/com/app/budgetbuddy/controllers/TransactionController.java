@@ -1,12 +1,10 @@
 package com.app.budgetbuddy.controllers;
 
-import com.app.budgetbuddy.domain.Transaction;
-import com.app.budgetbuddy.domain.TransactionBaseRequest;
-import com.app.budgetbuddy.domain.TransactionDTO;
-import com.app.budgetbuddy.domain.TransactionResponse;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.TransactionsNotFoundException;
+import com.app.budgetbuddy.services.CSVTransactionService;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.TransactionService;
 import org.jetbrains.annotations.NotNull;
@@ -27,16 +25,20 @@ import java.util.Optional;
 @RestController
 @RequestMapping(value="/api/transaction")
 @CrossOrigin(value="http://localhost:3000")
-public class TransactionController {
-
+public class TransactionController
+{
     private final TransactionService transactionService;
+    private final CSVTransactionService csvTransactionService;
     private final CategoryService categoryService;
     private final Logger LOGGER = LoggerFactory.getLogger(TransactionController.class);
 
     @Autowired
     public TransactionController(TransactionService transactionService,
-                                 CategoryService categoryService) {
+                                 CSVTransactionService csvTransactionService,
+                                 CategoryService categoryService)
+    {
         this.transactionService = transactionService;
+        this.csvTransactionService = csvTransactionService;
         this.categoryService = categoryService;
     }
 
@@ -44,6 +46,19 @@ public class TransactionController {
     public ResponseEntity<?> getAllTransactions() {
         List<TransactionsEntity> transactions = (List<TransactionsEntity>) transactionService.findAll();
         return ResponseEntity.ok(transactions);
+    }
+
+    @GetMapping("/{userId}/csv")
+    public ResponseEntity<List<TransactionCSV>> getCsvTransactionsForUser(@PathVariable Long userId,
+                                                       @RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                       @RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate)
+    {
+        if(userId < 1L)
+        {
+            return ResponseEntity.badRequest().build();
+        }
+        List<TransactionCSV> transactionCSVsForUser = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate);
+        return ResponseEntity.ok(transactionCSVsForUser);
     }
 
     @GetMapping("/by-amount-range")

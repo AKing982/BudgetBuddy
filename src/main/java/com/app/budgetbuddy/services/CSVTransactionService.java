@@ -10,5 +10,7 @@ public interface CSVTransactionService extends ServiceModel<CSVTransactionEntity
 {
     List<CSVTransactionEntity> createCSVTransactionEntities(List<TransactionCSV> transactionCSVList, Long userId);
     void saveAllCSVTransactionEntities(List<CSVTransactionEntity> csvTransactionEntities);
+
+    List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     List<CSVTransactionEntity> findCSVTransactionEntitiesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
 }

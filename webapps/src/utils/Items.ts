@@ -46,6 +46,18 @@ export interface Transaction {
     posted: string | null;          // LocalDate, optional
 }
 
+export interface CSVTransaction {
+    csvAcctId: number;
+    transactionDate: string | null;
+    transactionAmount: number;
+    transactionDescription: string;
+    extendedDescription: string;
+    merchantName: string;
+    category: string;
+    balance: number;
+    isSystemCategorized: boolean;
+}
+
 export interface UserLog
 {
     id: number;

@@ -118,12 +118,7 @@ class CSVTransactionCategorizerServiceImplTest
         transaction.setDescription(description);
         return transaction;
     }
-
-    @Test
-    void testCategorize_whenTransactionRulesNotEmpty_thenMatchOnUserRules(){
-        CSVTransactionRule
-
-    }
+    
 
     @AfterEach
     void tearDown() {
