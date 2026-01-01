@@ -14,4 +14,7 @@ public interface CSVAccountRepository extends JpaRepository<CSVAccountEntity, Lo
 
     @Query("SELECT c FROM CSVAccountEntity c WHERE c.user.id =:userId")
     Optional<CSVAccountEntity> findByUserId(Long userId);
+
+    @Query("SELECT c FROM CSVAccountEntity c WHERE c.accountNumber =:acctNum AND c.suffix =:suffix")
+    Optional<CSVAccountEntity> findByAcctNumAndSuffix(String acctNum, int suffix);
 }

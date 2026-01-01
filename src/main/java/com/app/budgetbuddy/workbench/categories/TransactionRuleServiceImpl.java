@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.categories;
 
+import com.app.budgetbuddy.domain.CSVTransactionRule;
 import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.domain.UserCategoryRule;
 import com.app.budgetbuddy.entities.TransactionRuleEntity;
@@ -106,11 +107,11 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     public TransactionRule createCategoryRuleFromEntity(TransactionRuleEntity transactionRuleEntity) {
         TransactionRule transactionRule = new TransactionRule();
         transactionRule.setMerchantPattern(transactionRuleEntity.getMerchantPattern());
-//        transactionRule.setFrequency(transactionRuleEntity.getFrequency());
         transactionRule.setMatchedCategory(transactionRuleEntity.getCategory());
         transactionRule.setDescriptionPattern(transactionRuleEntity.getDescriptionPattern());
         return transactionRule;
     }
+
 
     @Override
     public List<TransactionRuleEntity> findAllSystemCategoryRules() {
@@ -123,6 +124,27 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
         return categoryRuleEntities.stream()
                 .filter(TransactionRuleEntity::isActive)
                 .map(this::createCategoryRuleFromEntity)
+                .toList();
+    }
+
+    @Override
+    public CSVTransactionRule createCSVTransactionRuleFromEntity(TransactionRuleEntity csvTransactionRuleEntity)
+    {
+        CSVTransactionRule csvTransactionRule = new CSVTransactionRule();
+        csvTransactionRule.setRule(csvTransactionRule.getRule());
+        csvTransactionRule.setActive(csvTransactionRuleEntity.isActive());
+        csvTransactionRule.setUserId(csvTransactionRuleEntity.getUser().getId());
+        csvTransactionRule.setValue(csvTransactionRule.getValue());
+        return csvTransactionRule;
+    }
+
+    @Override
+    public List<CSVTransactionRule> findCSVTransactionRulesByUserId(Long userId)
+    {
+        List<TransactionRuleEntity> transactionRuleEntities = transactionRuleRepository.findAllByUser(userId);
+        return transactionRuleEntities.stream()
+                .filter(e -> e.getUser().getId().equals(userId))
+                .map(this::createCSVTransactionRuleFromEntity)
                 .toList();
     }
 

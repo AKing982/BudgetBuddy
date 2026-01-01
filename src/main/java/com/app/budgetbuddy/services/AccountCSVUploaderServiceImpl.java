@@ -26,14 +26,14 @@ public class AccountCSVUploaderServiceImpl implements CSVUploaderService<Transac
     }
 
     @Override
-    public List<AccountCSV> createCSVList(List<TransactionCSV> csvList, Long userId)
+    public Set<AccountCSV> createCSVList(List<TransactionCSV> csvList, Long userId)
     {
         if(csvList == null || csvList.isEmpty())
         {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
         Map<String, TransactionCSV> accountKeyMap = new HashMap<>();
-        List<AccountCSV> accountCSVList = new ArrayList<>();
+        Set<AccountCSV> accountCSVList = new HashSet<>();
         for(TransactionCSV transactionCSV : csvList)
         {
             String accountNumber = transactionCSV.getAccount();
@@ -73,7 +73,7 @@ public class AccountCSVUploaderServiceImpl implements CSVUploaderService<Transac
     }
 
     @Override
-    public List<CSVAccountEntity> createEntityList(List<AccountCSV> csvList)
+    public List<CSVAccountEntity> createEntityList(Set<AccountCSV> csvList)
     {
         if(csvList == null || csvList.isEmpty())
         {

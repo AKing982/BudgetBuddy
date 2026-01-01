@@ -1,9 +1,8 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.CategoryType;
-import com.app.budgetbuddy.domain.MerchantPrice;
-import com.app.budgetbuddy.domain.TransactionCSV;
-import com.app.budgetbuddy.domain.TransactionRule;
+import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.CSVAccountEntity;
+import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -11,7 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -19,13 +20,16 @@ import java.util.Map;
 public class CSVTransactionCategorizerServiceImpl implements CategorizerService<TransactionCSV>
 {
     private final TransactionRuleService transactionRuleService;
+    private final CSVAccountRepository csvAccountRepository;
     private static Map<String, CategoryType> csvMerchantMap = new HashMap<>();
     private static Map<MerchantPrice, CategoryType> csvMerchantPriceMap = new HashMap<>();
 
     @Autowired
-    public CSVTransactionCategorizerServiceImpl(TransactionRuleService transactionRuleService)
+    public CSVTransactionCategorizerServiceImpl(TransactionRuleService transactionRuleService,
+                                                CSVAccountRepository csvAccountRepository)
     {
         this.transactionRuleService = transactionRuleService;
+        this.csvAccountRepository = csvAccountRepository;
     }
 
     // Level 0 Merchant Static Matching
@@ -74,6 +78,17 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(1220.0).stripTrailingZeros()), CategoryType.RENT);
     }
 
+    private Long getUserIdByAcctNumberSuffix(int suffix, String acctNumber)
+    {
+        Optional<CSVAccountEntity> csvAccountEntityOptional = csvAccountRepository.findByAcctNumAndSuffix(acctNumber, suffix);
+        if(csvAccountEntityOptional.isEmpty())
+        {
+            return 0L;
+        }
+        CSVAccountEntity csvAccountEntity = csvAccountEntityOptional.get();
+        return csvAccountEntity.getUser().getId();
+    }
+
     @Override
     public CategoryType categorize(TransactionCSV transaction)
     {
@@ -86,20 +101,45 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
                         .stripTrailingZeros();
         log.info("tAmountDouble: {}",transactionAmount);
         String merchantName = transaction.getMerchantName();
-        String description = transaction.getDescription();
-        MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
-        log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
-        boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
-        log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
-        if(csvMerchantPriceMap.containsKey(key))
+        int suffix = transaction.getSuffix();
+        String acct = transaction.getAccount();
+        Long userId = getUserIdByAcctNumberSuffix(suffix, acct);
+        List<CSVTransactionRule> csvTransactionRules = transactionRuleService.findCSVTransactionRulesByUserId(userId);
+        if(csvTransactionRules.isEmpty())
         {
-            log.info("Found Merchant Price Map key: {}", key);
-            return csvMerchantPriceMap.get(key);
+            MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
+            log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
+            boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
+            log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
+            if(csvMerchantPriceMap.containsKey(key))
+            {
+                log.info("Found Merchant Price Map key: {}", key);
+                return csvMerchantPriceMap.get(key);
+            }
+            else if(csvMerchantMap.containsKey(merchantName))
+            {
+                log.info("Found MerchantMap key: {}", merchantName);
+                return csvMerchantMap.get(merchantName);
+            }
         }
-        else if(csvMerchantMap.containsKey(merchantName))
+        for(CSVTransactionRule csvTransactionRule : csvTransactionRules)
         {
-            log.info("Found MerchantMap key: {}", merchantName);
-            return csvMerchantMap.get(merchantName);
+            CSVRule csvRule = csvTransactionRule.getRule();
+            String csvValue = csvTransactionRule.getValue();
+            switch(csvRule)
+            {
+                case MERCHANT ->
+                {
+                    if(merchantName.equals(csvValue))
+                    {
+                        return 
+                    }
+                }
+                case DESCRIPTION ->
+                {
+
+                }
+            }
         }
         return null;
     }

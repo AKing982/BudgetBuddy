@@ -36,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -168,7 +169,7 @@ class UploadControllerTest
         List<AccountEntity> emptyAccountList = Collections.emptyList();
 
         // Mock account CSV data
-        List<AccountCSV> accountCSVList = List.of(
+        Set<AccountCSV> accountCSVList = Set.of(
                 new AccountCSV(1L, userId, "123456", 9, "CHECKING", new BigDecimal("1000.00"))
         );
 
@@ -187,7 +188,7 @@ class UploadControllerTest
         Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(true);
         Mockito.when(accountService.findByUser(anyLong())).thenReturn(emptyAccountList);
         Mockito.when(accountCSVUploaderService.createCSVList(anyList(), anyLong())).thenReturn(accountCSVList);
-        Mockito.when(accountCSVUploaderService.createEntityList(anyList())).thenReturn(csvAccountEntities);
+        Mockito.when(accountCSVUploaderService.createEntityList(anySet())).thenReturn(csvAccountEntities);
         Mockito.doNothing().when(accountCSVUploaderService).saveEntities(anyList());
         Mockito.when(csvTransactionService.createCSVTransactionEntities(anyList(), anyLong())).thenReturn(csvTransactionEntities);
         Mockito.doNothing().when(csvTransactionService).saveAllCSVTransactionEntities(anyList());
@@ -203,7 +204,7 @@ class UploadControllerTest
 
         // Verify interactions
         Mockito.verify(accountCSVUploaderService).createCSVList(anyList(), eq(userId));
-        Mockito.verify(accountCSVUploaderService).createEntityList(anyList());
+        Mockito.verify(accountCSVUploaderService).createEntityList(anySet());
         Mockito.verify(accountCSVUploaderService).saveEntities(anyList());
         Mockito.verify(csvTransactionService).createCSVTransactionEntities(anyList(), eq(userId));
         Mockito.verify(csvTransactionService).saveAllCSVTransactionEntities(anyList());
@@ -228,7 +229,7 @@ class UploadControllerTest
         List<AccountEntity> emptyAccountList = Collections.emptyList();
 
         // Mock account CSV data
-        List<AccountCSV> accountCSVList = List.of(
+        Set<AccountCSV> accountCSVList = Set.of(
                 new AccountCSV(1L, userId, "123456", 9, "CHECKING", new BigDecimal("1000.00"))
         );
 
@@ -243,7 +244,7 @@ class UploadControllerTest
         Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(true);
         Mockito.when(accountService.findByUser(anyLong())).thenReturn(emptyAccountList);
         Mockito.when(accountCSVUploaderService.createCSVList(anyList(), anyLong())).thenReturn(accountCSVList);
-        Mockito.when(accountCSVUploaderService.createEntityList(anyList())).thenReturn(csvAccountEntities);
+        Mockito.when(accountCSVUploaderService.createEntityList(anySet())).thenReturn(csvAccountEntities);
         Mockito.doNothing().when(accountCSVUploaderService).saveEntities(anyList());
         Mockito.when(csvTransactionService.createCSVTransactionEntities(anyList(), anyLong())).thenReturn(csvTransactionEntities);
 
@@ -257,7 +258,7 @@ class UploadControllerTest
                 .andExpect(jsonPath("$.isUploaded").value(false));
         // Verify interactions
         Mockito.verify(accountCSVUploaderService).createCSVList(anyList(), eq(userId));
-        Mockito.verify(accountCSVUploaderService).createEntityList(anyList());
+        Mockito.verify(accountCSVUploaderService).createEntityList(anySet());
         Mockito.verify(accountCSVUploaderService).saveEntities(anyList());
         Mockito.verify(csvTransactionService).createCSVTransactionEntities(anyList(), eq(userId));
     }

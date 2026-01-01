@@ -51,7 +51,7 @@ public class CSVAccountServiceImpl implements CSVAccountService
     }
 
     @Override
-    public List<CSVAccountEntity> createCSVAccountEntities(final List<AccountCSV> accountCSVList)
+    public List<CSVAccountEntity> createCSVAccountEntities(final Set<AccountCSV> accountCSVList)
     {
         if(accountCSVList == null || accountCSVList.isEmpty())
         {

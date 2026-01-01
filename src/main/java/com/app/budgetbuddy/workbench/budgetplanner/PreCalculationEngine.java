@@ -122,7 +122,7 @@ public class PreCalculationEngine
                 List<BudgetCategory> budgetCategoryList = entry.getValue();
                 if(budgetCategoryList.isEmpty())
                 {
-                    // TODO: If a week number is missing budget category data, then record the week number for data repair
+                    // TODO: If a week number is missing budget category data, then record the week number for data repairh
                     continue;
                 }
                 List<PreCalculationEntry> preCalculationEntries = new ArrayList<>();

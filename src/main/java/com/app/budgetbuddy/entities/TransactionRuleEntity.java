@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.entities;
 
+import com.app.budgetbuddy.domain.CSVRule;
+import com.app.budgetbuddy.domain.RuleType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +21,17 @@ public class TransactionRuleEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="userid")
     private UserEntity user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="ruleType", nullable=false)
+    private RuleType ruleType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="csv_rule")
+    private CSVRule csvRule;
+
+    @Column(name="csv_value", length=500)
+    private String csvValue;
 
     @Column(name="category")
     private String category;
@@ -44,5 +57,12 @@ public class TransactionRuleEntity {
     @Column(name="isActive")
     private boolean isActive;
 
+    public boolean isCSVRule() {
+        return ruleType == RuleType.CSV;
+    }
+
+    public boolean isPlaidRule() {
+        return ruleType == RuleType.PLAID;
+    }
 
 }

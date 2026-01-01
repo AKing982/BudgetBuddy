@@ -90,6 +90,7 @@ public class UploadController
                 transactionCSV.setExtendedDescription(record.getString("Extended Description"));
                 transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(record.getString("Electronic Transaction Date"), formatter));
                 transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
+                log.info("{}", transactionCSV.toString());
                 transactionCsvData.add(transactionCSV);
             });
             if(transactionCsvData.isEmpty())
@@ -99,14 +100,16 @@ public class UploadController
             }
             log.info("Successfully parsed {} transactions from the uploaded CSV file", transactionCsvData.size());
             List<TransactionCSV> filteredTransactionsByDateRange = filterTransactionCSVByDateRange(transactionCsvData, startDate, endDate);
-            log.info("Successfully filtered {} transactions by date range: start={}, end={}", startDate, endDate, filteredTransactionsByDateRange.size());
+            log.info("Successfully filtered csv transactions by date range: start={}, end={}, size={}", startDate, endDate, filteredTransactionsByDateRange.size());
             // After filtering convert the Transaction CSV models to TransactionEntity models
             // Check if the user has any accounts with the indicated suffix's from the transaction CSVs
             List<AccountEntity> userPlaidAccounts = accountService.findByUser(userId);
+            log.info("User {} has {} Plaid accounts", userId, userPlaidAccounts.size());
             if(userPlaidAccounts.isEmpty())
             {
+                log.info("No User Plaid accounts found... Creating Account CSV info");
                 // Next step is to generate CSVAccounts
-                List<AccountCSV> accountCSVList = accountCSVUploaderService.createCSVList(filteredTransactionsByDateRange, userId);
+                Set<AccountCSV> accountCSVList = accountCSVUploaderService.createCSVList(filteredTransactionsByDateRange, userId);
                 List<CSVAccountEntity> csvAccountEntityList = accountCSVUploaderService.createEntityList(accountCSVList);
                 accountCSVUploaderService.saveEntities(csvAccountEntityList);
                 log.info("Successfully created {} CSVAccountEntities for user {}", csvAccountEntityList.size(), userId);
@@ -141,6 +144,7 @@ public class UploadController
         return transactionCSVList.stream()
                 .filter(transactionCSV -> {
                     LocalDate transactionDate = transactionCSV.getTransactionDate();
+                    log.info("Transaction Date: {}", transactionDate);
                     return !transactionDate.isBefore(startDate) && !transactionDate.isAfter(endDate);
                 })
                 .sorted(Comparator.comparing(TransactionCSV::getTransactionDate))
@@ -222,6 +226,12 @@ public class UploadController
         {
 
             String normalizedDate = dateString.replace("-", "/");
+            if (normalizedDate.matches("\\d{4}/\\d{2}/\\d{2}")) {
+                formatter.applyPattern("yyyy/MM/dd");
+            } else if (normalizedDate.matches("\\d{2}/\\d{2}/\\d{4}")) {
+                formatter.applyPattern("MM/dd/yyyy");
+            }
+
             Date date = formatter.parse(normalizedDate);
             return date.toInstant()
                     .atZone(ZoneId.systemDefault())

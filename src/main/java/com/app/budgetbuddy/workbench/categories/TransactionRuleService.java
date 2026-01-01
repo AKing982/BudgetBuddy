@@ -1,6 +1,6 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.CategoryRule;
+import com.app.budgetbuddy.domain.CSVTransactionRule;
 import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.domain.UserCategoryRule;
 import com.app.budgetbuddy.entities.TransactionRuleEntity;
@@ -26,6 +26,10 @@ public interface TransactionRuleService extends ServiceModel<TransactionRuleEnti
     List<TransactionRuleEntity> findAllSystemCategoryRules();
 
     List<TransactionRule> getSystemCategoryRules();
+
+    CSVTransactionRule createCSVTransactionRuleFromEntity(TransactionRuleEntity csvTransactionRuleEntity);
+
+    List<CSVTransactionRule> findCSVTransactionRulesByUserId(Long userId);
 
     List<UserCategoryRule> getUserCategoryRules(Long userId);
 }

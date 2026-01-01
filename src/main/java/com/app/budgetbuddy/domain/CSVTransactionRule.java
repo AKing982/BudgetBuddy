@@ -8,6 +8,7 @@ import java.util.Objects;
 @Setter
 @AllArgsConstructor(access= AccessLevel.PUBLIC)
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
+@Builder
 public class CSVTransactionRule
 {
     private Long id;

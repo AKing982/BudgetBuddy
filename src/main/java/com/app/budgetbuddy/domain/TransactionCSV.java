@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor(access= AccessLevel.PUBLIC)
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
 @ToString
+@Builder
 public class TransactionCSV implements Comparable<TransactionCSV>
 {
     private Long id;

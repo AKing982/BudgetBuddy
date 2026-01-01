@@ -1,22 +1,22 @@
 package com.app.budgetbuddy.workbench.categories;
 
-import com.app.budgetbuddy.domain.CSVTransactionRule;
-import com.app.budgetbuddy.domain.CategoryType;
-import com.app.budgetbuddy.domain.TransactionCSV;
-import com.app.budgetbuddy.domain.TransactionRule;
+import com.app.budgetbuddy.domain.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 class CSVTransactionCategorizerServiceImplTest
@@ -109,6 +109,30 @@ class CSVTransactionCategorizerServiceImplTest
                         "State Farm should categorize as INSURANCE"
                 )
         );
+    }
+
+    @Test
+    void testCategorize_whenFoundCSVTransactionRules_thenApplyRule(){
+        Long userId = 1L;
+        TransactionCSV transaction = TransactionCSV.builder()
+                .merchantName("WINCO FOODS")
+                .transactionAmount(BigDecimal.valueOf(75.00))
+                .description("PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024")
+                .build();
+
+        CSVTransactionRule csvRule = CSVTransactionRule.builder()
+                .id(1L)
+                .userId(userId)
+                .rule(CSVRule.MERCHANT)
+                .value("WINCO: Groceries")
+                .isActive(true)
+                .build();
+        List<CSVTransactionRule> csvRules = List.of(csvRule);
+
+        Mockito.when(transactionRuleService.findCSVTransactionRulesByUserId(userId)).thenReturn(csvRules);
+        CategoryType actual = transactionCSVCategorizerService.categorize(transaction);
+        assertNotNull(actual);
+        assertEquals(CategoryType.GROCERIES, actual);
     }
 
     private static TransactionCSV createTransaction(String merchantName, BigDecimal amount, String description) {
