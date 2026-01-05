@@ -5,6 +5,7 @@ import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.entities.CSVTransactionEntity;
+import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.services.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.bytebuddy.utility.dispatcher.JavaDispatcher;
@@ -41,22 +42,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(value = UploadController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
-@Testcontainers
 class UploadControllerTest
 {
-    @Container
-    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:13.2")
-            .withDatabaseName("buddy")
-            .withUsername("buddy")
-            .withPassword("buddy");
-
-    @DynamicPropertySource
-    static void registerPgProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
-        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
-    }
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -65,6 +52,9 @@ class UploadControllerTest
 
     @MockBean
     private AccountService accountService;
+
+    @MockBean
+    private CSVAccountRepository csvAccountRepository;
 
     @MockBean
     @Qualifier("accountCSVUploaderServiceImpl")

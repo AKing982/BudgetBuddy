@@ -24,6 +24,10 @@ public class TransactionImportThreadConfig
     {
         LocalDate currentDate = LocalDate.now();
         int numOfMonthsFromCurrentDate = currentDate.getMonthValue() - budgetYearStart.getMonthValue();
+        if(numOfMonthsFromCurrentDate <= 0)
+        {
+            return Executors.newFixedThreadPool(1);
+        }
         return Executors.newFixedThreadPool(numOfMonthsFromCurrentDate);
     }
 }

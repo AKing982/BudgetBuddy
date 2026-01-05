@@ -29,9 +29,10 @@ public class BudgetRegistration
     private int totalBudgetsNeeded;
     private BigDecimal previousIncomeAmount;
     private String previousBudgetName;
+    private boolean previousBudgetSkipped;
     private Set<ControlledBudgetCategory> controlledBudgetCategorySet = new HashSet<>();
 
-    public BudgetRegistration(Long userId, String budgetName, String budgetDescription, Period budgetPeriod, BudgetMode budgetMode, BudgetGoals budgetGoals, int budgetYear, LocalDate budgetStartDate, LocalDate budgetEndDate, Set<DateRange> budgetDateRanges, BigDecimal totalIncomeAmount, int numberOfMonths, int totalBudgetsNeeded, BigDecimal previousIncomeAmount, String previousBudgetName) {
+    public BudgetRegistration(Long userId, String budgetName, String budgetDescription, Period budgetPeriod, BudgetMode budgetMode, BudgetGoals budgetGoals, int budgetYear, LocalDate budgetStartDate, LocalDate budgetEndDate, Set<DateRange> budgetDateRanges, BigDecimal totalIncomeAmount, int numberOfMonths, int totalBudgetsNeeded, BigDecimal previousIncomeAmount, String previousBudgetName, boolean isPreviousBudgetSkipped) {
         this.userId = userId;
         this.budgetName = budgetName;
         this.budgetDescription = budgetDescription;
@@ -47,6 +48,7 @@ public class BudgetRegistration
         this.totalBudgetsNeeded = totalBudgetsNeeded;
         this.previousIncomeAmount = previousIncomeAmount;
         this.previousBudgetName = previousBudgetName;
+        this.previousBudgetSkipped = isPreviousBudgetSkipped;
     }
 
     public BudgetRegistration(Long userId, String budgetName, String budgetDescription, Period budgetPeriod, BudgetMode budgetMode, BudgetGoals budgetGoals, int budgetYear, Set<DateRange> budgetDateRanges, BigDecimal totalIncomeAmount, int numberOfMonths, int totalBudgetsNeeded, Set<ControlledBudgetCategory> controlledBudgetCategorySet) {

@@ -32,9 +32,6 @@ public class CSVAccountEntity
     @Column(name="accountType")
     private String accountType;
 
-    @Column(name="balance")
-    private double balance;
-
     @Column(name="isActive")
     private boolean isActive;
 

@@ -122,25 +122,7 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
                 return csvMerchantMap.get(merchantName);
             }
         }
-        for(CSVTransactionRule csvTransactionRule : csvTransactionRules)
-        {
-            CSVRule csvRule = csvTransactionRule.getRule();
-            String csvValue = csvTransactionRule.getValue();
-            switch(csvRule)
-            {
-                case MERCHANT ->
-                {
-                    if(merchantName.equals(csvValue))
-                    {
-                        return 
-                    }
-                }
-                case DESCRIPTION ->
-                {
 
-                }
-            }
-        }
         return null;
     }
 

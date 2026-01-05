@@ -48,7 +48,7 @@ class PlaidLinkTokenProcessorTest {
     }
 
     @Test
-    void testCreateLinkTokenRequest_whenClientUserIdIsValid(){
+    void testCreateLinkTokenRequest_whenClientUserIdIsValid() throws IOException {
         String clientUserId = "1";
         LinkTokenCreateRequest request = new LinkTokenCreateRequest();
         request.setUser(new LinkTokenCreateRequestUser().clientUserId(clientUserId));

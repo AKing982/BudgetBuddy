@@ -4,6 +4,7 @@ import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 @Service
+@Slf4j
 public class PlaidLinkTokenProcessor extends AbstractPlaidManager
 {
     @Value("{plaid.client-id}")
@@ -43,14 +45,25 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      * @param clientUserId the ID of the client user
      * @return the created link token request
      */
-    public LinkTokenCreateRequest createLinkTokenRequest(String clientUserId){
+    public LinkTokenCreateRequest createLinkTokenRequest(String clientUserId) throws IOException {
         if(clientUserId.isEmpty()){
             throw new IllegalArgumentException("Client user id cannot be empty");
         }
+
+        InstitutionsGetByIdRequest request = new InstitutionsGetByIdRequest()
+                .institutionId("ins_132917")
+                .countryCodes(Arrays.asList(CountryCode.US));
+        InstitutionsGetByIdResponse response = plaidApi.institutionsGetById(request)
+                .execute().body();
+        Institution institution = response.getInstitution();
+        if(institution.getOauth()){
+            log.info("This institution requires OAuth");
+        }
+
         return new LinkTokenCreateRequest()
                 .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
                 .clientName("BudgetBuddy")
-                .products(Arrays.asList(Products.TRANSACTIONS))
+                .products(Arrays.asList(Products.TRANSACTIONS, Products.AUTH))
                 .countryCodes(Arrays.asList(CountryCode.US))
                 .language("en");
 

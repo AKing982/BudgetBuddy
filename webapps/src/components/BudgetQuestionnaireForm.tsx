@@ -85,47 +85,9 @@ interface BudgetCategoriesRequest {
 
 interface BudgetQuestionnaireProps {
     onSubmit: (budgetData: BudgetQuestions) => void;
+    skipHistoricalData?: boolean;
 }
 
-//
-// const theme = createTheme({
-//     palette: {
-//         background: {
-//             default: '#f5e6d3', // Beige background
-//         },
-//         primary: {
-//             main: '#800000', // Maroon for primary color (buttons and text)
-//         },
-//     },
-//     components: {
-//         MuiButton: {
-//             styleOverrides: {
-//                 root: {
-//                     borderRadius: 0, // Flat buttons
-//                     textTransform: 'none', // Prevents all-caps text
-//                 },
-//                 contained: {
-//                     boxShadow: 'none', // Removes default shadow for a flatter look
-//                     '&:hover': {
-//                         boxShadow: 'none', // Keeps it flat on hover
-//                     },
-//                 },
-//             },
-//         },
-//         MuiTextField: {
-//             styleOverrides: {
-//                 root: {
-//                     '& .MuiOutlinedInput-root': {
-//                         '&.Mui-focused fieldset': {
-//                             borderColor: '#800000', // Maroon outline when focused
-//                             borderWidth: '2px', // Make the outline a bit thicker
-//                         },
-//                     },
-//                 },
-//             },
-//         },
-//     },
-// });
 // Custom theme with a more modern color palette and design elements
 const theme = createTheme({
     palette: {
@@ -248,10 +210,10 @@ const budgetTypeIcons : Record<BudgetType, React.ReactNode> = {
     "Building Emergency Fund": <MonetizationOn fontSize="large" />
 };
 
-const steps = ['Previous Budget','Budget Type', 'Income', 'Goals', 'Review'];
 
-const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit }) => {
-    const [activeStep, setActiveStep] = useState<number>(0);
+
+const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit, skipHistoricalData = false }) => {
+    const [activeStep, setActiveStep] = useState<number>(skipHistoricalData ? 1 : 0);
     const [budgetData, setBudgetData] = useState<BudgetQuestions>({
         historicalData: {
             previousIncome: 0,
@@ -285,6 +247,10 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
         isActive: true,
         priority: 0
     });
+    const steps = skipHistoricalData
+        ? ['Budget Type', 'Income', 'Goals', 'Review']
+        : ['Previous Budget', 'Budget Type', 'Income', 'Goals', 'Review'];
+
     // Add state for notification
     const [notification, setNotification] = useState<{
         message: string;
@@ -302,6 +268,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
     const budgetCategoriesService = BudgetCategoriesService.getInstance();
     const budgetSetupService = BudgetSetupService.getInstance();
     const loginService = new LoginService();
+    const getAdjustedStep = () => skipHistoricalData ? activeStep + 1 : activeStep;
+
 
     const handleNext = () => {
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -597,7 +565,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                 totalBudgetsNeeded: numberOfMonths,
                 previousIncomeAmount: budgetData.historicalData?.previousIncome || 0,
                 previousBudgetName: budgetData.historicalData?.hadPreviousBudget ?
-                    `${startDate[0] - 1} ${budgetData.historicalData.previousBudgetType} Budget` : ''
+                    `${startDate[0] - 1} ${budgetData.historicalData.previousBudgetType} Budget` : '',
+                previousBudgetSkipped: skipHistoricalData
             };
 
             console.log('Starting budget setup process...', budgetRegistration);
@@ -640,7 +609,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
 
     // Function to determine if user can proceed to next step
     const canProceed = () => {
-        switch (activeStep) {
+        const actualStep = skipHistoricalData ? activeStep + 1 : activeStep;
+        switch (actualStep) {
             case 0: // Historical data
                 return true; // Always allow proceeding from this step
             case 1: // Budget type
@@ -726,7 +696,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                     </Stepper>
 
                     <Box sx={{ minHeight: '320px', mb: 4 }}>
-                        {activeStep === 0 && (
+                        {!skipHistoricalData && activeStep === 0 && (
                             <Fade in={activeStep === 0}>
                                 <Box>
                                     <Typography
@@ -828,8 +798,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             </Fade>
                         )}
 
-                        {activeStep === 1 && (
-                            <Fade in={activeStep === 1}>
+                        {((skipHistoricalData && activeStep === 0) || (!skipHistoricalData && activeStep === 1)) && (
+                            <Fade in={true}>
                                 <Box>
                                     <Typography
                                         variant="h6"
@@ -875,8 +845,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             </Fade>
                         )}
 
-                        {activeStep === 2 && (
-                            <Fade in={activeStep === 2}>
+                        {((skipHistoricalData && activeStep === 1) || (!skipHistoricalData && activeStep === 2)) && (
+                            <Fade in={true}>
                                 <Box>
                                     <Typography
                                         variant="h6"
@@ -936,8 +906,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             </Fade>
                         )}
 
-                        {activeStep === 3 && (
-                            <Fade in={activeStep === 3}>
+                        {((skipHistoricalData && activeStep === 2) || (!skipHistoricalData && activeStep === 3)) && (
+                            <Fade in={true}>
                                 <Box>
                                     {budgetData.budgetType === 'Saving for a goal' && (
                                         <SavingsGoalQuestions onDataChange={handleSavingsGoalDataChange} />
@@ -952,8 +922,8 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             </Fade>
                         )}
 
-                        {activeStep === 4 && (
-                            <Fade in={activeStep === 4}>
+                        {((skipHistoricalData && activeStep === 3) || (!skipHistoricalData && activeStep === 4)) && (
+                            <Fade in={true}>
                                 <Box>
                                     <Typography
                                         variant="h6"
@@ -1278,7 +1248,7 @@ const BudgetQuestionnaireForm: React.FC<BudgetQuestionnaireProps> = ({ onSubmit 
                             Back
                         </Button>
 
-                        {activeStep < 4 && (
+                        {activeStep < (skipHistoricalData ? 3 : 4) && (
                             <Button
                                 variant="contained"
                                 onClick={handleNext}

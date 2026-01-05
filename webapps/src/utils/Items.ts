@@ -47,6 +47,7 @@ export interface Transaction {
 }
 
 export interface CSVTransaction {
+    id: number;
     csvAcctId: number;
     transactionDate: string | null;
     transactionAmount: number;
@@ -69,6 +70,23 @@ export interface UserLog
     isActive: boolean;
 }
 
+export interface ManageBudgetsData
+{
+    id: number;
+    budgetName: string;
+    budgetDescription: string;
+    userId: number;
+    userFirstName: string;
+    userLastName: string;
+    monthlyIncome: number;
+    yearlyIncome: number;
+    savingsAmount: number;
+    budgetPeriod: 'MONTHLY' | 'WEEKLY' | 'BIWEEKLY' | 'BIMONTHLY' | 'YEARLY';
+    budgetMode: 'SAVINGS PLAN' | 'EMERGENCY FUND' | 'DEBT PAYOFF';
+    budgetYear: number;
+    savingsAllocation?: number;
+}
+
 export interface BudgetRegistration
 {
     userId: number;
@@ -86,6 +104,7 @@ export interface BudgetRegistration
     totalBudgetsNeeded: number;
     previousIncomeAmount: number;
     previousBudgetName: string;
+    previousBudgetSkipped: boolean;
 }
 
 // Interface for the budget data array

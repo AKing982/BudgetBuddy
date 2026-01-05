@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
     Table,
     TableBody,
@@ -55,9 +55,9 @@ import {
     Plus
 } from 'lucide-react';
 import Sidebar from "./Sidebar";
-import CategoryDropdown from "./CategoryDropdown";
 import TransactionService from '../services/TransactionService';
 import { Transaction, CSVTransaction } from "../utils/Items";
+import CategoryDialog, {CategorySaveData} from "./CategoryDialog";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -92,7 +92,11 @@ const TransactionsPage: React.FC = () => {
         dateRange: 'Last 30 days',
         type: null
     });
+    const [categoryDialogOpen, setCategoryDialogOpen] = useState<boolean>(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [animateIn, setAnimateIn] = useState(false);
+    const [disabledCategories, setDisabledCategories] = useState<string[]>([]);
+    const [customCategories, setCustomCategories] = useState<string[]>([]);
 
     const theme = useTheme();
 
@@ -171,6 +175,47 @@ const TransactionsPage: React.FC = () => {
         }).format(Math.abs(amount));
     };
 
+    const handleOpenCategoryDialog = (transaction: Transaction) => {
+        setSelectedTransaction(transaction);
+        setCategoryDialogOpen(true);
+    };
+
+    const handleCloseCategoryDialog = () => {
+        setCategoryDialogOpen(false);
+        setSelectedTransaction(null);
+    };
+
+    const handleSaveCategory = async (data: CategorySaveData) => {
+        try {
+            // Update local state immediately
+            setTransactions(prevTransactions =>
+                prevTransactions.map(transaction =>
+                    transaction.transactionId === data.transactionId
+                        ? { ...transaction, categories: [data.category] }
+                        : transaction
+                )
+            );
+
+            // Also update CSV transactions if needed
+            setCsvTransactions(prevCsvTransactions =>
+                prevCsvTransactions.map(csvTx =>
+                    `csv-${csvTx.id}` === data.transactionId
+                        ? { ...csvTx, category: data.category }
+                        : csvTx
+                )
+            );
+
+            // TODO: Call your API to save the category to the database
+            const transactionService = TransactionService.getInstance();
+            // await transactionService.updateTransactionCategory(data);
+
+            console.log('Category saved:', data);
+        } catch (error) {
+            console.error('Error saving category:', error);
+            // Optionally show an error message to the user
+        }
+    };
+
     const sortedCSVTransactions = useMemo(() => {
         const sortableTransactions = [...csvTransactions];
         if (sortConfig.key !== null) {
@@ -212,51 +257,36 @@ const TransactionsPage: React.FC = () => {
         return sortableTransactions;
     }, [csvTransactions, sortConfig]);
 
-    const filteredCSVTransactions = useMemo(() => {
-        let filtered = sortedCSVTransactions;
+    const combinedTransactions = useMemo(() => {
+        // Convert CSV transactions to match Transaction interface
+        const convertedCsvTransactions: Transaction[] = csvTransactions
+            .filter(csv => csv.transactionDate)
+            .map((csv, index) => ({
+                // Create unique ID - use csv.id if available, otherwise generate one
+                transactionId: csv.id ? `csv-${csv.id}` : `csv-generated-${index}-${csv.transactionDate}-${csv.transactionAmount}`,
+                amount: csv.transactionAmount,
+                date: csv.transactionDate!,
+                posted: csv.transactionDate,
+                name: csv.merchantName || csv.transactionDescription || 'Unknown',
+                description: csv.extendedDescription || '',
+                authorizedDate: csv.transactionDate || null,
+                categoryId: '',
+                merchantName: csv.merchantName,
+                categories: csv.category ? [csv.category] : ['Uncategorized'],
+                pending: false,
+                logoUrl: null,
+                isoCurrencyCode: '',
+                accountId: ''
+            }));
 
-        if (searchTerm.trim()) {
-            const searchTermLowerCase = searchTerm.toLowerCase().trim();
-            filtered = filtered.filter((transaction) => {
-                const description = transaction.transactionDescription?.toLowerCase() ?? '';
-                const merchantName = transaction.merchantName?.toLowerCase() ?? '';
-                const extendedDescription = transaction.extendedDescription?.toLowerCase() ?? '';
-                const category = transaction.category?.toLowerCase() ?? '';
-                const amount = transaction.transactionAmount?.toString() ?? '';
-                const date = transaction.transactionDate ? formatDate(null, transaction.transactionDate).toLowerCase() : '';
+        // Combine both arrays
+        return [...transactions, ...convertedCsvTransactions];
+    }, [transactions, csvTransactions]);
 
-                return description.includes(searchTermLowerCase) ||
-                    merchantName.includes(searchTermLowerCase) ||
-                    extendedDescription.includes(searchTermLowerCase) ||
-                    category.includes(searchTermLowerCase) ||
-                    amount.includes(searchTermLowerCase) ||
-                    date.includes(searchTermLowerCase);
-            });
-        }
-
-        if (activeFilters.categories.length > 0) {
-            filtered = filtered.filter(transaction =>
-                transaction.category && activeFilters.categories.includes(transaction.category)
-            );
-        }
-
-        if (activeFilters.type) {
-            filtered = filtered.filter(transaction => {
-                if (activeFilters.type === 'income') {
-                    return transaction.transactionAmount < 0;
-                } else if (activeFilters.type === 'expense') {
-                    return transaction.transactionAmount > 0;
-                }
-                return true;
-            });
-        }
-
-        return filtered;
-    }, [sortedCSVTransactions, searchTerm, activeFilters]);
 
     // Sort transactions
     const sortedTransactions = useMemo(() => {
-        const sortableTransactions = [...transactions];
+        const sortableTransactions = [...combinedTransactions];
         if (sortConfig.key !== null) {
             sortableTransactions.sort((a, b) => {
                 if (sortConfig.key === 'date') {
@@ -294,7 +324,45 @@ const TransactionsPage: React.FC = () => {
             });
         }
         return sortableTransactions;
-    }, [transactions, sortConfig]);
+    }, [combinedTransactions, sortConfig]);
+
+    const handleToggleCategory = async (category: string, enabled: boolean) => {
+        try
+        {
+            console.log('Toggling category:', category, enabled ? 'enable' : 'disable');
+            if(enabled){
+                const updated = disabledCategories.filter(cat => cat !== category);
+                console.log('Enabling - new disabled list:', updated);
+                setDisabledCategories(updated);
+            }else{
+                const updated = [...disabledCategories, category];
+                console.log('Disabling - new disabled list:', updated);
+                setDisabledCategories(updated);
+            }
+        }catch(error){
+            console.error('Error toggling category:', error);
+        }
+    }
+
+    const handleDeleteCustomCategory = async (category: string) => {
+        try {
+            console.log('Deleting custom category:', category);
+
+            // Remove from custom categories list
+            setCustomCategories(prev => prev.filter(cat => cat !== category));
+
+            // Also remove from disabled categories if it's there
+            setDisabledCategories(prev => prev.filter(cat => cat !== category));
+
+            // TODO: Call API to delete from database
+            // const transactionService = TransactionService.getInstance();
+            // await transactionService.deleteCustomCategory(category);
+
+            console.log('Custom category deleted:', category);
+        } catch (error) {
+            console.error('Error deleting custom category:', error);
+        }
+    };
 
     // Filter transactions
     const filteredTransactions = useMemo(() => {
@@ -376,6 +444,27 @@ const TransactionsPage: React.FC = () => {
         );
     };
 
+    // Add this handler
+    const handleAddCustomCategory = async (category: string) => {
+        try {
+            // Add to custom categories list
+            setCustomCategories(prev => {
+                if (prev.includes(category)) {
+                    return prev; // Already exists
+                }
+                return [...prev, category];
+            });
+
+            // TODO: Save to database
+            // const transactionService = TransactionService.getInstance();
+            // await transactionService.addCustomCategory(category);
+
+            console.log('Custom category added:', category);
+        } catch (error) {
+            console.error('Error adding custom category:', error);
+        }
+    };
+
     const handleOpenFilterMenu = (event: React.MouseEvent<HTMLElement>) => {
         setFilterAnchorEl(event.currentTarget);
     };
@@ -400,16 +489,18 @@ const TransactionsPage: React.FC = () => {
         handleCloseDateRangeMenu();
     };
 
-    const handleCategoryFilter = (category: string) => {
-        const newCategories = activeFilters.categories.includes(category)
-            ? activeFilters.categories.filter(c => c !== category)
-            : [...activeFilters.categories, category];
+    const handleCategoryFilter = useCallback((category: string) => {
+        setActiveFilters(prev => {
+            const newCategories = prev.categories.includes(category)
+                ? prev.categories.filter(c => c !== category)
+                : [...prev.categories, category];
 
-        setActiveFilters({
-            ...activeFilters,
-            categories: newCategories
+            return {
+                ...prev,
+                categories: newCategories
+            };
         });
-    };
+    }, []);
 
     const handleTypeFilter = (type: string | null) => {
         setActiveFilters({
@@ -444,13 +535,30 @@ const TransactionsPage: React.FC = () => {
         return colors;
     }, [uniqueCategories]);
 
+    const handleResetDisabledCategories = async () => {
+        try {
+            console.log('Resetting all disabled categories');
+
+            // Clear the disabled categories list
+            setDisabledCategories([]);
+
+            // TODO: Save to database
+            // const transactionService = TransactionService.getInstance();
+            // await transactionService.resetDisabledCategories();
+
+            console.log('All categories re-enabled');
+        } catch (error) {
+            console.error('Error resetting disabled categories:', error);
+        }
+    };
+
     const transactionStats = useMemo(() => {
         let income = 0;
         let expense = 0;
         let pending = 0;
         let lastMonthExpense = 0;
 
-        transactions.forEach(transaction => {
+        combinedTransactions.forEach(transaction => {
             if (transaction.pending) {
                 pending += 1;
                 return;
@@ -485,11 +593,11 @@ const TransactionsPage: React.FC = () => {
             income,
             expense,
             pending,
-            total: transactions.length,
+            total: combinedTransactions.length,
             expenseTrend,
             lastMonthExpense
         };
-    }, [transactions]);
+    }, [combinedTransactions]);
 
     // Get category breakdown for expense chart
     const categoryBreakdown = useMemo(() => {
@@ -856,6 +964,17 @@ const TransactionsPage: React.FC = () => {
                                         <Box sx={{ width: 8 }} />
                                     </InputAdornment>
                                 ),
+                                endAdornment: searchTerm && (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => setSearchTerm('')}
+                                            sx={{ mr: -1 }}
+                                        >
+                                            <XCircle size={16} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
                             }}
                             sx={{
                                 '& .MuiInputBase-input': {
@@ -1034,9 +1153,9 @@ const TransactionsPage: React.FC = () => {
                     component={Paper}
                     sx={{
                         borderRadius: 4,
-                        overflow: 'hidden',
+                        overflow: 'auto',
                         boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
-                        height: 'calc(100vh - 520px)',
+                        maxHeight: 'calc(100vh - 520px)',
                         minHeight: 400,
                         mb: 2,
                         '&::-webkit-scrollbar': {
@@ -1293,6 +1412,7 @@ const TransactionsPage: React.FC = () => {
                                             <Chip
                                                 label={transaction.categories[0] || 'Uncategorized'}
                                                 size="small"
+                                                onClick={() => handleOpenCategoryDialog(transaction)}
                                                 sx={{
                                                     borderRadius: 3,
                                                     fontWeight: 600,
@@ -1300,7 +1420,14 @@ const TransactionsPage: React.FC = () => {
                                                     color: categoryColors[transaction.categories[0]] || theme.palette.grey[700],
                                                     border: `1px solid ${alpha(categoryColors[transaction.categories[0]] || theme.palette.grey[500], 0.2)}`,
                                                     py: 0.6,
-                                                    px: 0.2
+                                                    px: 0.2,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease-in-out',
+                                                    '&:hover': {
+                                                        backgroundColor: alpha(categoryColors[transaction.categories[0]] || theme.palette.grey[500], 0.2),
+                                                        transform: 'scale(1.05)',
+                                                        boxShadow: `0 2px 8px ${alpha(categoryColors[transaction.categories[0]] || theme.palette.grey[500], 0.3)}`
+                                                    }
                                                 }}
                                             />
                                         </TableCell>
@@ -1717,6 +1844,24 @@ const TransactionsPage: React.FC = () => {
                     </MenuItem>
                 ))}
             </Menu>
+            {selectedTransaction && (
+                <CategoryDialog
+                    open={categoryDialogOpen}
+                    onClose={handleCloseCategoryDialog}
+                    currentCategory={selectedTransaction.categories[0] || ''}
+                    transactionId={selectedTransaction.transactionId}
+                    merchantName={selectedTransaction.merchantName || selectedTransaction.name}
+                    description={selectedTransaction.name}
+                    extendedDescription={selectedTransaction.description || ''}
+                    amount={selectedTransaction.amount}
+                    availableCategories={uniqueCategories}
+                    onSave={handleSaveCategory}
+                    onToggleCategory={handleToggleCategory}
+                    onAddCustomCategory={handleAddCustomCategory}
+                    onDeleteCustomCategory={handleDeleteCustomCategory}
+                    onResetDisabledCategories={handleResetDisabledCategories}
+                />
+            )}
         </Box>
     );
 };

@@ -36,4 +36,8 @@ public interface BudgetService extends ServiceModel<BudgetEntity>
 
     Optional<BudgetEntity> updateBudget(Budget budget);
 
+    boolean validateBudgetExistsForYear(Long userId, Integer year);
+
+    List<BudgetEntity> getBudgetsByUserIdAndYear(Long userId, int year);
+
 }

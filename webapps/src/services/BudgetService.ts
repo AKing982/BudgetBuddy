@@ -5,7 +5,7 @@ import {DebtPayoffData} from "../components/DebtPayoffQuestions";
 import {SpendingControlData} from "../components/SpendingControlQuestions";
 import LoginService from "./LoginService";
 import {BudgetType} from "../domain/BudgetType";
-import {BudgetStats} from "../utils/Items";
+import {BudgetStats, ManageBudgetsData} from "../utils/Items";
 
 
 export interface Budget {
@@ -18,6 +18,7 @@ export interface Budget {
     startDate: Date;
     endDate: Date;
 }
+
 
 
 interface BudgetCreateRequest {
@@ -138,31 +139,6 @@ class BudgetService {
         return 0.0;
     }
 
-    // public calculateSpendingBudgetStatistics(budgetAmount: number, startDate: string, endDate: string) : BudgetSpendingStatistics[]
-    // {
-    //     return 0;
-    // }
-    //
-    // public async fetchBudgetOverviewCategories(userId: number, startDate: string, endDate: string) : Promise<BudgetCategory[]>
-    // {
-    //     return null;
-    // }
-    //
-    // public async fetchTopExpenseBudgetCategories(userId: number, startDate: string, endDate: string) : Promise<BudgetCategory[]>
-    // {
-    //     return null;
-    // }
-    //
-    // public async fetchBudgetStatistics(userId: number, startDate: string, endDate: string) : Promise<BudgetStats[]>
-    // {
-    //     return null;
-    // }
-    //
-    // public async fetchBudgetPeriodCategories(userId: number, startDate: string, endDate: string) : Promise<BudgetCategory[]>
-    // {
-    //     return null;
-    // }
-
     public async createBudgetRequest(budgetData: BudgetQuestions): Promise<BudgetCreateRequest> {
         if (!budgetData) {
             throw new Error('BudgetData found null');
@@ -274,6 +250,101 @@ class BudgetService {
                 throw new Error('Invalid budget type found');
         }
     };
+
+    public async getBudgetsByUserIdAndYear(userId: number, year: number) : Promise<ManageBudgetsData[]>
+    {
+        if(userId < 1 || year < 0)
+        {
+            throw new Error('Invalid userId or year found');
+        }
+        try
+        {
+            const response = await axios.get(`http://localhost:8080/api/budgets/${userId}/${year}`);
+            return response.data;
+        }catch(error){
+            console.error('There was an error fetching budgets for userId: ', userId);
+            return [];
+        }
+    }
+
+    public async checkIfBudgetExistsForYear(userId: number, year: number) : Promise<boolean>
+    {
+        if(userId < 0){
+            throw new Error('Invalid userId found');
+        }
+        try
+        {
+            const response = await axios.get(`http://localhost:8080/api/budgets/check-if-budget-exists/${userId}/${year}`);
+            // Validate response
+            if (response.status !== 200) {
+                throw new Error(`Unexpected status code: ${response.status}`);
+            }
+
+            if (typeof response.data !== 'boolean') {
+                console.error('Invalid response format:', response.data);
+                throw new Error('Invalid response format: expected boolean');
+            }
+            return response.data;
+        }catch(error){
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    // Server responded with error status
+                    const status = error.response.status;
+                    const message = error.response.data?.message || error.message;
+
+                    console.error(
+                        `Server error checking budget existence for userId: ${userId}, year: ${year}`,
+                        {
+                            status,
+                            message,
+                            data: error.response.data
+                        }
+                    );
+
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad request: ${message}`);
+                        case 404:
+                            // Budget not found - this is actually a valid case, return false
+                            console.log(`No budget found for userId: ${userId}, year: ${year}`);
+                            return false;
+                        case 500:
+                            throw new Error(`Server error: ${message}`);
+                        case 503:
+                            throw new Error('Service temporarily unavailable. Please try again later.');
+                        default:
+                            throw new Error(`Failed to check budget existence: ${message}`);
+                    }
+                } else if (error.request) {
+                    // Request was made but no response received
+                    console.error(
+                        `No response received when checking budget for userId: ${userId}, year: ${year}`,
+                        error.request
+                    );
+                    throw new Error('No response from server. Please check your internet connection.');
+                } else {
+                    // Error setting up the request
+                    console.error(
+                        `Error setting up request for userId: ${userId}, year: ${year}`,
+                        error.message
+                    );
+                    throw new Error(`Request setup error: ${error.message}`);
+                }
+            }
+
+            // Handle non-Axios errors
+            console.error(
+                `Unexpected error checking budget existence for userId: ${userId}, year: ${year}`,
+                error
+            );
+
+            if (error instanceof Error) {
+                throw error;
+            }
+
+            throw new Error('An unexpected error occurred while checking budget existence');
+        }
+    }
 
     public async getBudgetTypeByUserId(userId: number) : Promise<Budget[]> {
         if(userId < 0){

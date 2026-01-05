@@ -23,6 +23,9 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
     @Query("SELECT b FROM BudgetEntity b WHERE b.user.id =:id")
     List<BudgetEntity> findByUser(@Param("id") Long id);
 
+    @Query("SELECT b FROM BudgetEntity b WHERE b.user.id =:id AND b.year =:year")
+    List<BudgetEntity> findByUserIdAndYear(@Param("id") Long id, @Param("year") Integer year);
+
     @Query("SELECT b.budgetAmount FROM BudgetEntity b JOIN b.subBudgetEntities sb WHERE b.user.id =:id AND sb.startDate >= :start AND sb.endDate <= :end AND b.id =:budgetid")
     BigDecimal findBudgetAmountByPeriod(@Param("id") Long userId, @Param("start")LocalDate startDate, @Param("end") LocalDate endDate, @Param("budgetid") Long budgetId);
 
@@ -35,6 +38,8 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long>
     @Modifying
     @Query("UPDATE BudgetEntity b SET b.subBudgetEntities =:subBudgets WHERE b.id =:id")
     void updateBudgetEntity(@Param("id") Long id, @Param("subBudgets") Set<SubBudgetEntity> subBudgets);
+
+    boolean existsByUserIdAndYear(Long userId, int year);
 
 
 }

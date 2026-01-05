@@ -14,7 +14,7 @@ import {
     Chip,
     Skeleton,
     Stack,
-    LinearProgress, Snackbar, Alert
+    LinearProgress, Snackbar, Alert, Dialog
 } from '@mui/material';
 import {
     ChevronLeft,
@@ -25,7 +25,7 @@ import {
     PieChart,
     TrendingUp,
     Award,
-    Download as DownloadIcon, ImportIcon
+    Download as DownloadIcon, ImportIcon, Delete, Clock
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from './Sidebar';
@@ -46,6 +46,10 @@ import {
 import DateRange from "../domain/DateRange";
 import CSVImportDialog from "./CSVImportDialog";
 import csvUploadService from "../services/CsvUploadService";
+import BudgetService from "../services/BudgetService";
+import {BudgetQuestions} from "../utils/BudgetUtils";
+import BudgetQuestionnaireForm from "./BudgetQuestionnaireForm";
+import ManageBudgetsDialog from "./ManageBudgetsDialog";
 
 interface DateArrays {
     startDate: [number, number, number];
@@ -76,8 +80,11 @@ const BudgetPage: React.FC = () => {
     const [snackBarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>()
+    const [newBudgetDialogOpen, setNewBudgetDialogOpen] = useState<boolean>(false);
+    const [manageBudgetsDialogOpen, setManageBudgetsDialogOpen] = useState<boolean>(false);
 
     const uploadService = new CsvUploadService();
+    const budgetService = BudgetService.getInstance();
 
     const theme = useTheme();
 
@@ -95,6 +102,61 @@ const BudgetPage: React.FC = () => {
 
     const handleImportClose = () => {
         setImportDialogOpen(false);
+    }
+
+    const doesBudgetExistForBeginningYear = async (retryCount = 0) =>
+    {
+        try
+        {
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            console.log('Current Year: ', currentYear);
+            console.log('UserID: ', userId);
+
+            console.log('Year Type: ', typeof(currentYear));
+            console.log('UserID type: ', typeof(userId));
+
+            // Add a small delay on retry to allow backend to flush
+            if (retryCount > 0) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            const exists = await budgetService.checkIfBudgetExistsForYear(userId, currentYear);
+            // Retry once if it returns false on first attempt
+            if (!exists && retryCount === 0) {
+                console.log('Budget not found, retrying...');
+                return await doesBudgetExistForBeginningYear(1);
+            }
+
+            console.log('Checking if budget exists for beginning year:', exists);
+            if(!exists){
+                setNewBudgetDialogOpen(true);
+            }
+            return exists;
+        }catch(error){
+            console.error('Error checking if budget exists for beginning year:', error);
+            setSnackbarMessage('Failed to check if budget exists for beginning year');
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
+            return false;
+        }
+    }
+
+    useEffect(() => {
+        doesBudgetExistForBeginningYear();
+    }, [userId]);
+
+    const handleNewBudgetDialogClose = () => {
+        setNewBudgetDialogOpen(false);
+    }
+
+    const handleNewBudgetSubmit = async (budgetData: BudgetQuestions) => {
+        setNewBudgetDialogOpen(false);
+        setSnackbarMessage('Budget created Successfully! Refreshing');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+
+        await fetchBudgetData(currentMonth);
     }
 
     const handleImportComplete = async (data: {file: File; startDate: string, endDate: string}) => {
@@ -152,6 +214,7 @@ const BudgetPage: React.FC = () => {
         };
     }, []);
 
+
     const fetchBudgetData = async (date: Date) => {
         try {
             setIsLoading(true);
@@ -190,6 +253,14 @@ const BudgetPage: React.FC = () => {
         totalBudget: 0,
         totalSaved: 0,
         totalSpent: 0
+    };
+
+    const handleManageBudgetsDialogOnClose = () => {
+        setManageBudgetsDialogOpen(false);
+    }
+
+    const handleManageBudgetsDialogOpen = () => {
+        setManageBudgetsDialogOpen(true);
     };
 
     const budgetStats = useMemo(() => {
@@ -265,6 +336,16 @@ const BudgetPage: React.FC = () => {
             spendingDifference: Math.abs(spendingDifference)
         };
     }, [currentMonth, budgetStats]);
+
+    const handleBudgetUpdated = async () => {
+        setManageBudgetsDialogOpen(false);
+        setSnackbarMessage('Budget updated successfully! Refreshing data...');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+
+        // Refresh the budget data
+        await fetchBudgetData(currentMonth);
+    };
 
     const topExpenseCategories = useMemo(() => {
         if (!budgetData?.length) return [];
@@ -372,25 +453,6 @@ const BudgetPage: React.FC = () => {
                             >
                                 <ChevronRight />
                             </IconButton>
-
-                            {/*<Button*/}
-                            {/*    variant="outlined"*/}
-                            {/*    startIcon={<DownloadIcon size={18} />}*/}
-                            {/*    sx={{*/}
-                            {/*        ml: 1,*/}
-                            {/*        borderRadius: 2,*/}
-                            {/*        textTransform: 'none',*/}
-                            {/*        fontWeight: 600,*/}
-                            {/*        borderColor: alpha(theme.palette.divider, 0.8),*/}
-                            {/*        color: theme.palette.text.primary,*/}
-                            {/*        '&:hover': {*/}
-                            {/*            borderColor: theme.palette.primary.main,*/}
-                            {/*            backgroundColor: alpha(theme.palette.primary.main, 0.05)*/}
-                            {/*        }*/}
-                            {/*    }}*/}
-                            {/*>*/}
-                            {/*    Export*/}
-                            {/*</Button>*/}
                             <Button
                                 variant="outlined"
                                 startIcon={<ImportIcon size={18} />}
@@ -414,6 +476,28 @@ const BudgetPage: React.FC = () => {
                                 onClose={handleImportClose}
                                 onImport={handleImportComplete}
                                 />
+                            <Button
+                                variant="outlined"
+                                startIcon={<Clock size={18}/>}
+                                onClick={handleManageBudgetsDialogOpen}
+                                sx={{
+                                    ml: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderColor: alpha(theme.palette.divider, 0.8),
+                                    color: theme.palette.text.primary,
+                                    '&:hover': {
+                                        borderColor: theme.palette.primary.main,
+                                        backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                                    }
+                                }}>
+                                Manage
+                            </Button>
+                            <ManageBudgetsDialog
+                                open={manageBudgetsDialogOpen}
+                                onClose={handleManageBudgetsDialogOnClose}
+                                onBudgetUpdated={handleBudgetUpdated}/>
                         </Box>
                     </Box>
                 </Grow>
@@ -1130,6 +1214,41 @@ const BudgetPage: React.FC = () => {
                     </Grid>
                 </Grid>
             </Container>
+            <Dialog
+                open={newBudgetDialogOpen}
+                onClose={handleNewBudgetDialogClose}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx:{
+                        borderRadius: 2,
+                        maxHeight: '90vh'
+                    }
+                }}>
+                <Box sx={{p: 2}}>
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mb: 2
+                    }}>
+                        <Typography variant="h5" component="h2" sx={{ fontWeight: 600 }}>
+                            Create Budget for {new Date().getFullYear()}
+                        </Typography>
+                        <IconButton onClick={handleNewBudgetDialogClose}>
+                            <Delete />
+                        </IconButton>
+                    </Box>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                        No budget found for {new Date().getFullYear()}. Let's create one!
+                    </Alert>
+                    <BudgetQuestionnaireForm
+                        onSubmit={handleNewBudgetSubmit}
+                        skipHistoricalData={true}
+                    />
+                </Box>
+            </Dialog>
+
             <Snackbar
                 open={!!successMessage}
                 autoHideDuration={6000}

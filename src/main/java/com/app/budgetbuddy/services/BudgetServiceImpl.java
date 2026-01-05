@@ -347,4 +347,38 @@ public class BudgetServiceImpl implements BudgetService
         return Optional.empty();
     }
 
+    @Override
+    @Transactional
+    public boolean validateBudgetExistsForYear(Long userId, Integer year)
+    {
+        if(userId == null || year == null)
+        {
+            return false;
+        }
+        log.info("UserID: {}", userId);
+        log.info("Year: {}", year);
+        try
+        {
+            boolean budgetExistsForYear = budgetRepository.existsByUserIdAndYear(userId, year);
+            log.info("Budget exists for year {}: {}", year, budgetExistsForYear);
+            return budgetExistsForYear;
+        }catch(DataAccessException e){
+            log.error("There was an error validating the budget exists for year: ", e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<BudgetEntity> getBudgetsByUserIdAndYear(Long userId, int year)
+    {
+        try
+        {
+            return budgetRepository.findByUserIdAndYear(userId, year);
+        }catch(DataAccessException e){
+            log.error("There was an error getting the budgets by user ID: ", e);
+            return List.of();
+        }
+    }
+
 }

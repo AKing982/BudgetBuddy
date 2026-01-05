@@ -6,6 +6,7 @@ import com.app.budgetbuddy.domain.UploadStatus;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.entities.CSVTransactionEntity;
+import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.services.*;
 import com.univocity.parsers.common.record.Record;
 import com.univocity.parsers.csv.CsvParser;
@@ -34,19 +35,42 @@ public class UploadController
 {
     private final UserService userService;
     private final AccountService accountService;
+    private final CSVAccountRepository csvAccountRepository;
     private final CSVUploaderService<TransactionCSV, AccountCSV, CSVAccountEntity> accountCSVUploaderService;
     private final CSVTransactionService csvTransactionService;
 
     @Autowired
     public UploadController(UserService userService,
                             AccountService accountService,
+                            CSVAccountRepository csvAccountRepository,
                             @Qualifier("accountCSVUploaderServiceImpl") CSVUploaderService<TransactionCSV, AccountCSV, CSVAccountEntity> accountCSVUploaderService,
                             CSVTransactionService csvTransactionService)
     {
         this.userService = userService;
         this.accountService = accountService;
+        this.csvAccountRepository = csvAccountRepository;
         this.accountCSVUploaderService = accountCSVUploaderService;
         this.csvTransactionService = csvTransactionService;
+    }
+
+    @GetMapping("/{userId}/byDates")
+    public ResponseEntity<Boolean> checkIfTransactionsExistByDateRanges(@PathVariable Long userId,
+                                                                        @RequestParam("startDate") LocalDate startDate,
+                                                                        @RequestParam("endDate") LocalDate endDate)
+    {
+        if(userId < 1L || startDate == null || endDate == null)
+        {
+            return ResponseEntity.badRequest().build();
+        }
+        List<TransactionCSV> transactionCSVS = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate);
+        System.out.println(transactionCSVS.size());
+        if(transactionCSVS.isEmpty())
+        {
+            log.info("No transactions exist for user {} between {} and {}", userId, startDate, endDate);
+            return ResponseEntity.ok(false);
+        }
+        log.info("Transactions exist for user {} between {} and {}", userId, startDate, endDate);
+        return ResponseEntity.ok(true);
     }
 
     @PostMapping("/{userId}/csv")

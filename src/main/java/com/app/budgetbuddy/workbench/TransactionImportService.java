@@ -44,12 +44,22 @@ public class TransactionImportService
         this.monthlyExecutorServiceThreads = configureMonthlyExecutorService();
     }
 
-    public ExecutorService configureMonthlyExecutorService() {
+    public ExecutorService configureMonthlyExecutorService()
+    {
+        if(numOfMonthsSinceCurrentDate <= 0)
+        {
+            return Executors.newFixedThreadPool(1);
+        }
         return Executors.newFixedThreadPool(numOfMonthsSinceCurrentDate);
     }
 
     public ExecutorService configureWeeklyExecutorService()
     {
+        int poolSize = 5;
+        if(numOfMonthsSinceCurrentDate <= 0)
+        {
+            return Executors.newFixedThreadPool(poolSize);
+        }
         return Executors.newFixedThreadPool(numOfMonthsSinceCurrentDate * 4);
     }
 

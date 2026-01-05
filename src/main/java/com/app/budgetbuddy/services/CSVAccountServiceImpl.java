@@ -8,11 +8,13 @@ import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -66,12 +68,10 @@ public class CSVAccountServiceImpl implements CSVAccountService
                 String accountNumber = accountCSV.getAccountNumber();
                 int suffix = accountCSV.getSuffix();
                 String accountName = accountCSV.getAccountName();
-                BigDecimal balance = accountCSV.getBalance();
                 Long userId = accountCSV.getUserId();
                 UserEntity userEntity = findUserEntity(userId);
                 csvAccountEntity.setAccountNumber(accountNumber);
                 csvAccountEntity.setAccountName(accountName);
-                csvAccountEntity.setBalance(balance.doubleValue());
                 csvAccountEntity.setSuffix(suffix);
                 csvAccountEntity.setActive(true);
                 csvAccountEntity.setUser(userEntity);
@@ -88,7 +88,22 @@ public class CSVAccountServiceImpl implements CSVAccountService
     @Transactional
     public void saveAllCSVAccountEntities(List<CSVAccountEntity> csvAccountEntities)
     {
-        csvAccountRepository.saveAll(csvAccountEntities);
+        List<CSVAccountEntity> entitiesToSave = csvAccountEntities.stream()
+                        .peek(entity -> entity.setId(null))
+                        .filter(entity -> {
+                            boolean exists = csvAccountRepository.existsBySuffixAccountNumberAndUserId(entity.getSuffix(), entity.getAccountNumber(), entity.getUser().getId());
+                            if(exists){
+                                log.info("CSV Account with suffix: {} and account number: {} already exists for user id: {}", entity.getSuffix(), entity.getAccountNumber(), entity.getUser().getId());
+                            }
+                            return !exists;
+                        })
+                .toList();
+        if(!entitiesToSave.isEmpty()){
+            csvAccountRepository.saveAll(entitiesToSave);
+            log.info("Successfully saved {} CSV Account Entities", entitiesToSave.size());
+        }else{
+            log.info("No CSV Account Entities to save");
+        }
     }
 
     private UserEntity findUserEntity(Long userId)

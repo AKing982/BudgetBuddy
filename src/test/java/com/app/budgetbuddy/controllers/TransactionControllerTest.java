@@ -50,21 +50,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(value=TransactionController.class, excludeAutoConfiguration= SecurityAutoConfiguration.class)
-@Testcontainers
-class TransactionControllerTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:13.2")
-            .withDatabaseName("buddy")
-            .withUsername("buddy")
-            .withPassword("buddy");
-
-    @DynamicPropertySource
-    static void registerPgProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
-        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
-    }
+class TransactionControllerTest
+{
 
     @Autowired
     private MockMvc mockMvc;

@@ -58,7 +58,6 @@ public class AccountCSVUploaderServiceImpl implements CSVUploaderService<Transac
             accountCSV.setUserId(userId);
             accountCSV.setAccountNumber(txn.getAccount());
             accountCSV.setSuffix(txn.getSuffix());
-            accountCSV.setBalance(txn.getBalance());
             if(txn.getSuffix() == 9)
             {
                 accountCSV.setAccountName("CHECKING");
