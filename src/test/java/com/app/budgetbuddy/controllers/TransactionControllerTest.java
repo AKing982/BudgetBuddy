@@ -295,7 +295,8 @@ class TransactionControllerTest
                 "Test Merchant",
                 "Extended description",
                 LocalDate.of(2024, 6, 15),
-                new BigDecimal("1500.00")
+                new BigDecimal("1500.00"),
+                "Test"
         );
     }
 

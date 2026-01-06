@@ -48,7 +48,7 @@ export interface Transaction {
 
 export interface CSVTransaction {
     id: number;
-    csvAcctId: number;
+    account: string;
     transactionDate: string | null;
     transactionAmount: number;
     transactionDescription: string;

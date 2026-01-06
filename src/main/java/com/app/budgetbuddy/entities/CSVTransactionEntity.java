@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +21,7 @@ public class CSVTransactionEntity
 
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="csvAcctId")
+    @JsonIgnore
     private CSVAccountEntity csvAccount;
 
     @Column(name="transactionDate")

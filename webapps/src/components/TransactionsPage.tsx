@@ -269,7 +269,9 @@ const TransactionsPage: React.FC = () => {
             .filter(csv => csv.transactionDate)
             .map((csv, index) => ({
                 // Create unique ID - use csv.id if available, otherwise generate one
-                transactionId: csv.id ? `csv-${csv.id}` : `csv-generated-${index}-${csv.transactionDate}-${csv.transactionAmount}`,
+                transactionId: csv.id
+                    ? `csv-${csv.id}-${index}`
+                    : `csv-generated-${index}-${csv.transactionDate}-${csv.transactionAmount}`,
                 amount: csv.transactionAmount,
                 date: csv.transactionDate!,
                 posted: csv.transactionDate,
@@ -285,8 +287,19 @@ const TransactionsPage: React.FC = () => {
                 accountId: ''
             }));
 
-        // Combine both arrays
-        return [...transactions, ...convertedCsvTransactions];
+        const allTransactions = [...transactions, ...convertedCsvTransactions];
+        const seen = new Set<string>();
+        return allTransactions.filter(transaction => {
+            // Create unique key
+            const key = `${transaction.date}|${transaction.amount}|${(transaction.merchantName || transaction.name || '').toLowerCase().trim()}`;
+
+            if (seen.has(key)) {
+                return false; // Skip duplicate
+            }
+
+            seen.add(key);
+            return true; // Keep unique
+        });
     }, [transactions, csvTransactions]);
 
 

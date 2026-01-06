@@ -25,6 +25,7 @@ public class TransactionCSV implements Comparable<TransactionCSV>
     private String extendedDescription;
     private LocalDate electronicTransactionDate;
     private BigDecimal balance;
+    private String category;
 
     @Override
     public int compareTo(@NotNull TransactionCSV o) {

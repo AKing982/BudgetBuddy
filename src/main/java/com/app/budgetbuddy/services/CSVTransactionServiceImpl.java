@@ -131,12 +131,16 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
             }
             CSVTransactionEntity csvTransactionEntity = updateCSVTransactionWithCategory.get();
             TransactionCSV transactionCSV = new TransactionCSV();
+            transactionCSV.setId(csvTransactionEntity.getId());
+            transactionCSV.setCategory(csvTransactionEntity.getCategory());
+            transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
             transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
             transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
             transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
             transactionCSV.setDescription(csvTransactionEntity.getDescription());
             transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
             transactionCSV.setBalance(csvTransactionEntity.getBalance());
+
             transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
             transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
             return Optional.of(transactionCSV);
