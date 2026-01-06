@@ -115,6 +115,39 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
 
     @Override
     @Transactional
+    public Optional<TransactionCSV> updateTransactionCSVCategory(Long transactionId, String category)
+    {
+        try
+        {
+            // Update the Transaction with the category
+            csvTransactionRepository.updateCSVTransactionEntity(category, transactionId);
+
+            // Fetch the same CSV Transaction
+            Optional<CSVTransactionEntity> updateCSVTransactionWithCategory = csvTransactionRepository.findById(transactionId);
+            if(updateCSVTransactionWithCategory.isEmpty())
+            {
+                log.error("There was an error updating the transaction CSV category: No CSV Transaction Entity was found with the transaction id: {}", transactionId);
+                return Optional.empty();
+            }
+            CSVTransactionEntity csvTransactionEntity = updateCSVTransactionWithCategory.get();
+            TransactionCSV transactionCSV = new TransactionCSV();
+            transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
+            transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
+            transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
+            transactionCSV.setDescription(csvTransactionEntity.getDescription());
+            transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
+            transactionCSV.setBalance(csvTransactionEntity.getBalance());
+            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
+            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
+            return Optional.of(transactionCSV);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the transaction CSV category: ", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
     public List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         List<CSVTransactionEntity> csvTransactionEntities = findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate);
@@ -123,6 +156,8 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         {
             TransactionCSV transactionCSV = new TransactionCSV();
             transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
+            transactionCSV.setId(csvTransactionEntity.getId());
+            transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
             transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
             transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
             transactionCSV.setDescription(csvTransactionEntity.getDescription());

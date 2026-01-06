@@ -58,6 +58,7 @@ import Sidebar from "./Sidebar";
 import TransactionService from '../services/TransactionService';
 import { Transaction, CSVTransaction } from "../utils/Items";
 import CategoryDialog, {CategorySaveData} from "./CategoryDialog";
+import CategoryService from "../services/CategoryService";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -97,6 +98,7 @@ const TransactionsPage: React.FC = () => {
     const [animateIn, setAnimateIn] = useState(false);
     const [disabledCategories, setDisabledCategories] = useState<string[]>([]);
     const [customCategories, setCustomCategories] = useState<string[]>([]);
+    const categoryService = CategoryService.getInstance();
 
     const theme = useTheme();
 
@@ -109,6 +111,7 @@ const TransactionsPage: React.FC = () => {
         }
     }, []);
 
+
     useEffect(() => {
         setIsLoading(true);
         const fetchTransactions = async() => {
@@ -117,8 +120,11 @@ const TransactionsPage: React.FC = () => {
                 let userId = Number(sessionStorage.getItem('userId'));
                 let startDate = transactionService.getStartDate();
                 let endDate = new Date().toISOString().split('T')[0];
+                console.log('Start Date: ', startDate);
+                console.log('End Date: ', endDate);
                 const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
-                const csvTransactionResponse: CSVTransaction[] = await transactionService.fetchCSVTransactionsByUserAndDateRange(userId, startDate, endDate);
+                const csvTransactionResponse: CSVTransaction[] = await categoryService.fetchCategorizedCSVTransactions(userId, startDate, endDate);
+
                 console.log('CSV Transaction Response:', csvTransactionResponse);
                 setTransactions(transactionResponse || []);
                 setCsvTransactions(csvTransactionResponse);

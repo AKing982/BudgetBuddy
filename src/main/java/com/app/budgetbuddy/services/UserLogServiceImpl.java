@@ -109,6 +109,19 @@ public class UserLogServiceImpl implements UserLogService
 
     @Override
     @Transactional
+    public List<Long> getActiveUserIds()
+    {
+        try
+        {
+            return userLogRepository.findAllActiveUserIds();
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the active user ids: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
     public double getDurationSinceLastLogout(Long userId)
     {
         LocalDate currentDate = LocalDate.now();

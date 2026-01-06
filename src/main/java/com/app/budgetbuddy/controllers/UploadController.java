@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.AccountCSV;
+import com.app.budgetbuddy.domain.Locations;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.domain.UploadStatus;
 import com.app.budgetbuddy.entities.AccountEntity;
@@ -207,6 +208,7 @@ public class UploadController
         {
             return merchantName.split(",")[0].trim();
         }
+        Locations[] locations = Locations.values();
         return merchantName;
     }
 

@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-@Qualifier("CSVTransactionCategorizerServiceImpl")
+@Qualifier("csvCategorizer")
 public class CSVTransactionCategorizerServiceImpl implements CategorizerService<TransactionCSV>
 {
     private final TransactionRuleService transactionRuleService;
@@ -74,6 +74,7 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
     // Level 0 Merchant Transaction Amount Static Matching
     static {
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(14.99).stripTrailingZeros()), CategoryType.SUBSCRIPTION);
+        csvMerchantPriceMap.put(new MerchantPrice("Flexible Finance", BigDecimal.valueOf(14.990).stripTrailingZeros()), CategoryType.SUBSCRIPTION);
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(707.0).stripTrailingZeros()), CategoryType.RENT);
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(1220.0).stripTrailingZeros()), CategoryType.RENT);
     }
@@ -122,8 +123,7 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
                 return csvMerchantMap.get(merchantName);
             }
         }
-
-        return null;
+        return CategoryType.UNCATEGORIZED;
     }
 
     @Override
