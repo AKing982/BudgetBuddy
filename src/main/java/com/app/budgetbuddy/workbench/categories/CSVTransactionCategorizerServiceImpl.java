@@ -53,7 +53,19 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantMap.put("MAVERIK", CategoryType.GAS);
         csvMerchantMap.put("TACO BELL", CategoryType.ORDER_OUT);
         csvMerchantMap.put("THE UPS STORE", CategoryType.OTHER);
-        csvMerchantMap.put("THE BREAK SPORTS", CategoryType.GROCERIES);
+        csvMerchantMap.put("THE BREAK SPORTS GRILL", CategoryType.GROCERIES);
+        csvMerchantMap.put("WHOLE FOODS", CategoryType.GROCERIES);
+        csvMerchantMap.put("PLANET FITNESS", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("CVS PHARMACY", CategoryType.OTHER);
+        csvMerchantMap.put("SCRIBD", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("AMAZON.COM", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("APPLE.COM", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("AFTERPAY",  CategoryType.PAYMENT);
+        csvMerchantMap.put("ROXBERRY JUICE", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("AMEX", CategoryType.PAYMENT);
+        csvMerchantMap.put("HBOMAX.COM",CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("Rocket Money", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("Claude.ai", CategoryType.SUBSCRIPTION);
         csvMerchantMap.put("ROCKYMTN/PACIFIC", CategoryType.ELECTRIC);
         csvMerchantMap.put("APPLE COM", CategoryType.SUBSCRIPTION);
         csvMerchantMap.put("WM SUPERCENTER", CategoryType.GROCERIES);
@@ -69,6 +81,10 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantMap.put("Wal-Mart", CategoryType.GROCERIES);
         csvMerchantMap.put("DUTCH BROS", CategoryType.ORDER_OUT);
         csvMerchantMap.put("WALGREENS", CategoryType.OTHER);
+        csvMerchantMap.put("Spotify", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("L3 Technologies", CategoryType.INCOME);
+        csvMerchantMap.put("Raising Canes", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("COLDSTONE", CategoryType.ORDER_OUT);
     }
 
     // Level 0 Merchant Transaction Amount Static Matching
@@ -77,6 +93,8 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantPriceMap.put(new MerchantPrice("Flexible Finance", BigDecimal.valueOf(14.990).stripTrailingZeros()), CategoryType.SUBSCRIPTION);
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(707.0).stripTrailingZeros()), CategoryType.RENT);
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(1220.0).stripTrailingZeros()), CategoryType.RENT);
+        csvMerchantPriceMap.put(new MerchantPrice("Flexible Finance", BigDecimal.valueOf(1220.03).stripTrailingZeros()), CategoryType.RENT);
+        csvMerchantPriceMap.put(new MerchantPrice("Flexible Finance", BigDecimal.valueOf(707.00).stripTrailingZeros()), CategoryType.RENT);
     }
 
     private Long getUserIdByAcctNumberSuffix(int suffix, String acctNumber)
@@ -117,10 +135,17 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
                 log.info("Found Merchant Price Map key: {}", key);
                 return csvMerchantPriceMap.get(key);
             }
-            else if(csvMerchantMap.containsKey(merchantName))
+            else if(csvMerchantMap.keySet().stream()
+                    .anyMatch(k -> k.equalsIgnoreCase(merchantName)))
             {
+                String matchedkey = csvMerchantMap.keySet().stream()
+                                .filter(k -> k.equalsIgnoreCase(merchantName))
+                                .findFirst()
+                                .orElse(null);
                 log.info("Found MerchantMap key: {}", merchantName);
-                return csvMerchantMap.get(merchantName);
+                CategoryType categoryType = csvMerchantMap.get(matchedkey);
+                log.info("Found CategoryType: {}", categoryType);
+                return categoryType;
             }
         }
         return CategoryType.UNCATEGORIZED;

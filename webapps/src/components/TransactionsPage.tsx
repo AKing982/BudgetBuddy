@@ -622,7 +622,7 @@ const TransactionsPage: React.FC = () => {
     const categoryBreakdown = useMemo(() => {
         const breakdowns: Record<string, number> = {};
 
-        transactions.forEach(transaction => {
+        combinedTransactions.forEach(transaction => {
             if (transaction.amount > 0 && transaction.categories.length > 0) {
                 const category = transaction.categories[0];
                 if (breakdowns[category]) {
@@ -637,7 +637,7 @@ const TransactionsPage: React.FC = () => {
             .map(([category, amount]) => ({ category, amount }))
             .sort((a, b) => b.amount - a.amount)
             .slice(0, 5); // Top 5 categories
-    }, [transactions]);
+    }, [combinedTransactions]);
 
     return (
         <Box sx={{
