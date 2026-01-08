@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.runner;
 
+import com.app.budgetbuddy.domain.CategorySaveData;
 import com.app.budgetbuddy.domain.CategoryType;
 import com.app.budgetbuddy.domain.Locations;
 import com.app.budgetbuddy.domain.TransactionCSV;
@@ -70,6 +71,15 @@ public class CategoryRunner
             }
         }
         return trimmedMerchantName;
+    }
+
+    public Optional<TransactionCSV> categorizeSingleCSVTransaction(final CategorySaveData categorySaveData)
+    {
+        if(categorySaveData == null)
+        {
+            return Optional.empty();
+        }
+        return null;
     }
 
     public List<TransactionCSV> categorizeCSVTransactionsByRange(Long userId,

@@ -1,9 +1,11 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.CategorySaveData;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,12 @@ public class CategoryController
     public CategoryController(CategoryRunner categoryRunner)
     {
         this.categoryRunner = categoryRunner;
+    }
+
+    @PostMapping("/categorize/transaction")
+    public ResponseEntity<TransactionCSV> categorizeCSVTransaction(@RequestBody @NotNull CategorySaveData categorySaveData)
+    {
+        return null;
     }
 
     @PostMapping("/categorize/{userId}/csv")
