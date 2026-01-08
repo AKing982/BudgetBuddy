@@ -115,12 +115,12 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
 
     @Override
     @Transactional
-    public Optional<TransactionCSV> updateTransactionCSVCategory(Long transactionId, String category)
+    public Optional<TransactionCSV> updateTransactionCSVCategoryAndMerchantName(Long transactionId, String merchantName, String category)
     {
         try
         {
             // Update the Transaction with the category
-            csvTransactionRepository.updateCSVTransactionEntity(category, transactionId);
+            csvTransactionRepository.updateCSVTransactionEntityCategoryAndMerchantName(category, merchantName, transactionId);
 
             // Fetch the same CSV Transaction
             Optional<CSVTransactionEntity> updateCSVTransactionWithCategory = csvTransactionRepository.findById(transactionId);

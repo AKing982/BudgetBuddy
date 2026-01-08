@@ -64,8 +64,8 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantMap.put("ROXBERRY JUICE", CategoryType.ORDER_OUT);
         csvMerchantMap.put("AMEX", CategoryType.PAYMENT);
         csvMerchantMap.put("HBOMAX.COM",CategoryType.SUBSCRIPTION);
-        csvMerchantMap.put("Rocket Money", CategoryType.SUBSCRIPTION);
-        csvMerchantMap.put("Claude.ai", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("ROCKET MONEY", CategoryType.SUBSCRIPTION);
+        csvMerchantMap.put("CLAUDE.AI", CategoryType.SUBSCRIPTION);
         csvMerchantMap.put("ROCKYMTN/PACIFIC", CategoryType.ELECTRIC);
         csvMerchantMap.put("APPLE COM", CategoryType.SUBSCRIPTION);
         csvMerchantMap.put("WM SUPERCENTER", CategoryType.GROCERIES);
@@ -81,10 +81,12 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantMap.put("Wal-Mart", CategoryType.GROCERIES);
         csvMerchantMap.put("DUTCH BROS", CategoryType.ORDER_OUT);
         csvMerchantMap.put("WALGREENS", CategoryType.OTHER);
-        csvMerchantMap.put("Spotify", CategoryType.SUBSCRIPTION);
-        csvMerchantMap.put("L3 Technologies", CategoryType.INCOME);
-        csvMerchantMap.put("Raising Canes", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("L3 TECHNOLOGIES", CategoryType.INCOME);
+        csvMerchantMap.put("RAISING CANES", CategoryType.ORDER_OUT);
         csvMerchantMap.put("COLDSTONE", CategoryType.ORDER_OUT);
+        csvMerchantMap.put("BUCKLE", CategoryType.OTHER);
+        csvMerchantMap.put("SP Strom Holdings LLC", CategoryType.OTHER);
+
     }
 
     // Level 0 Merchant Transaction Amount Static Matching
@@ -129,21 +131,17 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
             MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
             log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
             boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
+            String merchantNameUpper = merchantName.toUpperCase();
             log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
             if(csvMerchantPriceMap.containsKey(key))
             {
                 log.info("Found Merchant Price Map key: {}", key);
                 return csvMerchantPriceMap.get(key);
             }
-            else if(csvMerchantMap.keySet().stream()
-                    .anyMatch(k -> k.equalsIgnoreCase(merchantName)))
+            else if(csvMerchantMap.containsKey(merchantNameUpper))
             {
-                String matchedkey = csvMerchantMap.keySet().stream()
-                                .filter(k -> k.equalsIgnoreCase(merchantName))
-                                .findFirst()
-                                .orElse(null);
                 log.info("Found MerchantMap key: {}", merchantName);
-                CategoryType categoryType = csvMerchantMap.get(matchedkey);
+                CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
                 log.info("Found CategoryType: {}", categoryType);
                 return categoryType;
             }

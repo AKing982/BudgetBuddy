@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.CategoryType;
+import com.app.budgetbuddy.domain.Locations;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.services.CSVTransactionService;
 import com.app.budgetbuddy.services.UserLogService;
@@ -47,6 +48,30 @@ public class CategoryRunner
         currentUserIds.forEach(userId -> categorizeCSVTransactionsByRange(userId, lastMonth, today));
     }
 
+    private String trimMerchantName(String merchantName)
+    {
+        String trimmedMerchantName = merchantName.trim();
+        log.info("Original Merchant Name: {}", trimmedMerchantName);
+        Locations[] locations = Locations.values();
+        for(Locations location : locations)
+        {
+            String locationValue = location.getValue();
+            log.info("Location Value: {}", locationValue);
+            String toLowerValue = locationValue.toLowerCase();
+            log.info("ToLower Value: {}", toLowerValue);
+            if(trimmedMerchantName.toLowerCase().contains(locationValue.toLowerCase()))
+            {
+                log.info("Merchant Name contains: {}", locationValue);
+                int toUpperIndex = trimmedMerchantName.indexOf(toLowerValue);
+                int toUpperLength = toLowerValue.length();
+                trimmedMerchantName = trimmedMerchantName.substring(0, toUpperIndex + toUpperLength + 1).trim();
+                log.info("Trimmed Merchant Name substring: {}", trimmedMerchantName);
+                break;
+            }
+        }
+        return trimmedMerchantName;
+    }
+
     public List<TransactionCSV> categorizeCSVTransactionsByRange(Long userId,
                                                                     LocalDate startDate,
                                                                     LocalDate endDate)
@@ -58,12 +83,16 @@ public class CategoryRunner
             {
                 Long csvTransactionId = transactionCSV.getId();
 
+                // Trim and replace any transaction that has a bad merchant name
+                String trimmedMerchantName = trimMerchantName(transactionCSV.getMerchantName());
+                log.info("Trimmed Merchant Name: {}", trimmedMerchantName);
+
                 // Categorize the transaction
                 CategoryType categoryType = csvCategorizerService.categorize(transactionCSV);
                 String category = categoryType.getType();
 
                 // Update the existing transaction with the new category type
-                Optional<TransactionCSV> transactionCSVOptional = csvTransactionService.updateTransactionCSVCategory(csvTransactionId, category);
+                Optional<TransactionCSV> transactionCSVOptional = csvTransactionService.updateTransactionCSVCategoryAndMerchantName(csvTransactionId, trimmedMerchantName, category);
                 if(transactionCSVOptional.isEmpty())
                 {
                     log.error("There was an error updating the transaction category for transaction id {}", csvTransactionId);
