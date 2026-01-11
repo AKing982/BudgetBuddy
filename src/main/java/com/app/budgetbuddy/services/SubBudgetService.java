@@ -16,6 +16,7 @@ public interface SubBudgetService extends ServiceModel<SubBudgetEntity>
     Optional<SubBudgetEntity> updateSubBudget(SubBudget subBudget);
     Optional<SubBudget> findSubBudgetByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     List<SubBudget> findSubBudgetsByUserId(Long userId);
+    Optional<SubBudget> updateSubBudgetSpendingByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate);
     List<SubBudget> findSubBudgetsByUserIdAndLimit(Long userId, int numOfMonths, int year);
 
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEntity, Long>
@@ -20,6 +21,9 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
 
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id")
     List<BudgetCategoryEntity> findByBudgetId(@Param("id") Long budgetId);
+
+    @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id AND u.categoryName =:category AND u.startDate >=:start AND u.endDate <=:endDate")
+    Optional<BudgetCategoryEntity> findBySubBudgetIdAndCategoryAndDateRange(@Param("id") Long budgetId, @Param("category") String category, @Param("start") LocalDate start, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id AND u.startDate =:start AND u.endDate =:end")
     List<BudgetCategoryEntity> findByBudgetIdAndDateRange(@Param("id") Long budgetId, @Param("start") LocalDate start, @Param("end") LocalDate end);

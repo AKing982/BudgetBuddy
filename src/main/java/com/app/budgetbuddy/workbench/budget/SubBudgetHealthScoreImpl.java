@@ -2,6 +2,12 @@ package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.BudgetHealthScore;
 import com.app.budgetbuddy.domain.SubBudget;
+import com.app.budgetbuddy.entities.SubBudgetEntity;
+import com.app.budgetbuddy.repositories.SubBudgetRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -9,12 +15,24 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
+@Qualifier("subBudgetHealth")
 public class SubBudgetHealthScoreImpl implements BudgetHealthService<SubBudget>
 {
+    private final SubBudgetMonthOverviewServiceImpl subBudgetMonthOverviewServiceImpl;
     private Map<Long, BudgetHealthScore> subBudgetHealthScoreMap = new HashMap<>();
+    private final SubBudgetRepository subBudgetRepository;
+
+    @Autowired
+    public SubBudgetHealthScoreImpl(SubBudgetRepository subBudgetRepository, SubBudgetMonthOverviewServiceImpl subBudgetMonthOverviewServiceImpl)
+    {
+        this.subBudgetRepository = subBudgetRepository;
+        this.subBudgetMonthOverviewServiceImpl = subBudgetMonthOverviewServiceImpl;
+    }
 
     @Override
     public BudgetHealthScore calculateHealthScore(SubBudget budget)
@@ -25,9 +43,13 @@ public class SubBudgetHealthScoreImpl implements BudgetHealthService<SubBudget>
         }
 
         BigDecimal spendingRatio = trackSubBudgetSpendingRatio(budget);
+        log.info("Spending ratio for sub-budget {} is {}", budget.getId(), spendingRatio);
         BigDecimal variance = calculateVariance(budget);
-        BigDecimal savingsRatio = budget.getSavingsRatio();
+        log.info("Variance for sub-budget {} is {}", budget.getId(), variance);
+        BigDecimal savingsRatio = getSavingsRatioCalculation(budget);
+        log.info("Savings ratio for sub-budget {} is {}", budget.getId(), savingsRatio);
         BigDecimal score = computeHealthScore(spendingRatio, savingsRatio);
+        log.info("Health score for sub-budget {} is {}", budget.getId(), score);
         BudgetHealthScore healthScore = new BudgetHealthScore(
                 budget.getId(),
                 score,
@@ -39,6 +61,29 @@ public class SubBudgetHealthScoreImpl implements BudgetHealthService<SubBudget>
 
         subBudgetHealthScoreMap.put(budget.getId(), healthScore);
         return healthScore;
+    }
+
+    public BigDecimal getSavingsRatioCalculation(SubBudget subBudget)
+    {
+        BigDecimal allocatedAmount = subBudget.getAllocatedAmount();
+        BigDecimal subSavingsAmount = subBudget.getSubSavingsAmount();
+        if(subSavingsAmount.compareTo(BigDecimal.ZERO) == 0)
+        {
+            LocalDate subBudgetStart = subBudget.getStartDate();
+            LocalDate subBudgetEnd = subBudget.getEndDate();
+            Long subBudgetId = subBudget.getId();
+            subBudgetRepository.updateSubBudgetSavingsByDateRange(subBudgetStart, subBudgetEnd, subBudgetId);
+            Optional<SubBudgetEntity> refreshedSubBudgetOptional = subBudgetRepository.findById(subBudgetId);
+            if(refreshedSubBudgetOptional.isEmpty())
+            {
+                log.error("Sub budget {} could not be found after updating savings", subBudgetId);
+                return BigDecimal.ZERO;
+            }
+            SubBudgetEntity refreshedSubBudget = refreshedSubBudgetOptional.get();
+            subSavingsAmount = refreshedSubBudget.getSubSavingsAmount();
+            log.info("Updated sub budget savings to {}", subSavingsAmount);
+        }
+        return subBudget.getSavingsRatio();
     }
 
     /**
@@ -89,10 +134,33 @@ public class SubBudgetHealthScoreImpl implements BudgetHealthService<SubBudget>
      * @return The spending ratio.
      */
     private BigDecimal trackSubBudgetSpendingRatio(SubBudget budget) {
-        if (budget.getSpentOnBudget().compareTo(BigDecimal.ZERO) == 0) {
+        if (budget.getAllocatedAmount().compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
-        return budget.getSpentOnBudget().divide(budget.getAllocatedAmount(), 2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal allocatedAmount = budget.getAllocatedAmount();
+        log.info("Allocated amount for sub-budget {} is {}", budget.getId(), allocatedAmount);
+        BigDecimal spentOnSubBudget = budget.getSpentOnBudget();
+        if(spentOnSubBudget.compareTo(BigDecimal.ZERO) == 0)
+        {
+            log.info("Sub Budget spending is zero");
+            LocalDate subBudgetStart = budget.getStartDate();
+            LocalDate subBudgetEnd = budget.getEndDate();
+            Long subBudgetId = budget.getId();
+            subBudgetRepository.updateSubBudgetSpendingByDateRange(subBudgetStart, subBudgetEnd, subBudgetId);
+            Optional<SubBudgetEntity> refreshedSubBudgetOptional = subBudgetRepository.findById(subBudgetId);
+            if(refreshedSubBudgetOptional.isEmpty())
+            {
+                log.error("Sub budget {} could not be found after updating spending", subBudgetId);
+                return BigDecimal.ZERO;
+            }
+            SubBudgetEntity refreshedSubBudget = refreshedSubBudgetOptional.get();
+            spentOnSubBudget = refreshedSubBudget.getSpentOnBudget();
+            log.info("Updated sub budget spending to {}", spentOnSubBudget);
+        }
+        log.info("Spent on sub-budget {} is {}", budget.getId(), spentOnSubBudget);
+        BigDecimal spendingRatio = spentOnSubBudget.divide(allocatedAmount, 2, BigDecimal.ROUND_HALF_UP);
+        log.info("Spending ratio for sub-budget {} is {}", budget.getId(), spendingRatio);
+        return spendingRatio;
     }
 
     /**

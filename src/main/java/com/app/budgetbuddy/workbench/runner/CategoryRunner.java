@@ -53,30 +53,6 @@ public class CategoryRunner
         currentUserIds.forEach(userId -> categorizeCSVTransactionsByRange(userId, lastMonth, today));
     }
 
-    private String trimMerchantName(String merchantName)
-    {
-        String trimmedMerchantName = merchantName.trim();
-        log.info("Original Merchant Name: {}", trimmedMerchantName);
-        Locations[] locations = Locations.values();
-        for(Locations location : locations)
-        {
-            String locationValue = location.getValue();
-            log.info("Location Value: {}", locationValue);
-            String toLowerValue = locationValue.toLowerCase();
-            log.info("ToLower Value: {}", toLowerValue);
-            if(trimmedMerchantName.toLowerCase().contains(locationValue.toLowerCase()))
-            {
-                log.info("Merchant Name contains: {}", locationValue);
-                int toUpperIndex = trimmedMerchantName.indexOf(toLowerValue);
-                int toUpperLength = toLowerValue.length();
-                trimmedMerchantName = trimmedMerchantName.substring(0, toUpperIndex + toUpperLength + 1).trim();
-                log.info("Trimmed Merchant Name substring: {}", trimmedMerchantName);
-                break;
-            }
-        }
-        return trimmedMerchantName;
-    }
-
     public Optional<TransactionCSV> categorizeSingleCSVTransaction(final CategorySaveData categorySaveData)
     {
         if (categorySaveData == null)

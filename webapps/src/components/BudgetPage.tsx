@@ -33,7 +33,7 @@ import BudgetOverview from './BudgetOverview';
 import TopExpenseCategory from './TopExpenseCategory';
 import BudgetPeriodTable from './BudgetPeriodTable';
 import BudgetSummary from "./BudgetSummary";
-import BudgetProgressSummary from "./BudgetProgressSummary";
+import BudgetProgressSummary, {BudgetProgressData} from "./BudgetProgressSummary";
 import BudgetRunnerService, { BudgetRunnerResult } from "../services/BudgetRunnerService";
 import CsvUploadService  from "../services/CsvUploadService";
 import {
@@ -351,21 +351,22 @@ const BudgetPage: React.FC = () => {
 
         // Calculate days elapsed and days remaining
         let daysElapsed = currentDate;
+        console.log('Days elapsed: ', daysElapsed);
         let daysRemaining = daysInMonth - currentDate;
+        console.log('Days remaining: ', daysRemaining);
 
         // If we're viewing a month in the past, all days have elapsed
         if (currentMonth.getMonth() < today.getMonth() || currentMonth.getFullYear() < today.getFullYear()) {
             daysElapsed = daysInMonth;
             daysRemaining = 0;
-        }
-
-        // If we're viewing a month in the future, no days have elapsed
-        if (currentMonth.getMonth() > today.getMonth() || currentMonth.getFullYear() > today.getFullYear()) {
+        }// If we're viewing a month in the future, no days have elapsed
+        else if (currentMonth.getMonth() > today.getMonth() || currentMonth.getFullYear() > today.getFullYear()) {
             daysElapsed = 0;
             daysRemaining = daysInMonth;
         }
 
         const percentElapsed = (daysElapsed / daysInMonth) * 100;
+        console.log('Percent elapsed: ', percentElapsed);
 
         // Calculate spending rate metrics
         const idealSpendRate = budgetStats.totalBudget / daysInMonth;
@@ -388,6 +389,21 @@ const BudgetPage: React.FC = () => {
             spendingDifference: Math.abs(spendingDifference)
         };
     }, [currentMonth, budgetStats]);
+
+    const formatCurrency = (amount: number) : string => {
+        const absAmount = Math.abs(amount);
+        const formatted = absAmount.toFixed(2);
+        return amount < 0 ? `$0` : `$${formatted}`;
+    }
+
+    const budgetProgressData: BudgetProgressData = {
+
+        totalBudget: budgetStats.totalBudget,
+        totalSpent: budgetStats.totalSpent,
+        savingsGoal: budgetData[0]?.subBudget?.subSavingsTarget || 0,
+        currentSavings: budgetStats.totalSaved,
+        previousWeekSavings: 1000 // Optional: if you track this
+    };
 
     const handleBudgetUpdated = async () => {
         setManageBudgetsDialogOpen(false);
@@ -663,7 +679,7 @@ const BudgetPage: React.FC = () => {
                                     <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
                                 ) : (
                                     <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                        ${budgetStats.remaining.toLocaleString()}
+                                        {formatCurrency(budgetStats.remaining)}
                                     </Typography>
                                 )}
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1082,7 +1098,8 @@ const BudgetPage: React.FC = () => {
                                                 </Box>
                                             </Box>
 
-                                            <BudgetProgressSummary />
+                                            <BudgetProgressSummary budgetData={budgetProgressData}
+                                            budgetName={budgetData[0]?.subBudget?.subBudgetName}/>
 
                                             <Box sx={{ mt: 3 }}>
                                                 <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>

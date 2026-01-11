@@ -663,33 +663,38 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                                     {format(start, 'MM/dd/yy')} - {format(end, 'MM/dd/yy')}
                                                 </TableCell>
                                             </TableRow>
-
                                             {/*{periodData.length > 0 ? (*/}
                                             {/*    periodData.filter(category => {*/}
                                             {/*        if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {*/}
                                             {/*            return category.biWeekRanges.some(range => {*/}
+                                            {/*                const startArr = (range.startDate as unknown) as number[];*/}
+                                            {/*                const endArr = (range.endDate as unknown) as number[];*/}
+
                                             {/*                const categoryStart = new Date(*/}
-                                            {/*                    Number(range.startDate[0]),*/}
-                                            {/*                    Number(range.startDate[1]) - 1,*/}
-                                            {/*                    Number(range.startDate[2])*/}
+                                            {/*                    Number(startArr[0]),*/}
+                                            {/*                    Number(startArr[1]) - 1,*/}
+                                            {/*                    Number(startArr[2])*/}
                                             {/*                );*/}
                                             {/*                const categoryEnd = new Date(*/}
-                                            {/*                    Number(range.endDate[0]),*/}
-                                            {/*                    Number(range.endDate[1]) - 1,*/}
-                                            {/*                    Number(range.endDate[2])*/}
+                                            {/*                    Number(endArr[0]),*/}
+                                            {/*                    Number(endArr[1]) - 1,*/}
+                                            {/*                    Number(endArr[2])*/}
                                             {/*                );*/}
                                             {/*                return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);*/}
                                             {/*            });*/}
                                             {/*        } else if (category.dateRange?.startDate && category.dateRange?.endDate) {*/}
+                                            {/*            const startArr = (category.dateRange.startDate as unknown) as number[];*/}
+                                            {/*            const endArr = (category.dateRange.endDate as unknown) as number[];*/}
+
                                             {/*            const categoryStart = new Date(*/}
-                                            {/*                Number(category.dateRange.startDate[0]),*/}
-                                            {/*                Number(category.dateRange.startDate[1]) - 1,*/}
-                                            {/*                Number(category.dateRange.startDate[2])*/}
+                                            {/*                Number(startArr[0]),*/}
+                                            {/*                Number(startArr[1]) - 1,*/}
+                                            {/*                Number(startArr[2])*/}
                                             {/*            );*/}
                                             {/*            const categoryEnd = new Date(*/}
-                                            {/*                Number(category.dateRange.endDate[0]),*/}
-                                            {/*                Number(category.dateRange.endDate[1]) - 1,*/}
-                                            {/*                Number(category.dateRange.endDate[2])*/}
+                                            {/*                Number(endArr[0]),*/}
+                                            {/*                Number(endArr[1]) - 1,*/}
+                                            {/*                Number(endArr[2])*/}
                                             {/*            );*/}
                                             {/*            return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);*/}
                                             {/*        }*/}
@@ -729,64 +734,100 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                             {/*    </TableRow>*/}
                                             {/*)}*/}
                                             {periodData.length > 0 ? (
-                                                periodData.filter(category => {
-                                                    if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {
-                                                        return category.biWeekRanges.some(range => {
-                                                            const startArr = (range.startDate as unknown) as number[];
-                                                            const endArr = (range.endDate as unknown) as number[];
-
-                                                            const categoryStart = new Date(
-                                                                Number(startArr[0]),
-                                                                Number(startArr[1]) - 1,
-                                                                Number(startArr[2])
-                                                            );
-                                                            const categoryEnd = new Date(
-                                                                Number(endArr[0]),
-                                                                Number(endArr[1]) - 1,
-                                                                Number(endArr[2])
-                                                            );
-                                                            return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
-                                                        });
-                                                    } else if (category.dateRange?.startDate && category.dateRange?.endDate) {
-                                                        const startArr = (category.dateRange.startDate as unknown) as number[];
-                                                        const endArr = (category.dateRange.endDate as unknown) as number[];
-
-                                                        const categoryStart = new Date(
-                                                            Number(startArr[0]),
-                                                            Number(startArr[1]) - 1,
-                                                            Number(startArr[2])
-                                                        );
-                                                        const categoryEnd = new Date(
-                                                            Number(endArr[0]),
-                                                            Number(endArr[1]) - 1,
-                                                            Number(endArr[2])
-                                                        );
-                                                        return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
-                                                    }
-                                                    return false;
-                                                }).map((category, categoryIndex) => (
-                                                    <TableRow key={`${format(start, 'yyyy-MM-dd')}-${category.category}-${categoryIndex}`}>
-                                                        <TableCell component="th" scope="row">
-                                                            {category.category}
-                                                        </TableCell>
-                                                        <TableCell align="right">
-                                                            ${(category.budgeted || 0).toFixed(2)}
-                                                        </TableCell>
-                                                        <TableCell align="right">
-                                                            ${(category.actual || 0).toFixed(2)}
-                                                        </TableCell>
-                                                        <TableCell
-                                                            align="right"
+                                                <TableRow>
+                                                    <TableCell colSpan={4} sx={{ p: 0 }}>
+                                                        <Box
                                                             sx={{
-                                                                color: (category.remaining || 0) >= 0 ? 'green' : 'red',
-                                                                fontWeight: 'bold'
+                                                                maxHeight: '200px',
+                                                                overflowY: 'auto',
+                                                                '&::-webkit-scrollbar': {
+                                                                    width: '8px',
+                                                                },
+                                                                '&::-webkit-scrollbar-track': {
+                                                                    backgroundColor: 'rgba(0,0,0,0.05)',
+                                                                },
+                                                                '&::-webkit-scrollbar-thumb': {
+                                                                    backgroundColor: maroonColor,
+                                                                    borderRadius: '4px',
+                                                                    '&:hover': {
+                                                                        backgroundColor: '#600000',
+                                                                    },
+                                                                },
                                                             }}
                                                         >
-                                                            ${Math.abs(category.remaining || 0).toFixed(2)}
-                                                            {(category.remaining || 0) >= 0 ? ' under' : ' over'}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
+                                                            <Table>
+                                                                <TableBody>
+                                                                    {periodData.filter(category => {
+                                                                        if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {
+                                                                            return category.biWeekRanges.some(range => {
+                                                                                const startArr = (range.startDate as unknown) as number[];
+                                                                                const endArr = (range.endDate as unknown) as number[];
+
+                                                                                const categoryStart = new Date(
+                                                                                    Number(startArr[0]),
+                                                                                    Number(startArr[1]) - 1,
+                                                                                    Number(startArr[2])
+                                                                                );
+                                                                                const categoryEnd = new Date(
+                                                                                    Number(endArr[0]),
+                                                                                    Number(endArr[1]) - 1,
+                                                                                    Number(endArr[2])
+                                                                                );
+                                                                                return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
+                                                                            });
+                                                                        } else if (category.dateRange?.startDate && category.dateRange?.endDate) {
+                                                                            const startArr = (category.dateRange.startDate as unknown) as number[];
+                                                                            const endArr = (category.dateRange.endDate as unknown) as number[];
+
+                                                                            const categoryStart = new Date(
+                                                                                Number(startArr[0]),
+                                                                                Number(startArr[1]) - 1,
+                                                                                Number(startArr[2])
+                                                                            );
+                                                                            const categoryEnd = new Date(
+                                                                                Number(endArr[0]),
+                                                                                Number(endArr[1]) - 1,
+                                                                                Number(endArr[2])
+                                                                            );
+                                                                            return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
+                                                                        }
+                                                                        return false;
+                                                                    }).map((category, categoryIndex) => (
+                                                                        <TableRow
+                                                                            key={`${format(start, 'yyyy-MM-dd')}-${category.category}-${categoryIndex}`}
+                                                                            sx={{
+                                                                                '&:hover': {
+                                                                                    backgroundColor: 'rgba(128, 0, 0, 0.04)',
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <TableCell component="th" scope="row" sx={{ width: '40%' }}>
+                                                                                {category.category}
+                                                                            </TableCell>
+                                                                            <TableCell align="right" sx={{ width: '20%' }}>
+                                                                                ${(category.budgeted || 0).toFixed(2)}
+                                                                            </TableCell>
+                                                                            <TableCell align="right" sx={{ width: '20%' }}>
+                                                                                ${(category.actual || 0).toFixed(2)}
+                                                                            </TableCell>
+                                                                            <TableCell
+                                                                                align="right"
+                                                                                sx={{
+                                                                                    width: '20%',
+                                                                                    color: (category.remaining || 0) >= 0 ? 'green' : 'red',
+                                                                                    fontWeight: 'bold'
+                                                                                }}
+                                                                            >
+                                                                                ${Math.abs(category.remaining || 0).toFixed(2)}
+                                                                                {(category.remaining || 0) >= 0 ? ' under' : ' over'}
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                    ))}
+                                                                </TableBody>
+                                                            </Table>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
                                             ) : (
                                                 <TableRow>
                                                     <TableCell
@@ -798,8 +839,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                                     </TableCell>
                                                 </TableRow>
                                             )}
-
-
                                         </React.Fragment>
                                     ));
                                 })()

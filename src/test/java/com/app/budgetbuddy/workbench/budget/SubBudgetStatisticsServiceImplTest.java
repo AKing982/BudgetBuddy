@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +36,10 @@ class SubBudgetStatisticsServiceImplTest
 
     @Mock
     private SubBudgetService subBudgetService;
+
+    @Mock
+    @Qualifier("subBudgetHealth")
+    private BudgetHealthService<SubBudget> subBudgetBudgetHealthService;
 
     @InjectMocks
     private SubBudgetStatisticsServiceImpl subBudgetStatisticsService;
@@ -72,7 +77,7 @@ class SubBudgetStatisticsServiceImplTest
         testSubBudget.setSubSavingsTarget(new BigDecimal("200.00"));
 
 
-        subBudgetStatisticsService = new SubBudgetStatisticsServiceImpl(budgetQueriesService, budgetCalculations, budgetStatisticsService, subBudgetService);
+        subBudgetStatisticsService = new SubBudgetStatisticsServiceImpl(budgetQueriesService, budgetCalculations, budgetStatisticsService, subBudgetService, subBudgetBudgetHealthService);
     }
 
     @Test

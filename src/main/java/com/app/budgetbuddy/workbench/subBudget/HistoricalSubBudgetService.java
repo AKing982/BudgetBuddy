@@ -37,8 +37,33 @@ public class HistoricalSubBudgetService
     public Map<DateRange, BigDecimal> getWeeklyBudgetedAmounts(final int numberOfMonths, final Long userId, final LocalDate currentMonthStart, final LocalDate currentMonthEnd, final BigDecimal subBudgetAmount)
     {
         Map<DateRange, BigDecimal> weeklyBudgetedAmounts = new HashMap<>();
-        if(numberOfMonths <= 0 || userId == null || currentMonthStart == null || currentMonthEnd == null)
+        if(numberOfMonths < 0 || userId == null || currentMonthStart == null || currentMonthEnd == null)
         {
+            return weeklyBudgetedAmounts;
+        }
+        final LocalDate january1st = LocalDate.of(currentMonthStart.getYear(), 1, 1);
+        final LocalDate january31st = LocalDate.of(currentMonthEnd.getYear(), 1, 31);
+        final LocalDate january14 = LocalDate.of(currentMonthStart.getYear(), 1, 14);
+        if(numberOfMonths == 0 && currentMonthStart.isEqual(january1st) && currentMonthEnd.isEqual(january31st))
+        {
+            DateRange currentMonth = DateRange.createDateRange(currentMonthStart, currentMonthEnd);
+            List<DateRange> weeksInMonth = currentMonth.splitIntoWeeks();
+            int numOfWeeks = weeksInMonth.size();
+            BigDecimal estimatedWeeklyBudget = subBudgetAmount.divide(BigDecimal.valueOf(numOfWeeks), RoundingMode.CEILING);
+            BigDecimal januaryRentFirst = BigDecimal.valueOf(budgetCategoryQueries.getCategoryAmount(userId, january1st, january14, "Rent"));
+            for(DateRange week : weeksInMonth)
+            {
+                LocalDate weekStart = week.getStartDate();
+                LocalDate weekEnd = week.getEndDate();
+                boolean isEarlyJanuaryWeek = !weekStart.isAfter(january14) && !weekEnd.isBefore(january1st);
+                if(isEarlyJanuaryWeek)
+                {
+                    // Account for rent/mortgage
+                    estimatedWeeklyBudget = estimatedWeeklyBudget.add(januaryRentFirst);
+                    log.info("Week {} estimated weekly budget after rent: {}", week, estimatedWeeklyBudget);
+                }
+                weeklyBudgetedAmounts.put(week, estimatedWeeklyBudget);
+            }
             return weeklyBudgetedAmounts;
         }
         for(int i = 0; i < numberOfMonths; i++)
@@ -75,6 +100,7 @@ public class HistoricalSubBudgetService
                     BigDecimal paymentsAmount = BigDecimal.valueOf(budgetCategoryQueries.getCategoryAmount(userId, weekStart, weekEnd, "Payments"));
                     estimatedWeeklyBudget = estimatedWeeklyBudget.add(paymentsAmount);
                 }
+                log.info("Week {} estimated weekly budget: {}", week, estimatedWeeklyBudget);
                 weeklyBudgetedAmounts.put(week, estimatedWeeklyBudget);
             }
         }
@@ -136,8 +162,17 @@ public class HistoricalSubBudgetService
             INNER JOIN AccountEntity a ON t.account.id = a.id
             WHERE a.user.id = :userId
               AND t.posted BETWEEN :startDate AND :endDate
-              AND t.posted >= :monthsBackDate
               AND tc.matchedCategory = :category
+            UNION ALL
+            SELECT CASE
+                WHEN abs(SUM(ct.transactionAmount)) IS NULL
+                THEN 0
+                ELSE abs(SUM(ct.transactionAmount))
+            END as totalCSVCategorySpending
+           FROM CSVTransactionEntity ct
+           WHERE ct.csvAccount.user.id = :userId
+           AND ct.transactionDate BETWEEN :startDate AND :endDate
+           AND ct.category = :category
             """;
         try
         {
@@ -146,12 +181,13 @@ public class HistoricalSubBudgetService
             {
                 LocalDate previousMonthStart = startDate.minusMonths(i);
                 LocalDate previousMonthEnd = endDate.minusMonths(i);
-                BigDecimal totalMonthSpendingByCategory = entityManager.createQuery(totalSpendingForMonthCategoryQuery, BigDecimal.class)
+                List<BigDecimal> results = entityManager.createQuery(totalSpendingForMonthCategoryQuery, BigDecimal.class)
                         .setParameter("userId", userId)
                         .setParameter("startDate", previousMonthStart)
                         .setParameter("endDate", previousMonthEnd)
                         .setParameter("category", category)
-                        .getSingleResult();
+                        .getResultList();
+                BigDecimal totalMonthSpendingByCategory = results.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
                 totalSpendingForMonths = totalSpendingForMonths.add(totalMonthSpendingByCategory);
             }
             return totalSpendingForMonths;

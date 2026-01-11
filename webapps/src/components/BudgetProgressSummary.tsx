@@ -26,49 +26,20 @@ type Category = {
     budget: number;
 };
 
-type BudgetData = {
+
+export interface BudgetProgressData {
     totalBudget: number;
     totalSpent: number;
     savingsGoal: number;
     currentSavings: number;
-    previousWeekSavings: number;
-    categories: Category[];
-};
+    previousWeekSavings?: number;
+}
 
-type BudgetsData = {
-    [key: string]: BudgetData;
-};
+interface BudgetProgressSummaryProps {
+    budgetData: BudgetProgressData;
+    budgetName?: string;
+}
 
-const budgetsData: BudgetsData = {
-    'Monthly Budget': {
-        totalBudget: 3000,
-        totalSpent: 2100,
-        savingsGoal: 500,
-        currentSavings: 350,
-        previousWeekSavings: 300,
-        categories: [
-            { name: 'Housing', spent: 1200, budget: 1500 },
-            { name: 'Food', spent: 400, budget: 500 },
-            { name: 'Transportation', spent: 250, budget: 300 },
-            { name: 'Utilities', spent: 150, budget: 200 },
-            { name: 'Entertainment', spent: 100, budget: 150 },
-        ]
-    },
-    'Quarterly Budget': {
-        totalBudget: 9000,
-        totalSpent: 6300,
-        savingsGoal: 1500,
-        currentSavings: 1050,
-        previousWeekSavings: 900,
-        categories: [
-            { name: 'Housing', spent: 3600, budget: 4500 },
-            { name: 'Food', spent: 1200, budget: 1500 },
-            { name: 'Transportation', spent: 750, budget: 900 },
-            { name: 'Utilities', spent: 450, budget: 600 },
-            { name: 'Entertainment', spent: 300, budget: 450 },
-        ]
-    }
-};
 
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -79,15 +50,20 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 }));
 
 
-const BudgetProgressSummary: React.FC = () => {
+const BudgetProgressSummary: React.FC<BudgetProgressSummaryProps> = ({budgetData, budgetName = ''}) => {
     const [selectedBudget, setSelectedBudget] = useState('Monthly Budget');
-    const budgetData = budgetsData[selectedBudget] || [];
     const remainingBudget = budgetData.totalBudget - budgetData.totalSpent;
     const percentageSpent = (budgetData.totalSpent / budgetData.totalBudget) * 100;
     const savingsProgress = (budgetData.currentSavings / budgetData.savingsGoal) * 100;
 
     const remainingToSave = budgetData.savingsGoal - budgetData.currentSavings;
-    const savingsComparison = budgetData.currentSavings - budgetData.previousWeekSavings;
+    const savingsComparison = budgetData.previousWeekSavings ? budgetData.currentSavings - budgetData.previousWeekSavings : 0;
+    const formatCurrency = (amount: number) : string => {
+        const absAmount = Math.abs(amount);
+        const formatted = absAmount.toFixed(2);
+        return amount < 0 ? `$0` : `$${formatted}`;
+    }
+
 
     return (
         <Box>
@@ -101,15 +77,9 @@ const BudgetProgressSummary: React.FC = () => {
                 }}>
                     Savings & Budget Progress
                 </Typography>
-                <Select
-                    value={selectedBudget}
-                    onChange={(e) => setSelectedBudget(e.target.value)}
-                    size="small"
-                >
-                    {Object.keys(budgetsData).map((budget) => (
-                        <MenuItem key={budget} value={budget}>{budget}</MenuItem>
-                    ))}
-                </Select>
+                <Typography variant="body2" color="text.secondary">
+                    {budgetName}
+                </Typography>
             </Box>
             <StyledPaper>
                 <Grid container spacing={3}>
@@ -162,7 +132,7 @@ const BudgetProgressSummary: React.FC = () => {
                             <Typography variant="body2">Total Budget: ${budgetData.totalBudget}</Typography>
                             <Typography variant="body2">Total Spent: ${budgetData.totalSpent}</Typography>
                             <Typography variant="body2" color={remainingBudget >= 0 ? 'success.main' : 'error.main'}>
-                                Remaining: ${remainingBudget}
+                                Remaining: {formatCurrency(remainingBudget)}
                             </Typography>
                         </Box>
                     </Grid>

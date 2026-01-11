@@ -49,15 +49,20 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
         final String incomeQuery = """
-        SELECT SUM(tc.actual) as budgetedIncome,
+        SELECT b.monthlyIncome / 12 as budgetedIncome,
         SUM(tc.actual) as actualIncome,
-        (SUM(tc.budgetedAmount) - SUM(tc.actual)) as remainingIncome
+        (b.monthlyIncome / 12 - SUM(tc.actual)) as remainingIncome
         FROM BudgetCategoryEntity tc
+        INNER JOIN SubBudgetEntity sb
+            ON tc.subBudget.id = sb.id
+        INNER JOIN BudgetEntity b
+            ON sb.budget.id = b.id
         WHERE (tc.categoryName =:catName OR tc.categoryName = "PAYROLL")
         AND tc.subBudget.id = :subBudgetId
         AND tc.startDate >= :startDate
-        AND tc.endDate <= :endDate
+        AND tc.endDate < :endDate
         AND tc.active = true
+        group by b.monthlyIncome
         """;
         try
         {
@@ -76,14 +81,14 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             }
 
             Object[] row = results.get(0);
-            Double budgetedIncome = (Double) row[0];
-            Double actualIncome = (Double) row[1];
-            Double remainingIncome = (Double) row[2];
+            BigDecimal budgetedIncome = (BigDecimal) row[0];
+            BigDecimal actualIncome = BigDecimal.valueOf((Double) row[1]);
+            BigDecimal remainingIncome = BigDecimal.valueOf((Double) row[2]);
 
             IncomeCategory incomeCategory = IncomeCategory.builder()
-                    .budgetedIncome(BigDecimal.valueOf(budgetedIncome))
-                    .actualBudgetedIncome(BigDecimal.valueOf(actualIncome))
-                    .remainingIncome(BigDecimal.valueOf(remainingIncome))
+                    .budgetedIncome(budgetedIncome)
+                    .actualBudgetedIncome(actualIncome)
+                    .remainingIncome(remainingIncome)
                     .build();
             return Optional.of(incomeCategory);
         }catch(Exception e)
@@ -145,19 +150,21 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
         final String expenseCategoryQuery = """
-                            SELECT SUM(CASE\s
-                                       WHEN tc.categoryName IN ('INCOME', 'PAYROLL')
-                                       THEN tc.budgetedAmount
-                                       ELSE 0
-                                   END) as totalBudgeted,
+                            SELECT b.budgetAmount / 12 as budgetedAmount,
                             SUM(tc.actual) as totalSpent,
                             (SUM(tc.budgetedAmount) - SUM(tc.actual)) as remaining
                             FROM BudgetCategoryEntity tc
+                            INNER JOIN SubBudgetEntity sb
+                                ON tc.subBudget.id = sb.id
+                            INNER JOIN BudgetEntity b
+                                ON sb.budget.id = b.id
                             WHERE (tc.categoryName <> :catName)
                                 AND tc.subBudget.id = :subBudgetId
                                 AND tc.startDate >= :startDate
                                 AND tc.endDate <= :endDate
-                                AND tc.active = true""";
+                                AND tc.active = true
+                                group by b.budgetAmount
+                                """;
         try
         {
             Object[] expenseCategories = entityManager.createQuery(expenseCategoryQuery, Object[].class)
@@ -170,7 +177,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             {
                 return Optional.empty();
             }
-            BigDecimal budgeted = BigDecimal.valueOf((Double) expenseCategories[0]);
+            BigDecimal budgeted = (BigDecimal) expenseCategories[0];
             BigDecimal actual = BigDecimal.valueOf((Double) expenseCategories[1]);
 
             return Optional.of(new ExpenseCategory(
@@ -197,8 +204,14 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
         final String savingsCategoryQuery = """
-        SELECT bg.targetAmount,
-            SUM(tc.budgetedAmount - tc.actual) as totalSaved
+        SELECT bg.targetAmount / b.totalMonthsToSave as targetAmount,
+        CASE
+          WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0
+          ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual))
+          END as totalSaved,
+          (bg.targetAmount / b.totalMonthsToSave) - 
+          CASE WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0 ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual)) END
+          as remainingToSave
         FROM BudgetCategoryEntity tc
         JOIN tc.subBudget sb
         JOIN sb.budget b
@@ -207,7 +220,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         AND tc.startDate >= :startDate
         AND tc.endDate <= :endDate
         AND tc.active = true
-        GROUP BY bg.targetAmount
+        GROUP BY bg.targetAmount / b.totalMonthsToSave
         """;
 
         try {
@@ -251,17 +264,19 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Collections.emptyList();
         }
         final String topExpensesQuery = """
-        SELECT tc.categoryName,
+        SELECT DISTINCT tc.categoryName,
                tc.budgetedAmount,
-               tc.actual,
-               (tc.budgetedAmount - tc.actual) as remaining
+               SUM(tc.actual) as actualSpent,
+               (tc.budgetedAmount - SUM(tc.actual)) as remaining
         FROM BudgetCategoryEntity tc
         WHERE tc.subBudget.id = :budgetId
             AND tc.startDate >= :startDate
             AND tc.endDate <= :endDate
             AND tc.active = true
-            AND (tc.categoryName <> :catName)
-        ORDER BY tc.actual DESC
+            AND (tc.categoryName NOT IN ('Income', 'Uncategorized'))
+        GROUP BY categoryName, budgetedAmount
+        ORDER BY SUM(tc.actual) DESC
+        LIMIT 5
         """;
         try
         {
@@ -269,7 +284,6 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                     .setParameter("budgetId", budgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
-                    .setParameter("catName", "Income")
                     .setMaxResults(5)
                     .getResultList();
 

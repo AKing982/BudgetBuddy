@@ -78,8 +78,8 @@ public class BudgetRunner
         log.info("Processing SubBudget ID: {} with Budget Schedule ID: {}", subBudgetId, budgetSchedule.getBudgetScheduleId());
 
         // Calculate Budget Health Score
-        BudgetHealthScore budgetHealthScore = budgetHealthService.calculateHealthScore(subBudget);
-        log.info("Budget Health Score for SubBudget {}: {}", subBudgetId, budgetHealthScore.getScoreValue());
+//        BudgetHealthScore budgetHealthScore = budgetHealthService.calculateHealthScore(subBudget);
+//        log.info("Budget Health Score for SubBudget {}: {}", subBudgetId, budgetHealthScore.getScoreValue());
 
         // Get Budget Statistics
         List<BudgetStats> budgetStats = budgetStatisticsService.getBudgetStats(subBudget);
@@ -112,7 +112,7 @@ public class BudgetRunner
                 budgetSchedule,
                 budgetStats,
                 new BudgetCategoryStats(periodCategories, topFiveExpenses, expenseCategories, savingsCategory, incomeCategory),
-                budgetHealthScore.getScoreValue().compareTo(new BigDecimal("50")) < 0
+                false
         );
         log.info("Budget Runner Result: {}", result.getProcessingSummary());
 

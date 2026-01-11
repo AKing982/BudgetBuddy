@@ -305,7 +305,7 @@ public class BudgetQueriesServiceImpl implements BudgetQueriesService
            WHERE bc.startDate >= :startDate
            AND bc.endDate <= :endDate
            AND bc.subBudget.id = :budgetId
-           AND bc.active = true AND bc.categoryName NOT LIKE '%Payroll'
+           AND bc.active = true AND bc.categoryName <> 'Income'
            """;
 
         try

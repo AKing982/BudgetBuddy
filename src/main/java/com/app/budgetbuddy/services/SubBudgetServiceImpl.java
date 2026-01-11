@@ -228,6 +228,25 @@ public class SubBudgetServiceImpl implements SubBudgetService
     }
 
     @Override
+    @Transactional
+    public Optional<SubBudget> updateSubBudgetSpendingByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            subBudgetRepository.updateSubBudgetSpendingByDateRange(startDate, endDate, subBudgetId);
+            Optional<SubBudgetEntity> optionalSubBudgetEntity = subBudgetRepository.findById(subBudgetId);
+            if(optionalSubBudgetEntity.isEmpty())
+            {
+                log.error("SubBudget with id: {} not found", subBudgetId);
+            }
+            return optionalSubBudgetEntity.map(subBudgetEntityConverter::convert);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the subBudget spending by date range: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public List<SubBudget> findSubBudgetsByUserIdAndLimit(Long userId, int numOfMonths, int year)
     {
         if(userId < 1 || numOfMonths < 1)

@@ -9,6 +9,7 @@ import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.entities.CSVTransactionEntity;
 import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.services.*;
+import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import com.univocity.parsers.common.record.Record;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -39,19 +40,22 @@ public class UploadController
     private final CSVAccountRepository csvAccountRepository;
     private final CSVUploaderService<TransactionCSV, AccountCSV, CSVAccountEntity> accountCSVUploaderService;
     private final CSVTransactionService csvTransactionService;
+    private final CategoryRunner categoryRunner;
 
     @Autowired
     public UploadController(UserService userService,
                             AccountService accountService,
                             CSVAccountRepository csvAccountRepository,
                             @Qualifier("accountCSVUploaderServiceImpl") CSVUploaderService<TransactionCSV, AccountCSV, CSVAccountEntity> accountCSVUploaderService,
-                            CSVTransactionService csvTransactionService)
+                            CSVTransactionService csvTransactionService,
+                            CategoryRunner categoryRunner)
     {
         this.userService = userService;
         this.accountService = accountService;
         this.csvAccountRepository = csvAccountRepository;
         this.accountCSVUploaderService = accountCSVUploaderService;
         this.csvTransactionService = csvTransactionService;
+        this.categoryRunner = categoryRunner;
     }
 
     @GetMapping("/{userId}/byDates")
@@ -111,7 +115,7 @@ public class UploadController
                 transactionCSV.setTransactionAmount(parseCurrency(record.getString("Transaction Amount")));
                 transactionCSV.setDescription(record.getString("Description"));
                 transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
-                transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(record.getString("Extended Description")));
+                transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(record.getString("Extended Description"), record.getString("Description")));
                 transactionCSV.setExtendedDescription(record.getString("Extended Description"));
                 transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(record.getString("Electronic Transaction Date"), formatter));
                 transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
@@ -148,6 +152,9 @@ public class UploadController
                 return ResponseEntity.badRequest().body(new UploadStatus("No CSVTransactionEntities were created from the uploaded CSV file", false));
             }
             csvTransactionService.saveAllCSVTransactionEntities(csvTransactionEntityList);
+
+            // Categorize the CSV Transactions for the uploaded date range
+            categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
         }
         else
         {
@@ -157,6 +164,7 @@ public class UploadController
         }
         return ResponseEntity.ok(new UploadStatus("Successfully uploaded CSV file", true));
     }
+
 
     private boolean validateCSVTransactionExistForDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
@@ -176,8 +184,13 @@ public class UploadController
                 .toList();
     }
 
-    private String getMerchantNameByExtendedDescription(String extendedDescription)
+    private String getMerchantNameByExtendedDescription(String extendedDescription, String description)
     {
+        if(extendedDescription == null || extendedDescription.trim().isEmpty())
+        {
+            log.info("Extended Description is null or empty");
+            return description != null ? description : " ";
+        }
         String trimmedExtendedDescription = extendedDescription.trim();
         log.info("Original Merchant Name: {}", trimmedExtendedDescription);
         Locations[] locations = Locations.values();

@@ -90,8 +90,12 @@ public class SubBudget
      * Retrieves the savings ratio.
      * @return The savings ratio as a BigDecimal.
      */
-    public BigDecimal getSavingsRatio() {
-        if (allocatedAmount.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
+    public BigDecimal getSavingsRatio()
+    {
+        if (allocatedAmount.compareTo(BigDecimal.ZERO) == 0)
+        {
+            return BigDecimal.ZERO;
+        }
         return subSavingsAmount.divide(allocatedAmount, 2, BigDecimal.ROUND_HALF_UP);
     }
 

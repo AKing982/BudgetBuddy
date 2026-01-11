@@ -36,14 +36,11 @@ public class BudgetScheduleRangeEntity
     private int totalDays;
 
     @Column(name="budgetedAmount")
-    @NotNull
     private BigDecimal budgetedAmount;
 
     @Column(name="spentOnRange")
-    @NotNull
     private BigDecimal spentOnRange;
 
     @Column(name="rangeType")
-    @NotNull
     private String rangeType;
 }

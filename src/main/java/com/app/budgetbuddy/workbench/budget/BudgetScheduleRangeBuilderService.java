@@ -72,10 +72,13 @@ public class BudgetScheduleRangeBuilderService
         try
         {
             int numberOfMonthsSinceStartDate = getNumberOfMonthsSinceBudgetStartDate(monthStart);
-            if(numberOfMonthsSinceStartDate > 0)
-            {
-                weeklyBudgetedAmounts.putAll(historicalSubBudgetService.getWeeklyBudgetedAmounts(numberOfMonthsSinceStartDate, userId, monthStart, monthEnd, subBudgetAmount));
-            }
+            log.info("Number of Months Since Start Date: {}", numberOfMonthsSinceStartDate);
+            log.info("Number of Months Since Start Date: {}", numberOfMonthsSinceStartDate);
+            log.info("SubBudget Amount: {}", subBudgetAmount);
+            log.info("Month Start: {}", monthStart);
+            log.info("Month End: {}", monthEnd);
+            weeklyBudgetedAmounts.putAll(historicalSubBudgetService.getWeeklyBudgetedAmounts(numberOfMonthsSinceStartDate, userId, monthStart, monthEnd, subBudgetAmount));
+            log.info("Weekly Budgeted Amounts: {}", weeklyBudgetedAmounts);
             return weeklyBudgetedAmounts;
         }catch(BudgetScheduleException e)
         {

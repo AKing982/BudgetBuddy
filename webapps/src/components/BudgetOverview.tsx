@@ -106,37 +106,21 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) =>
     }
 
     const healthScore = useMemo(() => {
-        if (!data.length) {
+        if(!data.length)
+        {
             console.log('No data found');
             return 0;
         }
 
-        console.log('Full data:', data);
-
-        const totalScore = data.reduce((sum, budget) => {
-            // Handle budgetStats as an array
-            const stats = Array.isArray(budget.budgetStats) ?
-                budget.budgetStats[0] : budget.budgetStats;
-
-            console.log('Stats being processed:', stats);
-
-            if (!stats?.healthScore) {
-                console.log('No health score found in stats');
-                return sum;
-            }
-
-            const normalizedScore = Math.min(stats.healthScore, 100);
-            console.log('Normalized score:', normalizedScore);
-            const newSum = sum + normalizedScore;
-            console.log('Running sum:', newSum);
-
-            return newSum;
-        }, 0);
-
-        const finalScore = Math.round(totalScore / data.length);
-        console.log('Final score:', finalScore);
-
-        return finalScore;
+        data.forEach((budget, index) => {
+            const stats = Array.isArray(budget.budgetStats)
+                ? budget.budgetStats[0]
+                : budget.budgetStats;
+            console.log(`Budget ${index} health score:`, stats?.healthScore);
+        });
+        const stats = Array.isArray(data[0]?.budgetStats) ? data[0].budgetStats[0] : data[0]?.budgetStats;
+        const score = stats?.healthScore ?? 0;
+        return Math.round(score);
     }, [data]);
 
     if (isLoading) {

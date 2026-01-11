@@ -174,12 +174,29 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         }
         try
         {
-            List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategories.stream()
-                    .map(this::convertBudgetCategoryToEntity)
-                    .distinct()
-                    .toList();
-
-            budgetCategoryRepository.saveAll(budgetCategoryEntities);
+            List<BudgetCategory> savedCategories = new ArrayList<>();
+            for(BudgetCategory budgetCategory : budgetCategories)
+            {
+                Optional<BudgetCategoryEntity> existing = budgetCategoryRepository.findBySubBudgetIdAndCategoryAndDateRange(budgetCategory.getSubBudgetId(),
+                        budgetCategory.getCategoryName(),
+                        budgetCategory.getStartDate(),
+                        budgetCategory.getEndDate());
+                if(existing.isPresent())
+                {
+                    BudgetCategoryEntity existingEntity = existing.get();
+                    existingEntity.setBudgetedAmount(budgetCategory.getBudgetedAmount());
+                    existingEntity.setActual(budgetCategory.getBudgetActual());
+                    existingEntity.setIsOverSpent(budgetCategory.isOverSpent());
+                    budgetCategoryRepository.save(existingEntity);
+                    savedCategories.add(budgetCategory);
+                }
+                else
+                {
+                    BudgetCategoryEntity budgetCategoryEntity = convertBudgetCategoryToEntity(budgetCategory);
+                    budgetCategoryRepository.save(budgetCategoryEntity);
+                }
+                savedCategories.add(budgetCategory);
+            }
             return budgetCategories;
         }catch(DataAccessException e){
             return Collections.emptyList();
