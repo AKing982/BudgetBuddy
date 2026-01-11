@@ -59,9 +59,7 @@ public class BudgetPeriodQueries
         {
             log.info("Getting budget period query data for userId: {}", userId);
             SubBudget subBudget = subBudgetOptional.get();
-            List<BudgetSchedule> budgetSchedules = subBudget.getBudgetSchedule();
-            BudgetSchedule budgetSchedule = budgetSchedules.get(0);
-            return budgetPeriodCategoryService.getBudgetPeriodCategoriesByPeriod(budgetSchedule, period);
+            return budgetPeriodCategoryService.getBudgetPeriodCategoriesByPeriod(subBudget, period);
         }catch(Exception e)
         {
             log.error("There was an error retrieving the budget period query data from the server: ", e);

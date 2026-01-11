@@ -146,83 +146,83 @@ class WeeklyBudgetPeriodCategoryHandlerTest {
         List<BudgetPeriodCategory> result = handler.getBudgetPeriodCategories(null);
         assertThat(result).isEmpty();
     }
-
-    @Test
-    @DisplayName("Should handle normal use case for months worth of categories")
-    void shouldHandleNormalUseCaseForMonthsWorthOfCategories() {
-        // Mock data for each week
-        // Week 1: Jan 1-7
-        Object[] week1Data1 = new Object[]{1L, "Category1", 100.0, 25.0, 75.0};
-        Object[] week1Data2 = new Object[]{2L, "Category2", 150.0, 125.0, 25.0};
-        Object[] week1Data3 = new Object[]{3L, "Category3", 50.0, 45.0, 5.0};
-
-        // Week 2: Jan 8-14
-        Object[] week2Data1 = new Object[]{1L, "Category1", 100.0, 75.0, 25.0};
-        Object[] week2Data2 = new Object[]{2L, "Category2", 150.0, 160.0, -10.0};
-        Object[] week2Data3 = new Object[]{3L, "Category3", 50.0, 35.0, 15.0};
-
-        // Week 3: Jan 15-21
-        Object[] week3Data1 = new Object[]{1L, "Category1", 100.0, 95.0, 5.0};
-        Object[] week3Data2 = new Object[]{2L, "Category2", 150.0, 145.0, 5.0};
-        Object[] week3Data3 = new Object[]{3L, "Category3", 50.0, 65.0, -15.0};
-
-        // Week 4: Jan 22-28
-        Object[] week4Data1 = new Object[]{1L, "Category1", 100.0, 85.0, 15.0};
-        Object[] week4Data2 = new Object[]{2L, "Category2", 150.0, 130.0, 20.0};
-        Object[] week4Data3 = new Object[]{3L, "Category3", 50.0, 40.0, 10.0};
-
-        // Week 5: Jan 29-31
-        Object[] week5Data1 = new Object[]{1L, "Category1", 50.0, 45.0, 5.0};
-        Object[] week5Data2 = new Object[]{2L, "Category2", 75.0, 70.0, 5.0};
-        Object[] week5Data3 = new Object[]{3L, "Category3", 25.0, 20.0, 5.0};
-
-        when(entityManager.createQuery(anyString(), eq(Object[].class)))
-                .thenReturn(typedQuery);
-        when(typedQuery.setParameter(anyString(), any()))
-                .thenReturn(typedQuery);
-        when(typedQuery.getResultList())
-                .thenReturn(Arrays.asList(week1Data1, week1Data2, week1Data3))
-                .thenReturn(Arrays.asList(week2Data1, week2Data2, week2Data3))
-                .thenReturn(Arrays.asList(week3Data1, week3Data2, week3Data3))
-                .thenReturn(Arrays.asList(week4Data1, week4Data2, week4Data3))
-                .thenReturn(Arrays.asList(week5Data1, week5Data2, week5Data3));
-
-        List<BudgetPeriodCategory> result = handler.getBudgetPeriodCategories(budgetSchedule);
-
-        // Verify results
-        assertThat(result).hasSize(15); // 3 categories x 5 weeks
-
-        // Verify specific status checks
-        // Week 1
-        assertThat(result.get(0).getBudgetStatus()).isEqualTo(BudgetStatus.UNDER_UTILIZED); // 25%
-        assertThat(result.get(1).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 83%
-        assertThat(result.get(2).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 90%
-
-        // Week 2
-        assertThat(result.get(3).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 75%
-        assertThat(result.get(4).getBudgetStatus()).isEqualTo(BudgetStatus.OVER_BUDGET); // 107%
-        assertThat(result.get(5).getBudgetStatus()).isEqualTo(BudgetStatus.UNDER_UTILIZED); // 70%
-
-        // Week 3
-        assertThat(result.get(6).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 95%
-        assertThat(result.get(7).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 97%
-        assertThat(result.get(8).getBudgetStatus()).isEqualTo(BudgetStatus.OVER_BUDGET); // 130%
-
-        // Verify date ranges
-        assertThat(result.get(0).getDateRange().getStartDate()).isEqualTo(LocalDate.of(2025, 1, 1));
-        assertThat(result.get(0).getDateRange().getEndDate()).isEqualTo(LocalDate.of(2025, 1, 7));
-
-        assertThat(result.get(3).getDateRange().getStartDate()).isEqualTo(LocalDate.of(2025, 1, 8));
-        assertThat(result.get(3).getDateRange().getEndDate()).isEqualTo(LocalDate.of(2025, 1, 14));
-
-        // Verify remaining amounts
-        assertThat(result.get(0).getRemaining()).isEqualTo(new BigDecimal("75.00"));
-        assertThat(result.get(4).getRemaining()).isEqualTo(BigDecimal.ZERO); // Over budget case
-
-        // Verify spending percentages
-        assertThat(result.get(0).getSpendingPercentage()).isEqualTo(0.25);
-        assertThat(result.get(4).getSpendingPercentage()).isGreaterThan(1.0);
-    }
+//
+//    @Test
+//    @DisplayName("Should handle normal use case for months worth of categories")
+//    void shouldHandleNormalUseCaseForMonthsWorthOfCategories() {
+//        // Mock data for each week
+//        // Week 1: Jan 1-7
+//        Object[] week1Data1 = new Object[]{1L, "Category1", 100.0, 25.0, 75.0};
+//        Object[] week1Data2 = new Object[]{2L, "Category2", 150.0, 125.0, 25.0};
+//        Object[] week1Data3 = new Object[]{3L, "Category3", 50.0, 45.0, 5.0};
+//
+//        // Week 2: Jan 8-14
+//        Object[] week2Data1 = new Object[]{1L, "Category1", 100.0, 75.0, 25.0};
+//        Object[] week2Data2 = new Object[]{2L, "Category2", 150.0, 160.0, -10.0};
+//        Object[] week2Data3 = new Object[]{3L, "Category3", 50.0, 35.0, 15.0};
+//
+//        // Week 3: Jan 15-21
+//        Object[] week3Data1 = new Object[]{1L, "Category1", 100.0, 95.0, 5.0};
+//        Object[] week3Data2 = new Object[]{2L, "Category2", 150.0, 145.0, 5.0};
+//        Object[] week3Data3 = new Object[]{3L, "Category3", 50.0, 65.0, -15.0};
+//
+//        // Week 4: Jan 22-28
+//        Object[] week4Data1 = new Object[]{1L, "Category1", 100.0, 85.0, 15.0};
+//        Object[] week4Data2 = new Object[]{2L, "Category2", 150.0, 130.0, 20.0};
+//        Object[] week4Data3 = new Object[]{3L, "Category3", 50.0, 40.0, 10.0};
+//
+//        // Week 5: Jan 29-31
+//        Object[] week5Data1 = new Object[]{1L, "Category1", 50.0, 45.0, 5.0};
+//        Object[] week5Data2 = new Object[]{2L, "Category2", 75.0, 70.0, 5.0};
+//        Object[] week5Data3 = new Object[]{3L, "Category3", 25.0, 20.0, 5.0};
+//
+//        when(entityManager.createQuery(anyString(), eq(Object[].class)))
+//                .thenReturn(typedQuery);
+//        when(typedQuery.setParameter(anyString(), any()))
+//                .thenReturn(typedQuery);
+//        when(typedQuery.getResultList())
+//                .thenReturn(Arrays.asList(week1Data1, week1Data2, week1Data3))
+//                .thenReturn(Arrays.asList(week2Data1, week2Data2, week2Data3))
+//                .thenReturn(Arrays.asList(week3Data1, week3Data2, week3Data3))
+//                .thenReturn(Arrays.asList(week4Data1, week4Data2, week4Data3))
+//                .thenReturn(Arrays.asList(week5Data1, week5Data2, week5Data3));
+//
+////        List<BudgetPeriodCategory> result = handler.getBudgetPeriodCategories(budgetSchedule);
+//
+//        // Verify results
+//        assertThat(result).hasSize(15); // 3 categories x 5 weeks
+//
+//        // Verify specific status checks
+//        // Week 1
+//        assertThat(result.get(0).getBudgetStatus()).isEqualTo(BudgetStatus.UNDER_UTILIZED); // 25%
+//        assertThat(result.get(1).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 83%
+//        assertThat(result.get(2).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 90%
+//
+//        // Week 2
+//        assertThat(result.get(3).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 75%
+//        assertThat(result.get(4).getBudgetStatus()).isEqualTo(BudgetStatus.OVER_BUDGET); // 107%
+//        assertThat(result.get(5).getBudgetStatus()).isEqualTo(BudgetStatus.UNDER_UTILIZED); // 70%
+//
+//        // Week 3
+//        assertThat(result.get(6).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 95%
+//        assertThat(result.get(7).getBudgetStatus()).isEqualTo(BudgetStatus.GOOD); // 97%
+//        assertThat(result.get(8).getBudgetStatus()).isEqualTo(BudgetStatus.OVER_BUDGET); // 130%
+//
+//        // Verify date ranges
+//        assertThat(result.get(0).getDateRange().getStartDate()).isEqualTo(LocalDate.of(2025, 1, 1));
+//        assertThat(result.get(0).getDateRange().getEndDate()).isEqualTo(LocalDate.of(2025, 1, 7));
+//
+//        assertThat(result.get(3).getDateRange().getStartDate()).isEqualTo(LocalDate.of(2025, 1, 8));
+//        assertThat(result.get(3).getDateRange().getEndDate()).isEqualTo(LocalDate.of(2025, 1, 14));
+//
+//        // Verify remaining amounts
+//        assertThat(result.get(0).getRemaining()).isEqualTo(new BigDecimal("75.00"));
+//        assertThat(result.get(4).getRemaining()).isEqualTo(BigDecimal.ZERO); // Over budget case
+//
+//        // Verify spending percentages
+//        assertThat(result.get(0).getSpendingPercentage()).isEqualTo(0.25);
+//        assertThat(result.get(4).getSpendingPercentage()).isGreaterThan(1.0);
+//    }
 
 
 

@@ -99,6 +99,12 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) =>
         return calculateBudgetTotals(data);
     }, [data]);
 
+    const formatCurrency = (amount: number) : string => {
+        const absAmount = Math.abs(amount);
+        const formatted = absAmount.toFixed(2);
+        return amount < 0 ? `-$${formatted}` : `$${formatted}`;
+    }
+
     const healthScore = useMemo(() => {
         if (!data.length) {
             console.log('No data found');
@@ -213,21 +219,21 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) =>
                     <TableBody>
                         <TableRow>
                             <TableCell component="th" scope="row">Income</TableCell>
-                            <TableCell align="right">${totals.income.budgeted}</TableCell>
-                            <TableCell align="right">${totals.income.actual.toFixed(2)}</TableCell>
-                            <TableCell align="right">${totals.income.remaining.toFixed(2)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.income.budgeted)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.income.actual)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.income.remaining)}</TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell component="th" scope="row">Expenses</TableCell>
-                            <TableCell align="right">${totals.expenses.budgeted.toFixed(2)}</TableCell>
-                            <TableCell align="right">${totals.expenses.actual.toFixed(2)}</TableCell>
-                            <TableCell align="right">${totals.expenses.remaining.toFixed(2)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.expenses.budgeted)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.expenses.actual)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.expenses.remaining)}</TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell component="th" scope="row">Savings</TableCell>
-                            <TableCell align="right">${totals.savings.budgeted.toFixed(2)}</TableCell>
-                            <TableCell align="right">${totals.savings.actual.toFixed(2)}</TableCell>
-                            <TableCell align="right">${totals.savings.remaining.toFixed(2)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.savings.budgeted)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.savings.actual)}</TableCell>
+                            <TableCell align="right">{formatCurrency(totals.savings.remaining)}</TableCell>
                         </TableRow>
                     </TableBody>
                 </Table>

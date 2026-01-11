@@ -29,8 +29,10 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
     }
 
     @Override
-    public List<BudgetPeriodCategory> getBudgetPeriodCategories(BudgetSchedule budgetSchedule)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategories(SubBudget subBudget)
     {
+        List<BudgetSchedule> budgetScheduleList = subBudget.getBudgetSchedule();
+        BudgetSchedule budgetSchedule = budgetScheduleList.get(0);
         if(budgetSchedule == null)
         {
             return Collections.emptyList();

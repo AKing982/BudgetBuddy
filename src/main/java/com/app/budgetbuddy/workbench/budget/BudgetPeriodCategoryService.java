@@ -20,8 +20,10 @@ public class BudgetPeriodCategoryService
         this.handlerFactory = handlerFactory;
     }
 
-    public List<BudgetPeriodCategory> getBudgetPeriodCategoriesByPeriod(BudgetSchedule budgetSchedule, Period period)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategoriesByPeriod(SubBudget subBudget, Period period)
     {
+        List<BudgetSchedule> budgetScheduleList = subBudget.getBudgetSchedule();
+        BudgetSchedule budgetSchedule = budgetScheduleList.get(0);
         if(budgetSchedule == null || period == null)
         {
             return Collections.emptyList();
@@ -29,7 +31,7 @@ public class BudgetPeriodCategoryService
         try
         {
             BudgetPeriodCategoryHandler handler = handlerFactory.getHandler(period);
-            return handler.getBudgetPeriodCategories(budgetSchedule);
+            return handler.getBudgetPeriodCategories(subBudget);
         }catch(Exception e){
             log.error("Error determining budget period categories: ", e);
             return Collections.emptyList();
@@ -47,7 +49,7 @@ public class BudgetPeriodCategoryService
         {
             Period period = budgetSchedule.getPeriodType();
             BudgetPeriodCategoryHandler handler = handlerFactory.getHandler(period);
-            return handler.getBudgetPeriodCategories(budgetSchedule);
+            return handler.getBudgetPeriodCategories(budget);
         } catch (Exception e)
         {
             log.error("Error determining budget period categories: ", e);

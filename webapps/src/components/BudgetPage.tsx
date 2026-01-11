@@ -37,6 +37,7 @@ import BudgetProgressSummary from "./BudgetProgressSummary";
 import BudgetRunnerService, { BudgetRunnerResult } from "../services/BudgetRunnerService";
 import CsvUploadService  from "../services/CsvUploadService";
 import {
+    BudgetCategoryStats,
     BudgetPeriodCategory,
     BudgetStats,
     DateRangeInput,
@@ -50,6 +51,9 @@ import BudgetService from "../services/BudgetService";
 import {BudgetQuestions} from "../utils/BudgetUtils";
 import BudgetQuestionnaireForm from "./BudgetQuestionnaireForm";
 import ManageBudgetsDialog from "./ManageBudgetsDialog";
+import BudgetCategoriesService from "../services/BudgetCategoriesService";
+import budgetCategoriesService from "../services/BudgetCategoriesService";
+import {isNull} from "node:util";
 
 interface DateArrays {
     startDate: [number, number, number];
@@ -74,6 +78,7 @@ const BudgetPage: React.FC = () => {
     const [animateIn, setAnimateIn] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
     const budgetRunnerService = BudgetRunnerService.getInstance();
+    const budgetCategoryService = BudgetCategoriesService.getInstance();
     const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
     const userId = Number(sessionStorage.getItem('userId'));
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -229,8 +234,36 @@ const BudgetPage: React.FC = () => {
                 startDate,
                 endDate
             );
+            console.log('Budget results: ', results);
+            const budgetCategoryStats = results[0]?.budgetCategoryStats;
+            if(areAllBudgetCategoriesEmpty(budgetCategoryStats))
+            {
+                console.log('All budget categories are empty, fetching from budget category service');
+                try
+                {
+                   const budgetCategories = await budgetCategoryService.createBudgetCategoriesForDateRange(userId, startDate, endDate);
+                   console.log('Created budget categories: ', budgetCategories);
 
-            setBudgetData(results);
+                   const newBudgetResults = await budgetRunnerService.getBudgetsByDateRange(userId, startDate, endDate);
+                   console.log('New budget results: ', newBudgetResults);
+                   setBudgetData(newBudgetResults);
+                }catch(error){
+                    console.error('Error creating budget categories: ', error);
+                    if (error instanceof Error) {
+                        if (error.message.includes('No budget found')) {
+                            setError('No budget exists for this period. Please create a budget first.');
+                        } else {
+                            setError('Failed to create budget categories. Please try again.');
+                        }
+                    } else {
+                        setError('An unexpected error occurred.');
+                    }
+                    setBudgetData([]);
+                }
+            }
+            else{
+                setBudgetData(results);
+            }
         } catch (err) {
             setError('Failed to fetch budget data. Please try again later.');
             console.error('Error fetching budget data:', err);
@@ -242,6 +275,25 @@ const BudgetPage: React.FC = () => {
     useEffect(() => {
         fetchBudgetData(currentMonth);
     }, [currentMonth, userId]);
+
+
+    const isEmpty = <T,>(array: T[] | null | undefined): boolean => {
+        return !array || array.length === 0;
+    };
+
+    const areAllBudgetCategoriesEmpty = (stats: BudgetCategoryStats | undefined) : boolean =>
+    {
+        if(!stats){
+            return true;
+      }
+        return (
+            (stats.expenseCategories === null) &&
+            (stats.incomeCategories === null) &&
+            isEmpty(stats.topExpenseCategories) &&
+            (stats.savingsCategories === null) &&
+            isEmpty(stats.budgetPeriodCategories)
+        );
+    };
 
     const defaultBudgetStats: BudgetStats = {
         averageSpendingPerDay: 0,

@@ -23,16 +23,21 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
 {
     @PersistenceContext
     private final EntityManager entityManager;
+    private final BudgetScheduleRangeBuilderService budgetScheduleRangeBuilderService;
 
     @Autowired
-    public WeeklyBudgetPeriodCategoryHandler(EntityManager entityManager)
+    public WeeklyBudgetPeriodCategoryHandler(EntityManager entityManager,
+                                             BudgetScheduleRangeBuilderService budgetScheduleRangeBuilderService)
     {
         this.entityManager = entityManager;
+        this.budgetScheduleRangeBuilderService = budgetScheduleRangeBuilderService;
     }
 
     @Override
-    public List<BudgetPeriodCategory> getBudgetPeriodCategories(final BudgetSchedule budgetSchedule)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategories(final SubBudget subBudget)
     {
+        List<BudgetSchedule> budgetScheduleList = subBudget.getBudgetSchedule();
+        BudgetSchedule budgetSchedule = budgetScheduleList.get(0);
         if(budgetSchedule == null)
         {
             return Collections.emptyList();
@@ -45,7 +50,16 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
         if(budgetScheduleRanges.isEmpty())
         {
             log.warn("No Budget Schedule Ranges found for budget schedule: {}", budgetSchedule.getBudgetScheduleId());
-            return Collections.emptyList();
+            try
+            {
+                // If no Budget Schedule Ranges are found, then create budget schedule ranges for this period
+                List<BudgetScheduleRange> budgetScheduleRangeList = budgetScheduleRangeBuilderService.createBudgetScheduleRangesBySubBudget(subBudget);
+                log.info("Created Budget Schedule Ranges: {}", budgetScheduleRangeList);
+                budgetScheduleRanges = budgetSchedule.getBudgetScheduleRanges();
+            }catch(BudgetScheduleException e){
+                log.error("There was an error creating budget schedule ranges for budget schedule: ", e);
+                return Collections.emptyList();
+            }
         }
         try
         {

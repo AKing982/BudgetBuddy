@@ -109,7 +109,7 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                     Available to Spend
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" textAlign="center">
-                    ${budgetStats.remaining.toFixed(2)}
+                    {budgetStats.remaining < 0 ? `-$${Math.abs(budgetStats.remaining).toFixed(2)}` : `$${budgetStats.remaining.toFixed(2)}`}
                 </Typography>
                 <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
                     Daily average spending: ${budgetStats.averageSpendingPerDay.toFixed(2)}

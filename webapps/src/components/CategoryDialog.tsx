@@ -25,6 +25,7 @@ import {
     Tooltip as MuiTooltip, Paper
 } from '@mui/material';
 import {Eye, EyeOff, Plus, Settings, Trash2} from "lucide-react";
+import CategoryService from "../services/CategoryService";
 
 
 interface CategoryDialogProps {
@@ -65,7 +66,7 @@ export interface CategorySaveData {
 const DEFAULT_SYSTEM_CATEGORIES = [
     'Groceries',
     'Order Out',
-    'Subscriptions',
+    'Subscription',
     'Rent',
     'Mortgage',
     'Gas',
@@ -81,7 +82,9 @@ const DEFAULT_SYSTEM_CATEGORIES = [
     'Withdrawal',
     'Transfer',
     'Pet',
-    'Income'
+    'Income',
+    'Deposit',
+    'Refund'
 ];
 
 
@@ -133,6 +136,7 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
     const [amountRangeMax, setAmountRangeMax] = useState(amount * 1.1);
 
     const [saving, setSaving] = useState(false);
+
 
     const handleCategorySelect = (category: string) => {
         if(isCategoryEnabled(category)){

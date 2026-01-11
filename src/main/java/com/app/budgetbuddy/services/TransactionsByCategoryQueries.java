@@ -45,6 +45,7 @@ public class TransactionsByCategoryQueries
                 .toList();
     }
 
+
     private List<TransactionsByCategory> createTransactionsByCategoryList(List<CategoryTransactionMapping> categoryTransactionMappingList)
     {
         List<TransactionsByCategory> transactionsByCategoryList = new ArrayList<>();
@@ -169,9 +170,9 @@ public class TransactionsByCategoryQueries
             final String jpql = "SELECT CASE " +
                     "WHEN SUM(t.amount) < 0 THEN (-1) * SUM(t.amount) " +
                     "ELSE SUM(t.amount) END " +
-                    "FROM TransactionCategory tc " +
-                    "INNER JOIN Transaction t ON tc.transactionId = t.transactionId " +
-                    "INNER JOIN Account a ON t.accountId = a.id " +
+                    "FROM TransactionCategoryEntity tc " +
+                    "INNER JOIN TransactionsEntity t ON tc.transactionId = t.transactionId " +
+                    "INNER JOIN AccountEntity a ON t.accountId = a.id " +
                     "WHERE a.userId = :userId " +
                     "AND t.posted BETWEEN :startDate AND :endDate " +
                     "AND tc.matchedCategory = :category " +

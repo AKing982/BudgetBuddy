@@ -35,8 +35,10 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
     }
 
     @Override
-    public List<BudgetPeriodCategory> getBudgetPeriodCategories(final BudgetSchedule budgetSchedule)
+    public List<BudgetPeriodCategory> getBudgetPeriodCategories(final SubBudget subBudget)
     {
+        List<BudgetSchedule> budgetScheduleList = subBudget.getBudgetSchedule();
+        BudgetSchedule budgetSchedule = budgetScheduleList.get(0);
         if(budgetSchedule == null)
         {
             return Collections.emptyList();

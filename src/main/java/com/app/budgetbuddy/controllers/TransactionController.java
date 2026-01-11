@@ -88,6 +88,26 @@ public class TransactionController
         return ResponseEntity.ok(transactionsEntityList);
     }
 
+    @PutMapping("/update/category")
+    public ResponseEntity<TransactionCSV> updateTransactionCSVByCategory(@RequestParam Long transactionId,
+                                                                         @RequestParam String category)
+    {
+        try
+        {
+            Optional<TransactionCSV> updatedTransactionCSVOptional = csvTransactionService.updateTransactionCSVByCategory(transactionId, category);
+            if(updatedTransactionCSVOptional.isEmpty())
+            {
+                return ResponseEntity.notFound().build();
+            }
+            LOGGER.info("Updated Transaction CSV with id: {} and category: {}", transactionId, category);
+            TransactionCSV updatedTransactionCSV = updatedTransactionCSVOptional.get();
+            return ResponseEntity.ok(updatedTransactionCSV);
+        }catch(Exception e){
+            LOGGER.error("There was an error updating the transaction CSV", e);
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
     @GetMapping("/{userId}")
     public ResponseEntity<?> getTransactionsForUser(@PathVariable Long userId) {
         return null;

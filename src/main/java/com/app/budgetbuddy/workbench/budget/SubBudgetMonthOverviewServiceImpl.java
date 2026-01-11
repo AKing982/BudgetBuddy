@@ -49,7 +49,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
         final String incomeQuery = """
-        SELECT SUM(tc.budgetedAmount) as budgetedIncome,
+        SELECT SUM(tc.actual) as budgetedIncome,
         SUM(tc.actual) as actualIncome,
         (SUM(tc.budgetedAmount) - SUM(tc.actual)) as remainingIncome
         FROM BudgetCategoryEntity tc
@@ -61,20 +61,30 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         """;
         try
         {
-            List<BudgetCategoryEntity> incomeCategories = entityManager.createQuery(incomeQuery, BudgetCategoryEntity.class)
+            List<Object[]> results = entityManager.createQuery(incomeQuery, Object[].class)
                     .setParameter("catName", "Income")
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .getResultList();
-            if(incomeCategories == null || incomeCategories.isEmpty())
+
+            if(results == null || results.isEmpty())
             {
                 log.info("No income categories found for subBudgetId {} between {} and {}",
                         subBudgetId, startDate, endDate);
                 return Optional.empty();
             }
 
-            IncomeCategory incomeCategory = mapToIncomeCategory(incomeCategories);
+            Object[] row = results.get(0);
+            Double budgetedIncome = (Double) row[0];
+            Double actualIncome = (Double) row[1];
+            Double remainingIncome = (Double) row[2];
+
+            IncomeCategory incomeCategory = IncomeCategory.builder()
+                    .budgetedIncome(BigDecimal.valueOf(budgetedIncome))
+                    .actualBudgetedIncome(BigDecimal.valueOf(actualIncome))
+                    .remainingIncome(BigDecimal.valueOf(remainingIncome))
+                    .build();
             return Optional.of(incomeCategory);
         }catch(Exception e)
         {

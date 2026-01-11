@@ -189,9 +189,9 @@ export interface InputStats {
 export interface BudgetCategoryStats
 {
     budgetPeriodCategories: BudgetPeriodCategory[];
-    expenseCategories: ExpenseCategory;
-    topExpenseCategories: ExpenseCategory[];
-    savingsCategories: SavingsCategory;
+    expenseCategories: ExpenseCategory | null;
+    topExpenseCategories: ExpenseCategory[] | null;
+    savingsCategories: SavingsCategory | null;
     incomeCategories: IncomeCategory;
 }
 

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping(value="/api/budget-category-test")
+@RequestMapping(value="/api/budget-category")
 @CrossOrigin(value="http://localhost:3000")
 @Slf4j
 public class BudgetCategoryController

@@ -1,5 +1,6 @@
 import {CSVTransaction} from "../utils/Items";
 import axios, {AxiosError} from "axios";
+import {CategorySaveData} from "../components/CategoryDialog";
 
 class CategoryService
 {
@@ -16,6 +17,7 @@ class CategoryService
         }
         return CategoryService.instance;
     }
+
 
     public async fetchCategorizedCSVTransactions(userId: number,
                                                  startDate: string, endDate: string): Promise<CSVTransaction[]>{

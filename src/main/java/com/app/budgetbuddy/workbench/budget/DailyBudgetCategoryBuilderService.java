@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 @Service
 @Slf4j
@@ -47,7 +48,7 @@ public class DailyBudgetCategoryBuilderService
             {
                 continue;
             }
-            List<Transaction> transactions = transactionsByCategory.getTransactions();
+            List<Transaction> transactions = (List<Transaction>) transactionsByCategory.getTransactions();
             BigDecimal categorySpending = transactions.stream()
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);

@@ -22,6 +22,13 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
     @Query("UPDATE CSVTransactionEntity cte SET cte.merchantName =:merchantName WHERE cte.id =:id")
     void updateCSVTransactionEntityMerchantName(@Param("merchantName") String merchantName, @Param("id") Long id);
 
+    @Query("SELECT cte FROM CSVTransactionEntity cte INNER JOIN CSVAccountEntity cae ON cte.csvAccount.id = cae.id WHERE cae.user.id =:userId AND cte.transactionDate BETWEEN :startDate AND :endDate")
+    List<CSVTransactionEntity> findCSVTransactionIdAndCategoryByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Modifying
+    @Query("UPDATE CSVTransactionEntity  cte SET cte.category =:category WHERE cte.id =:id")
+    void updateCSVTransactionEntityCategory(@Param("category") String category, @Param("id") Long id);
+
     @Query("SELECT ct FROM CSVTransactionEntity ct WHERE ct.transactionDate BETWEEN :startDate AND :endDate AND ct.csvAccount.id =:acctId")
     List<CSVTransactionEntity> findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(@Param("acctId") Long acctId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

@@ -178,38 +178,26 @@ public class UploadController
 
     private String getMerchantNameByExtendedDescription(String extendedDescription)
     {
-        if(extendedDescription == null || extendedDescription.trim().isEmpty())
-        {
-            return "";
-        }
-        String merchantName = extendedDescription.trim();
-        if(merchantName.contains("#"))
-        {
-            return merchantName.split("#")[0].trim();
-        }
-        else if(merchantName.contains("*"))
-        {
-            return merchantName.split("\\*")[0].trim();
-        }
-        if(merchantName.toUpperCase().contains("TRANSFER") || merchantName.toUpperCase().contains("XFER"))
-        {
-            if(merchantName.toUpperCase().contains("INST XFER"))
-            {
-                return "PAYPAL";
-            }
-            return merchantName.split(" ")[0].trim();
-        }
-
-        if(merchantName.contains(" - "))
-        {
-            return merchantName.split(" - ")[0].trim();
-        }
-        if(merchantName.contains(","))
-        {
-            return merchantName.split(",")[0].trim();
-        }
+        String trimmedExtendedDescription = extendedDescription.trim();
+        log.info("Original Merchant Name: {}", trimmedExtendedDescription);
         Locations[] locations = Locations.values();
-        return merchantName;
+        for(Locations location : locations)
+        {
+            String locationValue = location.getValue();
+            log.info("Location Value: {}", locationValue);
+            String toLowerValue = locationValue.toLowerCase();
+            log.info("ToLower Value: {}", toLowerValue);
+            if(trimmedExtendedDescription.toLowerCase().contains(locationValue.toLowerCase()))
+            {
+                log.info("Merchant Name contains: {}", locationValue);
+                int toUpperIndex = trimmedExtendedDescription.indexOf(toLowerValue);
+                int toUpperLength = toLowerValue.length();
+                trimmedExtendedDescription = trimmedExtendedDescription.substring(0, toUpperIndex + toUpperLength + 1).trim();
+                log.info("Trimmed Merchant Name substring: {}", trimmedExtendedDescription);
+                break;
+            }
+        }
+        return trimmedExtendedDescription;
     }
 
     private Long removeLeadingZeros(String sequenceNumber)

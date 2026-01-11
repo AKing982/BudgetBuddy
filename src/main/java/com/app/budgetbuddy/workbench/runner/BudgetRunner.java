@@ -49,7 +49,6 @@ public class BudgetRunner
         this.subBudgetOverviewService = subBudgetOverviewService;
     }
 
-
     public List<BudgetRunnerResult> runBudgetProcess(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         log.info("Starting monthly budget process for user {} between {} and {}", userId, startDate, endDate);

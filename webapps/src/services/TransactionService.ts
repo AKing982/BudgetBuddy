@@ -1,6 +1,7 @@
 import axios from "axios";
 import {apiUrl} from "../config/api";
 import {CSVTransaction, Transaction} from "../utils/Items";
+import {CategorySaveData} from "../components/CategoryDialog";
 
 class TransactionService {
     private static instance: TransactionService;
@@ -28,6 +29,53 @@ class TransactionService {
         const currentDate = new Date();
         currentDate.setMonth(currentDate.getDay() - 15);
         return currentDate.toISOString().split('T')[0];
+    }
+
+    public async updateCSVTransactionWithCategorySaveData(categorySaveData: CategorySaveData) : Promise<CSVTransaction> {
+        try
+        {
+            const transactionIdString = categorySaveData.transactionId;
+            const transactionId: string | number | undefined = this.parseTransactionId(transactionIdString);
+            const response = await axios.put<CSVTransaction>(
+                "http://localhost:8080/api/transaction/update/category",
+                null, // No request body needed
+                {
+                    params: {
+                        transactionId: transactionId,
+                        category: categorySaveData.category
+                    }
+                }
+            );
+
+            return response.data;
+        }catch(error){
+            console.error('There was an error updating the CSV transaction with category data: ', error);
+            if(axios.isAxiosError(error) && error.response?.status === 500){
+                throw error;
+            }
+            throw error;
+        }
+    }
+
+    private parseTransactionId(transactionId: string | number | undefined) : number
+    {
+        if(transactionId === undefined)
+        {
+            throw new Error('Transaction id is undefined.');
+        }
+        try {
+            if(typeof transactionId === 'string')
+            {
+                const transactionIdSplit: string[] = transactionId.split('-');
+                return parseInt(transactionIdSplit[1]);
+            }
+            else {
+                return transactionId;
+            }
+        }catch(error){
+            console.error('There was an error parsing the transaction id: ', error);
+            return 0;
+        }
     }
 
     public async fetchCSVTransactionsByUserAndDateRange(userId: number, startDate: string, endDate: string) : Promise<CSVTransaction[]>

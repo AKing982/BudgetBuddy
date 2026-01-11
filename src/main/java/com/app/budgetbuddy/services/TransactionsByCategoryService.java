@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionsByCategory;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import lombok.Data;
@@ -43,7 +44,7 @@ public class TransactionsByCategoryService
                 log.error("There was an error fetching the transactions by categories by date {}", date, e);
                 return Collections.emptyList();
             }
-        }, taskExecutor.getThreadPoolExecutor());
+        }, taskExecutor);
     }
 
     public CompletableFuture<List<TransactionsByCategory>> fetchTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
