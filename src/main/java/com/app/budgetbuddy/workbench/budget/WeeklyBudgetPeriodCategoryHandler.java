@@ -4,6 +4,9 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetCategoryEntity;
 import com.app.budgetbuddy.exceptions.BudgetScheduleException;
 import com.app.budgetbuddy.exceptions.DateRangeException;
+import com.app.budgetbuddy.repositories.BudgetCategoryRepository;
+import com.app.budgetbuddy.services.BudgetCategoryService;
+import com.app.budgetbuddy.workbench.runner.BudgetCategoryRunner;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +26,16 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
 {
     @PersistenceContext
     private final EntityManager entityManager;
+    private final BudgetCategoryRunner budgetCategoryRunner;
     private final BudgetScheduleRangeBuilderService budgetScheduleRangeBuilderService;
 
     @Autowired
     public WeeklyBudgetPeriodCategoryHandler(EntityManager entityManager,
+                                             BudgetCategoryRunner budgetCategoryRunner,
                                              BudgetScheduleRangeBuilderService budgetScheduleRangeBuilderService)
     {
         this.entityManager = entityManager;
+        this.budgetCategoryRunner = budgetCategoryRunner;
         this.budgetScheduleRangeBuilderService = budgetScheduleRangeBuilderService;
     }
 
@@ -42,6 +48,7 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
         {
             return Collections.emptyList();
         }
+        Long userId = subBudget.getBudget().getUserId();
         log.info("BudgetScheduleId: {}", budgetSchedule.getBudgetScheduleId());
         List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
         Long subBudgetId = budgetSchedule.getSubBudgetId();
@@ -66,7 +73,13 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
             for(BudgetScheduleRange budgetScheduleWeek : budgetScheduleRanges)
             {
                 LocalDate budgetScheduleWeekStart = budgetScheduleWeek.getStartRange();
+                log.info("Budget Schedule Week Start: {}", budgetScheduleWeekStart);
                 LocalDate budgetScheduleWeekEnd = budgetScheduleWeek.getEndRange();
+                log.info("Budget Schedule Week End: {}", budgetScheduleWeekEnd);
+                budgetCategoryRunner.runBudgetCategoryCreateProcessForWeek(subBudget, budgetScheduleWeek);
+                log.info("Running Budget Category Update for week {}", budgetScheduleWeek);
+                budgetCategoryRunner.runBudgetCategoryUpdateProcessForBudgetScheduleRange(budgetScheduleWeek, subBudget, userId);
+                log.info("Successfully run Budget Category Update for week {}", budgetScheduleWeek);
                 log.info("Getting to Weekly Budget Query");
                 final String weeklyBudgetQuery = """
                 SELECT DISTINCT bc.categoryName,

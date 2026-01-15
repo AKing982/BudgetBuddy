@@ -10,6 +10,8 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
+@Builder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class BudgetCategory
 {
     private Long id;

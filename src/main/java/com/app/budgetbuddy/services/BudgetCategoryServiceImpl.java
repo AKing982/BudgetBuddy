@@ -15,6 +15,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -104,9 +105,9 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         BudgetCategory budgetCategory = new BudgetCategory();
         budgetCategory.setId(budgetCategoryEntity.getId());
         budgetCategory.setSubBudgetId(budgetCategoryEntity.getSubBudget().getId());
-        budgetCategory.setCategoryName(budgetCategory.getCategoryName());
+        budgetCategory.setCategoryName(budgetCategoryEntity.getCategoryName());
         budgetCategory.setBudgetedAmount(budgetCategoryEntity.getBudgetedAmount());
-        budgetCategory.setBudgetActual(budgetCategoryEntity.getActual());
+        budgetCategory.setBudgetActual(Math.abs(budgetCategoryEntity.getActual()));
         budgetCategory.setEndDate(budgetCategoryEntity.getEndDate());
         budgetCategory.setStartDate(budgetCategoryEntity.getStartDate());
         budgetCategory.setIsActive(budgetCategoryEntity.isActive());
@@ -147,14 +148,20 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     {
         BudgetCategoryEntity budgetCategoryEntity = new BudgetCategoryEntity();
         budgetCategoryEntity.setId(budgetCategory.getId());
-        budgetCategoryEntity.setCategoryName(budgetCategory.getCategoryName());
+        if(budgetCategory.getCategoryName() == null)
+        {
+            budgetCategoryEntity.setCategoryName("Uncategorized");
+        }
+        else {
+            budgetCategoryEntity.setCategoryName(budgetCategory.getCategoryName());
+        }
         budgetCategoryEntity.setActive(budgetCategory.getIsActive());
         budgetCategoryEntity.setOverspendingAmount(budgetCategory.getOverSpendingAmount());
         budgetCategoryEntity.setStartDate(budgetCategory.getStartDate());
         budgetCategoryEntity.setEndDate(budgetCategory.getEndDate());
         budgetCategoryEntity.setSubBudget(getSubBudgetEntityById(budgetCategory.getSubBudgetId()));
         budgetCategoryEntity.setBudgetedAmount(budgetCategory.getBudgetedAmount());
-        budgetCategoryEntity.setActual(budgetCategory.getBudgetActual());
+        budgetCategoryEntity.setActual(Math.abs(budgetCategory.getBudgetActual()));
         budgetCategoryEntity.setCreatedat(LocalDateTime.now());
         budgetCategoryEntity.setIsOverSpent(budgetCategory.isOverSpent());
         return budgetCategoryEntity;
@@ -185,8 +192,9 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
                 {
                     BudgetCategoryEntity existingEntity = existing.get();
                     existingEntity.setBudgetedAmount(budgetCategory.getBudgetedAmount());
-                    existingEntity.setActual(budgetCategory.getBudgetActual());
+                    existingEntity.setActual(Math.abs(budgetCategory.getBudgetActual()));
                     existingEntity.setIsOverSpent(budgetCategory.isOverSpent());
+                    existingEntity.setOverspendingAmount(budgetCategory.getOverSpendingAmount());
                     budgetCategoryRepository.save(existingEntity);
                     savedCategories.add(budgetCategory);
                 }

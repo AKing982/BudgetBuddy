@@ -171,10 +171,12 @@ public class SubBudgetHealthScoreImpl implements BudgetHealthService<SubBudget>
      */
     private BigDecimal computeHealthScore(BigDecimal spendingRatio, BigDecimal savingsRatio) {
         BigDecimal baseScore = new BigDecimal("100");
-        BigDecimal spendingPenalty = spendingRatio.multiply(new BigDecimal("120"));
-        BigDecimal savingsBoost = savingsRatio.multiply(new BigDecimal("50"));
+        BigDecimal cappedSpendingRatio = spendingRatio.min(new BigDecimal("1.5"));
+        BigDecimal spendingPenalty = cappedSpendingRatio.multiply(new BigDecimal("50"));
+        BigDecimal savingsBoost = savingsRatio.multiply(new BigDecimal("100"));
 
         BigDecimal finalScore = baseScore.subtract(spendingPenalty).add(savingsBoost);
+        log.info("Final Score: {}", finalScore);
         return finalScore.max(BigDecimal.ZERO).min(new BigDecimal("100"));
     }
 

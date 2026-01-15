@@ -1,5 +1,5 @@
 import axios from "axios";
-import {apiUrl} from "../config/api";
+import {API_BASE_URL, apiUrl} from "../config/api";
 import {BudgetCategory} from "../utils/BudgetUtils";
 
 interface BudgetCategories {
@@ -49,7 +49,7 @@ class BudgetCategoriesService
     {
         try
         {
-            const response = await axios.get<BudgetCategory[]>("http://localhost:8080/api/budget-category/create",
+            const response = await axios.get<BudgetCategory[]>(`${API_BASE_URL}/budget-category/create`,
                 {
                     params: {
                         userID: userId,

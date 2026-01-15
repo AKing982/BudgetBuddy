@@ -1,5 +1,5 @@
 import axios from "axios";
-import {apiUrl} from "../config/api";
+import {API_BASE_URL, apiUrl} from "../config/api";
 import {SavingsGoalData} from "../components/SavingsGoalQuestions";
 import {DebtPayoffData} from "../components/DebtPayoffQuestions";
 import {SpendingControlData} from "../components/SpendingControlQuestions";
@@ -259,7 +259,7 @@ class BudgetService {
         }
         try
         {
-            const response = await axios.get(`http://localhost:8080/api/budgets/${userId}/${year}`);
+            const response = await axios.get(`${API_BASE_URL}/budgets/${userId}/${year}`);
             return response.data;
         }catch(error){
             console.error('There was an error fetching budgets for userId: ', userId);
@@ -274,7 +274,7 @@ class BudgetService {
         }
         try
         {
-            const response = await axios.get(`http://localhost:8080/api/budgets/check-if-budget-exists/${userId}/${year}`);
+            const response = await axios.get(`${API_BASE_URL}/budgets/check-if-budget-exists/${userId}/${year}`);
             // Validate response
             if (response.status !== 200) {
                 throw new Error(`Unexpected status code: ${response.status}`);
@@ -352,7 +352,7 @@ class BudgetService {
         }
         try
         {
-            const response = await axios.get(`${apiUrl}/api/budgets/budget-type/${userId}`);
+            const response = await axios.get(`${API_BASE_URL}/budgets/budget-type/${userId}`);
             return response.data;
         }catch(error){
             console.error('There was an error fetching the budget type for userId: ', userId);
@@ -376,7 +376,7 @@ class BudgetService {
             if(!request){
                 throw new Error('Invalid budget request');
             }
-            return await axios.post(`${apiUrl}/budgets/`, {
+            return await axios.post(`${API_BASE_URL}/budgets/`, {
                 userId: request.userId,
                 budgetName: request.budgetName,
                 budgetDescription: request.budgetDescription,

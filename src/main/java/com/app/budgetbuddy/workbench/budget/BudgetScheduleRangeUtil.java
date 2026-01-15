@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.BudgetScheduleRange;
 import com.app.budgetbuddy.domain.DateRange;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -22,7 +23,7 @@ public class BudgetScheduleRangeUtil
         {
             BudgetScheduleRange firstWeek = sortedRanges.get(i);
             BudgetScheduleRange secondWeek = sortedRanges.get(i + 1);
-
+            BigDecimal spentOnFirstWeek = firstWeek.getSpentOnRange();
             // Only combine if they are consecutive weeks
             if (firstWeek.getEndRange().plusDays(1).equals(secondWeek.getStartRange()))
             {

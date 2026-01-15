@@ -1,5 +1,5 @@
 import axios from "axios";
-import {apiUrl} from "../config/api";
+import {API_BASE_URL, apiUrl} from "../config/api";
 import {CSVTransaction, Transaction} from "../utils/Items";
 import {CategorySaveData} from "../components/CategoryDialog";
 
@@ -36,8 +36,9 @@ class TransactionService {
         {
             const transactionIdString = categorySaveData.transactionId;
             const transactionId: string | number | undefined = this.parseTransactionId(transactionIdString);
+            console.log("TransactionId {}", transactionId);
             const response = await axios.put<CSVTransaction>(
-                "http://localhost:8080/api/transaction/update/category",
+                `${API_BASE_URL}/transaction/update/category`,
                 null, // No request body needed
                 {
                     params: {
@@ -89,7 +90,7 @@ class TransactionService {
         }
         try
         {
-            const response = await axios.get(`${apiUrl}/transaction/${userId}/csv`, {
+            const response = await axios.get(`${API_BASE_URL}/transaction/${userId}/csv`, {
                 params:{
                     userId: userId,
                     startDate: startDate,
@@ -113,7 +114,7 @@ class TransactionService {
 
         try
         {
-            const response = await axios.get<Transaction[]>(`${apiUrl}/transaction/${userId}/by-date`, {
+            const response = await axios.get<Transaction[]>(`${API_BASE_URL}/transaction/${userId}/by-date`, {
                 params:{
                     userId: userId,
                     startDate: startDate,
@@ -143,7 +144,7 @@ class TransactionService {
         }
         try
         {
-            const response = await axios.get<Transaction[]>(`${apiUrl}/transaction/${userId}`);
+            const response = await axios.get<Transaction[]>(`${API_BASE_URL}/transaction/${userId}`);
             if(response.data.length === 0){
                 return [];
             }

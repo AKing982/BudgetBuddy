@@ -808,7 +808,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                                                                 ${(category.budgeted || 0).toFixed(2)}
                                                                             </TableCell>
                                                                             <TableCell align="right" sx={{ width: '20%' }}>
-                                                                                ${(category.actual || 0).toFixed(2)}
+                                                                                ${(Math.abs(category.actual) || 0).toFixed(2)}
                                                                             </TableCell>
                                                                             <TableCell
                                                                                 align="right"

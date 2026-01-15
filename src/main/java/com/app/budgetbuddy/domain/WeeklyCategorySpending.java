@@ -7,6 +7,7 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@Builder
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class WeeklyCategorySpending extends CategorySpending
 {

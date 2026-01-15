@@ -48,7 +48,7 @@ public class DailyBudgetCategoryBuilderService
             {
                 continue;
             }
-            List<Transaction> transactions = (List<Transaction>) transactionsByCategory.getTransactions();
+            List<Transaction> transactions = transactionsByCategory.getTransactions();
             BigDecimal categorySpending = transactions.stream()
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);

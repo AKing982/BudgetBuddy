@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,12 +28,21 @@ public class HerokuWebConfig implements WebMvcConfigurer
                 .addResolver(new PathResourceResolver() {
                     @Override
                     protected Resource getResource(String resourcePath, Resource location) throws IOException {
+                        if(resourcePath.startsWith("api/"))
+                        {
+                            return null;
+                        }
                         Resource resource = location.createRelative(resourcePath);
                         if (resource.exists() && resource.isReadable()) {
                             return resource;
                         }
+                        Resource indexHtml = new FileSystemResource("/app/static/index.html");
+                        if(indexHtml.exists())
+                        {
+                            return indexHtml;
+                        }
                         // If resource not found, return index.html for SPA routing
-                        return new ClassPathResource("/static/index.html");
+                        return null;
                     }
                 });
     }

@@ -15,6 +15,7 @@ import javax.swing.text.html.parser.Entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -48,31 +49,45 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             log.warn("Invalid parameters provided to loadIncomeCategories");
             return Optional.empty();
         }
+        LocalDate adjustedDate = startDate;
+        Long previousSubBudgetId = null;
+        List<Long> subBudgetIds = new ArrayList<>();
+        subBudgetIds.add(subBudgetId);
+        log.info("EndDate: {}", endDate);
+        if(startDate.getMonthValue() == 1 && startDate.getDayOfMonth() == 1)
+        {
+            adjustedDate = startDate.minusDays(3);
+            log.info("Adjusted start date from {} to {} to include end of previous year",
+                    startDate, adjustedDate);
+            previousSubBudgetId = subBudgetId - 1;
+            subBudgetIds.add(previousSubBudgetId);
+            log.info("SubBudgetIds: {}", subBudgetIds);
+            log.info("Previous sub budget id is {}", previousSubBudgetId);
+        }
         final String incomeQuery = """
-        SELECT b.monthlyIncome / 12 as budgetedIncome,
+        SELECT b.monthlyIncome / b.totalMonthsToSave as budgetedIncome,
         SUM(tc.actual) as actualIncome,
-        (b.monthlyIncome / 12 - SUM(tc.actual)) as remainingIncome
+        (b.monthlyIncome / b.totalMonthsToSave - SUM(tc.actual)) as remainingIncome
         FROM BudgetCategoryEntity tc
         INNER JOIN SubBudgetEntity sb
             ON tc.subBudget.id = sb.id
         INNER JOIN BudgetEntity b
             ON sb.budget.id = b.id
         WHERE (tc.categoryName =:catName OR tc.categoryName = "PAYROLL")
-        AND tc.subBudget.id = :subBudgetId
-        AND tc.startDate >= :startDate
+        AND tc.subBudget.id IN (:subBudgetIds)
+        AND tc.startDate >= :adjustedStartDate
         AND tc.endDate < :endDate
         AND tc.active = true
-        group by b.monthlyIncome
+        group by b.monthlyIncome / b.totalMonthsToSave
         """;
         try
         {
             List<Object[]> results = entityManager.createQuery(incomeQuery, Object[].class)
                     .setParameter("catName", "Income")
-                    .setParameter("subBudgetId", subBudgetId)
-                    .setParameter("startDate", startDate)
+                    .setParameter("subBudgetIds", subBudgetIds)
+                    .setParameter("adjustedStartDate", adjustedDate)
                     .setParameter("endDate", endDate)
                     .getResultList();
-
             if(results == null || results.isEmpty())
             {
                 log.info("No income categories found for subBudgetId {} between {} and {}",
@@ -98,6 +113,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             return Optional.empty();
         }
     }
+
 
     // Updated mapping method to work with entity list directly
     private IncomeCategory mapToIncomeCategory(List<BudgetCategoryEntity> results) {
@@ -167,18 +183,19 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                                 """;
         try
         {
-            Object[] expenseCategories = entityManager.createQuery(expenseCategoryQuery, Object[].class)
+            List<Object[]> expenseCategories = entityManager.createQuery(expenseCategoryQuery, Object[].class)
                     .setParameter("catName", "Income")
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
-                    .getSingleResult();
-            if(expenseCategories[0] == null)
+                    .getResultList();
+            if(expenseCategories.isEmpty())
             {
                 return Optional.empty();
             }
-            BigDecimal budgeted = (BigDecimal) expenseCategories[0];
-            BigDecimal actual = BigDecimal.valueOf((Double) expenseCategories[1]);
+            Object[] row = expenseCategories.get(0);
+            BigDecimal budgeted = (BigDecimal) row[0];
+            BigDecimal actual = BigDecimal.valueOf((Double) row[1]);
 
             return Optional.of(new ExpenseCategory(
                     "Expense",
@@ -213,9 +230,9 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
           CASE WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0 ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual)) END
           as remainingToSave
         FROM BudgetCategoryEntity tc
-        JOIN tc.subBudget sb
-        JOIN sb.budget b
-        LEFT JOIN b.budgetGoals bg
+        INNER JOIN tc.subBudget sb
+        INNER JOIN sb.budget b
+        INNER JOIN b.budgetGoals bg
         WHERE tc.subBudget.id = :subBudgetId
         AND tc.startDate >= :startDate
         AND tc.endDate <= :endDate
@@ -224,19 +241,21 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         """;
 
         try {
-            Object[] result = entityManager.createQuery(savingsCategoryQuery, Object[].class)
+            List<Object[]> result = entityManager.createQuery(savingsCategoryQuery, Object[].class)
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
-                    .getSingleResult();
+                    .getResultList();
 
-            if (result[0] == null) {
+            if (result.isEmpty()) {
                 return Optional.empty();
             }
 
-            BigDecimal targetAmount = BigDecimal.valueOf((Double) result[0]);
-            BigDecimal totalSaved = BigDecimal.valueOf((Double) result[1]);
-            BigDecimal remainingToSave = targetAmount.subtract(totalSaved);
+            Object[] row = result.get(0);
+
+            BigDecimal targetAmount = BigDecimal.valueOf((Double) row[0]);
+            BigDecimal totalSaved = BigDecimal.valueOf((Double) row[1]);
+            BigDecimal remainingToSave = BigDecimal.valueOf((Double) row[2]);
 
             SavingsCategory savingsCategory = new SavingsCategory(
                     targetAmount,

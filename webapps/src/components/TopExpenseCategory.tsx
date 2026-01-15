@@ -116,7 +116,7 @@ const TopExpenseCategory: React.FC<TopExpenseCategoryProps> = ({isLoading, categ
                                         ${row.budgeted.toFixed(2)}
                                     </TableCell>
                                     <TableCell align="right">
-                                        ${row.actual.toFixed(2)}
+                                        ${Math.abs(row.actual).toFixed(2)}
                                     </TableCell>
                                     <TableCell
                                         align="right"

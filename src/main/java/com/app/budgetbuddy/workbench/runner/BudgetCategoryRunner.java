@@ -51,6 +51,34 @@ public class BudgetCategoryRunner
         }
     }
 
+    private List<TransactionsByCategory> getTransactionsByCategoryListByBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final Long userId)
+    {
+        LocalDate budgetWeekStart = budgetScheduleRange.getStartRange();
+        LocalDate budgetWeekEnd = budgetScheduleRange.getEndRange();
+        try
+        {
+            CompletableFuture<List<TransactionsByCategory>> future = transactionsByCategoryService.fetchTransactionsByCategoryList(userId, budgetWeekStart, budgetWeekEnd);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching transactions by category list for budget schedule range {}", budgetScheduleRange, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<CSVTransactionsByCategory> getCSVTransactionsByCategoryListByBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final Long userId)
+    {
+        LocalDate budgetWeekStart = budgetScheduleRange.getStartRange();
+        LocalDate budgetWeekEnd = budgetScheduleRange.getEndRange();
+        try
+        {
+            CompletableFuture<List<CSVTransactionsByCategory>> future = csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(userId, budgetWeekStart, budgetWeekEnd);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching csv transactions by category list for budget schedule range {}", budgetScheduleRange, e);
+            return Collections.emptyList();
+        }
+    }
+
     private List<TransactionsByCategory> getTransactionsByCategoryListByMonth(final SubBudget subBudget)
     {
         LocalDate startDate = subBudget.getStartDate();
@@ -74,6 +102,20 @@ public class BudgetCategoryRunner
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error fetching the existing budget categories for month {}", subBudget, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<BudgetCategory> getExistingBudgetCategoriesByBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final Long subBudgetId)
+    {
+        LocalDate startDate = budgetScheduleRange.getStartRange();
+        LocalDate endDate = budgetScheduleRange.getEndRange();
+        try
+        {
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.fetchExistingBudgetCategoriesByDateRange(startDate, endDate, subBudgetId);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching the existing budget categories for budget schedule range {}",  budgetScheduleRange, e);
             return Collections.emptyList();
         }
     }
@@ -103,6 +145,7 @@ public class BudgetCategoryRunner
             List<TransactionsByCategory> mergedTransactionsByCategoryList = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategoryList, csvTransactionsByCategoryList);
             log.info("Starting Thread for async budget category creation");
             CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(subBudget, subBudgetGoals1, mergedTransactionsByCategoryList);
+
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error fetching budget category list", e);
@@ -146,6 +189,34 @@ public class BudgetCategoryRunner
         return new TransactionsByCategory(csvTransactionsByCategories.getCategory(), csvTransactionsByCategories.getTotalCategorySpending(), convertedTransactions);
     }
 
+    public List<BudgetCategory> runBudgetCategoryUpdateProcessForBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final SubBudget subBudget,  Long userId)
+    {
+        try
+        {
+            Long subBudgetId = subBudget.getId();
+            // Get the Transactions categories for current budget schedule range
+            List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
+            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getCSVTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
+            log.info("CSVTransactionsByCategoryList: {}", csvTransactionsByCategoryList);
+            List<TransactionsByCategory> mergeTransactionsByCategory = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategoryList, csvTransactionsByCategoryList);
+            log.info("MergeTransactionsByCategory: {}", mergeTransactionsByCategory);
+            List<BudgetCategory> budgetCategoriesByBudgetScheduleRange = getExistingBudgetCategoriesByBudgetScheduleRange(budgetScheduleRange, subBudgetId);
+            log.info("ExistingBudgetCategoriesByBudgetScheduleRange: {}", budgetCategoriesByBudgetScheduleRange);
+            log.info("Starting Thread for async budget category update");
+
+            // run thread process to update budget categories for this week
+            CompletableFuture<List<BudgetCategory>> updatedBudgetCategories = budgetCategoryThreadService.updateAsyncBudgetCategoriesByWeek(budgetScheduleRange,subBudget, mergeTransactionsByCategory, budgetCategoriesByBudgetScheduleRange);
+            log.info("Updated Budget Categories: {}", updatedBudgetCategories);
+            log.info("Finished Thread for async budget category update");
+            // return the future bitch
+            return updatedBudgetCategories.join();
+
+        }catch(CompletionException e){
+            log.error("There was an error fetching budget category updates", e);
+            return Collections.emptyList();
+        }
+    }
+
     public List<BudgetCategory> runBudgetCategoryUpdateProcessForMonth(final SubBudget subBudget)
     {
         try
@@ -156,6 +227,30 @@ public class BudgetCategoryRunner
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error updating the budget category list for month: {}", subBudget, e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<BudgetCategory> runBudgetCategoryCreateProcessForWeek(final SubBudget subBudget, final BudgetScheduleRange budgetScheduleRange)
+    {
+        Long userId = subBudget.getBudget().getUserId();
+        LocalDate startDate = budgetScheduleRange.getStartRange();
+        LocalDate endDate = budgetScheduleRange.getEndRange();
+        try
+        {
+            // Get the transaction categories for the specified time period
+            List<TransactionsByCategory> transactionsByCategories = getTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
+            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getCSVTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
+            List<TransactionsByCategory> mergedTransactionsByCategory = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategories, csvTransactionsByCategoryList);
+            // Run the create Async Budget Categories for this time period
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByWeek(budgetScheduleRange, subBudget, mergedTransactionsByCategory);
+            List<BudgetCategory> newBudgetCategories = future.join();
+            log.info("New BudgetCategories: {}", newBudgetCategories);
+            // return the result
+            return future.join();
+
+        }catch(CompletionException e){
+            log.error("There was an error running the budget category creation for {} to {}:", startDate, endDate, e);
             return Collections.emptyList();
         }
     }

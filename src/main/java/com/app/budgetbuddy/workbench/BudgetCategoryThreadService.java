@@ -5,6 +5,7 @@ import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.workbench.budget.DailyBudgetCategoryBuilderService;
 import com.app.budgetbuddy.workbench.budget.MonthlyBudgetCategoryBuilderService;
+import com.app.budgetbuddy.workbench.budget.WeeklyBudgetCategoryBuilderService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,18 +27,36 @@ public class BudgetCategoryThreadService
 {
     private final DailyBudgetCategoryBuilderService dailyBudgetCategoryBuilderService;
     private final MonthlyBudgetCategoryBuilderService monthlyBudgetCategoryBuilderService;
+    private final WeeklyBudgetCategoryBuilderService weeklyBudgetCategoryBuilderService;
     private final BudgetCategoryService budgetCategoryService;
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
     @Autowired
     public BudgetCategoryThreadService(DailyBudgetCategoryBuilderService dailyBudgetCategoryBuilderService,
                                        MonthlyBudgetCategoryBuilderService monthlyBudgetCategoryBuilderService,
+                                       WeeklyBudgetCategoryBuilderService weeklyBudgetCategoryBuilderService,
                                        BudgetCategoryService budgetCategoryService,
                                        @Qualifier("taskScheduler1") ThreadPoolTaskScheduler threadPoolTaskScheduler) {
         this.dailyBudgetCategoryBuilderService = dailyBudgetCategoryBuilderService;
         this.monthlyBudgetCategoryBuilderService = monthlyBudgetCategoryBuilderService;
+        this.weeklyBudgetCategoryBuilderService = weeklyBudgetCategoryBuilderService;
         this.budgetCategoryService = budgetCategoryService;
         this.threadPoolTaskScheduler = threadPoolTaskScheduler;
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<List<BudgetCategory>> fetchExistingBudgetCategoriesByDateRange(final LocalDate startDate, final LocalDate endDate, final Long subBudgetId)
+    {
+        try
+        {
+            log.info("SubBudgetId: {}", subBudgetId);
+            List<BudgetCategory> budgetCategories = budgetCategoryService.getBudgetCategoryListByBudgetIdAndDateRange(subBudgetId, startDate, endDate);
+            log.info("Existing budget categories: {}", budgetCategories);
+            return CompletableFuture.completedFuture(budgetCategories);
+        }catch(CompletionException e){
+            log.error("There was an error retrieving the existing budget categories for week start {} to week end {}: {}", startDate, endDate, e.getMessage());
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
     }
 
     @Async("taskExecutor")
@@ -83,6 +102,50 @@ public class BudgetCategoryThreadService
             return CompletableFuture.completedFuture(Collections.emptyList());
         }
     }
+
+    @Async("taskExecutor")
+    public CompletableFuture<List<BudgetCategory>> createAsyncBudgetCategoriesByWeek(final BudgetScheduleRange budgetScheduleRange, final SubBudget subBudget, final List<TransactionsByCategory> categoryTransactions)
+    {
+        if(budgetScheduleRange == null || subBudget == null || categoryTransactions == null)
+        {
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+        LocalDate weekStart = budgetScheduleRange.getStartRange();
+        LocalDate weekEnd = budgetScheduleRange.getEndRange();
+        try
+        {
+            List<WeeklyCategorySpending> weeklyCategorySpending = weeklyBudgetCategoryBuilderService.getWeeklyCategorySpending(weekStart, weekEnd,  categoryTransactions);
+            List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = weeklyBudgetCategoryBuilderService.createWeeklyBudgetCategoryCriteria(subBudget, weeklyCategorySpending);
+            List<BudgetCategory> newBudgetCategories = weeklyBudgetCategoryBuilderService.buildBudgetCategoryList(weeklyBudgetCategoryCriteriaList);
+            return saveAsyncBudgetCategories(newBudgetCategories);
+        }catch(CompletionException e){
+            log.error("There was an error creating budget categories for the budget schedule range: {}", budgetScheduleRange, e);
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<List<BudgetCategory>> updateAsyncBudgetCategoriesByWeek(final BudgetScheduleRange budgetScheduleRange, final SubBudget subBudget, final List<TransactionsByCategory> categoryTransactions, final List<BudgetCategory> existingBudgetCategories)
+    {
+        if(budgetScheduleRange == null || categoryTransactions == null || existingBudgetCategories == null)
+        {
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+        LocalDate budgetScheduleWeekStart = budgetScheduleRange.getStartRange();
+        LocalDate budgetScheduleWeekEnd = budgetScheduleRange.getEndRange();
+        try
+        {
+            List<WeeklyCategorySpending> weeklyCategorySpendingList = weeklyBudgetCategoryBuilderService.getWeeklyCategorySpending(budgetScheduleWeekStart, budgetScheduleWeekEnd, categoryTransactions);
+            List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = weeklyBudgetCategoryBuilderService.createWeeklyBudgetCategoryCriteria(subBudget, weeklyCategorySpendingList);
+            List<BudgetCategory> updatedBudgetCategories = weeklyBudgetCategoryBuilderService.updateBudgetCategories(existingBudgetCategories, weeklyBudgetCategoryCriteriaList);
+            log.info("Updated Budget Categories: {}", updatedBudgetCategories);
+            return saveAsyncBudgetCategories(updatedBudgetCategories);
+
+        }catch(CompletionException e){
+            log.error("There was an error updating the budget categories for the week {} to {}", budgetScheduleWeekStart, budgetScheduleWeekEnd, e);
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+     }
 
     @Async("taskExecutor")
     public CompletableFuture<List<BudgetCategory>> updateAsyncBudgetCategoriesByMonth(final SubBudget subBudget, final List<TransactionsByCategory> categoryTransactions, final List<BudgetCategory> existingBudgetCategories)

@@ -1,18 +1,46 @@
-FROM maven:3.8.2-openjdk-17-slim as build
+# Build the React frontend
+FROM node:14 as frontend-build
+WORKDIR /app
+COPY webapps/package.json ./
+RUN npm install
+COPY webapps/ ./
+
+# Set the API URL for production
+ENV REACT_APP_API_URL=/api
+
+RUN npm run build
+
+# Build the Spring Boot backend
+FROM maven:3.8.2-openjdk-17-slim as backend-build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-FROM maven:3.8.2-openjdk-17-slim
+# Final image
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-RUN apt-get update
-COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8080
-#ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-# Set a default profile if none is provided
-ENV SPRING_PROFILES_ACTIVE=docker
+RUN apk add --no-cache curl
 
-# Use the environment variable in the entrypoint
-ENTRYPOINT ["sh", "-c", "java -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar /app/app.jar"]
+# Copy backend jar
+COPY --from=backend-build /app/target/*.jar app.jar
 
+COPY db/ /app/db/
+
+# Copy frontend static files
+COPY --from=frontend-build /app/build/* /app/static/
+
+COPY --from=frontend-build /app/build/static /app/static/static
+
+# Copy Heroku-specific properties
+COPY --from=backend-build /app/src/main/resources/application-heroku.properties ./application-heroku.properties
+
+# Set environment variables
+ENV SPRING_PROFILES_ACTIVE=heroku
+ENV PORT=8080
+
+# Expose the port Heroku will use
+EXPOSE $PORT
+
+# Start the application with Heroku's dynamic port
+CMD ["sh", "-c", "java -Dspring.profiles.active=heroku -Dserver.port=${PORT} -Xmx450m -Xms150m -XX:+UseG1GC -XX:+UseStringDeduplication -jar /app/app.jar"]

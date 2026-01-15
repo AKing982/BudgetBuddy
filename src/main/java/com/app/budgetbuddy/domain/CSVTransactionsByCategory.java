@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -12,6 +9,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
+@ToString
 public class CSVTransactionsByCategory
 {
     private String category;

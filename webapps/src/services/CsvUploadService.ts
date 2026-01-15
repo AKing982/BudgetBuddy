@@ -1,4 +1,5 @@
 import axios, {AxiosError} from "axios";
+import {API_BASE_URL} from "../config/api";
 
 interface UploadStatus
 {
@@ -12,11 +13,11 @@ interface UploadCSVParams {
     startDate: string;
     endDate: string;
 }
-
 class CsvUploadService
 {
     private readonly apiUrl: string;
     private static instance: CsvUploadService;
+
 
     constructor(apiUrl: string = "http://localhost:8080/api"){
         this.apiUrl = apiUrl;
@@ -27,7 +28,7 @@ class CsvUploadService
         try
         {
             const response = await axios.get<boolean>(
-                `${this.apiUrl}/upload/${userId}/byDates`,
+                `${API_BASE_URL}/upload/${userId}/byDates`,
                 {
                     params: {
                         startDate,
@@ -71,7 +72,7 @@ class CsvUploadService
             formData.append('endDate', endDate);
 
             const response = await axios.post<UploadStatus>(
-                `${this.apiUrl}/upload/${userId}/csv`,
+                `${API_BASE_URL}/upload/${userId}/csv`,
                 formData,
                 {
                     headers: {
