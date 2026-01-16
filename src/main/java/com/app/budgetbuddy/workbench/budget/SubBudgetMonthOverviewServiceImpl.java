@@ -174,7 +174,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                                 ON tc.subBudget.id = sb.id
                             INNER JOIN BudgetEntity b
                                 ON sb.budget.id = b.id
-                            WHERE (tc.categoryName <> :catName)
+                            WHERE (tc.categoryName NOT IN ('Income', 'Uncategorized'))
                                 AND tc.subBudget.id = :subBudgetId
                                 AND tc.startDate >= :startDate
                                 AND tc.endDate <= :endDate
@@ -184,7 +184,6 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         try
         {
             List<Object[]> expenseCategories = entityManager.createQuery(expenseCategoryQuery, Object[].class)
-                    .setParameter("catName", "Income")
                     .setParameter("subBudgetId", subBudgetId)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)

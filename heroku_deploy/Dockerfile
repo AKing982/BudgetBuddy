@@ -18,9 +18,9 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Final image
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-RUN apt-get update && apt-get install -y curl
+RUN apk add --no-cache curl
 
 # Copy backend jar
 COPY --from=backend-build /app/target/*.jar app.jar
@@ -28,12 +28,12 @@ COPY --from=backend-build /app/target/*.jar app.jar
 COPY db/ /app/db/
 
 # Copy frontend static files
-COPY --from=frontend-build /app/build/* /app/static/
+COPY --from=frontend-build /app/build/ /app/static/
 
 COPY --from=frontend-build /app/build/static /app/static/static
 
 # Copy Heroku-specific properties
-COPY src/main/resources/application-heroku.properties ./application-heroku.properties
+COPY --from=backend-build /app/src/main/resources/application-heroku.properties ./application-heroku.properties
 
 # Set environment variables
 ENV SPRING_PROFILES_ACTIVE=heroku

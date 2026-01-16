@@ -25,6 +25,16 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
     @Query("SELECT cte FROM CSVTransactionEntity cte INNER JOIN CSVAccountEntity cae ON cte.csvAccount.id = cae.id WHERE cae.user.id =:userId AND cte.transactionDate BETWEEN :startDate AND :endDate")
     List<CSVTransactionEntity> findCSVTransactionIdAndCategoryByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT COUNT(*) FROM CSVTransactionEntity cte INNER JOIN CSVAccountEntity cae ON cte.csvAccount.id = cae.id WHERE cae.user.id =:userId AND cte.transactionDate BETWEEN :startDate AND :endDate")
+    Long countByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END " +
+           "FROM CSVTransactionEntity c " +
+           "WHERE c.csvAccount.user.id =:userId " +
+           "AND c.transactionDate >= :startDate " +
+           "AND c.transactionDate <= :endDate")
+    boolean existsByUserAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
     @Modifying
     @Query("UPDATE CSVTransactionEntity cte SET cte.category =:category, cte.isSystemCategorized = TRUE WHERE cte.id =:id")
     void updateCSVTransactionEntityCategory(@Param("category") String category, @Param("id") Long id);

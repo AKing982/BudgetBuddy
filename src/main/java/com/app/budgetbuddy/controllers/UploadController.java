@@ -168,8 +168,7 @@ public class UploadController
 
     private boolean validateCSVTransactionExistForDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
-        List<CSVTransactionEntity> transactionEntities = csvTransactionService.findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate);
-        return !transactionEntities.isEmpty();
+        return csvTransactionService.existsByUserAndDateRange(userId, startDate, endDate);
     }
 
     private List<TransactionCSV> filterTransactionCSVByDateRange(List<TransactionCSV> transactionCSVList, LocalDate startDate, LocalDate endDate)

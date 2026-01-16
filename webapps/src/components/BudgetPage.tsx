@@ -14,7 +14,7 @@ import {
     Chip,
     Skeleton,
     Stack,
-    LinearProgress, Snackbar, Alert, Dialog
+    LinearProgress, Snackbar, Alert, Dialog, experimental_sx
 } from '@mui/material';
 import {
     ChevronLeft,
@@ -319,9 +319,22 @@ const BudgetPage: React.FC = () => {
         if (!budgetData?.length) {
             return defaultBudgetStats;
         }
+        const item = budgetData[0];
+        const stats = item?.budgetStats[0];
+        const categoryStats = item?.budgetCategoryStats;
+        if(!stats || !categoryStats){
+            return defaultBudgetStats;
+        }
 
-        const stats = budgetData[0]?.budgetStats[0];
-        if (!stats) return defaultBudgetStats;
+        const expenseCategories = categoryStats.expenseCategories;
+        const incomeCategories = categoryStats.incomeCategories;
+        const savingsCategories = categoryStats.savingsCategories;
+
+        const totalSpent = expenseCategories?.actualExpenses ?? 0;
+        const totalSaved = savingsCategories?.actualSavedAmount ?? 0;
+        const totalBudget = item.budget?.budgetAmount ?? 0;
+        const totalIncome = incomeCategories?.actualBudgetedIncome ?? 0;
+        const remaining = stats.totalBudget - totalSpent - totalSaved;
 
         // Just tell TypeScript these are number arrays
         const startDate = (stats.dateRange.startDate as unknown) as number[];
@@ -336,10 +349,10 @@ const BudgetPage: React.FC = () => {
             ),
             healthScore: stats.healthScore ?? 0,
             monthlyProjection: stats.monthlyProjection,
-            remaining: stats.remaining,
+            remaining: remaining,
             totalBudget: stats.totalBudget,
-            totalSaved: stats.totalSaved,
-            totalSpent: stats.totalSpent
+            totalSaved: totalSaved,
+            totalSpent: totalSpent
         };
     }, [budgetData]);
 

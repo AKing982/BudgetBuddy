@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface CSVTransactionService extends ServiceModel<CSVTransactionEntity>
 {
+
+    boolean existsByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     List<CSVTransactionEntity> createCSVTransactionEntities(List<TransactionCSV> transactionCSVList, Long userId);
     void saveAllCSVTransactionEntities(List<CSVTransactionEntity> csvTransactionEntities);
 

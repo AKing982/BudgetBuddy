@@ -58,6 +58,22 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
 
     @Override
     @Transactional
+    public boolean existsByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            log.info("Checking if transaction exists between {} and {}", startDate, endDate);
+            boolean exists = csvTransactionRepository.existsByUserAndDateRange(userId, startDate, endDate);
+            log.info("Transaction {} exists between {} and {}", userId, startDate, endDate);
+            return exists;
+        }catch(DataAccessException e){
+            log.error("Failed to check CSV transaction existence for userId {}, startDate {}, endDate {}", userId, startDate, endDate);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
     public List<CSVTransactionEntity> createCSVTransactionEntities(final List<TransactionCSV> transactionCSVList, final Long userId)
     {
         if(transactionCSVList == null || transactionCSVList.isEmpty())
