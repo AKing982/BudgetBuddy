@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +13,7 @@ import java.sql.Timestamp;
 @TableGenerator(name = "UserCategories")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Builder
 public class UserCategoryEntity
 {
     @Id
@@ -36,6 +38,11 @@ public class UserCategoryEntity
 
     @Column(name="created_at")
     private Timestamp createdAt;
+
+    @PostConstruct
+    void init() {
+        createdAt = new Timestamp(System.currentTimeMillis());
+    }
 
 
 }

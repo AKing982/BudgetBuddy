@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.entities.CategoryEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,6 +64,19 @@ public class CategoryServiceImpl implements CategoryService
     @Transactional
     public Optional<CategoryEntity> findCategoryById(String categoryId) {
         return categoryRepository.findByCategoryId(categoryId);
+    }
+
+    @Override
+    @Transactional
+    public List<CategoryEntity> findAllSystemCategories()
+    {
+        try
+        {
+            return categoryRepository.findAllSystemCategories();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving all the system categories: ", e);
+            return Collections.emptyList();
+        }
     }
 
     @Override

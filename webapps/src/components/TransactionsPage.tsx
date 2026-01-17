@@ -59,6 +59,7 @@ import TransactionService from '../services/TransactionService';
 import { Transaction, CSVTransaction } from "../utils/Items";
 import CategoryDialog, {CategorySaveData} from "./CategoryDialog";
 import CategoryService from "../services/CategoryService";
+import UserCategoryService from "../services/UserCategoryService";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -100,6 +101,7 @@ const TransactionsPage: React.FC = () => {
     const [customCategories, setCustomCategories] = useState<string[]>([]);
     const categoryService = CategoryService.getInstance();
     const transactionService = TransactionService.getInstance();
+    const userCategoryService = UserCategoryService.getInstance();
 
     const theme = useTheme();
 
@@ -489,10 +491,9 @@ const TransactionsPage: React.FC = () => {
             });
 
             // TODO: Save to database
-            // const transactionService = TransactionService.getInstance();
-            // await transactionService.addCustomCategory(category);
-
-            console.log('Custom category added:', category);
+            const userId = Number(localStorage.getItem('userId'));
+            const addedUserCustomCategory = await userCategoryService.addCustomUserCategory(userId, category);
+            console.log('Custom category added:', addedUserCustomCategory);
         } catch (error) {
             console.error('Error adding custom category:', error);
         }

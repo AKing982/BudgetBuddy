@@ -11,6 +11,8 @@ public interface CategoryService extends ServiceModel<CategoryEntity>
 
     Optional<CategoryEntity> findCategoryById(String categoryId);
 
+    List<CategoryEntity> findAllSystemCategories();
+
     Optional<CategoryEntity> findCategoryByName(String categoryName);
 
     Optional<CategoryEntity> getCategoryByNameOrDescription(String description, String name);

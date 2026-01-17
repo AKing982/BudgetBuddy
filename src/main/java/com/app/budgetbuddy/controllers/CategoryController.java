@@ -2,7 +2,9 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.CategorySaveData;
 import com.app.budgetbuddy.domain.TransactionCSV;
+import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
+import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -20,11 +22,27 @@ import java.util.List;
 public class CategoryController
 {
     private final CategoryRunner categoryRunner;
+    private final CategoryService categoryService;
 
     @Autowired
-    public CategoryController(CategoryRunner categoryRunner)
+    public CategoryController(CategoryRunner categoryRunner,
+                              CategoryService categoryService)
     {
         this.categoryRunner = categoryRunner;
+        this.categoryService = categoryService;
+    }
+
+    @GetMapping("/all-sys-categories")
+    public ResponseEntity<List<CategoryEntity>> getAllSystemCategories()
+    {
+        try
+        {
+            List<CategoryEntity> systemCategories = categoryService.findAllSystemCategories();
+            return ResponseEntity.ok(systemCategories);
+        }catch(Exception e){
+            log.error("There was an error retrieving all system categories: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping("/categorize/transaction")

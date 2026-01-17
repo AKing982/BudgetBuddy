@@ -116,7 +116,9 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
     const [overrideSystemCategory, setOverrideSystemCategory] = useState(false);
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [selectedCategoriesToReplace, setSelectedCategoriesToReplace] = useState<string[]>([]); // Add this
-
+    const categoryService = CategoryService.getInstance();
+    const [systemCategories, setSystemCategories] = useState<string[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
     // Advanced matching options
     const [matchByMerchant, setMatchByMerchant] = useState(false);
     const [merchantNameMatch, setMerchantNameMatch] = useState(merchantName);
@@ -145,6 +147,28 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
     };
 
     React.useEffect(() => {
+        const fetchSystemCategories = async () => {
+            if (open && systemCategories.length === 0) {
+                setLoadingCategories(true);
+                try {
+                    const categories = await categoryService.getAllSystemCategories();
+                    const categoryNames = categories
+                        .filter(cat => cat.isActive)
+                        .map(cat => cat.category);
+                    setSystemCategories(categoryNames);
+                } catch (error) {
+                    console.error('Error fetching system categories:', error);
+                } finally {
+                    setLoadingCategories(false);
+                }
+            }
+        };
+
+        fetchSystemCategories();
+    }, [open]);
+
+
+    React.useEffect(() => {
         if (open) {
             setLocalDisabledCategories(disabledCategories);
             setLocalCustomCategories([]);
@@ -155,7 +179,7 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
         const categorySet = new Set([...DEFAULT_SYSTEM_CATEGORIES]);
 
         if (availableCategories) {
-            availableCategories.forEach(cat => categorySet.add(cat));
+            systemCategories.forEach(cat => categorySet.add(cat));
         }
 
         if (customCategories) {
@@ -390,7 +414,7 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
                 <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 1.5 }}>
                     Select Category
                 </Typography>
-                {localDisabledCategories.length > 0 && (
+                {loadingCategories.length > 0 && (
                     <MuiTooltip title="Re-enable all disabled categories">
                         <Button
                             size="small"
