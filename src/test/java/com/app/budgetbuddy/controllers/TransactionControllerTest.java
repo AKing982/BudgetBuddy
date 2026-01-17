@@ -326,7 +326,7 @@ class TransactionControllerTest
         CategoryEntity category = new CategoryEntity();
 //        category.setId("56763344");
 //        category.setCreatedBy(1L);
-        category.setCustom(true);
+//        category.setCustom(true);
         category.setActive(true);
 //        category.setName("Travel");
         category.setDescription("Travel description");

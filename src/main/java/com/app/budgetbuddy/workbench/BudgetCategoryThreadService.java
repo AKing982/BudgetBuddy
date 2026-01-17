@@ -129,7 +129,7 @@ public class BudgetCategoryThreadService
                 log.info("All Budget Categories already exist for SubBudgetId {} from {} to {} ", subBudgetId, weekStart, weekEnd);
                 return CompletableFuture.completedFuture(Collections.emptyList());
             }
-            List<WeeklyCategorySpending> weeklyCategorySpending = weeklyBudgetCategoryBuilderService.getWeeklyCategorySpending(weekStart, weekEnd,  newTransactionsByCategory);
+            List<WeeklyCategorySpending> weeklyCategorySpending = weeklyBudgetCategoryBuilderService.getWeeklyCategorySpending(weekStart, weekEnd,  categoryTransactions);
             List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = weeklyBudgetCategoryBuilderService.createWeeklyBudgetCategoryCriteria(subBudget, weeklyCategorySpending);
             List<BudgetCategory> newBudgetCategories = weeklyBudgetCategoryBuilderService.buildBudgetCategoryList(weeklyBudgetCategoryCriteriaList);
 

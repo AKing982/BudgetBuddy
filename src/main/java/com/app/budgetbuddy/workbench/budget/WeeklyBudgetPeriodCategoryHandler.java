@@ -126,8 +126,7 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
 //                                    BigDecimal.valueOf(((Number) row[2]).doubleValue()) : BigDecimal.ZERO;
 //                            BigDecimal remaining = (row[3] instanceof Number) ?
 //                                    BigDecimal.valueOf(((Number) row[3]).doubleValue()) : BigDecimal.ZERO;
-//
-//                            return BudgetPeriodCategory.builder()
+//                            BudgetPeriodCategory budgetPeriodCategory = BudgetPeriodCategory.builder()
 //                                    .remaining(remaining)
 //                                    .budgetStatus(determineCategoryStatus(budgeted, actual))
 //                                    .actual(actual)
@@ -135,6 +134,8 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
 //                                    .category(categoryName)
 //                                    .dateRange(weekRange)
 //                                    .build();
+//                            log.info("Budget Period Category {}: ",  budgetPeriodCategory);
+//                            return budgetPeriodCategory;
 //                        })
 //                        .forEach(budgetPeriodCategories::add);
 //            }
@@ -153,12 +154,17 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
     private List<BudgetPeriodCategory> processSingleWeek(BudgetScheduleRange budgetScheduleRange,
                                                          SubBudget subBudget)
     {
+        log.info("Processing Week {}", budgetScheduleRange);
+        List<BudgetPeriodCategory> budgetPeriodCategories = new ArrayList<>();
         Long subBudgetId = subBudget.getId();
         Long userId = subBudget.getBudget().getUserId();
         LocalDate startDate = budgetScheduleRange.getStartRange();
         LocalDate endDate = budgetScheduleRange.getEndRange();
+        log.info("Running Budget Category Create Process for week {}", budgetScheduleRange);
         budgetCategoryRunner.runBudgetCategoryCreateProcessForWeek(subBudget, budgetScheduleRange);
+        log.info("running Budget Category Update process for week {}", budgetScheduleRange);
         budgetCategoryRunner.runBudgetCategoryUpdateProcessForBudgetScheduleRange(budgetScheduleRange, subBudget, userId);
+
         final String weeklyBudgetQuery = """
                 SELECT DISTINCT bc.categoryName,
                        bc.budgetedAmount,
@@ -177,27 +183,29 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
                 .setParameter("budgetId", subBudgetId)
                 .getResultList();
         DateRange weekRange = budgetScheduleRange.getBudgetDateRange();
-        return results.stream()
-                .map(row -> {
-                    // Use proper indices and add safe conversion
-                    String categoryName = getCategoryDisplayName(String.valueOf(row[0]));
-                    BigDecimal budgeted = (row[1] instanceof Number) ?
-                            BigDecimal.valueOf(((Number) row[1]).doubleValue()) : BigDecimal.ZERO;
-                    BigDecimal actual = (row[2] instanceof Number) ?
-                            BigDecimal.valueOf(((Number) row[2]).doubleValue()) : BigDecimal.ZERO;
-                    BigDecimal remaining = (row[3] instanceof Number) ?
-                            BigDecimal.valueOf(((Number) row[3]).doubleValue()) : BigDecimal.ZERO;
-
-                    return BudgetPeriodCategory.builder()
-                            .remaining(remaining)
-                            .budgetStatus(determineCategoryStatus(budgeted, actual))
-                            .actual(actual)
-                            .budgeted(budgeted)
-                            .category(categoryName)
-                            .dateRange(weekRange)
-                            .build();
-                })
-                .toList();
+        results.stream()
+                        .map(row -> {
+                            // Use proper indices and add safe conversion
+                            String categoryName = getCategoryDisplayName(String.valueOf(row[0]));
+                            BigDecimal budgeted = (row[1] instanceof Number) ?
+                                    BigDecimal.valueOf(((Number) row[1]).doubleValue()) : BigDecimal.ZERO;
+                            BigDecimal actual = (row[2] instanceof Number) ?
+                                    BigDecimal.valueOf(((Number) row[2]).doubleValue()) : BigDecimal.ZERO;
+                            BigDecimal remaining = (row[3] instanceof Number) ?
+                                    BigDecimal.valueOf(((Number) row[3]).doubleValue()) : BigDecimal.ZERO;
+                            BudgetPeriodCategory budgetPeriodCategory = BudgetPeriodCategory.builder()
+                                    .remaining(remaining)
+                                    .budgetStatus(determineCategoryStatus(budgeted, actual))
+                                    .actual(actual)
+                                    .budgeted(budgeted)
+                                    .category(categoryName)
+                                    .dateRange(weekRange)
+                                    .build();
+                            log.info("Budget Period Category {}: ",  budgetPeriodCategory);
+                            return budgetPeriodCategory;
+                        })
+                        .forEach(budgetPeriodCategories::add);
+        return budgetPeriodCategories;
     }
 
     /**

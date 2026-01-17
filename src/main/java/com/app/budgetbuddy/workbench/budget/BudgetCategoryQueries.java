@@ -214,7 +214,7 @@ public class BudgetCategoryQueries
                 FROM TransactionsEntity t
                 JOIN t.account a
                 JOIN t.category c
-                WHERE (c.id =:categoryId OR c.name =:name)
+                WHERE (c.id =:categoryId OR c.category =:name)
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
@@ -241,7 +241,7 @@ public class BudgetCategoryQueries
                 FROM TransactionsEntity t
                 JOIN t.account a
                 JOIN t.category c
-                WHERE (c.name =:name OR t.merchantName IN (:utilMerchants))
+                WHERE (c.category =:name OR t.merchantName IN (:utilMerchants))
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
@@ -270,7 +270,7 @@ public class BudgetCategoryQueries
                 FROM TransactionsEntity t
                 JOIN t.account a
                 JOIN t.category c
-                WHERE (c.name =:name OR t.merchantName IN (:gasMerchants))
+                WHERE (c.category =:name OR t.merchantName IN (:gasMerchants))
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
@@ -296,7 +296,7 @@ public class BudgetCategoryQueries
                 FROM TransactionsEntity t
                 JOIN t.account a
                 JOIN t.category c
-                WHERE (c.id IN (:orderOutCatIds) OR c.name =:name) AND (t.posted BETWEEN :startDate AND :endDate)
+                WHERE (c.id IN (:orderOutCatIds) OR c.category =:name) AND (t.posted BETWEEN :startDate AND :endDate)
                 AND a.user.id = :userId
                 """;
         try
@@ -322,7 +322,7 @@ public class BudgetCategoryQueries
                 FROM TransactionsEntity t
                 JOIN t.account a
                 JOIN t.category c
-                WHERE (t.merchantName IN (:groceriesMerchants) OR c.name =:name)
+                WHERE (t.merchantName IN (:groceriesMerchants) OR c.category =:name)
                 AND (t.posted BETWEEN :startDate AND :endDate)
                 AND a.user.id = :userId
                 """;

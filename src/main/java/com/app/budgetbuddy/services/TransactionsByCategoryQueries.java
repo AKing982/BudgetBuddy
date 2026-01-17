@@ -69,7 +69,7 @@ public class TransactionsByCategoryQueries
 
     public List<TransactionsByCategory> getTransactionsByCategoryListByDate(final Long userId, final LocalDate date)
     {
-        final String transactionsByCategoryDateQuery = "SELECT tc.matchedCategory, tc.transaction.id " +
+        final String transactionsByCategoryDateQuery = "SELECT tc.category, tc.transaction.id " +
                 "FROM TransactionCategoryEntity tc " +
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
@@ -91,7 +91,7 @@ public class TransactionsByCategoryQueries
 
     public List<TransactionsByCategory> getTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
-        final String transactionsByCategoryQuery =  "SELECT tc.matchedCategory, tc.transaction.id " +
+        final String transactionsByCategoryQuery =  "SELECT tc.category, tc.transaction.id " +
                 "FROM TransactionCategoryEntity tc " +
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
@@ -115,12 +115,12 @@ public class TransactionsByCategoryQueries
 
     public List<Transaction> getTransactionsByCategory(final String category, final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
-        final String categoryToTransactionIdQuery = "SELECT tc.matchedCategory, tc.transaction.id " +
+        final String categoryToTransactionIdQuery = "SELECT tc.category, tc.transaction.id " +
                 "FROM TransactionCategoryEntity tc " +
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
                 "WHERE a.user.id = :userId " +
-                "AND t.posted BETWEEN :startDate AND :endDate AND tc.matchedCategory = :category";
+                "AND t.posted BETWEEN :startDate AND :endDate AND tc.category = :category";
         try
         {
             List<Object[]> queryResults = entityManager.createQuery(categoryToTransactionIdQuery, Object[].class)
@@ -159,33 +159,33 @@ public class TransactionsByCategoryQueries
         return transactions;
     }
 
-    public BigDecimal getTotalSpendingByCategory(final String category, final Long userId, final LocalDate startDate, final LocalDate endDate)
-    {
-        if(category == null || userId == null || startDate == null || endDate == null)
-        {
-            return BigDecimal.ZERO;
-        }
-        try
-        {
-            final String jpql = "SELECT CASE " +
-                    "WHEN SUM(t.amount) < 0 THEN (-1) * SUM(t.amount) " +
-                    "ELSE SUM(t.amount) END " +
-                    "FROM TransactionCategoryEntity tc " +
-                    "INNER JOIN TransactionsEntity t ON tc.transactionId = t.transactionId " +
-                    "INNER JOIN AccountEntity a ON t.accountId = a.id " +
-                    "WHERE a.userId = :userId " +
-                    "AND t.posted BETWEEN :startDate AND :endDate " +
-                    "AND tc.matchedCategory = :category " +
-                    "GROUP BY tc.matchedCategory";
-            return entityManager.createQuery(jpql, BigDecimal.class)
-                    .setParameter("userId", userId)
-                    .setParameter("startDate", startDate)
-                    .setParameter("endDate", endDate)
-                    .setParameter("category", category)
-                    .getSingleResult();
-        }catch(DataAccessException e){
-            log.error("There was an error retrieving the total spending by category", e);
-            return BigDecimal.ZERO;
-        }
-    }
+//    public BigDecimal getTotalSpendingByCategory(final String category, final Long userId, final LocalDate startDate, final LocalDate endDate)
+//    {
+//        if(category == null || userId == null || startDate == null || endDate == null)
+//        {
+//            return BigDecimal.ZERO;
+//        }
+//        try
+//        {
+//            final String jpql = "SELECT CASE " +
+//                    "WHEN SUM(t.amount) < 0 THEN (-1) * SUM(t.amount) " +
+//                    "ELSE SUM(t.amount) END " +
+//                    "FROM TransactionCategoryEntity tc " +
+//                    "INNER JOIN TransactionsEntity t ON tc.transactionId = t.transactionId " +
+//                    "INNER JOIN AccountEntity a ON t.accountId = a.id " +
+//                    "WHERE a.userId = :userId " +
+//                    "AND t.posted BETWEEN :startDate AND :endDate " +
+//                    "AND tc.matchedCategory = :category " +
+//                    "GROUP BY tc.matchedCategory";
+//            return entityManager.createQuery(jpql, BigDecimal.class)
+//                    .setParameter("userId", userId)
+//                    .setParameter("startDate", startDate)
+//                    .setParameter("endDate", endDate)
+//                    .setParameter("category", category)
+//                    .getSingleResult();
+//        }catch(DataAccessException e){
+//            log.error("There was an error retrieving the total spending by category", e);
+//            return BigDecimal.ZERO;
+//        }
+//    }
 }

@@ -37,9 +37,6 @@ public class CategoryEntity
     @Column(name="is_active")
     private boolean isActive;
 
-    @Column(name="is_custom")
-    private boolean isCustom;
-
     @Column(name="created_at")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;

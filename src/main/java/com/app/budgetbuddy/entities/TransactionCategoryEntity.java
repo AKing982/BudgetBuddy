@@ -31,6 +31,10 @@ public class TransactionCategoryEntity
     @JoinColumn(name="category_id")
     private CategoryEntity category;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="user_category_id")
+    private UserCategoryEntity userCategory;
+
     @Column(name="categorized_by", nullable=false)
     private String categorizedBy;
 

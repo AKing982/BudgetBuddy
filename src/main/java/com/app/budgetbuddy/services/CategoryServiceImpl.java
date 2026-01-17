@@ -83,7 +83,7 @@ public class CategoryServiceImpl implements CategoryService
     private CategoryEntity createCategory(String categoryId, boolean isCustom, String name, String description, LocalDateTime created, Long id) {
         CategoryEntity categoryEntity = new CategoryEntity();
         categoryEntity.setId(id);
-        categoryEntity.setCustom(isCustom);
+//        categoryEntity.setCustom(isCustom);
         if(name == null)
         {
             categoryEntity.setCategory("");

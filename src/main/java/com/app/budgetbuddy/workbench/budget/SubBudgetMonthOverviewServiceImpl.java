@@ -174,7 +174,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                                 ON tc.subBudget.id = sb.id
                             INNER JOIN BudgetEntity b
                                 ON sb.budget.id = b.id
-                            WHERE (tc.categoryName NOT IN ('Income', 'Uncategorized'))
+                            WHERE (tc.categoryName NOT IN ('Income', 'Uncategorized', 'Deposit'))
                                 AND tc.subBudget.id = :subBudgetId
                                 AND tc.startDate >= :startDate
                                 AND tc.endDate <= :endDate
