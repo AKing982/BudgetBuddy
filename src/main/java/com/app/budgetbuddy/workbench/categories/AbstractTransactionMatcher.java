@@ -324,7 +324,7 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
             return CategoryType.UNCATEGORIZED;
         }
         CategoryEntity category = categoryOptional.get();
-        String categoryName = category.getName();
+        String categoryName = category.getCategory();
         return determineCategoryMatchByTransaction(transaction, categoryId, categoryName, merchantName, transactionDescription);
     }
 
@@ -608,6 +608,6 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
             throw new CategoryNotFoundException(categoryId);
         }
         log.info("Found Category: " + category);
-        return category.get().getName();
+        return category.get().getCategory();
     }
 }

@@ -137,8 +137,8 @@ public class TransactionController
             transactionResponse.setPosted(transaction.getPosted());
             // Safely handle potential null category
             if (transaction.getCategory() != null) {
-                transactionResponse.setCategories(getCategoriesForTransaction(transaction.getId(), transaction.getCategory().getId()));
-                transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getId()));
+                transactionResponse.setCategories(getCategoriesForTransaction(transaction.getId(), transaction.getCategory().getPlaidCategoryId()));
+                transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getPlaidCategoryId()));
             } else {
                 LOGGER.warn("Transaction with ID {} has no category", transaction.getId());
                 transactionResponse.setCategories(Collections.emptyList());
@@ -160,7 +160,7 @@ public class TransactionController
         }
         Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
         if(categoryEntity.isPresent()){
-            return categoryEntity.get().getId();
+            return categoryEntity.get().getPlaidCategoryId();
         }
         LOGGER.info("Returning CategoryId: {}", categoryId);
         return categoryId;
@@ -175,7 +175,7 @@ public class TransactionController
         List<String> categories = new ArrayList<>();
         if(transaction.isPresent()){
             CategoryEntity category = transaction.get().getCategory();
-            categories.add(category.getName());
+            categories.add(category.getCategory());
             categories.add(category.getDescription());
         }else{
             LOGGER.warn("Transaction with ID {} has no category", transactionId);

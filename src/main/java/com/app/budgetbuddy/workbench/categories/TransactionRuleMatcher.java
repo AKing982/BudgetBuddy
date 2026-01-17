@@ -72,7 +72,7 @@ public class TransactionRuleMatcher extends AbstractTransactionMatcher<Transacti
                 continue;
             }
             CategoryEntity category = categoryOptional.get();
-            String categoryName = category.getName();
+            String categoryName = category.getCategory();
             String categoryDescription = category.getDescription();
             int priorityLevel;
 
@@ -148,7 +148,7 @@ public class TransactionRuleMatcher extends AbstractTransactionMatcher<Transacti
             return CategoryType.UNCATEGORIZED;
         }
         CategoryEntity categoryEntity = categoryEntityOptional.get();
-        String categoryName = categoryEntity.getName();
+        String categoryName = categoryEntity.getCategory();
         CategoryType matchByTransactionDescription = checkTransactionDescriptionRules(categoryId, transactionDescription);
         if(matchByTransactionDescription != CategoryType.UNCATEGORIZED)
         {

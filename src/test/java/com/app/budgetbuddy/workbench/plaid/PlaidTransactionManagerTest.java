@@ -326,7 +326,7 @@ class PlaidTransactionManagerTest {
         recurringTransaction.setDescription("Monthly Subscription");
         recurringTransaction.setFirstDate(LocalDate.parse("2023-01-01"));
         recurringTransaction.setLastDate(LocalDate.parse("2024-01-01"));
-        recurringTransaction.setCategory(CategoryEntity.builder().id("CAT123").build());
+//        recurringTransaction.setCategory(CategoryEntity.builder().id("CAT123").build());
         recurringTransaction.setUser(UserEntity.builder().id(1L).build());
         recurringTransaction.setAccount(AccountEntity.builder().id("ACC123").build());
         return recurringTransaction;

@@ -77,24 +77,23 @@ public class CategoryServiceImpl implements CategoryService
 
     @Override
     public Optional<String> getCategoryIdByName(String categoryName) {
-        return categoryRepository.findCategoryIdByName(categoryName);
+        return null;
     }
 
     private CategoryEntity createCategory(String categoryId, boolean isCustom, String name, String description, LocalDateTime created, Long id) {
         CategoryEntity categoryEntity = new CategoryEntity();
-        categoryEntity.setId(categoryId);
+        categoryEntity.setId(id);
         categoryEntity.setCustom(isCustom);
         if(name == null)
         {
-            categoryEntity.setName("");
+            categoryEntity.setCategory("");
         }
         else
         {
-            categoryEntity.setName(name);
+            categoryEntity.setCategory(name);
         }
         categoryEntity.setDescription(description);
         categoryEntity.setCreatedat(created);
-        categoryEntity.setCreatedBy(id);
         return categoryEntity;
     }
 }

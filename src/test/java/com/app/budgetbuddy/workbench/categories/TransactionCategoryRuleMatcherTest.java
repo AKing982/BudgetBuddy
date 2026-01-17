@@ -909,7 +909,7 @@ class TransactionRuleMatcherTest {
         categoryEntity.setActive(true);
         categoryEntity.setDescription("Supermarkets and Groceries");
         categoryEntity.setCustom(false);
-        categoryEntity.setName("Supermarkets and Groceries");
+        categoryEntity.setCategory("Supermarkets and Groceries");
         return categoryEntity;
     }
 

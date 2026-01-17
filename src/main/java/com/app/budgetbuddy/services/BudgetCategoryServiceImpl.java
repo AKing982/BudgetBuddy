@@ -10,10 +10,12 @@ import com.app.budgetbuddy.repositories.BudgetCategoryRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Slf4j
 public class BudgetCategoryServiceImpl implements BudgetCategoryService
 {
     private final BudgetCategoryRepository budgetCategoryRepository;
@@ -71,6 +74,23 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     public List<BudgetCategoryEntity> getActiveBudgetCategoriesByUser(Long userId)
     {
         return budgetCategoryRepository.findActiveCategoriesByUser(userId);
+    }
+
+    @Override
+    @Transactional
+    public boolean existsByCategoryDateRange(final String category, final LocalDate dateStart, final LocalDate dateEnd, final Long subBudgetId)
+    {
+        if(category.isEmpty() || dateStart == null || dateEnd == null || subBudgetId == null)
+        {
+            return false;
+        }
+        try
+        {
+            return budgetCategoryRepository.existsByCategoryDateRange(category, dateStart, dateEnd, subBudgetId);
+        }catch(DataAccessException e){
+            log.error("There was an error validating budget category {} exists for start {} and end {}: {}",  category, dateStart, dateEnd, subBudgetId);
+            return false;
+        }
     }
 
     @Override

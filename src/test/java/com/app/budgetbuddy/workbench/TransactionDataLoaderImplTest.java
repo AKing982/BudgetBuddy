@@ -178,7 +178,7 @@ class TransactionDataLoaderImplTest {
         transactionsEntity.setAmount(new BigDecimal("15.75"));
         transactionsEntity.setMerchantName("Winco Foods");
         transactionsEntity.setAuthorizedDate(LocalDate.of(2024, 9, 30));
-        transactionsEntity.setCategory(CategoryEntity.builder().id("19047000").name("Supermarkets and Groceries").description("Shops").build());
+//        transactionsEntity.setCategory(CategoryEntity.builder().id("19047000").name("Supermarkets and Groceries").description("Shops").build());
         transactionsEntity.setPending(false);
         transactionsEntity.setId("transaction123");
         transactionsEntity.setDescription("PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024");

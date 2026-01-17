@@ -44,44 +44,44 @@ public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHan
             LocalDate subBudgetEndDate = budgetSchedule.getEndDate();
             Long subBudgetId = budgetSchedule.getSubBudgetId();
             // Generate daily date ranges
-            DateRange dailyDateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
-            List<LocalDate> dailyDates = dailyDateRange.splitIntoDays().stream()
-                    .map(DateRange::getStartDate)
-                    .toList();
-
-            for(LocalDate date : dailyDates)
-            {
-                List<Object[]> results = entityManager.createQuery("""
-                    SELECT DISTINCT categoryName,
-                           bc.budgetedAmount,
-                           COALESCE(bc.actual, 0) AS actualSpent,
-                           (bc.budgetedAmount - COALESCE(bc.actual, 0)) AS remainingAmount
-                    FROM BudgetCategoryEntity bc
-                    WHERE bc.startDate <= :date
-                      AND bc.endDate >= :date
-                      AND bc.subBudget.id = :budgetId
-                      AND bc.active = true
-                """, Object[].class)
-                        .setParameter("date", date)
-                        .setParameter("budgetId", subBudgetId)
-                        .getResultList();
-
-                results.stream()
-                        .map(row -> {
-                            String categoryName = getCategoryDisplayName((String) row[0]);
-                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[1]);
-                            BigDecimal actual = BigDecimal.valueOf((Double) row[2]);
-
-                            return new BudgetPeriodCategory(
-                                    categoryName,
-                                    budgeted,
-                                    actual,
-                                    new DateRange(date, date),
-                                    determineCategoryStatus(budgeted, actual)
-                            );
-                        })
-                        .forEach(budgetPeriodCategories::add);
-            }
+//            DateRange dailyDateRange = new DateRange(subBudgetStartDate, subBudgetEndDate);
+//            List<LocalDate> dailyDates = dailyDateRange.splitIntoDays().stream()
+//                    .map(DateRange::getStartDate)
+//                    .toList();
+//
+//            for(LocalDate date : dailyDates)
+//            {
+//                List<Object[]> results = entityManager.createQuery("""
+//                    SELECT DISTINCT categoryName,
+//                           bc.budgetedAmount,
+//                           COALESCE(bc.actual, 0) AS actualSpent,
+//                           (bc.budgetedAmount - COALESCE(bc.actual, 0)) AS remainingAmount
+//                    FROM BudgetCategoryEntity bc
+//                    WHERE bc.startDate <= :date
+//                      AND bc.endDate >= :date
+//                      AND bc.subBudget.id = :budgetId
+//                      AND bc.active = true
+//                """, Object[].class)
+//                        .setParameter("date", date)
+//                        .setParameter("budgetId", subBudgetId)
+//                        .getResultList();
+//
+//                results.stream()
+//                        .map(row -> {
+//                            String categoryName = getCategoryDisplayName((String) row[0]);
+//                            BigDecimal budgeted = BigDecimal.valueOf((Double) row[1]);
+//                            BigDecimal actual = BigDecimal.valueOf((Double) row[2]);
+//
+//                            return new BudgetPeriodCategory(
+//                                    categoryName,
+//                                    budgeted,
+//                                    actual,
+//                                    new DateRange(date, date),
+//                                    determineCategoryStatus(budgeted, actual)
+//                            );
+//                        })
+//                        .forEach(budgetPeriodCategories::add);
+//            }
 
             return budgetPeriodCategories;
 

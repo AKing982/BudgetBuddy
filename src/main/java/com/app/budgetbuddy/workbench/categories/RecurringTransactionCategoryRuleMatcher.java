@@ -124,7 +124,7 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
                 continue;
             }
             CategoryEntity category = categoryOptional.get();
-            String categoryName = category.getName();
+            String categoryName = category.getCategory();
             String categoryDescription = category.getDescription();
             int priorityLevel;
             if (categoryId != null && categoryName != null && categoryDescription != null &&

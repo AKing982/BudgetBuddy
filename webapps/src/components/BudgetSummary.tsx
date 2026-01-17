@@ -138,7 +138,7 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                             Total Saved
                         </Typography>
                         <Typography variant="body1" fontWeight="bold" color="success.main">
-                            ${budgetStats.totalSaved}
+                            ${Math.abs(Math.round(budgetStats.totalBudget - budgetStats.totalSpent))}
                         </Typography>
                     </Box>
                 </Box>

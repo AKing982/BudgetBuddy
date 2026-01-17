@@ -1165,7 +1165,7 @@ class BudgetCalculatorTest {
     private static CategoryEntity createCategory(String name, String description){
         CategoryEntity category = new CategoryEntity();
         category.setDescription(description);
-        category.setName(name);
+        category.setCategory(name);
         category.setActive(true);
         return category;
     }

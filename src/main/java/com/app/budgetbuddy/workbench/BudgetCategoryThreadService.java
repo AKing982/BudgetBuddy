@@ -17,8 +17,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -112,11 +114,25 @@ public class BudgetCategoryThreadService
         }
         LocalDate weekStart = budgetScheduleRange.getStartRange();
         LocalDate weekEnd = budgetScheduleRange.getEndRange();
+        Long subBudgetId = subBudget.getId();
         try
         {
-            List<WeeklyCategorySpending> weeklyCategorySpending = weeklyBudgetCategoryBuilderService.getWeeklyCategorySpending(weekStart, weekEnd,  categoryTransactions);
+            List<BudgetCategory> existingBudgetCategories = budgetCategoryService.getBudgetCategoryListByBudgetIdAndDateRange(subBudgetId, weekStart, weekEnd);
+            Set<String> existingCategoryNames = existingBudgetCategories.stream()
+                    .map(BudgetCategory::getCategoryName)
+                    .collect(Collectors.toSet());
+            List<TransactionsByCategory> newTransactionsByCategory = categoryTransactions.stream()
+                    .filter(t -> !existingCategoryNames.contains(t.getCategoryName()))
+                    .toList();
+            if(newTransactionsByCategory.isEmpty())
+            {
+                log.info("All Budget Categories already exist for SubBudgetId {} from {} to {} ", subBudgetId, weekStart, weekEnd);
+                return CompletableFuture.completedFuture(Collections.emptyList());
+            }
+            List<WeeklyCategorySpending> weeklyCategorySpending = weeklyBudgetCategoryBuilderService.getWeeklyCategorySpending(weekStart, weekEnd,  newTransactionsByCategory);
             List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = weeklyBudgetCategoryBuilderService.createWeeklyBudgetCategoryCriteria(subBudget, weeklyCategorySpending);
             List<BudgetCategory> newBudgetCategories = weeklyBudgetCategoryBuilderService.buildBudgetCategoryList(weeklyBudgetCategoryCriteriaList);
+
             return saveAsyncBudgetCategories(newBudgetCategories);
         }catch(CompletionException e){
             log.error("There was an error creating budget categories for the budget schedule range: {}", budgetScheduleRange, e);
@@ -188,6 +204,17 @@ public class BudgetCategoryThreadService
         } catch (CompletionException e) {
             log.error("There was an error saving the budget categories to the server: ", e);
             return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+    }
+
+    private CompletableFuture<Boolean> validateBudgetCategoriesExist(final List<BudgetCategory> budgetCategories)
+    {
+        try
+        {
+            return CompletableFuture.completedFuture(true);
+        }catch(CompletionException e){
+            log.error("There was an error validating the budget categories to the server: ", e);
+            return CompletableFuture.completedFuture(false);
         }
     }
 

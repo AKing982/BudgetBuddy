@@ -152,7 +152,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) =>
             </Typography>
             <Box mb={3}>
                 <Typography variant="h6" gutterBottom>
-                    Budget Health Score: {healthScore}/100
+                    Budget Health Score: {healthScore}%
                 </Typography>
                 <LinearProgress
                     variant="determinate"

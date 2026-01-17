@@ -252,8 +252,8 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         for (RecurringTransactionEntity recurringTransactionEntity : recurringTransactionEntities) {
             String categoryName = null;
             if (recurringTransactionEntity.getCategory() != null) {
-                categoryName = recurringTransactionEntity.getCategory().getName() != null
-                        ? recurringTransactionEntity.getCategory().getName()
+                categoryName = recurringTransactionEntity.getCategory().getPlaidCategoryId() != null
+                        ? recurringTransactionEntity.getCategory().getCategory()
                         : recurringTransactionEntity.getCategory().getDescription(); // Fallback to description
             }
 

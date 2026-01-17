@@ -23,7 +23,7 @@ public interface RecurringTransactionsRepository extends JpaRepository<Recurring
     @Query("SELECT rt.streamId FROM RecurringTransactionEntity rt JOIN rt.transactionsLinks tl WHERE tl.transaction.id IN :transactionIds")
     List<String> findRecurringTransactionIds(@Param("transactionIds") List<String> transactionIds);
 
-    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.category.id =:id AND rt.category.name LIKE :name AND rt.user.id =:uId")
+    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.category.id =:id AND rt.category.category LIKE :name AND rt.user.id =:uId")
     List<RecurringTransactionEntity> findRecurringTransactionsWithIncome(@Param("id") String categoryId, @Param("name") String categoryName, @Param("uId") Long userId);
 
     @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.user.id =:id")

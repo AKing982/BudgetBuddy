@@ -376,7 +376,7 @@ class BudgetCategoryRunnerTest {
 
     private CategoryEntity createCategory(String name){
         CategoryEntity categoryEntity = new CategoryEntity();
-        categoryEntity.setName(name);
+        categoryEntity.setCategory(name);
         return categoryEntity;
     }
 

@@ -336,7 +336,7 @@ public class PlaidController
                 String transactionId = transactionsEntity.getId();
                 String accountRefNumber = transactionsEntity.getAccount().getId();
                 BigDecimal amount = transactionsEntity.getAmount();
-                String categoryId = transactionsEntity.getCategory().getId();
+                String categoryId = transactionsEntity.getCategory().getPlaidCategoryId();
                 LocalDate date = transactionsEntity.getPosted();
                 String name = transactionsEntity.getDescription();
                 String merchantName = transactionsEntity.getMerchantName();

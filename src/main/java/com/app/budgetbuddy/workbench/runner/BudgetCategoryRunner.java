@@ -199,6 +199,11 @@ public class BudgetCategoryRunner
             List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getCSVTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
             log.info("CSVTransactionsByCategoryList: {}", csvTransactionsByCategoryList);
             List<TransactionsByCategory> mergeTransactionsByCategory = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategoryList, csvTransactionsByCategoryList);
+            if(mergeTransactionsByCategory.isEmpty())
+            {
+                log.info("No Updated TransactionsByCategory  found for Budget Schedule Range {}", budgetScheduleRange);
+                return Collections.emptyList();
+            }
             log.info("MergeTransactionsByCategory: {}", mergeTransactionsByCategory);
             List<BudgetCategory> budgetCategoriesByBudgetScheduleRange = getExistingBudgetCategoriesByBudgetScheduleRange(budgetScheduleRange, subBudgetId);
             log.info("ExistingBudgetCategoriesByBudgetScheduleRange: {}", budgetCategoriesByBudgetScheduleRange);
@@ -242,12 +247,16 @@ public class BudgetCategoryRunner
             List<TransactionsByCategory> transactionsByCategories = getTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
             List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getCSVTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
             List<TransactionsByCategory> mergedTransactionsByCategory = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategories, csvTransactionsByCategoryList);
+            if(mergedTransactionsByCategory.isEmpty())
+            {
+                return Collections.emptyList();
+            }
             // Run the create Async Budget Categories for this time period
             CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByWeek(budgetScheduleRange, subBudget, mergedTransactionsByCategory);
             List<BudgetCategory> newBudgetCategories = future.join();
             log.info("New BudgetCategories: {}", newBudgetCategories);
             // return the result
-            return future.join();
+            return newBudgetCategories;
 
         }catch(CompletionException e){
             log.error("There was an error running the budget category creation for {} to {}:", startDate, endDate, e);

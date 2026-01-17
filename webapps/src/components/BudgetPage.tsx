@@ -428,6 +428,8 @@ const BudgetPage: React.FC = () => {
         await fetchBudgetData(currentMonth);
     };
 
+
+
     const topExpenseCategories = useMemo(() => {
         if (!budgetData?.length) return [];
 
@@ -811,7 +813,7 @@ const BudgetPage: React.FC = () => {
                                     <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
                                 ) : (
                                     <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                        {budgetStats.healthScore}/100
+                                        {Math.round(budgetStats.healthScore)}%
                                     </Typography>
                                 )}
                                 <Box sx={{ mt: 1 }}>
@@ -829,8 +831,64 @@ const BudgetPage: React.FC = () => {
                                         }}
                                     />
                                 </Box>
+                                {!isLoading && (
+                                    <Typography variant="caption" sx={{ opacity: 0.85, display: 'block', mt: 1 }}>
+                                        {budgetStats.healthScore >= 90 ? 'Excellent budget management' :
+                                            budgetStats.healthScore >= 75 ? 'Good financial health' :
+                                                budgetStats.healthScore >= 50 ? 'Monitor spending closely' :
+                                                    'Review spending priorities'}
+                                    </Typography>
+                                )}
                             </Card>
                         </Grid>
+                        {/*<Grid item xs={12} sm={6} md={3}>*/}
+                        {/*    <Card sx={{*/}
+                        {/*        p: 3,*/}
+                        {/*        borderRadius: 4,*/}
+                        {/*        height: '100%',*/}
+                        {/*        background: gradients.orange,*/}
+                        {/*        color: 'white',*/}
+                        {/*        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',*/}
+                        {/*        position: 'relative',*/}
+                        {/*        overflow: 'hidden',*/}
+                        {/*        '&::after': {*/}
+                        {/*            content: '""',*/}
+                        {/*            position: 'absolute',*/}
+                        {/*            top: 0,*/}
+                        {/*            right: 0,*/}
+                        {/*            width: '50%',*/}
+                        {/*            height: '100%',*/}
+                        {/*            backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',*/}
+                        {/*            transform: 'skewX(-20deg) translateX(10%)',*/}
+                        {/*        }*/}
+                        {/*    }}>*/}
+                        {/*        <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>*/}
+                        {/*            Budget Health*/}
+                        {/*        </Typography>*/}
+                        {/*        {isLoading ? (*/}
+                        {/*            <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />*/}
+                        {/*        ) : (*/}
+                        {/*            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>*/}
+                        {/*                {Math.round(budgetStats.healthScore)}%*/}
+                        {/*            </Typography>*/}
+                        {/*        )}*/}
+                        {/*        <Box sx={{ mt: 1 }}>*/}
+                        {/*            <LinearProgress*/}
+                        {/*                variant="determinate"*/}
+                        {/*                value={budgetStats.healthScore}*/}
+                        {/*                sx={{*/}
+                        {/*                    height: 6,*/}
+                        {/*                    borderRadius: 3,*/}
+                        {/*                    bgcolor: 'rgba(255, 255, 255, 0.2)',*/}
+                        {/*                    '& .MuiLinearProgress-bar': {*/}
+                        {/*                        bgcolor: 'white',*/}
+                        {/*                        borderRadius: 3*/}
+                        {/*                    }*/}
+                        {/*                }}*/}
+                        {/*            />*/}
+                        {/*        </Box>*/}
+                        {/*    </Card>*/}
+                        {/*</Grid>*/}
                     </Grid>
                 </Grow>
 

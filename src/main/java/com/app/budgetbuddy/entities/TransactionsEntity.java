@@ -30,7 +30,7 @@ public class TransactionsEntity
     private AccountEntity account;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="categoryid")
+    @JoinColumn(name="category_id")
     @JsonManagedReference
     private CategoryEntity category;
 

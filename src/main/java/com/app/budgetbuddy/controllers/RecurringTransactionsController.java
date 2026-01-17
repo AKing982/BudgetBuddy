@@ -64,7 +64,7 @@ public class RecurringTransactionsController
             Long userId = recurringTransactionEntity.getUser().getId();
             String accountId = recurringTransactionEntity.getAccount().getId();
             String streamId = recurringTransactionEntity.getStreamId();
-            String categoryId = recurringTransactionEntity.getCategory().getId();
+            String categoryId = recurringTransactionEntity.getCategory().getPlaidCategoryId();
             String description = recurringTransactionEntity.getDescription();
             String merchantName = recurringTransactionEntity.getMerchantName();
             LocalDate firstDate = recurringTransactionEntity.getFirstDate();

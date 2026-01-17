@@ -35,7 +35,7 @@ public class TransactionRuleCreator
         }
         CategoryEntity category = categoryService.findCategoryById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException(categoryId));
-        return category.getName();
+        return category.getCategory();
     }
 
 

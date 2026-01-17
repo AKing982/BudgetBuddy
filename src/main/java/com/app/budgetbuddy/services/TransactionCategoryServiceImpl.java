@@ -83,10 +83,8 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     public TransactionCategoryEntity convertToEntity(TransactionCategory transactionCategory)
     {
         TransactionCategoryEntity transactionCategoryEntity = new TransactionCategoryEntity();
-        transactionCategoryEntity.setMatchedCategory(transactionCategory.getMatchedCategory());
-        transactionCategoryEntity.setPlaidCategory(transactionCategory.getPlaidCategory());
-        transactionCategoryEntity.setRecurring(transactionCategory.isRecurring());
-        transactionCategoryEntity.setRulePriority(transactionCategory.getPriority());
+        transactionCategoryEntity.setId(transactionCategory.getId());
+//        transactionCategoryEntity.setCategory(transactionCategory.getCategory());
         transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
         transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorized_date());
         Optional<TransactionsEntity> transactionsEntityOptional = findTransactionEntityById(transactionCategory.getTransactionId());
@@ -102,13 +100,12 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     public TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity)
     {
         TransactionCategory transactionCategory = new TransactionCategory();
-        transactionCategory.setMatchedCategory(transactionCategoryEntity.getMatchedCategory());
-        transactionCategory.setPlaidCategory(transactionCategoryEntity.getPlaidCategory());
-        transactionCategory.setRecurring(transactionCategoryEntity.isRecurring());
-        transactionCategory.setTransactionId(transactionCategoryEntity.getTransaction().getId());
+        transactionCategory.setId(transactionCategoryEntity.getId());
+        transactionCategory.setCategory_id(transactionCategoryEntity.getCategory().getId());
         transactionCategory.setCategorizedBy(transactionCategoryEntity.getCategorizedBy());
         transactionCategory.setCategorized_date(transactionCategoryEntity.getCategorized_date());
-        transactionCategory.setPriority(transactionCategory.getPriority());
+        transactionCategory.setTransactionId(transactionCategoryEntity.getTransaction().getId());
+        transactionCategory.setCategory(transactionCategoryEntity.getCategory().getCategory());
         return transactionCategory;
     }
 

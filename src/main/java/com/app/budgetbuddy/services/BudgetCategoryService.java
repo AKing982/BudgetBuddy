@@ -12,6 +12,7 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
 
     List<BudgetCategoryEntity> getActiveBudgetCategoriesByUser(Long userId);
 
+    boolean existsByCategoryDateRange(String category, LocalDate dateStart, LocalDate dateEnd, Long subBudgetId);
     List<BudgetCategoryEntity> getBudgetCategoriesByBudgetId(Long budgetId);
     List<BudgetCategoryEntity> getBudgetCategoriesByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate);
     List<BudgetCategoryEntity> getBudgetCategoriesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);

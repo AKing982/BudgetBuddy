@@ -19,17 +19,20 @@ public class CategoryEntity
 {
 
     @Id
-    @Column(name="categoryid")
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name="name")
-    private String name;
+    @Column(name="plaid_category_id")
+    private String plaidCategoryId;
+
+    @Column(name="plaid_category")
+    private String plaidCategory;
+
+    @Column(name="category")
+    private String category;
 
     @Column(name="description")
     private String description;
-
-    @Column(name="type")
-    private String type;
 
     @Column(name="is_active")
     private boolean isActive;
@@ -37,20 +40,8 @@ public class CategoryEntity
     @Column(name="is_custom")
     private boolean isCustom;
 
-    @Column(name="createdBy")
-    private Long createdBy;
-
-    @Column(name="createdat")
+    @Column(name="created_at")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;
 
-    @OneToMany(mappedBy="category")
-    private List<TransactionsEntity> transactions;
-
-
-    public CategoryEntity(String categoryId, String name, String description) {
-        this.id = categoryId;
-        this.name = name;
-        this.description = description;
-    }
 }

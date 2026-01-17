@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 @Setter
 public class WeeklyBudgetCategoryBuilderService
 {
-
     private final BudgetEstimatorService budgetEstimatorService;
 
     @Autowired

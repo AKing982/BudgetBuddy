@@ -18,8 +18,8 @@ public class TransactionEntityToModelConverter implements Converter<Transactions
 //        log.info("Converting TransactionsEntity to Transaction: {}", transactionsEntity.toString());
         String categoryName = (transactionsEntity.getCategory() == null)
                 ? ""
-                : (transactionsEntity.getCategory().getName() != null
-                ? transactionsEntity.getCategory().getName()
+                : (transactionsEntity.getCategory().getPlaidCategoryId() != null
+                ? transactionsEntity.getCategory().getCategory()
                 : (transactionsEntity.getCategory().getDescription() != null
                 ? transactionsEntity.getCategory().getDescription()
                 : ""));
@@ -31,7 +31,7 @@ public class TransactionEntityToModelConverter implements Converter<Transactions
                     transactionsEntity.getAmount(),
                     transactionsEntity.getIsoCurrencyCode(),
                     categories,
-                    transactionsEntity.getCategory().getId(),
+                    transactionsEntity.getCategory().getPlaidCategoryId(),
                     transactionsEntity.getCreateDate(),
                     transactionsEntity.getDescription(),
                     transactionsEntity.getMerchantName(),

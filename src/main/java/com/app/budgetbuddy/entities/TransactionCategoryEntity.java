@@ -23,29 +23,25 @@ public class TransactionCategoryEntity
     @JoinColumn(name="transaction_id")
     private TransactionsEntity transaction;
 
-    @Column(name="matched_category", nullable=false)
-    private String matchedCategory;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="csv_transaction_id")
+    private CSVTransactionEntity csvTransaction;
 
-    @Column(name="plaid_category", nullable=false)
-    private String plaidCategory;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="category_id")
+    private CategoryEntity category;
 
     @Column(name="categorized_by", nullable=false)
     private String categorizedBy;
 
+    @Column(name="is_categorized")
+    private Boolean isCategorized;
+
     @Column(name="categorized_date", nullable=false)
     private LocalDate categorized_date;
 
-    @Column(name="rule_priority")
-    private int rulePriority;
-
-    @Column(name="isRecurring")
-    private boolean isRecurring;
-
     @Column(name="created_at")
     private LocalDateTime createdAt;
-
-    @Column(name="isProcessed", columnDefinition = "false")
-    private boolean isProcessed;
 
     @PrePersist
     protected void onCreate() {

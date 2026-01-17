@@ -70,10 +70,7 @@ public class TransactionCategoryBuilder
                         .categorized_date(LocalDate.now())
                         .categorizedBy(categorizedBy)
                         .createdAt(LocalDateTime.now())
-                        .isRecurring(false)
-                        .matchedCategory(matchedCategory)
-                        .priority(priority)
-                        .plaidCategory(plaidCategories.get(0))
+                        .category(matchedCategory)
                         .transactionId(transactionId)
                         .build();
                 allTransactionCategories.add(transactionCategory);
@@ -94,7 +91,7 @@ public class TransactionCategoryBuilder
             for (TransactionCategory tc : existingTransactionCategories) {
                 existingCategories
                         .computeIfAbsent(tc.getTransactionId(), k -> new HashSet<>())
-                        .add(tc.getMatchedCategory());
+                        .add(tc.getCategory());
             }
         } catch (Exception e) {
             log.error("Error fetching existing transaction categories: ", e);
