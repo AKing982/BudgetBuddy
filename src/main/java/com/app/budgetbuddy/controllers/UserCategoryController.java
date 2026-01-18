@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +24,32 @@ public class UserCategoryController
     public UserCategoryController(UserCategoryService userCategoryService)
     {
         this.userCategoryService = userCategoryService;
+    }
+
+    @GetMapping("/{userId}/categories")
+    public ResponseEntity<List<UserCategory>> getAllCustomUserCategories(@PathVariable Long userId)
+    {
+        try
+        {
+            List<UserCategory> userCategories = userCategoryService.findAllCategoriesByUser(userId);
+            return ResponseEntity.ok(userCategories);
+        }catch(Exception e){
+            log.error("There was an error retrieving all custom user categories for user {}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/{userId}/delete/{categoryId}")
+    public ResponseEntity<Boolean> deleteCustomUserCategory(@PathVariable Long userId,
+                                                            @PathVariable Long categoryId)
+    {
+        try
+        {
+            return null;
+        }catch(Exception e){
+            log.error("There was an error deleting a custom user category for user {} and category {}", userId, categoryId, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping("/{userId}/add")

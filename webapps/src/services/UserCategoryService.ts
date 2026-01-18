@@ -25,6 +25,32 @@ class UserCategoryService
 
     }
 
+    public async deleteCustomUserCategory(userId: number, categoryId: number): Promise<void> {
+        try
+        {
+            await axios.delete(`${API_BASE_URL}/user-category/${userId}/delete/${categoryId}`);
+        }catch(error){
+            console.error("There was an error deleting a custom user category: ", error);
+            throw error;
+        }
+    }
+
+    public async getCustomUserCategories(userId: number): Promise<UserCategory[]> {
+        try
+        {
+            const response = await axios.get<UserCategory[]>(`${API_BASE_URL}/user-category/${userId}/categories`);
+            return response.data;
+        }catch(error){
+            console.error("There was an error fetching custom user categories: ", error);
+            if(axios.isAxiosError(error)){
+                const axiosError = error as AxiosError;
+                console.error('Response status:', axiosError.response?.status);
+                console.error('Response data:', axiosError.response?.data);
+            }
+            throw error;
+        }
+    }
+
     public async addCustomUserCategory(userId: number, category: string): Promise<UserCategory> {
         try
         {
@@ -33,7 +59,7 @@ class UserCategoryService
                 null,
                 {
                     params: {
-                        category: category
+                        customCategory: category
                     }
                 }
             );

@@ -12,7 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -62,6 +65,49 @@ public class UserCategoryServiceImpl implements UserCategoryService
     @Override
     public Optional<UserCategoryEntity> findById(Long id) {
         return Optional.empty();
+    }
+
+    @Override
+    @Transactional
+    public List<UserCategory> findAllCategoriesByUser(Long userId)
+    {
+        try
+        {
+            List<UserCategoryEntity> userCategoryEntities = userCategoryRepository.findAllByUser(userId);
+            return convertUserCategoryEntities(userCategoryEntities);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving all the user categories for the user with id: {}", userId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteUserCategory(Long categoryId, Long userId)
+    {
+        try
+        {
+            UserCategoryEntity userCategoryEntity = userCategoryRepository.findByIdAndUser(userId, categoryId);
+            log.info("Deleting user category with id: {} for the user with id: {}", categoryId, userId);
+            userCategoryRepository.delete(userCategoryEntity);
+            log.info("Successfully deleted user category with id: {} for the user with id: {}", categoryId, userId);
+        }catch(DataAccessException e){
+            log.error("There was an error deleting the user category with id: {} for the user with id: {}", categoryId, userId, e);
+            throw new DataAccessException("There was an error deleting the user category with id: " + categoryId + " for the user with id: " + userId, e);
+        }
+    }
+
+    private List<UserCategory> convertUserCategoryEntities(List<UserCategoryEntity> userCategoryEntities)
+    {
+        return userCategoryEntities.stream()
+                .map(userCategoryEntity -> {
+                    return new UserCategory(userCategoryEntity.getCategory(),
+                            userCategoryEntity.getUser().getId(),
+                            userCategoryEntity.getIsActive(),
+                            userCategoryEntity.getType(),
+                            userCategoryEntity.getIsSystemOverride());
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
