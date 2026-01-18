@@ -70,12 +70,11 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     @Override
     public TransactionRuleEntity create(TransactionRule transactionRule) {
         TransactionRuleEntity transactionRuleEntity = new TransactionRuleEntity();
-        transactionRuleEntity.setMerchantPattern(transactionRule.getMerchantPattern());
+        transactionRuleEntity.setMerchantRule(transactionRule.getMerchantRule());
         transactionRuleEntity.setPriority(transactionRule.getPriority());
-        transactionRuleEntity.setCategory(transactionRule.getMatchedCategory());
         transactionRuleEntity.setTransactionType("Debit");
         transactionRuleEntity.setActive(true);
-        transactionRuleEntity.setDescriptionPattern(transactionRule.getDescriptionPattern());
+        transactionRuleEntity.setDescriptionRule(transactionRule.getDescriptionRule());
         return transactionRuleRepository.save(transactionRuleEntity);
     }
 
@@ -106,9 +105,8 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     @Override
     public TransactionRule createCategoryRuleFromEntity(TransactionRuleEntity transactionRuleEntity) {
         TransactionRule transactionRule = new TransactionRule();
-        transactionRule.setMerchantPattern(transactionRuleEntity.getMerchantPattern());
-        transactionRule.setMatchedCategory(transactionRuleEntity.getCategory());
-        transactionRule.setDescriptionPattern(transactionRuleEntity.getDescriptionPattern());
+        transactionRule.setMerchantRule(transactionRuleEntity.getMerchantRule());
+        transactionRule.setDescriptionRule(transactionRuleEntity.getDescriptionRule());
         return transactionRule;
     }
 
@@ -133,7 +131,7 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
         CSVTransactionRule csvTransactionRule = new CSVTransactionRule();
         csvTransactionRule.setRule(csvTransactionRule.getRule());
         csvTransactionRule.setActive(csvTransactionRuleEntity.isActive());
-        csvTransactionRule.setUserId(csvTransactionRuleEntity.getUser().getId());
+//        csvTransactionRule.setUserId(csvTransactionRuleEntity.getUser().getId());
         csvTransactionRule.setValue(csvTransactionRule.getValue());
         return csvTransactionRule;
     }
@@ -143,18 +141,17 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     {
         List<TransactionRuleEntity> transactionRuleEntities = transactionRuleRepository.findAllByUser(userId);
         return transactionRuleEntities.stream()
-                .filter(e -> e.getUser().getId().equals(userId))
+//                .filter(e -> e.getUser().getId().equals(userId))
                 .map(this::createCSVTransactionRuleFromEntity)
                 .toList();
     }
 
-    @Override
-    public List<UserCategoryRule> getUserCategoryRules(Long userId) {
-        List<TransactionRuleEntity> categoryRuleEntities = transactionRuleRepository.findAllByUser(userId);
+//    @Override
+//    public List<UserCategoryRule> getUserCategoryRules(Long userId) {
+//        List<TransactionRuleEntity> categoryRuleEntities = transactionRuleRepository.findAllByUser(userId);
 //        return categoryRuleEntities.stream()
-//                .filter(CategoryRuleEntity::isActive)
 //                .map(this::createCategoryRuleFromEntity)
 //                .toList();
-        return null;
-    }
+//        return null;
+//    }
 }

@@ -175,7 +175,8 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
                 WHERE bc.startDate >= :startDate
                 AND bc.endDate <= :endDate
                 AND bc.subBudget.id = :budgetId
-                AND bc.active = true
+                AND bc.active = true 
+                AND bc.categoryName <> ''
                 """;
         List<Object[]> results = entityManager.createQuery(weeklyBudgetQuery, Object[].class)
                 .setParameter("startDate", startDate)

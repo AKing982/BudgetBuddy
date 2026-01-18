@@ -2,6 +2,8 @@ package com.app.budgetbuddy.domain;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.List;
 
 @Getter
@@ -12,18 +14,19 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class TransactionRule
 {
-    private String categoryId;
+    private Long id;
+    private Long userId;
     private String categoryName;
-    private String transactionId;
-    private String descriptionPattern;
-    private String merchantPattern;
+    private String descriptionRule;
+    private String merchantRule;
+    private String extendedDescriptionRule;
+    private BigDecimal amountMin;
+    private BigDecimal amountMax;
     private int priority;
-    private List<String> categories;
-    private String matchedCategory;
-    private String plaidCategory;
     private String transactionType;
-    private boolean isSystemRule;
     private boolean isActive;
+    private Timestamp dateCreated;
+    private Timestamp dateModified;
 
 
 }

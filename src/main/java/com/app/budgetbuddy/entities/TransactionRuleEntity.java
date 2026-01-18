@@ -2,8 +2,11 @@ package com.app.budgetbuddy.entities;
 
 import com.app.budgetbuddy.domain.CSVRule;
 import com.app.budgetbuddy.domain.RuleType;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.sql.Timestamp;
 
 @Table(name="transactionRules")
 @Entity
@@ -19,17 +22,26 @@ public class TransactionRuleEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="userid")
+    @JoinColumn(name="userId")
     private UserEntity user;
 
     @Column(name="category")
     private String category;
 
-    @Column(name="merchantPattern")
-    private String merchantPattern;
+    @Column(name="merchantRule")
+    private String merchantRule;
 
-    @Column(name="descriptionPattern")
-    private String descriptionPattern;
+    @Column(name="descriptionRule")
+    private String descriptionRule;
+
+    @Column(name="extendedDescriptionRule")
+    private String extendedDescriptionRule;
+
+    @Column(name="amountMin")
+    private Double amountMin;
+
+    @Column(name="amountMax")
+    private Double amountMax;
 
     @Column(name="priority")
     private int priority;
@@ -37,12 +49,18 @@ public class TransactionRuleEntity {
     @Column(name="transaction_type")
     private String transactionType;
 
-    @Column(name="isRecurring")
-    private boolean isRecurring;
-
-    @Column(name="isSystemRule")
-    private boolean isSystemRule;
-
     @Column(name="isActive")
     private boolean isActive;
+
+    @Column(name="date_created")
+    private Timestamp dateCreated;
+
+    @Column(name="date_modified")
+    private Timestamp dateModified;
+
+    @PostConstruct
+    void init() {
+        dateCreated = new Timestamp(System.currentTimeMillis());
+    }
+
 }

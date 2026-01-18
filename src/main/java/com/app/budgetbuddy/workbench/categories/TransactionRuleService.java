@@ -31,5 +31,5 @@ public interface TransactionRuleService extends ServiceModel<TransactionRuleEnti
 
     List<CSVTransactionRule> findCSVTransactionRulesByUserId(Long userId);
 
-    List<UserCategoryRule> getUserCategoryRules(Long userId);
+//    List<UserCategoryRule> getUserCategoryRules(Long userId);
 }
