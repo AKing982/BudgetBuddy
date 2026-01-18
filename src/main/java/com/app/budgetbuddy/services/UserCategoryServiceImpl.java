@@ -51,6 +51,7 @@ public class UserCategoryServiceImpl implements UserCategoryService
     }
 
     @Override
+    @Transactional
     public void delete(UserCategoryEntity userCategoryEntity)
     {
         try
@@ -87,9 +88,10 @@ public class UserCategoryServiceImpl implements UserCategoryService
     {
         try
         {
+
             UserCategoryEntity userCategoryEntity = userCategoryRepository.findByIdAndUser(userId, categoryId);
             log.info("Deleting user category with id: {} for the user with id: {}", categoryId, userId);
-            userCategoryRepository.delete(userCategoryEntity);
+            delete(userCategoryEntity);
             log.info("Successfully deleted user category with id: {} for the user with id: {}", categoryId, userId);
         }catch(DataAccessException e){
             log.error("There was an error deleting the user category with id: {} for the user with id: {}", categoryId, userId, e);
@@ -101,7 +103,8 @@ public class UserCategoryServiceImpl implements UserCategoryService
     {
         return userCategoryEntities.stream()
                 .map(userCategoryEntity -> {
-                    return new UserCategory(userCategoryEntity.getCategory(),
+                    return new UserCategory(userCategoryEntity.getId(),
+                            userCategoryEntity.getCategory(),
                             userCategoryEntity.getUser().getId(),
                             userCategoryEntity.getIsActive(),
                             userCategoryEntity.getType(),
@@ -125,7 +128,8 @@ public class UserCategoryServiceImpl implements UserCategoryService
                     .type("CUSTOM")
                     .build();
             userCategoryRepository.save(userCategoryEntity);
-            UserCategory userCategory = new UserCategory(categoryName, userId, true, "CUSTOM", false);
+            Long categoryId = userCategoryEntity.getId();
+            UserCategory userCategory = new UserCategory(categoryId, categoryName, userId, true, "CUSTOM", false);
             return Optional.of(userCategory);
         }catch(DataAccessException e){
             log.error("There was an error adding the custom user category: ", e);

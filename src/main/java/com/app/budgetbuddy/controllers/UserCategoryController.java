@@ -45,7 +45,9 @@ public class UserCategoryController
     {
         try
         {
-            return null;
+            userCategoryService.deleteUserCategory(categoryId, userId);
+            log.info("Deleted custom user category {} for user {}", categoryId, userId);
+            return ResponseEntity.ok(true);
         }catch(Exception e){
             log.error("There was an error deleting a custom user category for user {} and category {}", userId, categoryId, e);
             return ResponseEntity.internalServerError().build();

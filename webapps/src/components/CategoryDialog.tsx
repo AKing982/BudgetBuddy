@@ -259,7 +259,7 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
 
             if (userCategory) {
                 // Delete from database
-                await userCategoryService.deleteUserCategory(userId, userCategory.id);
+                await userCategoryService.deleteCustomUserCategory(userId, userCategory.id);
 
                 // Remove from local state
                 setUserCustomCategories(prev => prev.filter(cat => cat.id !== userCategory.id));
@@ -415,10 +415,10 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
         setSaving(true);
         try {
             const categoryToSave = selectedCategory;
+            console.log('Category to save: ', selectedCategory);
 
             // Check if it's a custom category by seeing if it's NOT in DEFAULT_CATEGORIES
             const isCustom = !systemCategories.includes(selectedCategory);
-
             const saveData: CategorySaveData = {
                 transactionId,
                 category: categoryToSave,
@@ -1265,18 +1265,18 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
                                                         </IconButton>
                                                     </MuiTooltip>
                                                 )}
-                                                <MuiTooltip title={isEnabled ? 'Disable category' : 'Enable category'}>
-                                                    <IconButton
-                                                        edge="end"
-                                                        size="small"
-                                                        onClick={(e) => handleToggleCategoryEnabled(category, e)}
-                                                        sx={{
-                                                            color: isEnabled ? 'success.main' : 'text.disabled',
-                                                        }}
-                                                    >
-                                                        {isEnabled ? <Eye size={18} /> : <EyeOff size={18} />}
-                                                    </IconButton>
-                                                </MuiTooltip>
+                                                {/*<MuiTooltip title={isEnabled ? 'Disable category' : 'Enable category'}>*/}
+                                                {/*    /!*<IconButton*!/*/}
+                                                {/*    /!*    edge="end"*!/*/}
+                                                {/*    /!*    size="small"*!/*/}
+                                                {/*    /!*    onClick={(e) => handleToggleCategoryEnabled(category, e)}*!/*/}
+                                                {/*    /!*    sx={{*!/*/}
+                                                {/*    /!*        color: isEnabled ? 'success.main' : 'text.disabled',*!/*/}
+                                                {/*    /!*    }}*!/*/}
+                                                {/*    /!*>*!/*/}
+                                                {/*    /!*    {isEnabled ? <Eye size={18} /> : <EyeOff size={18} />}*!/*/}
+                                                {/*    /!*</IconButton>*!/*/}
+                                                {/*</MuiTooltip>*/}
                                             </Box>
                                         }
                                     >
