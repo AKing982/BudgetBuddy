@@ -20,8 +20,8 @@ public class TransactionRule
     private String descriptionRule;
     private String merchantRule;
     private String extendedDescriptionRule;
-    private BigDecimal amountMin;
-    private BigDecimal amountMax;
+    private double amountMin;
+    private double amountMax;
     private int priority;
     private String transactionType;
     private boolean isActive;

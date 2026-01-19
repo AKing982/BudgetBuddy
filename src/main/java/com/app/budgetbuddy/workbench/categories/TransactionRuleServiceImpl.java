@@ -7,12 +7,15 @@ import com.app.budgetbuddy.entities.TransactionRuleEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.repositories.TransactionRuleRepository;
+import com.app.budgetbuddy.workbench.converter.TransactionRuleConverter;
+import com.app.budgetbuddy.workbench.converter.TransactionRuleToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -22,11 +25,17 @@ import java.util.stream.Collectors;
 public class TransactionRuleServiceImpl implements TransactionRuleService
 {
     private final TransactionRuleRepository transactionRuleRepository;
+    private final TransactionRuleToEntityConverter transactionRuleToEntityConverter;
+    private final TransactionRuleConverter transactionRuleConverter;
 
     @Autowired
-    public TransactionRuleServiceImpl(TransactionRuleRepository transactionRuleRepository)
+    public TransactionRuleServiceImpl(TransactionRuleRepository transactionRuleRepository,
+                                      TransactionRuleToEntityConverter transactionRuleToEntityConverter,
+                                      TransactionRuleConverter transactionRuleConverter)
     {
         this.transactionRuleRepository = transactionRuleRepository;
+        this.transactionRuleToEntityConverter = transactionRuleToEntityConverter;
+        this.transactionRuleConverter = transactionRuleConverter;
     }
 
     @Override
@@ -68,14 +77,16 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     }
 
     @Override
-    public TransactionRuleEntity create(TransactionRule transactionRule) {
-        TransactionRuleEntity transactionRuleEntity = new TransactionRuleEntity();
-        transactionRuleEntity.setMerchantRule(transactionRule.getMerchantRule());
-        transactionRuleEntity.setPriority(transactionRule.getPriority());
-        transactionRuleEntity.setTransactionType("Debit");
-        transactionRuleEntity.setActive(true);
-        transactionRuleEntity.setDescriptionRule(transactionRule.getDescriptionRule());
-        return transactionRuleRepository.save(transactionRuleEntity);
+    @Transactional(readOnly = true)
+    public TransactionRuleEntity create(TransactionRule transactionRule)
+    {
+       try
+       {
+          return transactionRuleToEntityConverter.convert(transactionRule);
+       }catch(DataException ex){
+           log.error("There was an error creating the transaction rule: ", ex);
+           throw new DataException("There was an error creating the transaction rule: ", ex);
+       }
     }
 
     @Override
@@ -91,8 +102,20 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     }
 
     @Override
-    public List<TransactionRuleEntity> findByUserId(Long userId) {
-        return transactionRuleRepository.findAllByUser(userId);
+    @Transactional(readOnly = true)
+    public List<TransactionRule> findByUserId(Long userId)
+    {
+        try
+        {
+            List<TransactionRuleEntity> transactionRuleEntities = transactionRuleRepository.findAllByUser(userId);
+            return transactionRuleEntities.stream()
+                    .map(this::createCategoryRuleFromEntity)
+                    .toList();
+        }catch(DataAccessException ex){
+            log.error("There was an error fetching the category rules for user: ", ex);
+            return Collections.emptyList();
+        }
+
     }
 
     @Override
@@ -103,17 +126,9 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     }
 
     @Override
-    public TransactionRule createCategoryRuleFromEntity(TransactionRuleEntity transactionRuleEntity) {
-        TransactionRule transactionRule = new TransactionRule();
-        transactionRule.setMerchantRule(transactionRuleEntity.getMerchantRule());
-        transactionRule.setDescriptionRule(transactionRuleEntity.getDescriptionRule());
-        return transactionRule;
-    }
-
-
-    @Override
-    public List<TransactionRuleEntity> findAllSystemCategoryRules() {
-        return transactionRuleRepository.findAllByUserIsNull();
+    public TransactionRule createCategoryRuleFromEntity(TransactionRuleEntity transactionRuleEntity)
+    {
+        return transactionRuleConverter.convert(transactionRuleEntity);
     }
 
     @Override
@@ -125,33 +140,4 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
                 .toList();
     }
 
-    @Override
-    public CSVTransactionRule createCSVTransactionRuleFromEntity(TransactionRuleEntity csvTransactionRuleEntity)
-    {
-        CSVTransactionRule csvTransactionRule = new CSVTransactionRule();
-        csvTransactionRule.setRule(csvTransactionRule.getRule());
-        csvTransactionRule.setActive(csvTransactionRuleEntity.isActive());
-//        csvTransactionRule.setUserId(csvTransactionRuleEntity.getUser().getId());
-        csvTransactionRule.setValue(csvTransactionRule.getValue());
-        return csvTransactionRule;
-    }
-
-    @Override
-    public List<CSVTransactionRule> findCSVTransactionRulesByUserId(Long userId)
-    {
-        List<TransactionRuleEntity> transactionRuleEntities = transactionRuleRepository.findAllByUser(userId);
-        return transactionRuleEntities.stream()
-//                .filter(e -> e.getUser().getId().equals(userId))
-                .map(this::createCSVTransactionRuleFromEntity)
-                .toList();
-    }
-
-//    @Override
-//    public List<UserCategoryRule> getUserCategoryRules(Long userId) {
-//        List<TransactionRuleEntity> categoryRuleEntities = transactionRuleRepository.findAllByUser(userId);
-//        return categoryRuleEntities.stream()
-//                .map(this::createCategoryRuleFromEntity)
-//                .toList();
-//        return null;
-//    }
 }

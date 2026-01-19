@@ -86,7 +86,6 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantMap.put("COLDSTONE", CategoryType.ORDER_OUT);
         csvMerchantMap.put("BUCKLE", CategoryType.OTHER);
         csvMerchantMap.put("SP Strom Holdings LLC", CategoryType.OTHER);
-
     }
 
     // Level 0 Merchant Transaction Amount Static Matching
@@ -125,8 +124,8 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         int suffix = transaction.getSuffix();
         String acct = transaction.getAccount();
         Long userId = getUserIdByAcctNumberSuffix(suffix, acct);
-        List<CSVTransactionRule> csvTransactionRules = transactionRuleService.findCSVTransactionRulesByUserId(userId);
-        if(csvTransactionRules.isEmpty())
+        List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
+        if(transactionRules.isEmpty())
         {
             MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
             log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
@@ -146,11 +145,89 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
                 return categoryType;
             }
         }
+        else
+        {
+            for(TransactionRule transactionRule : transactionRules)
+            {
+                if(transactionRule == null)
+                {
+                    log.info("Transaction Rule is null, skipping...");
+                    continue;
+                }
+                int priority = transactionRule.getPriority();
+                String merchantRule = transactionRule.getMerchantRule();
+                String descriptionRule = transactionRule.getDescriptionRule();
+                String extendedDescriptionRule = transactionRule.getExtendedDescriptionRule();
+                double minAmount = transactionRule.getAmountMin();
+                double maxAmount = transactionRule.getAmountMax();
+                switch(priority){
+
+                    // Match on All rules
+                    case 1 -> {
+
+                        String categoryRule = transactionRule.getCategoryName();
+                        // Check that the merchant rule matches
+                        boolean merchantRuleMatch = merchantRule.equalsIgnoreCase(merchantName);
+                        // Check that the Description Rule Matches
+                        boolean descriptionRuleMatch = descriptionRule.equalsIgnoreCase(transaction.getDescription());
+
+                        // Check that the extended Description Rule matches
+                        boolean extendedDescriptionRuleMatch = extendedDescriptionRule.equalsIgnoreCase(transaction.getExtendedDescription());
+
+                        // Check that the minAmount and maxAmount match
+                        boolean amountMatch = transactionAmount.compareTo(BigDecimal.valueOf(minAmount)) >= 0 && transactionAmount.compareTo(BigDecimal.valueOf(maxAmount)) <= 0;
+                        if(merchantRuleMatch && descriptionRuleMatch && extendedDescriptionRuleMatch && amountMatch)
+                        {
+                            // Categorize based on the merchant rule match
+
+                            // Categorize based on the description rule match
+
+                            // Categorize based on the extended Description Rule match
+                            
+                        }
+                    }
+
+                    // Match on Merchant, Category, and min Amount
+                    case 2 -> {
+                        // Check that the Merchant rule matches
+
+                        // Check that the Category matches
+
+                        // Check that the min Amount matches
+                    }
+
+                    // Match on Merchant, Category and Max amount
+                    case 3 -> {
+                        // Check that the Merchant matches
+
+                        // Check that the category matches
+
+                        // Check that the max amount matches
+
+                    }
+                    // Match on Merchant, and Description
+                    case 4 -> {
+                        // Check that the Merchant matches
+
+                        // Check that the description matches
+                    }
+
+                    // Match on Category
+                    case 5 -> {
+                        // Check that the category matches
+
+                    }
+                }
+
+            }
+        }
         return CategoryType.UNCATEGORIZED;
     }
 
     @Override
-    public boolean matches(TransactionCSV transaction, TransactionRule transactionRule) {
+    public boolean matches(TransactionCSV transaction, TransactionRule transactionRule)
+    {
+
         return false;
     }
 }

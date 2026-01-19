@@ -246,9 +246,7 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     protected List<TransactionRule> loadTransactionRules() {
-        return transactionRuleService.getConvertedCategoryRules(
-                transactionRuleService.findAllSystemCategoryRules()
-        );
+        return List.of();
     }
 
     protected boolean hasMatchingUserRule(T transaction, List<UserCategoryRule> userCategoryRules) {
@@ -429,12 +427,12 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     protected boolean matchesMerchantPatternRule(S transaction, CategoryRule rule) {
-        if (transaction.getMerchantPattern() == null || rule.getMerchantPattern() == null) {
+        if (transaction.getMerchantRule() == null || rule.getMerchantPattern() == null) {
             return false;
         }
         try {
             return Pattern.compile(rule.getMerchantPattern(), Pattern.CASE_INSENSITIVE)
-                    .matcher(transaction.getMerchantPattern())
+                    .matcher(transaction.getMerchantRule())
                     .find();
         } catch (PatternSyntaxException e) {
             log.error("Invalid merchant pattern in rule: {}", rule.getMerchantPattern(), e);
@@ -443,12 +441,12 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     protected boolean matchesDescriptionPatternRule(S transaction, CategoryRule rule) {
-        if (transaction.getDescriptionPattern() == null || rule.getDescriptionPattern() == null) {
+        if (transaction.getDescriptionRule() == null || rule.getDescriptionPattern() == null) {
             return false;
         }
         try {
             return Pattern.compile(rule.getDescriptionPattern(), Pattern.CASE_INSENSITIVE)
-                    .matcher(transaction.getDescriptionPattern())
+                    .matcher(transaction.getDescriptionRule())
                     .find();
         } catch (PatternSyntaxException e) {
             log.error("Invalid description pattern in rule: {}", rule.getDescriptionPattern(), e);
@@ -457,13 +455,14 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     protected boolean matchesCategoryPatternRule(S transaction, CategoryRule rule) {
-        if (transaction.getCategories() == null || rule.getCategoryName() == null) {
+        if (transaction.getCategoryName() == null || rule.getCategoryName() == null) {
             return false;
         }
         try {
-            Pattern categoryPattern = Pattern.compile(rule.getCategoryName(), Pattern.CASE_INSENSITIVE);
-            return transaction.getCategories().stream()
-                    .anyMatch(category -> categoryPattern.matcher(category).find());
+//            Pattern categoryPattern = Pattern.compile(rule.getCategoryName(), Pattern.CASE_INSENSITIVE);
+//            return transaction.getCategories().stream()
+//                    .anyMatch(category -> categoryPattern.matcher(category).find());
+            return false;
         } catch (PatternSyntaxException e) {
             log.error("Invalid category pattern in rule: {}", rule.getCategoryName(), e);
             return false;
@@ -589,13 +588,13 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
 
     protected List<TransactionRule> loadUserCategoryRules(Long userId)
     {
-        List<TransactionRuleEntity> categoryRuleEntities = transactionRuleService.findByUserId(userId);
-        if(!categoryRuleEntities.isEmpty()) {
-            List<TransactionRule> categoryRulesForUser = transactionRuleService.getConvertedCategoryRules(categoryRuleEntities);
-            if(!categoryRulesForUser.isEmpty()) {
-                this.userCategoryRules.addAll(categoryRulesForUser);
-            }
-        }
+//        List<TransactionRuleEntity> categoryRuleEntities = transactionRuleService.findByUserId(userId);
+//        if(!categoryRuleEntities.isEmpty()) {
+//            List<TransactionRule> categoryRulesForUser = transactionRuleService.getConvertedCategoryRules(categoryRuleEntities);
+//            if(!categoryRulesForUser.isEmpty()) {
+//                this.userCategoryRules.addAll(categoryRulesForUser);
+//            }
+//        }
         return new ArrayList<>();
     }
 

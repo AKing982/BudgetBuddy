@@ -17,19 +17,11 @@ public interface TransactionRuleService extends ServiceModel<TransactionRuleEnti
 
     void createAll(List<TransactionRule> categoryRules);
 
-    List<TransactionRuleEntity> findByUserId(Long userId);
+    List<TransactionRule> findByUserId(Long userId);
 
     List<TransactionRule> getConvertedCategoryRules(List<TransactionRuleEntity> categoryRuleEntities);
 
     TransactionRule createCategoryRuleFromEntity(TransactionRuleEntity categoryRuleEntity);
 
-    List<TransactionRuleEntity> findAllSystemCategoryRules();
-
     List<TransactionRule> getSystemCategoryRules();
-
-    CSVTransactionRule createCSVTransactionRuleFromEntity(TransactionRuleEntity csvTransactionRuleEntity);
-
-    List<CSVTransactionRule> findCSVTransactionRulesByUserId(Long userId);
-
-//    List<UserCategoryRule> getUserCategoryRules(Long userId);
 }

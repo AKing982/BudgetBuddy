@@ -37,47 +37,47 @@ public class TransactionCategoryBuilder
         for(Map.Entry<String, ? extends TransactionRule> entry : categorizedTransactions.entrySet())
         {
             TransactionRule transactionRule = entry.getValue();
-            String matchedCategory = transactionRule.getMatchedCategory();
+            String matchedCategory = transactionRule.getCategoryName();
             transactionRulesByMatchedCategory.computeIfAbsent(matchedCategory, k -> new HashSet<>()).add(transactionRule);
         }
         return transactionRulesByMatchedCategory;
     }
 
-    public List<TransactionCategory> createTransactionCategories(final Map<String, ? extends TransactionRule> categorizedTransactions)
-    {
-        if(categorizedTransactions == null || categorizedTransactions.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        Map<String, Set<TransactionRule>> groupedTransactionRulesByMatchedCategory = groupTransactionRulesByMatchedCategory(categorizedTransactions);
-        List<String> transactionIds = new ArrayList<>(categorizedTransactions.keySet());
-        List<TransactionCategory> allTransactionCategories = new ArrayList<>();
-        Map<String, Transaction> transactionMap = transactionService.getTransactionsMap(transactionIds);
-        log.info("Creating Transaction Categories");
-        for(Map.Entry<String, Set<TransactionRule>> entry : groupedTransactionRulesByMatchedCategory.entrySet())
-        {
-            String matchedCategory = entry.getKey();
-            Set<TransactionRule> transactionRules = entry.getValue();
-            for(TransactionRule transactionRule : transactionRules)
-            {
-                String transactionId = transactionRule.getTransactionId();
-                Transaction transaction = transactionMap.get(transactionId);
-                List<String> plaidCategories = transaction.getCategories();
-                boolean isSystemRule = transactionRule.isSystemRule();
-                String categorizedBy = isSystemRule ? "SYSTEM" : "USER_RULE";
-                int priority = transactionRule.getPriority();
-                TransactionCategory transactionCategory = TransactionCategory.builder()
-                        .categorized_date(LocalDate.now())
-                        .categorizedBy(categorizedBy)
-                        .createdAt(LocalDateTime.now())
-                        .category(matchedCategory)
-                        .transactionId(transactionId)
-                        .build();
-                allTransactionCategories.add(transactionCategory);
-            }
-        }
-        return allTransactionCategories;
-    }
+//    public List<TransactionCategory> createTransactionCategories(final Map<String, ? extends TransactionRule> categorizedTransactions)
+//    {
+//        if(categorizedTransactions == null || categorizedTransactions.isEmpty())
+//        {
+//            return Collections.emptyList();
+//        }
+//        Map<String, Set<TransactionRule>> groupedTransactionRulesByMatchedCategory = groupTransactionRulesByMatchedCategory(categorizedTransactions);
+//        List<String> transactionIds = new ArrayList<>(categorizedTransactions.keySet());
+//        List<TransactionCategory> allTransactionCategories = new ArrayList<>();
+//        Map<String, Transaction> transactionMap = transactionService.getTransactionsMap(transactionIds);
+//        log.info("Creating Transaction Categories");
+//        for(Map.Entry<String, Set<TransactionRule>> entry : groupedTransactionRulesByMatchedCategory.entrySet())
+//        {
+//            String matchedCategory = entry.getKey();
+//            Set<TransactionRule> transactionRules = entry.getValue();
+//            for(TransactionRule transactionRule : transactionRules)
+//            {
+////                String transactionId = transactionRule.getTransactionId();
+////                Transaction transaction = transactionMap.get(transactionId);
+////                List<String> plaidCategories = transaction.getCategories();
+////                boolean isSystemRule = transactionRule.isSystemRule();
+//                String categorizedBy = isSystemRule ? "SYSTEM" : "USER_RULE";
+//                int priority = transactionRule.getPriority();
+//                TransactionCategory transactionCategory = TransactionCategory.builder()
+//                        .categorized_date(LocalDate.now())
+//                        .categorizedBy(categorizedBy)
+//                        .createdAt(LocalDateTime.now())
+//                        .category(matchedCategory)
+//                        .transactionId(transactionId)
+//                        .build();
+//                allTransactionCategories.add(transactionCategory);
+//            }
+//        }
+//        return allTransactionCategories;
+//    }
 
     /**
      * Fetch existing transaction categories to avoid duplicates

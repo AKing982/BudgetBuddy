@@ -256,9 +256,9 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
 
     private RecurringTransactionRule createTransactionRule(RecurringTransaction transaction, String category, String matchByText, int priority) {
         RecurringTransactionRule rule = new RecurringTransactionRule();
-        rule.setTransactionId(transaction.getTransactionId());
+//        rule.setTransactionId(transaction.getTransactionId());
         rule.setRecurring(true);
-        rule.setMatchedCategory(category);
+        rule.setCategoryName(category);
         rule.setPriority(priority);
         rule.setFrequency(transaction.getFrequency());
 
@@ -270,7 +270,7 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
                     matchByText,              // keyword to find
                     TransactionMatchType.EXACT // exact match for merchant
             );
-            rule.setMerchantPattern(merchantPattern);
+            rule.setMerchantRule(merchantPattern);
         }
 
         final String description = transaction.getDescription();
@@ -280,7 +280,7 @@ public class RecurringTransactionCategoryRuleMatcher extends AbstractTransaction
                     matchByText,                // keyword to find
                     TransactionMatchType.EXACT  // exact match for description
             );
-            rule.setDescriptionPattern(descriptionPattern);
+            rule.setDescriptionRule(descriptionPattern);
         }
 
         return rule;
