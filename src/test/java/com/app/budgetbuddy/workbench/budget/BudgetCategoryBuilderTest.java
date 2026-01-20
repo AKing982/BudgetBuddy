@@ -3,7 +3,7 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.CategoryService;
-import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
+
 import com.app.budgetbuddy.workbench.categories.TransactionRuleService;
 
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
@@ -43,8 +43,8 @@ class BudgetCategoryBuilderTest {
     @MockBean
     private BudgetCalculations budgetCalculator;
 
-    @MockBean
-    private CategoryRuleEngine categoryRuleEngine;
+//    @MockBean
+//    private CategoryRuleEngine categoryRuleEngine;
 
     @MockBean
     private BudgetCategoryConverter userBudgetCategoryConverter;

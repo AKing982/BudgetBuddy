@@ -10,7 +10,7 @@ public class TransactionCategorizerServiceImpl implements CategorizerService<Tra
 {
 
     @Override
-    public CategoryType categorize(Transaction transaction)
+    public String categorize(Transaction transaction)
     {
         return null;
     }

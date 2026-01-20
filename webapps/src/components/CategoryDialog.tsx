@@ -22,7 +22,7 @@ import {
     Checkbox,
     Stack,
     IconButton, Chip,
-    Tooltip as MuiTooltip, Paper
+    Tooltip as MuiTooltip, Paper, CircularProgress
 } from '@mui/material';
 import {Eye, EyeOff, Plus, Settings, Trash2} from "lucide-react";
 import CategoryService from "../services/CategoryService";
@@ -156,19 +156,28 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
             if (open && systemCategories.length === 0) {
                 setLoadingCategories(true);
                 try {
-                    // Fetch system categories
-                    const sysCategories = await categoryService.getAllSystemCategories();
-                    console.log('System Categories: ', sysCategories);
-                    const sysCategoryNames = sysCategories
-                        .map(cat => cat.category);
-                    setSystemCategories(sysCategoryNames);
-                    console.log('System Categories: ', sysCategoryNames);
+                    // Create a minimum delay promise (e.g., 500ms)
+                    const minDelay = new Promise(resolve => setTimeout(resolve, 1400));
 
-                    // Fetch user custom categories
-                    const userCategories = await userCategoryService.getCustomUserCategories(userId);
-                    console.log('User Categories: ', userCategories);
-                    setUserCustomCategories(userCategories);
-                    console.log('User Categories: ', userCategories);
+                    // Fetch categories
+                    const fetchPromise = (async () => {
+                        // Fetch system categories
+                        const sysCategories = await categoryService.getAllSystemCategories();
+                        console.log('System Categories: ', sysCategories);
+                        const sysCategoryNames = sysCategories
+                            .map(cat => cat.category);
+                        setSystemCategories(sysCategoryNames);
+                        console.log('System Categories: ', sysCategoryNames);
+
+                        // Fetch user custom categories
+                        const userCategories = await userCategoryService.getCustomUserCategories(userId);
+                        console.log('User Categories: ', userCategories);
+                        setUserCustomCategories(userCategories);
+                        console.log('User Categories: ', userCategories);
+                    })();
+
+                    // Wait for both the fetch and the minimum delay
+                    await Promise.all([fetchPromise, minDelay]);
 
                 } catch (error) {
                     console.error('Error fetching categories:', error);
@@ -180,6 +189,36 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
 
         fetchCategories();
     }, [open, userId]);
+
+    // React.useEffect(() => {
+    //     const fetchCategories = async () => {
+    //         if (open && systemCategories.length === 0) {
+    //             setLoadingCategories(true);
+    //             try {
+    //                 // Fetch system categories
+    //                 const sysCategories = await categoryService.getAllSystemCategories();
+    //                 console.log('System Categories: ', sysCategories);
+    //                 const sysCategoryNames = sysCategories
+    //                     .map(cat => cat.category);
+    //                 setSystemCategories(sysCategoryNames);
+    //                 console.log('System Categories: ', sysCategoryNames);
+    //
+    //                 // Fetch user custom categories
+    //                 const userCategories = await userCategoryService.getCustomUserCategories(userId);
+    //                 console.log('User Categories: ', userCategories);
+    //                 setUserCustomCategories(userCategories);
+    //                 console.log('User Categories: ', userCategories);
+    //
+    //             } catch (error) {
+    //                 console.error('Error fetching categories:', error);
+    //             } finally {
+    //                 setLoadingCategories(false);
+    //             }
+    //         }
+    //     };
+    //
+    //     fetchCategories();
+    // }, [open, userId]);
 
 
 
@@ -1186,6 +1225,7 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
                 </Typography>
                 {loadingCategories ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                        <CircularProgress size={40} sx={{mb: 2}}/>
                         <Typography variant="body2" color="text.secondary">
                             Loading categories...
                         </Typography>

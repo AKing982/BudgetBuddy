@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -110,11 +111,11 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
     }
 
     @Override
-    public CategoryType categorize(TransactionCSV transaction)
+    public String categorize(TransactionCSV transaction)
     {
         if(transaction == null)
         {
-            return CategoryType.UNCATEGORIZED;
+            return "Uncategorized";
         }
         BigDecimal transactionAmount = transaction.getTransactionAmount()
                         .abs()
@@ -135,99 +136,86 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
             if(csvMerchantPriceMap.containsKey(key))
             {
                 log.info("Found Merchant Price Map key: {}", key);
-                return csvMerchantPriceMap.get(key);
+                return csvMerchantPriceMap.get(key).getType();
             }
             else if(csvMerchantMap.containsKey(merchantNameUpper))
             {
                 log.info("Found MerchantMap key: {}", merchantName);
                 CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
                 log.info("Found CategoryType: {}", categoryType);
-                return categoryType;
+                return categoryType.getType();
             }
         }
         else
         {
-            for(TransactionRule transactionRule : transactionRules)
+            Map<Integer, List<TransactionRule>> transactionRulesByPriority = transactionRules.stream()
+                    .filter(rule -> rule != null && rule.isActive())
+                    .collect(Collectors.groupingBy(TransactionRule::getPriority));
+            List<Integer> sortedPriorities = transactionRulesByPriority.keySet().stream()
+                    .sorted().toList();
+            long startTime = System.currentTimeMillis();
+            for(Integer sortedPriority : sortedPriorities)
             {
-                if(transactionRule == null)
+                log.info("Found Priority: {}", sortedPriority);
+                List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
+                for(TransactionRule rule : rules)
                 {
-                    log.info("Transaction Rule is null, skipping...");
-                    continue;
-                }
-                int priority = transactionRule.getPriority();
-                String merchantRule = transactionRule.getMerchantRule();
-                String descriptionRule = transactionRule.getDescriptionRule();
-                String extendedDescriptionRule = transactionRule.getExtendedDescriptionRule();
-                double minAmount = transactionRule.getAmountMin();
-                double maxAmount = transactionRule.getAmountMax();
-                switch(priority){
-
-                    // Match on All rules
-                    case 1 -> {
-
-                        String categoryRule = transactionRule.getCategoryName();
-                        // Check that the merchant rule matches
-                        boolean merchantRuleMatch = merchantRule.equalsIgnoreCase(merchantName);
-                        // Check that the Description Rule Matches
-                        boolean descriptionRuleMatch = descriptionRule.equalsIgnoreCase(transaction.getDescription());
-
-                        // Check that the extended Description Rule matches
-                        boolean extendedDescriptionRuleMatch = extendedDescriptionRule.equalsIgnoreCase(transaction.getExtendedDescription());
-
-                        // Check that the minAmount and maxAmount match
-                        boolean amountMatch = transactionAmount.compareTo(BigDecimal.valueOf(minAmount)) >= 0 && transactionAmount.compareTo(BigDecimal.valueOf(maxAmount)) <= 0;
-                        if(merchantRuleMatch && descriptionRuleMatch && extendedDescriptionRuleMatch && amountMatch)
-                        {
-                            // Categorize based on the merchant rule match
-
-                            // Categorize based on the description rule match
-
-                            // Categorize based on the extended Description Rule match
-                            
-                        }
-                    }
-
-                    // Match on Merchant, Category, and min Amount
-                    case 2 -> {
-                        // Check that the Merchant rule matches
-
-                        // Check that the Category matches
-
-                        // Check that the min Amount matches
-                    }
-
-                    // Match on Merchant, Category and Max amount
-                    case 3 -> {
-                        // Check that the Merchant matches
-
-                        // Check that the category matches
-
-                        // Check that the max amount matches
-
-                    }
-                    // Match on Merchant, and Description
-                    case 4 -> {
-                        // Check that the Merchant matches
-
-                        // Check that the description matches
-                    }
-
-                    // Match on Category
-                    case 5 -> {
-                        // Check that the category matches
-
+                    log.info("Found Rule: {}", rule);
+                    if(matches(transaction, rule))
+                    {
+                        log.info("Rule matches: {}", rule);
+                        long endTime = System.currentTimeMillis();
+                        log.info("Rules found in {} ms", endTime - startTime);
+                        return rule.getCategoryName();
                     }
                 }
-
             }
+
         }
-        return CategoryType.UNCATEGORIZED;
+        return "UNCATEGORIZED";
     }
 
     @Override
     public boolean matches(TransactionCSV transaction, TransactionRule transactionRule)
     {
+        if(transaction == null || transactionRule == null)
+        {
+            return false;
+        }
+        BigDecimal transactionAmount = transaction.getTransactionAmount()
+                .abs()
+                .stripTrailingZeros();
+        String merchantName = transaction.getMerchantName();
+        String description = transaction.getDescription();
+        String extendedDescription = transaction.getExtendedDescription();
+        String merchantRule = transactionRule.getMerchantRule();
+        String descriptionRule = transactionRule.getDescriptionRule();
+        String extendedDescriptionRule = transactionRule.getExtendedDescriptionRule();
+        double minAmount = transactionRule.getAmountMin();
+        double maxAmount = transactionRule.getAmountMax();
+        int priority = transactionRule.getPriority();
 
-        return false;
+        // Check individual field matches
+        boolean merchantRuleMatch = merchantRule != null && !merchantRule.isEmpty()
+                && merchantRule.equalsIgnoreCase(merchantName) || merchantName.contains(merchantRule);
+        boolean descriptionRuleMatch = descriptionRule != null && !descriptionRule.isEmpty()
+                && descriptionRule.equalsIgnoreCase(description);
+        boolean extendedDescriptionRuleMatch = extendedDescriptionRule != null && !extendedDescriptionRule.isEmpty()
+                && extendedDescriptionRule.equalsIgnoreCase(extendedDescription);
+        boolean amountMatch = transactionAmount.compareTo(BigDecimal.valueOf(minAmount)) >= 0
+                && transactionAmount.compareTo(BigDecimal.valueOf(maxAmount)) <= 0;
+        boolean minAmountMatch = transactionAmount.compareTo(BigDecimal.valueOf(minAmount)) >= 0;
+        boolean maxAmountMatch = transactionAmount.compareTo(BigDecimal.valueOf(maxAmount)) <= 0;
+
+        // Match based on priority level
+        return switch (priority) {
+            case 1 -> merchantRuleMatch && descriptionRuleMatch && extendedDescriptionRuleMatch && amountMatch;
+            case 2 -> merchantRuleMatch && amountMatch;
+            case 3 -> merchantRuleMatch && minAmountMatch;
+            case 4 -> merchantRuleMatch && descriptionRuleMatch;
+            case 5 -> descriptionRuleMatch && merchantRuleMatch;
+            case 6 -> merchantRuleMatch;
+            default -> false;
+        };
     }
 }

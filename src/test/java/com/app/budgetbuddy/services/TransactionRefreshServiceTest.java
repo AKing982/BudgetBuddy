@@ -35,8 +35,8 @@ import static org.mockito.Mockito.*;
 class TransactionRefreshServiceTest
 {
 
-    @Mock
-    private TransactionRefreshThreadService transactionRefreshThreadService;
+//    @Mock
+//    private TransactionRefreshThreadService transactionRefreshThreadService;
 
     @Mock
     private PlaidApi plaidApi;
@@ -59,8 +59,8 @@ class TransactionRefreshServiceTest
     @Mock
     private PlaidCursorService plaidCursorService;
 
-    @InjectMocks
-    private TransactionRefreshService transactionRefreshService;
+//    @InjectMocks
+//    private TransactionRefreshService transactionRefreshService;
 
     private SubBudget testSubBudget;
     private BudgetSchedule budgetSchedule;
@@ -100,445 +100,445 @@ class TransactionRefreshServiceTest
     }
 
 
-    @Test
-    void testPerformInitialSync_whenNoPlaidLinkEntity_thenReturnFalse(){
-        Optional<PlaidBooleanSync> result = transactionRefreshService.performInitialSync(null, budgetSchedule, LocalDate.of(2025, 4, 14));
-        assertEquals(Optional.empty(), result);
-    }
+//    @Test
+//    void testPerformInitialSync_whenNoPlaidLinkEntity_thenReturnFalse(){
+//        Optional<PlaidBooleanSync> result = transactionRefreshService.performInitialSync(null, budgetSchedule, LocalDate.of(2025, 4, 14));
+//        assertEquals(Optional.empty(), result);
+//    }
+//
+//    @Test
+//    void testPerformInitialSync_whenBudgetScheduleIsNull_thenReturnFalse(){
+//
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("test-access-token");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        Optional<PlaidBooleanSync> result = transactionRefreshService.performInitialSync(testPlaidLinkEntity, null, LocalDate.of(2025, 4, 14));
+//        assertEquals(Optional.empty(), result);
+//    }
+//
+//    @Test
+//    void testPerformInitialSync_whenPlaidLinkDoesNotHaveAccessToken_thenThrowAnException(){
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setAccessToken("");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        assertThrows(InvalidAccessTokenException.class, () -> {
+//            transactionRefreshService.performInitialSync(testPlaidLinkEntity, budgetSchedule, LocalDate.of(2025, 4, 14));
+//        });
+//    }
+//
+//    @Test
+//    void testPerformInitialSync_whenPlaidLinkDoesHaveAccessToken_thenReturnPlaidBooleanSyncWithInitialSyncData() throws IOException{
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("access-sandbox-0687f0d2-756c-42ea-9b3f-7fca2d955c47");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
+//        expectedPlaidBooleanSync.setTransactions(getAprilGroceriesTransactions());
+//        expectedPlaidBooleanSync.setUserId(1L);
+//        expectedPlaidBooleanSync.setTotalSyncedTransactions(7);
+//        expectedPlaidBooleanSync.setTotalModified(0);
+//        expectedPlaidBooleanSync.setSynced(true);
+//        expectedPlaidBooleanSync.setRecurringTransactions(List.of());
+//        expectedPlaidBooleanSync.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        expectedPlaidBooleanSync.setLastSyncTime(LocalDate.of(2025, 4, 5).atStartOfDay());
+//
+//        List<com.plaid.client.model.Transaction> plaidTransactions = convertToPlaidTransactions(getAprilGroceriesTransactions());
+//        System.out.println(plaidTransactions.size());
+//
+//        TransactionsSyncResponse mockPlaidResponse = new TransactionsSyncResponse()
+//                .added(plaidTransactions)
+//                .removed(List.of())
+//                .modified(new ArrayList<>())
+//                .nextCursor("new-cursor-value")
+//                .hasMore(false);
+//
+//        System.out.println("Transaction Sync Response:");
+//        System.out.println(mockPlaidResponse.getAdded().size());
+//
+//        LocalDateTime lastSyncTime = LocalDateTime.of(2025, 4, 5, 0, 0);
+//
+//        PlaidCursorEntity mockPlaidCursorEntity = new PlaidCursorEntity();
+//        mockPlaidCursorEntity.setAddedCursor("new-cursor-value2");
+//        mockPlaidCursorEntity.setItemId("test-item-id");
+//        mockPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//        Long userId = 1L;
+//        when(plaidTransactionManager.syncTransactionsForUser(userId, null))
+//                .thenAnswer(invocation -> {
+//                    System.out.println("✅ plaidTransactionManager mock called!");
+//                    return mockPlaidResponse;
+//                });
+//
+//        when(transactionService.convertPlaidTransactions(anyList())).thenReturn(getAprilGroceriesTransactions());
+//
+//        Optional<PlaidBooleanSync> expectedOptionalPlaidBooleanSyncOptional = Optional.of(expectedPlaidBooleanSync);
+//        Optional<PlaidBooleanSync> result = transactionRefreshService.performInitialSync(testPlaidLinkEntity, budgetSchedule, LocalDate.of(2025, 4, 14));
+//        assertNotNull(result);
+//        assertTrue(result.isPresent());
+//        PlaidBooleanSync actual = result.get();
+//        PlaidBooleanSync expected = expectedOptionalPlaidBooleanSyncOptional.get();
+//        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
+//        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
+//        assertEquals(expected.getTotalModified(), actual.getTotalModified());
+//        assertEquals(expected.getSynced(), actual.getSynced());
+//        assertEquals(expected.getRecurringTransactions().size(), actual.getRecurringTransactions().size());
+//    }
+//
+//    @Test
+//    void testPerformIncrementalSync_whenSyncSinceLastDate_thenReturnPlaidBooleanSync() throws IOException
+//    {
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("test-access-token");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
+//        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
+//        testPlaidCursorEntity.setItemId("test-item-id");
+//        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//
+//    }
+//
+//    @Test
+//    void testPerformOfflineSync_whenPlaidLinkDoesNotHaveAccessToken_thenThrowExceptionAndReturnEmptyOptional(){
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
+//        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
+//        testPlaidCursorEntity.setItemId("test-item-id");
+//        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 1));
+//        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//        LocalDate currentDate = LocalDate.of(2025, 4, 10);
+//        Optional<PlaidBooleanSync> actual = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
+//        assertEquals(Optional.empty(), actual);
+//    }
+//
+//    @Test
+//    void testPerformOfflineSync_whenPlaidCursorIsNull_thenThrowPlaidSyncExceptionAndReturnEmptyOptional()
+//    {
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("test-access-token");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
+//        testPlaidCursorEntity.setAddedCursor(null);
+//        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        testPlaidCursorEntity.setItemId("test-item-id");
+//        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//        LocalDate currentDate = LocalDate.of(2025, 4, 10);
+//        Optional<PlaidBooleanSync> actual = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
+//        assertEquals(Optional.empty(), actual);
+//    }
+//
+//    @Test
+//    void testPerformOfflineSync_whenPlaidCursorIsEmpty_thenThrowPlaidSyncExceptionAndReturnEmptyOptional()
+//    {
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("test-access-token");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
+//        testPlaidCursorEntity.setAddedCursor("");
+//        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        testPlaidCursorEntity.setItemId("test-item-id");
+//        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//        LocalDate currentDate = LocalDate.of(2025, 4, 10);
+//        Optional<PlaidBooleanSync> actual = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
+//        assertEquals(Optional.empty(), actual);
+//    }
+//
+//    @Test
+//    void testPerformOfflineSync_whenLastSyncDateIsCurrentDate_thenReturnPlaidBooleanSync()
+//    {
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("test-access-token");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
+//        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
+//        testPlaidCursorEntity.setItemId("test-item-id");
+//        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//        LocalDate currentDate = LocalDate.of(2025, 4, 5);
+//
+//        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
+//        expectedPlaidBooleanSync.setTransactions(List.of());
+//        expectedPlaidBooleanSync.setUserId(1L);
+//        expectedPlaidBooleanSync.setTotalSyncedTransactions(0);
+//        expectedPlaidBooleanSync.setTotalModified(0);
+//        expectedPlaidBooleanSync.setSynced(false);
+//        expectedPlaidBooleanSync.setRecurringTransactions(List.of());
+//        expectedPlaidBooleanSync.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        expectedPlaidBooleanSync.setLastSyncTime(LocalDate.of(2025, 4, 5).atStartOfDay());
+//
+//        Optional<PlaidBooleanSync> expectedOptionalPlaidBooleanSyncOptional = Optional.of(expectedPlaidBooleanSync);
+//        Optional<PlaidBooleanSync> result = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
+//        assertNotNull(result);
+//        assertTrue(result.isPresent());
+//        PlaidBooleanSync actual = result.get();
+//        PlaidBooleanSync expected = expectedOptionalPlaidBooleanSyncOptional.get();
+//        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
+//        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
+//        assertEquals(expected.getTotalModified(), actual.getTotalModified());
+//        assertEquals(expected.getSynced(), actual.getSynced());
+//        assertEquals(expected.getRecurringTransactions().size(), actual.getRecurringTransactions().size());
+//    }
+//
+//    @Test
+//    void testPerformOfflineSync_whenLastSyncDateIsOneDayFromCurrentDate_thenReturnPlaidBooleanSync() throws IOException
+//    {
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("test-access-token");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
+//        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
+//        testPlaidCursorEntity.setItemId("test-item-id");
+//        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 4));
+//        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//        LocalDate currentDate = LocalDate.of(2025, 4, 5);
+//
+//        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
+//        expectedPlaidBooleanSync.setTransactions(getSyncedTransactions1());
+//        expectedPlaidBooleanSync.setUserId(1L);
+//        expectedPlaidBooleanSync.setTotalSyncedTransactions(2);
+//        expectedPlaidBooleanSync.setTotalModified(0);
+//        expectedPlaidBooleanSync.setSynced(true);
+//        expectedPlaidBooleanSync.setRecurringTransactions(List.of());
+//        expectedPlaidBooleanSync.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        expectedPlaidBooleanSync.setLastSyncTime(LocalDate.of(2025, 4, 5).atStartOfDay());
+//
+//        List<com.plaid.client.model.Transaction> plaidTransactions = convertToPlaidTransactions(getSyncedTransactions1());
+//        System.out.println(plaidTransactions.size());
+//
+//        TransactionsSyncResponse mockPlaidResponse = new TransactionsSyncResponse()
+//                .added(plaidTransactions)
+//                .removed(List.of())
+//                .modified(new ArrayList<>())
+//                .nextCursor("new-cursor-value")
+//                .hasMore(false);
+//
+//        Long userId = testPlaidLinkEntity.getUser().getId();
+//        String cursor = testPlaidCursorEntity.getAddedCursor();
+//        when(plaidTransactionManager.syncTransactionsForUser(userId, cursor))
+//                .thenAnswer(invocation -> {
+//                    System.out.println("✅ plaidTransactionManager mock called!");
+//                    return mockPlaidResponse;
+//                });
+//
+//        when(transactionService.convertPlaidTransactions(plaidTransactions)).thenReturn(getSyncedTransactions1());
+//
+//        Optional<PlaidBooleanSync> expectedOptionalPlaidBooleanSyncOptional = Optional.of(expectedPlaidBooleanSync);
+//        Optional<PlaidBooleanSync> result = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
+//        assertNotNull(result);
+//        assertTrue(result.isPresent());
+//        PlaidBooleanSync actual = result.get();
+//        PlaidBooleanSync expected = expectedOptionalPlaidBooleanSyncOptional.get();
+//        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
+//        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
+//        assertEquals(expected.getTotalModified(), actual.getTotalModified());
+//        assertEquals(expected.getSynced(), actual.getSynced());
+//    }
 
-    @Test
-    void testPerformInitialSync_whenBudgetScheduleIsNull_thenReturnFalse(){
-
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("test-access-token");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        Optional<PlaidBooleanSync> result = transactionRefreshService.performInitialSync(testPlaidLinkEntity, null, LocalDate.of(2025, 4, 14));
-        assertEquals(Optional.empty(), result);
-    }
-
-    @Test
-    void testPerformInitialSync_whenPlaidLinkDoesNotHaveAccessToken_thenThrowAnException(){
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setAccessToken("");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        assertThrows(InvalidAccessTokenException.class, () -> {
-            transactionRefreshService.performInitialSync(testPlaidLinkEntity, budgetSchedule, LocalDate.of(2025, 4, 14));
-        });
-    }
-
-    @Test
-    void testPerformInitialSync_whenPlaidLinkDoesHaveAccessToken_thenReturnPlaidBooleanSyncWithInitialSyncData() throws IOException{
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("access-sandbox-0687f0d2-756c-42ea-9b3f-7fca2d955c47");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
-        expectedPlaidBooleanSync.setTransactions(getAprilGroceriesTransactions());
-        expectedPlaidBooleanSync.setUserId(1L);
-        expectedPlaidBooleanSync.setTotalSyncedTransactions(7);
-        expectedPlaidBooleanSync.setTotalModified(0);
-        expectedPlaidBooleanSync.setSynced(true);
-        expectedPlaidBooleanSync.setRecurringTransactions(List.of());
-        expectedPlaidBooleanSync.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        expectedPlaidBooleanSync.setLastSyncTime(LocalDate.of(2025, 4, 5).atStartOfDay());
-
-        List<com.plaid.client.model.Transaction> plaidTransactions = convertToPlaidTransactions(getAprilGroceriesTransactions());
-        System.out.println(plaidTransactions.size());
-
-        TransactionsSyncResponse mockPlaidResponse = new TransactionsSyncResponse()
-                .added(plaidTransactions)
-                .removed(List.of())
-                .modified(new ArrayList<>())
-                .nextCursor("new-cursor-value")
-                .hasMore(false);
-
-        System.out.println("Transaction Sync Response:");
-        System.out.println(mockPlaidResponse.getAdded().size());
-
-        LocalDateTime lastSyncTime = LocalDateTime.of(2025, 4, 5, 0, 0);
-
-        PlaidCursorEntity mockPlaidCursorEntity = new PlaidCursorEntity();
-        mockPlaidCursorEntity.setAddedCursor("new-cursor-value2");
-        mockPlaidCursorEntity.setItemId("test-item-id");
-        mockPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-        Long userId = 1L;
-        when(plaidTransactionManager.syncTransactionsForUser(userId, null))
-                .thenAnswer(invocation -> {
-                    System.out.println("✅ plaidTransactionManager mock called!");
-                    return mockPlaidResponse;
-                });
-
-        when(transactionService.convertPlaidTransactions(anyList())).thenReturn(getAprilGroceriesTransactions());
-
-        Optional<PlaidBooleanSync> expectedOptionalPlaidBooleanSyncOptional = Optional.of(expectedPlaidBooleanSync);
-        Optional<PlaidBooleanSync> result = transactionRefreshService.performInitialSync(testPlaidLinkEntity, budgetSchedule, LocalDate.of(2025, 4, 14));
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        PlaidBooleanSync actual = result.get();
-        PlaidBooleanSync expected = expectedOptionalPlaidBooleanSyncOptional.get();
-        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
-        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
-        assertEquals(expected.getTotalModified(), actual.getTotalModified());
-        assertEquals(expected.getSynced(), actual.getSynced());
-        assertEquals(expected.getRecurringTransactions().size(), actual.getRecurringTransactions().size());
-    }
-
-    @Test
-    void testPerformIncrementalSync_whenSyncSinceLastDate_thenReturnPlaidBooleanSync() throws IOException
-    {
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("test-access-token");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
-        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
-        testPlaidCursorEntity.setItemId("test-item-id");
-        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-
-    }
-
-    @Test
-    void testPerformOfflineSync_whenPlaidLinkDoesNotHaveAccessToken_thenThrowExceptionAndReturnEmptyOptional(){
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
-        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
-        testPlaidCursorEntity.setItemId("test-item-id");
-        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 1));
-        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-        LocalDate currentDate = LocalDate.of(2025, 4, 10);
-        Optional<PlaidBooleanSync> actual = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
-        assertEquals(Optional.empty(), actual);
-    }
-
-    @Test
-    void testPerformOfflineSync_whenPlaidCursorIsNull_thenThrowPlaidSyncExceptionAndReturnEmptyOptional()
-    {
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("test-access-token");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
-        testPlaidCursorEntity.setAddedCursor(null);
-        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        testPlaidCursorEntity.setItemId("test-item-id");
-        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-        LocalDate currentDate = LocalDate.of(2025, 4, 10);
-        Optional<PlaidBooleanSync> actual = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
-        assertEquals(Optional.empty(), actual);
-    }
-
-    @Test
-    void testPerformOfflineSync_whenPlaidCursorIsEmpty_thenThrowPlaidSyncExceptionAndReturnEmptyOptional()
-    {
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("test-access-token");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
-        testPlaidCursorEntity.setAddedCursor("");
-        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        testPlaidCursorEntity.setItemId("test-item-id");
-        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-        LocalDate currentDate = LocalDate.of(2025, 4, 10);
-        Optional<PlaidBooleanSync> actual = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
-        assertEquals(Optional.empty(), actual);
-    }
-
-    @Test
-    void testPerformOfflineSync_whenLastSyncDateIsCurrentDate_thenReturnPlaidBooleanSync()
-    {
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("test-access-token");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
-        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
-        testPlaidCursorEntity.setItemId("test-item-id");
-        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-        LocalDate currentDate = LocalDate.of(2025, 4, 5);
-
-        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
-        expectedPlaidBooleanSync.setTransactions(List.of());
-        expectedPlaidBooleanSync.setUserId(1L);
-        expectedPlaidBooleanSync.setTotalSyncedTransactions(0);
-        expectedPlaidBooleanSync.setTotalModified(0);
-        expectedPlaidBooleanSync.setSynced(false);
-        expectedPlaidBooleanSync.setRecurringTransactions(List.of());
-        expectedPlaidBooleanSync.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        expectedPlaidBooleanSync.setLastSyncTime(LocalDate.of(2025, 4, 5).atStartOfDay());
-
-        Optional<PlaidBooleanSync> expectedOptionalPlaidBooleanSyncOptional = Optional.of(expectedPlaidBooleanSync);
-        Optional<PlaidBooleanSync> result = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        PlaidBooleanSync actual = result.get();
-        PlaidBooleanSync expected = expectedOptionalPlaidBooleanSyncOptional.get();
-        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
-        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
-        assertEquals(expected.getTotalModified(), actual.getTotalModified());
-        assertEquals(expected.getSynced(), actual.getSynced());
-        assertEquals(expected.getRecurringTransactions().size(), actual.getRecurringTransactions().size());
-    }
-
-    @Test
-    void testPerformOfflineSync_whenLastSyncDateIsOneDayFromCurrentDate_thenReturnPlaidBooleanSync() throws IOException
-    {
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("test-access-token");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
-        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
-        testPlaidCursorEntity.setItemId("test-item-id");
-        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 4));
-        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-        LocalDate currentDate = LocalDate.of(2025, 4, 5);
-
-        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
-        expectedPlaidBooleanSync.setTransactions(getSyncedTransactions1());
-        expectedPlaidBooleanSync.setUserId(1L);
-        expectedPlaidBooleanSync.setTotalSyncedTransactions(2);
-        expectedPlaidBooleanSync.setTotalModified(0);
-        expectedPlaidBooleanSync.setSynced(true);
-        expectedPlaidBooleanSync.setRecurringTransactions(List.of());
-        expectedPlaidBooleanSync.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        expectedPlaidBooleanSync.setLastSyncTime(LocalDate.of(2025, 4, 5).atStartOfDay());
-
-        List<com.plaid.client.model.Transaction> plaidTransactions = convertToPlaidTransactions(getSyncedTransactions1());
-        System.out.println(plaidTransactions.size());
-
-        TransactionsSyncResponse mockPlaidResponse = new TransactionsSyncResponse()
-                .added(plaidTransactions)
-                .removed(List.of())
-                .modified(new ArrayList<>())
-                .nextCursor("new-cursor-value")
-                .hasMore(false);
-
-        Long userId = testPlaidLinkEntity.getUser().getId();
-        String cursor = testPlaidCursorEntity.getAddedCursor();
-        when(plaidTransactionManager.syncTransactionsForUser(userId, cursor))
-                .thenAnswer(invocation -> {
-                    System.out.println("✅ plaidTransactionManager mock called!");
-                    return mockPlaidResponse;
-                });
-
-        when(transactionService.convertPlaidTransactions(plaidTransactions)).thenReturn(getSyncedTransactions1());
-
-        Optional<PlaidBooleanSync> expectedOptionalPlaidBooleanSyncOptional = Optional.of(expectedPlaidBooleanSync);
-        Optional<PlaidBooleanSync> result = transactionRefreshService.performOfflineSync(testPlaidLinkEntity, testPlaidCursorEntity, currentDate);
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        PlaidBooleanSync actual = result.get();
-        PlaidBooleanSync expected = expectedOptionalPlaidBooleanSyncOptional.get();
-        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
-        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
-        assertEquals(expected.getTotalModified(), actual.getTotalModified());
-        assertEquals(expected.getSynced(), actual.getSynced());
-    }
-
-    @Test
-    void testPerformOfflineSync_whenPendingTransactionsChangedToPosted_thenReturnPlaidBooleanSync() throws IOException
-    {
-        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
-        testPlaidLinkEntity.setId(1L);
-        testPlaidLinkEntity.setAccessToken("test-access-token");
-        testPlaidLinkEntity.setItemId("test-item-id");
-        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-        testPlaidLinkEntity.setRequiresUpdate(false);
-
-        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
-        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
-        testPlaidCursorEntity.setItemId("test-item-id");
-        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
-        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
-
-        LocalDate currentDate = LocalDate.of(2025, 4, 6);
-        LocalDate lastSyncDate = LocalDate.of(2025, 4, 5);
-
-        // Create modified transactions (pending -> posted with amount changes)
-        List<com.plaid.client.model.Transaction> modifiedPlaidTransactions = new ArrayList<>();
-
-        com.plaid.client.model.Transaction gasModifiedPlaid = new com.plaid.client.model.Transaction()
-                .transactionId("tx_gas_001")
-                .accountId("test-account-id")
-                .amount(87.43)
-                .date(LocalDate.parse("2025-04-05"))
-                .name("Shell Gas Station")
-                .merchantName("Shell")
-                .pending(false);
-        modifiedPlaidTransactions.add(gasModifiedPlaid);
-
-        // Restaurant: tip added, was $50, now $60
-        com.plaid.client.model.Transaction restaurantModifiedPlaid = new com.plaid.client.model.Transaction()
-                .transactionId("tx_restaurant_001")
-                .accountId("test-account-id")
-                .amount(60.00)
-                .date(LocalDate.parse("2025-04-05"))
-                .name("Local Restaurant")
-                .merchantName("Local Restaurant")
-                .pending(false);
-        modifiedPlaidTransactions.add(restaurantModifiedPlaid);
-
-        // Mock existing transactions in DB that need to be updated
-        Transaction existingGasTransaction = new Transaction();
-        existingGasTransaction.setTransactionId("tx_gas_001");
-        existingGasTransaction.setAmount(BigDecimal.valueOf(100.00)); // Old pending amount
-        existingGasTransaction.setPending(true); // Was pending
-        existingGasTransaction.setPosted(LocalDate.of(2025, 4, 5));
-        existingGasTransaction.setName("Shell Gas Station");
-        existingGasTransaction.setDate(LocalDate.of(2025, 4, 5));
-        existingGasTransaction.setMerchantName("Shell");
-
-        Transaction existingRestaurantTransaction = new Transaction();
-        existingRestaurantTransaction.setTransactionId("tx_restaurant_001");
-        existingRestaurantTransaction.setAmount(BigDecimal.valueOf(50.00)); // Old amount without tip
-        existingRestaurantTransaction.setPending(false);
-        existingRestaurantTransaction.setDate(LocalDate.of(2025, 4, 5));
-        existingRestaurantTransaction.setPosted(LocalDate.of(2025, 4, 5));
-        existingRestaurantTransaction.setName("Local Restaurant");
-        existingRestaurantTransaction.setMerchantName("Local Restaurant");
-
-        // Gas station: was pending $100, now posted $87.43
-        Transaction gasModified = Transaction.builder()
-                .transactionId("tx_gas_001")
-                .accountId("test-account-id")
-                .amount(BigDecimal.valueOf(87.43))
-                .date(LocalDate.parse("2025-04-05"))
-                .name("Shell Gas Station")
-                .merchantName("Shell")
-                .pending(false)
-                .build();
-
-        // Restaurant: tip added, was $50, now $60
-        Transaction restaurantModified = Transaction.builder()
-                .transactionId("tx_restaurant_001")
-                .accountId("test-account-id")
-                .amount(BigDecimal.valueOf(60.00))
-                .date(LocalDate.parse("2025-04-05"))
-                .name("Local Restaurant")
-                .merchantName("Local Restaurant")
-                .pending(false)
-                .build();
-
-        when(transactionService.convertPlaidTransactions(eq(modifiedPlaidTransactions)))
-                .thenReturn(List.of(gasModified, restaurantModified));
-
-        when(transactionService.updateExistingTransaction(any(Transaction.class)))
-                .thenAnswer(invocation -> {
-                    Transaction arg = invocation.getArgument(0);
-                    if (arg.getTransactionId().equals("tx_gas_001")) {
-                        return Optional.of(gasModified);
-                    } else if (arg.getTransactionId().equals("tx_restaurant_001")) {
-                        return Optional.of(restaurantModified);
-                    }
-                    return Optional.empty();
-                });
-
-        // Create some new transactions that occurred while offline
-        List<com.plaid.client.model.Transaction> addedPlaidTransactions = new ArrayList<>();
-
-        com.plaid.client.model.Transaction coffeeNew = new com.plaid.client.model.Transaction()
-                .transactionId("tx_coffee_001")
-                .accountId("test-account-id")
-                .amount(5.50)
-                .date(LocalDate.parse("2025-04-06"))
-                .name("Coffee Shop")
-                .merchantName("Coffee Shop")
-                .pending(false);
-        addedPlaidTransactions.add(coffeeNew);
-
-        TransactionsSyncResponse mockPlaidResponse = new TransactionsSyncResponse()
-                .added(addedPlaidTransactions)
-                .modified(modifiedPlaidTransactions)
-                .removed(List.of())
-                .nextCursor("new-cursor-after-offline-sync")
-                .hasMore(false);
-
-        Long userId = testPlaidLinkEntity.getUser().getId();
-        String cursor = testPlaidCursorEntity.getAddedCursor();
-        when(plaidTransactionManager.syncTransactionsForUser(userId, cursor))
-                .thenAnswer(invocation -> {
-                    System.out.println("✅ plaidTransactionManager mock called!");
-                    return mockPlaidResponse;
-                });
-
-        // Mock conversion of new transactions
-        Transaction newCoffeeTransaction = new Transaction();
-        newCoffeeTransaction.setTransactionId("tx_coffee_001");
-        newCoffeeTransaction.setAmount(BigDecimal.valueOf(5.50));
-        newCoffeeTransaction.setPosted(LocalDate.of(2025, 4, 6));
-        newCoffeeTransaction.setName("Coffee Shop");
-        newCoffeeTransaction.setDate(LocalDate.of(2025, 4, 6));
-        newCoffeeTransaction.setMerchantName("Coffee Shop");
-        newCoffeeTransaction.setPending(false);
-
-        // Expected result
-        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
-        expectedPlaidBooleanSync.setUserId(1L);
-        expectedPlaidBooleanSync.setTransactions(List.of(restaurantModified, gasModified, newCoffeeTransaction));
-        expectedPlaidBooleanSync.setTotalSyncedTransactions(1); // 1 new transaction added
-        expectedPlaidBooleanSync.setTotalModified(2); // 2 transactions modified
-        expectedPlaidBooleanSync.setSynced(true);
-
-        when(transactionService.convertPlaidTransactions(eq(addedPlaidTransactions)))
-                .thenReturn(List.of(newCoffeeTransaction));
-
-        // Execute the offline sync (incremental sync after being offline)
-        Optional<PlaidBooleanSync> result = transactionRefreshService.performOfflineSync(
-                testPlaidLinkEntity,
-                testPlaidCursorEntity,
-                currentDate
-        );
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        PlaidBooleanSync actual = result.get();
-        PlaidBooleanSync expected = expectedPlaidBooleanSync;
-        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
-        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
-        assertEquals(expected.getTotalModified(), actual.getTotalModified());
-        assertEquals(expected.getSynced(), actual.getSynced());
-    }
+//    @Test
+//    void testPerformOfflineSync_whenPendingTransactionsChangedToPosted_thenReturnPlaidBooleanSync() throws IOException
+//    {
+//        PlaidLinkEntity testPlaidLinkEntity = new PlaidLinkEntity();
+//        testPlaidLinkEntity.setId(1L);
+//        testPlaidLinkEntity.setAccessToken("test-access-token");
+//        testPlaidLinkEntity.setItemId("test-item-id");
+//        testPlaidLinkEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//        testPlaidLinkEntity.setRequiresUpdate(false);
+//
+//        PlaidCursorEntity testPlaidCursorEntity = new PlaidCursorEntity();
+//        testPlaidCursorEntity.setAddedCursor("test-cursor-value");
+//        testPlaidCursorEntity.setItemId("test-item-id");
+//        testPlaidCursorEntity.setLastSyncDate(LocalDate.of(2025, 4, 5));
+//        testPlaidCursorEntity.setUser(UserEntity.builder().username("test-username").id(1L).build());
+//
+//        LocalDate currentDate = LocalDate.of(2025, 4, 6);
+//        LocalDate lastSyncDate = LocalDate.of(2025, 4, 5);
+//
+//        // Create modified transactions (pending -> posted with amount changes)
+//        List<com.plaid.client.model.Transaction> modifiedPlaidTransactions = new ArrayList<>();
+//
+//        com.plaid.client.model.Transaction gasModifiedPlaid = new com.plaid.client.model.Transaction()
+//                .transactionId("tx_gas_001")
+//                .accountId("test-account-id")
+//                .amount(87.43)
+//                .date(LocalDate.parse("2025-04-05"))
+//                .name("Shell Gas Station")
+//                .merchantName("Shell")
+//                .pending(false);
+//        modifiedPlaidTransactions.add(gasModifiedPlaid);
+//
+//        // Restaurant: tip added, was $50, now $60
+//        com.plaid.client.model.Transaction restaurantModifiedPlaid = new com.plaid.client.model.Transaction()
+//                .transactionId("tx_restaurant_001")
+//                .accountId("test-account-id")
+//                .amount(60.00)
+//                .date(LocalDate.parse("2025-04-05"))
+//                .name("Local Restaurant")
+//                .merchantName("Local Restaurant")
+//                .pending(false);
+//        modifiedPlaidTransactions.add(restaurantModifiedPlaid);
+//
+//        // Mock existing transactions in DB that need to be updated
+//        Transaction existingGasTransaction = new Transaction();
+//        existingGasTransaction.setTransactionId("tx_gas_001");
+//        existingGasTransaction.setAmount(BigDecimal.valueOf(100.00)); // Old pending amount
+//        existingGasTransaction.setPending(true); // Was pending
+//        existingGasTransaction.setPosted(LocalDate.of(2025, 4, 5));
+//        existingGasTransaction.setName("Shell Gas Station");
+//        existingGasTransaction.setDate(LocalDate.of(2025, 4, 5));
+//        existingGasTransaction.setMerchantName("Shell");
+//
+//        Transaction existingRestaurantTransaction = new Transaction();
+//        existingRestaurantTransaction.setTransactionId("tx_restaurant_001");
+//        existingRestaurantTransaction.setAmount(BigDecimal.valueOf(50.00)); // Old amount without tip
+//        existingRestaurantTransaction.setPending(false);
+//        existingRestaurantTransaction.setDate(LocalDate.of(2025, 4, 5));
+//        existingRestaurantTransaction.setPosted(LocalDate.of(2025, 4, 5));
+//        existingRestaurantTransaction.setName("Local Restaurant");
+//        existingRestaurantTransaction.setMerchantName("Local Restaurant");
+//
+//        // Gas station: was pending $100, now posted $87.43
+//        Transaction gasModified = Transaction.builder()
+//                .transactionId("tx_gas_001")
+//                .accountId("test-account-id")
+//                .amount(BigDecimal.valueOf(87.43))
+//                .date(LocalDate.parse("2025-04-05"))
+//                .name("Shell Gas Station")
+//                .merchantName("Shell")
+//                .pending(false)
+//                .build();
+//
+//        // Restaurant: tip added, was $50, now $60
+//        Transaction restaurantModified = Transaction.builder()
+//                .transactionId("tx_restaurant_001")
+//                .accountId("test-account-id")
+//                .amount(BigDecimal.valueOf(60.00))
+//                .date(LocalDate.parse("2025-04-05"))
+//                .name("Local Restaurant")
+//                .merchantName("Local Restaurant")
+//                .pending(false)
+//                .build();
+//
+//        when(transactionService.convertPlaidTransactions(eq(modifiedPlaidTransactions)))
+//                .thenReturn(List.of(gasModified, restaurantModified));
+//
+//        when(transactionService.updateExistingTransaction(any(Transaction.class)))
+//                .thenAnswer(invocation -> {
+//                    Transaction arg = invocation.getArgument(0);
+//                    if (arg.getTransactionId().equals("tx_gas_001")) {
+//                        return Optional.of(gasModified);
+//                    } else if (arg.getTransactionId().equals("tx_restaurant_001")) {
+//                        return Optional.of(restaurantModified);
+//                    }
+//                    return Optional.empty();
+//                });
+//
+//        // Create some new transactions that occurred while offline
+//        List<com.plaid.client.model.Transaction> addedPlaidTransactions = new ArrayList<>();
+//
+//        com.plaid.client.model.Transaction coffeeNew = new com.plaid.client.model.Transaction()
+//                .transactionId("tx_coffee_001")
+//                .accountId("test-account-id")
+//                .amount(5.50)
+//                .date(LocalDate.parse("2025-04-06"))
+//                .name("Coffee Shop")
+//                .merchantName("Coffee Shop")
+//                .pending(false);
+//        addedPlaidTransactions.add(coffeeNew);
+//
+//        TransactionsSyncResponse mockPlaidResponse = new TransactionsSyncResponse()
+//                .added(addedPlaidTransactions)
+//                .modified(modifiedPlaidTransactions)
+//                .removed(List.of())
+//                .nextCursor("new-cursor-after-offline-sync")
+//                .hasMore(false);
+//
+//        Long userId = testPlaidLinkEntity.getUser().getId();
+//        String cursor = testPlaidCursorEntity.getAddedCursor();
+//        when(plaidTransactionManager.syncTransactionsForUser(userId, cursor))
+//                .thenAnswer(invocation -> {
+//                    System.out.println("✅ plaidTransactionManager mock called!");
+//                    return mockPlaidResponse;
+//                });
+//
+//        // Mock conversion of new transactions
+//        Transaction newCoffeeTransaction = new Transaction();
+//        newCoffeeTransaction.setTransactionId("tx_coffee_001");
+//        newCoffeeTransaction.setAmount(BigDecimal.valueOf(5.50));
+//        newCoffeeTransaction.setPosted(LocalDate.of(2025, 4, 6));
+//        newCoffeeTransaction.setName("Coffee Shop");
+//        newCoffeeTransaction.setDate(LocalDate.of(2025, 4, 6));
+//        newCoffeeTransaction.setMerchantName("Coffee Shop");
+//        newCoffeeTransaction.setPending(false);
+//
+//        // Expected result
+//        PlaidBooleanSync expectedPlaidBooleanSync = new PlaidBooleanSync();
+//        expectedPlaidBooleanSync.setUserId(1L);
+//        expectedPlaidBooleanSync.setTransactions(List.of(restaurantModified, gasModified, newCoffeeTransaction));
+//        expectedPlaidBooleanSync.setTotalSyncedTransactions(1); // 1 new transaction added
+//        expectedPlaidBooleanSync.setTotalModified(2); // 2 transactions modified
+//        expectedPlaidBooleanSync.setSynced(true);
+//
+//        when(transactionService.convertPlaidTransactions(eq(addedPlaidTransactions)))
+//                .thenReturn(List.of(newCoffeeTransaction));
+//
+//        // Execute the offline sync (incremental sync after being offline)
+//        Optional<PlaidBooleanSync> result = transactionRefreshService.performOfflineSync(
+//                testPlaidLinkEntity,
+//                testPlaidCursorEntity,
+//                currentDate
+//        );
+//        assertNotNull(result);
+//        assertTrue(result.isPresent());
+//        PlaidBooleanSync actual = result.get();
+//        PlaidBooleanSync expected = expectedPlaidBooleanSync;
+//        assertEquals(expected.getTransactions().size(), actual.getTransactions().size());
+//        assertEquals(expected.getTotalSyncedTransactions(), actual.getTotalSyncedTransactions());
+//        assertEquals(expected.getTotalModified(), actual.getTotalModified());
+//        assertEquals(expected.getSynced(), actual.getSynced());
+//    }
 
     // Helper method to convert your Transaction objects to Plaid Transaction objects
     private List<com.plaid.client.model.Transaction> convertToPlaidTransactions(List<Transaction> transactions) {

@@ -5,6 +5,6 @@ import com.app.budgetbuddy.domain.TransactionRule;
 
 public interface CategorizerService<T>
 {
-    CategoryType categorize(T transaction);
+    String categorize(T transaction);
     boolean matches(T transaction, TransactionRule transactionRule);
 }

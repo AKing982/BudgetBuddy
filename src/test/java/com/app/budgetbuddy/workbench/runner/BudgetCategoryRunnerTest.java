@@ -6,7 +6,7 @@ import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.services.*;
 
 import com.app.budgetbuddy.workbench.budget.BudgetCategoryBuilderFactory;
-import com.app.budgetbuddy.workbench.categories.CategoryRuleEngine;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,8 +37,8 @@ class BudgetCategoryRunnerTest {
     @Mock
     private BudgetScheduleService budgetScheduleService;
 
-    @Mock
-    private CategoryRuleEngine categoryRuleEngine;
+//    @Mock
+//    private CategoryRuleEngine categoryRuleEngine;
 
     @Mock
     private BudgetCategoryService transactionCategoryService;

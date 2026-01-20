@@ -245,23 +245,23 @@ class TransactionCategorizerTest {
 //        verify(transactionCategoryRuleMatcher, times(1)).categorizeTransactionByUserRules(groceryTransaction, userId);
 //    }
 
-    private TransactionRule createTransactionRule(String merchant, String category, String description, int priority) {
-        return TransactionRule.builder()
-                .merchantPattern(merchant)
-                .matchedCategory(category)
-                .descriptionPattern(description)
-                .priority(priority)
-                .build();
-    }
-
-    private TransactionRule createTransactionRule(int priority){
-        TransactionRule transactionRule = new TransactionRule();
-        transactionRule.setPriority(priority);
-        transactionRule.setCategories(List.of("Supermarkets and Groceries", "Shops"));
-        transactionRule.setTransactionId("#2342342");
-        transactionRule.setMerchantPattern("winco");
-        return transactionRule;
-    }
+//    private TransactionRule createTransactionRule(String merchant, String category, String description, int priority) {
+//        return TransactionRule.builder()
+//                .merchantPattern(merchant)
+//                .matchedCategory(category)
+//                .descriptionPattern(description)
+//                .priority(priority)
+//                .build();
+//    }
+//
+//    private TransactionRule createTransactionRule(int priority){
+//        TransactionRule transactionRule = new TransactionRule();
+//        transactionRule.setPriority(priority);
+//        transactionRule.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+//        transactionRule.setTransactionId("#2342342");
+//        transactionRule.setMerchantPattern("winco");
+//        return transactionRule;
+//    }
 
     private Transaction createTransaction(String description, String merchantName, List<String> categories, String categoryId){
         Transaction transaction = new Transaction(

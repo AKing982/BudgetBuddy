@@ -103,11 +103,10 @@ public class CategoryRunner
                 Long csvTransactionId = transactionCSV.getId();
 
                 // Categorize the transaction
-                CategoryType categoryType = csvCategorizerService.categorize(transactionCSV);
-                String category = categoryType.getType();
+                String categoryType = csvCategorizerService.categorize(transactionCSV);
 
                 // Update the existing transaction with the new category type
-                Optional<TransactionCSV> transactionCSVOptional = csvTransactionService.updateTransactionCSVByCategory(csvTransactionId, category);
+                Optional<TransactionCSV> transactionCSVOptional = csvTransactionService.updateTransactionCSVByCategory(csvTransactionId, categoryType);
                 if(transactionCSVOptional.isEmpty())
                 {
                     log.error("There was an error updating the transaction category for transaction id {}", csvTransactionId);

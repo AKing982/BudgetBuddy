@@ -78,10 +78,10 @@ class CategoryRunnerTest
         Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
                 .thenReturn(expected);
 
-        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.GROCERIES);
-        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.RENT);
-        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.INCOME);
-        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.ORDER_OUT);
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.GROCERIES.getType());
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.RENT.getType());
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.INCOME.getType());
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.ORDER_OUT.getType());
 
         TransactionCSV updatedTransaction1 = createCSVTransaction("WINCO FOODS", BigDecimal.valueOf(29.770), "PIN PURCHASE", "Groceries", "WINCO FOODS #15 WINCO11969 S CARLSBAD");
         TransactionCSV updatedTransaction2 = createCSVTransaction("Flexible Finance", BigDecimal.valueOf(1220.030), "Purchase", "Rent", "Flexible Finance Inc.");

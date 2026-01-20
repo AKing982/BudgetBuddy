@@ -37,8 +37,8 @@ class CategoryRuleEngineTest
     @MockBean
     private TransactionLoaderService transactionLoaderService;
 
-    @Autowired
-    private CategoryRuleEngine categoryRuleEngine;
+//    @Autowired
+//    private CategoryRuleEngine categoryRuleEngine;
 
     @BeforeEach
     void setUp() {

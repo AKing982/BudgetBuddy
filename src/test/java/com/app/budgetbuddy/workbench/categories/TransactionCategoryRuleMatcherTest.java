@@ -39,8 +39,8 @@ class TransactionRuleMatcherTest {
     @Mock
     private PlaidCategoryManager plaidCategoryManager;
 
-    @InjectMocks
-    private TransactionRuleMatcher categoryRuleMatcher;
+//    @InjectMocks
+//    private TransactionRuleMatcher categoryRuleMatcher;
 
     private CategoryRule categoryRule;
 
@@ -478,23 +478,23 @@ class TransactionRuleMatcherTest {
         return rule;
     }
 
-    private TransactionRule createTransactionRule(String merchant, String category, String description, int priority) {
-        return TransactionRule.builder()
-                .merchantPattern(merchant)
-                .matchedCategory(category)
-                .descriptionPattern(description)
-                .priority(priority)
-                .build();
-    }
-
-    private TransactionRule createTransactionRule(int priority){
-        TransactionRule transactionRule = new TransactionRule();
-        transactionRule.setPriority(priority);
-        transactionRule.setCategories(List.of("Supermarkets and Groceries", "Shops"));
-        transactionRule.setTransactionId("#2342342");
-        transactionRule.setMerchantPattern("winco");
-        return transactionRule;
-    }
+//    private TransactionRule createTransactionRule(String merchant, String category, String description, int priority) {
+//        return TransactionRule.builder()
+//                .merchantPattern(merchant)
+//                .matchedCategory(category)
+//                .descriptionPattern(description)
+//                .priority(priority)
+//                .build();
+//    }
+//
+//    private TransactionRule createTransactionRule(int priority){
+//        TransactionRule transactionRule = new TransactionRule();
+//        transactionRule.setPriority(priority);
+//        transactionRule.setCategories(List.of("Supermarkets and Groceries", "Shops"));
+//        transactionRule.setTransactionId("#2342342");
+//        transactionRule.setMerchantPattern("winco");
+//        return transactionRule;
+//    }
 
 
 //    @Test
