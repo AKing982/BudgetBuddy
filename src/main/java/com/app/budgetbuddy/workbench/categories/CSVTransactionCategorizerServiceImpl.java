@@ -22,8 +22,8 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
 {
     private final TransactionRuleService transactionRuleService;
     private final CSVAccountRepository csvAccountRepository;
-    private static Map<String, CategoryType> csvMerchantMap = new HashMap<>();
-    private static Map<MerchantPrice, CategoryType> csvMerchantPriceMap = new HashMap<>();
+    private Map<String, CategoryType> csvMerchantMap = new HashMap<>();
+    private Map<MerchantPrice, CategoryType> csvMerchantPriceMap = new HashMap<>();
 
     @Autowired
     public CSVTransactionCategorizerServiceImpl(TransactionRuleService transactionRuleService,
@@ -31,10 +31,13 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
     {
         this.transactionRuleService = transactionRuleService;
         this.csvAccountRepository = csvAccountRepository;
+        initializeCSVMerchantMap();
+        initializeCSVMerchantPriceMap();
     }
 
     // Level 0 Merchant Static Matching
-    static {
+    void initializeCSVMerchantMap()
+    {
         csvMerchantMap.put("WINCO FOODS", CategoryType.GROCERIES);
         csvMerchantMap.put("PAYPAL", CategoryType.PAYMENT);
         csvMerchantMap.put("AMAZON PRIME", CategoryType.SUBSCRIPTION);
@@ -89,8 +92,10 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         csvMerchantMap.put("SP Strom Holdings LLC", CategoryType.OTHER);
     }
 
+
     // Level 0 Merchant Transaction Amount Static Matching
-    static {
+    void initializeCSVMerchantPriceMap()
+    {
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(14.99).stripTrailingZeros()), CategoryType.SUBSCRIPTION);
         csvMerchantPriceMap.put(new MerchantPrice("Flexible Finance", BigDecimal.valueOf(14.990).stripTrailingZeros()), CategoryType.SUBSCRIPTION);
         csvMerchantPriceMap.put(new MerchantPrice("FLEX FINANCE", BigDecimal.valueOf(707.0).stripTrailingZeros()), CategoryType.RENT);
@@ -172,7 +177,7 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
             }
 
         }
-        return "UNCATEGORIZED";
+        return "Uncategorized";
     }
 
     @Override
@@ -212,7 +217,7 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
             case 1 -> merchantRuleMatch && descriptionRuleMatch && extendedDescriptionRuleMatch && amountMatch;
             case 2 -> merchantRuleMatch && amountMatch;
             case 3 -> merchantRuleMatch && minAmountMatch;
-            case 4 -> merchantRuleMatch && descriptionRuleMatch;
+            case 4 -> merchantRuleMatch && maxAmountMatch;
             case 5 -> descriptionRuleMatch && merchantRuleMatch;
             case 6 -> merchantRuleMatch;
             default -> false;

@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 
 @SpringBootTest
@@ -237,6 +237,207 @@ class CSVTransactionCategorizerServiceImplTest
         assertEquals(expectedCategory, result);
     }
 
+    @Test
+    void testMatches_whenTransactionIsNull_thenReturnFalse(){
+        TransactionRule rule = TransactionRule.builder()
+                .id(1L)
+                .userId(1L)
+                .categoryName("Shopping")
+                .merchantRule("WINCO")
+                .descriptionRule("PIN Purchase")
+                .extendedDescriptionRule("WINCO FOODS #15")
+                .amountMin(10.0)
+                .amountMax(100.0)
+                .priority(1)
+                .isActive(true)
+                .build();
+
+        boolean result = transactionCSVCategorizerService.matches(null,rule);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenTransactionRuleIsNull_thenReturnFalse(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,null);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenAllRulesMatch_thenReturnTrue(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        TransactionRule wincoRule = new TransactionRule();
+        wincoRule.setMerchantRule("WINCO");
+        wincoRule.setDescriptionRule("PIN Purchase");
+        wincoRule.setActive(true);
+        wincoRule.setPriority(1);
+        wincoRule.setCategoryName("Shopping");
+        wincoRule.setExtendedDescriptionRule("WINCO FOODS #15");
+        wincoRule.setUserId(1L);
+        wincoRule.setAmountMin(10.0);
+        wincoRule.setAmountMax(100.0);
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleAndAmountMatch_thenReturnTrue(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        TransactionRule wincoRule = new TransactionRule();
+        wincoRule.setMerchantRule("WINCO");
+        wincoRule.setAmountMin(10.0);
+        wincoRule.setAmountMax(100.0);
+        wincoRule.setCategoryName("Shopping");
+        wincoRule.setActive(true);
+        wincoRule.setPriority(2);
+        wincoRule.setUserId(1L);
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleAndMinAmountMatch_thenReturnTrue(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        TransactionRule wincoRule = new TransactionRule();
+        wincoRule.setMerchantRule("WINCO");
+        wincoRule.setAmountMin(10.0);
+        wincoRule.setCategoryName("Shopping");
+        wincoRule.setActive(true);
+        wincoRule.setPriority(3);
+        wincoRule.setUserId(1L);
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleAndMaxAmountMatch_thenReturnTrue(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        TransactionRule wincoRule = new TransactionRule();
+        wincoRule.setMerchantRule("WINCO");
+        wincoRule.setCategoryName("Shopping");
+        wincoRule.setAmountMax(80.0);
+        wincoRule.setActive(true);
+        wincoRule.setPriority(4);
+        wincoRule.setUserId(1L);
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenDescriptionRuleAndMerchantRuleMatch_thenReturnTrue(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        TransactionRule wincoRule = new TransactionRule();
+        wincoRule.setMerchantRule("WINCO");
+        wincoRule.setCategoryName("Shopping");
+        wincoRule.setDescriptionRule("PIN Purchase");
+        wincoRule.setActive(true);
+        wincoRule.setPriority(5);
+        wincoRule.setUserId(1L);
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleMatch_thenReturnTrue(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        TransactionRule wincoRule = new TransactionRule();
+        wincoRule.setMerchantRule("WINCO");
+        wincoRule.setCategoryName("Shopping");
+        wincoRule.setActive(true);
+        wincoRule.setPriority(6);
+        wincoRule.setUserId(1L);
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenAllRulesEmpty_thenReturnFalse(){
+        TransactionCSV winco_transaction = new TransactionCSV();
+        winco_transaction.setMerchantName("WINCO FOODS");
+        winco_transaction.setTransactionAmount(BigDecimal.valueOf(40.310));
+        winco_transaction.setTransactionDate(LocalDate.of(2025, 10, 3));
+        winco_transaction.setDescription("PIN Purchase");
+        winco_transaction.setExtendedDescription("WINCO FOODS #15");
+        winco_transaction.setSuffix(9);
+        winco_transaction.setAccount("002285914");
+
+        TransactionRule wincoRule = new TransactionRule();
+        wincoRule.setMerchantRule("");
+        wincoRule.setCategoryName("Shopping");
+        wincoRule.setDescriptionRule("");
+        wincoRule.setAmountMax(0.0);
+        wincoRule.setAmountMin(0.0);
+        wincoRule.setActive(true);
+        wincoRule.setPriority(0);
+        wincoRule.setUserId(1L);
+
+        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        assertFalse(result);
+    }
+
+
     private static Stream<Arguments> provideTransactionsWithUserRules() {
         Long userId = 100L;
 
@@ -258,11 +459,11 @@ class CSVTransactionCategorizerServiceImplTest
                 .id(2L)
                 .userId(userId)
                 .categoryName("Ordering Out")
-                .merchantRule("Pandas Express")
+                .merchantRule("Panda Express")
                 .descriptionRule("")
                 .extendedDescriptionRule("")
                 .amountMin(0.0)
-                .amountMax(9.22)
+                .amountMax(11)
                 .priority(2)
                 .isActive(true)
                 .build();
@@ -284,8 +485,8 @@ class CSVTransactionCategorizerServiceImplTest
                 .id(4L)
                 .userId(userId)
                 .categoryName("Gym")
-                .merchantRule("Planet Fitness")
-                .descriptionRule("PIN Purchase")
+                .merchantRule("PLANET FITNESS")
+                .descriptionRule("Purchase")
                 .extendedDescriptionRule("")
                 .amountMin(0.0)
                 .amountMax(25.0)
@@ -297,7 +498,7 @@ class CSVTransactionCategorizerServiceImplTest
                 .id(5L)
                 .userId(userId)
                 .categoryName("Shopping")
-                .merchantRule("AMAZON.com")
+                .merchantRule("AMAZON")
                 .descriptionRule("PIN Purchase")
                 .extendedDescriptionRule("")
                 .amountMin(0.0)
@@ -404,7 +605,7 @@ class CSVTransactionCategorizerServiceImplTest
                         allRules,
                         createTransactionWithDetails("AMAZON", "PIN Purchase", "AMAZON.COM*BT09 AMAZON.COM",
                                 BigDecimal.valueOf(17.50), "1234567890", 1),
-                        "Gym",
+                        "Shopping",
                         "Priority 5: Should match when description and merchant match"
                 ),
 
@@ -452,7 +653,7 @@ class CSVTransactionCategorizerServiceImplTest
                 Arguments.of(
                         userId,
                         allRules,
-                        createTransactionWithDetails("AMAZON.COM", "VIDEO GAME", "XBOX GAME",
+                        createTransactionWithDetails("AMAZON.COM", "Purchase", "AMAZON.COM",
                                 BigDecimal.valueOf(59.99), "1234567890", 1),
                         "Electronics",
                         "Priority precedence: Priority 4 should match before Priority 5 or 6"
