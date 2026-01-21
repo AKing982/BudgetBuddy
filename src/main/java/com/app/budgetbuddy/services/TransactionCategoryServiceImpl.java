@@ -98,9 +98,54 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
+    @Transactional
+    public TransactionCategory getTransactionCategoryByCsvId(Long csvId, Long categoryId)
+    {
+        try
+        {
+            Optional<TransactionCategoryEntity> transactionCategoryEntity = transactionCategoryRepository.findTransactionCategoryByCategoryId(csvId, categoryId);
+            if(transactionCategoryEntity.isEmpty())
+            {
+                throw new IllegalArgumentException("No Transaction Category found");
+            }
+            TransactionCategoryEntity transactionCategory = transactionCategoryEntity.get();
+            return transactionCategoryConverter.convert(transactionCategory);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the TransactionCategory entity", e);
+            throw e;
+        }
+    }
+
+    @Override
     public TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity)
     {
         return transactionCategoryConverter.convert(transactionCategoryEntity);
+    }
+
+    @Override
+    public Optional<TransactionCategory> getTransactionCategoryById(Long categoryId, Long csvId)
+    {
+        try
+        {
+
+        }catch(DataAccessException e){
+            log.error("There was an error while getting the TransactionCategory entity", e);
+            return Optional.empty();
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    @Transactional
+    public void updateTransactionCategoriesByIdAndCategory(String category, Long id)
+    {
+        try
+        {
+            transactionCategoryRepository.updateTransactionCategoryByIdAndCategory(id, category);
+        }catch(DataAccessException e){
+            log.error("There was an error while updating the TransactionCategory entity", e);
+            return;
+        }
     }
 
     @Override

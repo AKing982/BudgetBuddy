@@ -56,9 +56,9 @@ public class CategoryRunner
         currentUserIds.forEach(userId -> categorizeCSVTransactionsByRange(userId, lastMonth, today));
     }
 
-    public Optional<TransactionCSV> categorizeSingleCSVTransaction(final CategorySaveData categorySaveData)
+    public Optional<TransactionCategory> categorizeSingleCSVTransaction(final CategorySaveData categorySaveData)
     {
-        if (categorySaveData == null)
+        if(categorySaveData == null)
         {
             return Optional.empty();
         }
@@ -70,7 +70,10 @@ public class CategoryRunner
                 throw new CategoryRunnerException("Category cannot be empty");
             }
             Long transactionId = parseTransactionId(categorySaveData.transactionId());
-            return csvTransactionService.updateTransactionCSVByCategory(transactionId, category);
+            transactionCategoryService.updateTransactionCategoriesByIdAndCategory(category, transactionId);
+
+            Optional<TransactionCategory> transactionCategoryOptional = transactionCategoryService.find
+            return null;
         }catch(CategoryRunnerException e){
             log.error("There was an error categorizing the category save data: {}", e.getMessage());
             return Optional.empty();

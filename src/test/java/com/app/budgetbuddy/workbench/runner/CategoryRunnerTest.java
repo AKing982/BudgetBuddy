@@ -5,6 +5,7 @@ import com.app.budgetbuddy.domain.CategoryType;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.services.CSVTransactionService;
+import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategorizerService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -105,7 +106,7 @@ class CategoryRunnerTest
 
     @Test
     void testCategorizeSingleCSVTransaction_whenCategorySaveDataIsNull_thenReturnEmptyOptional(){
-        Optional<TransactionCSV> actual = categoryRunner.categorizeSingleCSVTransaction(null);
+        Optional<TransactionCategory> actual = categoryRunner.categorizeSingleCSVTransaction(null);
         assertTrue(actual.isEmpty());
     }
 
