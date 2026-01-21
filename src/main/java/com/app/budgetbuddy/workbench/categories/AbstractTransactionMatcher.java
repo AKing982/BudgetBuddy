@@ -419,7 +419,7 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
         }
         try
         {
-            return categoryService.findCategoryById(categoryId);
+            return Optional.empty();
         }catch(CategoryNotFoundException e){
             log.error("There was an error retrieving category with id: {}", categoryId, e);
             return Optional.empty();
@@ -599,14 +599,15 @@ public abstract class AbstractTransactionMatcher<T extends Transaction, S extend
     }
 
     protected String getCategoryNameById(String categoryId) {
-        if (categoryId == null) {
-            return "";
-        }
-        Optional<CategoryEntity> category = categoryService.findCategoryById(categoryId);
-        if(category.isEmpty()){
-            throw new CategoryNotFoundException(categoryId);
-        }
-        log.info("Found Category: " + category);
-        return category.get().getCategory();
+//        if (categoryId == null) {
+//            return "";
+//        }
+//        Optional<CategoryEntity> category = categoryService.findCategoryById(categoryId);
+//        if(category.isEmpty()){
+//            throw new CategoryNotFoundException(categoryId);
+//        }
+//        log.info("Found Category: " + category);
+//        return category.get().getCategory();
+        return "";
     }
 }

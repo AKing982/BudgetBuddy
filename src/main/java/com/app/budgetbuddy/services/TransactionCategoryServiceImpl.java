@@ -7,9 +7,12 @@ import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.TransactionsNotFoundException;
 import com.app.budgetbuddy.repositories.TransactionCategoryRepository;
 import com.app.budgetbuddy.repositories.TransactionRepository;
+import com.app.budgetbuddy.workbench.converter.TransactionCategoryConverter;
+import com.app.budgetbuddy.workbench.converter.TransactionCategoryToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -23,13 +26,19 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 {
     private final TransactionCategoryRepository transactionCategoryRepository;
     private final TransactionRepository transactionRepository;
+    private final TransactionCategoryToEntityConverter transactionCategoryToEntityConverter;
+    private final TransactionCategoryConverter transactionCategoryConverter;
 
     @Autowired
     public TransactionCategoryServiceImpl(TransactionCategoryRepository transactionCategoryRepository,
-                                          TransactionRepository transactionRepository)
+                                          TransactionRepository transactionRepository,
+                                          TransactionCategoryToEntityConverter transactionCategoryToEntityConverter,
+                                          TransactionCategoryConverter transactionCategoryConverter)
     {
         this.transactionCategoryRepository = transactionCategoryRepository;
         this.transactionRepository = transactionRepository;
+        this.transactionCategoryToEntityConverter = transactionCategoryToEntityConverter;
+        this.transactionCategoryConverter = transactionCategoryConverter;
     }
 
     @Override
@@ -45,6 +54,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
+    @Transactional
     public void save(TransactionCategoryEntity transactionCategorizationEntity)
     {
         try
@@ -56,6 +66,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
+    @Transactional
     public void delete(TransactionCategoryEntity transactionCategorizationEntity)
     {
         try
@@ -72,6 +83,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
+    @Transactional
     public void saveAll(List<TransactionCategory> transactionCategoryList)
     {
         transactionCategoryList.stream()
@@ -82,31 +94,13 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     @Override
     public TransactionCategoryEntity convertToEntity(TransactionCategory transactionCategory)
     {
-        TransactionCategoryEntity transactionCategoryEntity = new TransactionCategoryEntity();
-        transactionCategoryEntity.setId(transactionCategory.getId());
-//        transactionCategoryEntity.setCategory(transactionCategory.getCategory());
-        transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
-        transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorized_date());
-        Optional<TransactionsEntity> transactionsEntityOptional = findTransactionEntityById(transactionCategory.getTransactionId());
-        if(transactionsEntityOptional.isEmpty()){
-            throw new TransactionsNotFoundException("Transaction Not Found: " + transactionCategory.getTransactionId());
-        }
-        TransactionsEntity transactionsEntity = transactionsEntityOptional.get();
-        transactionCategoryEntity.setTransaction(transactionsEntity);
-        return transactionCategoryEntity;
+        return transactionCategoryToEntityConverter.convert(transactionCategory);
     }
 
     @Override
     public TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity)
     {
-        TransactionCategory transactionCategory = new TransactionCategory();
-        transactionCategory.setId(transactionCategoryEntity.getId());
-        transactionCategory.setCategory_id(transactionCategoryEntity.getCategory().getId());
-        transactionCategory.setCategorizedBy(transactionCategoryEntity.getCategorizedBy());
-        transactionCategory.setCategorized_date(transactionCategoryEntity.getCategorized_date());
-        transactionCategory.setTransactionId(transactionCategoryEntity.getTransaction().getId());
-        transactionCategory.setCategory(transactionCategoryEntity.getCategory().getCategory());
-        return transactionCategory;
+        return transactionCategoryConverter.convert(transactionCategoryEntity);
     }
 
     @Override

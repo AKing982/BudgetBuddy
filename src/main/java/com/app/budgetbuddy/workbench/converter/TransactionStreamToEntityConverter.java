@@ -56,10 +56,6 @@ public class TransactionStreamToEntityConverter {
         if(categoryId == null){
             return null;
         }
-        Optional<CategoryEntity> categoryEntityOptional = categoryService.findCategoryById(categoryId);
-        if(categoryEntityOptional.isPresent()){
-            return categoryEntityOptional.get();
-        }
         return null;
     }
 

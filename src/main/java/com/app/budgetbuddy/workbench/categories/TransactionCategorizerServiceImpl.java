@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.categories;
 
+import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.domain.CategoryType;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionRule;
@@ -10,7 +11,7 @@ public class TransactionCategorizerServiceImpl implements CategorizerService<Tra
 {
 
     @Override
-    public String categorize(Transaction transaction)
+    public Category categorize(Transaction transaction)
     {
         return null;
     }

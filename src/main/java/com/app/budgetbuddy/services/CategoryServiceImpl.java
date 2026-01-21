@@ -48,21 +48,23 @@ public class CategoryServiceImpl implements CategoryService
 
     @Override
     public CategoryEntity createAndSaveCategory(String categoryId, List<String> categories) {
-        if(categories == null || categoryId == null){
-            return null;
-        }
-
-        Optional<CategoryEntity> existingCategory = categoryRepository.findByCategoryId(categoryId);
-        return existingCategory.orElseGet(() -> {
-            String mainCategory = categories.get(0);
-            String subCategory = categories.size() > 1 ? categories.get(1) : null;
-            return categoryRepository.save(createCategory(categoryId, false, subCategory, mainCategory, LocalDateTime.now(), 0L));
-        });
+//        if(categories == null || categoryId == null){
+//            return null;
+//        }
+//
+//        Optional<CategoryEntity> existingCategory = categoryRepository.findByCategoryId(categoryId);
+//        return existingCategory.orElseGet(() -> {
+//            String mainCategory = categories.get(0);
+//            String subCategory = categories.size() > 1 ? categories.get(1) : null;
+//            return categoryRepository.save(createCategory(categoryId, false, subCategory, mainCategory, LocalDateTime.now(), 0L));
+//        });
+        return null;
     }
 
     @Override
     @Transactional
-    public Optional<CategoryEntity> findCategoryById(String categoryId) {
+    public Optional<CategoryEntity> findCategoryById(Long categoryId)
+    {
         return categoryRepository.findByCategoryId(categoryId);
     }
 
@@ -80,9 +82,9 @@ public class CategoryServiceImpl implements CategoryService
     }
 
     @Override
-    public Optional<CategoryEntity> findCategoryByName(String categoryName) {
-        List<CategoryEntity> categoryEntities = categoryRepository.findByName(categoryName);
-        return categoryEntities.stream().findFirst();
+    public Optional<CategoryEntity> findCategoryByName(String categoryName)
+    {
+        return categoryRepository.findByName(categoryName);
     }
 
     @Override
@@ -91,8 +93,26 @@ public class CategoryServiceImpl implements CategoryService
     }
 
     @Override
-    public Optional<String> getCategoryIdByName(String categoryName) {
-        return null;
+    @Transactional
+    public Long getCategoryIdByName(String categoryName)
+    {
+        if(categoryName == null)
+        {
+            return 0L;
+        }
+        try
+        {
+            Optional<CategoryEntity> categoryEntityOptional = categoryRepository.findByName(categoryName);
+            if(categoryEntityOptional.isEmpty())
+            {
+                return 0L;
+            }
+            CategoryEntity categoryEntity = categoryEntityOptional.get();
+            return categoryEntity.getId();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving all the system categories: ", e);
+            return 0L;
+        }
     }
 
     private CategoryEntity createCategory(String categoryId, boolean isCustom, String name, String description, LocalDateTime created, Long id) {

@@ -9,11 +9,14 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface UserCategoryRepository extends JpaRepository<UserCategoryEntity, Integer>
+public interface UserCategoryRepository extends JpaRepository<UserCategoryEntity, Long>
 {
     @Query("SELECT c FROM UserCategoryEntity c WHERE c.isActive = TRUE and c.user.id =:userId")
     List<UserCategoryEntity> findAllByUser(@Param("userId") Long userId);
 
     @Query("SELECT c FROM UserCategoryEntity c WHERE c.user.id =:userId AND c.id =:id")
     UserCategoryEntity findByIdAndUser(@Param("userId") Long userId, @Param("id") Long id);
+
+    @Query("SELECT c FROM UserCategoryEntity c WHERE c.user.id =:userId AND c.category =:name")
+    Long findIdByNameAndUser(@Param("userId") Long userId, @Param("name") String name);
 }

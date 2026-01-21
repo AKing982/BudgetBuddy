@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
+@Builder
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class TransactionCategoryEntity
@@ -37,9 +38,6 @@ public class TransactionCategoryEntity
 
     @Column(name="categorized_by", nullable=false)
     private String categorizedBy;
-
-    @Column(name="is_categorized")
-    private Boolean isCategorized;
 
     @Column(name="categorized_date", nullable=false)
     private LocalDate categorized_date;

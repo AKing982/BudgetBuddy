@@ -13,11 +13,10 @@ import java.util.Optional;
 public interface CategoryRepository extends JpaRepository<CategoryEntity, Long>
 {
     @Query("SELECT c FROM CategoryEntity c WHERE c.category =:name")
-    List<CategoryEntity> findByName(@Param("name") String name);
-
+    Optional<CategoryEntity> findByName(@Param("name") String name);
 
     @Query("SELECT c FROM CategoryEntity c WHERE c.id =:categoryId")
-    Optional<CategoryEntity> findByCategoryId(@Param("categoryId") String categoryId);
+    Optional<CategoryEntity> findByCategoryId(@Param("categoryId") Long categoryId);
 
     @Query("SELECT c FROM CategoryEntity c WHERE c.description LIKE :descr")
     Optional<CategoryEntity> findByDescription(@Param("descr") String descr);

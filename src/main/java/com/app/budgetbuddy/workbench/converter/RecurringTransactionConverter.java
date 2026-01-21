@@ -59,7 +59,6 @@ public class RecurringTransactionConverter implements Converter<RecurringTransac
     }
 
     private CategoryEntity fetchCategoryById(String categoryId){
-        Optional<CategoryEntity> categoryEntityOptional = categoryService.findCategoryById(categoryId);
-        return categoryEntityOptional.orElse(null);
+       return null;
     }
 }

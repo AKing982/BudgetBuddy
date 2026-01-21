@@ -15,11 +15,11 @@ public class TransactionCategory
 {
     private Long id;
     private String transactionId;
-    private Long csv_transaction_id;
-    private Long category_id;
+    private Long csvTransactionId;
+    private Long categoryId;
     private String category;
     private String categorizedBy;
-    private LocalDate categorized_date;
+    private LocalDate categorizedDate;
     private boolean isCategorized;
     private LocalDateTime createdAt;
 

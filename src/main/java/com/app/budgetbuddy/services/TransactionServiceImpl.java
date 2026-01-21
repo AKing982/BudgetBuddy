@@ -384,11 +384,12 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     private CategoryEntity fetchCategoryById(String categoryId){
-        if(categoryId.isEmpty()){
-            throw new IllegalArgumentException("categoryId is empty");
-        }
-        Optional<CategoryEntity> categoryEntityOptional = categoryRepository.findByCategoryId(categoryId);
-        return categoryEntityOptional.orElseThrow(() -> new IllegalArgumentException("Category not found"));
+//        if(categoryId.isEmpty()){
+//            throw new IllegalArgumentException("categoryId is empty");
+//        }
+//        Optional<CategoryEntity> categoryEntityOptional = categoryRepository.findByCategoryId(categoryId);
+//        return categoryEntityOptional.orElseThrow(() -> new IllegalArgumentException("Category not found"));
+        return null;
     }
 
     private AccountEntity fetchAccountById(String accountId){

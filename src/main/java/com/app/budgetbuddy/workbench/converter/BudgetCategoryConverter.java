@@ -36,7 +36,6 @@ public class BudgetCategoryConverter implements Converter<BudgetCategory, Budget
         {
             return null;
         }
-        return categoryService.findCategoryById(categoryId)
-                .orElse(null);
+       return null;
     }
 }

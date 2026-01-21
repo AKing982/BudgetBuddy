@@ -3,12 +3,15 @@ package com.app.budgetbuddy.workbench.categories;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.repositories.CSVAccountRepository;
+import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.services.UserCategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,13 +27,21 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
     private final CSVAccountRepository csvAccountRepository;
     private Map<String, CategoryType> csvMerchantMap = new HashMap<>();
     private Map<MerchantPrice, CategoryType> csvMerchantPriceMap = new HashMap<>();
+    private final CategoryService categoryService;
+    private final UserCategoryService userCategoryService;
+    private final String SYSTEM_CATEGORIZED = "SYSTEM";
+    private final String USER_CATEGORIZED = "USER";
 
     @Autowired
     public CSVTransactionCategorizerServiceImpl(TransactionRuleService transactionRuleService,
-                                                CSVAccountRepository csvAccountRepository)
+                                                CSVAccountRepository csvAccountRepository,
+                                                CategoryService categoryService,
+                                                UserCategoryService userCategoryService)
     {
         this.transactionRuleService = transactionRuleService;
         this.csvAccountRepository = csvAccountRepository;
+        this.categoryService = categoryService;
+        this.userCategoryService = userCategoryService;
         initializeCSVMerchantMap();
         initializeCSVMerchantPriceMap();
     }
@@ -116,11 +127,11 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
     }
 
     @Override
-    public String categorize(TransactionCSV transaction)
+    public Category categorize(TransactionCSV transaction)
     {
         if(transaction == null)
         {
-            return "Uncategorized";
+            return Category.createUncategorized();
         }
         BigDecimal transactionAmount = transaction.getTransactionAmount()
                         .abs()
@@ -131,6 +142,9 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         String acct = transaction.getAccount();
         Long userId = getUserIdByAcctNumberSuffix(suffix, acct);
         List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
+        Long categoryId = 0L;
+        String matchedCategoryName = "";
+        Category category = null;
         if(transactionRules.isEmpty())
         {
             MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
@@ -141,14 +155,22 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
             if(csvMerchantPriceMap.containsKey(key))
             {
                 log.info("Found Merchant Price Map key: {}", key);
-                return csvMerchantPriceMap.get(key).getType();
+                CategoryType categoryType = csvMerchantPriceMap.get(key);
+                String categoryName = categoryType.getType();
+                categoryId = categoryService.getCategoryIdByName(categoryName);
+                matchedCategoryName = categoryName;
+                category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+                return category;
             }
             else if(csvMerchantMap.containsKey(merchantNameUpper))
             {
                 log.info("Found MerchantMap key: {}", merchantName);
                 CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
+                categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                matchedCategoryName = categoryType.getType();
+                category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
                 log.info("Found CategoryType: {}", categoryType);
-                return categoryType.getType();
+                return category;
             }
         }
         else
@@ -168,16 +190,18 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
                     log.info("Found Rule: {}", rule);
                     if(matches(transaction, rule))
                     {
+                        matchedCategoryName = rule.getCategoryName();
                         log.info("Rule matches: {}", rule);
                         long endTime = System.currentTimeMillis();
                         log.info("Rules found in {} ms", endTime - startTime);
-                        return rule.getCategoryName();
+                        Long userCategoryId = userCategoryService.getCategoryIdByNameAndUser(matchedCategoryName, userId);
+                        return Category.createCategory(userCategoryId, matchedCategoryName, USER_CATEGORIZED, LocalDate.now());
                     }
                 }
             }
 
         }
-        return "Uncategorized";
+        return Category.createUncategorized();
     }
 
     @Override

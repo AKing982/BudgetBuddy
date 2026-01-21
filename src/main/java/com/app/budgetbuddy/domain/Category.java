@@ -13,36 +13,29 @@ import java.time.LocalDate;
 @Builder
 public class Category
 {
-    private String categoryId;
+    private Long categoryId;
     private String categoryName;
-    private String categoryDescription;
-    private BigDecimal budgetedAmount;
-    private LocalDate categoryStartDate;
-    private LocalDate categoryEndDate;
-    private BigDecimal actual;
-    private boolean isActive;
-    private CategoryType categoryType;
-    private DateRange dateRange;
+    private String categorizedBy;
+    private LocalDate categorizedDate;
 
-    public Category(String categoryName, BigDecimal budgetedAmount, LocalDate categoryStartDate, LocalDate categoryEndDate, BigDecimal actual, boolean isActive) {
-        this.categoryName = categoryName;
-        this.budgetedAmount = budgetedAmount;
-        this.categoryStartDate = categoryStartDate;
-        this.categoryEndDate = categoryEndDate;
-        this.actual = actual;
-        this.isActive = isActive;
-        this.dateRange = new DateRange(categoryStartDate, categoryEndDate);
+    public static Category createCategory(Long categoryId, String categoryName, String categorizedBy, LocalDate categorizedDate)
+    {
+        return Category.builder()
+                .categorizedBy(categorizedBy)
+                .categoryId(categoryId)
+                .categorizedDate(categorizedDate)
+                .categoryName(categoryName)
+                .build();
     }
 
-    public Category(String categoryId, String categoryName, String categoryDescription, BigDecimal budgetedAmount, LocalDate categoryStartDate, LocalDate categoryEndDate, BigDecimal actual, boolean isActive, CategoryType categoryType) {
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-        this.categoryDescription = categoryDescription;
-        this.budgetedAmount = budgetedAmount;
-        this.categoryStartDate = categoryStartDate;
-        this.categoryEndDate = categoryEndDate;
-        this.actual = actual;
-        this.isActive = isActive;
-        this.categoryType = categoryType;
+    public static Category createUncategorized(){
+        return Category.builder()
+                .categoryId(0L)
+                .categoryName("Uncategorized")
+                .categorizedDate(LocalDate.now())
+                .categorizedBy("SYSTEM")
+                .build();
     }
+
+
 }

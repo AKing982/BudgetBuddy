@@ -54,7 +54,7 @@ class TransactionRuleMatcherTest {
         categoryRule.setMerchantPattern("winco");
         categoryRule.setRecurring(false);
         categoryRule.setTransactionType(TransactionType.CREDIT);
-        when(categoryService.findCategoryById("19047000")).thenReturn(Optional.of(createGroceryCategory()));
+//        when(categoryService.findCategoryById("19047000")).thenReturn(Optional.of(createGroceryCategory()));
 
         MockitoAnnotations.openMocks(this);
     }

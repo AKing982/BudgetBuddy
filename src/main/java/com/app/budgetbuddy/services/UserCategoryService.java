@@ -12,4 +12,6 @@ public interface UserCategoryService extends ServiceModel<UserCategoryEntity>
 
     void deleteUserCategory(Long categoryId, Long userId);
     Optional<UserCategory> addCustomUserCategory(String categoryName, Long userId);
+
+    Long getCategoryIdByNameAndUser(String categoryName, Long userId);
 }

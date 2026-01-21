@@ -839,14 +839,14 @@ public class BudgetCalculations {
 
 
 
-    private BigDecimal getBudgetControlAmount(final Category category, final List<ControlledSpendingCategoryEntity> budgetCategories) {
-        for (ControlledSpendingCategoryEntity budgetCategoriesEntity : budgetCategories) {
-            if (budgetCategoriesEntity.getCategoryName().equalsIgnoreCase(category.getCategoryName())) {
-                return BigDecimal.valueOf(budgetCategoriesEntity.getAllocatedAmount());
-            }
-        }
-        return category.getActual();
-    }
+//    private BigDecimal getBudgetControlAmount(final Category category, final List<ControlledSpendingCategoryEntity> budgetCategories) {
+//        for (ControlledSpendingCategoryEntity budgetCategoriesEntity : budgetCategories) {
+//            if (budgetCategoriesEntity.getCategoryName().equalsIgnoreCase(category.getCategoryName())) {
+//                return BigDecimal.valueOf(budgetCategoriesEntity.getAllocatedAmount());
+//            }
+//        }
+//        return category.getActual();
+//    }
 
 //    public BigDecimal getTotalSavedInUserBudgetCategoriesByPeriod(final BudgetPeriod budgetPeriod, final Budget budget)
 //    {
@@ -880,25 +880,26 @@ public class BudgetCalculations {
 
     public BigDecimal getTotalSavedInCategories(final Set<Category> categories)
     {
-        if(categories.isEmpty())
-        {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal totalSavedAmount = BigDecimal.ZERO;
-        for(Category category : categories)
-        {
-            if(category != null)
-            {
-                BigDecimal totalCategorySpending = category.getActual();
-                BigDecimal totalBudgetedForCategory = category.getBudgetedAmount();
-                if(totalCategorySpending != null && totalBudgetedForCategory != null)
-                {
-                    BigDecimal savedAmount = totalBudgetedForCategory.subtract(totalCategorySpending);
-                    totalSavedAmount = totalSavedAmount.add(savedAmount);
-                }
-            }
-        }
-        return totalSavedAmount;
+//        if(categories.isEmpty())
+//        {
+//            return BigDecimal.ZERO;
+//        }
+//        BigDecimal totalSavedAmount = BigDecimal.ZERO;
+//        for(Category category : categories)
+//        {
+//            if(category != null)
+//            {
+//                BigDecimal totalCategorySpending = category.getActual();
+//                BigDecimal totalBudgetedForCategory = category.getBudgetedAmount();
+//                if(totalCategorySpending != null && totalBudgetedForCategory != null)
+//                {
+//                    BigDecimal savedAmount = totalBudgetedForCategory.subtract(totalCategorySpending);
+//                    totalSavedAmount = totalSavedAmount.add(savedAmount);
+//                }
+//            }
+//        }
+//        return totalSavedAmount;
+        return null;
     }
 
     public BigDecimal getCategoryBudgetAmountProportion(final BigDecimal totalCategorySpending, final BigDecimal totalBudgetAmount, final BigDecimal totalSpendingOnCategories)

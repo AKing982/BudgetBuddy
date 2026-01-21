@@ -53,9 +53,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     }
 
     private CategoryEntity getCategoryEntityFromId(String id){
-        if(id == null) return null;
-        Optional<CategoryEntity> categoryEntityOptional = categoryRepository.findByCategoryId(id);
-        return categoryEntityOptional.orElse(null);
+        return null;
     }
 
     public List<RecurringTransactionEntity> createAndSaveRecurringTransactions(List<RecurringTransaction> recurringTransactions){

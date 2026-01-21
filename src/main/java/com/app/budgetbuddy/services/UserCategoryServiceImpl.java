@@ -136,4 +136,17 @@ public class UserCategoryServiceImpl implements UserCategoryService
             return Optional.empty();
         }
     }
+
+    @Override
+    @Transactional
+    public Long getCategoryIdByNameAndUser(String categoryName, Long userId)
+    {
+        try
+        {
+            return userCategoryRepository.findIdByNameAndUser(userId, categoryName);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the user category with id: {} for the user with id: {}", categoryName, userId, e);
+            return 0L;
+        }
+    }
 }

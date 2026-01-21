@@ -1,11 +1,9 @@
 package com.app.budgetbuddy.workbench.runner;
 
-import com.app.budgetbuddy.domain.CategorySaveData;
-import com.app.budgetbuddy.domain.CategoryType;
-import com.app.budgetbuddy.domain.Locations;
-import com.app.budgetbuddy.domain.TransactionCSV;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
 import com.app.budgetbuddy.services.CSVTransactionService;
+import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.services.UserLogService;
 import com.app.budgetbuddy.workbench.categories.CategorizerService;
@@ -16,6 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -25,18 +24,22 @@ public class CategoryRunner
     private final CategorizerService<TransactionCSV> csvCategorizerService;
     private final CSVTransactionService csvTransactionService;
     private final UserLogService userLogService;
-    private final List<TransactionCSV> categorizedCSVTransactions = new ArrayList<>();
+    private final List<TransactionCategory> categorizedCSVTransactions = new ArrayList<>();
     private final TransactionService transactionService;
+    private final TransactionCategoryService transactionCategoryService;
 
     @Autowired
     public CategoryRunner(@Qualifier("csvCategorizer") CategorizerService<TransactionCSV> categorizerService,
                           CSVTransactionService csvTransactionService,
-                          UserLogService userLogService, TransactionService transactionService)
+                          UserLogService userLogService,
+                          TransactionService transactionService,
+                          TransactionCategoryService transactionCategoryService)
     {
         this.csvCategorizerService = categorizerService;
         this.csvTransactionService = csvTransactionService;
         this.userLogService = userLogService;
         this.transactionService = transactionService;
+        this.transactionCategoryService = transactionCategoryService;
     }
 
     @Scheduled(cron = "0 0 * * * 1-5")
@@ -87,7 +90,7 @@ public class CategoryRunner
         }
     }
 
-    public List<TransactionCSV> categorizeCSVTransactionsByRange(Long userId,
+    public List<TransactionCategory> categorizeCSVTransactionsByRange(Long userId,
                                                                     LocalDate startDate,
                                                                     LocalDate endDate)
     {
@@ -101,20 +104,20 @@ public class CategoryRunner
             for(TransactionCSV transactionCSV : transactionCSVS)
             {
                 Long csvTransactionId = transactionCSV.getId();
-
                 // Categorize the transaction
-                String categoryType = csvCategorizerService.categorize(transactionCSV);
-
-                // Update the existing transaction with the new category type
-                Optional<TransactionCSV> transactionCSVOptional = csvTransactionService.updateTransactionCSVByCategory(csvTransactionId, categoryType);
-                if(transactionCSVOptional.isEmpty())
-                {
-                    log.error("There was an error updating the transaction category for transaction id {}", csvTransactionId);
-                    continue;
-                }
-                TransactionCSV updatedTransactionCSV = transactionCSVOptional.get();
-                categorizedCSVTransactions.add(updatedTransactionCSV);
+                Category category = csvCategorizerService.categorize(transactionCSV);
+                String categoryName = category.getCategoryName();
+                TransactionCategory transactionCategory = TransactionCategory.builder()
+                        .category(categoryName)
+                        .categoryId(category.getCategoryId())
+                        .csvTransactionId(csvTransactionId)
+                        .categorizedDate(category.getCategorizedDate())
+                        .createdAt(LocalDateTime.now())
+                        .categorizedBy(category.getCategorizedBy())
+                        .build();
+                categorizedCSVTransactions.add(transactionCategory);
             }
+            transactionCategoryService.saveAll(categorizedCSVTransactions);
             return categorizedCSVTransactions;
         }catch(Exception e){
             log.error("There was an error fetching the transaction categories: {}", e.getMessage());

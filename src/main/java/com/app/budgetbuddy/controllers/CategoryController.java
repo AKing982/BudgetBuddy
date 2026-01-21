@@ -2,6 +2,7 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.CategorySaveData;
 import com.app.budgetbuddy.domain.TransactionCSV;
+import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
 import com.app.budgetbuddy.services.CategoryService;
@@ -52,13 +53,13 @@ public class CategoryController
     }
 
     @PostMapping("/categorize/{userId}/csv")
-    public ResponseEntity<List<TransactionCSV>> categorizeCSVTransactionsByUserId(@PathVariable Long userId,
+    public ResponseEntity<List<TransactionCategory>> categorizeCSVTransactionsByUserId(@PathVariable Long userId,
                                                                                   @RequestParam LocalDate startDate,
                                                                                   @RequestParam LocalDate endDate)
     {
         try
         {
-            List<TransactionCSV> categorizedTransactionCSVs = categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
+            List<TransactionCategory> categorizedTransactionCSVs = categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
             log.info("Categorized {} transactions for user {} between {} and {}", categorizedTransactionCSVs.size(), userId, startDate, endDate);
             return ResponseEntity.ok(categorizedTransactionCSVs);
         }catch(CategoryRunnerException e){

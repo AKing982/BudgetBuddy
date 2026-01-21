@@ -9,7 +9,7 @@ public interface CategoryService extends ServiceModel<CategoryEntity>
 {
     CategoryEntity createAndSaveCategory(String categoryId, List<String> categories);
 
-    Optional<CategoryEntity> findCategoryById(String categoryId);
+    Optional<CategoryEntity> findCategoryById(Long categoryId);
 
     List<CategoryEntity> findAllSystemCategories();
 
@@ -17,7 +17,7 @@ public interface CategoryService extends ServiceModel<CategoryEntity>
 
     Optional<CategoryEntity> getCategoryByNameOrDescription(String description, String name);
 
-    Optional<String> getCategoryIdByName(String categoryName);
+    Long getCategoryIdByName(String categoryName);
 
 
 }

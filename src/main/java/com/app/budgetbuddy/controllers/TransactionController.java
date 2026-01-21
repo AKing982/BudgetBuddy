@@ -154,16 +154,17 @@ public class TransactionController
     }
 
     private String fetchCategory(final String categoryId){
-        if(categoryId == null){
-            LOGGER.warn("Category with ID {} has no category", categoryId);
-            return null;
-        }
-        Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
-        if(categoryEntity.isPresent()){
-            return categoryEntity.get().getPlaidCategoryId();
-        }
-        LOGGER.info("Returning CategoryId: {}", categoryId);
-        return categoryId;
+//        if(categoryId == null){
+//            LOGGER.warn("Category with ID {} has no category", categoryId);
+//            return null;
+//        }
+//        Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
+//        if(categoryEntity.isPresent()){
+//            return categoryEntity.get().getPlaidCategoryId();
+//        }
+//        LOGGER.info("Returning CategoryId: {}", categoryId);
+//        return categoryId;
+        return "";
     }
 
     private List<String> getCategoriesForTransaction(String transactionId, String categoryId){

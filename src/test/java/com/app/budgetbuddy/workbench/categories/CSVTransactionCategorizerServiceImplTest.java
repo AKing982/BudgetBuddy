@@ -4,6 +4,9 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.repositories.CSVAccountRepository;
+import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.services.UserCategoryService;
+import org.junit.Assert;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -24,6 +27,7 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @SpringBootTest
 class CSVTransactionCategorizerServiceImplTest
@@ -37,6 +41,12 @@ class CSVTransactionCategorizerServiceImplTest
     private CSVAccountRepository csvAccountRepository;
 
     @MockBean
+    private CategoryService categoryService;
+
+    @MockBean
+    private UserCategoryService userCategoryService;
+
+    @MockBean
     private TransactionRuleService transactionRuleService;
 
     @BeforeEach
@@ -45,8 +55,8 @@ class CSVTransactionCategorizerServiceImplTest
 
     @Test
     void testCategorize_whenTransactionCSVIsNull(){
-        String categoryType = transactionCSVCategorizerService.categorize(null);
-        Assertions.assertEquals(CategoryType.UNCATEGORIZED.getType(), categoryType);
+        Category categoryType = transactionCSVCategorizerService.categorize(null);
+        assertEquals(Category.createUncategorized().getCategoryName(), categoryType.getCategoryName());
     }
 
     @Test
@@ -54,8 +64,15 @@ class CSVTransactionCategorizerServiceImplTest
         TransactionCSV wincoTransactionCSV = new TransactionCSV();
         wincoTransactionCSV.setMerchantName("WINCO FOODS");
         wincoTransactionCSV.setTransactionAmount(BigDecimal.valueOf(75.00));
-        String categoryType = transactionCSVCategorizerService.categorize(wincoTransactionCSV);
-        assertEquals(CategoryType.GROCERIES.getType(), categoryType);
+
+        Mockito.when(categoryService.getCategoryIdByName("Groceries"))
+                .thenReturn(1L);
+
+        Category categoryType = transactionCSVCategorizerService.categorize(wincoTransactionCSV);
+        Assertions.assertEquals("Groceries", categoryType.getCategoryName());
+        Assertions.assertEquals("SYSTEM",  categoryType.getCategorizedBy());
+        Assertions.assertEquals(1L, categoryType.getCategoryId());
+        assertNotNull(categoryType.getCategorizedDate());
     }
 
     @Test
@@ -63,8 +80,16 @@ class CSVTransactionCategorizerServiceImplTest
         TransactionCSV rentTransactionCSV = new TransactionCSV();
         rentTransactionCSV.setMerchantName("FLEX FINANCE");
         rentTransactionCSV.setTransactionAmount(BigDecimal.valueOf(707.0));
-        String categoryType = transactionCSVCategorizerService.categorize(rentTransactionCSV);
-        assertEquals(CategoryType.RENT.getType(), categoryType);
+
+        Mockito.when(categoryService.getCategoryIdByName("Rent"))
+                .thenReturn(2L);
+
+        Category categoryType = transactionCSVCategorizerService.categorize(rentTransactionCSV);
+
+        Assertions.assertEquals("Rent", categoryType.getCategoryName());
+        Assertions.assertEquals("SYSTEM",  categoryType.getCategorizedBy());
+        Assertions.assertEquals(2L, categoryType.getCategoryId());
+        assertNotNull(categoryType.getCategorizedDate());
     }
 
     @Test
@@ -72,15 +97,23 @@ class CSVTransactionCategorizerServiceImplTest
         TransactionCSV rentTransactionCSV = new TransactionCSV();
         rentTransactionCSV.setMerchantName("FLEX FINANCE");
         rentTransactionCSV.setTransactionAmount(BigDecimal.valueOf(14.99));
-        String categoryType = transactionCSVCategorizerService.categorize(rentTransactionCSV);
-        assertEquals(CategoryType.SUBSCRIPTION.getType(), categoryType);
+
+        Mockito.when(categoryService.getCategoryIdByName("Subscription"))
+                .thenReturn(3L);
+
+        Category categoryType = transactionCSVCategorizerService.categorize(rentTransactionCSV);
+
+        Assertions.assertEquals("Subscription", categoryType.getCategoryName());
+        Assertions.assertEquals("SYSTEM",  categoryType.getCategorizedBy());
+        Assertions.assertEquals(3L, categoryType.getCategoryId());
+        assertNotNull(categoryType.getCategorizedDate());
     }
 
     @ParameterizedTest
     @MethodSource("provideTransactionsForCategorization")
     @DisplayName("Categorize various CSV transactions correctly")
     void testCategorize_withMultipleTransactions(TransactionCSV transactionCSV, CategoryType expectedCategoryType){
-        String categoryType = transactionCSVCategorizerService.categorize(transactionCSV);
+        Category categoryType = transactionCSVCategorizerService.categorize(transactionCSV);
         assertEquals(expectedCategoryType.getType(), categoryType);
     }
 
@@ -163,8 +196,15 @@ class CSVTransactionCategorizerServiceImplTest
 
         Mockito.when(transactionRuleService.findByUserId(anyLong())).thenReturn(wincoShoppingRules);
 
-        String categoryType = transactionCSVCategorizerService.categorize(winco_transaction);
-        assertEquals("Shopping", categoryType);
+        Mockito.when(userCategoryService.getCategoryIdByNameAndUser(anyString(), anyLong()))
+                .thenReturn(1L);
+
+        Category categoryType = transactionCSVCategorizerService.categorize(winco_transaction);
+
+        Assertions.assertEquals("Shopping", categoryType.getCategoryName());
+        Assertions.assertEquals("USER",  categoryType.getCategorizedBy());
+        Assertions.assertEquals(1L, categoryType.getCategoryId());
+        assertNotNull(categoryType.getCategorizedDate());
     }
 
     @Test
@@ -202,9 +242,15 @@ class CSVTransactionCategorizerServiceImplTest
                 .thenReturn(Optional.of(csvAccountEntity));
 
         Mockito.when(transactionRuleService.findByUserId(anyLong())).thenReturn(wincoShoppingRules);
-        String categoryType = transactionCSVCategorizerService.categorize(winco_transaction);
-        assertEquals("Shopping", categoryType);
 
+        Mockito.when(userCategoryService.getCategoryIdByNameAndUser(anyString(), anyLong()))
+                .thenReturn(1L);
+
+        Category categoryType = transactionCSVCategorizerService.categorize(winco_transaction);
+        Assertions.assertEquals("Shopping", categoryType.getCategoryName());
+        Assertions.assertEquals("USER",  categoryType.getCategorizedBy());
+        Assertions.assertEquals(1L, categoryType.getCategoryId());
+        assertNotNull(categoryType.getCategorizedDate());
     }
 
     @ParameterizedTest
@@ -231,7 +277,7 @@ class CSVTransactionCategorizerServiceImplTest
                 .thenReturn(transactionRules);
 
         // Execute
-        String result = transactionCSVCategorizerService.categorize(transactionCSV);
+        Category result = transactionCSVCategorizerService.categorize(transactionCSV);
 
         // Assert
         assertEquals(expectedCategory, result);
