@@ -28,13 +28,8 @@ public class TransactionCategoryEntity
     @JoinColumn(name="csv_transaction_id")
     private CSVTransactionEntity csvTransaction;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="category_id")
-    private CategoryEntity category;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="user_category_id")
-    private UserCategoryEntity userCategory;
+    @Column(name="matched_category")
+    private String matchedCategory;
 
     @Column(name="categorized_by", nullable=false)
     private String categorizedBy;

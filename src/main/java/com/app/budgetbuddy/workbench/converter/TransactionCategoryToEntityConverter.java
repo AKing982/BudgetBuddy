@@ -32,21 +32,10 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
     @Override
     public TransactionCategoryEntity convert(TransactionCategory transactionCategory)
     {
-        CategoryEntity category = getCategoryEntity(transactionCategory.getCategoryId());
-        CategoryEntity categoryEntity = category.isActive()
-                && "SYSTEM".equals(transactionCategory.getCategorizedBy())
-                ? category
-                : null;
-        UserCategoryEntity userCategory = getUserCategoryEntity(transactionCategory.getCategoryId());
-        UserCategoryEntity userCategoryEntity = userCategory.getIsActive()
-                && "USER".equals(transactionCategory.getCategorizedBy())
-                ? userCategory
-                : null;
         return TransactionCategoryEntity.builder()
                 .transaction(getTransactionEntity(transactionCategory.getTransactionId()))
                 .csvTransaction(getCSVTransactionEntity(transactionCategory.getCsvTransactionId()))
-                .category(categoryEntity)
-                .userCategory(userCategoryEntity)
+                .matchedCategory(transactionCategory.getCategory())
                 .categorizedBy(transactionCategory.getCategorizedBy())
                 .categorized_date(transactionCategory.getCategorizedDate())
                 .id(transactionCategory.getId())

@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.workbench.runner;
 
-import com.app.budgetbuddy.domain.CategorySaveData;
-import com.app.budgetbuddy.domain.CategoryType;
-import com.app.budgetbuddy.domain.TransactionCSV;
-import com.app.budgetbuddy.domain.TransactionCategory;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.CSVTransactionService;
 import com.app.budgetbuddy.services.TransactionCategoryService;
 import com.app.budgetbuddy.workbench.categories.CategorizerService;
@@ -45,6 +42,9 @@ class CategoryRunnerTest
     @MockBean
     private CSVTransactionService csvTransactionService;
 
+    @MockBean
+    private TransactionCategoryService transactionCategoryService;
+
     @BeforeEach
     void setUp() {
     }
@@ -63,46 +63,62 @@ class CategoryRunnerTest
         assertTrue(actual.isEmpty());
     }
 
-//    @Test
-//    void testCategorizeCSVTransactionsByRange_whenCSVTransactionsFound_thenReturnCategorizedTransactions()
-//    {
-//        Long userId = 1L;
-//        LocalDate startDate = LocalDate.of(2025, 11, 1);
-//        LocalDate endDate = LocalDate.of(2026, 1, 1);
-//
-//        TransactionCSV transaction1 = createCSVTransaction(BigDecimal.valueOf(29.770), "PIN PURCHASE", "WINCO FOODS #15 WINCO11969 S CARLSBAD");
-//        TransactionCSV transaction2 = createCSVTransaction(BigDecimal.valueOf(1220.030), "Purchase", "Flexible Finance Inc.");
-//        TransactionCSV transaction3 = createCSVTransaction( BigDecimal.valueOf(1956.520), "L3 TECHNOLOGIES PAYROLL", "L3 TECHNOLOGIES PAYROLL");
-//        TransactionCSV transaction4 = createCSVTransaction(BigDecimal.valueOf(14.950), "Purchase", "OLIVE GARDEN 0021815   SOUTH JORDAN UTUS");
-//
-//        List<TransactionCSV> expected = createExpectedCSVTransactions();
-//
-//        Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
-//                .thenReturn(expected);
-//
-//        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.GROCERIES.);
-//        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.RENT.getType());
-//        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.INCOME.getType());
-//        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(CategoryType.ORDER_OUT.getType());
-//
-//        TransactionCSV updatedTransaction1 = createCSVTransaction("WINCO FOODS", BigDecimal.valueOf(29.770), "PIN PURCHASE", "Groceries", "WINCO FOODS #15 WINCO11969 S CARLSBAD");
-//        TransactionCSV updatedTransaction2 = createCSVTransaction("Flexible Finance", BigDecimal.valueOf(1220.030), "Purchase", "Rent", "Flexible Finance Inc.");
-//        TransactionCSV updatedTransaction3 = createCSVTransaction("L3 TECHNOLOGIES", BigDecimal.valueOf(1956.520), "L3 TECHNOLOGIES PAYROLL", "Income", "L3 TECHNOLOGIES PAYROLL");
-//        TransactionCSV updatedTransaction4 = createCSVTransaction("OLIVE GARDEN", BigDecimal.valueOf(14.950), "Purchase", "Order Out","OLIVE GARDEN 0021815  SOUTH JORDAN UTUS");
-//
-//        Mockito.when(csvTransactionService.updateTransactionCSVCategoryAndMerchantName(1L, "Groceries", "WINCO FOODS"))
-//                        .thenReturn(Optional.of(updatedTransaction1));
-//        Mockito.when(csvTransactionService.updateTransactionCSVCategoryAndMerchantName(2L, "Rent", "Flexible Finance"))
-//                        .thenReturn(Optional.of(updatedTransaction2));
-//        Mockito.when(csvTransactionService.updateTransactionCSVCategoryAndMerchantName(3L, "Income", "L3 TECHNOLOGIES"))
-//                        .thenReturn(Optional.of(updatedTransaction3));
-//        Mockito.when(csvTransactionService.updateTransactionCSVCategoryAndMerchantName(4L, "Order Out", "OLIVE GARDEN"))
-//                .thenReturn(Optional.of(updatedTransaction4));
-//
-//        List<TransactionCSV> actual = categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
-//        assertNotNull(actual);
-//        Assertions.assertEquals(expected, actual);
-//    }
+    @Test
+    void testCategorizeCSVTransactionsByRange_whenCSVTransactionsFound_thenReturnCategorizedTransactions()
+    {
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2025, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 1, 1);
+
+        TransactionCSV transaction1 = createCSVTransaction(BigDecimal.valueOf(29.770), "PIN PURCHASE", "WINCO FOODS #15 WINCO11969 S CARLSBAD");
+        TransactionCSV transaction2 = createCSVTransaction(BigDecimal.valueOf(1220.030), "Purchase", "Flexible Finance Inc.");
+        TransactionCSV transaction3 = createCSVTransaction( BigDecimal.valueOf(1956.520), "L3 TECHNOLOGIES PAYROLL", "L3 TECHNOLOGIES PAYROLL");
+        TransactionCSV transaction4 = createCSVTransaction(BigDecimal.valueOf(14.950), "Purchase", "OLIVE GARDEN 0021815   SOUTH JORDAN UTUS");
+
+        List<TransactionCSV> expected = createExpectedCSVTransactions();
+        expected.add(transaction1);
+        expected.add(transaction2);
+        expected.add(transaction3);
+        expected.add(transaction4);
+
+        Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
+                .thenReturn(expected);
+
+        Category groceriesCategory = Category.builder()
+                        .categoryId(1L)
+                        .categorizedBy("SYSTEM")
+                        .categoryName("Groceries")
+                        .categorizedDate(LocalDate.of(2025, 10, 1))
+                        .build();
+        Category rentCategory = Category.builder()
+                        .categorizedBy("SYSTEM")
+                        .categorizedDate(LocalDate.of(2025, 10, 1))
+                        .categoryId(2L)
+                        .categoryName("Rent")
+                        .build();
+        Category incomeCategory = Category.builder()
+                        .categorizedBy("SYSTEM")
+                        .categoryName("Income")
+                        .categorizedDate(LocalDate.of(2025, 10, 1))
+                        .categoryId(3L)
+                        .build();
+        Category orderOut = Category.builder()
+                        .categorizedBy("SYSTEM")
+                        .categoryId(4L)
+                        .categoryName("Order Out")
+                        .categorizedDate(LocalDate.of(2025, 10, 1))
+                        .build();
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(groceriesCategory);
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(rentCategory);
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(incomeCategory);
+        Mockito.when(csvCategorizerService.categorize(any(TransactionCSV.class))).thenReturn(orderOut);
+
+
+
+        List<TransactionCategory> actual = categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
+        assertNotNull(actual);
+        Assertions.assertEquals(expected, actual);
+    }
 
     @Test
     void testCategorizeSingleCSVTransaction_whenCategorySaveDataIsNull_thenReturnEmptyOptional(){

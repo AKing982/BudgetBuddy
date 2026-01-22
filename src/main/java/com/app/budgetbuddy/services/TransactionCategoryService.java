@@ -12,11 +12,9 @@ public interface TransactionCategoryService extends ServiceModel<TransactionCate
     void saveAll(List<TransactionCategory> transactionCategoryList);
 
     TransactionCategoryEntity convertToEntity(TransactionCategory transactionCategory);
-
-    TransactionCategory getTransactionCategoryByCsvId(Long csvId, Long categoryId);
     TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity);
 
-    Optional<TransactionCategory> getTransactionCategoryById(Long categoryId, Long csvId);
+    Optional<TransactionCategory> getTransactionCategoryByCsvIdAndCatName(String category, Long csvId);
     void updateTransactionCategoriesByIdAndCategory(String category, Long id);
     List<TransactionCategory> getTransactionCategoryListByTransactionIds(List<String> transactionIds);
     List<TransactionCategory> getTransactionCategoriesBetweenStartAndEndDates(LocalDate startDate, LocalDate endDate, Long userId);

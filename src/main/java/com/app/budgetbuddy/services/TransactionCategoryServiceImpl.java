@@ -98,41 +98,29 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
-    @Transactional
-    public TransactionCategory getTransactionCategoryByCsvId(Long csvId, Long categoryId)
-    {
-        try
-        {
-            Optional<TransactionCategoryEntity> transactionCategoryEntity = transactionCategoryRepository.findTransactionCategoryByCategoryId(csvId, categoryId);
-            if(transactionCategoryEntity.isEmpty())
-            {
-                throw new IllegalArgumentException("No Transaction Category found");
-            }
-            TransactionCategoryEntity transactionCategory = transactionCategoryEntity.get();
-            return transactionCategoryConverter.convert(transactionCategory);
-        }catch(DataAccessException e){
-            log.error("There was an error fetching the TransactionCategory entity", e);
-            throw e;
-        }
-    }
-
-    @Override
     public TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity)
     {
         return transactionCategoryConverter.convert(transactionCategoryEntity);
     }
 
     @Override
-    public Optional<TransactionCategory> getTransactionCategoryById(Long categoryId, Long csvId)
+    public Optional<TransactionCategory> getTransactionCategoryByCsvIdAndCatName(String category, Long csvId)
     {
         try
         {
-
+            Optional<TransactionCategoryEntity> transactionCategoryEntityOptional = transactionCategoryRepository.findTransactionCategoryByCategoryAndId(category, csvId);
+            if(transactionCategoryEntityOptional.isEmpty())
+            {
+                log.info("No Transaction Category found for given category and csv Id");
+                return Optional.empty();
+            }
+            TransactionCategoryEntity transactionCategoryEntity = transactionCategoryEntityOptional.get();
+            TransactionCategory transactionCategory = transactionCategoryConverter.convert(transactionCategoryEntity);
+            return Optional.of(transactionCategory);
         }catch(DataAccessException e){
             log.error("There was an error while getting the TransactionCategory entity", e);
             return Optional.empty();
         }
-        return Optional.empty();
     }
 
     @Override

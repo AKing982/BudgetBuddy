@@ -26,18 +26,14 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
             "ORDER BY tc.id")
     List<TransactionCategoryEntity> findTransactionCategoryByTransactionIds(@Param("transactionIds") List<String> transactionIds);
 
-
-    @Query("SELECT tce FROM TransactionCategoryEntity tce WHERE tce.csvTransaction.id =:id AND tce.userCategory.id =:uId")
-    Optional<TransactionCategoryEntity> findTransactionCategoryByIdAndUserCategoryId(@Param("id") Long id, @Param("uId") Long uId);
-
-    @Query("SELECT tce FROM TransactionCategoryEntity tce WHERE tce.csvTransaction.id =:id AND tce.category.id =:catId")
-    Optional<TransactionCategoryEntity> findTransactionCategoryByCategoryId(@Param("id") Long id, @Param("catId") Long categoryId);
+    @Query("SELECT tce FROM TransactionCategoryEntity tce WHERE tce.matchedCategory =:category AND tce.csvTransaction.id =:id")
+    Optional<TransactionCategoryEntity> findTransactionCategoryByCategoryAndId(@Param("category") String category, @Param("id") Long id);
 
     @Modifying
-    @Query("UPDATE TransactionCategoryEntity tce SET tce.category =:category WHERE tce.csvTransaction.id =:id")
+    @Query("UPDATE TransactionCategoryEntity tce SET tce.matchedCategory =:category WHERE tce.csvTransaction.id =:id")
     void updateTransactionCategoryByIdAndCategory(@Param("id") Long id, @Param("category") String category);
 
     @Modifying
-    @Query("UPDATE TransactionCategoryEntity tce SET tce.category =:category WHERE tce.category.id IS NOT NULL AND tce.id =:id")
+    @Query("UPDATE TransactionCategoryEntity tce SET tce.matchedCategory =:category WHERE tce.matchedCategory IS NOT NULL AND tce.id =:id")
     void updateTransactionCategoryByIdNotCategory(@Param("category") String category);
 }

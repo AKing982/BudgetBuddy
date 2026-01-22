@@ -11,14 +11,11 @@ public class TransactionCategoryConverter implements Converter<TransactionCatego
     @Override
     public TransactionCategory convert(TransactionCategoryEntity transactionCategoryEntity)
     {
-        String categoryName = (transactionCategoryEntity.getCategory() != null) ? transactionCategoryEntity.getCategory().getCategory() : transactionCategoryEntity.getUserCategory().getCategory();
-        Long categoryId = (transactionCategoryEntity.getCategory() != null) ?  transactionCategoryEntity.getCategory().getId() : transactionCategoryEntity.getUserCategory().getId();
         return TransactionCategory.builder()
                 .categorizedDate(transactionCategoryEntity.getCategorized_date())
                 .csvTransactionId(transactionCategoryEntity.getCsvTransaction().getId())
                 .categorizedBy(transactionCategoryEntity.getCategorizedBy())
-                .category(categoryName)
-                .categoryId(categoryId)
+                .category(transactionCategoryEntity.getMatchedCategory())
                 .transactionId(transactionCategoryEntity.getTransaction().getId())
                 .build();
     }

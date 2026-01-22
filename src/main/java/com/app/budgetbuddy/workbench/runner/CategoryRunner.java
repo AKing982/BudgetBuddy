@@ -71,9 +71,8 @@ public class CategoryRunner
             }
             Long transactionId = parseTransactionId(categorySaveData.transactionId());
             transactionCategoryService.updateTransactionCategoriesByIdAndCategory(category, transactionId);
+            return transactionCategoryService.getTransactionCategoryByCsvIdAndCatName(category, transactionId);
 
-            Optional<TransactionCategory> transactionCategoryOptional = transactionCategoryService.find
-            return null;
         }catch(CategoryRunnerException e){
             log.error("There was an error categorizing the category save data: {}", e.getMessage());
             return Optional.empty();
@@ -112,7 +111,6 @@ public class CategoryRunner
                 String categoryName = category.getCategoryName();
                 TransactionCategory transactionCategory = TransactionCategory.builder()
                         .category(categoryName)
-                        .categoryId(category.getCategoryId())
                         .csvTransactionId(csvTransactionId)
                         .categorizedDate(category.getCategorizedDate())
                         .createdAt(LocalDateTime.now())

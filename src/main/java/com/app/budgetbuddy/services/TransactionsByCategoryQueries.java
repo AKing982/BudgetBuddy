@@ -69,7 +69,7 @@ public class TransactionsByCategoryQueries
 
     public List<TransactionsByCategory> getTransactionsByCategoryListByDate(final Long userId, final LocalDate date)
     {
-        final String transactionsByCategoryDateQuery = "SELECT tc.category, tc.transaction.id " +
+        final String transactionsByCategoryDateQuery = "SELECT tc.matchedCategory, tc.transaction.id " +
                 "FROM TransactionCategoryEntity tc " +
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
@@ -91,7 +91,7 @@ public class TransactionsByCategoryQueries
 
     public List<TransactionsByCategory> getTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
-        final String transactionsByCategoryQuery =  "SELECT tc.category, tc.transaction.id " +
+        final String transactionsByCategoryQuery =  "SELECT tc.matchedCategory, tc.transaction.id " +
                 "FROM TransactionCategoryEntity tc " +
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
@@ -115,12 +115,12 @@ public class TransactionsByCategoryQueries
 
     public List<Transaction> getTransactionsByCategory(final String category, final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
-        final String categoryToTransactionIdQuery = "SELECT tc.category, tc.transaction.id " +
+        final String categoryToTransactionIdQuery = "SELECT tc.matchedCategory, tc.transaction.id " +
                 "FROM TransactionCategoryEntity tc " +
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
                 "WHERE a.user.id = :userId " +
-                "AND t.posted BETWEEN :startDate AND :endDate AND tc.category = :category";
+                "AND t.posted BETWEEN :startDate AND :endDate AND tc.matchedCategory = :category";
         try
         {
             List<Object[]> queryResults = entityManager.createQuery(categoryToTransactionIdQuery, Object[].class)
