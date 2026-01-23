@@ -130,24 +130,24 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         }
     }
 
-    @Override
-    @Transactional
-    public Optional<TransactionCSV> updateTransactionCSVByCategory(Long transactionId, String category)
-
-    {
-        if(transactionId == null || category == null)
-        {
-            return Optional.empty();
-        }
-        try
-        {
-            csvTransactionRepository.updateCSVTransactionEntityCategory(category, transactionId);
-            return findTransactionCSVById(transactionId);
-        }catch(DataAccessException e){
-            log.error("There was an error updating the transaction CSV by category: ", e);
-            return Optional.empty();
-        }
-    }
+//    @Override
+//    @Transactional
+//    public Optional<TransactionCSV> updateTransactionCSVByCategory(Long transactionId, String category)
+//
+//    {
+//        if(transactionId == null || category == null)
+//        {
+//            return Optional.empty();
+//        }
+//        try
+//        {
+//            csvTransactionRepository.updateCSVTransactionEntityCategory(category, transactionId);
+//            return findTransactionCSVById(transactionId);
+//        }catch(DataAccessException e){
+//            log.error("There was an error updating the transaction CSV by category: ", e);
+//            return Optional.empty();
+//        }
+//    }
 
     @Override
     @Transactional
@@ -163,7 +163,6 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
             CSVTransactionEntity csvTransactionEntity = csvTransactionEntityOptional.get();
             TransactionCSV transactionCSV = new TransactionCSV();
             transactionCSV.setId(csvTransactionEntity.getId());
-            transactionCSV.setCategory(csvTransactionEntity.getCategory());
             transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
             transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
             transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
@@ -177,42 +176,41 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         }
     }
 
-    @Override
-    @Transactional
-    public Optional<TransactionCSV> updateTransactionCSVCategoryAndMerchantName(Long transactionId, String merchantName, String category)
-    {
-        try
-        {
-            // Update the Transaction with the category
-            csvTransactionRepository.updateCSVTransactionEntityCategoryAndMerchantName(category, merchantName, transactionId);
-
-            // Fetch the same CSV Transaction
-            Optional<CSVTransactionEntity> updateCSVTransactionWithCategory = csvTransactionRepository.findById(transactionId);
-            if(updateCSVTransactionWithCategory.isEmpty())
-            {
-                log.error("There was an error updating the transaction CSV category: No CSV Transaction Entity was found with the transaction id: {}", transactionId);
-                return Optional.empty();
-            }
-            CSVTransactionEntity csvTransactionEntity = updateCSVTransactionWithCategory.get();
-            TransactionCSV transactionCSV = new TransactionCSV();
-            transactionCSV.setId(csvTransactionEntity.getId());
-            transactionCSV.setCategory(csvTransactionEntity.getCategory());
-            transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
-            transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
-            transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
-            transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
-            transactionCSV.setDescription(csvTransactionEntity.getDescription());
-            transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
-            transactionCSV.setBalance(csvTransactionEntity.getBalance());
-
-            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
-            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
-            return Optional.of(transactionCSV);
-        }catch(DataAccessException e){
-            log.error("There was an error updating the transaction CSV category: ", e);
-            return Optional.empty();
-        }
-    }
+//    @Override
+//    @Transactional
+//    public Optional<TransactionCSV> updateTransactionCSVCategoryAndMerchantName(Long transactionId, String merchantName, String category)
+//    {
+//        try
+//        {
+//            // Update the Transaction with the category
+//            csvTransactionRepository.updateCSVTransactionEntityCategoryAndMerchantName(category, merchantName, transactionId);
+//
+//            // Fetch the same CSV Transaction
+//            Optional<CSVTransactionEntity> updateCSVTransactionWithCategory = csvTransactionRepository.findById(transactionId);
+//            if(updateCSVTransactionWithCategory.isEmpty())
+//            {
+//                log.error("There was an error updating the transaction CSV category: No CSV Transaction Entity was found with the transaction id: {}", transactionId);
+//                return Optional.empty();
+//            }
+//            CSVTransactionEntity csvTransactionEntity = updateCSVTransactionWithCategory.get();
+//            TransactionCSV transactionCSV = new TransactionCSV();
+//            transactionCSV.setId(csvTransactionEntity.getId());
+//            transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
+//            transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
+//            transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
+//            transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
+//            transactionCSV.setDescription(csvTransactionEntity.getDescription());
+//            transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
+//            transactionCSV.setBalance(csvTransactionEntity.getBalance());
+//
+//            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
+//            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
+//            return Optional.of(transactionCSV);
+//        }catch(DataAccessException e){
+//            log.error("There was an error updating the transaction CSV category: ", e);
+//            return Optional.empty();
+//        }
+//    }
 
     @Override
     @Transactional
@@ -230,7 +228,6 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
             transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
             transactionCSV.setDescription(csvTransactionEntity.getDescription());
             transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
-            transactionCSV.setCategory(csvTransactionEntity.getCategory());
             transactionCSV.setBalance(csvTransactionEntity.getBalance());
             transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
             transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());

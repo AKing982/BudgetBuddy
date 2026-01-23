@@ -15,10 +15,6 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
 {
 
     @Modifying
-    @Query("UPDATE CSVTransactionEntity cte SET cte.category =:category, cte.merchantName =:merchant WHERE cte.id =:id")
-    void updateCSVTransactionEntityCategoryAndMerchantName(@Param("category") String category, @Param("merchant") String merchant, @Param("id") Long id);
-
-    @Modifying
     @Query("UPDATE CSVTransactionEntity cte SET cte.merchantName =:merchantName WHERE cte.id =:id")
     void updateCSVTransactionEntityMerchantName(@Param("merchantName") String merchantName, @Param("id") Long id);
 
@@ -34,10 +30,6 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
            "AND c.transactionDate >= :startDate " +
            "AND c.transactionDate <= :endDate")
     boolean existsByUserAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-
-    @Modifying
-    @Query("UPDATE CSVTransactionEntity cte SET cte.category =:category, cte.isSystemCategorized = TRUE WHERE cte.id =:id")
-    void updateCSVTransactionEntityCategory(@Param("category") String category, @Param("id") Long id);
 
     @Query("SELECT ct FROM CSVTransactionEntity ct WHERE ct.transactionDate BETWEEN :startDate AND :endDate AND ct.csvAccount.id =:acctId")
     List<CSVTransactionEntity> findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(@Param("acctId") Long acctId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);

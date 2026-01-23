@@ -45,9 +45,6 @@ public class CSVTransactionEntity
     @Column(name="balance")
     private BigDecimal balance;
 
-    @Column(name="category")
-    private String category;
-
     @Column(name="isSystemCategorized")
     private boolean isSystemCategorized;
 }
