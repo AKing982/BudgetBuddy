@@ -176,6 +176,7 @@ public class BudgetCategoryRunner
                 .map(csv -> Transaction.builder()
                         .transactionId("csv-" + csv.getId())
                         .amount(csv.getTransactionAmount())
+                        .categories(List.of())
                         .accountId(csv.getAccount())
                         .description(csv.getDescription())
                         .date(csv.getTransactionDate())
