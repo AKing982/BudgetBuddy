@@ -79,7 +79,7 @@ public class TransactionCategoryQueries
     {
         final String query = """
                 SELECT cte.id, tc.matchedCategory, cte.merchantName, cte.description, cte.extendedDescription,
-                cte.transactionAmount, cte.balance, cte.transactionDate, cae.suffix, cae.accountName, cae.accountNumber
+                cte.transactionAmount, cte.balance, cte.transactionDate, cae.suffix, cae.accountName
                 FROM TransactionCategoryEntity tc
                 INNER JOIN CSVTransactionEntity cte
                    ON tc.csvTransaction.id = cte.id
@@ -109,9 +109,8 @@ public class TransactionCategoryQueries
                         .category((String) result[1])
                         .transactionAmount((BigDecimal) result[5])
                         .transactionDate((LocalDate) result[7])
-                        .electronicTransactionDate((LocalDate) result[7])
                         .balance((BigDecimal) result[6])
-                        .account((String) result[11])
+                        .account((String) result[9])
                         .merchantName((String) result[2])
                         .suffix((Integer) result[8])
                         .extendedDescription((String) result[4])

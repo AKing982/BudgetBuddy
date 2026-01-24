@@ -91,21 +91,12 @@ public class TransactionsByCategoryQueries
 
     public List<TransactionsByCategory> getTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
-        final String transactionsByCategoryQuery =  "SELECT tc.matchedCategory, tc.transaction.id " +
+        final String transactionsByCategoryQuery =  "SELECT tc.matchedCategory, CAST(t.id as long) " +
                 "FROM TransactionCategoryEntity tc " +
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
                 "WHERE a.user.id = :userId " +
-                "AND t.posted BETWEEN :startDate AND :endDate " +
-                "UNION " +
-                "SELECT tc.matchedCategory, cte.id " +
-                "FROM TransactionCategoryEntity tc " +
-                "INNER JOIN CSVTransactionEntity cte " +
-                " ON tc.csvTransaction.id = cte.id " +
-                "INNER JOIN CSVAccountEntity cae " +
-                " ON cte.csvAccount.id = cae.id " +
-                "WHERE cte.transactionDate BETWEEN :startDate AND :endDate " +
-                "AND cae.user.id = :userId";
+                "AND t.posted BETWEEN :startDate AND :endDate";
         try
         {
             List<Object[]> queryResults = entityManager.createQuery(transactionsByCategoryQuery, Object[].class)

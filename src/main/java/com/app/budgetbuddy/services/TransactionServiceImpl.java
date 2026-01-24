@@ -615,7 +615,6 @@ public class TransactionServiceImpl implements TransactionService
     {
         try
         {
-            log.info("Fetching TransactionID: {}", transactionId);
             Optional<TransactionsEntity> transactionsEntity = transactionRepository.findTransactionByTransactionId(transactionId);
             if(transactionsEntity.isEmpty())
             {

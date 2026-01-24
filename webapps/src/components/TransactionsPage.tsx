@@ -60,6 +60,7 @@ import { Transaction, CSVTransaction } from "../utils/Items";
 import CategoryDialog, {CategorySaveData} from "./CategoryDialog";
 import CategoryService from "../services/CategoryService";
 import UserCategoryService from "../services/UserCategoryService";
+import TransactionCategoryService from "../services/TransactionCategoryService";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -101,6 +102,7 @@ const TransactionsPage: React.FC = () => {
     const [customCategories, setCustomCategories] = useState<string[]>([]);
     const categoryService = CategoryService.getInstance();
     const transactionService = TransactionService.getInstance();
+    const transactionCategoryService = TransactionCategoryService.getInstance();
     const userCategoryService = UserCategoryService.getInstance();
 
     const theme = useTheme();
@@ -125,11 +127,11 @@ const TransactionsPage: React.FC = () => {
                 let endDate = new Date().toISOString().split('T')[0];
                 console.log('Start Date: ', startDate);
                 console.log('End Date: ', endDate);
-                const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
+                // const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
                 // const csvTransactionResponse: CSVTransaction[] = await categoryService.fetchCategorizedCSVTransactions(userId, startDate, endDate);
-                const csvTransactionResponse = await transactionService.fetchCSVTransactionsByUserAndDateRange(userId, startDate, endDate);
+                const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDate, endDate);
                 console.log('CSV Transaction Response:', csvTransactionResponse);
-                setTransactions(transactionResponse || []);
+                // setTransactions(transactionResponse || []);
                 setCsvTransactions(csvTransactionResponse);
             } catch(error) {
                 console.error('Error fetching transactions:', error);
@@ -218,17 +220,10 @@ const TransactionsPage: React.FC = () => {
                     )
                 );
             }
-            // // Also update CSV transactions if needed
-            // setCsvTransactions(prevCsvTransactions =>
-            //     prevCsvTransactions.map(csvTx =>
-            //         `csv-${csvTx.id}` === data.transactionId
-            //             ? { ...csvTx, category: data.category }
-            //             : csvTx
-            //     )
-            // );
-
             // TODO: Call your API to save the category to the database
-            const transactionResponse = await transactionService.updateCSVTransactionWithCategorySaveData(data);
+            // const transactionResponse = await transactionService.updateCSVTransactionWithCategorySaveData(data);
+            const userId = Number(sessionStorage.getItem('userId'));
+            const transactionResponse = await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
             console.log('Updated CSV Transaction response: ', transactionResponse);
 
             console.log('Category saved:', data);

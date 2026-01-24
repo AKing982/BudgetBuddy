@@ -115,6 +115,7 @@ public class BudgetCategoryThreadService
         LocalDate weekStart = budgetScheduleRange.getStartRange();
         LocalDate weekEnd = budgetScheduleRange.getEndRange();
         Long subBudgetId = subBudget.getId();
+        log.info("Category Transactions: {}", categoryTransactions);
         try
         {
             List<BudgetCategory> existingBudgetCategories = budgetCategoryService.getBudgetCategoryListByBudgetIdAndDateRange(subBudgetId, weekStart, weekEnd);
