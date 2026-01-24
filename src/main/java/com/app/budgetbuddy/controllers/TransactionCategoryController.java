@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/transaction-category")
@@ -30,15 +31,16 @@ public class TransactionCategoryController
 
     @PutMapping("/update/category")
     public ResponseEntity<TransactionCSV> updateCSVTransactionCategory(@RequestParam Long csvTransactionId,
-                                                                       @RequestParam String category)
+                                                                       @RequestParam String category,
+                                                                       @RequestParam Long userId)
     {
         try
         {
             log.info("Updating TransactionCategory with csv Id {} with updated category {}", csvTransactionId, category);
             transactionCategoryService.updateTransactionCategoriesByIdAndCategory(category, csvTransactionId);
             log.info("Updated TransactionCategory with csv Id {}", csvTransactionId);
-
-
+            Optional<TransactionCSV> transactionCSVOptional = transactionCategoryQueries.getSingleTransactionCSVWithCategory(csvTransactionId, userId);
+            return transactionCSVOptional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
         }catch(Exception ex){
             log.error("Exception in updateCSVTransactionCategory", ex);
             return ResponseEntity.internalServerError().build();

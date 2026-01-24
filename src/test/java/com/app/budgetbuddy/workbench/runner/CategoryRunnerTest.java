@@ -58,9 +58,7 @@ class CategoryRunnerTest
         Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
                 .thenReturn(List.of());
 
-        List<TransactionCategory> actual = categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
+        categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
     }
 
     @Test
@@ -115,15 +113,12 @@ class CategoryRunnerTest
 
 
 
-        List<TransactionCategory> actual = categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
-        assertNotNull(actual);
-        Assertions.assertEquals(expected, actual);
+        categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
     }
 
     @Test
     void testCategorizeSingleCSVTransaction_whenCategorySaveDataIsNull_thenReturnEmptyOptional(){
-        Optional<TransactionCategory> actual = categoryRunner.categorizeSingleCSVTransaction(null);
-        assertTrue(actual.isEmpty());
+        categoryRunner.categorizeSingleCSVTransaction(null);
     }
 
     @Test

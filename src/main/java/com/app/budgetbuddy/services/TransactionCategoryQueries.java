@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +27,52 @@ public class TransactionCategoryQueries
     {
         this.transactionCategoryService = transactionCategoryService;
         this.em = em;
+    }
+
+    private TransactionCSV convertObjectToCSV(Object[] result)
+    {
+        Long id = (Long) result[0];
+        String merchantName = (String) result[1];
+        BigDecimal transactionAmount = (BigDecimal) result[2];
+        LocalDate transactionDate = (LocalDate) result[3];
+        int suffix = (Integer) result[4];
+        String accountName = (String) result[5];
+        BigDecimal balance = (BigDecimal) result[6];
+
+        return TransactionCSV.builder()
+                .id(id)
+                .merchantName(merchantName)
+                .transactionAmount(transactionAmount)
+                .transactionDate(transactionDate)
+                .suffix(suffix)
+                .account(accountName)
+                .balance(balance)
+                .build();
+    }
+
+    public Optional<TransactionCSV> getSingleTransactionCSVWithCategory(final Long csvId, final Long userId)
+    {
+        final String csvTransactionCategoryQuery = """
+                SELECT cte.id, cte.merchantName, cte.transactionAmount, cte.transactionDate, cae.suffix, cae.accountName,
+                cte.balance
+                FROM TransactionCategoryEntity tc
+                INNER JOIN CSVTransactionEntity cte
+                    ON tc.csvTransaction.id = cte.id
+                INNER JOIN CSVAccountEntity cae
+                    ON cte.csvAccount.id = cae.id
+                WHERE cte.id = :csvId AND cae.user.id = :userId
+                """;
+        try
+        {
+            Object[] result = em.createQuery(csvTransactionCategoryQuery, Object[].class)
+                    .setParameter("csvId", csvId)
+                    .setParameter("userId", userId)
+                    .getSingleResult();
+            return Optional.of(convertObjectToCSV(result));
+        }catch(DataAccessException ex){
+            log.error("There was an error fetching the transaction csv list by category {}: ", ex.getMessage());
+            return Optional.empty();
+        }
     }
 
     public List<TransactionCSV> getTransactionCSVByCategoryList(final LocalDate startDate, final LocalDate endDate, final Long userID)

@@ -17,6 +17,7 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@Deprecated
 public class AutoCategorizeTransactionService
 {
     private final TransactionRuleService transactionRuleService;

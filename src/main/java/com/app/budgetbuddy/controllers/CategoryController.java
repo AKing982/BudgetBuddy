@@ -49,19 +49,31 @@ public class CategoryController
     @PostMapping("/categorize/transaction")
     public ResponseEntity<TransactionCSV> categorizeCSVTransaction(@RequestBody @NotNull CategorySaveData categorySaveData)
     {
-        return null;
+        try
+        {
+            categoryRunner.categorizeSingleCSVTransaction(categorySaveData);
+            log.info("Successfully categorized csv transaction with category save data: {}", categorySaveData);
+
+            // TODO: Add code to fetch the categorized transaction CSV list
+
+            return ResponseEntity.ok().build();
+        }catch(CategoryRunnerException e){
+            log.error("There was an error categorizing the CSV transaction: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping("/categorize/{userId}/csv")
-    public ResponseEntity<List<TransactionCategory>> categorizeCSVTransactionsByUserId(@PathVariable Long userId,
+    public ResponseEntity<List<TransactionCSV>> categorizeCSVTransactionsByUserId(@PathVariable Long userId,
                                                                                   @RequestParam LocalDate startDate,
                                                                                   @RequestParam LocalDate endDate)
     {
         try
         {
-            List<TransactionCategory> categorizedTransactionCSVs = categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
-            log.info("Categorized {} transactions for user {} between {} and {}", categorizedTransactionCSVs.size(), userId, startDate, endDate);
-            return ResponseEntity.ok(categorizedTransactionCSVs);
+            categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
+            log.info("Successfully categorized CSV transactions for user {} between {} and {}", userId, startDate, endDate);
+            //TODO: Add code to fetch the transaction csv list
+            return ResponseEntity.ok().build();
         }catch(CategoryRunnerException e){
             log.error("There was an error running the category runner for user {} between {} and {}: ", userId, startDate, endDate, e);
             return ResponseEntity.internalServerError().build();

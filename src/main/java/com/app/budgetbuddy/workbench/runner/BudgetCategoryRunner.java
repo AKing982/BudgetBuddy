@@ -19,36 +19,17 @@ import java.util.stream.Collectors;
 public class BudgetCategoryRunner
 {
     private final TransactionsByCategoryService transactionsByCategoryService;
-    private final CSVTransactionsThreadService csvTransactionsThreadService;
     private final BudgetCategoryThreadService budgetCategoryThreadService;
     private final SubBudgetGoalsService subBudgetGoalsService;
 
     @Autowired
     public BudgetCategoryRunner(TransactionsByCategoryService transactionsByCategoryService,
-                                CSVTransactionsThreadService csvTransactionsThreadService,
                                 BudgetCategoryThreadService budgetCategoryThreadService,
                                 SubBudgetGoalsService subBudgetGoalsService)
     {
         this.transactionsByCategoryService = transactionsByCategoryService;
-        this.csvTransactionsThreadService = csvTransactionsThreadService;
         this.budgetCategoryThreadService = budgetCategoryThreadService;
         this.subBudgetGoalsService = subBudgetGoalsService;
-    }
-
-    private List<CSVTransactionsByCategory> getCSVTransactionsByCategoryListByMonth(final SubBudget subBudget)
-    {
-        LocalDate startDate = subBudget.getStartDate();
-        LocalDate endDate = subBudget.getEndDate();
-        Long userId = subBudget.getBudget().getUserId();
-        try
-        {
-            CompletableFuture<List<CSVTransactionsByCategory>> future = csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(userId, startDate, endDate);
-            return future.join();
-        }catch(CompletionException e)
-        {
-            log.error("There was an error fetching csv transactions by category list", e);
-            return Collections.emptyList();
-        }
     }
 
     private List<TransactionsByCategory> getTransactionsByCategoryListByBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final Long userId)
@@ -61,20 +42,6 @@ public class BudgetCategoryRunner
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error fetching transactions by category list for budget schedule range {}", budgetScheduleRange, e);
-            return Collections.emptyList();
-        }
-    }
-
-    private List<CSVTransactionsByCategory> getCSVTransactionsByCategoryListByBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final Long userId)
-    {
-        LocalDate budgetWeekStart = budgetScheduleRange.getStartRange();
-        LocalDate budgetWeekEnd = budgetScheduleRange.getEndRange();
-        try
-        {
-            CompletableFuture<List<CSVTransactionsByCategory>> future = csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(userId, budgetWeekStart, budgetWeekEnd);
-            return future.join();
-        }catch(CompletionException e){
-            log.error("There was an error fetching csv transactions by category list for budget schedule range {}", budgetScheduleRange, e);
             return Collections.emptyList();
         }
     }
@@ -140,12 +107,9 @@ public class BudgetCategoryRunner
             Long subBudgetId = subBudget.getId();
             SubBudgetGoals subBudgetGoals1 = subBudgetGoalsService.getSubBudgetGoalsEntitiesBySubBudgetId(subBudgetId);
             List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByMonth(subBudget);
-            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getCSVTransactionsByCategoryListByMonth(subBudget);
             // Merge TransactionsByCategory and CSVTransactionsByCategory into TransactionsByCategory
-            List<TransactionsByCategory> mergedTransactionsByCategoryList = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategoryList, csvTransactionsByCategoryList);
             log.info("Starting Thread for async budget category creation");
-            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(subBudget, subBudgetGoals1, mergedTransactionsByCategoryList);
-
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByMonth(subBudget, subBudgetGoals1, transactionsByCategoryList);
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error fetching budget category list", e);
@@ -153,15 +117,15 @@ public class BudgetCategoryRunner
         }
     }
 
-    private List<TransactionsByCategory> mergeTransactionsByCategoryAndCSVTransactionsByCategory(List<TransactionsByCategory> transactionsByCategoryList, List<CSVTransactionsByCategory> csvTransactionsByCategoryList)
-    {
-        List<TransactionsByCategory> convertedCSVTransactionsByCategory = csvTransactionsByCategoryList.stream()
-                .map(this::convertCSVTransactionsByCategory)
-                .toList();
-        List<TransactionsByCategory> mergedTransactionsByCategoryList = new ArrayList<>(transactionsByCategoryList);
-        mergedTransactionsByCategoryList.addAll(convertedCSVTransactionsByCategory);
-        return mergedTransactionsByCategoryList;
-    }
+//    private List<TransactionsByCategory> mergeTransactionsByCategoryAndCSVTransactionsByCategory(List<TransactionsByCategory> transactionsByCategoryList, List<CSVTransactionsByCategory> csvTransactionsByCategoryList)
+//    {
+//        List<TransactionsByCategory> convertedCSVTransactionsByCategory = csvTransactionsByCategoryList.stream()
+//                .map(this::convertCSVTransactionsByCategory)
+//                .toList();
+//        List<TransactionsByCategory> mergedTransactionsByCategoryList = new ArrayList<>(transactionsByCategoryList);
+//        mergedTransactionsByCategoryList.addAll(convertedCSVTransactionsByCategory);
+//        return mergedTransactionsByCategoryList;
+//    }
 
     private List<Transaction> convertCSVTransactionToTransactions(final List<TransactionCSV> transactionCSVList)
     {
@@ -196,21 +160,12 @@ public class BudgetCategoryRunner
             Long subBudgetId = subBudget.getId();
             // Get the Transactions categories for current budget schedule range
             List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
-            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getCSVTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
-            log.info("CSVTransactionsByCategoryList: {}", csvTransactionsByCategoryList);
-            List<TransactionsByCategory> mergeTransactionsByCategory = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategoryList, csvTransactionsByCategoryList);
-            if(mergeTransactionsByCategory.isEmpty())
-            {
-                log.info("No Updated TransactionsByCategory  found for Budget Schedule Range {}", budgetScheduleRange);
-                return Collections.emptyList();
-            }
-            log.info("MergeTransactionsByCategory: {}", mergeTransactionsByCategory);
+            log.info("CSVTransactionsByCategoryList: {}", transactionsByCategoryList);
             List<BudgetCategory> budgetCategoriesByBudgetScheduleRange = getExistingBudgetCategoriesByBudgetScheduleRange(budgetScheduleRange, subBudgetId);
             log.info("ExistingBudgetCategoriesByBudgetScheduleRange: {}", budgetCategoriesByBudgetScheduleRange);
             log.info("Starting Thread for async budget category update");
-
             // run thread process to update budget categories for this week
-            CompletableFuture<List<BudgetCategory>> updatedBudgetCategories = budgetCategoryThreadService.updateAsyncBudgetCategoriesByWeek(budgetScheduleRange,subBudget, mergeTransactionsByCategory, budgetCategoriesByBudgetScheduleRange);
+            CompletableFuture<List<BudgetCategory>> updatedBudgetCategories = budgetCategoryThreadService.updateAsyncBudgetCategoriesByWeek(budgetScheduleRange,subBudget, transactionsByCategoryList, budgetCategoriesByBudgetScheduleRange);
             log.info("Updated Budget Categories: {}", updatedBudgetCategories);
             log.info("Finished Thread for async budget category update");
             // return the future bitch
@@ -245,14 +200,12 @@ public class BudgetCategoryRunner
         {
             // Get the transaction categories for the specified time period
             List<TransactionsByCategory> transactionsByCategories = getTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
-            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getCSVTransactionsByCategoryListByBudgetScheduleRange(budgetScheduleRange, userId);
-            List<TransactionsByCategory> mergedTransactionsByCategory = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategories, csvTransactionsByCategoryList);
-//            if(mergedTransactionsByCategory.isEmpty())
-//            {
-//                return Collections.emptyList();
-//            }
+            if(transactionsByCategories.isEmpty())
+            {
+                return Collections.emptyList();
+            }
             // Run the create Async Budget Categories for this time period
-            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByWeek(budgetScheduleRange, subBudget, mergedTransactionsByCategory);
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.createAsyncBudgetCategoriesByWeek(budgetScheduleRange, subBudget, transactionsByCategories);
             List<BudgetCategory> newBudgetCategories = future.join();
             log.info("New BudgetCategories for week {}: {}", budgetScheduleRange, newBudgetCategories);
             // return the result

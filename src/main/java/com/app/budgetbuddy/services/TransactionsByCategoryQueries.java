@@ -96,7 +96,16 @@ public class TransactionsByCategoryQueries
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
                 "WHERE a.user.id = :userId " +
-                "AND t.posted BETWEEN :startDate AND :endDate";
+                "AND t.posted BETWEEN :startDate AND :endDate " +
+                "UNION " +
+                "SELECT tc.matchedCategory, cte.id " +
+                "FROM TransactionCategoryEntity tc " +
+                "INNER JOIN CSVTransactionEntity cte " +
+                " ON tc.csvTransaction.id = cte.id " +
+                "INNER JOIN CSVAccountEntity cae " +
+                " ON cte.csvAccount.id = cae.id " +
+                "WHERE cte.transactionDate BETWEEN :startDate AND :endDate " +
+                "AND cae.user.id = :userId";
         try
         {
             List<Object[]> queryResults = entityManager.createQuery(transactionsByCategoryQuery, Object[].class)

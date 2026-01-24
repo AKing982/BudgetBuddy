@@ -6,10 +6,14 @@ import com.app.budgetbuddy.repositories.CSVTransactionRepository;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import com.app.budgetbuddy.repositories.UserCategoryRepository;
 import com.app.budgetbuddy.services.CategoryService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
+@Slf4j
 public class TransactionCategoryToEntityConverter implements Converter<TransactionCategory, TransactionCategoryEntity>
 {
     private final TransactionRepository transactionRepository;
@@ -32,36 +36,43 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
     @Override
     public TransactionCategoryEntity convert(TransactionCategory transactionCategory)
     {
-        return TransactionCategoryEntity.builder()
-                .transaction(getTransactionEntity(transactionCategory.getTransactionId()))
-                .csvTransaction(getCSVTransactionEntity(transactionCategory.getCsvTransactionId()))
-                .matchedCategory(transactionCategory.getCategory())
-                .categorizedBy(transactionCategory.getCategorizedBy())
-                .categorized_date(transactionCategory.getCategorizedDate())
-                .id(transactionCategory.getId())
-                .build();
+        TransactionCategoryEntity transactionCategoryEntity = new TransactionCategoryEntity();
+        transactionCategoryEntity.setId(transactionCategory.getId());
+        transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
+        transactionCategoryEntity.setMatchedCategory(transactionCategory.getCategory());
+        transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorizedDate());
+        Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());
+        Optional<CSVTransactionEntity> csvTransactionEntity = getCSVTransactionEntity(transactionCategory.getCsvTransactionId());
+        if(transactionEntity.isEmpty() && csvTransactionEntity.isPresent())
+        {
+            transactionCategoryEntity.setCsvTransaction(csvTransactionEntity.get());
+        }
+        else if(csvTransactionEntity.isEmpty() && transactionEntity.isPresent())
+        {
+            transactionCategoryEntity.setTransaction(transactionEntity.get());
+        }
+        return transactionCategoryEntity;
     }
 
-    private UserCategoryEntity getUserCategoryEntity(Long categoryId)
+    private Optional<CSVTransactionEntity> getCSVTransactionEntity(Long transactionId)
     {
-        return userCategoryRepository.findById(categoryId)
-                .orElse(null);
+        try
+        {
+            return csvTransactionRepository.findById(transactionId);
+        }catch(Exception e){
+            log.error("Error fetching csv transaction entity for transaction id: " + transactionId, e);
+            return Optional.empty();
+        }
     }
 
-    private CategoryEntity getCategoryEntity(Long categoryId)
+    private Optional<TransactionsEntity> getTransactionEntity(String transactionId)
     {
-        return categoryService.findCategoryById(categoryId)
-                .orElse(null);
-    }
-
-    private CSVTransactionEntity getCSVTransactionEntity(Long transactionId)
-    {
-        return csvTransactionRepository.findById(transactionId).orElse(null);
-    }
-
-    private TransactionsEntity getTransactionEntity(String transactionId)
-    {
-        return transactionRepository.findTransactionByTransactionId(transactionId)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+        try
+        {
+            return transactionRepository.findTransactionByTransactionId(transactionId);
+        }catch(Exception e){
+            log.error("Error fetching transaction entity for transaction id: " + transactionId, e);
+            return Optional.empty();
+        }
     }
 }

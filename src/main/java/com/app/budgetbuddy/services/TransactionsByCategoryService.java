@@ -18,46 +18,44 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @Data
 @Slf4j
-@Async
 public class TransactionsByCategoryService
 {
     private TransactionCategoryService transactionCategoryService;
     private TransactionsByCategoryQueries transactionsByCategoryQueries;
-    private ThreadPoolTaskExecutor taskExecutor;
 
     @Autowired
     public TransactionsByCategoryService(TransactionCategoryService transactionCategoryService,
-                                         TransactionsByCategoryQueries transactionsByCategoryQueries,
-                                         ThreadPoolTaskExecutor taskExecutor) {
+                                         TransactionsByCategoryQueries transactionsByCategoryQueries)
+    {
         this.transactionCategoryService = transactionCategoryService;
         this.transactionsByCategoryQueries = transactionsByCategoryQueries;
-        this.taskExecutor = taskExecutor;
     }
 
+    @Async("taskExecutor")
     public CompletableFuture<List<TransactionsByCategory>> fetchTransactionsByCategoryListByDate(final Long userId, final LocalDate date)
     {
-        return CompletableFuture.supplyAsync(() -> {
-            try
-            {
-                return transactionsByCategoryQueries.getTransactionsByCategoryListByDate(userId, date);
-            }catch(DataAccessException e){
-                log.error("There was an error fetching the transactions by categories by date {}", date, e);
-                return Collections.emptyList();
-            }
-        }, taskExecutor);
+        try
+        {
+            List<TransactionsByCategory> transactionsByCategories = transactionsByCategoryQueries.getTransactionsByCategoryListByDate(userId, date);
+            return CompletableFuture.completedFuture(transactionsByCategories);
+        }catch(DataAccessException e)
+        {
+            log.error("There was an error fetching the transactions by categories by date {}", date, e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
+    @Async("taskExecutor")
     public CompletableFuture<List<TransactionsByCategory>> fetchTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
-        return CompletableFuture.supplyAsync(() -> {
-            try
-            {
-                return transactionsByCategoryQueries.getTransactionsByCategoryList(userId, startDate, endDate);
-            }catch(DataAccessException e){
-                log.error("There was an error fetching all the transactions by categories: ", e);
-                return Collections.emptyList();
-            }
-        }, taskExecutor.getThreadPoolExecutor());
+        try
+        {
+            List<TransactionsByCategory> transactionsByCategoryList = transactionsByCategoryQueries.getTransactionsByCategoryList(userId, startDate, endDate);
+            return CompletableFuture.completedFuture(transactionsByCategoryList);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching all the transactions by categories: ", e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
 }

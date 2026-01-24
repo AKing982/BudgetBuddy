@@ -14,6 +14,7 @@ import java.util.*;
 
 @Service
 @Slf4j
+@Deprecated
 public class TransactionCategoryBuilder
 {
     private final TransactionCategoryService transactionCategoryService;
