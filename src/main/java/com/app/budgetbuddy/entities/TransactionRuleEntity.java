@@ -46,8 +46,8 @@ public class TransactionRuleEntity {
     @Column(name="priority")
     private int priority;
 
-    @Column(name="transaction_type")
-    private String transactionType;
+    @Column(name="match_count")
+    private int matchCount;
 
     @Column(name="isActive")
     private boolean isActive;
@@ -58,8 +58,9 @@ public class TransactionRuleEntity {
     @Column(name="date_modified")
     private Timestamp dateModified;
 
-    @PostConstruct
+    @PrePersist
     void init() {
+        dateModified = new Timestamp(System.currentTimeMillis());
         dateCreated = new Timestamp(System.currentTimeMillis());
     }
 

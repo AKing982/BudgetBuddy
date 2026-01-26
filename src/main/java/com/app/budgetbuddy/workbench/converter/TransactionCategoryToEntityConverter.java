@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.converter;
 import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.repositories.CSVTransactionRepository;
+import com.app.budgetbuddy.repositories.SubBudgetRepository;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import com.app.budgetbuddy.repositories.UserCategoryRepository;
 import com.app.budgetbuddy.services.CategoryService;
@@ -19,17 +20,20 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
     private final TransactionRepository transactionRepository;
     private final CSVTransactionRepository csvTransactionRepository;
     private final UserCategoryRepository userCategoryRepository;
+    private final SubBudgetRepository subBudgetRepository;
     private final CategoryService categoryService;
 
     @Autowired
     public TransactionCategoryToEntityConverter(TransactionRepository transactionRepository,
                                                 CSVTransactionRepository csvTransactionRepository,
                                                 UserCategoryRepository userCategoryRepository,
+                                                SubBudgetRepository subBudgetRepository,
                                                 CategoryService categoryService)
     {
         this.transactionRepository = transactionRepository;
         this.csvTransactionRepository = csvTransactionRepository;
         this.userCategoryRepository = userCategoryRepository;
+        this.subBudgetRepository = subBudgetRepository;
         this.categoryService = categoryService;
     }
 
@@ -41,6 +45,7 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
         transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
         transactionCategoryEntity.setMatchedCategory(transactionCategory.getCategory());
         transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorizedDate());
+        transactionCategoryEntity.setSubBudget(subBudgetRepository.findById(transactionCategory.getSubBudgetId()).orElse(null));
         Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());
         Optional<CSVTransactionEntity> csvTransactionEntity = getCSVTransactionEntity(transactionCategory.getCsvTransactionId());
         if(transactionEntity.isEmpty() && csvTransactionEntity.isPresent())

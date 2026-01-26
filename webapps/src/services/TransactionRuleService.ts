@@ -11,8 +11,8 @@ export interface TransactionRule {
     amountMin?: number;
     amountMax?: number;
     priority?: number;
-    transactionType?: string;
     isActive?: boolean;
+    matchCount: number;
     dateCreated?: string;  // ISO date string
     dateModified?: string; // ISO date string
 }
@@ -35,7 +35,7 @@ class TransactionRuleService
     public async getTransactionRulesByUser(userId: number) : Promise<TransactionRule[]>
     {
         try {
-            const response = await axios.get<TransactionRule[]>(`${this.api}/${userId}/rules`);
+            const response = await axios.get<TransactionRule[]>(`${this.api}/transaction-rules/${userId}/rules`);
             return response.data;
         } catch (error) {
             console.error('Error fetching transaction rules:', error);
@@ -47,7 +47,7 @@ class TransactionRuleService
     {
         try
         {
-            const response = await axios.delete<boolean>(`${this.api}/${userId}/delete/${ruleId}`);
+            const response = await axios.delete<boolean>(`${this.api}/transaction-rules/${userId}/delete/${ruleId}`);
             return response.data;
         } catch (error) {
             console.error('Error deleting transaction rule:', error);
@@ -59,7 +59,7 @@ class TransactionRuleService
     {
         try
         {
-            const response = await axios.put<TransactionRule>(`${this.api}/${userId}/update/${ruleId}`, transactionRule);
+            const response = await axios.put<TransactionRule>(`${this.api}/transaction-rules/${userId}/update/${ruleId}`, transactionRule);
             return response.data;
         } catch (error) {
             console.error('Error updating transaction rule:', error);
@@ -69,10 +69,17 @@ class TransactionRuleService
 
     public async addTransactionRule(userId: number, transactionRule: TransactionRule): Promise<TransactionRule> {
         try {
-            const response = await axios.post<TransactionRule>(`${this.api}/${userId}/add`, transactionRule);
+
+            console.log('Request payload:', JSON.stringify(transactionRule, null, 2));
+            const response = await axios.post<TransactionRule>(`${this.api}/transaction-rules/${userId}/add`, transactionRule);
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error adding transaction rule:', error);
+            if (error.response) {
+                console.error('Response status:', error.response.status);
+                console.error('Response data:', JSON.stringify(error.response.data, null, 2)); // <-- DETAILED ERROR
+                console.error('Response headers:', error.response.headers);
+            }
             throw error;
         }
     }
@@ -81,7 +88,7 @@ class TransactionRuleService
     {
         try
         {
-            const response = await axios.get<TransactionRule[]>(`${this.api}/${userId}/category`, {
+            const response = await axios.get<TransactionRule[]>(`${this.api}/transaction-rules/${userId}/category`, {
                 params: { category }
             });
             return response.data;

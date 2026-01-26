@@ -61,6 +61,9 @@ import CategoryDialog, {CategorySaveData} from "./CategoryDialog";
 import CategoryService from "../services/CategoryService";
 import UserCategoryService from "../services/UserCategoryService";
 import TransactionCategoryService from "../services/TransactionCategoryService";
+import transactionRuleService, {TransactionRule} from "../services/TransactionRuleService";
+import TransactionRuleService from "../services/TransactionRuleService";
+import MonthPickerDialog from "./MonthPickerDialog";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -99,10 +102,14 @@ const TransactionsPage: React.FC = () => {
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [animateIn, setAnimateIn] = useState(false);
     const [disabledCategories, setDisabledCategories] = useState<string[]>([]);
+    const [customMonthDialogOpen, setCustomMonthDialogOpen] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState<Date | null>(null);
+
     const [customCategories, setCustomCategories] = useState<string[]>([]);
     const categoryService = CategoryService.getInstance();
     const transactionService = TransactionService.getInstance();
     const transactionCategoryService = TransactionCategoryService.getInstance();
+    const transactionRuleService = TransactionRuleService.getInstance();
     const userCategoryService = UserCategoryService.getInstance();
 
     const theme = useTheme();
@@ -123,13 +130,20 @@ const TransactionsPage: React.FC = () => {
             try {
                 const transactionService = TransactionService.getInstance();
                 let userId = Number(sessionStorage.getItem('userId'));
-                let startDate = transactionService.getStartDate();
-                let endDate = new Date().toISOString().split('T')[0];
+                // let startDate = transactionService.getStartDate();
+                // let endDate = new Date().toISOString().split('T')[0];
+
+                const { startDate, endDate } = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
+
+                const startDateStr = startDate.toISOString().split('T')[0];
+                const endDateStr = endDate.toISOString().split('T')[0];
+
+
                 console.log('Start Date: ', startDate);
                 console.log('End Date: ', endDate);
                 // const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
                 // const csvTransactionResponse: CSVTransaction[] = await categoryService.fetchCategorizedCSVTransactions(userId, startDate, endDate);
-                const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDate, endDate);
+                const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDateStr, endDateStr);
                 console.log('CSV Transaction Response:', csvTransactionResponse);
                 // setTransactions(transactionResponse || []);
                 setCsvTransactions(csvTransactionResponse);
@@ -144,6 +158,82 @@ const TransactionsPage: React.FC = () => {
 
         fetchTransactions();
     }, [activeFilters]);
+
+    const getDateRangeFilter = (range: string, customMonth?: Date | null) : {startDate: Date; endDate: Date} => {
+
+        if (range === 'Custom Month' && customMonth) {
+            const year = customMonth.getFullYear();
+            const month = customMonth.getMonth();
+
+            const startDate = new Date(year, month, 1, 0, 0, 0, 0);
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const endDate = new Date(year, month, lastDay, 23, 59, 59, 999);
+
+            console.log('Custom Month Range:', {
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+                month: customMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            });
+
+            return { startDate, endDate };
+        }
+
+        // For all other ranges, use today as reference
+        const today = new Date();
+        let startDate: Date;
+        let endDate: Date;
+
+        switch (range) {
+            case 'Today':
+                startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                break;
+
+            case 'Yesterday':
+                startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 0, 0, 0, 0);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 23, 59, 59, 999);
+                break;
+
+            case 'Last 7 days':
+                startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7, 0, 0, 0, 0);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                break;
+
+            case 'Last 30 days':
+                startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 31, 0, 0, 0, 0);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                break;
+
+            case 'This month':
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                break;
+
+            case 'Last month':
+                const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                startDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1, 0, 0, 0, 0);
+                const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+                endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), lastDayOfLastMonth, 23, 59, 59, 999);
+                break;
+
+            case 'This year':
+                startDate = new Date(today.getFullYear(), 0, 1, 0, 0, 0, 0);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                break;
+
+            default:
+                // Default to last 30 days
+                startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30, 0, 0, 0, 0);
+                endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        }
+
+        console.log(`${range} Range:`, {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        });
+
+        return { startDate, endDate };
+    };
 
     const handleSearchTermChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);
@@ -198,6 +288,84 @@ const TransactionsPage: React.FC = () => {
 
     const handleSaveCategory = async (data: CategorySaveData) => {
         try {
+            const userId = Number(sessionStorage.getItem('userId'));
+
+            const hasAdvancedMatching = data.advancedMatching && (
+                data.advancedMatching.matchByMerchant ||
+                data.advancedMatching.matchByDescription ||
+                data.advancedMatching.matchByExtendedDescription ||
+                data.advancedMatching.matchByAmountRange
+            );
+
+            if (hasAdvancedMatching) {
+
+                const matchByMerchant = data.advancedMatching?.matchByMerchant || false;
+                const matchByDescription = data.advancedMatching?.matchByDescription || false;
+                const matchByExtendedDescription = data.advancedMatching?.matchByExtendedDescription || false;
+                const matchByAmountRange = data.advancedMatching?.matchByAmountRange || false;
+                let priority = 6;
+                if(matchByMerchant && matchByDescription && matchByExtendedDescription && matchByAmountRange)
+                {
+                    priority = 1;
+                } else if(matchByMerchant && matchByAmountRange){
+                    priority = 2;
+                }else if(matchByMerchant && matchByAmountRange && data.advancedMatching?.amountRangeMin !== undefined){
+                    priority = 3;
+                }else if(matchByMerchant && matchByAmountRange && data.advancedMatching?.amountRangeMax !== undefined){
+                    priority = 4;
+                }else if(matchByDescription && matchByMerchant){
+                    priority = 5;
+                }else if(matchByMerchant){
+                    priority = 6;
+                }
+                // Create a transaction rule instead of just updating the category
+                const transactionRule: TransactionRule = {
+                    userId: userId,
+                    categoryName: data.category,
+                    priority: priority,
+                    isActive: true,
+                    amountMin: 0,  // Default value for primitive
+                    amountMax: 0,   // Default value for primitive
+                    matchCount: 0
+                };
+
+                if (data.advancedMatching?.matchByMerchant && data.advancedMatching.merchantNameMatch) {
+                    transactionRule.merchantRule = data.advancedMatching.merchantNameMatch;
+                }
+
+                if (data.advancedMatching?.matchByDescription && data.advancedMatching.descriptionMatch) {
+                    transactionRule.descriptionRule = data.advancedMatching.descriptionMatch;
+                }
+
+                if (data.advancedMatching?.matchByExtendedDescription && data.advancedMatching.extendedDescriptionMatch) {
+                    transactionRule.extendedDescriptionRule = data.advancedMatching.extendedDescriptionMatch;
+                }
+
+                if (data.advancedMatching?.matchByAmountRange) {
+                    if (data.advancedMatching.amountRangeMin !== undefined) {
+                        transactionRule.amountMin = data.advancedMatching.amountRangeMin;
+                    }
+                    if (data.advancedMatching.amountRangeMax !== undefined) {
+                        transactionRule.amountMax = data.advancedMatching.amountRangeMax;
+                    }
+                }
+
+
+                console.log('Creating transaction rule:', transactionRule);
+
+                // Create the transaction rule
+                const createdRule = await transactionRuleService.addTransactionRule(userId, transactionRule);
+                console.log('Transaction rule created:', createdRule);
+
+                // Still update the current transaction's category
+                const transactionResponse = await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
+                console.log('Updated CSV Transaction response:', transactionResponse);
+            } else {
+                // No advanced matching - just update the transaction category as before
+                const transactionResponse = await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
+                console.log('Updated CSV Transaction response:', transactionResponse);
+            }
+
             // Update local state immediately
             setTransactions(prevTransactions =>
                 prevTransactions.map(transaction =>
@@ -220,13 +388,6 @@ const TransactionsPage: React.FC = () => {
                     )
                 );
             }
-            // TODO: Call your API to save the category to the database
-            // const transactionResponse = await transactionService.updateCSVTransactionWithCategorySaveData(data);
-            const userId = Number(sessionStorage.getItem('userId'));
-            const transactionResponse = await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
-            console.log('Updated CSV Transaction response: ', transactionResponse);
-
-            console.log('Category saved:', data);
         } catch (error) {
             console.error('Error saving category:', error);
             // Optionally show an error message to the user
@@ -286,10 +447,11 @@ const TransactionsPage: React.FC = () => {
                 amount: csv.transactionAmount,
                 date: csv.transactionDate!,
                 posted: csv.transactionDate,
-                name: csv.merchantName || csv.transactionDescription || 'Unknown',
-                description: csv.extendedDescription || '',
+                name: csv.merchantName || csv.description || 'Unknown',
+                description: csv.description || '',
                 authorizedDate: csv.transactionDate || null,
                 categoryId: '',
+                extendedDescription: csv.extendedDescription || '',
                 merchantName: csv.merchantName,
                 categories: csv.category ? [csv.category] : ['Uncategorized'],
                 pending: false,
@@ -398,6 +560,12 @@ const TransactionsPage: React.FC = () => {
     const filteredTransactions = useMemo(() => {
         let filtered = sortedTransactions;
 
+
+        const {startDate, endDate} = getDateRangeFilter(activeFilters.dateRange, );
+        filtered = filtered.filter(transaction => {
+            const transactionDate = new Date(transaction.posted || transaction.date);
+            return transactionDate >= startDate && transactionDate <= endDate;
+        });
         // Apply search term filter
         if (searchTerm.trim()) {
             const searchTermLowerCase = searchTerm.toLowerCase().trim();
@@ -581,13 +749,24 @@ const TransactionsPage: React.FC = () => {
         }
     };
 
+    const handleCustomMonthSelect = (month: Date) => {
+        setSelectedMonth(month);
+        setActiveFilters({
+            ...activeFilters,
+            dateRange: 'Custom Month'
+        });
+        setCustomMonthDialogOpen(false);
+        handleCloseDateRangeMenu();
+    }
+
     const transactionStats = useMemo(() => {
         let income = 0;
         let expense = 0;
         let pending = 0;
         let lastMonthExpense = 0;
 
-        combinedTransactions.forEach(transaction => {
+        // Use filteredTransactions instead of combinedTransactions
+        filteredTransactions.forEach(transaction => {
             if (transaction.pending) {
                 pending += 1;
                 return;
@@ -599,15 +778,25 @@ const TransactionsPage: React.FC = () => {
             } else {
                 expense += transaction.amount;
             }
+        });
 
-            // Simulate last month data for comparison
+        // Calculate comparison period for trend
+        // Get the date range for filtered period
+        const { startDate, endDate } = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
+        // Calculate period length in milliseconds
+        const periodLength = endDate.getTime() - startDate.getTime();
+
+        // Calculate previous period by subtracting the period length
+        const previousPeriodEnd = new Date(startDate.getTime() - 1); // 1ms before current period starts
+        const previousPeriodStart = new Date(previousPeriodEnd.getTime() - periodLength);
+
+
+        // Calculate expense from previous period for comparison
+        combinedTransactions.forEach(transaction => {
             const transactionDate = new Date(transaction.posted || transaction.date);
-            const today = new Date();
-            const lastMonth = new Date();
-            lastMonth.setMonth(today.getMonth() - 1);
 
-            if (transactionDate.getMonth() === lastMonth.getMonth() &&
-                transactionDate.getFullYear() === lastMonth.getFullYear() &&
+            if (transactionDate >= previousPeriodStart &&
+                transactionDate <= previousPeriodEnd &&
                 transaction.amount > 0) {
                 lastMonthExpense += transaction.amount;
             }
@@ -616,17 +805,64 @@ const TransactionsPage: React.FC = () => {
         // Calculate percentage change for expense trend
         const expenseTrend = lastMonthExpense > 0
             ? ((expense - lastMonthExpense) / lastMonthExpense) * 100
-            : 0;
+            : expense > 0 ? 100 : 0; // If no previous data but current expense exists, show 100% increase
 
         return {
             income,
             expense,
             pending,
-            total: combinedTransactions.length,
+            total: filteredTransactions.length,
             expenseTrend,
             lastMonthExpense
         };
-    }, [combinedTransactions]);
+    }, [filteredTransactions, activeFilters.dateRange, selectedMonth, combinedTransactions]);
+
+    // const transactionStats = useMemo(() => {
+    //     let income = 0;
+    //     let expense = 0;
+    //     let pending = 0;
+    //     let lastMonthExpense = 0;
+    //
+    //     filteredTransactions.forEach(transaction => {
+    //         if (transaction.pending) {
+    //             pending += 1;
+    //             return;
+    //         }
+    //
+    //         // Calculate current stats
+    //         if (transaction.amount < 0) {
+    //             income += Math.abs(transaction.amount);
+    //         } else {
+    //             expense += transaction.amount;
+    //         }
+    //
+    //         // Simulate last month data for comparison
+    //         const transactionDate = new Date(transaction.posted || transaction.date);
+    //         const today = new Date();
+    //         const lastMonth = new Date();
+    //         lastMonth.setMonth(today.getMonth() - 1);
+    //
+    //         if (transactionDate.getMonth() === lastMonth.getMonth() &&
+    //             transactionDate.getFullYear() === lastMonth.getFullYear() &&
+    //             transaction.amount > 0) {
+    //             lastMonthExpense += transaction.amount;
+    //         }
+    //     });
+    //
+    //     // Calculate percentage change for expense trend
+    //     const expenseTrend = lastMonthExpense > 0
+    //         ? ((expense - lastMonthExpense) / lastMonthExpense) * 100
+    //         : 0;
+    //
+    //     return {
+    //         income,
+    //         expense,
+    //         pending,
+    //         total: combinedTransactions.length,
+    //         expenseTrend,
+    //         lastMonthExpense
+    //     };
+    // }, [combinedTransactions]);
 
     // Get category breakdown for expense chart
     const categoryBreakdown = useMemo(() => {
@@ -648,6 +884,8 @@ const TransactionsPage: React.FC = () => {
             .sort((a, b) => b.amount - a.amount)
             .slice(0, 5); // Top 5 categories
     }, [combinedTransactions]);
+
+
 
     return (
         <Box sx={{
@@ -1041,7 +1279,10 @@ const TransactionsPage: React.FC = () => {
                                 }
                             }}
                         >
-                            {activeFilters.dateRange}
+                            {/*{activeFilters.dateRange}*/}
+                            {activeFilters.dateRange === 'Custom Month' && selectedMonth
+                                ? selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                                : activeFilters.dateRange}
                         </Button>
                         <Button
                             variant="outlined"
@@ -1872,7 +2113,40 @@ const TransactionsPage: React.FC = () => {
                         {range}
                     </MenuItem>
                 ))}
+                <Divider sx={{my: 1}}/>
+
+                {/* Custom Month Option */}
+                <MenuItem
+                    onClick={() => {
+                        setCustomMonthDialogOpen(true);
+                        handleCloseDateRangeMenu();
+                    }}
+                    selected={activeFilters.dateRange === 'Custom Month'}
+                    sx={{
+                        py: 1.2,
+                        mx: 1,
+                        borderRadius: 2,
+                        '&.Mui-selected': {
+                            backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                            fontWeight: 600,
+                            color: theme.palette.primary.main,
+                            '&:hover': {
+                                backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                            }
+                        }
+                    }}
+                >
+                    <Calendar size={16} style={{ marginRight: 8 }} />
+                    Select Month
+                </MenuItem>
             </Menu>
+            <MonthPickerDialog
+                open={customMonthDialogOpen}
+                onClose={() => setCustomMonthDialogOpen(false)}
+                onSelect={handleCustomMonthSelect}
+                currentMonth={selectedMonth}
+                />
+
             {selectedTransaction && (
                 <CategoryDialog
                     open={categoryDialogOpen}
@@ -1880,8 +2154,8 @@ const TransactionsPage: React.FC = () => {
                     currentCategory={selectedTransaction.categories[0] || ''}
                     transactionId={selectedTransaction.transactionId}
                     merchantName={selectedTransaction.merchantName || selectedTransaction.name}
-                    description={selectedTransaction.name}
-                    extendedDescription={selectedTransaction.description || ''}
+                    description={selectedTransaction.description}
+                    extendedDescription={selectedTransaction.extendedDescription || ''}
                     amount={selectedTransaction.amount}
                     availableCategories={uniqueCategories}
                     onSave={handleSaveCategory}

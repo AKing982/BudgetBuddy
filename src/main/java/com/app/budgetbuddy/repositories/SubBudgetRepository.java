@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.entities.SubBudgetEntity;
+import com.app.budgetbuddy.services.SubBudgetService;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -47,4 +48,13 @@ public interface SubBudgetRepository extends JpaRepository<SubBudgetEntity, Long
 
     @Query("SELECT sb FROM SubBudgetEntity sb JOIN sb.budget b WHERE b.user.id =:uId AND sb.year =:year ORDER BY sb.startDate LIMIT :numMonths")
     List<SubBudgetEntity> findSubBudgetEntitiesByUserIdAndLimit(@Param("uId") Long userId, @Param("year") int year, @Param("numMonths") Integer numMonths);
+
+    @Query("SELECT sb FROM SubBudgetEntity sb JOIN sb.budget b " +
+            "WHERE b.user.id = :userId " +
+            "AND sb.startDate <= :end " +
+            "AND sb.endDate >= :start " +
+            "ORDER BY sb.startDate")
+    List<SubBudgetEntity> findSubBudgetsListByDateRange(@Param("userId") Long userId,
+                                                        @Param("start") LocalDate startDate,
+                                                        @Param("end") LocalDate endDate);
 }

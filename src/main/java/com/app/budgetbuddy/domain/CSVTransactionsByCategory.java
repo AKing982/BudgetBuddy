@@ -10,6 +10,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
 @ToString
+@Builder
 public class CSVTransactionsByCategory
 {
     private String category;

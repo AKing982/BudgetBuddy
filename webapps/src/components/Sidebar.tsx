@@ -24,7 +24,7 @@ import {
     AccountBalance,
     TrendingUp,
     Search,
-    CreditScore
+    CreditScore, ShoppingCart
 } from '@mui/icons-material';
 import {
     Bell,
@@ -122,6 +122,7 @@ const Sidebar: React.FC = () => {
         // { text: 'Recurring', icon: <EventRepeat />, path: '/recurring' },
         // { text: 'Spending', icon: <AttachMoney /> , path: '/spending'},
         { text: 'Budgets', icon: <AccountBalance /> , path: getBudgetPath()},
+        {text: 'Grocery Tracker', icon: <ShoppingCart />, path: '/grocery-tracker'},
         // { text: 'Net Worth', icon: <TrendingUp />, path: '/net-worth' },
         { text: 'Transactions', icon: <Search /> , path: '/transactions'},
         // { text: 'Credit Score', icon: <CreditScore />, path: '/score' },

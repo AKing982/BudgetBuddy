@@ -77,7 +77,7 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public TransactionRuleEntity create(TransactionRule transactionRule)
     {
        try
@@ -102,7 +102,7 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<TransactionRule> findByUserId(Long userId)
     {
         try
@@ -138,6 +138,19 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
                 .filter(TransactionRuleEntity::isActive)
                 .map(this::createCategoryRuleFromEntity)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void updateMatchCount(Long ruleId, int matchCount)
+    {
+        try
+        {
+            transactionRuleRepository.updateMatchCount(ruleId, matchCount);
+        }catch(DataAccessException ex){
+            log.error("There was an error updating the match count: ", ex);
+            throw new DataException("There was an error updating the match count: ", ex);
+        }
     }
 
 }

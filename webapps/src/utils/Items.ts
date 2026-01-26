@@ -38,6 +38,7 @@ export interface Transaction {
     date: string;    // LocalDate will come as string in JSON
     description: string;
     merchantName: string;
+    extendedDescription?: string;
     name: string;
     pending: boolean;
     transactionId: string;
@@ -51,7 +52,7 @@ export interface CSVTransaction {
     account: string;
     transactionDate: string | null;
     transactionAmount: number;
-    transactionDescription: string;
+    description: string;
     extendedDescription: string;
     merchantName: string;
     category: string;

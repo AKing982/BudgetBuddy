@@ -1,10 +1,12 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.TransactionRule;
+import com.app.budgetbuddy.entities.TransactionRuleEntity;
 import com.app.budgetbuddy.workbench.categories.TransactionRuleService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,7 +71,9 @@ public class TransactionRuleController
     {
         try
         {
-            return null;
+            TransactionRuleEntity transactionRuleEntity = transactionRuleService.create(transactionRule);
+            transactionRuleService.save(transactionRuleEntity);
+            return ResponseEntity.status(HttpStatus.CREATED).body(transactionRule);
         }catch(Exception e){
             log.error("There was an error adding transaction rule {} for user {}", transactionRule, userId, e);
             return ResponseEntity.internalServerError().build();

@@ -20,6 +20,7 @@ import SpendingOverview from "./components/SpendingOverview";
 import ForgotPassword from "./components/ForgotPassword";
 import BudgetPlanner from "./components/BudgetPlanner";
 import PBTemplate from "./components/PBTemplate";
+import GroceryTracker from "./components/GroceryTracker";
 // import BudgetControlPage from "./components/BudgetControlPage";
 // import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
 
@@ -47,6 +48,7 @@ function App() {
                       <Route path="/payments" element={<PaymentCharges />}/>
                       <Route path="/transactions" element={<TransactionsPage />}/>
                       <Route path="/budgets" element={<BudgetPage />}/>
+                      <Route path="/grocery-tracker" element={<GroceryTracker />}/>
                       <Route path="/budget-test" element={<BudgetCategoryDetails/>}/>
                       <Route path="/debt-overview" element={<DebtOverview />}/>
                       <Route path="/debt-progress" element={<DebtPaymentProgress />}/>

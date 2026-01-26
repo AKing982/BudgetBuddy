@@ -28,6 +28,10 @@ public class TransactionCategoryEntity
     @JoinColumn(name="csv_transaction_id")
     private CSVTransactionEntity csvTransaction;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="sub_budgetId")
+    private SubBudgetEntity subBudget;
+
     @Column(name="matched_category")
     private String matchedCategory;
 

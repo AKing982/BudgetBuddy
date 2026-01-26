@@ -15,6 +15,7 @@ public class TransactionCategoryConverter implements Converter<TransactionCatego
                 .categorizedDate(transactionCategoryEntity.getCategorized_date())
                 .csvTransactionId(transactionCategoryEntity.getCsvTransaction().getId())
                 .categorizedBy(transactionCategoryEntity.getCategorizedBy())
+                .subBudgetId(transactionCategoryEntity.getSubBudget().getId())
                 .category(transactionCategoryEntity.getMatchedCategory())
                 .transactionId(transactionCategoryEntity.getTransaction().getId())
                 .build();

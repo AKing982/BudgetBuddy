@@ -187,9 +187,15 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
                 List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
                 for(TransactionRule rule : rules)
                 {
+                    int match_counter = 0;
+                    Long ruleId = rule.getId();
                     log.info("Found Rule: {}", rule);
                     if(matches(transaction, rule))
                     {
+                        match_counter++;
+                        rule.setMatchCount(match_counter);
+                        // Update the rule match counter
+                        transactionRuleService.updateMatchCount(ruleId, rule.getMatchCount());
                         matchedCategoryName = rule.getCategoryName();
                         log.info("Rule matches: {}", rule);
                         long endTime = System.currentTimeMillis();

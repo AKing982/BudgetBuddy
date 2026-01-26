@@ -17,6 +17,6 @@ public interface UserCategoryRepository extends JpaRepository<UserCategoryEntity
     @Query("SELECT c FROM UserCategoryEntity c WHERE c.user.id =:userId AND c.id =:id")
     UserCategoryEntity findByIdAndUser(@Param("userId") Long userId, @Param("id") Long id);
 
-    @Query("SELECT c FROM UserCategoryEntity c WHERE c.user.id =:userId AND c.category =:name")
+    @Query("SELECT c.id FROM UserCategoryEntity c WHERE c.user.id =:userId AND c.category =:name")
     Long findIdByNameAndUser(@Param("userId") Long userId, @Param("name") String name);
 }

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.app.budgetbuddy.domain.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

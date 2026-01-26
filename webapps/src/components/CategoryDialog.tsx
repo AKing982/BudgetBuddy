@@ -58,38 +58,14 @@ export interface CategorySaveData {
         matchByMerchant: boolean;
         matchByDescription: boolean;
         matchByExtendedDescription: boolean;
-        matchByAmountRange: boolean
+        matchByAmountRange: boolean;
+        merchantNameMatch?: string;  // Add this
+        descriptionMatch?: string;   // Add this
+        extendedDescriptionMatch?: string;  // Add this
         amountRangeMin?: number;
         amountRangeMax?: number;
     };
 }
-
-const DEFAULT_SYSTEM_CATEGORIES = [
-    'Groceries',
-    'Order Out',
-    'Subscription',
-    'Rent',
-    'Mortgage',
-    'Gas',
-    'Utilities',
-    'Gas (Utilities)',
-    'Haircut',
-    'Other',
-    'Coffee',
-    'Trip',
-    'Electric',
-    'Insurance',
-    'Payment',
-    'Withdrawal',
-    'Transfer',
-    'Pet',
-    'Income',
-    'Deposit',
-    'Refund'
-];
-
-
-
 const CategoryDialog: React.FC<CategoryDialogProps> = ({
                                                            open,
                                                            onClose,
@@ -144,7 +120,6 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
 
     const [saving, setSaving] = useState(false);
 
-
     const handleCategorySelect = (category: string) => {
         if(isCategoryEnabled(category)){
             setSelectedCategory(category);
@@ -189,38 +164,6 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
 
         fetchCategories();
     }, [open, userId]);
-
-    // React.useEffect(() => {
-    //     const fetchCategories = async () => {
-    //         if (open && systemCategories.length === 0) {
-    //             setLoadingCategories(true);
-    //             try {
-    //                 // Fetch system categories
-    //                 const sysCategories = await categoryService.getAllSystemCategories();
-    //                 console.log('System Categories: ', sysCategories);
-    //                 const sysCategoryNames = sysCategories
-    //                     .map(cat => cat.category);
-    //                 setSystemCategories(sysCategoryNames);
-    //                 console.log('System Categories: ', sysCategoryNames);
-    //
-    //                 // Fetch user custom categories
-    //                 const userCategories = await userCategoryService.getCustomUserCategories(userId);
-    //                 console.log('User Categories: ', userCategories);
-    //                 setUserCustomCategories(userCategories);
-    //                 console.log('User Categories: ', userCategories);
-    //
-    //             } catch (error) {
-    //                 console.error('Error fetching categories:', error);
-    //             } finally {
-    //                 setLoadingCategories(false);
-    //             }
-    //         }
-    //     };
-    //
-    //     fetchCategories();
-    // }, [open, userId]);
-
-
 
     React.useEffect(() => {
         if (open) {

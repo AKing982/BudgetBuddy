@@ -54,6 +54,7 @@ import ManageBudgetsDialog from "./ManageBudgetsDialog";
 import BudgetCategoriesService from "../services/BudgetCategoriesService";
 import budgetCategoriesService from "../services/BudgetCategoriesService";
 import {isNull} from "node:util";
+import UserService from "../services/UserService";
 
 interface DateArrays {
     startDate: [number, number, number];
@@ -77,6 +78,7 @@ const BudgetPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [animateIn, setAnimateIn] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
+    const [uploadAccess, setUploadAccess] = useState<boolean>(false);
     const budgetRunnerService = BudgetRunnerService.getInstance();
     const budgetCategoryService = BudgetCategoriesService.getInstance();
     const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
@@ -87,6 +89,7 @@ const BudgetPage: React.FC = () => {
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>()
     const [newBudgetDialogOpen, setNewBudgetDialogOpen] = useState<boolean>(false);
     const [manageBudgetsDialogOpen, setManageBudgetsDialogOpen] = useState<boolean>(false);
+    const userService = UserService.getInstance();
 
     const uploadService = new CsvUploadService();
     const budgetService = BudgetService.getInstance();
@@ -108,6 +111,19 @@ const BudgetPage: React.FC = () => {
     const handleImportClose = () => {
         setImportDialogOpen(false);
     }
+
+    useEffect(() => {
+        const fetchUserHasUploadAccess = async() => {
+            try {
+                const userId = Number(sessionStorage.getItem('userId'));
+                const hasUploadAccess = await userService.fetchUserOverrideEnabled(userId);
+                setUploadAccess(hasUploadAccess);
+            } catch (error) {
+                console.error("There was an error fetching user upload access: ", error);
+            }
+        };
+        fetchUserHasUploadAccess();
+    })
 
     const doesBudgetExistForBeginningYear = async (retryCount = 0) =>
     {
@@ -540,6 +556,7 @@ const BudgetPage: React.FC = () => {
                                 variant="outlined"
                                 startIcon={<ImportIcon size={18} />}
                                 onClick={handleImportClick}
+                                disabled={!uploadAccess}
                                 sx={{
                                     ml: 1,
                                     borderRadius: 2,

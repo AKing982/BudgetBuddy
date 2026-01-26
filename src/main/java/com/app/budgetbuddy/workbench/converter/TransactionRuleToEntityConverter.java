@@ -20,7 +20,8 @@ public class TransactionRuleToEntityConverter implements Converter<TransactionRu
     }
 
     @Override
-    public TransactionRuleEntity convert(TransactionRule transactionRule) {
+    public TransactionRuleEntity convert(TransactionRule transactionRule)
+    {
         return TransactionRuleEntity.builder()
                 .id(transactionRule.getId())
                 .user(getUserById(transactionRule.getUserId()))
@@ -32,9 +33,6 @@ public class TransactionRuleToEntityConverter implements Converter<TransactionRu
                 .isActive(transactionRule.isActive())
                 .extendedDescriptionRule(transactionRule.getExtendedDescriptionRule())
                 .priority(transactionRule.getPriority())
-                .transactionType(transactionRule.getTransactionType())
-                .dateCreated(transactionRule.getDateCreated())
-                .dateModified(transactionRule.getDateModified())
                 .build();
     }
 

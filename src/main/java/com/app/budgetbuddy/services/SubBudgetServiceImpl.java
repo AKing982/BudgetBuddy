@@ -265,6 +265,22 @@ public class SubBudgetServiceImpl implements SubBudgetService
         }
     }
 
+    @Override
+    @Transactional
+    public List<SubBudget> getSubBudgetsByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetsListByDateRange(userId, startDate, endDate);
+            return subBudgetEntities.stream()
+                    .map(subBudgetEntityConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the sub budgets by start={} and end={}", startDate, endDate);
+            return Collections.emptyList();
+        }
+    }
+
     private SubBudgetEntity convertSubBudgetToEntity(SubBudget subBudget)
     {
         SubBudgetEntity subBudgetEntity = new SubBudgetEntity();

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -23,7 +24,9 @@ public class TransactionRule
     private double amountMin;
     private double amountMax;
     private int priority;
-    private String transactionType;
+    private int matchCount;
+
+    @JsonProperty("isActive")
     private boolean isActive;
     private Timestamp dateCreated;
     private Timestamp dateModified;

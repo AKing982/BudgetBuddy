@@ -16,6 +16,7 @@ public class TransactionCategory
     private Long id;
     private String transactionId;
     private Long csvTransactionId;
+    private Long subBudgetId;
     private String category;
     private String categorizedBy;
     private LocalDate categorizedDate;

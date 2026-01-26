@@ -2,10 +2,7 @@ package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
-import com.app.budgetbuddy.services.CSVTransactionService;
-import com.app.budgetbuddy.services.TransactionCategoryService;
-import com.app.budgetbuddy.services.TransactionService;
-import com.app.budgetbuddy.services.UserLogService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.categories.CategorizerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +22,7 @@ public class CategoryRunner
     private final CategorizerService<TransactionCSV> csvCategorizerService;
     private final CSVTransactionService csvTransactionService;
     private final UserLogService userLogService;
+    private final SubBudgetService subBudgetService;
     private List<TransactionCategory> categorizedCSVTransactions = new ArrayList<>();
     private final TransactionService transactionService;
     private final TransactionCategoryService transactionCategoryService;
@@ -33,12 +31,14 @@ public class CategoryRunner
     public CategoryRunner(@Qualifier("csvCategorizer") CategorizerService<TransactionCSV> categorizerService,
                           CSVTransactionService csvTransactionService,
                           UserLogService userLogService,
+                          SubBudgetService subBudgetService,
                           TransactionService transactionService,
                           TransactionCategoryService transactionCategoryService)
     {
         this.csvCategorizerService = categorizerService;
         this.csvTransactionService = csvTransactionService;
         this.userLogService = userLogService;
+        this.subBudgetService = subBudgetService;
         this.transactionService = transactionService;
         this.transactionCategoryService = transactionCategoryService;
     }
@@ -93,11 +93,17 @@ public class CategoryRunner
     }
 
     public void categorizeCSVTransactionsByRange(Long userId,
-                                                                    LocalDate startDate,
-                                                                    LocalDate endDate)
+                                                 LocalDate startDate,
+                                                 LocalDate endDate)
     {
         try
         {
+            List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByUserIdAndDateRange(userId, startDate, endDate);
+            if(subBudgets.isEmpty())
+            {
+                log.info("There are no sub-budgets for user {} at {}", userId, startDate);
+                return;
+            }
             List<TransactionCSV> transactionCSVS = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate);
             if(transactionCSVS.isEmpty())
             {
@@ -107,11 +113,19 @@ public class CategoryRunner
             categorizedCSVTransactions = transactionCSVS.stream()
                     .map(transactionCSV -> {
                         Long csvTransactionId = transactionCSV.getId();
+                        LocalDate transactionDate = transactionCSV.getTransactionDate();
                         // Categorize the transaction
                         Category category = csvCategorizerService.categorize(transactionCSV);
                         String categoryName = category.getCategoryName();
+                        SubBudget matchingSubBudget = subBudgets.stream()
+                                .filter(sb -> !transactionDate.isBefore(sb.getStartDate()) &&
+                                        !transactionDate.isAfter((sb.getEndDate())))
+                                .findFirst()
+                                .orElseThrow(() -> new RuntimeException("Sub-budget not found"));
+                        Long subBudgetId = matchingSubBudget.getId();
                         return TransactionCategory.builder()
                                 .category(categoryName)
+                                .subBudgetId(subBudgetId)
                                 .csvTransactionId(csvTransactionId)
                                 .categorizedDate(category.getCategorizedDate())
                                 .createdAt(LocalDateTime.now())

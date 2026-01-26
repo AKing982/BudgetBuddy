@@ -12,7 +12,6 @@ public class TransactionRuleConverter implements Converter<TransactionRuleEntity
     public TransactionRule convert(TransactionRuleEntity transactionRuleEntity) {
         return TransactionRule.builder()
                 .id(transactionRuleEntity.getId())
-                .transactionType(transactionRuleEntity.getTransactionType())
                 .amountMax(transactionRuleEntity.getAmountMax())
                 .amountMin(transactionRuleEntity.getAmountMin())
                 .descriptionRule(transactionRuleEntity.getDescriptionRule())
