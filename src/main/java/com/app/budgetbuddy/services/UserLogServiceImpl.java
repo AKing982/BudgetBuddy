@@ -203,7 +203,6 @@ public class UserLogServiceImpl implements UserLogService
             }
             UserEntity userEntity = userEntityOptional.get();
             LocalDateTime lastLogin = userLogRequest.lastLogin();
-            LocalDateTime lastLogout = userLogRequest.lastLogout();
             int sessionDuration = userLogRequest.sessionDuration();
             int loginAttempts = userLogRequest.loginAttempts();
             boolean isActive = userLogRequest.isActive();
@@ -211,7 +210,6 @@ public class UserLogServiceImpl implements UserLogService
                     .loginAttempts(loginAttempts)
                     .sessionDuration(sessionDuration)
                     .lastLogin(lastLogin)
-                    .lastLogout(lastLogout)
                     .isActive(isActive)
                     .user(userEntity).build();
             userLogRepository.save(userLogEntity);

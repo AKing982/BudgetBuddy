@@ -250,7 +250,6 @@ const LoginForm: React.FC = () => {
                 console.error('Failed to fetch userId');
                 return;
             }
-
             console.log('UserID: ', userId);
             sessionStorage.setItem('userId', String(userId));
             let userFullName = await fetchUserFullNameById(userId);
@@ -258,31 +257,12 @@ const LoginForm: React.FC = () => {
             sessionStorage.setItem('fullName', userFullName);
             sessionStorage.setItem('email', userEmail);
 
-            const sessionService = SessionService.getInstance();
-            const sessionData = {
-                userId: String(userId),
-                username: formData.email,
-                email: userEmail,
-                fullName: userFullName,
-                roles: ['USER'] // Add user roles if available
-            };
-
-            try {
-                const sessionResult = await sessionService.createSession(sessionData);
-                console.log('Session created successfully:', sessionResult);
-
-                // Store session info in sessionStorage for client-side access
-                sessionStorage.setItem('sessionId', sessionResult.sessionId);
-                sessionStorage.setItem('userId', String(userId));
-                sessionStorage.setItem('username', formData.email);
-                sessionStorage.setItem('fullName', userFullName);
-                sessionStorage.setItem('email', userEmail);
-                sessionStorage.setItem('sessionActive', 'true');
-
-            } catch (sessionError) {
-                console.error('Failed to create session:', sessionError);
-                // You might want to continue without session or handle this error
-            }
+            let sessionDuration = 0;
+            let loginAttempts = 0;
+            let lastLogin = new Date();
+            let lastLogout = new Date();
+            await userLogService.saveUserLog(userId, sessionDuration, loginAttempts, lastLogin, lastLogout);
+            sessionStorage.setItem('sessionDuration', String(sessionDuration));
 
             console.log('Is Authenticated: ', true);
             const isUserOverrideEnabled = await userService.fetchUserOverrideEnabled(userId);
@@ -342,7 +322,6 @@ const LoginForm: React.FC = () => {
                     // Case 3: Link exists and is up-to-date
                     console.log('Plaid linked and up-to-date, syncing transactions...');
                     navigate('/dashboard');
-                    loginAttempts = 0;
                 }
             }
         } catch (error) {
@@ -350,6 +329,7 @@ const LoginForm: React.FC = () => {
             setIsAuthenticated(false); // Reset auth state on failure
             // Optionally notify user (e.g., setError('Login failed'))
             // Clear any partial session data
+            loginAttempts++;
             sessionStorage.removeItem('sessionActive');
             sessionStorage.removeItem('sessionId');
         }

@@ -52,6 +52,11 @@ public class CSVTransactionsByCategoryQueries
                     .setParameter("endDate", endDate)
                     .setParameter("userId", userId)
                     .getResultList();
+
+            if(result == null)
+            {
+                return Collections.emptyList();
+            }
             return convertObjectToCategorySpending(result);
 
         }catch(DataException e){
@@ -144,22 +149,4 @@ public class CSVTransactionsByCategoryQueries
             return Collections.emptyList();
         }
     }
-
-//    private List<CSVTransactionsByCategory> createCSVTransactionsByCategoryList(final List<TransactionCSV> csvTransactions)
-//    {
-//        return csvTransactions.stream()
-//                .collect(Collectors.groupingBy(tx -> tx.getCategory() != null ? tx.getCategory() : "Uncategorized"))
-//                .entrySet().stream()
-//                .map(entry -> {
-//                    String category = entry.getKey();
-//                    List<TransactionCSV> transactions = entry.getValue();
-//                    BigDecimal totalSpending = transactions.stream()
-//                            .map(TransactionCSV::getTransactionAmount)
-//                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-//                    return new CSVTransactionsByCategory(category, totalSpending, transactions);
-//                })
-//                .sorted(Comparator.comparing(CSVTransactionsByCategory::getTotalCategorySpending))
-//                .collect(Collectors.toList());
-//    }
-
 }

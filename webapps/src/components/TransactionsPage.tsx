@@ -123,42 +123,6 @@ const TransactionsPage: React.FC = () => {
         }
     }, []);
 
-
-    useEffect(() => {
-        setIsLoading(true);
-        const fetchTransactions = async() => {
-            try {
-                const transactionService = TransactionService.getInstance();
-                let userId = Number(sessionStorage.getItem('userId'));
-                // let startDate = transactionService.getStartDate();
-                // let endDate = new Date().toISOString().split('T')[0];
-
-                const { startDate, endDate } = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
-
-                const startDateStr = startDate.toISOString().split('T')[0];
-                const endDateStr = endDate.toISOString().split('T')[0];
-
-
-                console.log('Start Date: ', startDate);
-                console.log('End Date: ', endDate);
-                // const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
-                // const csvTransactionResponse: CSVTransaction[] = await categoryService.fetchCategorizedCSVTransactions(userId, startDate, endDate);
-                const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDateStr, endDateStr);
-                console.log('CSV Transaction Response:', csvTransactionResponse);
-                // setTransactions(transactionResponse || []);
-                setCsvTransactions(csvTransactionResponse);
-            } catch(error) {
-                console.error('Error fetching transactions:', error);
-                setTransactions([]);
-                setCsvTransactions([]);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTransactions();
-    }, [activeFilters]);
-
     const getDateRangeFilter = (range: string, customMonth?: Date | null) : {startDate: Date; endDate: Date} => {
 
         if (range === 'Custom Month' && customMonth) {
@@ -234,6 +198,42 @@ const TransactionsPage: React.FC = () => {
 
         return { startDate, endDate };
     };
+
+    const dateRange = useMemo(() => {
+        return getDateRangeFilter(activeFilters.dateRange, selectedMonth);
+    }, [activeFilters.dateRange, selectedMonth]);
+
+
+    useEffect(() => {
+        setIsLoading(true);
+        const fetchTransactions = async() => {
+            try {
+                const transactionService = TransactionService.getInstance();
+                let userId = Number(sessionStorage.getItem('userId'));
+                // let startDate = transactionService.getStartDate();
+                // let endDate = new Date().toISOString().split('T')[0];
+
+                const startDateStr = dateRange.startDate.toISOString().split('T')[0];
+                const endDateStr = dateRange.endDate.toISOString().split('T')[0];
+                // const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
+                // const csvTransactionResponse: CSVTransaction[] = await categoryService.fetchCategorizedCSVTransactions(userId, startDate, endDate);
+                const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDateStr, endDateStr);
+                console.log('CSV Transaction Response:', csvTransactionResponse);
+                // setTransactions(transactionResponse || []);
+                setCsvTransactions(csvTransactionResponse);
+            } catch(error) {
+                console.error('Error fetching transactions:', error);
+                setTransactions([]);
+                setCsvTransactions([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTransactions();
+    }, [activeFilters]);
+
+
 
     const handleSearchTermChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);

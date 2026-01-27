@@ -30,7 +30,6 @@ public class UserLogEntity
     private LocalDateTime lastLogin;
 
     @Column(name="lastLogout")
-    @NotNull
     private LocalDateTime lastLogout;
 
     @Column(name="session_duration")

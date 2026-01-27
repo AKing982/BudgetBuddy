@@ -2,6 +2,8 @@ import React from "react";
 import {useNavigate} from "react-router-dom";
 import { Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
 import SessionService from "../services/SessionService";
+import UserLogService from "../services/UserLogService";
+import {log} from "node:util";
 
 interface SidebarMenuItem {
     text: string;
@@ -15,6 +17,7 @@ interface SideBarMenuItemProps {
 
 const SidebarMenu: React.FC<SideBarMenuItemProps> = ({isOpen, onClose}) => {
     const navigate = useNavigate();
+    const userLogService = UserLogService.getInstance();
 
     const menuItems = [
         {text: 'Profile', path: '/profile'},
@@ -32,10 +35,19 @@ const SidebarMenu: React.FC<SideBarMenuItemProps> = ({isOpen, onClose}) => {
     }
 
     const handleLogout = async () => {
-        try {
-            const sessionService = SessionService.getInstance();
-            // 1. Invalidate session on backend (this will also handle session logging)
-            await sessionService.invalidateSession();
+        try
+        {
+            let userId = Number(sessionStorage.getItem("userId"));
+            const userLog = await userLogService.fetchActiveUserLogByUserId(userId);
+            if(userLog?.id && userLog?.lastLogin){
+                const sessionDuration = userLogService.calculateSessionDuration(userLog.lastLogin);
+                await userLogService.updateUserLog(userLog.id, {
+                    userId: userId,
+                    sessionDuration: sessionDuration,
+                    lastLogout: new Date().toISOString(),
+                    isActive: false
+                });
+            }
 
             // 2. Clear all client-side storage
             sessionStorage.clear();

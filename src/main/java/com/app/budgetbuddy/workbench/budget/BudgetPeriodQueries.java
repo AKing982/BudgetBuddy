@@ -85,23 +85,28 @@ public class BudgetPeriodQueries
         }
         SubBudget subBudget = subBudgetOptional.get();
         Long subBudgetId = subBudget.getId();
+        log.info("Running Daily Query");
         try
         {
-
             final String dateBudgetQuery = """
-                    SELECT DISTINCT bc.categoryName,
-                   bc.budgetedAmount,
-                   bc.actual as actualSpent,
-                   bc.budgetedAmount - bc.actual as remainingAmount
-            FROM BudgetCategoryEntity bc
-            JOIN bc.subBudget sb
-            WHERE bc.startDate <= :date
-           AND bc.endDate >= :date
-            AND bc.subBudget.id = :budgetId
-            AND bc.active = true""";
+    SELECT tc.matchedCategory as category,
+           ROUND(bsr.budgetedAmount / 7, 2) as budgeted,
+           ABS(SUM(ct.transactionAmount)) as actual,
+           ROUND(bsr.budgetedAmount / 7, 2) - SUM(ct.transactionAmount) as remaining
+    FROM TransactionCategoryEntity tc
+    INNER JOIN tc.csvTransaction ct
+    INNER JOIN tc.subBudget sb
+    INNER JOIN sb.budgetSchedules bs
+    INNER JOIN bs.dateRanges bsr
+    WHERE tc.matchedCategory <> 'Uncategorized'
+        AND tc.subBudget.id = :subBudgetId
+        AND ct.transactionDate BETWEEN bsr.rangeStart AND bsr.rangeEnd
+        AND ct.transactionDate =:transactionDate
+    GROUP BY tc.matchedCategory, bsr.budgetedAmount
+    """;
             List<Object[]> results = entityManager.createQuery(dateBudgetQuery, Object[].class)
-                    .setParameter("date", date)
-                    .setParameter("budgetId", subBudgetId)
+                    .setParameter("transactionDate", date)
+                    .setParameter("subBudgetId", subBudgetId)
                     .getResultList();
 
             return results.stream()
