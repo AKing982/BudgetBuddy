@@ -3,6 +3,12 @@ import axios from "axios";
 import {API_BASE_URL} from "../config/api";
 import {CategorySaveData} from "../components/CategoryDialog";
 
+
+export interface BoolStatus {
+    status: boolean;
+    message: string;
+}
+
 class TransactionCategoryService {
     private static instance: TransactionCategoryService;
 
@@ -32,6 +38,59 @@ class TransactionCategoryService {
         }catch(error){
             console.error('There was an error parsing the transaction id: ', error);
             return 0;
+        }
+    }
+
+    public async checkUpdatedTransactionCategoriesByDateRange(userId: number, startDate: Date, endDate: Date) : Promise<boolean>
+    {
+        try
+        {
+            const response = await axios.get<BoolStatus>(
+                `${API_BASE_URL}/transaction-category/is-updated-by-month`,
+                {
+                    params: {
+                        userId: userId,
+                        startDate: this.formatDate(startDate),
+                        endDate: this.formatDate(endDate)
+                    }
+                }
+            );
+
+            return response.data.status;
+        }catch(error){
+            console.error("There was an error checking for updated transaction categories: ", error);
+            return false;
+        }
+    }
+
+    private formatDate(date: Date): string {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    public async checkNewTransactionCategoriesByDateRange(userId: number, startDate: Date, endDate: Date) : Promise<boolean>
+    {
+        try
+        {
+            const response = await axios.get<BoolStatus>(
+                `${API_BASE_URL}/transaction-category/is-new-by-month`,
+                {
+                    params: {
+                        userId: userId,
+                        startDate: this.formatDate(startDate),
+                        endDate: this.formatDate(endDate)
+                    }
+                }
+            );
+
+            console.log(response.data.message); // Log the message from backend
+            return response.data.status;
+
+        } catch(error) {
+            console.error(`There was an error checking for new transaction categories for userId ${userId}:`, error);
+            return false;
         }
     }
 

@@ -21,6 +21,7 @@ import ForgotPassword from "./components/ForgotPassword";
 import BudgetPlanner from "./components/BudgetPlanner";
 import PBTemplate from "./components/PBTemplate";
 import GroceryTracker from "./components/GroceryTracker";
+import OAuthRedirect from "./components/OAuthRedirect";
 // import BudgetControlPage from "./components/BudgetControlPage";
 // import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
 
@@ -53,6 +54,7 @@ function App() {
                       <Route path="/debt-overview" element={<DebtOverview />}/>
                       <Route path="/debt-progress" element={<DebtPaymentProgress />}/>
                       <Route path="/forgot-password" element={<ForgotPassword />}/>
+                      <Route path="/oauth-redirect" element={<OAuthRedirect />}/>
                       <Route path="/budget-planner" element={<BudgetPlanner />}/>
                       <Route path="/pb-template" element={<PBTemplate />}/>
                       {/*<Route path="/budget-debt" element={<BudgetDebtPage />}/>*/}

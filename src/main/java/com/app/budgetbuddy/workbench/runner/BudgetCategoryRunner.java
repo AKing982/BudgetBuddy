@@ -87,6 +87,21 @@ public class BudgetCategoryRunner
         }
     }
 
+    private List<TransactionsByCategory> getUpdatedTransactionsByCategoryListByMonth(final SubBudget subBudget)
+    {
+        LocalDate monthStartDate = subBudget.getStartDate();
+        LocalDate monthEndDate = subBudget.getEndDate();
+        Long userId = subBudget.getBudget().getUserId();
+        try
+        {
+            CompletableFuture<List<TransactionsByCategory>> future = transactionsByCategoryService.fetchUpdatedTransactionsByCategoryList(userId, monthStartDate, monthEndDate);
+            return future.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching updated transactions by category list: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     private List<TransactionsByCategory> getTransactionsByCategoryListByMonth(final SubBudget subBudget)
     {
         LocalDate startDate = subBudget.getStartDate();
@@ -137,6 +152,21 @@ public class BudgetCategoryRunner
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error fetching transactions by category list by date", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<CSVTransactionsByCategory> getUpdatedCSVTransactionsByCategoryForMonth(final SubBudget subBudget)
+    {
+        LocalDate startDate = subBudget.getStartDate();
+        LocalDate endDate = subBudget.getEndDate();
+        Long userId =  subBudget.getBudget().getUserId();
+        try
+        {
+            CompletableFuture<List<CSVTransactionsByCategory>> updatedTransactionsByCategories = csvTransactionsThreadService.fetchUpdatedCSVTransactionsByCategoryListByDateRange(userId, startDate, endDate);
+            return updatedTransactionsByCategories.join();
+        }catch(CompletionException e){
+            log.error("There was an error fetching the updated csv transactions by category: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -226,9 +256,11 @@ public class BudgetCategoryRunner
     {
         try
         {
-            List<TransactionsByCategory> transactionsByCategoryList = getTransactionsByCategoryListByMonth(subBudget);
+            List<TransactionsByCategory> transactionsByCategoryList = getUpdatedTransactionsByCategoryListByMonth(subBudget);
+            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = getUpdatedCSVTransactionsByCategoryForMonth(subBudget);
+            List<TransactionsByCategory> mergedTransactionsByCategory = mergeTransactionsByCategoryAndCSVTransactionsByCategory(transactionsByCategoryList, csvTransactionsByCategoryList);
             List<BudgetCategory> existingBudgetCategories = getExistingBudgetCategoriesByMonth(subBudget);
-            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.updateAsyncBudgetCategoriesByMonth(subBudget, transactionsByCategoryList, existingBudgetCategories);
+            CompletableFuture<List<BudgetCategory>> future = budgetCategoryThreadService.updateAsyncBudgetCategoriesByMonth(subBudget, mergedTransactionsByCategory, existingBudgetCategories);
             return future.join();
         }catch(CompletionException e){
             log.error("There was an error updating the budget category list for month: {}", subBudget, e);

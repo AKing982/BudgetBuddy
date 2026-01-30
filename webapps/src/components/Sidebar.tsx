@@ -168,11 +168,22 @@ const Sidebar: React.FC = () => {
 
     const handleLogout = async () => {
         try {
-            const sessionService = SessionService.getInstance();
 
-            // 1. Invalidate session on backend (this will also handle session logging)
-            await sessionService.invalidateSession();
-
+            let userId = Number(sessionStorage.getItem("userId"));
+            const userLog = await userLogService.fetchActiveUserLogByUserId(userId);
+            console.log('Active User Log: ', userLog);
+            if(userLog?.id && userLog?.lastLogin){
+                const sessionDuration = userLogService.calculateSessionDuration(userLog.lastLogin);
+                console.log('session duration: ', sessionDuration);
+                console.log('Updating user Log');
+                await userLogService.updateUserLog(userLog.id, {
+                    userId: userId,
+                    lastLogin: userLog.lastLogin,
+                    sessionDuration: sessionDuration,
+                    lastLogout: new Date().toISOString(),
+                    isActive: false
+                });
+            }
             // 2. Clear all client-side storage
             sessionStorage.clear();
             localStorage.clear();

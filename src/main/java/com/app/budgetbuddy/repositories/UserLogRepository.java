@@ -22,7 +22,7 @@ public interface UserLogRepository extends JpaRepository<UserLogEntity, Long>
 
     @Query("UPDATE UserLogEntity e SET e =:eNew WHERE e.user.id =:uId")
     @Modifying
-    Optional<UserLogEntity> updateUserLogEntity(@Param("eNew") UserLogEntity userLog, @Param("uId") Long userId);
+    void updateUserLogEntity(@Param("eNew") UserLogEntity userLog, @Param("uId") Long userId);
 
     @Query("SELECT e.user.id FROM UserLogEntity e WHERE e.isActive = true")
     List<Long> findAllActiveUserIds();

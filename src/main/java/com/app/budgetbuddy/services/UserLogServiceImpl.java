@@ -149,13 +149,13 @@ public class UserLogServiceImpl implements UserLogService
 
     @Override
     @Transactional
-    public Optional<UserLogEntity> updateUserLog(Long userLogId, UserLogRequest userLogRequest)
+    public void updateUserLog(Long userLogId, UserLogRequest userLogRequest)
     {
         if(userLogRequest == null)
         {
-            return Optional.empty();
+            return;
         }
-
+        log.info("UserLogRequest: {}", userLogRequest);
         try
         {
             Long userId = userLogRequest.userId();
@@ -168,7 +168,7 @@ public class UserLogServiceImpl implements UserLogService
             Optional<UserLogEntity> userLogEntityOpt = userLogRepository.findByUserIdAndId(userLogId, userId);
             if(userLogEntityOpt.isEmpty())
             {
-                return Optional.empty();
+                return;
             }
             UserLogEntity userLogEntity = userLogEntityOpt.get();
             userLogEntity.setLastLogout(lastLogout);
@@ -176,12 +176,11 @@ public class UserLogServiceImpl implements UserLogService
             userLogEntity.setSessionDuration(sessionDuration);
             userLogEntity.setLoginAttempts(loginAttempts);
             userLogEntity.setActive(isActive);
-            Optional<UserLogEntity> updatedUserLog = userLogRepository.updateUserLogEntity(userLogEntity, userId);
+            userLogRepository.updateUserLogEntity(userLogEntity, userId);
             log.info("User Log: {} has been updated successfully.", userLogEntity);
-            return updatedUserLog;
         }catch(DataAccessException e){
             log.error("There was an error updating the user log entry: ", e);
-            return Optional.empty();
+            return;
         }
     }
 

@@ -117,7 +117,7 @@ const TransactionsPage: React.FC = () => {
     useEffect(() => {
         document.title = 'Transactions - BudgetBuddy';
         // Trigger animation after component is mounted
-        setTimeout(() => setAnimateIn(true), 100);
+        setTimeout(() => setAnimateIn(true), 50);
         return () => {
             document.title = 'BudgetBuddy';
         }

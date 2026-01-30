@@ -215,7 +215,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         if(data?.[0]?.subBudget){
             fetchBudgetPeriodData(budgetPeriod, data[0].subBudget);
         }
-    }, [budgetPeriod, selectedDate]);
+    }, [budgetPeriod, selectedDate, data?.[0]?.subBudget]);
 
     const handlePeriodChange = (newPeriod: BudgetPeriod) => {
         setBudgetPeriod(newPeriod);

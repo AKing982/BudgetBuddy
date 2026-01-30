@@ -14,6 +14,6 @@ public interface UserLogService extends ServiceModel<UserLogEntity>
     List<Long> getActiveUserIds();
     double getDurationSinceLastLogout(Long userId);
 
-    Optional<UserLogEntity> updateUserLog(Long userLogId, UserLogRequest userLogRequest);
+    void updateUserLog(Long userLogId, UserLogRequest userLogRequest);
     Optional<UserLogEntity> saveUserLogRequest(UserLogRequest userLogRequest);
 }

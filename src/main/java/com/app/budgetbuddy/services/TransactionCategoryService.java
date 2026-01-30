@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.TransactionCategory;
+import com.app.budgetbuddy.domain.TransactionCategoryStatus;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 
 import java.time.LocalDate;
@@ -16,6 +17,14 @@ public interface TransactionCategoryService extends ServiceModel<TransactionCate
 
     Optional<TransactionCategory> getTransactionCategoryByCsvIdAndCatName(String category, Long csvId);
     void updateTransactionCategoriesByIdAndCategory(String category, Long id);
+
+    void updateTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId);
+
+    boolean checkNewTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
+    boolean checkUpdatedTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
+
+    void updateTransactionCategoryIsUpdated(Long csvId, boolean isUpdated);
+
     List<TransactionCategory> getTransactionCategoryListByTransactionIds(List<String> transactionIds);
     List<TransactionCategory> getTransactionCategoriesBetweenStartAndEndDates(LocalDate startDate, LocalDate endDate, Long userId);
 }

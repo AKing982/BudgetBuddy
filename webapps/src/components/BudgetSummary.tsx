@@ -109,7 +109,7 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                     Available to Spend
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" textAlign="center">
-                    {budgetStats.remaining < 0 ? `-$${Math.abs(budgetStats.remaining).toFixed(2)}` : `$${budgetStats.remaining.toFixed(2)}`}
+                    {budgetStats.remaining < 0 ? `$${0}` : `$${budgetStats.remaining.toFixed(2)}`}
                 </Typography>
                 <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
                     Daily average spending: ${budgetStats.averageSpendingPerDay.toFixed(2)}
@@ -138,7 +138,8 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({isLoading, budgetStats}) =
                             Total Saved
                         </Typography>
                         <Typography variant="body1" fontWeight="bold" color="success.main">
-                            ${Math.abs(Math.round(budgetStats.totalBudget - budgetStats.totalSpent))}
+                            {/*${Math.abs(Math.round(budgetStats.totalBudget - budgetStats.totalSpent))}*/}
+                            {Math.round(budgetStats.totalBudget - budgetStats.totalSpent) < 0 ? `$${0}` : Math.round(budgetStats.totalBudget - budgetStats.totalSpent).toFixed(2)}
                         </Typography>
                     </Box>
                 </Box>

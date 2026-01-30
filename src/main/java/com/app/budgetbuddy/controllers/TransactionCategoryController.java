@@ -1,6 +1,8 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.BoolStatus;
 import com.app.budgetbuddy.domain.TransactionCSV;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.TransactionCategoryQueries;
 import com.app.budgetbuddy.services.TransactionCategoryService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,46 @@ public class TransactionCategoryController
     {
         this.transactionCategoryService = transactionCategoryService;
         this.transactionCategoryQueries = transactionCategoryQueries;
+    }
+
+    @GetMapping("/is-updated-by-month")
+    public ResponseEntity<BoolStatus> checkIfAnyUpdatedTransactionCategoriesByMonth(@RequestParam Long userId,
+                                                                                    @RequestParam LocalDate startDate,
+                                                                                    @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            boolean anyUpdated = transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, startDate, endDate);
+            if(anyUpdated)
+            {
+                BoolStatus updatedStatus = new BoolStatus(true, "Found Updated Transaction Categories");
+                return ResponseEntity.ok(updatedStatus);
+            }
+            return ResponseEntity.ok(new BoolStatus(false, "No Updated Transaction Categories"));
+        }catch(DataException e){
+            log.error("There was an error checking for any updated transaction categories: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/is-new-by-month")
+    public ResponseEntity<BoolStatus> checkIfAnyNewTransactionCategoriesByMonth(@RequestParam Long userId,
+                                                                                @RequestParam LocalDate startDate,
+                                                                                @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            boolean anyNew =  transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, startDate, endDate);
+            if(anyNew)
+            {
+                BoolStatus newStatus = new BoolStatus(true, "Found New Transaction Categories");
+                return ResponseEntity.ok(newStatus);
+            }
+            return ResponseEntity.ok(new BoolStatus(false, "No New Transaction Categories"));
+        }catch(DataException e){
+            log.error("There was an error checking for any new transaction categories: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PutMapping("/update/category")

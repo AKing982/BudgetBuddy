@@ -37,17 +37,7 @@ const SidebarMenu: React.FC<SideBarMenuItemProps> = ({isOpen, onClose}) => {
     const handleLogout = async () => {
         try
         {
-            let userId = Number(sessionStorage.getItem("userId"));
-            const userLog = await userLogService.fetchActiveUserLogByUserId(userId);
-            if(userLog?.id && userLog?.lastLogin){
-                const sessionDuration = userLogService.calculateSessionDuration(userLog.lastLogin);
-                await userLogService.updateUserLog(userLog.id, {
-                    userId: userId,
-                    sessionDuration: sessionDuration,
-                    lastLogout: new Date().toISOString(),
-                    isActive: false
-                });
-            }
+
 
             // 2. Clear all client-side storage
             sessionStorage.clear();

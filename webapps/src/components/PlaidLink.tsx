@@ -33,7 +33,18 @@ const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken,
 
     const onExit: PlaidLinkOnExit = useCallback((err, metadata) => {
         if (err != null) {
-            setError(err.display_message || 'Error linking account');
+            alert(`Error Code: ${err.error_code}\nError: ${err.error_message}`);
+            console.error('Full error object:', JSON.stringify(err, null, 2));
+            setError(err.display_message || err.error_message || 'Error linking account')
+        }
+        console.log('Plaid Link exited');
+        console.log('Error:', err);
+        console.log('Metadata:', metadata);
+
+        if (err) {
+            console.error('Error code:', err.error_code);
+            console.error('Error message:', err.error_message);
+            console.error('Display message:', err.display_message);
         }
     }, []);
 
@@ -53,7 +64,21 @@ const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken,
         token: linkToken,
         onSuccess: handleSuccess,
         onExit,
+        ...(window.location.pathname === '/oauth-redirect' && {
+            receivedRedirectUri: window.location.href
+        })
     };
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('oauth_state_id')) {
+        config.receivedRedirectUri = window.location.href;
+    }
+
+    console.log('═══ PLAID CONFIG ═══');
+    console.log('window.location.href:', window.location.href);
+    console.log('receivedRedirectUri:', config.receivedRedirectUri);
+    console.log('Has oauth_state_id?', window.location.href.includes('oauth_state_id'));
+    console.log('Full config:', JSON.stringify(config, null, 2));
 
     const { open, ready } = usePlaidLink(config);
 

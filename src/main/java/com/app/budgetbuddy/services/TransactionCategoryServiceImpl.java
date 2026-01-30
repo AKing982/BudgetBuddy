@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.TransactionCategory;
+import com.app.budgetbuddy.domain.TransactionCategoryStatus;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import com.app.budgetbuddy.entities.TransactionsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
@@ -132,6 +133,70 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
             transactionCategoryRepository.updateTransactionCategoryByIdAndCategory(id, category);
         }catch(DataAccessException e){
             log.error("There was an error while updating the TransactionCategory entity", e);
+            return;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId)
+    {
+        if(transactionCategoryStatus == null || csvId < 1L)
+        {
+            return;
+        }
+        try
+        {
+            transactionCategoryRepository.updateTransactionCategoryStatus(csvId, transactionCategoryStatus);
+            log.info("Successfully updated the TransactionCategory status to {} for the csv Id: {} ", transactionCategoryStatus, csvId);
+        }catch(DataAccessException e){
+            log.error("There was an error while updating the TransactionCategory entity", e);
+            return;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean checkNewTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            int checkCountNew = transactionCategoryRepository.findNewTransactionCategories(startDate, endDate, userId);
+            return checkCountNew > 0;
+        }catch(DataAccessException e){
+            log.error("There was an error fetching new transaction categories by date range", e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean checkUpdatedTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            int checkUpdated = transactionCategoryRepository.findUpdatedTransactionCategories(startDate, endDate, userId);
+            return checkUpdated > 0;
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the updated transaction categories by date range", e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateTransactionCategoryIsUpdated(Long csvId, boolean isUpdated)
+    {
+        if(csvId < 1L)
+        {
+            return;
+        }
+        try
+        {
+            transactionCategoryRepository.updateTransactionCategoryIsUpdated(csvId, isUpdated);
+            log.info("Successfully updated transaction category isUpdated field to {} for the csv Id: {} ", isUpdated, csvId);
+        }catch(DataAccessException e){
+            log.error("There was an error while updating the is updated field for transaction category with csvId {}: {}", csvId, e.getMessage());
             return;
         }
     }

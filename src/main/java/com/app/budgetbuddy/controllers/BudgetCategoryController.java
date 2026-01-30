@@ -72,4 +72,25 @@ public class BudgetCategoryController
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/update-by-month")
+    public ResponseEntity<List<BudgetCategory>> updateBudgetCategoriesByMonth(@RequestParam Long userID,
+                                                                              @RequestParam(required = true) LocalDate startDate,
+                                                                              @RequestParam(required = true) LocalDate endDate)
+    {
+        try
+        {
+            Optional<SubBudget> subBudgetOptional =  subBudgetService.findSubBudgetByUserIdAndDateRange(userID, startDate, endDate);
+            if(subBudgetOptional.isEmpty())
+            {
+                return ResponseEntity.notFound().build();
+            }
+            SubBudget subBudget = subBudgetOptional.get();
+            List<BudgetCategory> updatedBudgetCategories = budgetCategoryRunner.runBudgetCategoryUpdateProcessForMonth(subBudget);
+            return ResponseEntity.ok(updatedBudgetCategories);
+        }catch(BudgetCategoryException e){
+            log.error("There was an error updating the budget categories for start={} and end={}", startDate, endDate, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

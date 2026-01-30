@@ -197,20 +197,6 @@ const LoginForm: React.FC = () => {
         }
     };
 
-    const { open, ready } = usePlaidLink({
-        token: linkToken,
-        onSuccess: async (publicToken, metadata) => {
-            console.log("Plaid re-authentication successful!", metadata);
-            await plaidService.exchangePublicToken(publicToken, Number(sessionStorage.getItem("userId")));
-            console.log("Plaid access token updated successfully!");
-        },
-        onExit: (error, metadata) => {
-            if (error) {
-                console.error("Error exiting Plaid Link:", error);
-            }
-        },
-    });
-
     const validateForm = (): boolean => {
         const newErrors: FormErrors = {};
         if(!formData.email) newErrors.username = 'UserName or Email is required';
@@ -218,6 +204,15 @@ const LoginForm: React.FC = () => {
         setFormErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }
+
+    useEffect(() => {
+        // Restore link token from session storage if it exists
+        const savedLinkToken = sessionStorage.getItem('plaidLinkToken');
+        if (savedLinkToken && !linkToken) {
+            console.log('Restoring link token from session storage');
+            setLinkToken(savedLinkToken);
+        }
+    }, []);
 
 // Modified handleSubmit function with enhanced Plaid open logic
     const handleSubmit = async (event: FormEvent) => {
@@ -261,8 +256,6 @@ const LoginForm: React.FC = () => {
             let loginAttempts = 0;
             let lastLogin = new Date();
             let lastLogout = new Date();
-            await userLogService.saveUserLog(userId, sessionDuration, loginAttempts, lastLogin, lastLogout);
-            sessionStorage.setItem('sessionDuration', String(sessionDuration));
 
             console.log('Is Authenticated: ', true);
             const isUserOverrideEnabled = await userService.fetchUserOverrideEnabled(userId);
@@ -274,6 +267,8 @@ const LoginForm: React.FC = () => {
                 // Update the override_upload_enabled in the database
                 await userService.updateUserUploadEnabledAccess(userId, overrideAccessClick);
                 console.log('User override is enabled, navigating to dashboard...');
+                await userLogService.saveUserLog(userId, sessionDuration, loginAttempts, lastLogin, lastLogout);
+                sessionStorage.setItem('sessionDuration', String(sessionDuration));
                 navigate('/dashboard');
                 return;
             }
@@ -307,6 +302,7 @@ const LoginForm: React.FC = () => {
                         }
                         console.log('Link token created successfully:', linkResponse.linkToken);
                         setLinkToken(linkResponse.linkToken);
+                        sessionStorage.setItem('plaidLinkToken', linkResponse.linkToken);
                         // Add a small delay to ensure state updates before opening
                         setTimeout(() => {
                             if (plaidLinkRef.current) {
@@ -415,10 +411,8 @@ const LoginForm: React.FC = () => {
         }
 
     }
-
     const openUpdateMode = async (userId: number) => {
-        try
-        {
+        try {
             console.log('UserID: ', userId);
             const accessToken = await plaidService.getAccessTokenForUser(userId);
             if(!accessToken){
@@ -431,41 +425,73 @@ const LoginForm: React.FC = () => {
                 return;
             }
 
-            // Use the Plaid React hook to open update mode
+            // Set the link token
             setLinkToken(linkToken);
-            const waitForPlaidReady = (timeoutMs = 60000) => {
-                return new Promise<void>((resolve, reject) => {
-                    // If already ready, resolve immediately
-                    if (ready) {
-                        resolve();
-                        return;
-                    }
 
-                    // Set a timeout for the maximum wait time
-                    const timeout = setTimeout(() => {
-                        clearInterval(checkInterval);
-                        reject(new Error("Timed out waiting for Plaid to be ready"));
-                    }, timeoutMs);
+            // ✅ Wait for component to render and ref to be available
+            setTimeout(() => {
+                if (plaidLinkRef.current) {
+                    console.log('Opening Plaid Link in update mode...');
+                    plaidLinkRef.current.open();
+                } else {
+                    console.error('Plaid Link ref not available');
+                }
+            }, 1000); // Increased timeout
 
-                    // Check periodically if Plaid is ready
-                    const checkInterval = setInterval(() => {
-                        if (ready) {
-                            clearTimeout(timeout);
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 200); // Check every 200ms
-                });
-            };
-
-            // Wait for Plaid to be ready with a generous timeout
-            await waitForPlaidReady();
-            console.log("Plaid is ready, opening update mode...");
-            open();
         } catch (error) {
             console.error("Error opening Plaid update mode:", error);
         }
     };
+    // const openUpdateMode = async (userId: number) => {
+    //     try
+    //     {
+    //         console.log('UserID: ', userId);
+    //         const accessToken = await plaidService.getAccessTokenForUser(userId);
+    //         if(!accessToken){
+    //             console.error("Access Token is null or unavailable for user: ", userId);
+    //             return;
+    //         }
+    //         const linkToken = await plaidService.updatePlaidLink(userId, accessToken);
+    //         if (!linkToken) {
+    //             console.error("Failed to fetch update link token");
+    //             return;
+    //         }
+    //
+    //         // Use the Plaid React hook to open update mode
+    //         setLinkToken(linkToken);
+    //         const waitForPlaidReady = (timeoutMs = 60000) => {
+    //             return new Promise<void>((resolve, reject) => {
+    //                 // If already ready, resolve immediately
+    //                 if (ready) {
+    //                     resolve();
+    //                     return;
+    //                 }
+    //
+    //                 // Set a timeout for the maximum wait time
+    //                 const timeout = setTimeout(() => {
+    //                     clearInterval(checkInterval);
+    //                     reject(new Error("Timed out waiting for Plaid to be ready"));
+    //                 }, timeoutMs);
+    //
+    //                 // Check periodically if Plaid is ready
+    //                 const checkInterval = setInterval(() => {
+    //                     if (ready) {
+    //                         clearTimeout(timeout);
+    //                         clearInterval(checkInterval);
+    //                         resolve();
+    //                     }
+    //                 }, 200); // Check every 200ms
+    //             });
+    //         };
+    //
+    //         // Wait for Plaid to be ready with a generous timeout
+    //         await waitForPlaidReady();
+    //         console.log("Plaid is ready, opening update mode...");
+    //         open();
+    //     } catch (error) {
+    //         console.error("Error opening Plaid update mode:", error);
+    //     }
+    // };
 
     const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
         if(isProcessing) return;
@@ -507,6 +533,8 @@ const LoginForm: React.FC = () => {
             });
 
             navigate('/dashboard');
+
+            sessionStorage.removeItem('plaidLinkToken');
         }catch(error)
         {
             console.error('Error exchanging public token: ', error);

@@ -21,6 +21,8 @@ public class TransactionCategory
     private String categorizedBy;
     private LocalDate categorizedDate;
     private boolean isCategorized;
+    private boolean isUpdated;
+    private TransactionCategoryStatus transactionCategoryStatus;
     private LocalDateTime createdAt;
 
 }

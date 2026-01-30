@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Data
@@ -26,12 +27,15 @@ public class TransactionsByCategoryQueries
     @PersistenceContext
     private EntityManager entityManager;
     private TransactionService transactionService;
+    private final TransactionCategoryService transactionCategoryService;
 
     @Autowired
     public TransactionsByCategoryQueries(EntityManager entityManager,
+                                         TransactionCategoryService transactionCategoryService,
                                          TransactionService transactionService)
     {
         this.entityManager = entityManager;
+        this.transactionCategoryService = transactionCategoryService;
         this.transactionService = transactionService;
     }
 
@@ -89,6 +93,34 @@ public class TransactionsByCategoryQueries
         }
     }
 
+    public List<TransactionsByCategory> getUpdatedTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            final String transactionsByCategoryQuery =  "SELECT tc.matchedCategory, CAST(t.id as long) " +
+                    "FROM TransactionCategoryEntity tc " +
+                    "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
+                    "INNER JOIN AccountEntity a ON t.account.id = a.id " +
+                    "WHERE a.user.id = :userId " +
+                    "AND t.posted BETWEEN :startDate AND :endDate " +
+                    "AND tc.status = 'Processed' AND tc.isUpdated = TRUE";
+            List<Object[]> queryResults = entityManager.createQuery(transactionsByCategoryQuery, Object[].class)
+                    .setParameter("userId", userId)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .getResultList();
+            if(queryResults.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            List<CategoryTransactionMapping> categoryTransactionMappings = getCategoryTransactionMapping(queryResults);
+            return createTransactionsByCategoryList(categoryTransactionMappings);
+        }catch(DataAccessException e){
+            log.error("There was an error: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     public List<TransactionsByCategory> getTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         final String transactionsByCategoryQuery =  "SELECT tc.matchedCategory, CAST(t.id as long) " +
@@ -96,7 +128,8 @@ public class TransactionsByCategoryQueries
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
                 "WHERE a.user.id = :userId " +
-                "AND t.posted BETWEEN :startDate AND :endDate";
+                "AND t.posted BETWEEN :startDate AND :endDate " +
+                "AND tc.status = 'New' AND tc.isUpdated = False";
         try
         {
             List<Object[]> queryResults = entityManager.createQuery(transactionsByCategoryQuery, Object[].class)
@@ -104,6 +137,14 @@ public class TransactionsByCategoryQueries
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .getResultList();
+            if(queryResults.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            List<Long> transactionIds = queryResults.stream()
+                    .map(result -> (Long) result[1])
+                    .toList();
+
             List<CategoryTransactionMapping> categoryTransactionMappings = getCategoryTransactionMapping(queryResults);
             return createTransactionsByCategoryList(categoryTransactionMappings);
         }catch(DataAccessException e){

@@ -3,6 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionsByCategory;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.exceptions.DataException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,11 +47,25 @@ public class TransactionsByCategoryService
     }
 
     @Async("taskExecutor")
+    public CompletableFuture<List<TransactionsByCategory>> fetchUpdatedTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            List<TransactionsByCategory> transactionsByCategoryList = transactionsByCategoryQueries.getUpdatedTransactionsByCategoryList(userId, startDate, endDate);
+            return CompletableFuture.completedFuture(transactionsByCategoryList);
+        }catch(DataException e){
+            log.error("There was an error fetching the updated transactions by category list {}: ", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    @Async("taskExecutor")
     public CompletableFuture<List<TransactionsByCategory>> fetchTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         try
         {
             List<TransactionsByCategory> transactionsByCategoryList = transactionsByCategoryQueries.getTransactionsByCategoryList(userId, startDate, endDate);
+
             return CompletableFuture.completedFuture(transactionsByCategoryList);
         }catch(DataAccessException e){
             log.error("There was an error fetching all the transactions by categories: ", e);

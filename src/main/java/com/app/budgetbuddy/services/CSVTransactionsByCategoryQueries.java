@@ -3,6 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.CSVTransactionsByCategory;
 import com.app.budgetbuddy.domain.CategorySpendAmount;
 import com.app.budgetbuddy.domain.TransactionCSV;
+import com.app.budgetbuddy.domain.TransactionCategoryStatus;
 import com.app.budgetbuddy.exceptions.DataException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -22,12 +23,15 @@ public class CSVTransactionsByCategoryQueries
     @PersistenceContext
     private EntityManager entityManager;
     private CSVTransactionService csvTransactionService;
+    private final TransactionCategoryService transactionCategoryService;
 
     @Autowired
     public CSVTransactionsByCategoryQueries(CSVTransactionService csvTransactionService,
+                                            TransactionCategoryService transactionCategoryService,
                                             EntityManager entityManager)
     {
         this.csvTransactionService = csvTransactionService;
+        this.transactionCategoryService = transactionCategoryService;
         this.entityManager = entityManager;
     }
 
@@ -76,6 +80,45 @@ public class CSVTransactionsByCategoryQueries
                 .collect(Collectors.toList());
     }
 
+    public List<CSVTransactionsByCategory> getUpdatedCSVTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            final String csvTransactionCategoryQuery = """
+                    SELECT ct.id, tc.matchedCategory
+                    FROM TransactionCategoryEntity tc
+                    INNER JOIN CSVTransactionEntity ct
+                        ON tc.csvTransaction.id = ct.id
+                    INNER JOIN CSVAccountEntity cae
+                        ON ct.csvAccount.id = cae.id
+                    WHERE ct.transactionDate BETWEEN :startDate AND :endDate
+                        AND cae.user.id =:userId AND tc.isUpdated = TRUE
+                        """;
+            List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("userId", userId)
+                    .getResultList();
+            log.info("Updated Results size: {}", results.size());
+            if(results.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            List<Long> csvIds = results.stream()
+                    .map(result -> (Long) result[0])
+                    .toList();
+            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = createCSVTransactionsByCategoryList(results);
+            if(!csvTransactionsByCategoryList.isEmpty())
+            {
+                updateTransactionCategoriesIsUpdatedToFalse(csvIds);
+            }
+            return csvTransactionsByCategoryList;
+        }catch(DataException e){
+            log.error("There was an error: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     public List<CSVTransactionsByCategory> getCSVTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         try
@@ -88,18 +131,70 @@ public class CSVTransactionsByCategoryQueries
                     INNER JOIN CSVAccountEntity cae
                         ON ct.csvAccount.id = cae.id
                     WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-                        AND cae.user.id =:userId
+                        AND cae.user.id =:userId AND (tc.isUpdated = FALSE AND tc.status = 'NEW') OR (tc.isUpdated = true AND tc.status = 'PROCESSED')
                     """;
             List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .setParameter("userId", userId)
                     .getResultList();
-            return createCSVTransactionsByCategoryList(results);
+            log.info("Results size: {}", results.size());
+            if(results.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            List<Long> csvIds = results.stream()
+                    .map(result -> (Long) result[0])
+                    .toList();
+            List<CSVTransactionsByCategory> csvTransactionsByCategoryList = createCSVTransactionsByCategoryList(results);
+            if(!csvTransactionsByCategoryList.isEmpty())
+            {
+                updateTransactionCategoriesToProcessed(csvIds);
+            }
+            return csvTransactionsByCategoryList;
 
         }catch(DataException e){
             log.error("There was an error fetching the csv transactions by category list for start={} and end={}: {}", startDate, endDate, e.getMessage());
             return Collections.emptyList();
+        }
+    }
+
+    private void updateTransactionCategoriesIsUpdatedToFalse(List<Long> csvIds)
+    {
+        if(csvIds.isEmpty())
+        {
+            return;
+        }
+        try
+        {
+            for(Long csvId : csvIds)
+            {
+                transactionCategoryService.updateTransactionCategoryIsUpdated(csvId, false);
+            }
+        }catch(DataException e){
+            log.error(e.getMessage());
+        }
+    }
+
+    private void updateTransactionCategoriesToProcessed(List<Long> csvTransactionIds)
+    {
+        if(csvTransactionIds == null || csvTransactionIds.isEmpty())
+        {
+            return;
+        }
+        try
+        {
+            for(Long csvId : csvTransactionIds)
+            {
+                transactionCategoryService.updateTransactionCategoryStatus(
+                        TransactionCategoryStatus.PROCESSED,
+                        csvId
+                );
+            }
+            log.info("Updated {} transaction categories to IsProcessed status", csvTransactionIds.size());
+        } catch (Exception e) {
+            log.error("Error updating transaction categories to IsProcessed: {}", e.getMessage(), e);
+            // Don't throw - we still want to return the results even if update fails
         }
     }
 

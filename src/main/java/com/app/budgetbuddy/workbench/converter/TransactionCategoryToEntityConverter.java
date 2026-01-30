@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.converter;
 
 import com.app.budgetbuddy.domain.TransactionCategory;
+import com.app.budgetbuddy.domain.TransactionCategoryStatus;
 import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.repositories.CSVTransactionRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
@@ -45,6 +46,8 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
         transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
         transactionCategoryEntity.setMatchedCategory(transactionCategory.getCategory());
         transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorizedDate());
+        transactionCategoryEntity.setStatus(TransactionCategoryStatus.NEW);
+        transactionCategoryEntity.setUpdated(transactionCategoryEntity.isUpdated());
         transactionCategoryEntity.setSubBudget(subBudgetRepository.findById(transactionCategory.getSubBudgetId()).orElse(null));
         Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());
         Optional<CSVTransactionEntity> csvTransactionEntity = getCSVTransactionEntity(transactionCategory.getCsvTransactionId());

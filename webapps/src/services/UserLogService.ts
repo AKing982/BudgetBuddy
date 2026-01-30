@@ -108,6 +108,7 @@ class UserLogService
     {
         return {
             userId: userLog.userId,
+            lastLogin: userLog.lastLogin,
             sessionDuration: userLog.sessionDuration,
             lastLogout: userLog.lastLogout,
             isActive: userLog.isActive

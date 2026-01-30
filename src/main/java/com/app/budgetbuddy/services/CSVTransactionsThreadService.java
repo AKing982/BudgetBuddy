@@ -51,4 +51,18 @@ public class CSVTransactionsThreadService
             return CompletableFuture.failedFuture(e); // Or return empty list
         }
     }
+
+    @Async("taskExecutor")
+    public CompletableFuture<List<CSVTransactionsByCategory>> fetchUpdatedCSVTransactionsByCategoryListByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<CSVTransactionsByCategory> result = csvTransactionsByCategoryQueries.getUpdatedCSVTransactionsByCategoryList(userId, startDate, endDate);
+            log.debug("Successfully fetched {} updated categories for userId={}", result.size(), userId);
+            return CompletableFuture.completedFuture(result);
+        }catch(Exception e){
+            log.error("Error fetching csv transactions by category: {}", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
+    }
 }

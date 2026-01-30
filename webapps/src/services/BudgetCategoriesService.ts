@@ -106,7 +106,30 @@ class BudgetCategoriesService
         return null;
     }
 
-    public async updateBudgetCategory(id: number, budgetCategory: BudgetCategories) : Promise<null> {
+    public async updateBudgetCategoriesByMonth(userId: number, startDate: Date, endDate: Date) : Promise<BudgetCategory[]>
+    {
+        try
+        {
+            const response = await axios.put<BudgetCategory[]>(
+                `${API_BASE_URL}/budget-category/update-by-month`,
+                null,
+                {
+                    params: {
+                        userID: userId,  // ✅ Changed to match backend parameter name
+                        startDate: this.formatDate(startDate),
+                        endDate: this.formatDate(endDate)
+                    }
+                }
+            );
+            return response.data;
+        }catch(error){
+            console.error(`There was an error updating the budget categories for ${startDate} and ${endDate}: `, error);
+            throw error;
+        }
+    }
+
+    public async updateBudgetCategory(id: number, budgetCategory: BudgetCategories) : Promise<null>
+    {
         return null;
     }
 }

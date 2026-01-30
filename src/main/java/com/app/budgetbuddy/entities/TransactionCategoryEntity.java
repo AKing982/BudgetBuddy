@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.app.budgetbuddy.domain.TransactionCategoryStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -40,6 +41,13 @@ public class TransactionCategoryEntity
 
     @Column(name="categorized_date", nullable=false)
     private LocalDate categorized_date;
+
+    @Column(name="is_updated")
+    private boolean isUpdated;
+
+    @Column(name="status", columnDefinition = "New")
+    @Enumerated(EnumType.STRING)
+    private TransactionCategoryStatus status;
 
     @Column(name="created_at")
     private LocalDateTime createdAt;

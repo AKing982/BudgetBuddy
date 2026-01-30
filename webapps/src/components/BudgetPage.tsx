@@ -14,7 +14,7 @@ import {
     Chip,
     Skeleton,
     Stack,
-    LinearProgress, Snackbar, Alert, Dialog, experimental_sx
+    LinearProgress, Snackbar, Alert, Dialog, experimental_sx, CircularProgress
 } from '@mui/material';
 import {
     ChevronLeft,
@@ -55,6 +55,7 @@ import BudgetCategoriesService from "../services/BudgetCategoriesService";
 import budgetCategoriesService from "../services/BudgetCategoriesService";
 import {isNull} from "node:util";
 import UserService from "../services/UserService";
+import TransactionCategoryService from "../services/TransactionCategoryService";
 
 interface DateArrays {
     startDate: [number, number, number];
@@ -81,6 +82,7 @@ const BudgetPage: React.FC = () => {
     const [uploadAccess, setUploadAccess] = useState<boolean>(false);
     const budgetRunnerService = BudgetRunnerService.getInstance();
     const budgetCategoryService = BudgetCategoriesService.getInstance();
+    const transactionCategoryService = TransactionCategoryService.getInstance();
     const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
     const userId = Number(sessionStorage.getItem('userId'));
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -89,6 +91,8 @@ const BudgetPage: React.FC = () => {
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>()
     const [newBudgetDialogOpen, setNewBudgetDialogOpen] = useState<boolean>(false);
     const [manageBudgetsDialogOpen, setManageBudgetsDialogOpen] = useState<boolean>(false);
+    const [isBudgetCategoryLoading, setIsBudgetCategoryLoading] = useState<boolean>(false);
+    const [budgetCategoryLoadingMessage, setBudgetCategoryLoadingMessage] = useState<string>('');
     const userService = UserService.getInstance();
 
     const uploadService = new CsvUploadService();
@@ -113,6 +117,96 @@ const BudgetPage: React.FC = () => {
     }
 
     useEffect(() => {
+        let userId = Number(sessionStorage.getItem('userId'));
+        let now = new Date();
+        let budgetStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        let budgetEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const fetchNewBudgetCategories = async () => {
+            try {
+                console.log('Creating new Budget Categories');
+                const budgetCategories = await budgetCategoryService.createBudgetCategoriesForDateRange(
+                    userId,
+                    budgetStartDate,
+                    budgetEndDate
+                );
+                console.log('Successfully created new budget categories: ', budgetCategories);
+            } catch(error) {
+                console.error(`There was an error fetching new budget categories for userId ${userId}:`, error);
+            }
+        };
+
+        const checkAndFetchBudgetCategories = async () => {
+            try {
+                const anyNewTransactionCategories = await transactionCategoryService.checkNewTransactionCategoriesByDateRange(
+                    userId,
+                    budgetStartDate,
+                    budgetEndDate
+                );
+
+                if (anyNewTransactionCategories) {
+                    setIsLoading(true);
+                    await fetchNewBudgetCategories();
+
+                    fetchBudgetData(currentMonth, true);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    setIsLoading(false);
+                }
+            } catch(error) {
+                console.error('Error checking for new transaction categories:', error);
+                setSnackbarMessage('Failed to create budget categories');
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+                setIsLoading(false);
+            }
+        };
+
+        checkAndFetchBudgetCategories();
+    }, [userId, currentMonth]);
+
+    useEffect(() => {
+        let userId = Number(sessionStorage.getItem('userId'));
+        const now = new Date();
+        const budgetStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        const budgetEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const fetchUpdatedBudgetCategories = async () => {
+            try {
+                // Check if there are any updated transaction categories first
+                const anyUpdatedTransactionCategories = await transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(
+                    userId,
+                    budgetStartDate,
+                    budgetEndDate
+                );
+
+                if (anyUpdatedTransactionCategories) {
+                    setIsLoading(true);
+                    console.log('Updating budget categories...');
+                    await budgetCategoryService.updateBudgetCategoriesByMonth(
+                        userId,
+                        budgetStartDate,
+                        budgetEndDate
+                    );
+
+                    await fetchBudgetData(currentMonth);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    setIsLoading(false);
+
+                    console.log('Successfully updated budget categories');
+                } else {
+                    console.log('No updated transaction categories found');
+                }
+            } catch(error) {
+                console.error(`There was an error fetching updated budget categories for userId ${userId}:`, error);
+                setSnackbarMessage('Failed to update budget categories');
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+                setIsLoading(false);
+            }
+        };
+
+        fetchUpdatedBudgetCategories();
+    }, [currentMonth]);
+
+    useEffect(() => {
         const fetchUserHasUploadAccess = async() => {
             try {
                 const userId = Number(sessionStorage.getItem('userId'));
@@ -123,7 +217,7 @@ const BudgetPage: React.FC = () => {
             }
         };
         fetchUserHasUploadAccess();
-    })
+    });
 
     const doesBudgetExistForBeginningYear = async (retryCount = 0) =>
     {
@@ -236,7 +330,7 @@ const BudgetPage: React.FC = () => {
     }, []);
 
 
-    const fetchBudgetData = async (date: Date) => {
+    const fetchBudgetData = async (date: Date, skipLoadingState: boolean = false) => {
         try {
             setIsLoading(true);
             setError(null);
@@ -288,10 +382,9 @@ const BudgetPage: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        fetchBudgetData(currentMonth);
-    }, [currentMonth, userId]);
-
+    // useEffect(() => {
+    //     fetchBudgetData(currentMonth);
+    // }, [currentMonth, userId]);
 
     const isEmpty = <T,>(array: T[] | null | undefined): boolean => {
         return !array || array.length === 0;
@@ -444,8 +537,6 @@ const BudgetPage: React.FC = () => {
         await fetchBudgetData(currentMonth);
     };
 
-
-
     const topExpenseCategories = useMemo(() => {
         if (!budgetData?.length) return [];
 
@@ -481,6 +572,32 @@ const BudgetPage: React.FC = () => {
             backgroundSize: '40px 40px'
         }}>
             <Sidebar />
+            {isLoading && (
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        bgcolor: 'rgba(255, 255, 255, 0.9)',
+                        backdropFilter: 'blur(8px)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                    }}
+                >
+                    <CircularProgress size={60} thickness={4} sx={{ mb: 3 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                        {budgetCategoryLoadingMessage}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Building Budget Categories, Please Wait....
+                    </Typography>
+                </Box>
+            )}
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 {/* Header with title and month navigation */}
                 <Grow in={animateIn} timeout={600}>

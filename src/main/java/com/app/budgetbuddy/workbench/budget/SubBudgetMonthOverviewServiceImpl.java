@@ -165,6 +165,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             log.warn("Invalid parameters provided to loadExpenseCategories");
             return Optional.empty();
         }
+
         final String expenseCategoryQuery = """
                             SELECT b.budgetAmount / 12 as budgetedAmount,
                             SUM(tc.actual) as totalSpent,

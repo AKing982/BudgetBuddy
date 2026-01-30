@@ -72,7 +72,7 @@ public class UserLogController
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<UserLogEntity> updateUserLog(@PathVariable Long id, @RequestBody UserLogRequest userLogRequest)
+    public ResponseEntity<?> updateUserLog(@PathVariable Long id, @RequestBody UserLogRequest userLogRequest)
     {
         try
         {
@@ -80,8 +80,9 @@ public class UserLogController
             {
                 return ResponseEntity.badRequest().build();
             }
-            Optional<UserLogEntity> userLogEntity = userLogService.updateUserLog(id, userLogRequest);
-            return userLogEntity.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+            log.info("Updating user log entity with id " + id);
+            userLogService.updateUserLog(id, userLogRequest);
+            return ResponseEntity.ok("User log updated successfully");
 
         }catch(Exception e){
             log.error("There was an error while updating user log", e);

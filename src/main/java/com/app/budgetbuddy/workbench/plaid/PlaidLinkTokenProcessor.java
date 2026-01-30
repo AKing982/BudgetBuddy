@@ -27,6 +27,9 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
     @Value("{plaid.secret}")
     private String secret;
 
+    @Value("${plaid.redirect.uri}")
+    private String redirectUri;
+
     private Logger LOGGER = LoggerFactory.getLogger(PlaidLinkTokenProcessor.class);
 
     @Autowired
@@ -49,24 +52,28 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         if(clientUserId.isEmpty()){
             throw new IllegalArgumentException("Client user id cannot be empty");
         }
+        try
+        {
+            InstitutionsGetByIdRequest request = new InstitutionsGetByIdRequest()
+                    .institutionId("ins_132917")
+                    .countryCodes(Arrays.asList(CountryCode.US));
+            InstitutionsGetByIdResponse response = plaidApi.institutionsGetById(request)
+                    .execute().body();
+            Institution institution = response.getInstitution();
 
-        InstitutionsGetByIdRequest request = new InstitutionsGetByIdRequest()
-                .institutionId("ins_132917")
-                .countryCodes(Arrays.asList(CountryCode.US));
-        InstitutionsGetByIdResponse response = plaidApi.institutionsGetById(request)
-                .execute().body();
-        Institution institution = response.getInstitution();
-        if(institution.getOauth()){
-            log.info("This institution requires OAuth");
+            LinkTokenCreateRequest linkTokenCreateRequest = new LinkTokenCreateRequest()
+                    .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
+                    .clientName("BudgetBuddy")
+                    .products(Arrays.asList(Products.TRANSACTIONS))
+                    .countryCodes(Arrays.asList(CountryCode.US))
+                    .redirectUri(redirectUri)
+                    .language("en");
+            log.info("Link Token Create Request: " + linkTokenCreateRequest);
+            return linkTokenCreateRequest;
+        }catch(Exception e){
+            log.error("Error creating link token request: {}",e.getMessage(), e);
+            throw e;
         }
-
-        return new LinkTokenCreateRequest()
-                .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
-                .clientName("BudgetBuddy")
-                .products(Arrays.asList(Products.TRANSACTIONS, Products.AUTH))
-                .countryCodes(Arrays.asList(CountryCode.US))
-                .language("en");
-
     }
 
     /**
@@ -95,17 +102,18 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         {
             attempts++;
             Call<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest);
-            response = linkTokenResponse.execute();
-            if(!response.isSuccessful()){
-                try
-                {
-                    Thread.sleep(1000);
-                }catch(InterruptedException e)
-                {
-                    throw new PlaidApiException("Error while waiting for the next attempt: ", e);
+            try
+            {
+                response = linkTokenResponse.execute();
+                if(!response.isSuccessful()){
+                    String errorBody = response.errorBody().string();
+                    log.error("Plaid API error - Code: {}, Message: {}", response.code(), errorBody);
                 }
+                log.info("Link Token Create Response: " + response);
+            }catch(IOException e){
+                log.error("IOException on attempt {}: {}", attempts, e.getMessage());
+                throw e;
             }
-
         }while(attempts < MAX_ATTEMPTS && !response.isSuccessful());
 
         if(response.isSuccessful()){
