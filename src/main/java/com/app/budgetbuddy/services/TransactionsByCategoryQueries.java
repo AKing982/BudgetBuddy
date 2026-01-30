@@ -11,13 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Data
@@ -78,7 +76,7 @@ public class TransactionsByCategoryQueries
                 "INNER JOIN TransactionsEntity t ON tc.transaction.id = t.id " +
                 "INNER JOIN AccountEntity a ON t.account.id = a.id " +
                 "WHERE a.user.id = :userId " +
-                "AND t.posted =:date";
+                "AND t.posted =:date AND (tc.isUpdated = FALSE AND tc.status = 'PROCESSED') OR (tc.isUpdated = TRUE AND tc.status = 'PROCESSED') ";
         try
         {
             List<Object[]> queryResults = entityManager.createQuery(transactionsByCategoryDateQuery, Object[].class)
@@ -103,7 +101,7 @@ public class TransactionsByCategoryQueries
                     "INNER JOIN AccountEntity a ON t.account.id = a.id " +
                     "WHERE a.user.id = :userId " +
                     "AND t.posted BETWEEN :startDate AND :endDate " +
-                    "AND tc.status = 'Processed' AND tc.isUpdated = TRUE";
+                    "AND tc.isUpdated = TRUE";
             List<Object[]> queryResults = entityManager.createQuery(transactionsByCategoryQuery, Object[].class)
                     .setParameter("userId", userId)
                     .setParameter("startDate", startDate)
