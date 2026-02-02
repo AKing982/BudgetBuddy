@@ -35,7 +35,8 @@ class TransactionRuleService
     public async getTransactionRulesByUser(userId: number) : Promise<TransactionRule[]>
     {
         try {
-            const response = await axios.get<TransactionRule[]>(`${this.api}/transaction-rules/${userId}/rules`);
+            const response = await axios.get<TransactionRule[]>(`${API_BASE_URL}/transaction-rules/${userId}/rules`);
+            console.log('Transaction Rules for user: ', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching transaction rules:', error);
@@ -47,7 +48,7 @@ class TransactionRuleService
     {
         try {
             const response = await axios.put<TransactionRule>(
-                `${this.api}/transaction-rules/${ruleId}/${userId}/update-active`,
+                `${API_BASE_URL}/transaction-rules/${ruleId}/${userId}/update-active`,
                 null,
                 {
                     params: { active }

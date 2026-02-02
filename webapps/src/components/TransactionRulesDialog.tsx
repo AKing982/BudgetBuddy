@@ -25,7 +25,8 @@ import {
     Tooltip,
     Menu,
     MenuItem,
-    Badge
+    Badge,
+    CircularProgress
 } from '@mui/material';
 import {
     Search,
@@ -71,13 +72,19 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
     const [sortBy, setSortBy] = useState<'priority' | 'matches' | 'category'>('priority');
     const [deletingRuleId, setDeletingRuleId] = useState<number | null>(null);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedRule, setSelectedRule] = useState<TransactionRule | null>(null);
+
+    // Local state for optimistic updates
     const [localRules, setLocalRules] = useState<TransactionRule[]>(rules);
 
-    const [selectedRule, setSelectedRule] = useState<TransactionRule | null>(null);
+    // Sync local state when props change
+    React.useEffect(() => {
+        setLocalRules(rules);
+    }, [rules]);
 
     // Filter and sort rules
     const filteredRules = useMemo(() => {
-        let filtered = [...localRules]; // Changed from rules to localRules
+        let filtered = [...localRules];
 
         // Apply search filter
         if (searchTerm.trim()) {
@@ -111,7 +118,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
         });
 
         return filtered;
-    }, [localRules, searchTerm, filterActive, sortBy]); // Changed dependency
+    }, [localRules, searchTerm, filterActive, sortBy]);
 
     const handleToggleExpand = (ruleId: number) => {
         setExpandedRuleId(expandedRuleId === ruleId ? null : ruleId);
@@ -119,13 +126,20 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
 
     const handleDeleteRule = async (ruleId: number) => {
         setDeletingRuleId(ruleId);
+
+        // Optimistically remove from local state
+        const originalRules = [...localRules];
+        setLocalRules(prev => prev.filter(rule => rule.id !== ruleId));
+
         try {
             await onDeleteRule(ruleId);
+            handleCloseMenu();
         } catch (error) {
+            // Revert on error
+            setLocalRules(originalRules);
             console.error('Error deleting rule:', error);
         } finally {
             setDeletingRuleId(null);
-            handleCloseMenu();
         }
     };
 
@@ -190,7 +204,6 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
         };
     }, [localRules, loading]);
 
-
     return (
         <Dialog
             open={open}
@@ -237,7 +250,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             Total Rules
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
-                            {stats.total}
+                            {loading ? '...' : stats.total}
                         </Typography>
                     </Paper>
                     <Paper sx={{ p: 2, borderRadius: 3, bgcolor: alpha('#10b981', 0.05) }}>
@@ -245,7 +258,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             Active
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: '#10b981' }}>
-                            {stats.active}
+                            {loading ? '...' : stats.active}
                         </Typography>
                     </Paper>
                     <Paper sx={{ p: 2, borderRadius: 3, bgcolor: alpha('#ef4444', 0.05) }}>
@@ -253,7 +266,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             Inactive
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: '#ef4444' }}>
-                            {stats.inactive}
+                            {loading ? '...' : stats.inactive}
                         </Typography>
                     </Paper>
                     <Paper sx={{ p: 2, borderRadius: 3, bgcolor: alpha('#8b5cf6', 0.05) }}>
@@ -261,7 +274,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             Total Matches
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b5cf6' }}>
-                            {stats.totalMatches}
+                            {loading ? '...' : stats.totalMatches}
                         </Typography>
                     </Paper>
                 </Box>
@@ -274,6 +287,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                         placeholder="Search rules..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        disabled={loading}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
@@ -292,6 +306,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             variant={filterActive === 'all' ? 'contained' : 'outlined'}
                             onClick={() => setFilterActive('all')}
                             size="small"
+                            disabled={loading}
                             sx={{ borderRadius: 3, textTransform: 'none', minWidth: 80 }}
                         >
                             All
@@ -300,6 +315,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             variant={filterActive === 'active' ? 'contained' : 'outlined'}
                             onClick={() => setFilterActive('active')}
                             size="small"
+                            disabled={loading}
                             sx={{ borderRadius: 3, textTransform: 'none', minWidth: 80 }}
                         >
                             Active
@@ -308,6 +324,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             variant={filterActive === 'inactive' ? 'contained' : 'outlined'}
                             onClick={() => setFilterActive('inactive')}
                             size="small"
+                            disabled={loading}
                             sx={{ borderRadius: 3, textTransform: 'none', minWidth: 80 }}
                         >
                             Inactive
@@ -325,6 +342,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                         onClick={() => setSortBy('priority')}
                         variant={sortBy === 'priority' ? 'filled' : 'outlined'}
                         size="small"
+                        disabled={loading}
                         sx={{ borderRadius: 2 }}
                     />
                     <Chip
@@ -332,6 +350,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                         onClick={() => setSortBy('matches')}
                         variant={sortBy === 'matches' ? 'filled' : 'outlined'}
                         size="small"
+                        disabled={loading}
                         sx={{ borderRadius: 2 }}
                     />
                     <Chip
@@ -339,12 +358,38 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                         onClick={() => setSortBy('category')}
                         variant={sortBy === 'category' ? 'filled' : 'outlined'}
                         size="small"
+                        disabled={loading}
                         sx={{ borderRadius: 2 }}
                     />
                 </Box>
 
                 {/* Rules List */}
-                {filteredRules.length === 0 ? (
+                {loading ? (
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            py: 8
+                        }}
+                    >
+                        <CircularProgress
+                            size={56}
+                            thickness={4}
+                            sx={{
+                                mb: 3,
+                                color: theme.palette.primary.main
+                            }}
+                        />
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                            Loading Transaction Rules
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Please wait while we fetch your rules...
+                        </Typography>
+                    </Box>
+                ) : filteredRules.length === 0 ? (
                     <Paper
                         sx={{
                             p: 6,

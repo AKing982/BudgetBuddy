@@ -13,6 +13,7 @@ public class TransactionRuleConverter implements Converter<TransactionRuleEntity
         return TransactionRule.builder()
                 .id(transactionRuleEntity.getId())
                 .amountMax(transactionRuleEntity.getAmountMax())
+                .matchCount(transactionRuleEntity.getMatchCount())
                 .amountMin(transactionRuleEntity.getAmountMin())
                 .descriptionRule(transactionRuleEntity.getDescriptionRule())
                 .priority(transactionRuleEntity.getPriority())

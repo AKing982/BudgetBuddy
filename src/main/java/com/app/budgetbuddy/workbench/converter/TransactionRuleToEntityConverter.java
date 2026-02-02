@@ -31,6 +31,7 @@ public class TransactionRuleToEntityConverter implements Converter<TransactionRu
                 .amountMin(transactionRule.getAmountMin())
                 .category(transactionRule.getCategoryName())
                 .isActive(transactionRule.isActive())
+                .matchCount(transactionRule.getMatchCount())
                 .extendedDescriptionRule(transactionRule.getExtendedDescriptionRule())
                 .priority(transactionRule.getPriority())
                 .build();
