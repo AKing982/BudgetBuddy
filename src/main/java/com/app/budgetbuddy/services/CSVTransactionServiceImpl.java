@@ -121,8 +121,25 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
     @Transactional
     public void saveAllCSVTransactionEntities(List<CSVTransactionEntity> csvTransactionEntities)
     {
+        List<CSVTransactionEntity> uniqueCSVTransactionEntities = new ArrayList<>();
         try
         {
+            for(CSVTransactionEntity csvTransactionEntity : csvTransactionEntities)
+            {
+                Long userId = csvTransactionEntity.getCsvAccount().getUser().getId();
+                LocalDate transactionDate = csvTransactionEntity.getTransactionDate();
+                String description = csvTransactionEntity.getDescription();
+                String extendedDescription = csvTransactionEntity.getExtendedDescription();
+                String merchant = csvTransactionEntity.getMerchantName();
+                // Does the transaction already exist in the database?
+                Optional<CSVTransactionEntity> existing = csvTransactionRepository.findCSVTransactionByUserIdAndParams(userId, transactionDate, merchant, extendedDescription, description);
+                if(existing.isPresent())
+                {
+                    log.info("CSVTransaction with id {} already exists", csvTransactionEntity.getId());
+                    continue;
+                }
+                uniqueCSVTransactionEntities.add(csvTransactionEntity);
+            }
             csvTransactionRepository.saveAll(csvTransactionEntities);
         }catch(DataAccessException e){
             log.error("There was an error saving the CSV transaction entities: ", e);

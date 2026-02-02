@@ -1,12 +1,12 @@
 import {useEffect, useState} from "react";
-import {GroceryBudget} from "../config/Types";
+import {GroceryBudget, GroceryBudgetWithTotals} from "../config/Types";
 import {
     Alert, alpha,
     AppBar,
     Box,
-    Button, Card,
-    Container,
-    Grow,
+    Button, Card, Chip,
+    Container, FormControl, Grid,
+    Grow, IconButton, InputLabel, MenuItem, Select,
     Stack,
     Tab,
     Tabs,
@@ -15,9 +15,7 @@ import {
     useTheme
 } from "@mui/material";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import ListIcon from '@mui/icons-material/List';
 import {GroceryBudgetCreate} from "./GroceryBudgetCreate";
-import {GroceryBudgetDetail} from "./GroceryBudgetDetail";
 import {GroceryBudgetList} from "./GroceryBudgetList";
 import {BudgetComparisonView} from "./BudgetComparisonView";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
@@ -27,11 +25,22 @@ import {
     List,
     Plus,
     TrendingUp,
-    ArrowLeft
+    ArrowLeft, Calendar, ChevronRight, ChevronLeft, ListIcon
 } from 'lucide-react';
 import Sidebar from "./Sidebar";
+import GroceryBudgetTable, {ReceiptSummary, WeekData} from "./GroceryBudgetTable";
+import { addMonths, format, subMonths } from 'date-fns';
+import ReceiptDetailPanel from "./ReceiptDetailPanel";
+// import GroceryBudgetDetailPanel from "./GroceryBudgetDetailPanel";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import GroceryBudgetStatsPanel from "./GroceryBudgetStatsPanel";
+import GroceryAnalyticsPanel from "./GroceryAnalyticsPanel";
+import GroceryListDialog, { GroceryListItem} from './GroceryListDialog';
 
-type View = 'list' | 'create' | 'detail' | 'compare';
+type GroceryTrackerView = 'table' | 'create' | 'compare';
+export type ViewMode = 'week' | 'receiptDetail' | 'budgetDetail' | 'analytics';
 
 const gradients = {
     blue: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
@@ -39,25 +48,57 @@ const gradients = {
     purple: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
     orange: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
     indigo: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
-    teal: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)'
+    teal: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
+    maroon: 'linear-gradient(135deg, #800000 0%, #a00000 100%)'
 };
 
 const GroceryTracker: React.FC = () => {
-    const [currentView, setCurrentView] = useState<View>('list');
+    const [currentView, setCurrentView] = useState<GroceryTrackerView>('table');
     const [selectedBudget, setSelectedBudget] = useState<GroceryBudget | null>(null);
     const [budgets, setBudgets] = useState<GroceryBudget[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
     const [tabValue, setTabValue] = useState(0);
     const [animateIn, setAnimateIn] = useState(false);
+    const [selectedBudgetId, setSelectedBudgetId] = useState<number>(1);
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedReceipt, setSelectedReceipt] = useState<ReceiptSummary | null>(null);
+    const [selectedWeek, setSelectedWeek] = useState<WeekData | null>(null);
+    const [viewMode, setViewMode] = useState<ViewMode>('week');
+    const [createDialogOpen, setCreateDialogOpen] = useState<boolean>(false);
+    const [weekReceipts, setWeekReceipts] = useState<ReceiptSummary[]>([]);
+    const [groceryListDialogOpen, setGroceryListDialogOpen] = useState(false);
+    const [savedGroceryList, setSavedGroceryList] = useState<GroceryListItem[]>([]);
+    const [weeklyData, setWeeklyData] = useState<WeekData[]>([]); // For week options
+
 
     const handleViewBudget = (budget: GroceryBudget) => {
         setSelectedBudget(budget);
-        setCurrentView('detail');
+        setCurrentView('table');
     };
 
+    // Update your handleReceiptSelect function to also set weekReceipts
+
+    const handleCreateNew = () => {
+        setCreateDialogOpen(true);
+    };
+
+// Update the component props
+    const handleBudgetCreateSuccess = () => {
+        setCreateDialogOpen(false);
+        loadBudgets();
+    };
+
+    const handleSaveGroceryList = (items: GroceryListItem[], budgetId: number) => {
+        console.log('Saved grocery list to budget:', budgetId);
+        console.log('Items:', items);
+        setGroceryListDialogOpen(false);
+        // TODO: Save to backend or state
+    };
+
+
     useEffect(() => {
-        document.title = 'Grocery Tracker - BudgetBuddy';
+        document.title = 'Grocery Tracker';
         setTimeout(() => setAnimateIn(true), 100);
         loadBudgets();
 
@@ -66,6 +107,49 @@ const GroceryTracker: React.FC = () => {
         };
     }, []);
 
+    const transformBudgetData = (budget: GroceryBudget): GroceryBudgetWithTotals => {
+        const totalSpent = budget.stores.reduce((sum, store) => {
+            return sum + store.items.reduce((storeSum, item) => storeSum + item.itemCost, 0);
+        }, 0);
+
+        // Force type narrowing for id
+        const id: number = budget.id ?? 0;
+
+        // Explicitly type the result to satisfy Required<>
+        const result: GroceryBudgetWithTotals = {
+            id,
+            name: budget.name,
+            budgetAmount: budget.budgetAmount,
+            totalSpent,
+            startDate: budget.startDate,
+            endDate: budget.endDate,
+            savingsGoal: budget.savingsGoal,
+            subBudgetId: budget.subBudgetId,
+            plannedItems: budget.plannedItems,
+            stores: budget.stores.map(store => ({
+                storeName: store.storeName,
+                totalSpent: store.items.reduce((sum, item) => sum + item.itemCost, 0),
+                items: store.items
+            })),
+            sections: budget.sections
+        };
+
+        return result;
+    };
+
+    const handlePreviousMonth = () => {
+        setCurrentMonth(prevMonth => subMonths(prevMonth, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentMonth(prevMonth => addMonths(prevMonth, 1));
+    };
+
+    const dummyBudgets = [
+        { id: 1, name: 'Week 1: 02/01/26 - 02/07/26', budgetAmount: 600 },
+        { id: 2, name: 'Week 2: 02/08/26 - 02/15/26', budgetAmount: 700 },
+        { id: 3, name: 'Week 3: 02/16/26 - 02/23/26', budgetAmount: 150 }
+    ];
 
     const loadBudgets = async () => {
         try {
@@ -342,6 +426,7 @@ const GroceryTracker: React.FC = () => {
             // Simulate API delay
             setTimeout(() => {
                 setBudgets(dummyBudgets);
+                setSelectedBudget(dummyBudgets[0]); // <-- AUTO-SELECT FIRST BUDGET
                 setLoading(false);
             }, 500);
 
@@ -352,31 +437,37 @@ const GroceryTracker: React.FC = () => {
         }
     };
 
+    const showRightPanel = viewMode === 'week' || 'receiptDetail' || viewMode === 'budgetDetail' || viewMode === 'analytics';
+
     const handleBackToList = () => {
-        setCurrentView('list');
+        setCurrentView('table');
         setSelectedBudget(null);
         loadBudgets();
     };
 
 
-
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setTabValue(newValue);
-        const views: View[] = ['list', 'create', 'compare'];
-        setCurrentView(views[newValue]);
-    };
-
-
-    const handleCreateNew = () => {
-        setCurrentView('create');
-    };
-
     const handleCompare = () => {
         setCurrentView('compare');
     };
 
-    const theme = useTheme();
+    const handleReceiptSelect = (receipt: ReceiptSummary) => {
+        setSelectedReceipt(receipt);
+    };
 
+    const handleViewModeChange = (mode: ViewMode) => {
+        setViewMode(mode);
+        setSelectedReceipt(null);
+        setSelectedWeek(null);
+    };
+
+
+    const handleWeekSelect = (week: WeekData) => {
+        setSelectedWeek(week);
+        setSelectedReceipt(null); // Clear receipt selection when selecting week
+    };
+
+
+    const theme = useTheme();
     return (
         <Box sx={{
             maxWidth: 'calc(100% - 240px)',
@@ -388,7 +479,7 @@ const GroceryTracker: React.FC = () => {
         }}>
             <Sidebar />
 
-            <Container maxWidth="lg" sx={{ py: 4 }}>
+            <Container maxWidth="xl" sx={{ py: 4 }}>
                 {/* Header Section */}
                 <Grow in={animateIn} timeout={600}>
                     <Box sx={{
@@ -401,152 +492,132 @@ const GroceryTracker: React.FC = () => {
                         gap: 2
                     }}>
                         <Box>
-                            {currentView === 'detail' ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Button
-                                        onClick={handleBackToList}
-                                        startIcon={<ArrowLeft size={18} />}
-                                        sx={{
-                                            borderRadius: 2,
-                                            textTransform: 'none',
-                                            fontWeight: 600,
-                                            color: theme.palette.text.primary,
-                                            '&:hover': {
-                                                backgroundColor: alpha(theme.palette.primary.main, 0.05)
-                                            }
-                                        }}
-                                    >
-                                        Back
-                                    </Button>
-                                    <Typography variant="h4" component="h1" sx={{
-                                        fontWeight: 800,
-                                        color: theme.palette.text.primary,
-                                        letterSpacing: '-0.025em'
-                                    }}>
-                                        Budget Details
-                                    </Typography>
-                                </Box>
-                            ) : (
-                                <>
-                                    <Typography variant="h4" component="h1" sx={{
-                                        fontWeight: 800,
-                                        color: theme.palette.text.primary,
-                                        letterSpacing: '-0.025em',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2
-                                    }}>
-                                        <Box sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: '12px',
-                                            background: gradients.teal,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)'
-                                        }}>
-                                            <ShoppingCart size={24} color="white" />
-                                        </Box>
-                                        Grocery Tracker
-                                    </Typography>
-                                    <Typography variant="subtitle1" sx={{ color: theme.palette.text.secondary, mt: 0.5 }}>
-                                        {currentView === 'create' && 'Create a new grocery budget'}
-                                        {currentView === 'list' && 'Manage and track your grocery budgets'}
-                                        {currentView === 'compare' && 'Compare your grocery budgets'}
-                                    </Typography>
-                                </>
-                            )}
+                            <Typography variant="h4" component="h1" sx={{
+                                fontWeight: 800,
+                                color: theme.palette.text.primary,
+                                letterSpacing: '-0.025em'
+                            }}>
+                                {format(currentMonth, 'MMMM yyyy')} Groceries
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ color: theme.palette.text.secondary, mt: 0.5 }}>
+                                Track your grocery spending and manage budgets
+                            </Typography>
                         </Box>
 
-                        {/* Action Buttons */}
-                        {currentView !== 'detail' && (
-                            <Stack direction="row" spacing={2}>
-                                <Button
-                                    variant={currentView === 'list' ? 'contained' : 'outlined'}
-                                    startIcon={<List size={18} />}
-                                    onClick={() => setCurrentView('list')}
-                                    sx={{
-                                        borderRadius: 3,
-                                        textTransform: 'none',
-                                        fontWeight: 600,
-                                        px: 3,
-                                        ...(currentView === 'list' ? {
-                                            background: gradients.blue,
-                                            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
-                                            '&:hover': {
-                                                background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-                                            }
-                                        } : {
-                                            borderColor: alpha(theme.palette.divider, 0.8),
-                                            color: theme.palette.text.primary,
-                                            '&:hover': {
-                                                borderColor: theme.palette.primary.main,
-                                                backgroundColor: alpha(theme.palette.primary.main, 0.05)
-                                            }
-                                        })
-                                    }}
-                                >
-                                    View Budgets
-                                </Button>
+                        {/* Month Navigation + Action Buttons */}
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                        }}>
+                            <IconButton
+                                onClick={handlePreviousMonth}
+                                disabled={loading}
+                                sx={{
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                    color: theme.palette.primary.main,
+                                    '&:hover': {
+                                        bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                    }
+                                }}
+                            >
+                                <ChevronLeft />
+                            </IconButton>
 
-                                <Button
-                                    variant={currentView === 'create' ? 'contained' : 'outlined'}
-                                    startIcon={<Plus size={18} />}
-                                    onClick={handleCreateNew}
-                                    sx={{
-                                        borderRadius: 3,
-                                        textTransform: 'none',
-                                        fontWeight: 600,
-                                        px: 3,
-                                        ...(currentView === 'create' ? {
-                                            background: gradients.green,
-                                            boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
-                                            '&:hover': {
-                                                background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
-                                            }
-                                        } : {
-                                            borderColor: alpha(theme.palette.divider, 0.8),
-                                            color: theme.palette.text.primary,
-                                            '&:hover': {
-                                                borderColor: theme.palette.primary.main,
-                                                backgroundColor: alpha(theme.palette.primary.main, 0.05)
-                                            }
-                                        })
-                                    }}
-                                >
-                                    Create Budget
-                                </Button>
+                            <Card sx={{
+                                px: 2.5,
+                                py: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderRadius: 2,
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                            }}>
+                                <Calendar size={18} style={{ marginRight: 8, color: theme.palette.text.secondary }} />
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                    {format(currentMonth, 'MMMM yyyy')}
+                                </Typography>
+                            </Card>
 
-                                <Button
-                                    variant={currentView === 'compare' ? 'contained' : 'outlined'}
-                                    startIcon={<TrendingUp size={18} />}
-                                    onClick={handleCompare}
-                                    sx={{
-                                        borderRadius: 3,
-                                        textTransform: 'none',
-                                        fontWeight: 600,
-                                        px: 3,
-                                        ...(currentView === 'compare' ? {
-                                            background: gradients.purple,
-                                            boxShadow: '0 4px 14px rgba(124, 58, 237, 0.25)',
-                                            '&:hover': {
-                                                background: 'linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)',
-                                            }
-                                        } : {
-                                            borderColor: alpha(theme.palette.divider, 0.8),
-                                            color: theme.palette.text.primary,
-                                            '&:hover': {
-                                                borderColor: theme.palette.primary.main,
-                                                backgroundColor: alpha(theme.palette.primary.main, 0.05)
-                                            }
-                                        })
-                                    }}
-                                >
-                                    Compare
-                                </Button>
-                            </Stack>
-                        )}
+                            <IconButton
+                                onClick={handleNextMonth}
+                                disabled={loading}
+                                sx={{
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                    color: theme.palette.primary.main,
+                                    '&:hover': {
+                                        bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                    }
+                                }}
+                            >
+                                <ChevronRight />
+                            </IconButton>
+
+                            <Button
+                                variant={currentView === 'create' ? 'contained' : 'outlined'}
+                                startIcon={<Plus size={18} />}
+                                onClick={handleCreateNew}
+                                sx={{
+                                    ml: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    ...(currentView === 'create' ? {
+                                        background: gradients.green,
+                                        boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
+                                        '&:hover': {
+                                            background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
+                                        }
+                                    } : {
+                                        borderColor: alpha(theme.palette.divider, 0.8),
+                                        color: theme.palette.text.primary,
+                                        '&:hover': {
+                                            borderColor: theme.palette.primary.main,
+                                            backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                                        }
+                                    })
+                                }}
+                            >
+                                Create Budget
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                startIcon={<ListIcon size={18} />}
+                                onClick={() => setGroceryListDialogOpen(true)}
+                                disabled={!selectedBudget}
+                                endIcon={
+                                    savedGroceryList.length > 0 ? (
+                                        <Chip
+                                            label={savedGroceryList.length}
+                                            size="small"
+                                            sx={{
+                                                height: 20,
+                                                fontSize: '0.7rem',
+                                                bgcolor: alpha('#0d9488', 0.2),
+                                                color: '#0d9488'
+                                            }}
+                                        />
+                                    ) : null
+                                }
+                                sx={{
+                                    ml: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderColor: alpha(theme.palette.divider, 0.8),
+                                    color: theme.palette.text.primary,
+                                    '&:hover': {
+                                        borderColor: '#0d9488',
+                                        backgroundColor: alpha('#0d9488', 0.05)
+                                    },
+                                    '&.Mui-disabled': {
+                                        borderColor: alpha(theme.palette.divider, 0.3),
+                                        color: theme.palette.text.disabled
+                                    }
+                                }}
+                            >
+                                Grocery List
+                            </Button>
+                        </Box>
                     </Box>
                 </Grow>
 
@@ -570,41 +641,248 @@ const GroceryTracker: React.FC = () => {
                 {/* Main Content */}
                 <Grow in={animateIn} timeout={900}>
                     <Box>
-                        {currentView === 'list' && (
-                            <GroceryBudgetList
-                                budgets={budgets}
-                                onViewBudget={handleViewBudget}
-                            />
+                        {currentView === 'table' && selectedBudget && (
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} lg={8}>
+                                    <GroceryBudgetTable
+                                        budget={transformBudgetData(selectedBudget)}
+                                        viewMode={viewMode}
+                                        onViewModeChange={handleViewModeChange}
+                                        onReceiptSelect={handleReceiptSelect}
+                                        onWeekSelect={handleWeekSelect}
+                                    />
+                                </Grid>
+                                {showRightPanel && (
+                                    <Grid item xs={12} lg={4}>
+                                        <Box sx={{ position: 'sticky', top: 24 }}>
+                                            {viewMode === 'week' && (
+                                                <GroceryBudgetStatsPanel budget={transformBudgetData(selectedBudget)} />
+                                            )}
+                                            {viewMode === 'receiptDetail' && (
+                                                <ReceiptDetailPanel receipt={selectedReceipt}
+                                                                    weekReceipts={selectedReceipt ? [
+                                                                        selectedReceipt,
+                                                                        {
+                                                                            ...selectedReceipt,
+                                                                            id: 'dummy-1',
+                                                                            storeName: 'Trader Joes',
+                                                                            totalCost: 45.50,
+                                                                            purchaseDate: '2026-01-10'
+                                                                        },
+                                                                        {
+                                                                            ...selectedReceipt,
+                                                                            id: 'dummy-2',
+                                                                            storeName: 'Costco',
+                                                                            totalCost: 89.99,
+                                                                            purchaseDate: '2026-01-12'
+                                                                        }
+                                                                    ] : []}/>
+                                            )}
+                                            {/*{viewMode === 'budgetDetail' && (*/}
+                                            {/*    <GroceryBudgetDetailPanel week={selectedWeek} />*/}
+                                            {/*)}*/}
+                                            {viewMode === 'analytics' && (
+                                                <GroceryAnalyticsPanel budget={transformBudgetData(selectedBudget)} />
+                                            )}
+                                        </Box>
+                                    </Grid>
+                                )}
+                            </Grid>
                         )}
-
-                        {currentView === 'create' && (
-                            <Card sx={{
-                                p: 4,
-                                borderRadius: 4,
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)'
-                            }}>
-                                <GroceryBudgetCreate
-                                    onSuccess={handleBackToList}
-                                    onCancel={handleBackToList}
-                                />
-                            </Card>
-                        )}
-
-                        {currentView === 'detail' && selectedBudget && (
-                            <GroceryBudgetDetail
-                                budget={selectedBudget}
-                                onBack={handleBackToList}
-                            />
-                        )}
-
-                        {currentView === 'compare' && (
-                            <BudgetComparisonView budgets={budgets} />
-                        )}
+                        <GroceryBudgetCreate
+                            open={createDialogOpen}
+                            onSuccess={handleBudgetCreateSuccess}
+                            onClose={() => setCreateDialogOpen(false)}
+                        />
+                        <GroceryListDialog
+                            open={groceryListDialogOpen}
+                            onClose={() => setGroceryListDialogOpen(false)}
+                            budgets={dummyBudgets}  // Pass your array of budgets
+                            onSave={handleSaveGroceryList}
+                        />
+                        <GroceryBudgetCreate
+                            open={createDialogOpen}
+                            onSuccess={handleBudgetCreateSuccess}
+                            onClose={() => setCreateDialogOpen(false)}
+                        />
                     </Box>
                 </Grow>
             </Container>
         </Box>
     );
+    // return (
+    //     <Box sx={{
+    //         maxWidth: 'calc(100% - 240px)',
+    //         ml: '240px',
+    //         minHeight: '100vh',
+    //         background: '#f9fafc',
+    //         backgroundImage: 'radial-gradient(rgba(0, 0, 120, 0.01) 2px, transparent 2px)',
+    //         backgroundSize: '40px 40px'
+    //     }}>
+    //         <Sidebar />
+    //
+    //         <Container maxWidth="xl" sx={{ py: 4 }}>
+    //             {/* Header Section */}
+    //             <Grow in={animateIn} timeout={600}>
+    //                 <Box sx={{
+    //                     display: 'flex',
+    //                     justifyContent: 'space-between',
+    //                     alignItems: 'center',
+    //                     mb: 4,
+    //                     flexDirection: { xs: 'column', sm: 'row' },
+    //                     textAlign: { xs: 'center', sm: 'left' },
+    //                     gap: 2
+    //                 }}>
+    //                     <Box>
+    //                         <Typography variant="h4" component="h1" sx={{
+    //                             fontWeight: 800,
+    //                             color: theme.palette.text.primary,
+    //                             letterSpacing: '-0.025em'
+    //                         }}>
+    //                             {format(currentMonth, 'MMMM yyyy')} Groceries
+    //                         </Typography>
+    //                         <Typography variant="subtitle1" sx={{ color: theme.palette.text.secondary, mt: 0.5 }}>
+    //                             Track your grocery spending and manage budgets
+    //                         </Typography>
+    //                     </Box>
+    //
+    //                     {/* Month Navigation + Action Buttons */}
+    //                     <Box sx={{
+    //                         display: 'flex',
+    //                         alignItems: 'center',
+    //                         gap: 1
+    //                     }}>
+    //                         <IconButton
+    //                             onClick={handlePreviousMonth}
+    //                             disabled={loading}
+    //                             sx={{
+    //                                 bgcolor: alpha(theme.palette.primary.main, 0.1),
+    //                                 color: theme.palette.primary.main,
+    //                                 '&:hover': {
+    //                                     bgcolor: alpha(theme.palette.primary.main, 0.2),
+    //                                 }
+    //                             }}
+    //                         >
+    //                             <ChevronLeft />
+    //                         </IconButton>
+    //
+    //                         <Card sx={{
+    //                             px: 2.5,
+    //                             py: 1,
+    //                             display: 'flex',
+    //                             alignItems: 'center',
+    //                             borderRadius: 2,
+    //                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+    //                         }}>
+    //                             <Calendar size={18} style={{ marginRight: 8, color: theme.palette.text.secondary }} />
+    //                             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+    //                                 {format(currentMonth, 'MMMM yyyy')}
+    //                             </Typography>
+    //                         </Card>
+    //
+    //                         <IconButton
+    //                             onClick={handleNextMonth}
+    //                             disabled={loading}
+    //                             sx={{
+    //                                 bgcolor: alpha(theme.palette.primary.main, 0.1),
+    //                                 color: theme.palette.primary.main,
+    //                                 '&:hover': {
+    //                                     bgcolor: alpha(theme.palette.primary.main, 0.2),
+    //                                 }
+    //                             }}
+    //                         >
+    //                             <ChevronRight />
+    //                         </IconButton>
+    //
+    //                         <Button
+    //                             variant={currentView === 'create' ? 'contained' : 'outlined'}
+    //                             startIcon={<Plus size={18} />}
+    //                             onClick={handleCreateNew}
+    //                             sx={{
+    //                                 ml: 1,
+    //                                 borderRadius: 2,
+    //                                 textTransform: 'none',
+    //                                 fontWeight: 600,
+    //                                 ...(currentView === 'create' ? {
+    //                                     background: gradients.green,
+    //                                     boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
+    //                                     '&:hover': {
+    //                                         background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
+    //                                     }
+    //                                 } : {
+    //                                     borderColor: alpha(theme.palette.divider, 0.8),
+    //                                     color: theme.palette.text.primary,
+    //                                     '&:hover': {
+    //                                         borderColor: theme.palette.primary.main,
+    //                                         backgroundColor: alpha(theme.palette.primary.main, 0.05)
+    //                                     }
+    //                                 })
+    //                             }}
+    //                         >
+    //                             Create Budget
+    //                         </Button>
+    //                     </Box>
+    //                 </Box>
+    //             </Grow>
+    //
+    //             {/* Error Alert */}
+    //             {error && (
+    //                 <Grow in={true} timeout={800}>
+    //                     <Alert
+    //                         severity="error"
+    //                         sx={{
+    //                             mb: 3,
+    //                             borderRadius: 3,
+    //                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+    //                         }}
+    //                         onClose={() => setError('')}
+    //                     >
+    //                         {error}
+    //                     </Alert>
+    //                 </Grow>
+    //             )}
+    //
+    //             {/* Main Content */}
+    //             <Grow in={animateIn} timeout={900}>
+    //                 <Box>
+    //                     {currentView === 'table' && selectedBudget && (
+    //                         <Grid container spacing={3}>
+    //                             <Grid item xs={12} lg={8}>
+    //                                 <GroceryBudgetTable
+    //                                     budget={transformBudgetData(selectedBudget)}
+    //                                     viewMode={viewMode}
+    //                                     onViewModeChange={handleViewModeChange}
+    //                                     onReceiptSelect={handleReceiptSelect}
+    //                                     onWeekSelect={handleWeekSelect}
+    //                                 />
+    //                             </Grid>
+    //                             {showRightPanel && (
+    //                                 <Grid item xs={12} lg={4}>
+    //                                     <Box sx={{ position: 'sticky', top: 24 }}>
+    //                                         {viewMode === 'week' && (
+    //                                             <GroceryBudgetStatsPanel budget={transformBudgetData(selectedBudget)} />
+    //                                         )}
+    //                                         {viewMode === 'receiptDetail' && (
+    //                                             <ReceiptDetailPanel receipt={selectedReceipt} />
+    //                                         )}
+    //                                         {viewMode === 'budgetDetail' && (
+    //                                             <GroceryBudgetDetailPanel week={selectedWeek} />
+    //                                         )}
+    //                                     </Box>
+    //                                 </Grid>
+    //                             )}
+    //                         </Grid>
+    //                     )}
+    //                     <GroceryBudgetCreate
+    //                         open={createDialogOpen}
+    //                         onSuccess={handleBudgetCreateSuccess}
+    //                         onClose={() => setCreateDialogOpen(false)}
+    //                     />
+    //                 </Box>
+    //             </Grow>
+    //         </Container>
+    //     </Box>
+    // );
 };
 
 export default GroceryTracker;

@@ -43,6 +43,23 @@ class TransactionRuleService
         }
     }
 
+    public async updateTransactionRuleActiveState(userId: number, ruleId: number, active: boolean) : Promise<TransactionRule>
+    {
+        try {
+            const response = await axios.put<TransactionRule>(
+                `${this.api}/transaction-rules/${ruleId}/${userId}/update-active`,
+                null,
+                {
+                    params: { active }
+                }
+            );
+            return response.data;
+        } catch(error) {
+            console.error('There was an error updating the transaction rule active state: ', error);
+            throw error;
+        }
+    }
+
     public async deleteTransactionRule(userId: number, ruleId: number): Promise<boolean>
     {
         try

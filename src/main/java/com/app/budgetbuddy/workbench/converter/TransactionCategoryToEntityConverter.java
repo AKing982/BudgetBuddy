@@ -42,24 +42,30 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
     public TransactionCategoryEntity convert(TransactionCategory transactionCategory)
     {
         TransactionCategoryEntity transactionCategoryEntity = new TransactionCategoryEntity();
-        transactionCategoryEntity.setId(transactionCategory.getId());
-        transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
-        transactionCategoryEntity.setMatchedCategory(transactionCategory.getCategory());
-        transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorizedDate());
-        transactionCategoryEntity.setStatus(TransactionCategoryStatus.NEW);
-        transactionCategoryEntity.setUpdated(transactionCategoryEntity.isUpdated());
-        transactionCategoryEntity.setSubBudget(subBudgetRepository.findById(transactionCategory.getSubBudgetId()).orElse(null));
-        Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());
-        Optional<CSVTransactionEntity> csvTransactionEntity = getCSVTransactionEntity(transactionCategory.getCsvTransactionId());
-        if(transactionEntity.isEmpty() && csvTransactionEntity.isPresent())
+        try
         {
-            transactionCategoryEntity.setCsvTransaction(csvTransactionEntity.get());
+            transactionCategoryEntity.setId(transactionCategory.getId());
+            transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
+            transactionCategoryEntity.setMatchedCategory(transactionCategory.getCategory());
+            transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorizedDate());
+            transactionCategoryEntity.setStatus(TransactionCategoryStatus.NEW);
+            transactionCategoryEntity.setUpdated(transactionCategoryEntity.isUpdated());
+            transactionCategoryEntity.setSubBudget(subBudgetRepository.findById(transactionCategory.getSubBudgetId()).orElse(null));
+            Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());
+            Optional<CSVTransactionEntity> csvTransactionEntity = getCSVTransactionEntity(transactionCategory.getCsvTransactionId());
+            if(transactionEntity.isEmpty() && csvTransactionEntity.isPresent())
+            {
+                transactionCategoryEntity.setCsvTransaction(csvTransactionEntity.get());
+            }
+            else if(csvTransactionEntity.isEmpty() && transactionEntity.isPresent())
+            {
+                transactionCategoryEntity.setTransaction(transactionEntity.get());
+            }
+            return transactionCategoryEntity;
+        }catch(Exception e){
+            log.error("There was an error converting the transaction category model to entity: {}", e.getMessage());
+            throw e;
         }
-        else if(csvTransactionEntity.isEmpty() && transactionEntity.isPresent())
-        {
-            transactionCategoryEntity.setTransaction(transactionEntity.get());
-        }
-        return transactionCategoryEntity;
     }
 
     private Optional<CSVTransactionEntity> getCSVTransactionEntity(Long transactionId)

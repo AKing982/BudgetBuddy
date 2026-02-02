@@ -1,4 +1,4 @@
-import { addMonths, format, subMonths } from 'date-fns';
+import {addMonths, endOfMonth, format, startOfMonth, subMonths} from 'date-fns';
 import {
     Box,
     Button,
@@ -14,7 +14,7 @@ import {
     Chip,
     Skeleton,
     Stack,
-    LinearProgress, Snackbar, Alert, Dialog, experimental_sx, CircularProgress
+    LinearProgress, Snackbar, Alert, Dialog, experimental_sx, CircularProgress, Backdrop
 } from '@mui/material';
 import {
     ChevronLeft,
@@ -75,7 +75,7 @@ const gradients = {
 const BudgetPage: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [budgetType, setBudgetType] = useState('50/30/20');
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [animateIn, setAnimateIn] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -116,11 +116,13 @@ const BudgetPage: React.FC = () => {
         setImportDialogOpen(false);
     }
 
+
     useEffect(() => {
         let userId = Number(sessionStorage.getItem('userId'));
         let now = new Date();
-        let budgetStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        let budgetEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const budgetStartDate = startOfMonth(currentMonth);
+        const budgetEndDate = endOfMonth(currentMonth);
+        console.log('Budget End Date {}', budgetEndDate);
         const fetchNewBudgetCategories = async () => {
             try {
                 console.log('Creating new Budget Categories');
@@ -144,19 +146,19 @@ const BudgetPage: React.FC = () => {
                 );
 
                 if (anyNewTransactionCategories) {
-                    setIsLoading(true);
+                    setIsBudgetCategoryLoading(true);
                     await fetchNewBudgetCategories();
 
                     fetchBudgetData(currentMonth, true);
                     await new Promise(resolve => setTimeout(resolve, 2000));
-                    setIsLoading(false);
+                    setIsBudgetCategoryLoading(false);
                 }
             } catch(error) {
                 console.error('Error checking for new transaction categories:', error);
                 setSnackbarMessage('Failed to create budget categories');
                 setSnackbarSeverity('error');
                 setSnackbarOpen(true);
-                setIsLoading(false);
+                setIsBudgetCategoryLoading(false);
             }
         };
 
@@ -178,7 +180,7 @@ const BudgetPage: React.FC = () => {
                 );
 
                 if (anyUpdatedTransactionCategories) {
-                    setIsLoading(true);
+                    setIsBudgetCategoryLoading(true);
                     console.log('Updating budget categories...');
                     await budgetCategoryService.updateBudgetCategoriesByMonth(
                         userId,
@@ -188,7 +190,7 @@ const BudgetPage: React.FC = () => {
 
                     await fetchBudgetData(currentMonth);
                     await new Promise(resolve => setTimeout(resolve, 2000));
-                    setIsLoading(false);
+                    setIsBudgetCategoryLoading(false);
 
                     console.log('Successfully updated budget categories');
                 } else {
@@ -199,7 +201,7 @@ const BudgetPage: React.FC = () => {
                 setSnackbarMessage('Failed to update budget categories');
                 setSnackbarSeverity('error');
                 setSnackbarOpen(true);
-                setIsLoading(false);
+                setIsBudgetCategoryLoading(false);
             }
         };
 
@@ -320,7 +322,7 @@ const BudgetPage: React.FC = () => {
     }
 
     useEffect(() => {
-        document.title = 'Budget Dashboard';
+        document.title = 'Budgets';
         // Trigger animation after component mounts
         setTimeout(() => setAnimateIn(true), 100);
 
@@ -330,9 +332,13 @@ const BudgetPage: React.FC = () => {
     }, []);
 
 
-    const fetchBudgetData = async (date: Date, skipLoadingState: boolean = false) => {
+    const fetchBudgetData = async (date: Date, useBudgetCategoryLoading: boolean = false) => {
         try {
-            setIsLoading(true);
+            if(useBudgetCategoryLoading){
+                setIsBudgetCategoryLoading(true);
+            }else{
+                setIsLoading(true);
+            }
             setError(null);
 
             // Get first and last day of the month
@@ -378,7 +384,12 @@ const BudgetPage: React.FC = () => {
             setError('Failed to fetch budget data. Please try again later.');
             console.error('Error fetching budget data:', err);
         } finally {
-            setIsLoading(false);
+            if (useBudgetCategoryLoading) {
+                setIsBudgetCategoryLoading(false);
+                setBudgetCategoryLoadingMessage('');
+            } else {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -572,7 +583,7 @@ const BudgetPage: React.FC = () => {
             backgroundSize: '40px 40px'
         }}>
             <Sidebar />
-            {isLoading && (
+            {isBudgetCategoryLoading && (
                 <Box
                     sx={{
                         position: 'fixed',
@@ -1533,212 +1544,42 @@ const BudgetPage: React.FC = () => {
                     {successMessage}
                 </Alert>
             </Snackbar>
+            <Backdrop
+                sx={{
+                    color: '#fff',
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)'
+                }}
+                open={isLoading && !isBudgetCategoryLoading} // Only show for CSV import, not budget category loading
+            >
+                <Box sx={{ textAlign: 'center' }}>
+                    <CircularProgress color="inherit" size={60} />
+                    <Typography variant="h6" sx={{ mt: 2 }}>
+                        Importing CSV data...
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+                        Please wait while we process your transactions
+                    </Typography>
+                </Box>
+            </Backdrop>
+
+            <Snackbar
+                open={snackBarOpen}
+                autoHideDuration={6000}
+                onClose={() => setSnackbarOpen(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSnackbarOpen(false)}
+                    severity={snackbarSeverity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
+
     );
 };
-
-
-// const BudgetPage: React.FC = () => {
-//     const [currentMonth, setCurrentMonth] = useState(new Date());
-//     const [budgetType, setBudgetType] = useState('50/30/20');
-//     const [isLoading, setIsLoading] = useState(true);
-//     const [error, setError] = useState<string | null>(null);
-//     const budgetRunnerService = BudgetRunnerService.getInstance();
-//     const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
-//     const userId = Number(sessionStorage.getItem('userId'));
-//
-//     const handlePreviousMonth = () => {
-//         setCurrentMonth(prevMonth => subMonths(prevMonth, 1));
-//     };
-//
-//     const handleNextMonth = () => {
-//         setCurrentMonth(prevMonth => addMonths(prevMonth, 1));
-//     };
-//
-//     useEffect(() => {
-//         document.title = 'Budgets';
-//         // Optional: Return a cleanup function to reset the title when component unmounts
-//         return () => {
-//             document.title = "Budgets";
-//         };
-//     }, []);
-//
-//     const fetchBudgetData = async (date: Date) => {
-//         try {
-//             setIsLoading(true);
-//             setError(null);
-//
-//             // Get first and last day of the month
-//             const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
-//             const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-//
-//             const results = await budgetRunnerService.getBudgetsByDateRange(
-//                 userId,
-//                 startDate,
-//                 endDate
-//             );
-//
-//             setBudgetData(results);
-//             console.log('Budget Data: ', results);
-//         } catch (err) {
-//             setError('Failed to fetch budget data. Please try again later.');
-//             console.error('Error fetching budget data:', err);
-//         } finally {
-//             setIsLoading(false);
-//         }
-//     };
-//
-//
-//     useEffect(() => {
-//         fetchBudgetData(currentMonth);
-//     }, [currentMonth, userId]);
-//
-//
-//     const defaultBudgetStats: BudgetStats = {
-//         averageSpendingPerDay: 0,
-//         budgetId: 0,
-//         dateRange: new DateRange(new Date(), new Date()),
-//         healthScore: 0,
-//         monthlyProjection: null,
-//         remaining: 0,
-//         totalBudget: 0,
-//         totalSaved: 0,
-//         totalSpent: 0
-//     };
-//
-//
-//     const budgetStats = useMemo(() => {
-//         if (!budgetData?.length) {
-//             return {
-//                 averageSpendingPerDay: 0,
-//                 budgetId: 0,
-//                 dateRange: new DateRange(new Date(), new Date()),
-//                 healthScore: 0,
-//                 monthlyProjection: null,
-//                 remaining: 0,
-//                 totalBudget: 0,
-//                 totalSaved: 0,
-//                 totalSpent: 0
-//             };
-//         }
-//
-//         const stats = budgetData[0]?.budgetStats[0];
-//         if (!stats) return defaultBudgetStats;
-//
-//         // Just tell TypeScript these are number arrays
-//         const startDate = (stats.dateRange.startDate as unknown) as number[];
-//         const endDate = (stats.dateRange.endDate as unknown) as number[];
-//
-//
-//         return {
-//             averageSpendingPerDay: stats.averageSpendingPerDay ?? 0,
-//             budgetId: stats.budgetId,
-//             dateRange: new DateRange(
-//                 new Date(startDate[0], startDate[1] - 1, startDate[2]),
-//                 new Date(endDate[0], endDate[1] - 1, endDate[2])
-//             ),
-//             healthScore: stats.healthScore ?? 0,
-//             monthlyProjection: stats.monthlyProjection,
-//             remaining: stats.remaining,
-//             totalBudget: stats.totalBudget,
-//             totalSaved: stats.totalSaved,
-//             totalSpent: stats.totalSpent
-//         };
-//     }, [budgetData]);
-//
-//     const handleBudgetTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-//         setBudgetType(event.target.value as string);
-//     };
-//
-//     const handleAddBudget = (newBudget: any) => {
-//         // Implement the logic to add a new budget
-//         console.log('Add new budget');
-//     };
-//
-//     const topExpenseCategories = useMemo(() => {
-//         if (!budgetData?.length) return [];
-//
-//         // Flatten topExpenseCategories from all budget results
-//         return budgetData.reduce<any[]>((acc, budget) => {
-//             const stats = budget.budgetCategoryStats;
-//             if (!stats || !stats.topExpenseCategories) {
-//                 return acc;
-//             }
-//
-//             // Map the top expenses to match the component's expected structure
-//             const mappedExpenses = stats.topExpenseCategories.map(expense => ({
-//                 categoryName: expense.category,
-//                 budgetedAmount: expense.budgetedExpenses,
-//                 actualAmount: expense.actualExpenses,
-//                 remainingAmount: expense.remainingExpenses,
-//                 startDate: expense.startDate,
-//                 endDate: expense.endDate,
-//                 isActive: expense.active
-//             }));
-//
-//             return [...acc, ...mappedExpenses];
-//         }, []);
-//     }, [budgetData]);
-//
-//     return (
-//         <Box sx={{ p: 3, maxWidth: 937, margin: 'auto' }}>
-//             <Sidebar />
-//             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-//                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
-//                     {format(currentMonth, 'MMMM yyyy')} Budget
-//                 </Typography>
-//                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-//                     <Button
-//                         startIcon={<ChevronLeft />}
-//                         onClick={handlePreviousMonth}
-//                         sx={{ mr: 1 }}
-//                         disabled={isLoading}
-//                     >
-//                         {format(subMonths(currentMonth, 1), 'MMM. yyyy')}
-//                     </Button>
-//                     <Button
-//                         endIcon={<ChevronRight />}
-//                         onClick={handleNextMonth}
-//                         disabled={isLoading}
-//                     >
-//                         {format(addMonths(currentMonth, 1), 'MMM. yyyy')}
-//                     </Button>
-//                 </Box>
-//             </Box>
-//             {error && (
-//                 <Box sx={{ mb: 2, p: 2, bgcolor: 'error.light', color: 'error.contrastText', borderRadius: 1 }}>
-//                     {error}
-//                 </Box>
-//             )}
-//
-//             <Grid container spacing={4}>
-//                 <Grid item xs={12} md={8}>
-//                     <Box sx={{ mb: 4 }}>
-//                         <BudgetOverview isLoading={isLoading} data={budgetData}/>
-//                     </Box>
-//
-//                     <Box sx={{ mb: 4 }}>
-//                         <TopExpenseCategory isLoading={isLoading} categories={topExpenseCategories}/>
-//                     </Box>
-//
-//                     <Box>
-//                         <BudgetPeriodTable isLoading={isLoading} data={budgetData} />
-//                     </Box>
-//                 </Grid>
-//                 <Grid item xs={12} md={4}>
-//                     <Box sx={{mb: 4}}>
-//                         <BudgetSummary
-//                            isLoading={isLoading}
-//                            budgetStats={budgetStats}
-//                         />
-//                     </Box>
-//                    <Box>
-//                        <BudgetProgressSummary />
-//                    </Box>
-//                 </Grid>
-//             </Grid>
-//         </Box>
-//     );
-// }
 
 export default BudgetPage;

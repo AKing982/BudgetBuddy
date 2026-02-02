@@ -1,14 +1,15 @@
 package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.entities.CSVTransactionEntity;
-import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEntity, Long>
@@ -30,6 +31,15 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
            "AND c.transactionDate >= :startDate " +
            "AND c.transactionDate <= :endDate")
     boolean existsByUserAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT cte " +
+            "FROM CSVTransactionEntity cte " +
+            "WHERE cte.csvAccount.user.id =:userId " +
+            "AND cte.transactionDate = :date " +
+            "AND cte.merchantName =:merchant " +
+            "AND cte.extendedDescription =:extended " +
+            "AND cte.description =:description")
+    Optional<CSVTransactionEntity> findCSVTransactionByUserIdAndParams(@Param("userId") Long userId, @Param("date") LocalDate date, @Param("merchant") String merchantName, @Param("extended") String extendedDescription, @Param("description") String description);
 
     @Query("SELECT ct FROM CSVTransactionEntity ct WHERE ct.transactionDate BETWEEN :startDate AND :endDate AND ct.csvAccount.id =:acctId")
     List<CSVTransactionEntity> findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(@Param("acctId") Long acctId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);

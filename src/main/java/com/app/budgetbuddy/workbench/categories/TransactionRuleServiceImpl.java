@@ -108,6 +108,7 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
         try
         {
             List<TransactionRuleEntity> transactionRuleEntities = transactionRuleRepository.findAllByUser(userId);
+            log.info("Transaction rules size: " + transactionRuleEntities.size());
             return transactionRuleEntities.stream()
                     .map(this::createCategoryRuleFromEntity)
                     .toList();
@@ -138,6 +139,42 @@ public class TransactionRuleServiceImpl implements TransactionRuleService
                 .filter(TransactionRuleEntity::isActive)
                 .map(this::createCategoryRuleFromEntity)
                 .toList();
+    }
+
+    @Override
+    public void updateTransactionRule(TransactionRule transactionRule)
+    {
+        try
+        {
+            Long ruleId = transactionRule.getId();
+            Optional<TransactionRuleEntity> transactionRuleEntityOptional = transactionRuleRepository.findById(ruleId);
+            if(transactionRuleEntityOptional.isPresent())
+            {
+                TransactionRuleEntity existingTransactionRule = transactionRuleEntityOptional.get();
+
+                // Convert the transaction rule
+                TransactionRuleEntity updatedTransactionRule = transactionRuleToEntityConverter.convert(transactionRule);
+                transactionRuleRepository.updateTransactionRule(updatedTransactionRule, ruleId);
+
+            }
+        }catch(DataAccessException ex){
+            log.error("There was an error updating the transaction rule: ", ex);
+
+        }
+    }
+
+
+    @Override
+    @Transactional
+    public void updateTransactionRuleActiveStatus(boolean active, Long ruleId, Long userId)
+    {
+        try
+        {
+            transactionRuleRepository.updateActive(ruleId, active, userId);
+        }catch(DataAccessException ex){
+            log.error("There was an error updating the transaction rule: ", ex);
+            return;
+        }
     }
 
     @Override

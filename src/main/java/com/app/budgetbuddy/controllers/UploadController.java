@@ -91,78 +91,85 @@ public class UploadController
             return ResponseEntity.badRequest().body(new UploadStatus("No File was uploaded", false));
         }
         boolean userHasUploadAccess = userService.doesUserHaveOverride(userId);
-        if(userHasUploadAccess)
+        try
         {
-            InputStream inputStream = file.getInputStream();
-            CsvParserSettings settings = new CsvParserSettings();
-            settings.setHeaderExtractionEnabled(true);
-            settings.getFormat().setLineSeparator("\n");
-            SimpleDateFormat formatter = new SimpleDateFormat("MM/d/yyyy");
-            CsvParser parser = new CsvParser(settings);
-            boolean transactionsExistForDateRange = validateCSVTransactionExistForDateRange(userId, startDate, endDate);
-            if(transactionsExistForDateRange)
+            if(userHasUploadAccess)
             {
-                log.error("Transactions already exist for user {} between {} and {}", userId, startDate, endDate);
-                return ResponseEntity.status(409).body(new UploadStatus("Transactions already exist for the selected date range. Please choose a different date range or delete existing transactions first.", false));
-            }
-            List<Record> parseAllRecords = parser.parseAllRecords(inputStream);
-            parseAllRecords.forEach(record -> {
-                TransactionCSV transactionCSV = new TransactionCSV();
-                transactionCSV.setAccount(record.getString("Account"));
-                transactionCSV.setSuffix(Integer.parseInt(record.getString("Suffix")));
-                transactionCSV.setSequenceNo(removeLeadingZeros(record.getString("Sequence Number")));
-                transactionCSV.setTransactionDate(convertDateToLocalDate(record.getString("Transaction Date"), formatter));
-                transactionCSV.setTransactionAmount(parseCurrency(record.getString("Transaction Amount")));
-                transactionCSV.setDescription(record.getString("Description"));
-                transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
-                transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(record.getString("Extended Description"), record.getString("Description")));
-                transactionCSV.setExtendedDescription(record.getString("Extended Description"));
-                transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(record.getString("Electronic Transaction Date"), formatter));
-                transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
-                log.info("{}", transactionCSV.toString());
-                transactionCsvData.add(transactionCSV);
-            });
-            if(transactionCsvData.isEmpty())
-            {
-                log.error("No transactions were parsed from the uploaded CSV file");
-                return ResponseEntity.badRequest().body(new UploadStatus("No transactions were parsed from the uploaded CSV file", false));
-            }
-            log.info("Successfully parsed {} transactions from the uploaded CSV file", transactionCsvData.size());
-            List<TransactionCSV> filteredTransactionsByDateRange = filterTransactionCSVByDateRange(transactionCsvData, startDate, endDate);
-            log.info("Successfully filtered csv transactions by date range: start={}, end={}, size={}", startDate, endDate, filteredTransactionsByDateRange.size());
-            // After filtering convert the Transaction CSV models to TransactionEntity models
-            // Check if the user has any accounts with the indicated suffix's from the transaction CSVs
-            List<AccountEntity> userPlaidAccounts = accountService.findByUser(userId);
-            log.info("User {} has {} Plaid accounts", userId, userPlaidAccounts.size());
-            if(userPlaidAccounts.isEmpty())
-            {
-                log.info("No User Plaid accounts found... Creating Account CSV info");
-                // Next step is to generate CSVAccounts
-                Set<AccountCSV> accountCSVList = accountCSVUploaderService.createCSVList(filteredTransactionsByDateRange, userId);
-                List<CSVAccountEntity> csvAccountEntityList = accountCSVUploaderService.createEntityList(accountCSVList);
-                accountCSVUploaderService.saveEntities(csvAccountEntityList);
-                log.info("Successfully created {} CSVAccountEntities for user {}", csvAccountEntityList.size(), userId);
-            }
-            log.info("Successfully converted {} Transaction CSV models to TransactionEntity models", filteredTransactionsByDateRange.size());
-            filteredTransactionsByDateRange.forEach(transactionCSV -> log.info("{}", transactionCSV));
-            List<CSVTransactionEntity> csvTransactionEntityList = csvTransactionService.createCSVTransactionEntities(filteredTransactionsByDateRange, userId);
-            if(csvTransactionEntityList.isEmpty())
-            {
-                log.error("No CSVTransactionEntities were created for user {} between {} and {}", userId, startDate, endDate);
-                return ResponseEntity.badRequest().body(new UploadStatus("No CSVTransactionEntities were created from the uploaded CSV file", false));
-            }
-            csvTransactionService.saveAllCSVTransactionEntities(csvTransactionEntityList);
+                InputStream inputStream = file.getInputStream();
+                CsvParserSettings settings = new CsvParserSettings();
+                settings.setHeaderExtractionEnabled(true);
+                settings.getFormat().setLineSeparator("\n");
+                SimpleDateFormat formatter = new SimpleDateFormat("MM/d/yyyy");
+                CsvParser parser = new CsvParser(settings);
+//                boolean transactionsExistForDateRange = validateCSVTransactionExistForDateRange(userId, startDate, endDate);
+//                if(transactionsExistForDateRange)
+//                {
+//                    log.error("Transactions already exist for user {} between {} and {}", userId, startDate, endDate);
+//                    return ResponseEntity.status(409).body(new UploadStatus("Transactions already exist for the selected date range. Please choose a different date range or delete existing transactions first.", false));
+//                }
+                List<Record> parseAllRecords = parser.parseAllRecords(inputStream);
+                parseAllRecords.forEach(record -> {
+                    TransactionCSV transactionCSV = new TransactionCSV();
+                    transactionCSV.setAccount(record.getString("Account"));
+                    transactionCSV.setSuffix(Integer.parseInt(record.getString("Suffix")));
+                    transactionCSV.setSequenceNo(removeLeadingZeros(record.getString("Sequence Number")));
+                    transactionCSV.setTransactionDate(convertDateToLocalDate(record.getString("Transaction Date"), formatter));
+                    transactionCSV.setTransactionAmount(parseCurrency(record.getString("Transaction Amount")));
+                    transactionCSV.setDescription(record.getString("Description"));
+                    transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
+                    transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(record.getString("Extended Description"), record.getString("Description")));
+                    transactionCSV.setExtendedDescription(record.getString("Extended Description"));
+                    transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(record.getString("Electronic Transaction Date"), formatter));
+                    transactionCSV.setBalance(parseCurrency(record.getString("Balance")));
+                    log.info("{}", transactionCSV.toString());
+                    transactionCsvData.add(transactionCSV);
+                });
+                if(transactionCsvData.isEmpty())
+                {
+                    log.error("No transactions were parsed from the uploaded CSV file");
+                    return ResponseEntity.badRequest().body(new UploadStatus("No transactions were parsed from the uploaded CSV file", false));
+                }
+                log.info("Successfully parsed {} transactions from the uploaded CSV file", transactionCsvData.size());
+                List<TransactionCSV> filteredTransactionsByDateRange = filterTransactionCSVByDateRange(transactionCsvData, startDate, endDate);
+                log.info("Successfully filtered csv transactions by date range: start={}, end={}, size={}", startDate, endDate, filteredTransactionsByDateRange.size());
+                // After filtering convert the Transaction CSV models to TransactionEntity models
+                // Check if the user has any accounts with the indicated suffix's from the transaction CSVs
+                List<AccountEntity> userPlaidAccounts = accountService.findByUser(userId);
+                log.info("User {} has {} Plaid accounts", userId, userPlaidAccounts.size());
+                if(userPlaidAccounts.isEmpty())
+                {
+                    log.info("No User Plaid accounts found... Creating Account CSV info");
+                    // Next step is to generate CSVAccounts
+                    Set<AccountCSV> accountCSVList = accountCSVUploaderService.createCSVList(filteredTransactionsByDateRange, userId);
+                    List<CSVAccountEntity> csvAccountEntityList = accountCSVUploaderService.createEntityList(accountCSVList);
+                    accountCSVUploaderService.saveEntities(csvAccountEntityList);
+                    log.info("Successfully created {} CSVAccountEntities for user {}", csvAccountEntityList.size(), userId);
+                }
+                log.info("Successfully converted {} Transaction CSV models to TransactionEntity models", filteredTransactionsByDateRange.size());
+                filteredTransactionsByDateRange.forEach(transactionCSV -> log.info("{}", transactionCSV));
+                List<CSVTransactionEntity> csvTransactionEntityList = csvTransactionService.createCSVTransactionEntities(filteredTransactionsByDateRange, userId);
+                if(csvTransactionEntityList.isEmpty())
+                {
+                    log.error("No CSVTransactionEntities were created for user {} between {} and {}", userId, startDate, endDate);
+                    return ResponseEntity.badRequest().body(new UploadStatus("No CSVTransactionEntities were created from the uploaded CSV file", false));
+                }
+                csvTransactionService.saveAllCSVTransactionEntities(csvTransactionEntityList);
 
-            // Categorize the CSV Transactions for the uploaded date range
-            categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
+                // Categorize the CSV Transactions for the uploaded date range
+                categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
+            }
+            else
+            {
+                log.error("User {} does not have upload access", userId);
+                String userUploadMessage = "User " + userId + " does not have upload access";
+                return ResponseEntity.status(403).body(new UploadStatus(userUploadMessage,false));
+            }
+            return ResponseEntity.ok(new UploadStatus("Successfully uploaded CSV file", true));
+        }catch(Exception ex){
+            log.error("There was an error uploading CSV file", ex);
+            return ResponseEntity.internalServerError().body(new UploadStatus("There was an error uploading CSV file: " + ex.getMessage(), false));
         }
-        else
-        {
-            log.error("User {} does not have upload access", userId);
-            String userUploadMessage = "User " + userId + " does not have upload access";
-            return ResponseEntity.status(403).body(new UploadStatus(userUploadMessage,false));
-        }
-        return ResponseEntity.ok(new UploadStatus("Successfully uploaded CSV file", true));
+
     }
 
 
@@ -190,26 +197,32 @@ public class UploadController
             log.info("Extended Description is null or empty");
             return description != null ? description : " ";
         }
-        String trimmedExtendedDescription = extendedDescription.trim();
-        log.info("Original Merchant Name: {}", trimmedExtendedDescription);
-        Locations[] locations = Locations.values();
-        for(Locations location : locations)
+        try
         {
-            String locationValue = location.getValue();
-            log.info("Location Value: {}", locationValue);
-            String toLowerValue = locationValue.toLowerCase();
-            log.info("ToLower Value: {}", toLowerValue);
-            if(trimmedExtendedDescription.toLowerCase().contains(locationValue.toLowerCase()))
+            String trimmedExtendedDescription = extendedDescription.trim();
+            log.info("Original Merchant Name: {}", trimmedExtendedDescription);
+            Locations[] locations = Locations.values();
+            for(Locations location : locations)
             {
-                log.info("Merchant Name contains: {}", locationValue);
-                int toUpperIndex = trimmedExtendedDescription.indexOf(toLowerValue);
-                int toUpperLength = toLowerValue.length();
-                trimmedExtendedDescription = trimmedExtendedDescription.substring(0, toUpperIndex + toUpperLength + 1).trim();
-                log.info("Trimmed Merchant Name substring: {}", trimmedExtendedDescription);
-                break;
+                String locationValue = location.getValue();
+                log.info("Location Value: {}", locationValue);
+                String toLowerValue = locationValue.toLowerCase();
+                log.info("ToLower Value: {}", toLowerValue);
+                if(trimmedExtendedDescription.toLowerCase().contains(locationValue.toLowerCase()))
+                {
+                    log.info("Merchant Name contains: {}", locationValue);
+                    int toUpperIndex = trimmedExtendedDescription.indexOf(toLowerValue);
+                    int toUpperLength = toLowerValue.length();
+                    trimmedExtendedDescription = trimmedExtendedDescription.substring(0, toUpperIndex + toUpperLength + 1).trim();
+                    log.info("Trimmed Merchant Name substring: {}", trimmedExtendedDescription);
+                    break;
+                }
             }
+            return trimmedExtendedDescription;
+        }catch(Exception ex){
+            log.error("There was an error converting extended description to merchant name", ex);
+            throw ex;
         }
-        return trimmedExtendedDescription;
     }
 
     private Long removeLeadingZeros(String sequenceNumber)

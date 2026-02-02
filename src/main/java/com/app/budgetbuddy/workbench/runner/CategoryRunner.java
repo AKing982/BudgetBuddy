@@ -43,20 +43,6 @@ public class CategoryRunner
         this.transactionCategoryService = transactionCategoryService;
     }
 
-//    @Scheduled(cron = "0 0 * * * 1-5")
-//    public void scheduleCSVTransactionCategorization()
-//    {
-//        LocalDate today = LocalDate.now();
-//        LocalDate lastMonth = today.minusDays(30);
-//        List<Long> currentUserIds = userLogService.getActiveUserIds();
-//        if(currentUserIds.isEmpty())
-//        {
-//            log.warn("There are no active users to categorize CSV transactions for");
-//            return;
-//        }
-//        currentUserIds.forEach(userId -> categorizeCSVTransactionsByRange(userId, lastMonth, today));
-//    }
-
     public void categorizeSingleCSVTransaction(final CategorySaveData categorySaveData)
     {
         if(categorySaveData == null)

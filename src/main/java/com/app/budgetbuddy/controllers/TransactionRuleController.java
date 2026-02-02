@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/transaction-rules")
@@ -52,15 +53,47 @@ public class TransactionRuleController
         }
     }
 
-    @PutMapping("/{userId}/update/{ruleId}")
-    public ResponseEntity<TransactionRule> updateTransactionRule(@PathVariable Long userId,
-                                                                  @PathVariable Long ruleId)
+    @PutMapping("/{ruleId}/{userId}/update-active")
+    public ResponseEntity<TransactionRule> updateTransactionRuleActiveStatus(@PathVariable Long ruleId,
+                                                                             @PathVariable Long userId,
+                                                                             @RequestParam boolean active)
     {
         try
         {
-            return null;
+            transactionRuleService.updateTransactionRuleActiveStatus(active, ruleId, userId);
+            Optional<TransactionRuleEntity> transactionRuleEntityOptional = transactionRuleService.findById(ruleId);
+            if(transactionRuleEntityOptional.isPresent())
+            {
+                TransactionRuleEntity transactionRuleEntity = transactionRuleEntityOptional.get();
+                TransactionRule transactionRule = transactionRuleService.createCategoryRuleFromEntity(transactionRuleEntity);
+                return ResponseEntity.ok(transactionRule);
+            }else{
+                return ResponseEntity.notFound().build();
+            }
         }catch(Exception e){
-            log.error("There was an error updating transaction rule {} for user {}", ruleId, userId, e);
+            log.error("There was an error updating the transaction rule {} active status: ",  ruleId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/{userId}/update/{ruleId}")
+    public ResponseEntity<TransactionRule> updateTransactionRule(@PathVariable Long ruleId,
+                                                                 @RequestBody TransactionRule transactionRule)
+    {
+        try
+        {
+            transactionRuleService.updateTransactionRule(transactionRule);
+            Optional<TransactionRuleEntity> transactionRuleEntityOptional = transactionRuleService.findById(ruleId);
+            if(transactionRuleEntityOptional.isPresent())
+            {
+                TransactionRuleEntity transactionRuleEntity = transactionRuleEntityOptional.get();
+                TransactionRule transactionRule1 = transactionRuleService.createCategoryRuleFromEntity(transactionRuleEntity);
+                return ResponseEntity.ok(transactionRule1);
+            }
+            return ResponseEntity.notFound().build();
+
+        }catch(Exception e){
+            log.error("There was an error updating transaction rule {}", ruleId, e);
             return ResponseEntity.internalServerError().build();
         }
     }

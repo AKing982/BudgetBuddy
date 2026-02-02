@@ -347,6 +347,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
             subBudget.endDate[2]
         );
 
+        console.log('periodData {}', periodData);
         periodData.forEach(category => {
             try {
                 if (budgetPeriod === 'BiWeekly') {
@@ -428,27 +429,48 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         const monthEnd = endOfMonth(selectedDate);
 
         // Filter ranges based on budgetPeriod
+        // const filteredRanges = ranges.filter(([start, end]) => {
+        //     const daysDiff = differenceInDays(end, start);
+        //
+        //     switch (budgetPeriod) {
+        //         case 'Daily':
+        //             return isSameDay(start, selectedDate);
+        //         case 'Weekly':
+        //             return daysDiff === 6;
+        //         case 'BiWeekly':
+        //             return daysDiff === 13; // BiWeekly ranges should be exactly 13 days based on the data
+        //         case 'Monthly':
+        //             // return isWithinInterval(start, {
+        //             //     start: monthStart,
+        //             //     end: monthEnd
+        //             // });
+        //             return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
+        //         default:
+        //             return true;
+        //     }
+        // });
         const filteredRanges = ranges.filter(([start, end]) => {
-            const daysDiff = differenceInDays(end, start);
-
             switch (budgetPeriod) {
                 case 'Daily':
                     return isSameDay(start, selectedDate);
+
                 case 'Weekly':
-                    return daysDiff === 6;
-                case 'BiWeekly':
-                    return daysDiff === 13; // BiWeekly ranges should be exactly 13 days based on the data
-                case 'Monthly':
-                    // return isWithinInterval(start, {
-                    //     start: monthStart,
-                    //     end: monthEnd
-                    // });
+                    // FIX: Check if the week starts within the SubBudget range
+                    // OR if it overlaps the selected month.
                     return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
+
+                case 'BiWeekly':
+                    // FIX: Similar to weekly, don't rely on exactly 13 days if the
+                    // end of the budget period cuts a bi-week short.
+                    return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
+
+                case 'Monthly':
+                    return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
+
                 default:
                     return true;
             }
         });
-
         console.log('Filtered ranges for', budgetPeriod, ':', filteredRanges.map(([start, end]) => ({
             start: format(start, 'yyyy-MM-dd'),
             end: format(end, 'yyyy-MM-dd'),
@@ -482,321 +504,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         );
     }
 
-    // return (
-    //     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    //         <Box>
-    //             <Typography variant="h5" component="h2" gutterBottom sx={{
-    //                 fontWeight: 'bold',
-    //                 mb: 2,
-    //                 textAlign: 'left',
-    //                 fontSize: '0.875rem',
-    //                 color: 'text.secondary'
-    //             }}>
-    //                 Budget Period Overview
-    //             </Typography>
-    //
-    //             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-    //                 <StyledButtonGroup variant="outlined" aria-label="budget period toggle">
-    //                     {['Daily', 'Weekly', 'BiWeekly', 'Monthly'].map((period) => (
-    //                         <StyledButton
-    //                             key={period}
-    //                             onClick={() => setBudgetPeriod(period as BudgetPeriod)}
-    //                             variant={budgetPeriod === period ? 'contained' : 'outlined'}
-    //                         >
-    //                             {period}
-    //                         </StyledButton>
-    //                     ))}
-    //                 </StyledButtonGroup>
-    //
-    //                 <DatePicker
-    //                     label="Select Date"
-    //                     value={selectedDate}
-    //                     onChange={(newValue: Date | null) => setSelectedDate(newValue)}
-    //                     disabled={budgetPeriod !== 'Daily'}
-    //                 />
-    //             </Box>
-    //
-    //             <TableContainer component={Paper} sx={{
-    //                 boxShadow: 3,
-    //                 borderRadius: 4,
-    //                 maxHeight: '600px',
-    //                 transition: 'box-shadow 0.3s ease-in-out',
-    //                 '&:hover': {
-    //                     boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-    //                 }
-    //             }}>
-    //                 <Table>
-    //                     <TableHead>
-    //                         <TableRow sx={{backgroundColor: 'background.paper'}}>
-    //                             <TableCell sx={{
-    //                                 fontWeight: 'bold',
-    //                                 color: maroonColor,
-    //                                 fontSize: '0.95rem'
-    //                             }}>Category</TableCell>
-    //                             <TableCell align="right" sx={{
-    //                                 fontWeight: 'bold',
-    //                                 color: maroonColor,
-    //                                 fontSize: '0.95rem'
-    //                             }}>Budgeted</TableCell>
-    //                             <TableCell align="right" sx={{
-    //                                 fontWeight: 'bold',
-    //                                 color: maroonColor,
-    //                                 fontSize: '0.95rem'
-    //                             }}>Actual</TableCell>
-    //                             <TableCell align="right" sx={{
-    //                                 fontWeight: 'bold',
-    //                                 color: maroonColor,
-    //                                 fontSize: '0.95rem'
-    //                             }}>Remaining</TableCell>
-    //                         </TableRow>
-    //                     </TableHead>
-    //                     <TableBody>
-    //                         {isLoadingData ? (
-    //                             <TableRow>
-    //                                 <TableCell colSpan={4}>
-    //                                     <Skeleton variant="rectangular" height={100} />
-    //                                 </TableCell>
-    //                             </TableRow>
-    //                         ) : !data?.[0]?.subBudget ? (
-    //                             <TableRow>
-    //                                 <TableCell
-    //                                     colSpan={4}
-    //                                     align="center"
-    //                                     sx={{ color: 'gray', fontStyle: 'italic' }}
-    //                                 >
-    //                                     No budget data available.
-    //                                 </TableCell>
-    //                             </TableRow>
-    //                         ) : (
-    //                             (() => {
-    //                                 const subBudget = data[0].subBudget;
-    //                                 if (!subBudget) return null;
-    //
-    //                                 const dateRanges = getDateRanges(subBudget);
-    //
-    //                                 if (!dateRanges.length) {
-    //                                     return (
-    //                                         <TableRow>
-    //                                             <TableCell
-    //                                                 colSpan={4}
-    //                                                 align="center"
-    //                                                 sx={{ color: 'gray', fontStyle: 'italic' }}
-    //                                             >
-    //                                                 No date ranges available for this period.
-    //                                             </TableCell>
-    //                                         </TableRow>
-    //                                     );
-    //                                 }
-    //
-    //                                 return dateRanges.map(([start, end], rangeIndex) => (
-    //                                     <React.Fragment key={`range-${rangeIndex}`}>
-    //                                         <TableRow>
-    //                                             <TableCell
-    //                                                 colSpan={4}
-    //                                                 sx={{
-    //                                                     fontWeight: 'bold',
-    //                                                     color: maroonColor,
-    //                                                     fontSize: '1rem',
-    //                                                     backgroundColor: 'rgba(128, 0, 0, 0.1)'
-    //                                                 }}
-    //                                             >
-    //                                                 {format(start, 'MM/dd/yy')} - {format(end, 'MM/dd/yy')}
-    //                                             </TableCell>
-    //                                         </TableRow>
-    //                                         {periodData.length > 0 ? (
-    //                                             periodData.filter(category => {
-    //                                                 if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {
-    //                                                     return category.biWeekRanges.some(range => {
-    //                                                         const startArr = (range.startDate as unknown) as number[];
-    //                                                         const endArr = (range.endDate as unknown) as number[];
-    //
-    //                                                         const categoryStart = new Date(
-    //                                                             Number(startArr[0]),
-    //                                                             Number(startArr[1]) - 1,
-    //                                                             Number(startArr[2])
-    //                                                         );
-    //                                                         const categoryEnd = new Date(
-    //                                                             Number(endArr[0]),
-    //                                                             Number(endArr[1]) - 1,
-    //                                                             Number(endArr[2])
-    //                                                         );
-    //                                                         return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
-    //                                                     });
-    //                                                 } else if (category.dateRange?.startDate && category.dateRange?.endDate) {
-    //                                                     const startArr = (category.dateRange.startDate as unknown) as number[];
-    //                                                     const endArr = (category.dateRange.endDate as unknown) as number[];
-    //
-    //                                                     const categoryStart = new Date(
-    //                                                         Number(startArr[0]),
-    //                                                         Number(startArr[1]) - 1,
-    //                                                         Number(startArr[2])
-    //                                                     );
-    //                                                     const categoryEnd = new Date(
-    //                                                         Number(endArr[0]),
-    //                                                         Number(endArr[1]) - 1,
-    //                                                         Number(endArr[2])
-    //                                                     );
-    //                                                     return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);
-    //                                                 }
-    //                                                 return false;
-    //                                             }).map((category, categoryIndex) => (
-    //                                                 <TableRow
-    //                                                     key={`${format(start, 'yyyy-MM-dd')}-${category.category}-${categoryIndex}`}
-    //                                                     sx={{
-    //                                                         '&:hover': {
-    //                                                             backgroundColor: 'rgba(128, 0, 0, 0.04)',
-    //                                                         }
-    //                                                     }}
-    //                                                 >
-    //                                                     <TableCell component="th" scope="row">
-    //                                                         {category.category}
-    //                                                     </TableCell>
-    //                                                     <TableCell align="right">
-    //                                                         ${(category.budgeted || 0).toFixed(2)}
-    //                                                     </TableCell>
-    //                                                     <TableCell align="right">
-    //                                                         ${(Math.abs(category.actual) || 0).toFixed(2)}
-    //                                                     </TableCell>
-    //                                                     <TableCell
-    //                                                         align="right"
-    //                                                         sx={{
-    //                                                             color: (category.remaining || 0) >= 0 ? 'green' : 'red',
-    //                                                             fontWeight: 'bold'
-    //                                                         }}
-    //                                                     >
-    //                                                         ${Math.abs(category.remaining || 0).toFixed(2)}
-    //                                                         {(category.remaining || 0) >= 0 ? ' under' : ' over'}
-    //                                                     </TableCell>
-    //                                                 </TableRow>
-    //                                             ))
-    //                                         ) : (
-    //                                             <TableRow>
-    //                                                 <TableCell
-    //                                                     colSpan={4}
-    //                                                     align="center"
-    //                                                     sx={{ color: 'gray', fontStyle: 'italic' }}
-    //                                                 >
-    //                                                     No categories available for this range.
-    //                                                 </TableCell>
-    //                                             </TableRow>
-    //                                         )}
-    //                                         {/*{periodData.length > 0 ? (*/}
-    //                                         {/*    <TableRow>*/}
-    //                                         {/*        <TableCell colSpan={4} sx={{ p: 0 }}>*/}
-    //                                         {/*            <Box*/}
-    //                                         {/*                sx={{*/}
-    //                                         {/*                    maxHeight: '200px',*/}
-    //                                         {/*                    overflowY: 'auto',*/}
-    //                                         {/*                    '&::-webkit-scrollbar': {*/}
-    //                                         {/*                        width: '8px',*/}
-    //                                         {/*                    },*/}
-    //                                         {/*                    '&::-webkit-scrollbar-track': {*/}
-    //                                         {/*                        backgroundColor: 'rgba(0,0,0,0.05)',*/}
-    //                                         {/*                    },*/}
-    //                                         {/*                    '&::-webkit-scrollbar-thumb': {*/}
-    //                                         {/*                        backgroundColor: maroonColor,*/}
-    //                                         {/*                        borderRadius: '4px',*/}
-    //                                         {/*                        '&:hover': {*/}
-    //                                         {/*                            backgroundColor: '#600000',*/}
-    //                                         {/*                        },*/}
-    //                                         {/*                    },*/}
-    //                                         {/*                }}*/}
-    //                                         {/*            >*/}
-    //                                         {/*                <Table>*/}
-    //                                         {/*                    <TableBody>*/}
-    //                                         {/*                        {periodData.filter(category => {*/}
-    //                                         {/*                            if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {*/}
-    //                                         {/*                                return category.biWeekRanges.some(range => {*/}
-    //                                         {/*                                    const startArr = (range.startDate as unknown) as number[];*/}
-    //                                         {/*                                    const endArr = (range.endDate as unknown) as number[];*/}
-    //
-    //                                         {/*                                    const categoryStart = new Date(*/}
-    //                                         {/*                                        Number(startArr[0]),*/}
-    //                                         {/*                                        Number(startArr[1]) - 1,*/}
-    //                                         {/*                                        Number(startArr[2])*/}
-    //                                         {/*                                    );*/}
-    //                                         {/*                                    const categoryEnd = new Date(*/}
-    //                                         {/*                                        Number(endArr[0]),*/}
-    //                                         {/*                                        Number(endArr[1]) - 1,*/}
-    //                                         {/*                                        Number(endArr[2])*/}
-    //                                         {/*                                    );*/}
-    //                                         {/*                                    return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);*/}
-    //                                         {/*                                });*/}
-    //                                         {/*                            } else if (category.dateRange?.startDate && category.dateRange?.endDate) {*/}
-    //                                         {/*                                const startArr = (category.dateRange.startDate as unknown) as number[];*/}
-    //                                         {/*                                const endArr = (category.dateRange.endDate as unknown) as number[];*/}
-    //
-    //                                         {/*                                const categoryStart = new Date(*/}
-    //                                         {/*                                    Number(startArr[0]),*/}
-    //                                         {/*                                    Number(startArr[1]) - 1,*/}
-    //                                         {/*                                    Number(startArr[2])*/}
-    //                                         {/*                                );*/}
-    //                                         {/*                                const categoryEnd = new Date(*/}
-    //                                         {/*                                    Number(endArr[0]),*/}
-    //                                         {/*                                    Number(endArr[1]) - 1,*/}
-    //                                         {/*                                    Number(endArr[2])*/}
-    //                                         {/*                                );*/}
-    //                                         {/*                                return isSameDay(categoryStart, start) && isSameDay(categoryEnd, end);*/}
-    //                                         {/*                            }*/}
-    //                                         {/*                            return false;*/}
-    //                                         {/*                        }).map((category, categoryIndex) => (*/}
-    //                                         {/*                            <TableRow*/}
-    //                                         {/*                                key={`${format(start, 'yyyy-MM-dd')}-${category.category}-${categoryIndex}`}*/}
-    //                                         {/*                                sx={{*/}
-    //                                         {/*                                    '&:hover': {*/}
-    //                                         {/*                                        backgroundColor: 'rgba(128, 0, 0, 0.04)',*/}
-    //                                         {/*                                    }*/}
-    //                                         {/*                                }}*/}
-    //                                         {/*                            >*/}
-    //                                         {/*                                <TableCell component="th" scope="row" sx={{ width: '40%' }}>*/}
-    //                                         {/*                                    {category.category}*/}
-    //                                         {/*                                </TableCell>*/}
-    //                                         {/*                                <TableCell align="right" sx={{ width: '20%' }}>*/}
-    //                                         {/*                                    ${(category.budgeted || 0).toFixed(2)}*/}
-    //                                         {/*                                </TableCell>*/}
-    //                                         {/*                                <TableCell align="right" sx={{ width: '20%' }}>*/}
-    //                                         {/*                                    ${(Math.abs(category.actual) || 0).toFixed(2)}*/}
-    //                                         {/*                                </TableCell>*/}
-    //                                         {/*                                <TableCell*/}
-    //                                         {/*                                    align="right"*/}
-    //                                         {/*                                    sx={{*/}
-    //                                         {/*                                        width: '20%',*/}
-    //                                         {/*                                        color: (category.remaining || 0) >= 0 ? 'green' : 'red',*/}
-    //                                         {/*                                        fontWeight: 'bold'*/}
-    //                                         {/*                                    }}*/}
-    //                                         {/*                                >*/}
-    //                                         {/*                                    ${Math.abs(category.remaining || 0).toFixed(2)}*/}
-    //                                         {/*                                    {(category.remaining || 0) >= 0 ? ' under' : ' over'}*/}
-    //                                         {/*                                </TableCell>*/}
-    //                                         {/*                            </TableRow>*/}
-    //                                         {/*                        ))}*/}
-    //                                         {/*                    </TableBody>*/}
-    //                                         {/*                </Table>*/}
-    //                                         {/*            </Box>*/}
-    //                                         {/*        </TableCell>*/}
-    //                                         {/*    </TableRow>*/}
-    //                                         {/*) : (*/}
-    //                                         {/*    <TableRow>*/}
-    //                                         {/*        <TableCell*/}
-    //                                         {/*            colSpan={4}*/}
-    //                                         {/*            align="center"*/}
-    //                                         {/*            sx={{ color: 'gray', fontStyle: 'italic' }}*/}
-    //                                         {/*        >*/}
-    //                                         {/*            No categories available for this range.*/}
-    //                                         {/*        </TableCell>*/}
-    //                                         {/*    </TableRow>*/}
-    //                                         {/*)}*/}
-    //                                     </React.Fragment>
-    //                                 ));
-    //                             })()
-    //                         )}
-    //                     </TableBody>
-    //                 </Table>
-    //
-    //             </TableContainer>
-    //         </Box>
-    //     </LocalizationProvider>
-    // );
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
             <Box>

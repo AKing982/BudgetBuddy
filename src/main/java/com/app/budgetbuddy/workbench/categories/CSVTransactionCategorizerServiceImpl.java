@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CSVAccountEntity;
+import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.UserCategoryService;
@@ -145,69 +146,75 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
         Long categoryId = 0L;
         String matchedCategoryName = "";
         Category category = null;
-        if(transactionRules.isEmpty())
+        try
         {
-            MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
-            log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
-            boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
-            String merchantNameUpper = merchantName.toUpperCase();
-            log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
-            if(csvMerchantPriceMap.containsKey(key))
+            if(transactionRules.isEmpty())
             {
-                log.info("Found Merchant Price Map key: {}", key);
-                CategoryType categoryType = csvMerchantPriceMap.get(key);
-                String categoryName = categoryType.getType();
-                categoryId = categoryService.getCategoryIdByName(categoryName);
-                matchedCategoryName = categoryName;
-                category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
-                return category;
-            }
-            else if(csvMerchantMap.containsKey(merchantNameUpper))
-            {
-                log.info("Found MerchantMap key: {}", merchantName);
-                CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
-                categoryId = categoryService.getCategoryIdByName(categoryType.getType());
-                matchedCategoryName = categoryType.getType();
-                category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
-                log.info("Found CategoryType: {}", categoryType);
-                return category;
-            }
-        }
-        else
-        {
-            Map<Integer, List<TransactionRule>> transactionRulesByPriority = transactionRules.stream()
-                    .filter(rule -> rule != null && rule.isActive())
-                    .collect(Collectors.groupingBy(TransactionRule::getPriority));
-            List<Integer> sortedPriorities = transactionRulesByPriority.keySet().stream()
-                    .sorted().toList();
-            long startTime = System.currentTimeMillis();
-            for(Integer sortedPriority : sortedPriorities)
-            {
-                log.info("Found Priority: {}", sortedPriority);
-                List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
-                for(TransactionRule rule : rules)
+                MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
+                log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
+                boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
+                String merchantNameUpper = merchantName.toUpperCase();
+                log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
+                if(csvMerchantPriceMap.containsKey(key))
                 {
-                    int match_counter = 0;
-                    Long ruleId = rule.getId();
-                    log.info("Found Rule: {}", rule);
-                    if(matches(transaction, rule))
-                    {
-                        match_counter++;
-                        rule.setMatchCount(match_counter);
-                        // Update the rule match counter
-                        transactionRuleService.updateMatchCount(ruleId, rule.getMatchCount());
-                        matchedCategoryName = rule.getCategoryName();
-                        log.info("Rule matches: {}", rule);
-                        long endTime = System.currentTimeMillis();
-                        log.info("Rules found in {} ms", endTime - startTime);
-                        Long userCategoryId = userCategoryService.getCategoryIdByNameAndUser(matchedCategoryName, userId);
-                        return Category.createCategory(userCategoryId, matchedCategoryName, USER_CATEGORIZED, LocalDate.now());
-                    }
+                    log.info("Found Merchant Price Map key: {}", key);
+                    CategoryType categoryType = csvMerchantPriceMap.get(key);
+                    String categoryName = categoryType.getType();
+                    categoryId = categoryService.getCategoryIdByName(categoryName);
+                    matchedCategoryName = categoryName;
+                    category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+                    return category;
+                }
+                else if(csvMerchantMap.containsKey(merchantNameUpper))
+                {
+                    log.info("Found MerchantMap key: {}", merchantName);
+                    CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
+                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                    matchedCategoryName = categoryType.getType();
+                    category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+                    log.info("Found CategoryType: {}", categoryType);
+                    return category;
                 }
             }
+            else
+            {
+                Map<Integer, List<TransactionRule>> transactionRulesByPriority = transactionRules.stream()
+                        .filter(rule -> rule != null && rule.isActive())
+                        .collect(Collectors.groupingBy(TransactionRule::getPriority));
+                List<Integer> sortedPriorities = transactionRulesByPriority.keySet().stream()
+                        .sorted().toList();
+                long startTime = System.currentTimeMillis();
+                for(Integer sortedPriority : sortedPriorities)
+                {
+                    log.info("Found Priority: {}", sortedPriority);
+                    List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
+                    for(TransactionRule rule : rules)
+                    {
+                        int match_counter = 0;
+                        Long ruleId = rule.getId();
+                        log.info("Found Rule: {}", rule);
+                        if(matches(transaction, rule))
+                        {
+                            match_counter++;
+                            rule.setMatchCount(match_counter);
+                            // Update the rule match counter
+                            transactionRuleService.updateMatchCount(ruleId, rule.getMatchCount());
+                            matchedCategoryName = rule.getCategoryName();
+                            log.info("Rule matches: {}", rule);
+                            long endTime = System.currentTimeMillis();
+                            log.info("Rules found in {} ms", endTime - startTime);
+                            Long userCategoryId = userCategoryService.getCategoryIdByNameAndUser(matchedCategoryName, userId);
+                            return Category.createCategory(userCategoryId, matchedCategoryName, USER_CATEGORIZED, LocalDate.now());
+                        }
+                    }
+                }
 
+            }
+            return Category.createUncategorized();
+        }catch(CategoryException e){
+            log.error("There was an error categorizing the csv transaction {}: {}", transaction, e.getMessage());
+            throw e;
         }
-        return Category.createUncategorized();
     }
 
     @Override

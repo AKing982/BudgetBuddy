@@ -25,5 +25,9 @@ public interface TransactionRuleService extends ServiceModel<TransactionRuleEnti
 
     List<TransactionRule> getSystemCategoryRules();
 
+    void updateTransactionRule(TransactionRule transactionRule);
+
+    void updateTransactionRuleActiveStatus(boolean active, Long ruleId, Long userId);
+
     void updateMatchCount(Long ruleId, int matchCount);
 }

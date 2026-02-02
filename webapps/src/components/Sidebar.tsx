@@ -366,7 +366,10 @@ const Sidebar: React.FC = () => {
                             {userEmail}
                         </Typography>
                     </Box>
-                    <MenuItem onClick={handleSettingsClose} sx={{ py: 1.5 }}>
+                    <MenuItem onClick={() => {
+                        handleSettingsClose();
+                        navigate('/profile');
+                    }} sx={{ py: 1.5 }}>
                         <ListItemIcon>
                             <User size={18} />
                         </ListItemIcon>

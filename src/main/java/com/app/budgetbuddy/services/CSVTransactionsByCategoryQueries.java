@@ -123,6 +123,7 @@ public class CSVTransactionsByCategoryQueries
     {
         try
         {
+            log.info("Fetching new CSV Transactions by Category Query for start date: {} and end date: {}", startDate, endDate);
             final String csvTransactionCategoryQuery = """
                     SELECT ct.id, tc.matchedCategory
                     FROM TransactionCategoryEntity tc

@@ -53,8 +53,9 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         Long previousSubBudgetId = null;
         List<Long> subBudgetIds = new ArrayList<>();
         subBudgetIds.add(subBudgetId);
+        log.info("Start Date: {}", startDate);
         log.info("EndDate: {}", endDate);
-        if(startDate.getMonthValue() == 1 && startDate.getDayOfMonth() == 1)
+        if(startDate.getDayOfMonth() == 1)
         {
             adjustedDate = startDate.minusDays(3);
             log.info("Adjusted start date from {} to {} to include end of previous year",
@@ -64,6 +65,9 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             log.info("SubBudgetIds: {}", subBudgetIds);
             log.info("Previous sub budget id is {}", previousSubBudgetId);
         }
+        log.info("Adjusted start date: {}", adjustedDate);
+
+        log.info("Querying for income between {} and {}", adjustedDate, endDate);
         final String incomeQuery = """
         SELECT b.monthlyIncome / b.totalMonthsToSave as budgetedIncome,
         SUM(tc.actual) as actualIncome,

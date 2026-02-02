@@ -64,6 +64,7 @@ import TransactionCategoryService from "../services/TransactionCategoryService";
 import transactionRuleService, {TransactionRule} from "../services/TransactionRuleService";
 import TransactionRuleService from "../services/TransactionRuleService";
 import MonthPickerDialog from "./MonthPickerDialog";
+import TransactionRulesDialog from "./TransactionRulesDialog";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -104,8 +105,10 @@ const TransactionsPage: React.FC = () => {
     const [disabledCategories, setDisabledCategories] = useState<string[]>([]);
     const [customMonthDialogOpen, setCustomMonthDialogOpen] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState<Date | null>(null);
-
+    const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
+    const [transactionRules, setTransactionRules] = useState<TransactionRule[]>([]);
     const [customCategories, setCustomCategories] = useState<string[]>([]);
+    const [loadingRules, setLoadingRules] = useState(false); // ADD THIS
     const categoryService = CategoryService.getInstance();
     const transactionService = TransactionService.getInstance();
     const transactionCategoryService = TransactionCategoryService.getInstance();
@@ -115,13 +118,76 @@ const TransactionsPage: React.FC = () => {
     const theme = useTheme();
 
     useEffect(() => {
-        document.title = 'Transactions - BudgetBuddy';
+        document.title = 'Transactions';
         // Trigger animation after component is mounted
         setTimeout(() => setAnimateIn(true), 50);
         return () => {
             document.title = 'BudgetBuddy';
         }
     }, []);
+
+    const handleOpenRulesDialog = async () => {
+        setRulesDialogOpen(true);
+        setLoadingRules(true); // Start loading
+
+        try {
+            const userId = Number(sessionStorage.getItem('userId'));
+            const rules = await transactionRuleService.getTransactionRulesByUser(userId);
+            setTransactionRules(rules);
+        } catch (error) {
+            console.error('Error fetching transaction rules:', error);
+            // Optionally show an error message to the user
+        } finally {
+            setLoadingRules(false); // Stop loading
+        }
+    };
+
+    const handleDeleteRule = async (ruleId: number) => {
+        try {
+            // await transactionRuleService.deleteTransactionRule(userId, ruleId);
+            // // Refresh rules
+            // const rules = await transactionRuleService.getTransactionRulesByUserId(userId);
+            // setTransactionRules(rules);
+        } catch (error) {
+            console.error('Error deleting rule:', error);
+            throw error;
+        }
+    };
+
+    const handleToggleRule = async (ruleId: number, isActive: boolean) => {
+        try {
+            const userId = Number(sessionStorage.getItem('userId'));
+
+            // Use the correct method with all required parameters
+            await transactionRuleService.updateTransactionRuleActiveState(ruleId, userId, isActive);
+
+            // Update local state immediately (optimistic update)
+            setTransactionRules(prev =>
+                prev.map(rule =>
+                    rule.id === ruleId
+                        ? { ...rule, isActive }
+                        : rule
+                )
+            );
+        } catch (error) {
+            console.error('Error toggling rule:', error);
+
+            // Revert on error - refresh from server
+            try {
+                const userId = Number(sessionStorage.getItem('userId'));
+                const rules = await transactionRuleService.getTransactionRulesByUser(userId);
+                setTransactionRules(rules);
+            } catch (refreshError) {
+                console.error('Error refreshing rules:', refreshError);
+            }
+
+            throw error;
+        }
+    };
+
+    const handleCloseRulesDialog = () => {
+        setRulesDialogOpen(false);
+    };
 
     const getDateRangeFilter = (range: string, customMonth?: Date | null) : {startDate: Date; endDate: Date} => {
 
@@ -130,7 +196,8 @@ const TransactionsPage: React.FC = () => {
             const month = customMonth.getMonth();
 
             const startDate = new Date(year, month, 1, 0, 0, 0, 0);
-            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            const lastDay = new Date(year, month, 30).getDate();
             const endDate = new Date(year, month, lastDay, 23, 59, 59, 999);
 
             console.log('Custom Month Range:', {
@@ -178,6 +245,9 @@ const TransactionsPage: React.FC = () => {
                 startDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1, 0, 0, 0, 0);
                 const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
                 endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), lastDayOfLastMonth, 23, 59, 59, 999);
+
+                console.log('Start Date: {}', startDate);
+                console.log('End Date: {}', endDate);
                 break;
 
             case 'This year':
@@ -191,16 +261,18 @@ const TransactionsPage: React.FC = () => {
                 endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
         }
 
-        console.log(`${range} Range:`, {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-        });
+        // console.log(`${range} Range:`, {
+        //     startDate: startDate.toISOString(),
+        //     endDate: endDate.toISOString()
+        // });
 
         return { startDate, endDate };
     };
 
     const dateRange = useMemo(() => {
-        return getDateRangeFilter(activeFilters.dateRange, selectedMonth);
+        const dateRange = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
+        console.log('Date Range: {}', dateRange);
+        return dateRange;
     }, [activeFilters.dateRange, selectedMonth]);
 
 
@@ -561,7 +633,7 @@ const TransactionsPage: React.FC = () => {
         let filtered = sortedTransactions;
 
 
-        const {startDate, endDate} = getDateRangeFilter(activeFilters.dateRange, );
+        const {startDate, endDate} = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
         filtered = filtered.filter(transaction => {
             const transactionDate = new Date(transaction.posted || transaction.date);
             return transactionDate >= startDate && transactionDate <= endDate;
@@ -750,6 +822,7 @@ const TransactionsPage: React.FC = () => {
     };
 
     const handleCustomMonthSelect = (month: Date) => {
+        console.log('Selected custom month: ', month);
         setSelectedMonth(month);
         setActiveFilters({
             ...activeFilters,
@@ -771,9 +844,10 @@ const TransactionsPage: React.FC = () => {
                 pending += 1;
                 return;
             }
+            const category = transaction.categories;
 
             // Calculate current stats
-            if (transaction.amount < 0) {
+            if (transaction.amount > 0 && category.includes('Income')) {
                 income += Math.abs(transaction.amount);
             } else {
                 expense += transaction.amount;
@@ -1314,9 +1388,31 @@ const TransactionsPage: React.FC = () => {
                             Filters
                         </Button>
 
+                        {/*<Button*/}
+                        {/*    variant="outlined"*/}
+                        {/*    startIcon={<Download size={18} />}*/}
+                        {/*    sx={{*/}
+                        {/*        borderRadius: 3,*/}
+                        {/*        textTransform: 'none',*/}
+                        {/*        fontWeight: 600,*/}
+                        {/*        px: 2.5,*/}
+                        {/*        py: 1.2,*/}
+                        {/*        fontSize: '0.95rem',*/}
+                        {/*        color: theme.palette.text.primary,*/}
+                        {/*        borderColor: alpha(theme.palette.divider, 0.8),*/}
+                        {/*        backgroundColor: alpha(theme.palette.background.paper, 0.8),*/}
+                        {/*        '&:hover': {*/}
+                        {/*            borderColor: theme.palette.primary.main,*/}
+                        {/*            backgroundColor: alpha(theme.palette.primary.main, 0.05)*/}
+                        {/*        }*/}
+                        {/*    }}*/}
+                        {/*>*/}
+                        {/*    Export*/}
+                        {/*</Button>*/}
                         <Button
                             variant="outlined"
-                            startIcon={<Download size={18} />}
+                            startIcon={<SlidersHorizontal size={18} />}
+                            onClick={handleOpenRulesDialog}
                             sx={{
                                 borderRadius: 3,
                                 textTransform: 'none',
@@ -1333,7 +1429,7 @@ const TransactionsPage: React.FC = () => {
                                 }
                             }}
                         >
-                            Export
+                            Rules
                         </Button>
                     </Stack>
                 </Box>
@@ -2165,6 +2261,14 @@ const TransactionsPage: React.FC = () => {
                     onResetDisabledCategories={handleResetDisabledCategories}
                 />
             )}
+            <TransactionRulesDialog
+                open={rulesDialogOpen}
+                onClose={handleCloseRulesDialog}
+                rules={transactionRules}
+                loading={loadingRules}
+                onDeleteRule={handleDeleteRule}
+                onToggleRule={handleToggleRule}
+            />
         </Box>
     );
 };
