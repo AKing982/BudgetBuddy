@@ -1,5 +1,7 @@
-package com.app.budgetbuddy.domain;
+package com.app.budgetbuddy.workbench.grocerytracker.dto;
 
+import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionCSV;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -19,8 +21,9 @@ public class GroceryBudget
     private double budgetedAmount;
     private double totalSpent;
     private double savingsGoal;
+    private GroceryList groceryList;
     private List<GroceryReceipt> receipts = new ArrayList<>();
-    private List<String> groceryStoreList = new ArrayList<>();
+    private List<Store> groceryStores = new ArrayList<>();
     private List<Transaction> transactions = new ArrayList<>();
     private List<TransactionCSV> csvTransactions = new ArrayList<>();
 }

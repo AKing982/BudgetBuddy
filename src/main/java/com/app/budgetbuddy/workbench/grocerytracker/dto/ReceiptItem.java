@@ -1,4 +1,4 @@
-package com.app.budgetbuddy.domain;
+package com.app.budgetbuddy.workbench.grocerytracker.dto;
 
 import lombok.*;
 

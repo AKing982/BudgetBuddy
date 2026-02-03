@@ -59,168 +59,175 @@ public class PlaidTransactionManager extends AbstractPlaidManager
 
     public TransactionsGetRequest createTransactionRequest(String accessToken, LocalDate startDate, LocalDate endDate)
     {
-        LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
-        LOGGER.info("Creating Transaction Request for date range: " + startDate + " - " + endDate);
-        if(accessToken.isEmpty()){
-            throw new InvalidAccessTokenException("Invalid access token");
-        }
-        if(startDate == null || endDate == null){
-            throw new IllegalDateException("Start date cannot be null");
-        }
-
-        if(startDate.isAfter(endDate)){
-            return createTransactionRequest(accessToken, endDate, startDate);
-        }
-        return createRequest(accessToken, startDate, endDate);
+//        LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
+//        LOGGER.info("Creating Transaction Request for date range: " + startDate + " - " + endDate);
+//        if(accessToken.isEmpty()){
+//            throw new InvalidAccessTokenException("Invalid access token");
+//        }
+//        if(startDate == null || endDate == null){
+//            throw new IllegalDateException("Start date cannot be null");
+//        }
+//
+//        if(startDate.isAfter(endDate)){
+//            return createTransactionRequest(accessToken, endDate, startDate);
+//        }
+//        return createRequest(accessToken, startDate, endDate);
+        return null;
     }
 
     public List<Transaction> fetchPlaidTransactionsByDateRange(Long userId, LocalDate startDate, LocalDate endDate) throws IOException
     {
-        TransactionsGetResponse transactionsGetResponse = getTransactionsForUser(userId, startDate, endDate);
-        List<com.plaid.client.model.Transaction> plaidTransactions = transactionsGetResponse.getTransactions();
-        return transactionService.convertPlaidTransactions(plaidTransactions);
+//        TransactionsGetResponse transactionsGetResponse = getTransactionsForUser(userId, startDate, endDate);
+//        List<com.plaid.client.model.Transaction> plaidTransactions = transactionsGetResponse.getTransactions();
+//        return transactionService.convertPlaidTransactions(plaidTransactions);
+        return Collections.emptyList();
     }
 
     public TransactionsGetResponse getTransactionsForUser(Long userId, LocalDate startDate, LocalDate endDate) throws IOException {
-        PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
-        String accessToken = getPlaidAccessToken(plaidLink);
-        LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
-        TransactionsGetRequest transactionsGetRequest = createTransactionRequest(accessToken, startDate, endDate);
-        LOGGER.info("TransactionGetRequest: {}", transactionsGetRequest);
-        Response<TransactionsGetResponse> transactionsGetResponseResponse = getTransactionsResponseWithRetry(transactionsGetRequest);
-        return transactionsGetResponseResponse.body();
+//        PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
+//        String accessToken = getPlaidAccessToken(plaidLink);
+//        LOGGER.info("Retrieving Transactions with access token: {}", accessToken);
+//        TransactionsGetRequest transactionsGetRequest = createTransactionRequest(accessToken, startDate, endDate);
+//        LOGGER.info("TransactionGetRequest: {}", transactionsGetRequest);
+//        Response<TransactionsGetResponse> transactionsGetResponseResponse = getTransactionsResponseWithRetry(transactionsGetRequest);
+//        return transactionsGetResponseResponse.body();
+        return null;
     }
 
     public Response<TransactionsGetResponse> getTransactionsResponseWithRetry(TransactionsGetRequest transactionsGetRequest) throws IOException {
-        if(transactionsGetRequest == null){
-            throw new IllegalArgumentException("TransactionsGetRequest cannot be null");
-        }
-        int attempts = 0;
-        int MAX_ATTEMPTS = 3;
-        final long INITIAL_DELAY_MS = 5000;
-        final long MAX_DELAY_MS = 300000;
-        Response<TransactionsGetResponse> transactionsGetResponse = null;
-        do
-        {
-            Call<TransactionsGetResponse> transactionsGetResponseCall = plaidApi.transactionsGet(transactionsGetRequest);
-            LOGGER.info("Transaction Response Call: {}", transactionsGetResponseCall);
-            transactionsGetResponse = transactionsGetResponseCall.execute();
-            try
-            {
-                if(transactionsGetResponse.isSuccessful()){
-                    LOGGER.info("Transaction Response Successful");
-                   break;
-                }else{
-                    attempts++;
-                    if(transactionsGetResponse.errorBody() != null){
-                        String errorBody = transactionsGetResponse.errorBody().string();
-                        LOGGER.warn("Transaction Response Error: {}", transactionsGetResponse.errorBody().toString());
-                        try
-                        {
-                            JsonObject jsonError = JsonParser.parseString(errorBody).getAsJsonObject();
-                            String errorType = jsonError.has("error_type") ? jsonError.get("error_type").getAsString() : "Unknown";
-                            String errorCode = jsonError.has("error_code") ? jsonError.get("error_code").getAsString() : "Unknown";
-                            String errorMessage = jsonError.has("error_message") ? jsonError.get("error_message").getAsString() : "No error message provided";
-
-                            if("PRODUCT_NOT_READY".equals(errorCode)){
-                                LOGGER.info("Product not ready, implementing backoff strategy");
-                                long delay = Math.min(INITIAL_DELAY_MS * (long) Math.pow(2, attempts - 1), MAX_DELAY_MS);
-                                LOGGER.info("Waiting {} ms before next attempt", delay);
-                                Thread.sleep(delay);
-                                continue;
-                            }
-                            LOGGER.error("Plaid API Error - Type: {}, Code: {}, Message: {}", errorType, errorCode, errorMessage);
-
-                            // If there's a display_message, log it as well
-                            if (jsonError.has("display_message")) {
-                                String displayMessage = jsonError.get("display_message").getAsString();
-                                LOGGER.error("Display Message: {}", displayMessage);
-                            }
-
-                            // Log any additional details if present
-                            if (jsonError.has("request_id")) {
-                                LOGGER.error("Request ID: {}", jsonError.get("request_id").getAsString());
-                            }
-
-                        }catch(Exception e){
-                            LOGGER.error("Failed to parse error response: ", e);
-                        }
-                    }
-                    Thread.sleep(500);
-                }
-            }catch(InterruptedException e)
-            {
-                LOGGER.error("There was an error while getting the transactions response", e);
-            }
-
-        }while(attempts < MAX_ATTEMPTS);
-        return transactionsGetResponse;
+//        if(transactionsGetRequest == null){
+//            throw new IllegalArgumentException("TransactionsGetRequest cannot be null");
+//        }
+//        int attempts = 0;
+//        int MAX_ATTEMPTS = 3;
+//        final long INITIAL_DELAY_MS = 5000;
+//        final long MAX_DELAY_MS = 300000;
+//        Response<TransactionsGetResponse> transactionsGetResponse = null;
+//        do
+//        {
+//            Call<TransactionsGetResponse> transactionsGetResponseCall = plaidApi.transactionsGet(transactionsGetRequest);
+//            LOGGER.info("Transaction Response Call: {}", transactionsGetResponseCall);
+//            transactionsGetResponse = transactionsGetResponseCall.execute();
+//            try
+//            {
+//                if(transactionsGetResponse.isSuccessful()){
+//                    LOGGER.info("Transaction Response Successful");
+//                   break;
+//                }else{
+//                    attempts++;
+//                    if(transactionsGetResponse.errorBody() != null){
+//                        String errorBody = transactionsGetResponse.errorBody().string();
+//                        LOGGER.warn("Transaction Response Error: {}", transactionsGetResponse.errorBody().toString());
+//                        try
+//                        {
+//                            JsonObject jsonError = JsonParser.parseString(errorBody).getAsJsonObject();
+//                            String errorType = jsonError.has("error_type") ? jsonError.get("error_type").getAsString() : "Unknown";
+//                            String errorCode = jsonError.has("error_code") ? jsonError.get("error_code").getAsString() : "Unknown";
+//                            String errorMessage = jsonError.has("error_message") ? jsonError.get("error_message").getAsString() : "No error message provided";
+//
+//                            if("PRODUCT_NOT_READY".equals(errorCode)){
+//                                LOGGER.info("Product not ready, implementing backoff strategy");
+//                                long delay = Math.min(INITIAL_DELAY_MS * (long) Math.pow(2, attempts - 1), MAX_DELAY_MS);
+//                                LOGGER.info("Waiting {} ms before next attempt", delay);
+//                                Thread.sleep(delay);
+//                                continue;
+//                            }
+//                            LOGGER.error("Plaid API Error - Type: {}, Code: {}, Message: {}", errorType, errorCode, errorMessage);
+//
+//                            // If there's a display_message, log it as well
+//                            if (jsonError.has("display_message")) {
+//                                String displayMessage = jsonError.get("display_message").getAsString();
+//                                LOGGER.error("Display Message: {}", displayMessage);
+//                            }
+//
+//                            // Log any additional details if present
+//                            if (jsonError.has("request_id")) {
+//                                LOGGER.error("Request ID: {}", jsonError.get("request_id").getAsString());
+//                            }
+//
+//                        }catch(Exception e){
+//                            LOGGER.error("Failed to parse error response: ", e);
+//                        }
+//                    }
+//                    Thread.sleep(500);
+//                }
+//            }catch(InterruptedException e)
+//            {
+//                LOGGER.error("There was an error while getting the transactions response", e);
+//            }
+//
+//        }while(attempts < MAX_ATTEMPTS);
+//        return transactionsGetResponse;
+        return null;
     }
 
     public TransactionsRecurringGetResponse getRecurringTransactionsForUser(Long userId) throws IOException {
-        if(userId < 1){
-            throw new InvalidUserIDException("Invalid user ID");
-        }
-        PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
-        String accessToken = getPlaidAccessToken(plaidLink);
-        LOGGER.info("Retrieving Access Token for recurring transactions: {}", accessToken);
-        TransactionsRecurringGetRequestOptions options = new TransactionsRecurringGetRequestOptions()
-                .includePersonalFinanceCategory(true);
-
-        TransactionsRecurringGetRequest request = new TransactionsRecurringGetRequest()
-                .accessToken(accessToken)
-                .options(options);
-
-        Call<TransactionsRecurringGetResponse> callResponse = plaidApi.transactionsRecurringGet(request);
-        return callResponse.execute().body();
+//        if(userId < 1){
+//            throw new InvalidUserIDException("Invalid user ID");
+//        }
+//        PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
+//        String accessToken = getPlaidAccessToken(plaidLink);
+//        LOGGER.info("Retrieving Access Token for recurring transactions: {}", accessToken);
+//        TransactionsRecurringGetRequestOptions options = new TransactionsRecurringGetRequestOptions()
+//                .includePersonalFinanceCategory(true);
+//
+//        TransactionsRecurringGetRequest request = new TransactionsRecurringGetRequest()
+//                .accessToken(accessToken)
+//                .options(options);
+//
+//        Call<TransactionsRecurringGetResponse> callResponse = plaidApi.transactionsRecurringGet(request);
+//        return callResponse.execute().body();
+        return null;
     }
 
     private TransactionsRecurringGetResponse getRecurringTransactionsResponseWithRetry(TransactionsRecurringGetRequest request) throws IOException
     {
-        if (request == null)
-        {
-            throw new IllegalArgumentException("TransactionsRecurringGetRequest cannot be null");
-        }
-        int attempts = 0;
-        int MAX_ATTEMPTS = 3;
-        Response<TransactionsRecurringGetResponse> response = null;
-        do {
-            Call<TransactionsRecurringGetResponse> call = plaidApi.transactionsRecurringGet(request);
-            response = call.execute();
-
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                attempts++;
-                LOGGER.warn("Attempt {} failed to get recurring transactions. Status code: {}",
-                        attempts, response.code());
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    LOGGER.error("Sleep interrupted while retrying to get recurring transactions", e);
-                    Thread.currentThread().interrupt();
-                }
-            }
-        } while (attempts < MAX_ATTEMPTS);
-
-        throw new IOException("Failed to get recurring transactions after " + MAX_ATTEMPTS + " attempts. Last status code: " +
-                (response != null ? response.code() : "N/A"));
+//        if (request == null)
+//        {
+//            throw new IllegalArgumentException("TransactionsRecurringGetRequest cannot be null");
+//        }
+//        int attempts = 0;
+//        int MAX_ATTEMPTS = 3;
+//        Response<TransactionsRecurringGetResponse> response = null;
+//        do {
+//            Call<TransactionsRecurringGetResponse> call = plaidApi.transactionsRecurringGet(request);
+//            response = call.execute();
+//
+//            if (response.isSuccessful()) {
+//                return response.body();
+//            } else {
+//                attempts++;
+//                LOGGER.warn("Attempt {} failed to get recurring transactions. Status code: {}",
+//                        attempts, response.code());
+//                try {
+//                    Thread.sleep(500);
+//                } catch (InterruptedException e) {
+//                    LOGGER.error("Sleep interrupted while retrying to get recurring transactions", e);
+//                    Thread.currentThread().interrupt();
+//                }
+//            }
+//        } while (attempts < MAX_ATTEMPTS);
+//
+//        throw new IOException("Failed to get recurring transactions after " + MAX_ATTEMPTS + " attempts. Last status code: " +
+//                (response != null ? response.code() : "N/A"));
+        return null;
     }
 
     public List<RecurringTransactionEntity> saveRecurringTransactions(final List<RecurringTransactionDTO> recurringTransactions) throws IOException {
-        List<RecurringTransactionEntity> recurringTransactionEntities = new ArrayList<>();
-        if(recurringTransactions == null){
-            return new ArrayList<>();
-        }
-        if(recurringTransactions.isEmpty()){
-            return new ArrayList<>();
-        }
-        for(RecurringTransactionDTO recurringTransaction : recurringTransactions) {
-            RecurringTransactionEntity recurringTransactionEntity = recurringTransactionConverter.convert(recurringTransaction);
-            recurringTransactionService.save(recurringTransactionEntity);
-            recurringTransactionEntities.add(recurringTransactionEntity);
-        }
-        return recurringTransactionEntities;
+//        List<RecurringTransactionEntity> recurringTransactionEntities = new ArrayList<>();
+//        if(recurringTransactions == null){
+//            return new ArrayList<>();
+//        }
+//        if(recurringTransactions.isEmpty()){
+//            return new ArrayList<>();
+//        }
+//        for(RecurringTransactionDTO recurringTransaction : recurringTransactions) {
+//            RecurringTransactionEntity recurringTransactionEntity = recurringTransactionConverter.convert(recurringTransaction);
+//            recurringTransactionService.save(recurringTransactionEntity);
+//            recurringTransactionEntities.add(recurringTransactionEntity);
+//        }
+//        return recurringTransactionEntities;
+        return Collections.emptyList();
     }
 
     private TransactionsRefreshRequest createTransactionRefreshRequest(String accessToken){
@@ -237,69 +244,55 @@ public class PlaidTransactionManager extends AbstractPlaidManager
 
     public TransactionsSyncResponse syncTransactionsForUser(final String accessToken, final String cursor, final Long userId) throws IOException
     {
-        TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
-                .accessToken(accessToken)
-                .count(500)
-                .cursor(cursor);
-        try
-        {
-            Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
-            Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();
-            if(response.isSuccessful() && response.body() != null)
-            {
-                return response.body();
-            }
-            else
-            {
-                throw new IOException("Failed to sync transactions for user ID " + userId);
-            }
-        }catch(IOException e){
-            log.error("There was an error syncing the transactions for userId {}", userId);
-            throw e;
-        }
+//        TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
+//                .accessToken(accessToken)
+//                .count(500)
+//                .cursor(cursor);
+//        try
+//        {
+//            Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
+//            Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();
+//            if(response.isSuccessful() && response.body() != null)
+//            {
+//                return response.body();
+//            }
+//            else
+//            {
+//                throw new IOException("Failed to sync transactions for user ID " + userId);
+//            }
+//        }catch(IOException e){
+//            log.error("There was an error syncing the transactions for userId {}", userId);
+//            throw e;
+//        }
+        return null;
     }
 
     public TransactionsSyncResponse syncTransactionsForUser(final Long userId, final String cursor) throws IOException
     {
-        Optional<PlaidLinkEntity> plaidLinkEntityOptional = plaidLinkService.findPlaidLinkByUserID(userId);
-        if(plaidLinkEntityOptional.isEmpty())
-        {
-            throw new PlaidLinkException("Plaid link not found");
-        }
-        PlaidLinkEntity plaidLinkEntity = plaidLinkEntityOptional.get();
-        String accessToken = getPlaidAccessToken(plaidLinkEntity);
-        TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
-                .accessToken(accessToken)
-                .count(500)
-                .cursor(cursor);
-        Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
-        Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();
-        if(response.isSuccessful() && response.body() != null)
-        {
-            return response.body();
-        }
-        else
-        {
-            throw new IOException("Failed to sync transactions for user ID " + userId);
-        }
+//        Optional<PlaidLinkEntity> plaidLinkEntityOptional = plaidLinkService.findPlaidLinkByUserID(userId);
+//        if(plaidLinkEntityOptional.isEmpty())
+//        {
+//            throw new PlaidLinkException("Plaid link not found");
+//        }
+//        PlaidLinkEntity plaidLinkEntity = plaidLinkEntityOptional.get();
+//        String accessToken = getPlaidAccessToken(plaidLinkEntity);
+//        TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
+//                .accessToken(accessToken)
+//                .count(500)
+//                .cursor(cursor);
+//        Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
+//        Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();
+//        if(response.isSuccessful() && response.body() != null)
+//        {
+//            return response.body();
+//        }
+//        else
+//        {
+//            throw new IOException("Failed to sync transactions for user ID " + userId);
+//        }
+        return null;
     }
-
-    public List<Transaction> saveTransactions(List<Transaction> transactions)
-    {
-        if(transactions == null || transactions.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        try
-        {
-            transactionService.saveAll(transactions);
-            return transactions;
-        }catch(Exception e)
-        {
-            return Collections.emptyList();
-        }
-    }
-
+    
     public List<TransactionsEntity> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList)
     {
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();

@@ -20,6 +20,10 @@ public class GroceryBudgetEntity
     @JoinColumn(name="budgetScheduleRangeId")
     private BudgetScheduleRangeEntity budgetScheduleRange;
 
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="userId")
+    private UserEntity user;
+
     @Column(name="week_number")
     private int weekNumber;
 

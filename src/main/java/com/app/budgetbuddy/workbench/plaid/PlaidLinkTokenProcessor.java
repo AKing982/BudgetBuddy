@@ -21,10 +21,10 @@ import java.util.Arrays;
 @Slf4j
 public class PlaidLinkTokenProcessor extends AbstractPlaidManager
 {
-    @Value("{plaid.client-id}")
+    @Value("${plaid.client-id}")
     private String clientId;
 
-    @Value("{plaid.secret}")
+    @Value("${plaid.secret}")
     private String secret;
 
     @Value("${plaid.redirect.uri}")
@@ -54,12 +54,12 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         }
         try
         {
-            InstitutionsGetByIdRequest request = new InstitutionsGetByIdRequest()
-                    .institutionId("ins_132917")
-                    .countryCodes(Arrays.asList(CountryCode.US));
-            InstitutionsGetByIdResponse response = plaidApi.institutionsGetById(request)
-                    .execute().body();
-            Institution institution = response.getInstitution();
+//            InstitutionsGetByIdRequest request = new InstitutionsGetByIdRequest()
+//                    .institutionId("ins_132917")
+//                    .countryCodes(Arrays.asList(CountryCode.US));
+//            InstitutionsGetByIdResponse response = plaidApi.institutionsGetById(request)
+//                    .execute().body();
+//            Institution institution = response.getInstitution();
 
             LinkTokenCreateRequest linkTokenCreateRequest = new LinkTokenCreateRequest()
                     .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
