@@ -1,0 +1,136 @@
+
+package com.app.budgetbuddy.domain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import com.app.budgetbuddy.exceptions.DataException;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Slf4j
+public class UserSecurity 
+{
+    private Long id;
+    private Long userId;
+    private int accessLevel;
+    private boolean enable_csv_upload;
+    private boolean enable_plaid_sync;
+    private boolean enable_2fa_auth;
+    private boolean enable_email_notifications;
+    private boolean enable_user;
+    private List<BudgetFeature> budgetFeatureAccess = new ArrayList<>();
+
+    public List<BudgetFeature> getUserBudgetFeaturesByAccessLevel(Long userId, int accessLevel)
+    {
+        if(accessLevel == 0)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            return budgetFeatureAccess.stream()
+            .filter(budgetFeature -> (budgetFeature.accessLevel() == accessLevel) && (budgetFeature.userId() == userId))
+            .toList();
+        }catch(DataException ex){
+            log.error("There was an error fetching the budget features for userId {} with access level {}: ", userId, accessLevel, ex.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+}
+
+package com.app.budgetbuddy.domain;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import com.app.budgetbuddy.exceptions.UserNotFoundException;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@EqualsAndHashCode
+@AllArgsConstructor(access=AccessLevel.PUBLIC)
+public class UserProfile
+{
+    private Long id;
+    private User user;
+    private String profileImage;
+    private String planType;
+    private boolean enable_auto_categorization;
+    private boolean enable_game_mode;
+    private List<EmailNotifications> emailNotifications = new ArrayList<>();
+    private UserSecurity userSecurity;
+    
+    public UserProfile(User user, String planType)
+    {
+        if(user == null)
+        {
+            throw new UserNotFoundException("User not found.... Unable to load User Profile");
+        }
+        this.user = user;
+        this.planType = planType;
+        this.userSecurity = loadUserSecurityByPlan(planType, user.getId());
+    }
+
+    public String loadUserProfileImage(Long userId)
+    {
+        return "";
+    }
+
+    public List<EmailNotifications> loadEmailNotifications(Long userId)
+    {
+        return Collections.emptyList();
+    }
+
+    public UserSecurity loadUserSecurityByPlan(String planType, Long userId)
+    {
+        return null;
+    }
+}
+
+package com.app.budgetbuddy.domain;
+
+import java.time.LocalDate;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor(access=AccessLevel.PUBLIC)
+@NoArgsConstructor(access=AccessLevel.PUBLIC)
+public class EmailNotifications 
+{
+    private Long notificationId;
+    private Long userId;
+    private String toEmail;
+    private String fromEmail;
+    private String subject;
+    private String body;
+    private LocalDate sendDate;
+    private String type;
+    private boolean isRead;
+   
+}
+
