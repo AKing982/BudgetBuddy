@@ -1,68 +1,54 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: BudgetBuddy CI/CD
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 jobs:
-  build-and-test:
+  deploy:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_DB: budgetbuddydb
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: pass
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/budgetbuddydb
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: pass
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    - name: Build and test Java application
-      run: |
-        ls -la  # List files in the current directory
-        if [ -f "./mvnw" ]; then
-          chmod +x ./mvnw  # Make sure mvnw is executable
-          ./mvnw clean install
-        elif [ -f "mvnw" ]; then
-          chmod +x mvnw
-          ./mvnw clean install
-        else
-          mvn clean install
-        fi
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - name: Set Node.js environment
-      run: export NODE_OPTIONS=--openssl-legacy-provider
-    
-    - name: Build and test React application
-      env:
-        CI: false
-      run: |
-        cd webapps
-        npm ci
-        npm update react-scripts
-        # npm ci --legacy-peer-deps
-        # npm install typescript@4.9.5 --save-dev --legacy-peer-deps
-        npm install @testing-library/react@^13.0.0 @testing-library/jest-dom@^5.16.4 --save-dev
-    
-        npm run build
-        npm test -- --passWithNoTests
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Configure Heroku Properties
+        run: |
+          # Injecting your custom properties before the Docker build starts
+          echo "security.basic.enabled=false" >> src/main/resources/application-heroku.properties
+          echo "spring.main.allow-bean-definition-overriding=true" >> src/main/resources/application-heroku.properties
+      - name: Login to Heroku Registry
+        env:
+          HEROKU_API_KEY = ${{secrets.HEROKU_API_KEY}}
+        run: |
+          echo ${{ secrets.HEROKU_API_KEY }} | docker login --username=_ --password-stdin registry.heroku.com
+      - name: Build and Push Docker Image
+        env:
+            HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }} 
+        run: | 
+          # We use buildx to match your local script's --provenance=false flag
+          docker buildx build --provenance=false \
+            -f heroku_deploy/Dockerfile \
+            -t registry.heroku.com/$HEROKU_APP_NAME/web .
+          
+          docker push registry.heroku.com/$HEROKU_APP_NAME/web
+          
+      - name: Release and Verify
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+        run: |
+          # Release the container
+          heroku container:release web --app $HEROKU_APP_NAME
+          
+          # Verification steps from your script
+          heroku releases --app $HEROKU_APP_NAME
+          heroku ps --app $HEROKU_APP_NAME
+          
+          # Verify Redis connection (assuming the addon is already provisioned)
+          heroku redis:info --app $HEROKU_APP_NAME
+
+            
+
+        
