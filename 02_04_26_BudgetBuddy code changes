@@ -1,0 +1,41 @@
+ @Override
+    @Transactional
+    public List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate, int pageNum)
+    {
+        Page<CSVTransactionEntity> csvTransactionEntities = findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate, pageNum);
+        return csvTransactionEntities.stream()
+            .filter(Objects::nonNull)
+            .map(csvTransactionEntity -> {
+                TransactionCSV transactionCSV = new TransactionCSV();
+                transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
+                transactionCSV.setId(csvTransactionEntity.getId());
+                transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
+                transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
+                transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
+                transactionCSV.setDescription(csvTransactionEntity.getDescription());
+                transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
+                transactionCSV.setBalance(csvTransactionEntity.getBalance());
+                transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
+                transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
+                return transactionCSV;
+            })
+            .distinct()
+            .toList();
+    }
+
+public class SyncCursorException extends RuntimeException {
+    public SyncCursorException(String message){
+        super(message);
+    }
+
+    public SyncCursorException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
+}
+
+ @Query("SELECT ct FROM CSVTransactionEntity ct WHERE ct.transactionDate BETWEEN :startDate AND :endDate AND ct.csvAccount.id =:acctId")
+    Page<CSVTransactionEntity> findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(@Param("acctId") Long acctId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
+
+ @Query("SELECT cte FROM CSVTransactionEntity cte INNER JOIN CSVAccountEntity cae ON cte.csvAccount.id = cae.id WHERE cae.user.id =:userId AND cte.transactionDate BETWEEN :startDate AND :endDate")
+    Page<CSVTransactionEntity> findCSVTransactionIdAndCategoryByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
