@@ -1,0 +1,357 @@
+package com.app.budgetbuddy.workbench.plaid;
+
+import com.app.budgetbuddy.domain.PlaidTransaction;
+import com.app.budgetbuddy.domain.RecurringTransactionDTO;
+import com.app.budgetbuddy.entities.PlaidCursorEntity;
+import com.app.budgetbuddy.entities.PlaidLinkEntity;
+import com.app.budgetbuddy.entities.RecurringTransactionEntity;
+import com.app.budgetbuddy.entities.TransactionsEntity;
+import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.*;
+import com.app.budgetbuddy.services.PlaidCursorService;
+import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.RecurringTransactionService;
+import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.services.UserService;
+import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
+import com.app.budgetbuddy.workbench.converter.TransactionConverter;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.plaid.client.model.*;
+import com.plaid.client.request.PlaidApi;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import retrofit2.Call;
+import retrofit2.Response;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+
+@Service
+@Slf4j
+public class PlaidTransactionManager extends AbstractPlaidManager
+{
+    private final RecurringTransactionService recurringTransactionService;
+    private final TransactionService transactionService;
+    private final TransactionConverter transactionConverter;
+    private final RecurringTransactionConverter recurringTransactionConverter;
+    private final UserService userService;
+    private final PlaidCursorService plaidCursorService;
+    private final int MAX_ATTEMPTS = 5;
+    private final String clientId = "BudgetBuddy";
+    private List<com.plaid.client.model.Transaction> addedSyncedTransactions = new ArrayList<>();
+    private List<com.plaid.client.model.Transaction> modifiedSyncedTransactions = new ArrayList<>();
+
+    @Autowired
+    public PlaidTransactionManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi,
+                                   TransactionConverter transactionConverter,
+                                   RecurringTransactionService recurringTransactionService,
+                                   TransactionService transactionService,
+                                   RecurringTransactionConverter recurringTransactionConverter,
+                                   PlaidCursorService plaidCursorService,
+                                   UserService userService)
+    {
+        super(plaidLinkService, plaidApi);
+        this.transactionConverter = transactionConverter;
+        this.recurringTransactionService = recurringTransactionService;
+        this.transactionService = transactionService;
+        this.recurringTransactionConverter = recurringTransactionConverter;
+        this.plaidCursorService = plaidCursorService;
+        this.userService = userService;
+    }
+
+    private TransactionsGetRequest createTransactionRequest(String accessToken, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            if(accessToken.isEmpty())
+            {
+                throw new InvalidAccessTokenException("Invalid access token");
+            }
+            return new TransactionsGetRequest()
+                    .accessToken(accessToken)
+                    .clientId("BudgetBuddy")
+                    .startDate(startDate)
+                    .endDate(endDate);
+        }catch(InvalidAccessTokenException ex){
+            log.error("There was an error creating the transaction request: {}", ex.getMessage());
+            throw ex;
+        }
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<TransactionsGetResponse> getAsyncTransactionsResponse(Long userId, LocalDate startDate, LocalDate endDate) throws IOException
+    {
+        Optional<UserEntity> user = userService.findById(userId);
+        if(user.isEmpty())
+        {
+            throw new UserNotFoundException("User with id " + userId + " not found");
+        }
+        PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
+        String accessToken = plaidLink.getAccessToken();
+        if(accessToken.isEmpty())
+        {
+            throw new InvalidAccessTokenException("Invalid access token");
+        }
+        TransactionsGetRequest transactionGetRequest = createTransactionRequest(accessToken, startDate, endDate);
+        Call<TransactionsGetResponse> transactionsGetResponseCall = plaidApi.transactionsGet(transactionGetRequest);
+        Response<TransactionsGetResponse> transactionResponse = transactionsGetResponseCall.execute();
+        if(transactionResponse.isSuccessful())
+        {
+            return CompletableFuture.completedFuture(transactionResponse.body());
+        }
+        else
+        {
+            int attempts = 0;
+            while(attempts < MAX_ATTEMPTS)
+            {
+                try
+                {
+                    Response<TransactionsGetResponse> transactionsResponse = plaidApi.transactionsGet(transactionGetRequest).execute();
+                    attempts++;
+                    if(transactionsResponse.isSuccessful())
+                    {
+                        return CompletableFuture.completedFuture(transactionsResponse.body());
+                    }
+                    else
+                    {
+                        if(attempts < MAX_ATTEMPTS)
+                        {
+                            Thread.sleep(1000L *(attempts + 1));
+                        }
+                        if(attempts == MAX_ATTEMPTS)
+                        {
+                            showPlaidResponseErrors(transactionsResponse, attempts);
+                        }
+                    }
+                }catch(IOException e){
+                    log.error("There was an error fetching the plaid transactions from transactions get call: {}", e.getMessage());
+                    return CompletableFuture.failedFuture(e);
+                }catch(InterruptedException ef){
+                    log.error("Failed to fetch plaid transactions from transactions get call: {}", ef.getMessage());
+                    return CompletableFuture.failedFuture(ef);
+                }
+            }
+            return CompletableFuture.failedFuture(new RuntimeException("There was an error getting the transactions response"));
+        }
+    }
+
+    private void showPlaidResponseErrors(Response<TransactionsGetResponse> transactionsGetResponse, int attempts) throws IOException
+    {
+        if(transactionsGetResponse.errorBody() == null)
+        {
+            log.error("No Transaction Get Response found");
+        }
+        try
+        {
+            String errorBody = transactionsGetResponse.errorBody().string();
+            JsonObject jsonError = JsonParser.parseString(errorBody).getAsJsonObject();
+            String errorType = jsonError.has("error_type") ? jsonError.get("error_type").getAsString() : "Unknown";
+            String errorCode = jsonError.has("error_code") ? jsonError.get("error_code").getAsString() : "Unknown";
+            String errorMessage = jsonError.has("error_message") ? jsonError.get("error_message").getAsString() : "No Error Message";
+            if("PRODUCT_NOT_READY".equals(errorCode))
+            {
+                log.info("Product Not Ready, implementing backoff strategy...");
+                long delay = Math.min(5000 * (long) Math.pow(2, attempts - 1), 300000);
+                Thread.sleep(delay);
+            }
+            log.error("Plaid API Error - Type: {}, Code: {}, Message: {}", errorType, errorCode, errorMessage);
+            if(jsonError.has("display_message"))
+            {
+                String displayMessage = jsonError.get("display_message").getAsString();
+                log.error("Display Message: {}", displayMessage);
+            }
+        }catch(InterruptedException e){
+            log.error("The response was interrupted: {}", e.getMessage());
+        }catch(IOException ex){
+            log.error("There was an error while fetching the transaction response errors: {}", ex.getMessage());
+        }
+    }
+
+    private TransactionsRecurringGetRequest createRecurringTransactionRequest(String accessToken)
+    {
+        if(accessToken.isEmpty())
+        {
+            throw new InvalidAccessTokenException("No Access token was provided");
+        }
+        try
+        {
+            return new TransactionsRecurringGetRequest()
+                    .accessToken(accessToken)
+                    .clientId("BudgetBuddy");
+        } catch (InvalidAccessTokenException e)
+        {
+            log.error("There was an error creating the recurring transaction request: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<TransactionsRecurringGetResponse> getAsyncRecurringResponse(Long userId) throws IOException
+    {
+        Optional<UserEntity> userEntityOptional = userService.findById(userId);
+        if(userEntityOptional.isEmpty())
+        {
+            log.info("No user found with userId {}. Unable to fetch recurring transactions", userId);
+            return CompletableFuture.completedFuture(null);
+        }
+        try
+        {
+            // Fetch the Access Token from the user's plaid link
+            PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
+            String accessToken = plaidLinkEntity.getAccessToken();
+            TransactionsRecurringGetRequest request = createRecurringTransactionRequest(accessToken);
+            Call<TransactionsRecurringGetResponse> transactionsRecurringCall = plaidApi.transactionsRecurringGet(request);
+            Response<TransactionsRecurringGetResponse> transactionRecurringResponse = transactionsRecurringCall.execute();
+            if(transactionRecurringResponse.isSuccessful())
+            {
+                TransactionsRecurringGetResponse rBody = transactionRecurringResponse.body();
+                return CompletableFuture.completedFuture(rBody);
+            }
+            else
+            {
+                int attempts = 0;
+                Response<TransactionsRecurringGetResponse> retryResponse;
+                while(attempts < MAX_ATTEMPTS)
+                {
+                    Call<TransactionsRecurringGetResponse> responseCall = plaidApi.transactionsRecurringGet(request);
+                    retryResponse = responseCall.execute();
+                    if(retryResponse.isSuccessful())
+                    {
+                        TransactionsRecurringGetResponse responseBody = retryResponse.body();
+                        return CompletableFuture.completedFuture(responseBody);
+                    }
+                    else
+                    {
+                        attempts++;
+                        if(attempts == MAX_ATTEMPTS)
+                        {
+                            log.info("MAX Attempts Reached.");
+                            break;
+                        }
+                    }
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        }catch(IOException e){
+            log.error("There was an error fetching the recurring transaction response from the plaid server: {}", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<List<RecurringTransactionEntity>> saveRecurringTransactions(final List<RecurringTransactionDTO> recurringTransactions) throws IOException
+    {
+        if(recurringTransactions.isEmpty())
+        {
+            return CompletableFuture.completedFuture(new ArrayList<>());
+        }
+        List<RecurringTransactionEntity> recurringTransactionEntities;
+        try
+        {
+            recurringTransactionEntities = recurringTransactions.stream()
+                    .map(recurringTransactionConverter::convert)
+                    .distinct()
+                    .toList();
+            if(recurringTransactionEntities.isEmpty())
+            {
+                log.info("No Recurring Transactions were converted to entities.");
+                return CompletableFuture.completedFuture(new ArrayList<>());
+            }
+            recurringTransactionEntities.forEach(recurringTransactionService::save);
+        }catch(DataException e){
+            log.error("There was an error saving the recurring transactions to the database: {}", e.getMessage());
+            return CompletableFuture.completedFuture(new ArrayList<>());
+        }
+        return CompletableFuture.completedFuture(recurringTransactionEntities);
+    }
+
+    private TransactionsSyncRequest createTransactionSyncRequest(String secret, String accessToken, String cursor, TransactionsSyncRequestOptions options)
+    {
+        return new TransactionsSyncRequest()
+                .secret(secret)
+                .cursor(cursor)
+                .count(500)
+                .options(options)
+                .accessToken(accessToken);
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<TransactionsSyncResponse> syncTransactionsForUser(final String secret, final String accessToken, final String cursor, final Long userId) throws IOException
+    {
+        Optional<UserEntity> userEntityOptional = userService.findById(userId);
+        if(userEntityOptional.isEmpty())
+        {
+            log.info("No user found with userId {}. Unable to sync transactions", userId);
+            return CompletableFuture.failedFuture(new UserNotFoundException("User with id " + userId + " was not found"));
+        }
+        if(accessToken.isEmpty())
+        {
+            return CompletableFuture.failedFuture(new InvalidAccessTokenException("Invalid access token was found. Unable to sync user transactions."));
+        }
+        if(cursor == null || cursor.isEmpty())
+        {
+            return CompletableFuture.failedFuture(new SyncCursorException("Invalid Sync Cursor found. Unable to sync user transactions from plaid."));
+        }
+        TransactionsSyncRequestOptions options = new TransactionsSyncRequestOptions()
+            .includePersonalFinanceCategory(true);
+        boolean hasMore = true;
+        String currentCursor = cursor;
+        TransactionsSyncResponse lastResponse = null;
+        while(hasMore)
+        {
+            TransactionsSyncRequest transactionsSyncRequest = createTransactionSyncRequest(secret, accessToken, cursor, options);
+            Response<TransactionsSyncResponse> response = plaidApi.transactionsSync(transactionsSyncRequest).execute();
+            if(response.isSuccessful())
+            {
+                TransactionsSyncResponse body = response.body();
+                List<com.plaid.client.model.Transaction> addedTransactions = body.getAdded();
+                List<com.plaid.client.model.Transaction> modifiedTransactions = body.getModified();
+                addedSyncedTransactions.addAll(addedTransactions);
+                modifiedSyncedTransactions.addAll(modifiedTransactions);
+                hasMore = body.getHasMore();
+                currentCursor = body.getNextCursor();
+                lastResponse = body;
+            }
+            else
+            {
+                hasMore = false;
+            }
+        }
+        return CompletableFuture.completedFuture(lastResponse);
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<List<TransactionsEntity>> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList)
+    {
+        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
+        if(transactionList.isEmpty())
+        {
+            log.info("No transactions were converted to entities.");
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+        try
+        {
+            transactionsEntities = transactionList.stream()
+                    .filter(Objects::nonNull)
+                    .map(transactionConverter::convert)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+            transactionsEntities.forEach(transactionService::save);
+            return CompletableFuture.completedFuture(transactionsEntities);
+        }catch(DataException e){
+            log.error("There was an error saving the transactions to the database: {}", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+}
