@@ -20,7 +20,7 @@ jobs:
           echo "spring.main.allow-bean-definition-overriding=true" >> src/main/resources/application-heroku.properties
       - name: Login to Heroku Registry
         env:
-          HEROKU_API_KEY = ${{secrets.HEROKU_API_KEY}}
+          HEROKU_API_KEY: ${{secrets.HEROKU_API_KEY}}
         run: |
           echo ${{ secrets.HEROKU_API_KEY }} | docker login --username=_ --password-stdin registry.heroku.com
       - name: Build and Push Docker Image
