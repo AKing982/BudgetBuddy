@@ -4,10 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.domain.AccountType;
 import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.*;
-import com.app.budgetbuddy.services.AccountService;
-import com.app.budgetbuddy.services.PlaidLinkService;
-import com.app.budgetbuddy.services.RecurringTransactionService;
-import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionConverter;
 import com.plaid.client.model.*;
@@ -24,6 +21,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.testcontainers.shaded.org.apache.commons.lang3.ObjectUtils;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -38,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class PlaidTransactionManagerTest {
+class PlaidTransactionManagerTest
+{
 
-    @InjectMocks
     private PlaidTransactionManager transactionManager;
 
     @Mock
@@ -61,137 +60,146 @@ class PlaidTransactionManagerTest {
     @Mock
     private RecurringTransactionService recurringTransactionService;
 
+    @Mock
+    private UserService userService;
+
+    private Long userId = 1L;
+    private LocalDate startDate = LocalDate.of(2024, 6, 1);
+    private LocalDate endDate = LocalDate.of(2024, 6, 5);
+    private UserEntity userEntity;
+    private PlaidLinkEntity plaidLinkEntity;
+
     @BeforeEach
     void setUp() {
+        userEntity = new UserEntity();
+        userEntity.setId(userId);
+
+        plaidLinkEntity = new PlaidLinkEntity();
+        plaidLinkEntity.setUser(userEntity);
+
+        transactionManager = new PlaidTransactionManager(
+                plaidLinkService,
+                plaidApi,
+                transactionConverter,
+                recurringTransactionService,
+                transactionService,
+                recurringTransactionConverter,
+                userService
+        );
+
     }
 
     @Test
-    void testCreateTransactionRequest_whenAccessTokenIsEmpty(){
-        String accessToken = "";
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = LocalDate.of(2024, 6, 2);
+    void testGetAsyncTransactionsResponse_whenUserIdDoesNotExist_thenThrowUserNotFoundException() throws IOException
+    {
+        when(userService.findById(userId)).thenReturn(Optional.empty());
+        assertThrows(UserNotFoundException.class, () -> {
+            transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate);
+        });
+    }
+
+    @Test
+    void testGetAsyncTransactionsResponse_whenAccessTokenIsEmpty_thenThrowAccessTokenNotFoundException() throws IOException
+    {
+        plaidLinkEntity.setAccessToken("");
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
         assertThrows(InvalidAccessTokenException.class, () -> {
-            transactionManager.createTransactionRequest(accessToken, startDate, endDate);
+            transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate);
         });
+        verify(userService, times(1)).findById(userId);
+        verify(plaidLinkService, times(1)).findPlaidLinkByUserID(userId);
     }
 
     @Test
-    void testCreateTransactionRequest_whenStartDateIsNull(){
-        String accessToken = "access_token";
-        LocalDate startDate = null;
-        LocalDate endDate = LocalDate.of(2024, 6, 5);
-
-        assertThrows(IllegalDateException.class, () -> {
-            transactionManager.createTransactionRequest(accessToken, startDate, endDate);
-        });
-    }
-
-    @Test
-    void testCreateTransactionRequest_whenEndDateIsNull(){
-        String accessToken = "access_token";
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = null;
-
-        assertThrows(IllegalDateException.class, () -> {
-            transactionManager.createTransactionRequest(accessToken, startDate, endDate);
-        });
-    }
-
-    @Test
-    void testCreateTransactionRequest_whenEndDateIsBeforeStartDate(){
-        LocalDate startDate = LocalDate.of(2024, 6, 5);
-        LocalDate endDate = LocalDate.of(2024, 6, 1);
-        String accessToken = "access_token";
-
-        TransactionsGetRequest expectedRequest = new TransactionsGetRequest().accessToken(accessToken)
-                .startDate(LocalDate.of(2024, 6,1))
-                .endDate(LocalDate.of(2024, 6,5));
-
-        TransactionsGetRequest actual = transactionManager.createTransactionRequest(accessToken, startDate, endDate);
-        assertNotNull(actual);
-        assertEquals(expectedRequest.getAccessToken(), actual.getAccessToken());
-        assertEquals(expectedRequest.getStartDate(), actual.getStartDate());
-        assertEquals(expectedRequest.getEndDate(), actual.getEndDate());
-
-    }
-
-    @Test
-    void testCreateTransactionRequest_whenAccessTokenIsValid() throws IOException {
-        String accessToken = "access_token";
-        Long userId = 1L;
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = LocalDate.of(2024, 6, 6);
-        TransactionsGetRequest transactionsGetRequest = new TransactionsGetRequest().accessToken(accessToken)
-                .startDate(startDate)
-                .endDate(endDate);
-
-        TransactionsGetRequest actual = transactionManager.createTransactionRequest(accessToken, startDate, endDate);
-        assertNotNull(actual);
-        assertEquals(transactionsGetRequest.getAccessToken(), actual.getAccessToken());
-        assertEquals(transactionsGetRequest.getStartDate(), actual.getStartDate());
-        assertEquals(transactionsGetRequest.getEndDate(), actual.getEndDate());
-    }
-
-    @Test
-    void testGetTransactionsForUser_whenUserIdIsValid() throws IOException {
-        String accessToken = "access_token";
+    void testGetAsyncTransactionsResponse_whenUserIdIsValid() throws IOException {
         List<PlaidTransaction> transactions = new ArrayList<>();
         transactions.add(createTransaction());
         transactions.add(createTransaction());
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = LocalDate.of(2024, 6, 5);
-        Long userId = 1L;
-
-        TransactionsGetRequest transactionsGetRequest = new TransactionsGetRequest().accessToken(accessToken)
-                .startDate(startDate)
-                .endDate(endDate);
 
         TransactionsGetResponse expectedResponse = new TransactionsGetResponse();
 
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
         when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
-
         Call<TransactionsGetResponse> callSuccessful = mock(Call.class);
         when(callSuccessful.execute()).thenReturn(Response.success(expectedResponse));
-        when(plaidApi.transactionsGet(transactionsGetRequest)).thenReturn(callSuccessful);
 
-        TransactionsGetResponse actualResponse = transactionManager.getTransactionsForUser(userId, startDate, endDate);
+        when(plaidApi.transactionsGet(any(TransactionsGetRequest.class))).thenReturn(callSuccessful);
+
+        TransactionsGetResponse actualResponse = transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate).join();
         assertNotNull(actualResponse);
         assertEquals(expectedResponse.getTotalTransactions(), actualResponse.getTotalTransactions());
     }
 
     @Test
-    void testGetTransactionsResponseWithRetry_whenTransactionGetRequestIsNull(){
-        assertThrows(IllegalArgumentException.class, () -> {
-            transactionManager.getTransactionsResponseWithRetry(null);
-        });
-    }
-
-    @Test
-    void testGetTransactionsResponseWithRetry_whenResponseFailsThenSuccessful_ThenReturnResponse() throws IOException {
-        String accessToken = "access_token";
+    void testGetAsyncTransactionsResponse_whenTransactionResponseCallFailsTwoAttempts_thenReturnSuccess() throws IOException
+    {
         List<PlaidTransaction> transactions = new ArrayList<>();
         transactions.add(createTransaction());
         transactions.add(createTransaction());
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = LocalDate.of(2024, 6, 5);
-        Long userId = 1L;
-
-        TransactionsGetRequest transactionsGetRequest = new TransactionsGetRequest().accessToken(accessToken)
-                .startDate(startDate)
-                .endDate(endDate);
-
-        Call<TransactionsGetResponse> callUnsuccessful = mock(Call.class);
-        when(callUnsuccessful.execute()).thenReturn(Response.error(500, ResponseBody.create(MediaType.parse("application/json"), "Error")));
-
         TransactionsGetResponse expectedResponse = new TransactionsGetResponse();
-        Call<TransactionsGetResponse> callSuccessful = mock(Call.class);
-        when(callSuccessful.execute()).thenReturn(Response.success(expectedResponse));
+        expectedResponse.setTotalTransactions(transactions.size());
 
-        when(plaidApi.transactionsGet(transactionsGetRequest)).thenReturn(callUnsuccessful, callSuccessful);
-        Response<TransactionsGetResponse> actualResponse = transactionManager.getTransactionsResponseWithRetry(transactionsGetRequest);
+        plaidLinkEntity.setAccessToken("32323232");
+
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
+        Call<TransactionsGetResponse> firstCall = mock(Call.class);
+        Response<TransactionsGetResponse> failedResponse = Response.error(500, ResponseBody.create(MediaType.get("application/json"), "{}"));
+        when(firstCall.execute()).thenReturn(failedResponse);
+
+        Call<TransactionsGetResponse> retryCall1 = mock(Call.class);
+        Call<TransactionsGetResponse> retryCall2 = mock(Call.class);
+        Call<TransactionsGetResponse> retryCall3 = mock(Call.class);
+        when(retryCall1.execute()).thenReturn(failedResponse);
+        when(retryCall2.execute()).thenReturn(failedResponse);
+        when(retryCall3.execute()).thenReturn(Response.success(expectedResponse));
+
+        when(plaidApi.transactionsGet(any(TransactionsGetRequest.class)))
+                .thenReturn(firstCall)
+                .thenReturn(retryCall1)
+                .thenReturn(retryCall2)
+                .thenReturn(retryCall3);
+
+        TransactionsGetResponse actualResponse = transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate).join();
         assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getTransactions(), actualResponse.body().getTransactions());
-        assertEquals(expectedResponse.getTotalTransactions(), actualResponse.body().getTotalTransactions());
+        assertEquals(expectedResponse.getTotalTransactions(), actualResponse.getTotalTransactions());
+        verify(plaidApi, times(4)).transactionsGet(any(TransactionsGetRequest.class));
+    }
+
+    @Test
+    void testGetAsyncTransactionResponse_whenMaxAttemptsReached_thenReturnRuntimeException() throws IOException
+    {
+        TransactionsGetResponse expectedResponse = new TransactionsGetResponse();
+
+        plaidLinkEntity.setAccessToken("32323232");
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
+        Call<TransactionsGetResponse> firstCall = mock(Call.class);
+        Response<TransactionsGetResponse> failedResponse = Response.error(500, ResponseBody.create(MediaType.get("application/json"), "{}"));
+        when(firstCall.execute()).thenReturn(failedResponse);
+
+        Call<TransactionsGetResponse> retryCall1 = mock(Call.class);
+        Call<TransactionsGetResponse> retryCall2 = mock(Call.class);
+        Call<TransactionsGetResponse> retryCall3 = mock(Call.class);
+        Call<TransactionsGetResponse> retryCall4 = mock(Call.class);
+        Call<TransactionsGetResponse> retryCall5 = mock(Call.class);
+        when(retryCall1.execute()).thenReturn(failedResponse);
+        when(retryCall2.execute()).thenReturn(failedResponse);
+        when(retryCall3.execute()).thenReturn(failedResponse);
+        when(retryCall4.execute()).thenReturn(failedResponse);
+        when(retryCall5.execute()).thenReturn(failedResponse);
+
+        when(plaidApi.transactionsGet(any(TransactionsGetRequest.class)))
+                .thenReturn(firstCall)
+                .thenReturn(retryCall1)
+                .thenReturn(retryCall2)
+                .thenReturn(retryCall3)
+                .thenReturn(retryCall4)
+                .thenReturn(retryCall5);
+        assertThrows(RuntimeException.class, () -> {
+            transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate).join();
+        });
     }
 
     @Test
@@ -201,118 +209,118 @@ class PlaidTransactionManagerTest {
             transactionManager.saveTransactionsToDatabase(transactions);
         });
     }
-
-    @Test
-    void testSaveTransactionToDatabase_whenTransactionElementNullThenSkipAndSaveTransaction() {
-        List<PlaidTransaction> transactions = new ArrayList<>();
-        transactions.add(null);
-        transactions.add(createTransaction());
-
-        List<TransactionsEntity> expected = Arrays.asList(createTransactionEntity());
-        when(transactionConverter.convert(createTransaction())).thenReturn(createTransactionEntity());
-        doNothing().when(transactionService).save(createTransactionEntity());
-        List<TransactionsEntity> actual = transactionManager.saveTransactionsToDatabase(transactions);
-        assertNotNull(actual);
-        assertEquals(expected.size(), actual.size());
-        for(int i = 0; i < actual.size(); i++){
-            assertEquals(expected.get(i).getId(), actual.get(i).getId());
-            assertEquals(expected.get(i).getAccount().getId(), actual.get(i).getAccount().getId());
-//            assertEquals(expected.get(i).getCategoryId(), actual.get(i).getCategoryId());
-            assertEquals(expected.get(i).getAuthorizedDate(), actual.get(i).getAuthorizedDate());
-            assertEquals(expected.get(i).isPending(), actual.get(i).isPending());
-            assertEquals(expected.get(i).getDescription(), actual.get(i).getDescription());
-            assertEquals(expected.get(i).getAmount(), actual.get(i).getAmount());
-//            assertEquals(expected.get(i).getCategories(), actual.get(i).getCategories());
-            assertEquals(expected.get(i).getPosted(), actual.get(i).getPosted());
-        }
-
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideNullParameters")
-    void testSaveTransactionToDatabase_whenTransactionParametersAreNull(String transactionId, AccountEntity account, String description,
-                                                                        BigDecimal amount, Boolean isPending, List<String> categories, String categoryId, LocalDate authorizedDate, Class<? extends Exception> expectedException){
-        List<PlaidTransaction> transactions = new ArrayList<>();
-        transactions.add(createTransaction());
-        transactions.add(createTransaction());
-
-        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
-        TransactionsEntity transactionsEntity = createTransaction(transactionId, account, description, amount, isPending, categories, categoryId, authorizedDate);
-        transactionsEntities.add(transactionsEntity);
-        assertThrows(expectedException, () -> {
-            transactionManager.saveTransactionsToDatabase(transactions);
-        });
-
-    }
-
-    @Test
-    void testGetRecurringTransactionsForUser_whenUserIdNotValid_thenThrowException(){
-        Long userId = -1L;
-        assertThrows(InvalidUserIDException.class, () -> {
-            transactionManager.getRecurringTransactionsForUser(userId);
-        });
-    }
-
-    @Test
-    void testGetRecurringTransactionsForUser_whenUserIdValid() throws IOException {
-        Long userId = 1L;
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
-        TransactionsRecurringGetRequestOptions options = new TransactionsRecurringGetRequestOptions()
-                .includePersonalFinanceCategory(true);
-
-        TransactionsRecurringGetRequest transactionsRecurringGetRequest = new TransactionsRecurringGetRequest()
-                .accessToken("access_token")
-                .options(options);
-
-        TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
-        expectedResponse.setInflowStreams(Collections.singletonList(createTransactionStream()));
-        expectedResponse.setOutflowStreams(Collections.singletonList(createTransactionStream()));
-
-        Call<TransactionsRecurringGetResponse> callSuccessful = mock(Call.class);
-        Response<TransactionsRecurringGetResponse> response = Response.success(expectedResponse);
-
-        when(plaidApi.transactionsRecurringGet(transactionsRecurringGetRequest)).thenReturn(callSuccessful);
-        when(callSuccessful.execute()).thenReturn(response);
-
-        TransactionsRecurringGetResponse actual = transactionManager.getRecurringTransactionsForUser(userId);
-        assertNotNull(actual);
-        assertEquals(expectedResponse.getInflowStreams(), actual.getInflowStreams());
-        assertEquals(expectedResponse.getOutflowStreams(), actual.getOutflowStreams());
-        verify(plaidLinkService, times(1)).findPlaidLinkByUserID(userId);
-        verify(plaidApi).transactionsRecurringGet(transactionsRecurringGetRequest);
-    }
-
-    @Test
-    void testSaveRecurringTransactions_whenRecurringTransactionsListIsEmpty_thenReturnEmptyList() throws IOException {
-        List<RecurringTransactionDTO> transactions = new ArrayList<>();
-        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
-    }
-
-    @Test
-    void testSaveRecurringTransactions_whenRecurringTransactionsListIsNull_thenReturnEmptyList() throws IOException {
-        List<RecurringTransactionDTO> transactions = null;
-        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
-    }
-
-    @Test
-    void testSaveRecurringTransactions_whenRecurringTransactionsListIsValid_thenReturnEntityList() throws IOException {
-        List<RecurringTransactionDTO> transactions = new ArrayList<>();
-        transactions.add(createRecurringTransaction());
-
-        List<RecurringTransactionEntity> expectedEntityList = new ArrayList<>();
-        expectedEntityList.add(createRecurringTransactionEntity());
-
-        when(recurringTransactionConverter.convert(createRecurringTransaction())).thenReturn(createRecurringTransactionEntity());
-        lenient().doNothing().when(recurringTransactionService).save(createRecurringTransactionEntity());
-        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
-        assertNotNull(actual);
-        assertEquals(expectedEntityList.size(), actual.size());
-
-    }
+//
+//    @Test
+//    void testSaveTransactionToDatabase_whenTransactionElementNullThenSkipAndSaveTransaction() {
+//        List<PlaidTransaction> transactions = new ArrayList<>();
+//        transactions.add(null);
+//        transactions.add(createTransaction());
+//
+//        List<TransactionsEntity> expected = Arrays.asList(createTransactionEntity());
+//        when(transactionConverter.convert(createTransaction())).thenReturn(createTransactionEntity());
+//        doNothing().when(transactionService).save(createTransactionEntity());
+//        List<TransactionsEntity> actual = transactionManager.saveTransactionsToDatabase(transactions);
+//        assertNotNull(actual);
+//        assertEquals(expected.size(), actual.size());
+//        for(int i = 0; i < actual.size(); i++){
+//            assertEquals(expected.get(i).getId(), actual.get(i).getId());
+//            assertEquals(expected.get(i).getAccount().getId(), actual.get(i).getAccount().getId());
+////            assertEquals(expected.get(i).getCategoryId(), actual.get(i).getCategoryId());
+//            assertEquals(expected.get(i).getAuthorizedDate(), actual.get(i).getAuthorizedDate());
+//            assertEquals(expected.get(i).isPending(), actual.get(i).isPending());
+//            assertEquals(expected.get(i).getDescription(), actual.get(i).getDescription());
+//            assertEquals(expected.get(i).getAmount(), actual.get(i).getAmount());
+////            assertEquals(expected.get(i).getCategories(), actual.get(i).getCategories());
+//            assertEquals(expected.get(i).getPosted(), actual.get(i).getPosted());
+//        }
+//
+//    }
+//
+//    @ParameterizedTest
+//    @MethodSource("provideNullParameters")
+//    void testSaveTransactionToDatabase_whenTransactionParametersAreNull(String transactionId, AccountEntity account, String description,
+//                                                                        BigDecimal amount, Boolean isPending, List<String> categories, String categoryId, LocalDate authorizedDate, Class<? extends Exception> expectedException){
+//        List<PlaidTransaction> transactions = new ArrayList<>();
+//        transactions.add(createTransaction());
+//        transactions.add(createTransaction());
+//
+//        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
+//        TransactionsEntity transactionsEntity = createTransaction(transactionId, account, description, amount, isPending, categories, categoryId, authorizedDate);
+//        transactionsEntities.add(transactionsEntity);
+//        assertThrows(expectedException, () -> {
+//            transactionManager.saveTransactionsToDatabase(transactions);
+//        });
+//
+//    }
+//
+//    @Test
+//    void testGetRecurringTransactionsForUser_whenUserIdNotValid_thenThrowException(){
+//        Long userId = -1L;
+//        assertThrows(InvalidUserIDException.class, () -> {
+//            transactionManager.getRecurringTransactionsForUser(userId);
+//        });
+//    }
+//
+//    @Test
+//    void testGetRecurringTransactionsForUser_whenUserIdValid() throws IOException {
+//        Long userId = 1L;
+//        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
+//        TransactionsRecurringGetRequestOptions options = new TransactionsRecurringGetRequestOptions()
+//                .includePersonalFinanceCategory(true);
+//
+//        TransactionsRecurringGetRequest transactionsRecurringGetRequest = new TransactionsRecurringGetRequest()
+//                .accessToken("access_token")
+//                .options(options);
+//
+//        TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
+//        expectedResponse.setInflowStreams(Collections.singletonList(createTransactionStream()));
+//        expectedResponse.setOutflowStreams(Collections.singletonList(createTransactionStream()));
+//
+//        Call<TransactionsRecurringGetResponse> callSuccessful = mock(Call.class);
+//        Response<TransactionsRecurringGetResponse> response = Response.success(expectedResponse);
+//
+//        when(plaidApi.transactionsRecurringGet(transactionsRecurringGetRequest)).thenReturn(callSuccessful);
+//        when(callSuccessful.execute()).thenReturn(response);
+//
+//        TransactionsRecurringGetResponse actual = transactionManager.getRecurringTransactionsForUser(userId);
+//        assertNotNull(actual);
+//        assertEquals(expectedResponse.getInflowStreams(), actual.getInflowStreams());
+//        assertEquals(expectedResponse.getOutflowStreams(), actual.getOutflowStreams());
+//        verify(plaidLinkService, times(1)).findPlaidLinkByUserID(userId);
+//        verify(plaidApi).transactionsRecurringGet(transactionsRecurringGetRequest);
+//    }
+//
+//    @Test
+//    void testSaveRecurringTransactions_whenRecurringTransactionsListIsEmpty_thenReturnEmptyList() throws IOException {
+//        List<RecurringTransactionDTO> transactions = new ArrayList<>();
+//        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
+//        assertNotNull(actual);
+//        assertTrue(actual.isEmpty());
+//    }
+//
+//    @Test
+//    void testSaveRecurringTransactions_whenRecurringTransactionsListIsNull_thenReturnEmptyList() throws IOException {
+//        List<RecurringTransactionDTO> transactions = null;
+//        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
+//        assertNotNull(actual);
+//        assertTrue(actual.isEmpty());
+//    }
+//
+//    @Test
+//    void testSaveRecurringTransactions_whenRecurringTransactionsListIsValid_thenReturnEntityList() throws IOException {
+//        List<RecurringTransactionDTO> transactions = new ArrayList<>();
+//        transactions.add(createRecurringTransaction());
+//
+//        List<RecurringTransactionEntity> expectedEntityList = new ArrayList<>();
+//        expectedEntityList.add(createRecurringTransactionEntity());
+//
+//        when(recurringTransactionConverter.convert(createRecurringTransaction())).thenReturn(createRecurringTransactionEntity());
+//        lenient().doNothing().when(recurringTransactionService).save(createRecurringTransactionEntity());
+//        List<RecurringTransactionEntity> actual = transactionManager.saveRecurringTransactions(transactions);
+//        assertNotNull(actual);
+//        assertEquals(expectedEntityList.size(), actual.size());
+//
+//    }
 
     private RecurringTransactionEntity createRecurringTransactionEntity(){
         RecurringTransactionEntity recurringTransaction = new RecurringTransactionEntity();

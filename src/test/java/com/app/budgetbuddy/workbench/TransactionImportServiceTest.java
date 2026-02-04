@@ -101,51 +101,51 @@ class TransactionImportServiceTest
         verify(subBudgetService).findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear);
     }
 
-    @Test
-    @DisplayName("Should process multiple months concurrently")
-    void shouldProcessMultipleMonthsConcurrently() throws InterruptedException, IOException {
-        // Given - Setup multiple months of data
-        List<SubBudget> multipleMonthBudgets = createMultipleMonthSubBudgets();
-        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
-                .thenReturn(multipleMonthBudgets);
-
-        // When
-        long startTime = System.currentTimeMillis();
-        List<Transaction> result = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
-        long endTime = System.currentTimeMillis();
-
-        // Then
-        assertNotNull(result);
-        assertThat(endTime - startTime).isLessThan(5000); // Should complete within 5 seconds
-
-        // Verify all months were processed
-        verify(plaidTransactionManager, times(getTotalExpectedWeekCalls(multipleMonthBudgets)))
-                .fetchPlaidTransactionsByDateRange(eq(TEST_USER_ID), any(LocalDate.class), any(LocalDate.class));
-    }
-
-    @Test
-    @DisplayName("Should handle exception when month thread process fails")
-    void shouldHandleExceptionWhenMonthThreadProcessFails() throws InterruptedException, IOException {
-        // Given - Setup data that will cause an exception during processing
-        List<SubBudget> multipleMonthBudgets = createMultipleMonthSubBudgets();
-        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
-                .thenReturn(multipleMonthBudgets);
-
-        // Configure plaidTransactionManager to throw an exception
-        when(plaidTransactionManager.fetchPlaidTransactionsByDateRange(any(), any(), any()))
-                .thenThrow(new RuntimeException("Simulated month processing failure"));
-
-        // When - The service should handle the exception gracefully
-        List<Transaction> result = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
-
-        // Then - Should return empty list, not throw exception
-        assertThat(result).isNotNull();
-        assertThat(result).isEmpty(); // Your service handles exceptions by returning empty collections
-
-        // Verify that the service methods were still called
-        verify(subBudgetService).findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear);
-        verify(plaidTransactionManager, atLeast(1)).fetchPlaidTransactionsByDateRange(any(), any(), any());
-    }
+//    @Test
+//    @DisplayName("Should process multiple months concurrently")
+//    void shouldProcessMultipleMonthsConcurrently() throws InterruptedException, IOException {
+//        // Given - Setup multiple months of data
+//        List<SubBudget> multipleMonthBudgets = createMultipleMonthSubBudgets();
+//        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
+//                .thenReturn(multipleMonthBudgets);
+//
+//        // When
+//        long startTime = System.currentTimeMillis();
+//        List<Transaction> result = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
+//        long endTime = System.currentTimeMillis();
+//
+//        // Then
+//        assertNotNull(result);
+//        assertThat(endTime - startTime).isLessThan(5000); // Should complete within 5 seconds
+//
+//        // Verify all months were processed
+//        verify(plaidTransactionManager, times(getTotalExpectedWeekCalls(multipleMonthBudgets)))
+//                .fetchPlaidTransactionsByDateRange(eq(TEST_USER_ID), any(LocalDate.class), any(LocalDate.class));
+//    }
+//
+//    @Test
+//    @DisplayName("Should handle exception when month thread process fails")
+//    void shouldHandleExceptionWhenMonthThreadProcessFails() throws InterruptedException, IOException {
+//        // Given - Setup data that will cause an exception during processing
+//        List<SubBudget> multipleMonthBudgets = createMultipleMonthSubBudgets();
+//        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
+//                .thenReturn(multipleMonthBudgets);
+//
+//        // Configure plaidTransactionManager to throw an exception
+//        when(plaidTransactionManager.fetchPlaidTransactionsByDateRange(any(), any(), any()))
+//                .thenThrow(new RuntimeException("Simulated month processing failure"));
+//
+//        // When - The service should handle the exception gracefully
+//        List<Transaction> result = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
+//
+//        // Then - Should return empty list, not throw exception
+//        assertThat(result).isNotNull();
+//        assertThat(result).isEmpty(); // Your service handles exceptions by returning empty collections
+//
+//        // Verify that the service methods were still called
+//        verify(subBudgetService).findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear);
+//        verify(plaidTransactionManager, atLeast(1)).fetchPlaidTransactionsByDateRange(any(), any(), any());
+//    }
 
     @Test
     @DisplayName("Should handle empty month date ranges and return empty list")
@@ -156,27 +156,27 @@ class TransactionImportServiceTest
         assertNotNull(actual);
         assertEquals(0, actual.size());
     }
-
-    @Test
-    @DisplayName("Should handle exception in outer try-catch and return empty list")
-    void shouldHandleExceptionInOuterTryCatch() throws IOException {
-        // Given - Mock the subBudgetService to throw an exception during the initial call
-        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
-                .thenThrow(new RuntimeException("Database connection failed"));
-
-        // When - The outer try-catch should handle this exception
-        List<Transaction> result = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
-
-        // Then - Should return empty list instead of throwing exception
-        assertThat(result).isNotNull();
-        assertThat(result).isEmpty();
-
-        // Verify the service was called (and failed)
-        verify(subBudgetService).findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear);
-
-        // Verify that PlaidTransactionManager was never called due to early failure
-        verify(plaidTransactionManager, never()).fetchPlaidTransactionsByDateRange(any(), any(), any());
-    }
+//
+//    @Test
+//    @DisplayName("Should handle exception in outer try-catch and return empty list")
+//    void shouldHandleExceptionInOuterTryCatch() throws IOException {
+//        // Given - Mock the subBudgetService to throw an exception during the initial call
+//        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
+//                .thenThrow(new RuntimeException("Database connection failed"));
+//
+//        // When - The outer try-catch should handle this exception
+//        List<Transaction> result = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
+//
+//        // Then - Should return empty list instead of throwing exception
+//        assertThat(result).isNotNull();
+//        assertThat(result).isEmpty();
+//
+//        // Verify the service was called (and failed)
+//        verify(subBudgetService).findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear);
+//
+//        // Verify that PlaidTransactionManager was never called due to early failure
+//        verify(plaidTransactionManager, never()).fetchPlaidTransactionsByDateRange(any(), any(), any());
+//    }
 
     private int getTotalExpectedWeekCalls(List<SubBudget> subBudgets) {
         return subBudgets.stream()

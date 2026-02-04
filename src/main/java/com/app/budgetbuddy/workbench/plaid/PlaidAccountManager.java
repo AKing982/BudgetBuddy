@@ -9,11 +9,13 @@ import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.services.AccountService;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.UserService;
 import com.app.budgetbuddy.workbench.converter.AccountBaseConverter;
 import com.plaid.client.model.AccountBase;
 import com.plaid.client.model.AccountsGetRequest;
 import com.plaid.client.model.AccountsGetResponse;
 import com.plaid.client.request.PlaidApi;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,21 +32,22 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
+@Slf4j
 public class PlaidAccountManager extends AbstractPlaidManager
 {
-    private Logger LOGGER = LoggerFactory.getLogger(PlaidAccountManager.class);
     private AccountBaseConverter accountBaseConverter;
-    private UserRepository userRepository;
+    private UserService userService;
     private AccountService accountService;
 
     @Autowired
-    public PlaidAccountManager(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi,
+    public PlaidAccountManager(PlaidLinkService plaidLinkService,
+                               @Qualifier("plaid") PlaidApi plaidApi,
                                AccountBaseConverter accountBaseConverter,
-                               UserRepository userRepository,
+                               UserService userService,
                                AccountService accountService) {
         super(plaidLinkService, plaidApi);
         this.accountBaseConverter = accountBaseConverter;
-        this.userRepository = userRepository;
+        this.userService = userService;
         this.accountService = accountService;
     }
 
@@ -106,7 +109,7 @@ public class PlaidAccountManager extends AbstractPlaidManager
                }
            }catch(InterruptedException e)
            {
-               LOGGER.error("There was a problem while trying to retrieve accounts from Plaid API.", e);
+               log.error("There was a problem while trying to retrieve accounts from Plaid API.", e);
            }
 
         }while(attempts < MAX_ATTEMPTS);
@@ -117,7 +120,7 @@ public class PlaidAccountManager extends AbstractPlaidManager
         if(accounts.isEmpty()){
             throw new AccountsNotFoundException("No accounts found.");
         }
-        Optional<UserEntity> user = userRepository.findById(userId);
+        Optional<UserEntity> user = userService.findById(userId);
         if(user.isEmpty()){
             throw new UserNotFoundException("User not found.");
         }

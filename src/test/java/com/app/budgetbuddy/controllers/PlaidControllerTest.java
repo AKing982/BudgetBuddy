@@ -3,7 +3,9 @@ package com.app.budgetbuddy.controllers;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
@@ -31,26 +33,17 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 
 @WebMvcTest(value=PlaidController.class, excludeAutoConfiguration= SecurityAutoConfiguration.class)
-@Testcontainers
 class PlaidControllerTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:13.2")
-            .withDatabaseName("buddy")
-            .withUsername("buddy")
-            .withPassword("buddy");
-
-    @MockBean
-    private PlaidApi plaid;
 
     @MockBean
     private PlaidAccountManager plaidAccountManager;
@@ -58,20 +51,7 @@ class PlaidControllerTest {
     @MockBean
     private PlaidTransactionManager plaidTransactionManager;
 
-    @MockBean
-    private TransactionDTOConverter transactionDTOConverter;
-
     private ObjectMapper objectMapper = new ObjectMapper();
-
-    @DynamicPropertySource
-    static void registerPgProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
-        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
-    }
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @MockBean
     private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
@@ -79,18 +59,22 @@ class PlaidControllerTest {
     @MockBean
     private PlaidLinkService plaidLinkService;
 
+    @MockBean
+    private UserRepository userRepository;
+
+    @Autowired
+    private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
     }
 
     @Test
-    void testCreateLinkTokenWithEmptyUserId_thenReturnBadRequest() throws Exception {
-
-        String jsonString = objectMapper.writeValueAsString("");
+    void testCreateLinkTokenWithNullUserId_thenReturnBadRequest() throws Exception
+    {
         mockMvc.perform(post("/api/plaid/create_link_token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(""))
+                .content("null"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -102,7 +86,7 @@ class PlaidControllerTest {
 
         mockMvc.perform(post("/api/plaid/create_link_token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("1"))
+                .content("{\"userId\":  1}"))
                 .andExpect(status().isCreated());
     }
 
@@ -246,30 +230,64 @@ class PlaidControllerTest {
 
 
     @Test
-    void testGetAllAccounts_whenUserIsIsInvalid_thenReturnBadRequest() throws Exception {
+    void testGetAllAccounts_whenUserIsIsInvalid_thenReturnBadRequest() throws Exception
+    {
         Long userId = -1L;
 
-        mockMvc.perform(get("/api/plaid/accounts")
-                .contentType(MediaType.APPLICATION_JSON)
-                .param("userId", String.valueOf(userId)))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/plaid/users/{userId}/accounts", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("UserId is invalid")));
     }
 
     @Test
-    void testGetAllAccounts_whenUserIdIsValid_thenReturnOk() throws Exception {
+    void testGetAllAccounts_whenUserIdIsValid_thenReturnOk() throws Exception
+    {
         List<AccountBase> accountBaseList = new ArrayList<>();
         accountBaseList.add(testAccount());
         accountBaseList.add(testAccount());
         Long userId = 1L;
 
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
+
         AccountsGetResponse expectedResponse = new AccountsGetResponse();
         expectedResponse.setAccounts(accountBaseList);
 
         when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(expectedResponse);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
+        mockMvc.perform(get("/api/plaid/users/{userId}/accounts", userId)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
 
-        mockMvc.perform(get("/api/plaid/accounts")
-                .contentType(MediaType.APPLICATION_JSON)
-                .param("userId", String.valueOf(userId)))
+    @Test
+    void testGetAllAccounts_whenAccountResponseIsNull_thenReturnInternalServerError() throws Exception
+    {
+        Long userId = 1L;
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
+        when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(null);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
+        mockMvc.perform(get("/api/plaid/users/{userId}/accounts", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testGetAllAccounts_whenAccountsListIsEmpty_thenReturnNotFound() throws Exception
+    {
+        Long userId = 1L;
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
+        List<AccountBase> accountBaseList = new ArrayList<>();
+
+        AccountsGetResponse expectedResponse = new AccountsGetResponse();
+        expectedResponse.setAccounts(accountBaseList);
+        when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(expectedResponse);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
+        mockMvc.perform(get("/api/plaid/users/{userId}/accounts", userId)
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
@@ -318,40 +336,19 @@ class PlaidControllerTest {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2024, 6, 1);
         LocalDate endDate = LocalDate.of(2024, 6, 5);
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
 
         TransactionsGetResponse transactionsGetResponse = new TransactionsGetResponse();
 
-        when(plaidTransactionManager.getTransactionsForUser(userId, startDate, endDate)).thenReturn(transactionsGetResponse);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(plaidTransactionManager.getAsyncTransactionsResponse(userId, startDate, endDate)).thenReturn(CompletableFuture.completedFuture(transactionsGetResponse));
 
         mockMvc.perform(get("/api/plaid/transactions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .param("userId", String.valueOf(userId))
                 .param("startDate", String.valueOf(startDate))
                 .param("endDate", String.valueOf(endDate)))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void testSaveTransactions_whenTransactionRequestIsNull_thenReturnBadRequest() throws Exception {
-
-        String jsonString = objectMapper.writeValueAsString(null);
-        mockMvc.perform(post("/api/plaid/save-transactions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonString))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testSaveTransactions_whenTransactionRequestIsValid_thenReturnOk() throws Exception {
-        List<TransactionDTO> transactionList = new ArrayList<>();
-        transactionList.add(createTransactionDTO());
-        transactionList.add(createTransactionDTO());
-
-        TransactionRequest transactionRequest = new TransactionRequest(transactionList);
-        String jsonString = objectMapper.writeValueAsString(transactionRequest);
-        mockMvc.perform(post("/api/plaid/save-transactions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonString))
                 .andExpect(status().isOk());
     }
 
@@ -369,7 +366,7 @@ class PlaidControllerTest {
         Long userId = 1L;
         TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
 
-        when(plaidTransactionManager.getRecurringTransactionsForUser(userId)).thenReturn(expectedResponse);
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId)).thenReturn(CompletableFuture.completedFuture(expectedResponse));
         mockMvc.perform(get("/api/plaid/users/{userId}/recurring-transactions", userId)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());

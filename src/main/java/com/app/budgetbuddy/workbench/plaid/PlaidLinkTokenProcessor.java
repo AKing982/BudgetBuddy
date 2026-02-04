@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.plaid.client.model.*;
@@ -48,19 +49,14 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      * @param clientUserId the ID of the client user
      * @return the created link token request
      */
-    public LinkTokenCreateRequest createLinkTokenRequest(String clientUserId) throws IOException {
-        if(clientUserId.isEmpty()){
+    public LinkTokenCreateRequest createLinkTokenRequest(String clientUserId)
+    {
+        if(clientUserId.isEmpty())
+        {
             throw new IllegalArgumentException("Client user id cannot be empty");
         }
         try
         {
-//            InstitutionsGetByIdRequest request = new InstitutionsGetByIdRequest()
-//                    .institutionId("ins_132917")
-//                    .countryCodes(Arrays.asList(CountryCode.US));
-//            InstitutionsGetByIdResponse response = plaidApi.institutionsGetById(request)
-//                    .execute().body();
-//            Institution institution = response.getInstitution();
-
             LinkTokenCreateRequest linkTokenCreateRequest = new LinkTokenCreateRequest()
                     .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
                     .clientName("BudgetBuddy")
@@ -70,7 +66,7 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
                     .language("en");
             log.info("Link Token Create Request: " + linkTokenCreateRequest);
             return linkTokenCreateRequest;
-        }catch(Exception e){
+        }catch(DataException e){
             log.error("Error creating link token request: {}",e.getMessage(), e);
             throw e;
         }

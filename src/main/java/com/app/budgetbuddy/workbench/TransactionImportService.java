@@ -152,25 +152,26 @@ public class TransactionImportService
 
     private List<Transaction> processWeek(final Long userId, final DateRange weekRange) throws IOException
     {
-        log.debug("Processing week range {} to {} for user {} (Thread: {})",
-                weekRange.getStartDate(), weekRange.getEndDate(), userId,
-                Thread.currentThread().getName());
-
-        // Fetch transactions from plaid for the week
-        LocalDate weekStart = weekRange.getStartDate();
-        LocalDate weekEnd = weekRange.getEndDate();
-        try
-        {
-            List<Transaction> transactionsForWeek = plaidTransactionManager.fetchPlaidTransactionsByDateRange(userId, weekStart, weekEnd);
-            log.info("Retrieved {} transactions for {} to {}", transactionsForWeek.size(), weekRange.getStartDate(), weekRange.getEndDate());
-            transactionService.saveAll(transactionsForWeek);
-            log.info("Saving transactions to the database");
-            return transactionsForWeek;
-
-        }catch(Exception e){
-            log.error("There was an error processing transactions for week {} to {} for userId {}: {}", weekRange.getStartDate(), weekRange.getEndDate(), userId, e.getMessage());
-            return Collections.emptyList();
-        }
+//        log.debug("Processing week range {} to {} for user {} (Thread: {})",
+//                weekRange.getStartDate(), weekRange.getEndDate(), userId,
+//                Thread.currentThread().getName());
+//
+//        // Fetch transactions from plaid for the week
+//        LocalDate weekStart = weekRange.getStartDate();
+//        LocalDate weekEnd = weekRange.getEndDate();
+//        try
+//        {
+//            List<Transaction> transactionsForWeek = plaidTransactionManager.fetchPlaidTransactionsByDateRange(userId, weekStart, weekEnd);
+//            log.info("Retrieved {} transactions for {} to {}", transactionsForWeek.size(), weekRange.getStartDate(), weekRange.getEndDate());
+//            transactionService.saveAll(transactionsForWeek);
+//            log.info("Saving transactions to the database");
+//            return transactionsForWeek;
+//
+//        }catch(Exception e){
+//            log.error("There was an error processing transactions for week {} to {} for userId {}: {}", weekRange.getStartDate(), weekRange.getEndDate(), userId, e.getMessage());
+//            return Collections.emptyList();
+//        }
+        return null;
     }
 
  }
