@@ -1,9 +1,12 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.PlaidCursor;
 import com.app.budgetbuddy.entities.PlaidCursorEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.exceptions.PlaidCursorException;
 import com.app.budgetbuddy.repositories.PlaidCursorRepository;
+import com.app.budgetbuddy.workbench.converter.PlaidCursorToEntityConverter;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +27,14 @@ import java.util.Optional;
 public class PlaidCursorServiceImpl implements PlaidCursorService
 {
     private final PlaidCursorRepository plaidCursorRepository;
+    private final PlaidCursorToEntityConverter plaidCursorToEntityConverter;
 
     @Autowired
-    public PlaidCursorServiceImpl(PlaidCursorRepository plaidCursorRepository)
+    public PlaidCursorServiceImpl(PlaidCursorRepository plaidCursorRepository,
+                                  PlaidCursorToEntityConverter plaidCursorToEntityConverter)
     {
         this.plaidCursorRepository = plaidCursorRepository;
+        this.plaidCursorToEntityConverter = plaidCursorToEntityConverter;
     }
 
     @Override
@@ -67,9 +73,16 @@ public class PlaidCursorServiceImpl implements PlaidCursorService
     }
 
     @Override
+    @Transactional
     public Optional<PlaidCursorEntity> findById(Long id)
     {
-        return Optional.empty();
+        try
+        {
+            return plaidCursorRepository.findById(id);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the plaid cursor with id {}: ", id, e);
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -85,37 +98,28 @@ public class PlaidCursorServiceImpl implements PlaidCursorService
     }
 
     @Override
-    public List<PlaidCursorEntity> findByUser(UserEntity user) {
-        return List.of();
-    }
-
-    @Override
-    public List<PlaidCursorEntity> findByUserId(Long userId)
+    public PlaidCursorEntity updateSyncStatus(Long cursorId, boolean successful, String status, String errorMessage)
     {
-        try
-        {
-            return plaidCursorRepository.findByUserId(userId);
-        }catch(DataAccessException e){
-            log.error("There was an error retrieving the plaid cursor: ", e);
-            return Collections.emptyList();
-        }
-    }
-
-    @Override
-    public Optional<PlaidCursorEntity> findByUserIdAndItemId(Long userId, String itemId)
-    {
-        try
-        {
-            return plaidCursorRepository.findByUserIdAndItemId(userId, itemId);
-        }catch(DataAccessException e){
-            log.error("There was an error retrieving the plaid cursor: ", e);
-            return Optional.empty();
-        }
-    }
-
-    @Override
-    public PlaidCursorEntity updateSyncStatus(Long cursorId, boolean successful, String status, String errorMessage) {
         return null;
+    }
+
+
+    @Override
+    @Transactional
+    public PlaidCursorEntity findByUserAndItemId(Long userId, String itemId)
+    {
+        try
+        {
+            Optional<PlaidCursorEntity> plaidCursorEntityOptional = plaidCursorRepository.findByUserIdAndItemId(userId, itemId);
+            if(plaidCursorEntityOptional.isEmpty())
+            {
+                throw new PlaidCursorException("No Plaid cursor was found with userId " + userId + " and itemId " + itemId );
+            }
+            return plaidCursorEntityOptional.get();
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the plaid cursor by user {} and itemId {}:", userId, itemId, e);
+            throw e;
+        }
     }
 
     @Override
@@ -129,7 +133,33 @@ public class PlaidCursorServiceImpl implements PlaidCursorService
     }
 
     @Override
-    public void deleteCursorByItemId(String itemId) {
+    @Transactional
+    public void updateNextPlaidCursor(String cursor, Long userId, String itemId)
+    {
+        try
+        {
+            plaidCursorRepository.updatePlaidCursor(cursor, userId, itemId);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the next plaid cursor: ", e);
+            throw e;
+        }
+    }
 
+    @Override
+    @Transactional
+    public void savePlaidCursor(PlaidCursor plaidCursor)
+    {
+        if(plaidCursor == null)
+        {
+            return;
+        }
+        try
+        {
+            PlaidCursorEntity plaidCursorEntity = plaidCursorToEntityConverter.convert(plaidCursor);
+            plaidCursorRepository.save(plaidCursorEntity);
+        }catch(DataAccessException e){
+            log.error("There was an error saving the plaid cursor: ", e);
+            return;
+        }
     }
 }

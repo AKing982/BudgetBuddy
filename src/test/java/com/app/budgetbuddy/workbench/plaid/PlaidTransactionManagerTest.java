@@ -8,6 +8,7 @@ import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionConverter;
 import com.plaid.client.model.*;
+import com.plaid.client.model.Transaction;
 import com.plaid.client.request.PlaidApi;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
@@ -31,6 +32,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,6 +64,9 @@ class PlaidTransactionManagerTest
     private RecurringTransactionService recurringTransactionService;
 
     @Mock
+    private PlaidCursorService plaidCursorService;
+
+    @Mock
     private UserService userService;
 
     private Long userId = 1L;
@@ -68,6 +74,7 @@ class PlaidTransactionManagerTest
     private LocalDate endDate = LocalDate.of(2024, 6, 5);
     private UserEntity userEntity;
     private PlaidLinkEntity plaidLinkEntity;
+    private String itemId = "123456789";
 
     @BeforeEach
     void setUp() {
@@ -84,6 +91,7 @@ class PlaidTransactionManagerTest
                 recurringTransactionService,
                 transactionService,
                 recurringTransactionConverter,
+                plaidCursorService,
                 userService
         );
 
@@ -209,6 +217,230 @@ class PlaidTransactionManagerTest
             transactionManager.saveTransactionsToDatabase(transactions);
         });
     }
+
+    @Test
+    void testSaveTransactionsToDatabase_whenTransactionsValid(){
+        List<PlaidTransaction> transactions = new ArrayList<>();
+        transactions.add(createTransaction());
+
+        TransactionsEntity mockedTransactionsEntity = new TransactionsEntity();
+
+        when(transactionConverter.convert(any(PlaidTransaction.class)))
+                .thenReturn(mockedTransactionsEntity);
+
+        List<TransactionsEntity> actual = transactionManager.saveTransactionsToDatabase(transactions).join();
+        assertNotNull(actual);
+        assertEquals(1, actual.size());
+
+        verify(transactionService, times(1)).save(any(TransactionsEntity.class));
+    }
+
+    @Test
+    void testSaveTransactionsToDatabase_whenNullPlaidTransactionFound_thenSkipAndReturn(){
+        List<PlaidTransaction> transactions = new ArrayList<>();
+        PlaidTransaction transaction = new PlaidTransaction();
+        transaction.setAccountId("23232");
+        transaction.setAmount(BigDecimal.valueOf(50));
+        transaction.setMerchantName("WINCO");
+        transaction.setName("WINCO");
+        transaction.setPending(false);
+
+        transactions.add(createTransaction());
+        transactions.add(null);
+        transactions.add(transaction);
+        TransactionsEntity mockedTransactionsEntity = new TransactionsEntity();
+        TransactionsEntity mockTransactionsEntity2 = new TransactionsEntity();
+
+        when(transactionConverter.convert(any(PlaidTransaction.class)))
+                .thenReturn(mockedTransactionsEntity)
+                .thenReturn(mockTransactionsEntity2);
+
+        List<TransactionsEntity> actual = transactionManager.saveTransactionsToDatabase(transactions).join();
+        assertNotNull(actual);
+        assertTrue(!actual.isEmpty());
+        assertEquals(2, actual.size());
+
+        verify(transactionService, times(2)).save(any(TransactionsEntity.class));
+    }
+
+    @Test
+    void testSaveTransactionsToDatabase_whenDuplicateTransactions_thenReturn(){
+        List<PlaidTransaction> transactions = new ArrayList<>();
+        transactions.add(createTransaction());
+        transactions.add(createTransaction());
+
+        TransactionsEntity mockedTransactionsEntity = new TransactionsEntity();
+
+        when(transactionConverter.convert(any(PlaidTransaction.class)))
+                .thenReturn(mockedTransactionsEntity);
+
+        List<TransactionsEntity> actual = transactionManager.saveTransactionsToDatabase(transactions).join();
+        assertNotNull(actual);
+        assertTrue(!actual.isEmpty());
+        assertEquals(1, actual.size());
+    }
+
+    @Test
+    void testSaveTransactionsToDatabase_whenConvertedTransactionIsNull_thenSkipAndReturn(){
+        List<PlaidTransaction> transactions = new ArrayList<>();
+        transactions.add(createTransaction());
+
+        PlaidTransaction transaction = new PlaidTransaction();
+        transaction.setAccountId("23232");
+        transaction.setAmount(BigDecimal.valueOf(50));
+        transaction.setMerchantName("WINCO");
+        transaction.setName("WINCO");
+        transaction.setPending(false);
+        transactions.add(transaction);
+
+        TransactionsEntity mockTransactionsEntity = new TransactionsEntity();
+
+        when(transactionConverter.convert(any(PlaidTransaction.class)))
+                .thenReturn(null)
+                .thenReturn(mockTransactionsEntity);
+
+        List<TransactionsEntity> actual = transactionManager.saveTransactionsToDatabase(transactions).join();
+        assertNotNull(actual);
+        assertTrue(!actual.isEmpty());
+        assertEquals(1, actual.size());
+        verify(transactionService, times(1)).save(any(TransactionsEntity.class));
+    }
+
+    @Test
+    void testSaveTransactions_whenExceptionThrown_thenReturnDataException(){
+        List<PlaidTransaction> transactions = new ArrayList<>();
+        transactions.add(createTransaction());
+
+        when(transactionConverter.convert(any(PlaidTransaction.class)))
+                .thenReturn(new TransactionsEntity());
+
+        doThrow(new DataException("There was an error saving the transactions to the database"))
+                .when(transactionService).save(any(TransactionsEntity.class));
+
+        CompletableFuture<List<TransactionsEntity>> resultFuture = transactionManager.saveTransactionsToDatabase(transactions);
+        assertTrue(resultFuture.isCompletedExceptionally());
+        CompletionException ex = assertThrows(CompletionException.class, resultFuture::join);
+        assertTrue(ex.getCause() instanceof DataException);
+        assertEquals("There was an error saving the transactions to the database", ex.getCause().getMessage());
+    }
+
+    @Test
+    void testSyncTransactionsForUser_whenUserNotFound_thenReturnFailedFutureWithException()throws IOException{
+        String accessToken = "2323232";
+        String cursor = "cursor1";
+        String secret = "e223234234";
+
+        when(userService.findById(userId)).thenReturn(Optional.empty());
+        CompletableFuture<TransactionsSyncResponse> actual = transactionManager.syncTransactionsForUser(secret, itemId, accessToken, userId);
+        assertTrue(actual.isCompletedExceptionally());
+        CompletionException ex = assertThrows(CompletionException.class, actual::join);
+        assertTrue(ex.getCause() instanceof UserNotFoundException);
+        assertEquals("User with id " + userId + " was not found", ex.getCause().getMessage());
+    }
+
+
+    @Test
+    void testSyncTransactionsForUser_whenAccessTokenIsEmpty_thenReturnFailedFutureWithInvalidAccessToken() throws IOException {
+
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        String accessToken = "";
+        String cursor = "cursor1";
+        String secret = "e223234234";
+        CompletableFuture<TransactionsSyncResponse> actual = transactionManager.syncTransactionsForUser(secret, itemId, accessToken, userId);
+        assertTrue(actual.isCompletedExceptionally());
+        CompletionException ex = assertThrows(CompletionException.class, actual::join);
+        assertTrue(ex.getCause() instanceof InvalidAccessTokenException);
+        assertEquals("Invalid access token was found. Unable to sync user transactions.", ex.getCause().getMessage());
+    }
+
+    @Test
+    void testSyncTransactionsForUser_whenCursorIsEmpty_thenReturnFailedFutureWithInvalidSyncCursorException() throws IOException{
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+
+        String accessToken = "323232";
+        String cursor = "";
+        String secret = "e223234234";
+        CompletableFuture<TransactionsSyncResponse> actual = transactionManager.syncTransactionsForUser(secret, itemId, accessToken, userId);
+        assertTrue(actual.isCompletedExceptionally());
+
+        CompletionException ex = assertThrows(CompletionException.class, actual::join);
+        assertTrue(ex.getCause() instanceof SyncCursorException);
+        assertEquals("Invalid Sync Cursor found. Unable to sync user transactions from plaid.", ex.getCause().getMessage());
+    }
+
+    @Test
+    void testSyncTransactionsForUser_whenSuccessfulResponse_thenReturnTransactionSyncResponse() throws IOException
+    {
+        String accessToken = "232323";
+        String cursor = "next-cursor-123";
+        String secret = "e223234234";
+
+        TransactionsSyncResponse syncResponse = new TransactionsSyncResponse();
+        syncResponse.setNextCursor("next-cursor-123");
+
+        com.plaid.client.model.Transaction mockTransaction = new Transaction();
+        syncResponse.added(List.of(mockTransaction));
+        syncResponse.hasMore(false);
+
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        Call<TransactionsSyncResponse> callSuccessful = mock(Call.class);
+        Response<TransactionsSyncResponse> responseSuccess = Response.success(syncResponse);
+        when(callSuccessful.execute()).thenReturn(responseSuccess);
+
+        when(plaidApi.transactionsSync(any(TransactionsSyncRequest.class)))
+                .thenReturn(callSuccessful);
+
+        CompletableFuture<TransactionsSyncResponse> actualFuture = transactionManager.syncTransactionsForUser(secret, itemId, accessToken, userId);
+        TransactionsSyncResponse actual = actualFuture.join();
+        assertNotNull(actual);
+        assertEquals("next-cursor-123", actual.getNextCursor());
+
+        verify(plaidApi).transactionsSync(any(TransactionsSyncRequest.class));
+    }
+
+    @Test
+    void testSyncTransactionsForUser_whenInitialResponseFails_thenSuccessAfterTwoRetries() throws IOException
+    {
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        String accessToken = "2323232";
+        String cursor = "cursor1";
+        String secret = "e223234234";
+        TransactionsSyncResponse syncResponse = new TransactionsSyncResponse();
+        syncResponse.setNextCursor("next-cursor-123");
+        com.plaid.client.model.Transaction mockTransaction = new Transaction();
+        com.plaid.client.model.Transaction mockTransaction2 = new com.plaid.client.model.Transaction();
+        syncResponse.added(List.of(mockTransaction, mockTransaction2));
+        syncResponse.hasMore(false);
+
+        Response<TransactionsSyncResponse> failedResponse = mock(Response.class);
+        Response<TransactionsSyncResponse> successResponse = mock(Response.class);
+        when(successResponse.isSuccessful()).thenReturn(true);
+        when(successResponse.body()).thenReturn(syncResponse);
+
+        Call<TransactionsSyncResponse> failedCall1 = mock(Call.class);
+        Call<TransactionsSyncResponse> failedCall2 = mock(Call.class);
+        Call<TransactionsSyncResponse> successfulCall = mock(Call.class);
+        when(failedCall1.execute()).thenReturn(failedResponse);
+        when(failedCall2.execute()).thenReturn(failedResponse);
+        when(successfulCall.execute()).thenReturn(successResponse);
+
+        when(plaidApi.transactionsSync(any(TransactionsSyncRequest.class)))
+                .thenReturn(failedCall1)
+                .thenReturn(failedCall2)
+                .thenReturn(successfulCall);
+
+        CompletableFuture<TransactionsSyncResponse> actualFuture = transactionManager.syncTransactionsForUser(secret, itemId, accessToken, userId);
+        TransactionsSyncResponse actual = actualFuture.join();
+        assertNotNull(actual);
+        assertEquals("next-cursor-123", actual.getNextCursor());
+        assertFalse(actual.getHasMore());
+        assertFalse(actual.getAdded().isEmpty());
+
+        verify(plaidApi, times(3)).transactionsSync(any(TransactionsSyncRequest.class));
+    }
+
+
+
 //
 //    @Test
 //    void testSaveTransactionToDatabase_whenTransactionElementNullThenSkipAndSaveTransaction() {

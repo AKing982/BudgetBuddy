@@ -2,6 +2,7 @@ package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.entities.PlaidCursorEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,7 +24,12 @@ public interface PlaidCursorRepository extends JpaRepository<PlaidCursorEntity, 
      * Find cursor by user ID using join
      */
     @Query("SELECT pc FROM PlaidCursorEntity pc WHERE pc.user.id = :userId")
-    List<PlaidCursorEntity> findByUserId(@Param("userId") Long userId);
+    Optional<PlaidCursorEntity> findByUserId(@Param("userId") Long userId);
+
+
+    @Modifying
+    @Query("UPDATE PlaidCursorEntity pc SET pc.cursor =:cursor WHERE pc.user.id =:userId AND pc.itemId =:itemId")
+    void updatePlaidCursor(@Param("cursor") String cursor, @Param("userId") Long userId, @Param("itemId") String itemId);
 
     /**
      * Find cursor by both user ID and item ID
@@ -33,9 +39,4 @@ public interface PlaidCursorRepository extends JpaRepository<PlaidCursorEntity, 
             @Param("userId") Long userId,
             @Param("itemId") String itemId);
 
-    /**
-     * Find cursors that need syncing (haven't been successfully synced or had errors)
-     */
-    @Query("SELECT pc FROM PlaidCursorEntity pc WHERE pc.cursorSyncSuccessful = false OR pc.lastSyncStatus = 'ERROR'")
-    List<PlaidCursorEntity> findCursorsNeedingSync();
 }

@@ -1,16 +1,11 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.domain.PlaidCursor;
 import com.app.budgetbuddy.domain.PlaidTransaction;
 import com.app.budgetbuddy.domain.RecurringTransactionDTO;
-import com.app.budgetbuddy.entities.PlaidLinkEntity;
-import com.app.budgetbuddy.entities.RecurringTransactionEntity;
-import com.app.budgetbuddy.entities.TransactionsEntity;
-import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.*;
-import com.app.budgetbuddy.services.PlaidLinkService;
-import com.app.budgetbuddy.services.RecurringTransactionService;
-import com.app.budgetbuddy.services.TransactionService;
-import com.app.budgetbuddy.services.UserService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionConverter;
 import com.google.gson.JsonObject;
@@ -26,9 +21,8 @@ import retrofit2.Response;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -42,6 +36,9 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     private final UserService userService;
     private final int MAX_ATTEMPTS = 5;
     private final String clientId = "BudgetBuddy";
+    private final PlaidCursorService plaidCursorService;
+    private List<com.plaid.client.model.Transaction> addedSyncedTransactions = new ArrayList<>();
+    private List<com.plaid.client.model.Transaction> modifiedSyncedTransactions = new ArrayList<>();
 
     @Autowired
     public PlaidTransactionManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi,
@@ -49,6 +46,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                                    RecurringTransactionService recurringTransactionService,
                                    TransactionService transactionService,
                                    RecurringTransactionConverter recurringTransactionConverter,
+                                   PlaidCursorService plaidCursorService,
                                    UserService userService)
     {
         super(plaidLinkService, plaidApi);
@@ -57,6 +55,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         this.transactionService = transactionService;
         this.recurringTransactionConverter = recurringTransactionConverter;
         this.userService = userService;
+        this.plaidCursorService = plaidCursorService;
     }
 
     private TransactionsGetRequest createTransactionRequest(String accessToken, LocalDate startDate, LocalDate endDate)
@@ -238,6 +237,8 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
     }
 
+    // TODO: Implement code to update transactions and recurring transactions table after fetching latest transactions or synced transactions
+
     @Async("taskExecutor")
     public CompletableFuture<List<RecurringTransactionEntity>> saveRecurringTransactions(final List<RecurringTransactionDTO> recurringTransactions) throws IOException
     {
@@ -265,56 +266,121 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         return CompletableFuture.completedFuture(recurringTransactionEntities);
     }
 
-    private TransactionsRefreshRequest createTransactionRefreshRequest(String accessToken)
+    private TransactionsSyncRequest createTransactionSyncRequest(String secret, String accessToken, String cursor, TransactionsSyncRequestOptions options)
     {
-        return new TransactionsRefreshRequest()
+        return new TransactionsSyncRequest()
+                .secret(secret)
+                .cursor(cursor)
+                .count(500)
+                .options(options)
                 .accessToken(accessToken);
     }
 
     @Async("taskExecutor")
-    public CompletableFuture<TransactionsSyncResponse> syncTransactionsForUser(final String accessToken, final String cursor, final Long userId) throws IOException
+    public CompletableFuture<TransactionsSyncResponse> syncTransactionsForUser(final String secret, final String itemId, final String accessToken, final Long userId) throws IOException
     {
         Optional<UserEntity> userEntityOptional = userService.findById(userId);
         if(userEntityOptional.isEmpty())
         {
             log.info("No user found with userId {}. Unable to sync transactions", userId);
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.failedFuture(new UserNotFoundException("User with id " + userId + " was not found"));
         }
-        TransactionsSyncRequest transactionsSyncRequest = new TransactionsSyncRequest()
-                .accessToken(accessToken)
-                .count(500)
-                .cursor(cursor);
-        try
+        if(accessToken.isEmpty())
         {
-            Call<TransactionsSyncResponse> transactionsSyncResponseCall = plaidApi.transactionsSync(transactionsSyncRequest);
-            Response<TransactionsSyncResponse> response = transactionsSyncResponseCall.execute();
+            return CompletableFuture.failedFuture(new InvalidAccessTokenException("Invalid access token was found. Unable to sync user transactions."));
+        }
+        TransactionsSyncRequestOptions options = new TransactionsSyncRequestOptions()
+                .includePersonalFinanceCategory(true);
+        boolean hasMore = true;
+        String nextCursor;
+        while(hasMore)
+        {
+            PlaidCursorEntity plaidCursorEntity = plaidCursorService.findByUserAndItemId(userId, itemId);
+            String cursor = plaidCursorEntity.getCursor();
+            TransactionsSyncRequest transactionsSyncRequest = createTransactionSyncRequest(secret, accessToken, cursor, options);
+            Response<TransactionsSyncResponse> response = plaidApi.transactionsSync(transactionsSyncRequest).execute();
             if(response.isSuccessful())
             {
-                return CompletableFuture.completedFuture(response.body());
+                TransactionsSyncResponse body = response.body();
+                List<com.plaid.client.model.Transaction> addedTransactions = body.getAdded();
+                List<com.plaid.client.model.Transaction> modifiedTransactions = body.getModified();
+                addedSyncedTransactions.addAll(addedTransactions);
+                modifiedSyncedTransactions.addAll(modifiedTransactions);
+                hasMore = body.getHasMore();
+                nextCursor = body.getNextCursor();
+                if(nextCursor == null)
+                {
+                    PlaidCursor plaidCursor = PlaidCursor.builder()
+                            .addedCursor(cursor)
+                            .userId(userId)
+                            .lastSyncTimestamp(LocalDateTime.now())
+                            .cursorSyncSuccessful(true)
+                            .build();
+                    plaidCursorService.savePlaidCursor(plaidCursor);
+                }
+                else
+                {
+                    plaidCursorService.updateNextPlaidCursor(nextCursor, userId, itemId);
+                }
+                return CompletableFuture.completedFuture(body);
             }
             else
             {
-                throw new IOException("Failed to sync transactions for user ID " + userId);
+                int attempts = 0;
+                while(attempts < MAX_ATTEMPTS)
+                {
+                    Response<TransactionsSyncResponse> response2 = plaidApi.transactionsSync(transactionsSyncRequest).execute();
+                    if(response2.isSuccessful())
+                    {
+                        TransactionsSyncResponse body = response2.body();
+                        List<com.plaid.client.model.Transaction> addedTransactions = body.getAdded();
+                        List<com.plaid.client.model.Transaction> modifiedTransactions = body.getModified();
+                        addedSyncedTransactions.addAll(addedTransactions);
+                        modifiedSyncedTransactions.addAll(modifiedTransactions);
+                        hasMore = body.getHasMore();
+                        nextCursor = body.getNextCursor();
+                        if(nextCursor == null)
+                        {
+                            PlaidCursor plaidCursor = PlaidCursor.builder()
+                                    .addedCursor(nextCursor)
+                                    .userId(userId)
+                                    .lastSyncTimestamp(LocalDateTime.now())
+                                    .cursorSyncSuccessful(true)
+                                    .build();
+                            plaidCursorService.savePlaidCursor(plaidCursor);
+                        }
+                        else
+                        {
+                            plaidCursorService.updateNextPlaidCursor(nextCursor, userId, itemId);
+                        }
+                        return CompletableFuture.completedFuture(body);
+                    }
+                    else
+                    {
+                        attempts++;
+                    }
+                }
+                hasMore = false;
             }
-        }catch(IOException e){
-            log.error("There was an error syncing the transactions for userId {}: {}", userId, e.getMessage());
-            return CompletableFuture.failedFuture(e);
         }
+        return CompletableFuture.failedFuture(new SyncCursorException("There was an error syncing transactions."));
     }
 
     @Async("taskExecutor")
     public CompletableFuture<List<TransactionsEntity>> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList)
     {
-        List<TransactionsEntity> transactionsEntities = new ArrayList<>();
+        List<TransactionsEntity> transactionsEntities;
         if(transactionList.isEmpty())
         {
             log.info("No transactions were converted to entities.");
-            return CompletableFuture.completedFuture(transactionsEntities);
+            return CompletableFuture.completedFuture(Collections.emptyList());
         }
         try
         {
             transactionsEntities = transactionList.stream()
+                    .filter(Objects::nonNull)
                     .map(transactionConverter::convert)
+                    .filter(Objects::nonNull)
                     .distinct()
                     .toList();
             transactionsEntities.forEach(transactionService::save);

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.PlaidCursor;
 import com.app.budgetbuddy.entities.PlaidCursorEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 
@@ -15,21 +16,6 @@ public interface PlaidCursorService extends ServiceModel<PlaidCursorEntity>
     Optional<PlaidCursorEntity> findByItemId(String itemId);
 
     /**
-     * Find all cursors for a specific user
-     */
-    List<PlaidCursorEntity> findByUser(UserEntity user);
-
-    /**
-     * Find all cursors for a user by user ID
-     */
-    List<PlaidCursorEntity> findByUserId(Long userId);
-
-    /**
-     * Find a specific cursor by both user ID and item ID
-     */
-    Optional<PlaidCursorEntity> findByUserIdAndItemId(Long userId, String itemId);
-
-    /**
      * Update the sync status for a cursor
      */
     PlaidCursorEntity updateSyncStatus(
@@ -37,6 +23,8 @@ public interface PlaidCursorService extends ServiceModel<PlaidCursorEntity>
             boolean successful,
             String status,
             String errorMessage);
+
+    PlaidCursorEntity findByUserAndItemId(Long userId, String itemId);
 
     /**
      * Update the last sync timestamp
@@ -48,9 +36,8 @@ public interface PlaidCursorService extends ServiceModel<PlaidCursorEntity>
      */
     List<PlaidCursorEntity> findCursorsNeedingSync();
 
-    /**
-     * Delete cursor by item ID (for when accounts are unlinked)
-     */
-    void deleteCursorByItemId(String itemId);
+    void updateNextPlaidCursor(String cursor, Long userId, String itemId);
+
+    void savePlaidCursor(PlaidCursor plaidCursor);
 
 }
