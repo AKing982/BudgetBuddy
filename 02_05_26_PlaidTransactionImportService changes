@@ -1,0 +1,57 @@
+package com.app.budgetbuddy.services;
+
+import com.app.budgetbuddy.domain.BudgetCategory;
+import com.app.budgetbuddy.domain.RecurringTransaction;
+import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionCategory;
+import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
+import com.app.budgetbuddy.workbench.runner.BudgetCategoryRunner;
+import com.app.budgetbuddy.workbench.runner.CategoryRunner;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+
+@Service
+@Slf4j
+public class PlaidTransactionImportService
+{
+    private final PlaidTransactionManager plaidTransactionManager;
+    private final BudgetCategoryRunner budgetCategoryRunner;
+    private final CategoryRunner categoryRunner;
+    private final SubBudgetService subBudgetService;
+
+    @Autowired
+    public PlaidTransactionImportService(PlaidTransactionManager plaidTransactionManager,
+                                         BudgetCategoryRunner budgetCategoryRunner,
+                                         CategoryRunner categoryRunner,
+                                         SubBudgetService subBudgetService)
+    {
+        this.plaidTransactionManager = plaidTransactionManager;
+        this.budgetCategoryRunner = budgetCategoryRunner;
+        this.categoryRunner = categoryRunner;
+        this.subBudgetService = subBudgetService;
+    }
+
+    private List<Transaction> importPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        return null;
+    }
+
+    private List<RecurringTransaction> importRecurringTransactions(Long userId)
+    {
+        return null;
+    }
+
+    public List<TransactionCategory> createTransactionCategories(List<Transaction> transactions, List<RecurringTransaction> recurringTransactions)
+    {
+        return null;
+    }
+    
+
+}
