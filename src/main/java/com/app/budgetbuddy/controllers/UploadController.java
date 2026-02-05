@@ -67,7 +67,8 @@ public class UploadController
         {
             return ResponseEntity.badRequest().build();
         }
-        List<TransactionCSV> transactionCSVS = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate);
+        int pageNum = 30;
+        List<TransactionCSV> transactionCSVS = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum);
         System.out.println(transactionCSVS.size());
         if(transactionCSVS.isEmpty())
         {

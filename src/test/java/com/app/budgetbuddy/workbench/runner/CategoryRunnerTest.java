@@ -55,7 +55,8 @@ class CategoryRunnerTest
         LocalDate startDate = LocalDate.of(2025, 11, 1);
         LocalDate endDate = LocalDate.of(2026, 1, 1);
 
-        Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
+        int pageNum = 30;
+        Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum))
                 .thenReturn(List.of());
 
         categoryRunner.categorizeCSVTransactionsByRange(userId, startDate, endDate);
@@ -79,7 +80,8 @@ class CategoryRunnerTest
         expected.add(transaction3);
         expected.add(transaction4);
 
-        Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
+        int pageNum = 30;
+        Mockito.when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum))
                 .thenReturn(expected);
 
         Category groceriesCategory = Category.builder()

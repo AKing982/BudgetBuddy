@@ -9,6 +9,9 @@ import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.repositories.CSVTransactionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -231,9 +234,9 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
 
     @Override
     @Transactional
-    public List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    public List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate, int pageNum)
     {
-        List<CSVTransactionEntity> csvTransactionEntities = findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate);
+        Page<CSVTransactionEntity> csvTransactionEntities = findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate, pageNum);
         List<TransactionCSV> transactionCSVList = new ArrayList<>();
         for(CSVTransactionEntity csvTransactionEntity : csvTransactionEntities)
         {
@@ -255,11 +258,11 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
 
     @Override
     @Transactional
-    public List<CSVTransactionEntity> findCSVTransactionEntitiesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    public Page<CSVTransactionEntity> findCSVTransactionEntitiesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate, int pageNum)
     {
         if(userId == null || startDate == null || endDate == null)
         {
-            return Collections.emptyList();
+            return Page.empty();
         }
         try
         {
@@ -267,14 +270,15 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
             if(csvAccountEntityOptional.isEmpty())
             {
                 log.error("There was an error finding a CSV account for the user id: {}", userId);
-                return Collections.emptyList();
+                return Page.empty();
             }
             CSVAccountEntity csvAccountEntity = csvAccountEntityOptional.get();
             Long csvAccountId = csvAccountEntity.getId();
-            return csvTransactionRepository.findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(csvAccountId, startDate, endDate);
+            Pageable pageable = PageRequest.of(0, pageNum);
+            return csvTransactionRepository.findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(csvAccountId, startDate, endDate, pageable);
         }catch(DataAccessException e){
             log.error("There was an error retrieving the CSV transaction entities: ", e);
-            return Collections.emptyList();
+            return Page.empty();
         }
     }
 }

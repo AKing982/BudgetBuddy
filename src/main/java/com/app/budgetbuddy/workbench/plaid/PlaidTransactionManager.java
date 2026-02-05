@@ -14,6 +14,7 @@ import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
@@ -222,11 +223,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                     else
                     {
                         attempts++;
-                        if(attempts == MAX_ATTEMPTS)
-                        {
-                            log.info("MAX Attempts Reached.");
-                            break;
-                        }
                     }
                 }
                 return CompletableFuture.completedFuture(null);

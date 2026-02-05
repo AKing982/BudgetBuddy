@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -270,9 +272,9 @@ class UploadControllerTest
         CSVTransactionEntity existingTransaction = new CSVTransactionEntity();
         existingTransaction.setId(1L);
         existingTransaction.setDescription("Existing Transaction");
-        List<CSVTransactionEntity> existingTransactions = List.of(existingTransaction);
+        Page<CSVTransactionEntity> existingTransactions = new PageImpl<>(List.of(existingTransaction));
         Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(true);
-        Mockito.when(csvTransactionService.findCSVTransactionEntitiesByUserAndDateRange(anyLong(), any(LocalDate.class), any(LocalDate.class)))
+        Mockito.when(csvTransactionService.findCSVTransactionEntitiesByUserAndDateRange(anyLong(), any(LocalDate.class), any(LocalDate.class), anyInt()))
                 .thenReturn(existingTransactions);
 
         mockMvc.perform(multipart("/api/upload/" + userId + "/csv")

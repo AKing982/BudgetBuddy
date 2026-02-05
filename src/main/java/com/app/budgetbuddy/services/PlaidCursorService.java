@@ -15,15 +15,6 @@ public interface PlaidCursorService extends ServiceModel<PlaidCursorEntity>
      */
     Optional<PlaidCursorEntity> findByItemId(String itemId);
 
-    /**
-     * Update the sync status for a cursor
-     */
-    PlaidCursorEntity updateSyncStatus(
-            Long cursorId,
-            boolean successful,
-            String status,
-            String errorMessage);
-
     PlaidCursorEntity findByUserAndItemId(Long userId, String itemId);
 
     /**

@@ -57,7 +57,8 @@ public class TransactionController
         {
             return ResponseEntity.badRequest().build();
         }
-        List<TransactionCSV> transactionCSVsForUser = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate);
+        int pageLimit = 30;
+        List<TransactionCSV> transactionCSVsForUser = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageLimit);
         return ResponseEntity.ok(transactionCSVsForUser);
     }
 

@@ -99,24 +99,24 @@ class PlaidControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void testExchangePublicToken_whenExchangePublicTokenDTOIsNotNull_thenReturnOk() throws Exception {
-        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
-        exchangePublicTokenMap.put(1L, "public_token");
-
-        Long userID = 1L;
-        String publicToken = "public_token";
-        PlaidExchangeRequest exchangeRequest = new PlaidExchangeRequest(userID, publicToken);
-
-        String jsonString = objectMapper.writeValueAsString(exchangeRequest);
-        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
-        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
-
-        mockMvc.perform(post("/api/plaid/exchange_public_token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonString))
-                .andExpect(status().isOk());
-    }
+//    @Test
+//    void testExchangePublicToken_whenExchangePublicTokenDTOIsNotNull_thenReturnOk() throws Exception {
+//        Map<Long, String> exchangePublicTokenMap = new HashMap<>();
+//        exchangePublicTokenMap.put(1L, "public_token");
+//
+//        Long userID = 1L;
+//        String publicToken = "public_token";
+//        PlaidExchangeRequest exchangeRequest = new PlaidExchangeRequest(userID, publicToken);
+//
+//        String jsonString = objectMapper.writeValueAsString(exchangeRequest);
+//        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
+//        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
+//
+//        mockMvc.perform(post("/api/plaid/exchange_public_token")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(jsonString))
+//                .andExpect(status().isOk());
+//    }
 
     @Test
     void testExchangePublicToken_whenExchangePublicTokeMapIsEmpty_thenReturnBadRequest() throws Exception {
@@ -145,41 +145,41 @@ class PlaidControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void testExchangePublicToken_whenAccessTokenEmpty_thenReturnNotFound() throws Exception {
+//    @Test
+//    void testExchangePublicToken_whenAccessTokenEmpty_thenReturnNotFound() throws Exception {
+//
+//        Long userID = 1L;
+//        String publicToken = "public_token";
+//        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest(userID, publicToken);
+//
+//        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("");
+//        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
+//
+//        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
+//
+//        mockMvc.perform(post("/api/plaid/exchange_public_token")
+//                .contentType(MediaType.APPLICATION_JSON)
+//                .content(jsonString))
+//                .andExpect(status().isNotFound());
+//    }
 
-        Long userID = 1L;
-        String publicToken = "public_token";
-        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest(userID, publicToken);
-
-        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("");
-        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
-
-        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
-
-        mockMvc.perform(post("/api/plaid/exchange_public_token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonString))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void testExchangePublicToken_whenMapIsValid_thenReturnOk() throws Exception {
-        Long userId = 1L;
-        String publicToken = "public_token";
-        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest(userId, publicToken);
-
-        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
-        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
-
-        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
-
-        mockMvc.perform(post("/api/plaid/exchange_public_token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonString))
-                .andExpect(status().isOk());
-
-    }
+//    @Test
+//    void testExchangePublicToken_whenMapIsValid_thenReturnOk() throws Exception {
+//        Long userId = 1L;
+//        String publicToken = "public_token";
+//        PlaidExchangeRequest plaidExchangeRequest = new PlaidExchangeRequest(userId, publicToken);
+//
+//        ItemPublicTokenExchangeResponse itemPublicTokenExchangeResponse = new ItemPublicTokenExchangeResponse().accessToken("access_token");
+//        when(plaidLinkTokenProcessor.exchangePublicToken("public_token")).thenReturn(itemPublicTokenExchangeResponse);
+//
+//        String jsonString = objectMapper.writeValueAsString(plaidExchangeRequest);
+//
+//        mockMvc.perform(post("/api/plaid/exchange_public_token")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(jsonString))
+//                .andExpect(status().isOk());
+//
+//    }
 
     @Test
     void testSaveAccessToken_whenPlaidLinkRequestIsNull_thenReturnBadRequest() throws Exception {

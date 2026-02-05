@@ -270,7 +270,8 @@ class TransactionControllerTest
         List<TransactionCSV> expectedTransactions = new ArrayList<>();
         expectedTransactions.add(createTransactionCSV());
 
-        when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate))
+        int pageNum = 30;
+        when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum))
                 .thenReturn(expectedTransactions);
 
         mockMvc.perform(get("/api/transaction/{userId}/csv", userId)

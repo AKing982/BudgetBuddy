@@ -98,13 +98,6 @@ public class PlaidCursorServiceImpl implements PlaidCursorService
     }
 
     @Override
-    public PlaidCursorEntity updateSyncStatus(Long cursorId, boolean successful, String status, String errorMessage)
-    {
-        return null;
-    }
-
-
-    @Override
     @Transactional
     public PlaidCursorEntity findByUserAndItemId(Long userId, String itemId)
     {

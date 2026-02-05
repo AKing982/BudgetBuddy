@@ -1,6 +1,8 @@
 package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.entities.CSVTransactionEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -42,5 +44,5 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
     Optional<CSVTransactionEntity> findCSVTransactionByUserIdAndParams(@Param("userId") Long userId, @Param("date") LocalDate date, @Param("merchant") String merchantName, @Param("extended") String extendedDescription, @Param("description") String description);
 
     @Query("SELECT ct FROM CSVTransactionEntity ct WHERE ct.transactionDate BETWEEN :startDate AND :endDate AND ct.csvAccount.id =:acctId")
-    List<CSVTransactionEntity> findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(@Param("acctId") Long acctId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    Page<CSVTransactionEntity> findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(@Param("acctId") Long acctId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
 }

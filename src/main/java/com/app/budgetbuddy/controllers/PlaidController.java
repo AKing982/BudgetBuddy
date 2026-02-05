@@ -148,7 +148,7 @@ public class PlaidController
             {
                 return ResponseEntity.badRequest().body("Exchange Public Token Map is empty");
             }
-            ItemPublicTokenExchangeResponse exchangePublicTokenResponse = plaidLinkTokenProcessor.exchangePublicToken(publicToken);
+            ItemPublicTokenExchangeResponse exchangePublicTokenResponse = plaidLinkTokenProcessor.exchangePublicToken(publicToken).join();
             String accessToken = exchangePublicTokenResponse.getAccessToken();
             String itemId = exchangePublicTokenResponse.getItemId();
             log.info("Access Token: {}", accessToken);
@@ -347,7 +347,7 @@ public class PlaidController
         try
         {
             // Call service to get the update token
-            LinkTokenCreateResponse linkTokenResponse = plaidLinkTokenProcessor.createUpdateLinkToken(userId, accessToken);
+            LinkTokenCreateResponse linkTokenResponse = plaidLinkTokenProcessor.createUpdateLinkToken(userId, accessToken).join();
             if(linkTokenResponse == null || linkTokenResponse.getLinkToken() == null)
             {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create update link token.");

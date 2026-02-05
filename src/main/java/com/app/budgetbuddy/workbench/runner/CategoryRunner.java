@@ -90,7 +90,8 @@ public class CategoryRunner
                 log.info("There are no sub-budgets for user {} at {}", userId, startDate);
                 return;
             }
-            List<TransactionCSV> transactionCSVS = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate);
+            int pageNum = 30;
+            List<TransactionCSV> transactionCSVS = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum);
             if(transactionCSVS.isEmpty())
             {
                 log.warn("There are no transactions to categorize for user {} between {} and {}", userId, startDate, endDate);
