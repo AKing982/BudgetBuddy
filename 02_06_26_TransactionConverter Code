@@ -1,0 +1,68 @@
+package com.app.budgetbuddy.workbench.converter;
+
+import com.app.budgetbuddy.domain.PlaidTransaction;
+import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.CategoryEntity;
+import com.app.budgetbuddy.entities.TransactionsEntity;
+import com.app.budgetbuddy.exceptions.AccountNotFoundException;
+import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
+import com.app.budgetbuddy.repositories.AccountRepository;
+import com.app.budgetbuddy.repositories.CategoryRepository;
+import com.app.budgetbuddy.services.CategoryService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Component
+public class TransactionConverter implements Converter<com.plaid.client.model.Transaction, TransactionsEntity>
+{
+    private final AccountRepository accountRepository;
+
+    @Autowired
+    public TransactionConverter(AccountRepository accountRepository){
+        this.accountRepository = accountRepository;
+    }
+
+    @Override
+    public TransactionsEntity convert(com.plaid.client.model.Transaction transaction) 
+    {
+        
+        TransactionsEntity transactionsEntity = new TransactionsEntity();
+        transactionsEntity.setPending(transaction.getPending());
+        transactionsEntity.setAmount(BigDecimal.valueOf(transaction.getAmount()));
+        transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
+        transactionsEntity.setDescription(transaction.getOriginalDescription());
+        transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
+        List<String> categories = transaction.getCategory();
+        if(!categories.isEmpty() && categories.size() == 2)
+        {
+            transactionsEntity.setPrimaryPlaidCategory(categories.get(0));
+            transactionsEntity.setSecondaryPlaidCategory(categories.get(1));
+        }
+        else if(!categories.isEmpty() && categories.size() == 1)
+        {
+            transactionsEntity.setPrimaryPlaidCategory(categories.get(0));
+            transactionsEntity.setSecondaryPlaidCategory("");
+        }
+        transactionsEntity.setPosted(transaction.getDate());
+        transactionsEntity.setCSVTransaction(false);
+        transactionsEntity.setMerchantName(transaction.getMerchantName());
+        transactionsEntity.setCreateDate(LocalDate.now());
+        transactionsEntity.setLogoUrl(transaction.getLogoUrl());
+        transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
+        transactionsEntity.setId(transaction.getTransactionId());
+        return transactionsEntity;
+    }
+
+    private AccountEntity fetchAccountByAccountId(String accountId){
+        Optional<AccountEntity> accountEntity = accountRepository.findByAccountId(accountId);
+        if(accountEntity.isEmpty()){
+            throw new AccountNotFoundException("Account with account id " + accountId + " not found");
+        }
+        return accountEntity.get();
+    }
+}
