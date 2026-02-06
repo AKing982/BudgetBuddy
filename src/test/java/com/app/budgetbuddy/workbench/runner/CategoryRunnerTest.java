@@ -1,17 +1,19 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.services.CSVTransactionService;
-import com.app.budgetbuddy.services.TransactionCategoryService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.categories.CategorizerService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,24 +31,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class CategoryRunnerTest
 {
-    @Autowired
+
     private CategoryRunner categoryRunner;
 
-    @MockBean
-    @Qualifier("csvCategorizer")
+    @Mock
     private CategorizerService<TransactionCSV> csvCategorizerService;
 
-    @MockBean
+    @Mock
     private CSVTransactionService csvTransactionService;
 
-    @MockBean
+    @Mock
+    private UserLogService userLogService;
+
+    @Mock
+    private SubBudgetService subBudgetService;
+
+    @Mock
+    private TransactionService transactionService;
+
+    @Mock
     private TransactionCategoryService transactionCategoryService;
 
     @BeforeEach
     void setUp() {
+
+        categoryRunner = new CategoryRunner(csvCategorizerService, csvTransactionService, userLogService, subBudgetService, transactionService, transactionCategoryService);
     }
 
     @Test

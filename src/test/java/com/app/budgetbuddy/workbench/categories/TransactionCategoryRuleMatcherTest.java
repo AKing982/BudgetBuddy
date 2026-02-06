@@ -423,47 +423,47 @@ class TransactionRuleMatcherTest {
 //        assertEquals("PIN Purchase WINCO FOODS #15", result.getDescriptionPattern());
 //    }
 
-    private Transaction createTransaction(String description, String merchantName, List<String> categories, String categoryId){
-        Transaction transaction = new Transaction(
-                "account123",
-                BigDecimal.valueOf(15.75),
-                "USD",
-                categories,
-                categoryId,
-                LocalDate.of(2024, 9, 30),
-                description,
-                merchantName,
-                merchantName,
-                false,
-                "transaction123",
-                LocalDate.of(2024, 9, 30),
-                "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30),
-                false
-        );
-        return transaction;
-    }
-
-    private Transaction createTransaction(){
-        Transaction transaction = new Transaction(
-                "account123",
-                BigDecimal.valueOf(15.75),
-                "USD",
-                List.of("Supermarkets and Groceries", "Shops"),
-                "19047000",
-                LocalDate.of(2024, 9, 30),
-                "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024",
-                "Winco Foods",
-                "Winco Foods",
-                false,
-                "transaction123",
-                LocalDate.of(2024, 9, 30),
-                "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30),
-                false
-        );
-        return transaction;
-    }
+//    private Transaction createTransaction(String description, String merchantName, List<String> categories, String categoryId){
+//        Transaction transaction = new Transaction(
+//                "account123",
+//                BigDecimal.valueOf(15.75),
+//                "USD",
+//                categories,
+//                categoryId,
+//                LocalDate.of(2024, 9, 30),
+//                description,
+//                merchantName,
+//                merchantName,
+//                false,
+//                "transaction123",
+//                LocalDate.of(2024, 9, 30),
+//                "http://example.com/logo.png",
+//                LocalDate.of(2024, 9, 30),
+//                false
+//        );
+//        return transaction;
+//    }
+//
+//    private Transaction createTransaction(){
+//        Transaction transaction = new Transaction(
+//                "account123",
+//                BigDecimal.valueOf(15.75),
+//                "USD",
+//                List.of("Supermarkets and Groceries", "Shops"),
+//                "19047000",
+//                LocalDate.of(2024, 9, 30),
+//                "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024",
+//                "Winco Foods",
+//                "Winco Foods",
+//                false,
+//                "transaction123",
+//                LocalDate.of(2024, 9, 30),
+//                "http://example.com/logo.png",
+//                LocalDate.of(2024, 9, 30),
+//                false
+//        );
+//        return transaction;
+//    }
 
 
     private UserCategoryRule createUserRule(String merchant, String category, String description, int priority) {
@@ -914,47 +914,47 @@ class TransactionRuleMatcherTest {
     }
 
 
-    private Transaction createTransactionWithInvalidDescription(){
-        Transaction transaction = new Transaction(
-                "account123",
-                BigDecimal.valueOf(29.99),
-                "USD",
-                List.of("Supermarkets and Groceries", "Shops"),
-                "19047000",
-                LocalDate.of(2024, 10, 1),
-                "",
-                "Winco Foods",
-                "",
-                false,
-                "transaction123",
-                LocalDate.of(2024, 10, 1),
-                "http://example.com/logo.png",
-                LocalDate.of(2024, 10, 1),
-                false
-        );
-        return transaction;
-    }
-
-    private Transaction createTransactionWithDescriptionOnly(){
-        Transaction transaction = new Transaction(
-                "account123",
-                BigDecimal.valueOf(15.75),
-                "USD",
-                List.of("Supermarkets and Groceries", "Shops"),
-                "19047000",
-                LocalDate.of(2024, 9, 30),
-                "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024",
-                "",
-                "",
-                false,
-                "transaction123",
-                LocalDate.of(2024, 9, 30),
-                "http://example.com/logo.png",
-                LocalDate.of(2024, 9, 30),
-                false
-        );
-        return transaction;
-    }
+//    private Transaction createTransactionWithInvalidDescription(){
+//        Transaction transaction = new Transaction(
+//                "account123",
+//                BigDecimal.valueOf(29.99),
+//                "USD",
+//                List.of("Supermarkets and Groceries", "Shops"),
+//                "19047000",
+//                LocalDate.of(2024, 10, 1),
+//                "",
+//                "Winco Foods",
+//                "",
+//                false,
+//                "transaction123",
+//                LocalDate.of(2024, 10, 1),
+//                "http://example.com/logo.png",
+//                LocalDate.of(2024, 10, 1),
+//                false
+//        );
+//        return transaction;
+//    }
+//
+//    private Transaction createTransactionWithDescriptionOnly(){
+//        Transaction transaction = new Transaction(
+//                "account123",
+//                BigDecimal.valueOf(15.75),
+//                "USD",
+//                List.of("Supermarkets and Groceries", "Shops"),
+//                "19047000",
+//                LocalDate.of(2024, 9, 30),
+//                "PIN Purchase WINCO FOODS #15 11969 S Carlsbad Way Herrim, 09-29-2024",
+//                "",
+//                "",
+//                false,
+//                "transaction123",
+//                LocalDate.of(2024, 9, 30),
+//                "http://example.com/logo.png",
+//                LocalDate.of(2024, 9, 30),
+//                false
+//        );
+//        return transaction;
+//    }
 
 
 

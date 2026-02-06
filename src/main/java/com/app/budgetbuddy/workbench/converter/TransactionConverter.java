@@ -9,15 +9,17 @@ import com.app.budgetbuddy.exceptions.CategoryNotFoundException;
 import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.services.CategoryService;
+import com.plaid.client.model.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Component
-public class TransactionConverter implements Converter<PlaidTransaction, TransactionsEntity>
+public class TransactionConverter implements Converter<Transaction, TransactionsEntity>
 {
     private final AccountRepository accountRepository;
     private final CategoryService categoryService;
@@ -30,25 +32,24 @@ public class TransactionConverter implements Converter<PlaidTransaction, Transac
     }
 
     @Override
-    public TransactionsEntity convert(PlaidTransaction transaction) {
+    public TransactionsEntity convert(Transaction transaction)
+    {
+        List<String> categories = transaction.getCategory();
         TransactionsEntity transactionsEntity = new TransactionsEntity();
         transactionsEntity.setPending(transaction.getPending());
-        transactionsEntity.setAmount(transaction.getAmount());
+        transactionsEntity.setAmount(BigDecimal.valueOf(transaction.getAmount()));
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
-        transactionsEntity.setDescription(transaction.getDescription());
+        transactionsEntity.setDescription(transaction.getOriginalDescription());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
-        transactionsEntity.setCategory(createNewCategory(transaction.getCategoryId(), transaction.getCategories()));
+        transactionsEntity.setPrimaryCategory(categories.get(0));
+        transactionsEntity.setSecondaryCategory(categories.get(1));
         transactionsEntity.setPosted(transaction.getDate());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setCreateDate(LocalDate.now());
-        transactionsEntity.setLogoUrl(transaction.getLogo());
+        transactionsEntity.setLogoUrl(transaction.getLogoUrl());
         transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
         transactionsEntity.setId(transaction.getTransactionId());
         return transactionsEntity;
-    }
-
-    private CategoryEntity createNewCategory(String categoryId, List<String> categories){
-        return categoryService.createAndSaveCategory(categoryId, categories);
     }
 
     private AccountEntity fetchAccountByAccountId(String accountId){

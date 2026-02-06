@@ -87,7 +87,7 @@ class TransactionControllerTest
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id", is(transactionsEntity.getId())))
                 .andExpect(jsonPath("$[0].account.id", is(transactionsEntity.getAccount().getId())))
-                .andExpect(jsonPath("$[0].category.id", is(transactionsEntity.getCategory().getId())))
+//                .andExpect(jsonPath("$[0].category.id", is(transactionsEntity.getCategory().getId())))
                 .andExpect(jsonPath("$[0].description", is(transactionsEntity.getDescription())))
                 .andExpect(jsonPath("$[0].isoCurrencyCode", is(transactionsEntity.getIsoCurrencyCode())))
                 .andExpect(jsonPath("$[0].merchantName", is(transactionsEntity.getMerchantName())))
@@ -358,7 +358,7 @@ class TransactionControllerTest
         transactionsEntity.setAmount(new BigDecimal("120"));
         transactionsEntity.setCreateDate(LocalDate.now());
         transactionsEntity.setId("e232323232");
-        transactionsEntity.setCategory(createCategoryEntity());
+//        transactionsEntity.setCategory(createCategoryEntity());
         transactionsEntity.setPosted(LocalDate.now());
         transactionsEntity.setAuthorizedDate(LocalDate.of(2024, 6, 1));
         transactionsEntity.setMerchantName("testMerchantName");

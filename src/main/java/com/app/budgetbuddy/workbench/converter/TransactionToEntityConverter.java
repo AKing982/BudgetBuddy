@@ -36,9 +36,10 @@ public class TransactionToEntityConverter implements Converter<Transaction, Tran
         transactionsEntity.setAmount(transaction.getAmount());
         transactionsEntity.setDescription(transaction.getDescription());
         transactionsEntity.setPosted(transaction.getPosted());
-        transactionsEntity.setCategory(createNewCategory(transaction.getCategoryId(), transaction.getCategories()));
+        transactionsEntity.setPrimaryCategory(transaction.getPrimaryCategory());
+        transactionsEntity.setSecondaryCategory(transaction.getSecondaryCategory());
         transactionsEntity.setLogoUrl(transaction.getLogoUrl());
-        transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCode());
+        transactionsEntity.setIsoCurrencyCode(transaction.getIsoCurrencyCodes());
         transactionsEntity.setMerchantName(transaction.getMerchantName());
         transactionsEntity.setAuthorizedDate(transaction.getAuthorizedDate());
         transactionsEntity.setCreateDate(LocalDate.now());

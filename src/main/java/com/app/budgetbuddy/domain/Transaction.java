@@ -15,11 +15,13 @@ import java.util.List;
 @ToString
 @Setter
 @SuperBuilder
-public class Transaction {
+public class Transaction
+{
     private String accountId;
     private BigDecimal amount;
-    private String isoCurrencyCode;
-    private List<String> categories;
+    private String isoCurrencyCodes;
+    private String primaryCategory;
+    private String secondaryCategory;
     private String categoryId;
 
     @JsonDeserialize(using = LocalDateDeserializer.class)
@@ -45,7 +47,8 @@ public class Transaction {
             @JsonProperty("accountId") String accountId,
             @JsonProperty("amount") BigDecimal amount,
             @JsonProperty("isoCurrencyCode") String isoCurrencyCode,
-            @JsonProperty("categories") List<String> categories,
+            String primaryCategory,
+            String secondaryCategory,
             @JsonProperty("categoryId") String categoryId,
             @JsonProperty("date") LocalDate date,
             @JsonProperty("description") String description,
@@ -59,8 +62,9 @@ public class Transaction {
             @JsonProperty("isSystemCategorized") boolean isSystemCategorized) {
         this.accountId = accountId;
         this.amount = amount;
-        this.isoCurrencyCode = isoCurrencyCode;
-        this.categories = categories;
+        this.isoCurrencyCodes = isoCurrencyCode;
+        this.primaryCategory = primaryCategory;
+        this.secondaryCategory = secondaryCategory;
         this.categoryId = categoryId;
         this.date = date;
         this.description = description;

@@ -105,13 +105,13 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 try
                 {
                     Response<TransactionsGetResponse> transactionsResponse = plaidApi.transactionsGet(transactionGetRequest).execute();
-                    attempts++;
                     if(transactionsResponse.isSuccessful())
                     {
                         return CompletableFuture.completedFuture(transactionsResponse.body());
                     }
                     else
                     {
+                        attempts++;
                         if(attempts == MAX_ATTEMPTS)
                         {
                             showPlaidResponseErrors(transactionsResponse, attempts);
@@ -211,27 +211,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
         return CompletableFuture.failedFuture(new RuntimeException("There was an error fetching recurring transactions."));
     }
-
-    // TODO: Implement code to update transactions and recurring transactions table after fetching latest transactions or synced transactions
-
-    @Async("taskExecutor")
-    public CompletableFuture<List<RecurringTransactionEntity>> saveRecurringTransactions(final List<RecurringTransactionDTO> recurringTransactions) throws IOException
-    {
-        if(recurringTransactions.isEmpty())
-        {
-            return CompletableFuture.completedFuture(new ArrayList<>());
-        }
-        List<RecurringTransactionEntity> recurringTransactionEntities;
-        recurringTransactionEntities = recurringTransactions.stream()
-                .filter(Objects::nonNull)
-                .map(recurringTransactionConverter::convert)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        recurringTransactionEntities.forEach(recurringTransactionService::save);
-        return CompletableFuture.completedFuture(recurringTransactionEntities);
-    }
-
 
     private TransactionsSyncRequest createTransactionSyncRequest(String secret, String accessToken, String cursor, TransactionsSyncRequestOptions options)
     {
@@ -333,28 +312,4 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         return CompletableFuture.failedFuture(new SyncCursorException("There was an error syncing transactions."));
     }
 
-    @Async("taskExecutor")
-    public CompletableFuture<List<TransactionsEntity>> saveTransactionsToDatabase(final List<PlaidTransaction> transactionList)
-    {
-        List<TransactionsEntity> transactionsEntities;
-        if(transactionList.isEmpty())
-        {
-            log.info("No transactions were converted to entities.");
-            return CompletableFuture.completedFuture(Collections.emptyList());
-        }
-        try
-        {
-            transactionsEntities = transactionList.stream()
-                    .filter(Objects::nonNull)
-                    .map(transactionConverter::convert)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-            transactionsEntities.forEach(transactionService::save);
-            return CompletableFuture.completedFuture(transactionsEntities);
-        }catch(DataException e){
-            log.error("There was an error saving the transactions to the database: {}", e.getMessage());
-            return CompletableFuture.failedFuture(e);
-        }
-    }
 }

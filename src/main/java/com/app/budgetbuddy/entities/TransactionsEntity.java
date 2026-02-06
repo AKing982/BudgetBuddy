@@ -29,10 +29,14 @@ public class TransactionsEntity
     @JsonManagedReference
     private AccountEntity account;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="category_id")
-    @JsonManagedReference
-    private CategoryEntity category;
+    @Column(name="categoryId")
+    private String categoryId;
+
+    @Column(name="primary_category")
+    private String primaryCategory;
+
+    @Column(name="secondary_category")
+    private String secondaryCategory;
 
     @Column(name = "amount")
     private BigDecimal amount;
@@ -60,9 +64,6 @@ public class TransactionsEntity
 
     @Column(name="createdat")
     private LocalDate createDate;
-
-    @Column(name="isCSVTransaction")
-    private boolean isCSVTransaction;
 
     @Column(name="issystemcategorized")
     private boolean issystemCategorized;

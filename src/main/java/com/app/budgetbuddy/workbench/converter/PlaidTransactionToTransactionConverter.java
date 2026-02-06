@@ -1,0 +1,38 @@
+package com.app.budgetbuddy.workbench.converter;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import com.app.budgetbuddy.domain.Transaction;
+
+@Component
+public class PlaidTransactionToTransactionConverter implements Converter<com.plaid.client.model.Transaction, Transaction>
+{
+
+    @Override
+    public Transaction convert(com.plaid.client.model.Transaction transaction) {
+        List<String> categories = transaction.getCategory();
+        // TODO Auto-generated method stub
+        return Transaction.builder()
+                .accountId(transaction.getAccountId())
+                .amount(BigDecimal.valueOf(transaction.getAmount()))
+                .authorizedDate(transaction.getAuthorizedDate())
+                .categoryId(transaction.getCategoryId())
+                .date(transaction.getDate())
+                .description(transaction.getOriginalDescription())
+                .posted(transaction.getDate())
+                .merchantName(transaction.getMerchantName())
+                .name(transaction.getMerchantName())
+                .pending(transaction.getPending())
+                .primaryCategory(categories.get(0))
+                .secondaryCategory(categories.get(1))
+                .transactionId(transaction.getTransactionId())
+                .isoCurrencyCodes(transaction.getIsoCurrencyCode())
+                .logoUrl(transaction.getLogoUrl())
+                .isSystemCategorized(false)
+                .build();
+    }
+
+}

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class RecurringTransactionCategorizerServiceImpl extends AbstractTransactionMatcher<RecurringTransaction> implements CategorizerService<RecurringTransaction>
+public class RecurringTransactionCategorizerServiceImpl implements CategorizerService<RecurringTransaction>
 {
 
     @Override

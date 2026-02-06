@@ -14,39 +14,25 @@ import java.util.List;
 public class TransactionEntityToModelConverter implements Converter<TransactionsEntity, Transaction>
 {
     @Override
-    public Transaction convert(TransactionsEntity transactionsEntity) {
-//        log.info("Converting TransactionsEntity to Transaction: {}", transactionsEntity.toString());
-        String categoryName = (transactionsEntity.getCategory() == null)
-                ? ""
-                : (transactionsEntity.getCategory().getPlaidCategoryId() != null
-                ? transactionsEntity.getCategory().getCategory()
-                : (transactionsEntity.getCategory().getDescription() != null
-                ? transactionsEntity.getCategory().getDescription()
-                : ""));
-        List<String> categories = categoryName.equals("Unknown") ? List.of() : List.of(categoryName);
-
-        try {
-            return new Transaction(
-                    transactionsEntity.getAccount().getId(),
-                    transactionsEntity.getAmount(),
-                    transactionsEntity.getIsoCurrencyCode(),
-                    categories,
-                    transactionsEntity.getCategory().getPlaidCategoryId(),
-                    transactionsEntity.getCreateDate(),
-                    transactionsEntity.getDescription(),
-                    transactionsEntity.getMerchantName(),
-                    transactionsEntity.getMerchantName(),
-                    transactionsEntity.isPending(),
-                    transactionsEntity.getId(),
-                    transactionsEntity.getAuthorizedDate(),
-                    transactionsEntity.getLogoUrl(),
-                    transactionsEntity.getPosted(),
-                    transactionsEntity.isIssystemCategorized()
-            );
-        }catch(Exception e) {
-            log.error("There was an error while converting the TransactionsEntity", e);
-            return null;
-
-        }
+    public Transaction convert(TransactionsEntity transactionsEntity)
+    {
+            return Transaction.builder()
+                            .accountId(transactionsEntity.getAccount().getId())
+                            .transactionId(transactionsEntity.getId())
+                            .amount(transactionsEntity.getAmount())
+                            .categoryId(transactionsEntity.getCategoryId())
+                            .description(transactionsEntity.getDescription())
+                            .merchantName(transactionsEntity.getMerchantName())
+                            .authorizedDate(transactionsEntity.getAuthorizedDate())
+                            .isoCurrencyCodes(transactionsEntity.getIsoCurrencyCode())
+                            .date(transactionsEntity.getPosted())
+                            .posted(transactionsEntity.getPosted())
+                            .logoUrl(transactionsEntity.getLogoUrl())
+                            .pending(transactionsEntity.isPending())
+                            .primaryCategory(transactionsEntity.getPrimaryCategory())
+                            .secondaryCategory(transactionsEntity.getSecondaryCategory())
+                            .name(transactionsEntity.getMerchantName())
+                            .isSystemCategorized(transactionsEntity.isIssystemCategorized())
+                            .build();
     }
 }

@@ -2166,66 +2166,66 @@ class BudgetCategoryBuilderTest {
 //        );
 //    }
 
-    private Transaction createWalmartTransaction() {
-        return new Transaction(
-                "account-12345",               // accountId
-                new BigDecimal("50.75"),       // amount
-                "USD",                         // isoCurrencyCode
-                List.of("Groceries"),  // categories
-                "cat-001",                     // categoryId
-                LocalDate.of(2024, 11, 1),     // date
-                "Walmart Purchase",            // description
-                "Walmart",                     // merchantName
-                "Walmart Grocery Purchase",    // name
-                false,                         // pending
-                "txn-12345",                   // transactionId
-                LocalDate.of(2024, 11, 1),     // authorizedDate
-                "https://example.com/logo.png", // logoUrl
-                LocalDate.of(2024, 10, 2),
-                false
-        );
-    }
+//    private Transaction createWalmartTransaction() {
+//        return new Transaction(
+//                "account-12345",               // accountId
+//                new BigDecimal("50.75"),       // amount
+//                "USD",                         // isoCurrencyCode
+//                List.of("Groceries"),  // categories
+//                "cat-001",                     // categoryId
+//                LocalDate.of(2024, 11, 1),     // date
+//                "Walmart Purchase",            // description
+//                "Walmart",                     // merchantName
+//                "Walmart Grocery Purchase",    // name
+//                false,                         // pending
+//                "txn-12345",                   // transactionId
+//                LocalDate.of(2024, 11, 1),     // authorizedDate
+//                "https://example.com/logo.png", // logoUrl
+//                LocalDate.of(2024, 10, 2),
+//                false
+//        );
+//    }
+//
+//    private Transaction createWincoTransaction(){
+//        return new Transaction(
+//                "account-12345",               // accountId
+//                new BigDecimal("50.75"),       // amount
+//                "USD",                         // isoCurrencyCode
+//                List.of("Groceries"),  // categories
+//                "cat-001",                     // categoryId
+//                LocalDate.of(2024, 11, 5),     // date
+//                "WINCO Purchase",            // description
+//                "WINCO",                     // merchantName
+//                "WINCO Grocery Purchase",    // name
+//                false,                         // pending
+//                "txn-12345",                   // transactionId
+//                LocalDate.of(2024, 11, 6),     // authorizedDate
+//                "https://example.com/logo.png", // logoUrl
+//                LocalDate.of(2024, 10, 5),
+//                false
+//        );
+//    }
 
-    private Transaction createWincoTransaction(){
-        return new Transaction(
-                "account-12345",               // accountId
-                new BigDecimal("50.75"),       // amount
-                "USD",                         // isoCurrencyCode
-                List.of("Groceries"),  // categories
-                "cat-001",                     // categoryId
-                LocalDate.of(2024, 11, 5),     // date
-                "WINCO Purchase",            // description
-                "WINCO",                     // merchantName
-                "WINCO Grocery Purchase",    // name
-                false,                         // pending
-                "txn-12345",                   // transactionId
-                LocalDate.of(2024, 11, 6),     // authorizedDate
-                "https://example.com/logo.png", // logoUrl
-                LocalDate.of(2024, 10, 5),
-                false
-        );
-    }
 
-
-    private Transaction createGasTransaction() {
-        return new Transaction(
-                "account-12345",               // accountId
-                new BigDecimal("50.75"),       // amount
-                "USD",                         // isoCurrencyCode
-                List.of("Gas"),  // categories
-                "cat-003",                     // categoryId
-                LocalDate.of(2024, 11, 4),     // date
-                "PIN Purchase - MAVERICK",            // description
-                "MAVERICK",                     // merchantName
-                "PIN Purcahse - MAVERICK",    // name
-                false,                         // pending
-                "txn-12345",                   // transactionId
-                LocalDate.of(2024, 11, 4),     // authorizedDate
-                "https://example.com/logo.png", // logoUrl
-                LocalDate.of(2024, 11, 5),  // posted
-                false
-        );
-    }
+//    private Transaction createGasTransaction() {
+//        return new Transaction(
+//                "account-12345",               // accountId
+//                new BigDecimal("50.75"),       // amount
+//                "USD",                         // isoCurrencyCode
+//                List.of("Gas"),  // categories
+//                "cat-003",                     // categoryId
+//                LocalDate.of(2024, 11, 4),     // date
+//                "PIN Purchase - MAVERICK",            // description
+//                "MAVERICK",                     // merchantName
+//                "PIN Purcahse - MAVERICK",    // name
+//                false,                         // pending
+//                "txn-12345",                   // transactionId
+//                LocalDate.of(2024, 11, 4),     // authorizedDate
+//                "https://example.com/logo.png", // logoUrl
+//                LocalDate.of(2024, 11, 5),  // posted
+//                false
+//        );
+//    }
 
     private RecurringTransaction createAffirmRecurringTransaction() {
         return new RecurringTransaction(

@@ -353,16 +353,16 @@ class BudgetCategoryRunnerTest {
 //    }
 
 
-    private List<Transaction> createGroceryTransactions(){
-        return List.of(
-                new Transaction("acc1", new BigDecimal("34.32"), "USD", List.of("Groceries"), "cat1",
-                        LocalDate.of(2024, 8, 2), "desc", "merchant", "name", false, "trans_08_02",
-                        null, null, LocalDate.of(2024, 8, 2), false),
-                new Transaction("acc1", new BigDecimal("45.24"), "USD", List.of("Groceries"), "cat1",
-                        LocalDate.of(2024, 8, 8), "desc", "merchant", "name", false, "trans_08_08",
-                        null, null, LocalDate.of(2024, 8, 8), false)
-        );
-    }
+//    private List<Transaction> createGroceryTransactions(){
+//        return List.of(
+//                new Transaction("acc1", new BigDecimal("34.32"), "USD", List.of("Groceries"), "cat1",
+//                        LocalDate.of(2024, 8, 2), "desc", "merchant", "name", false, "trans_08_02",
+//                        null, null, LocalDate.of(2024, 8, 2), false),
+//                new Transaction("acc1", new BigDecimal("45.24"), "USD", List.of("Groceries"), "cat1",
+//                        LocalDate.of(2024, 8, 8), "desc", "merchant", "name", false, "trans_08_08",
+//                        null, null, LocalDate.of(2024, 8, 8), false)
+//        );
+//    }
 
     private TransactionsEntity createTransactionEntity(LocalDate posted){
         TransactionsEntity transactionsEntity = new TransactionsEntity();

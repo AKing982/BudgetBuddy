@@ -137,15 +137,7 @@ public class TransactionController
             transactionResponse.setAuthorizedDate(transaction.getAuthorizedDate());
             transactionResponse.setPosted(transaction.getPosted());
             // Safely handle potential null category
-            if (transaction.getCategory() != null) {
-                transactionResponse.setCategories(getCategoriesForTransaction(transaction.getId(), transaction.getCategory().getPlaidCategoryId()));
-                transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getPlaidCategoryId()));
-            } else {
-                LOGGER.warn("Transaction with ID {} has no category", transaction.getId());
-                transactionResponse.setCategories(Collections.emptyList());
-                transactionResponse.setCategoryId(null);
-            }
-
+            transactionResponse.setCategories(List.of());
 //            // Safely set the category ID
 //            transactionResponse.setCategoryId(fetchCategory(transaction.getCategory().getId()));
             transactionResponse.setMerchantName(transaction.getMerchantName());
@@ -166,23 +158,6 @@ public class TransactionController
 //        LOGGER.info("Returning CategoryId: {}", categoryId);
 //        return categoryId;
         return "";
-    }
-
-    private List<String> getCategoriesForTransaction(String transactionId, String categoryId){
-        if(categoryId == null){
-            LOGGER.info("Category with ID {} has no category", transactionId);
-            return Collections.emptyList();
-        }
-        Optional<TransactionsEntity> transaction = transactionService.getTransactionByIdAndCategoryId(transactionId, categoryId);
-        List<String> categories = new ArrayList<>();
-        if(transaction.isPresent()){
-            CategoryEntity category = transaction.get().getCategory();
-            categories.add(category.getCategory());
-            categories.add(category.getDescription());
-        }else{
-            LOGGER.warn("Transaction with ID {} has no category", transactionId);
-        }
-        return categories;
     }
 
     @PostMapping("/save-transactions")

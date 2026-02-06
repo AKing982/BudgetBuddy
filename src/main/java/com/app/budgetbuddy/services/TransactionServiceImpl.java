@@ -224,27 +224,27 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     public List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions)
     {
-        List<Transaction> transactions = new ArrayList<>();
-        for(com.plaid.client.model.Transaction plaidTransaction : plaidTransactions){
-            Transaction transaction1 = Transaction.builder()
-                    .accountId(plaidTransaction.getAccountId())
-                    .amount(BigDecimal.valueOf(plaidTransaction.getAmount()))
-                    .categoryId(plaidTransaction.getCategoryId())
-                    .merchantName(plaidTransaction.getMerchantName())
-                    .categories(plaidTransaction.getCategory())
-                    .name(plaidTransaction.getName())
-                    .transactionId(plaidTransaction.getTransactionId())
-                    .authorizedDate(plaidTransaction.getAuthorizedDate())
-                    .posted(plaidTransaction.getDate())
-                    .logoUrl(plaidTransaction.getLogoUrl())
-                    .date(plaidTransaction.getDate())
-                    .description(plaidTransaction.getOriginalDescription())
-                    .isoCurrencyCode(plaidTransaction.getIsoCurrencyCode())
-                    .pending(plaidTransaction.getPending())
-                    .isSystemCategorized(false).build();
-            transactions.add(transaction1);
-        }
-        return transactions;
+//        List<Transaction> transactions = new ArrayList<>();
+//        for(com.plaid.client.model.Transaction plaidTransaction : plaidTransactions){
+//            Transaction transaction1 = Transaction.builder()
+//                    .accountId(plaidTransaction.getAccountId())
+//                    .amount(BigDecimal.valueOf(plaidTransaction.getAmount()))
+//                    .categoryId(plaidTransaction.getCategoryId())
+//                    .merchantName(plaidTransaction.getMerchantName())
+//                    .categories(plaidTransaction.getCategory())
+//                    .name(plaidTransaction.getName())
+//                    .transactionId(plaidTransaction.getTransactionId())
+//                    .authorizedDate(plaidTransaction.getAuthorizedDate())
+//                    .posted(plaidTransaction.getDate())
+//                    .logoUrl(plaidTransaction.getLogoUrl())
+//                    .date(plaidTransaction.getDate())
+//                    .description(plaidTransaction.getOriginalDescription())
+//                    .isoCurrencyCode(plaidTransaction.getIsoCurrencyCode())
+//                    .pending(plaidTransaction.getPending())
+//                    .isSystemCategorized(false).build();
+//            transactions.add(transaction1);
+//        }
+        return Collections.emptyList();
     }
 
     @Override
@@ -367,20 +367,20 @@ public class TransactionServiceImpl implements TransactionService
     }
 
     private TransactionsEntity convertPlaidTransactionToEntity(PlaidTransaction plaidTransaction){
-        TransactionsEntity transactionsEntity = new TransactionsEntity();
-        transactionsEntity.setId(plaidTransaction.getTransactionId());
-        transactionsEntity.setAmount(plaidTransaction.getAmount());
-        transactionsEntity.setPending(plaidTransaction.getPending());
-        transactionsEntity.setAuthorizedDate(plaidTransaction.getAuthorizedDate());
-        transactionsEntity.setDescription(plaidTransaction.getDescription());
-        transactionsEntity.setAccount(fetchAccountById(plaidTransaction.getAccountId()));
-        transactionsEntity.setPosted(plaidTransaction.getDate());
-        transactionsEntity.setCategory(fetchCategoryById(plaidTransaction.getCategoryId()));
-        transactionsEntity.setLogoUrl(plaidTransaction.getLogo());
-        transactionsEntity.setIsoCurrencyCode(plaidTransaction.getIsoCurrencyCode());
-        transactionsEntity.setMerchantName(plaidTransaction.getMerchantName());
-        transactionsEntity.setId(plaidTransaction.getTransactionId());
-        return transactionsEntity;
+//        TransactionsEntity transactionsEntity = new TransactionsEntity();
+//        transactionsEntity.setId(plaidTransaction.getTransactionId());
+//        transactionsEntity.setAmount(plaidTransaction.getAmount());
+//        transactionsEntity.setPending(plaidTransaction.getPending());
+//        transactionsEntity.setAuthorizedDate(plaidTransaction.getAuthorizedDate());
+//        transactionsEntity.setDescription(plaidTransaction.getDescription());
+//        transactionsEntity.setAccount(fetchAccountById(plaidTransaction.getAccountId()));
+//        transactionsEntity.setPosted(plaidTransaction.getDate());
+//        transactionsEntity.setCategory(fetchCategoryById(plaidTransaction.getCategoryId()));
+//        transactionsEntity.setLogoUrl(plaidTransaction.getLogo());
+//        transactionsEntity.setIsoCurrencyCode(plaidTransaction.getIsoCurrencyCode());
+//        transactionsEntity.setMerchantName(plaidTransaction.getMerchantName());
+//        transactionsEntity.setId(plaidTransaction.getTransactionId());
+        return null;
     }
 
     private CategoryEntity fetchCategoryById(String categoryId){
@@ -451,7 +451,6 @@ public class TransactionServiceImpl implements TransactionService
                 transactionsEntity.setAuthorizedDate(transactionCSV.getElectronicTransactionDate());
                 transactionsEntity.setPosted(transactionCSV.getTransactionDate());
                 transactionsEntity.setPending(false);
-                transactionsEntity.setCSVTransaction(true);
                 transactionsEntity.setIssystemCategorized(false);
                 transactionsEntities.add(transactionsEntity);
             }

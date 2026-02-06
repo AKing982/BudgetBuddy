@@ -7,8 +7,10 @@ import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
+import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -25,29 +27,35 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class TransactionImportService
 {
-    private PlaidTransactionManager plaidTransactionManager;
+    private PlaidTransactionRunner plaidTransactionRunner;
     private CategoryRunner categoryRunner;
     private SubBudgetService subBudgetService;
 
     @Autowired
-    public TransactionImportService(PlaidTransactionManager plaidTransactionManager,
+    public TransactionImportService(PlaidTransactionRunner plaidTransactionRunner,
                                     CategoryRunner categoryRunner,
                                     SubBudgetService subBudgetService) {
-        this.plaidTransactionManager = plaidTransactionManager;
+        this.plaidTransactionRunner = plaidTransactionRunner;
         this.categoryRunner = categoryRunner;
         this.subBudgetService = subBudgetService;
     }
 
-    public List<DateRange> getMonthDateRangesByCurrentDate(final Long userId) {
-
-        List<DateRange> monthRanges = subBudgetService.findSubBudgetsByUserIdAndLimit(userId, numOfMonthsSinceCurrentDate, currentYear)
+    public List<DateRange> getMonthDateRangesByCurrentDate(final Long userId)
+    {
+        LocalDate currentDate = LocalDate.now();
+        int currentYear = currentDate.getYear();
+        LocalDate budgetBeginDate = LocalDate.of(currentYear, 1, 1);
+        DateRange currentDateRange = DateRange.createDateRange(budgetBeginDate, currentDate);
+        int numberOfMonths = currentDateRange.splitIntoMonths().size();
+        List<DateRange> monthRanges = subBudgetService.findSubBudgetsByUserIdAndLimit(userId, numberOfMonths, currentYear)
                 .stream()
                 .map(subBudget -> new DateRange(subBudget.getStartDate(), subBudget.getEndDate()))
                 .sorted(Comparator.comparing(DateRange::getStartDate))
                 .toList();
-        log.info("Found {} month ranges for user {}", monthRanges.size(), userId);
+        // log.info("Found {} month ranges for user {}", monthRanges.size(), userId);
         return monthRanges;
     }
+
 
     public List<Transaction> importMonthlyTransactions(final Long userId) {
 //        List<CompletableFuture<List<Transaction>>> monthlyFutures = new ArrayList<>();

@@ -7,6 +7,7 @@ import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
+import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,10 @@ class TransactionImportServiceTest
     @Mock
     private SubBudgetService subBudgetService;
 
+    @Mock
+    private CategoryRunner categoryRunner;
+
+
     private TransactionImportService transactionImportService;
 
     private Long TEST_USER_ID = 1L;
@@ -64,7 +69,7 @@ class TransactionImportServiceTest
         mockBudget.setBudgetName("2025 Budget Test");
         mockBudget.setBudgetYear(2025);
 
-        transactionImportService = new TransactionImportService(plaidTransactionManager, subBudgetService);
+        transactionImportService = new TransactionImportService(plaidTransactionManager, categoryRunner, subBudgetService);
     }
 
     @AfterEach

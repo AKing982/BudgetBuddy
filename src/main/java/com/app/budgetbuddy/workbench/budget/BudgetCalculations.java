@@ -310,21 +310,6 @@ public class BudgetCalculations {
 
 
 
-    private BigDecimal getTotalTransactionSpendingForCategoryDateRange(final List<Transaction> transactions,
-                                                                       final DateRange categoryDateRange,
-                                                                       final TransactionsByCategory categoryDesignator) {
-        return transactions.stream()
-                .filter(transaction -> transaction.getDate() != null &&
-                        transaction.getDate().isAfter(categoryDateRange.getStartDate().minusDays(1)) &&
-                        transaction.getDate().isBefore(categoryDateRange.getEndDate().plusDays(1)) &&
-                        (categoryDesignator.getCategoryName() != null &&
-                                transaction.getCategories() != null &&
-                                !transaction.getCategories().isEmpty() &&
-                                transaction.getCategories().contains(categoryDesignator.getCategoryName())))
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
     private BudgetGoalsEntity getBudgetGoalsByBudgetId(Long budgetId)
     {
         Optional<BudgetGoalsEntity> budgetGoalsEntityOptional = budgetGoalsService.findById(budgetId);
@@ -660,36 +645,37 @@ public class BudgetCalculations {
 
     public boolean isFixedExpense(final Transaction transaction)
     {
-        if(transaction == null)
-        {
-            return false;
-        }
-        try
-        {
-            List<String> transactionCategories = transaction.getCategories();
-            String transactionCategoryId = transaction.getCategoryId();
-            Map<String, List<String>> fixedExpenseCategories = new HashMap<>();
-            fixedExpenseCategories.put("18068005", List.of("Utilities", "Service"));
-            fixedExpenseCategories.put("18030000", List.of("Insurance", "Service"));
-            fixedExpenseCategories.put("18061000", List.of("Subscription", "Service"));
-            fixedExpenseCategories.put("18020004", List.of("Financial", "Service"));
-            fixedExpenseCategories.put("19019000", List.of("Digital Purchase", "Shops"));
-            fixedExpenseCategories.put("19013000", List.of("Computers and Electronics", "Shops"));
-            fixedExpenseCategories.put("17018000", List.of("Gyms and Fitness Centers", "Recreation"));
-            if(transactionCategories.isEmpty())
-            {
-                return fixedExpenseCategories.containsKey(transactionCategoryId);
-            }
-            if(transactionCategories.size() == 2)
-            {
-                return fixedExpenseCategories.containsKey(transactionCategoryId) && fixedExpenseCategories.containsValue(transactionCategories.get(0)) || fixedExpenseCategories.containsValue(transactionCategories.get(1));
-            }
-            return fixedExpenseCategories.containsKey(transactionCategoryId) && fixedExpenseCategories.containsValue(transactionCategories.get(0));
-
-        }catch(Exception e)
-        {
-            return false;
-        }
+//        if(transaction == null)
+//        {
+//            return false;
+//        }
+//        try
+//        {
+//            List<String> transactionCategories = transaction.getCategories();
+//            String transactionCategoryId = transaction.getCategoryId();
+//            Map<String, List<String>> fixedExpenseCategories = new HashMap<>();
+//            fixedExpenseCategories.put("18068005", List.of("Utilities", "Service"));
+//            fixedExpenseCategories.put("18030000", List.of("Insurance", "Service"));
+//            fixedExpenseCategories.put("18061000", List.of("Subscription", "Service"));
+//            fixedExpenseCategories.put("18020004", List.of("Financial", "Service"));
+//            fixedExpenseCategories.put("19019000", List.of("Digital Purchase", "Shops"));
+//            fixedExpenseCategories.put("19013000", List.of("Computers and Electronics", "Shops"));
+//            fixedExpenseCategories.put("17018000", List.of("Gyms and Fitness Centers", "Recreation"));
+//            if(transactionCategories.isEmpty())
+//            {
+//                return fixedExpenseCategories.containsKey(transactionCategoryId);
+//            }
+//            if(transactionCategories.size() == 2)
+//            {
+//                return fixedExpenseCategories.containsKey(transactionCategoryId) && fixedExpenseCategories.containsValue(transactionCategories.get(0)) || fixedExpenseCategories.containsValue(transactionCategories.get(1));
+//            }
+//            return fixedExpenseCategories.containsKey(transactionCategoryId) && fixedExpenseCategories.containsValue(transactionCategories.get(0));
+//
+//        }catch(Exception e)
+//        {
+//            return false;
+//        }
+        return false;
     }
 
 //    public boolean isRentDueDuringPeriod(final DateRange dateRange)

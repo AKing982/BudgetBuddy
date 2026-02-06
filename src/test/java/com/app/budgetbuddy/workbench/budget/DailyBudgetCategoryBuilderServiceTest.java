@@ -817,7 +817,7 @@ class DailyBudgetCategoryBuilderServiceTest
         transaction.setPending(false);
         transaction.setAuthorizedDate(LocalDate.of(2025, 4, 16));
         transaction.setDescription("Purchase FLEX FINANCE");
-        transaction.setCategories(List.of("Financial", "Service"));
+//        transaction.setCategories(List.of("Financial", "Service"));
         transaction.setAccountId("vBbQarwL0Yu8YD8EjxOMFNN0LwQ16LCkg0Roo");
         return transaction;
     }
