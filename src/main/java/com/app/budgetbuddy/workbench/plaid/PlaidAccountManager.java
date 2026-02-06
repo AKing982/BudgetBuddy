@@ -36,7 +36,6 @@ import java.util.Set;
 public class PlaidAccountManager extends AbstractPlaidManager
 {
     private AccountBaseConverter accountBaseConverter;
-    private UserService userService;
     private AccountService accountService;
 
     @Autowired
@@ -45,9 +44,8 @@ public class PlaidAccountManager extends AbstractPlaidManager
                                AccountBaseConverter accountBaseConverter,
                                UserService userService,
                                AccountService accountService) {
-        super(plaidLinkService, plaidApi);
+        super(plaidLinkService,userService, plaidApi);
         this.accountBaseConverter = accountBaseConverter;
-        this.userService = userService;
         this.accountService = accountService;
     }
 

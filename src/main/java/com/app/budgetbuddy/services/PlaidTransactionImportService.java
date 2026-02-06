@@ -15,6 +15,7 @@ import java.util.List;
 
 @Service
 @Slf4j
+@Deprecated
 public class PlaidTransactionImportService
 {
     private final PlaidTransactionManager plaidTransactionManager;

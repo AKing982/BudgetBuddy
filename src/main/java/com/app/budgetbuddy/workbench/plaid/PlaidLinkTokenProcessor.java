@@ -1,8 +1,12 @@
 package com.app.budgetbuddy.workbench.plaid;
 
+import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.exceptions.PlaidApiException;
+import com.app.budgetbuddy.exceptions.PlaidLinkException;
+import com.app.budgetbuddy.exceptions.UserNotFoundException;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.UserService;
 import com.plaid.client.model.*;
 import com.plaid.client.request.PlaidApi;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +22,7 @@ import retrofit2.Response;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -34,9 +39,31 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
     private String redirectUri;
 
     @Autowired
-    public PlaidLinkTokenProcessor(PlaidLinkService plaidLinkService, @Qualifier("plaid") PlaidApi plaidApi)
+    public PlaidLinkTokenProcessor(PlaidLinkService plaidLinkService, UserService userService, @Qualifier("plaid") PlaidApi plaidApi)
     {
-        super(plaidLinkService, plaidApi);
+        super(plaidLinkService, userService, plaidApi);
+    }
+
+    private DepositoryFilter createDepositoryFilter()
+    {
+        return new DepositoryFilter()
+                .accountSubtypes(Arrays.asList(
+                        DepositoryAccountSubtype.CHECKING,
+                        DepositoryAccountSubtype.SAVINGS,
+                        DepositoryAccountSubtype.MONEY_MARKET
+                ));
+    }
+
+    private LinkTokenTransactions createLinkTokenTransactions()
+    {
+        return new LinkTokenTransactions()
+                .daysRequested(730);
+    }
+
+    private LinkTokenAccountFilters createAccountFilters(DepositoryFilter depositoryFilter)
+    {
+        return new LinkTokenAccountFilters()
+                .depository(depositoryFilter);
     }
 
     /**
@@ -51,21 +78,18 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         {
             throw new IllegalArgumentException("Client user id cannot be empty");
         }
-        try
-        {
-            LinkTokenCreateRequest linkTokenCreateRequest = new LinkTokenCreateRequest()
-                    .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
-                    .clientName("BudgetBuddy")
-                    .products(Arrays.asList(Products.TRANSACTIONS))
-                    .countryCodes(Arrays.asList(CountryCode.US))
-                    .redirectUri(redirectUri)
-                    .language("en");
-            log.info("Link Token Create Request: " + linkTokenCreateRequest);
-            return linkTokenCreateRequest;
-        }catch(DataException e){
-            log.error("Error creating link token request: {}",e.getMessage(), e);
-            throw e;
-        }
+        DepositoryFilter depository = createDepositoryFilter();
+        LinkTokenTransactions transactions = createLinkTokenTransactions();
+        LinkTokenAccountFilters accountFilters = createAccountFilters(depository);
+        return new LinkTokenCreateRequest()
+                .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
+                .clientName("BudgetBuddy")
+                .products(Arrays.asList(Products.TRANSACTIONS))
+                .countryCodes(Arrays.asList(CountryCode.US))
+                .transactions(transactions)
+                .accountFilters(accountFilters)
+                .redirectUri(redirectUri)
+                .language("en");
     }
 
     /**
@@ -75,14 +99,41 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      * @return the created link token response
      */
     @Async("taskExecutor")
-    public LinkTokenCreateResponse createLinkToken(String clientUserId) throws IOException {
-//        if(clientUserId.isEmpty()){
-//            throw new IllegalArgumentException("Client user id cannot be empty");
-//        }
-//        LinkTokenCreateRequest linkTokenCreateRequest = createLinkTokenRequest(clientUserId);
-//        Response<LinkTokenCreateResponse> response = createLinkTokenWithRetry(linkTokenCreateRequest);
-//        return response.body();
-        return null;
+    public CompletableFuture<LinkTokenCreateResponse> createLinkToken(String clientUserId) throws IOException
+    {
+        if(clientUserId.isEmpty())
+        {
+            throw new IllegalArgumentException("Client user id cannot be empty");
+        }
+        Long userId = Long.valueOf(clientUserId);
+        Optional<UserEntity> userOptional = userService.findById(userId);
+        if(userOptional.isEmpty())
+        {
+            return CompletableFuture.failedFuture(new UserNotFoundException("User with id " + userId + " not found."));
+        }
+        LinkTokenCreateRequest linkTokenCreateRequest = createLinkTokenRequest(clientUserId);
+        Response<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest).execute();
+        if(linkTokenResponse.isSuccessful())
+        {
+            return CompletableFuture.completedFuture(linkTokenResponse.body());
+        }
+        else
+        {
+            int attempts = 0;
+            while(attempts < MAX_ATTEMPTS)
+            {
+                Response<LinkTokenCreateResponse> linkTokenRetryResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest).execute();
+                if(linkTokenRetryResponse.isSuccessful())
+                {
+                    return CompletableFuture.completedFuture(linkTokenRetryResponse.body());
+                }
+                else
+                {
+                    attempts++;
+                }
+            }
+        }
+        return CompletableFuture.failedFuture(new PlaidLinkException("Plaid Link token creation failed."));
     }
 
     /**
@@ -107,16 +158,19 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
      * @throws IOException if an I/O error occurs
      */
     @Async("taskExecutor")
-    public CompletableFuture<ItemPublicTokenExchangeResponse> exchangePublicToken(String publicToken) throws IOException {
-//        if(publicToken.isEmpty()){
-//            throw new IllegalArgumentException("Public token cannot be empty");
-//        }
-//        ItemPublicTokenExchangeRequest itemPublicTokenExchangeRequest = createPublicTokenExchangeRequest(publicToken);
-//
-//        Call<ItemPublicTokenExchangeResponse> publicTokenExchangeResponseCall = plaidApi.itemPublicTokenExchange(itemPublicTokenExchangeRequest);
-//        Response<ItemPublicTokenExchangeResponse> response = publicTokenExchangeResponseCall.execute();
-//        return response.body();
-        return null;
+    public CompletableFuture<ItemPublicTokenExchangeResponse> exchangePublicToken(String publicToken) throws IOException
+    {
+        if(publicToken.isEmpty())
+        {
+            throw new IllegalArgumentException("Public token cannot be empty");
+        }
+        ItemPublicTokenExchangeRequest itemPublicTokenExchangeRequest = createPublicTokenExchangeRequest(publicToken);
+        Response<ItemPublicTokenExchangeResponse> response = plaidApi.itemPublicTokenExchange(itemPublicTokenExchangeRequest).execute();
+        if(response.isSuccessful())
+        {
+            return CompletableFuture.completedFuture(response.body());
+        }
+        return CompletableFuture.failedFuture(new RuntimeException("There was an error exchanging the public token."));
     }
 
     @Async("taskExecutor")

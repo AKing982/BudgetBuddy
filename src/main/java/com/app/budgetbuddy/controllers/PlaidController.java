@@ -69,7 +69,7 @@ public class PlaidController
             return ResponseEntity.badRequest().body("Username cannot be empty");
         }
         String userIdAsString = String.valueOf(userId);
-        LinkTokenCreateResponse linkTokenCreateResponse = plaidLinkTokenProcessor.createLinkToken(userIdAsString);
+        LinkTokenCreateResponse linkTokenCreateResponse = plaidLinkTokenProcessor.createLinkToken(userIdAsString).join();
         String linkToken = linkTokenCreateResponse.getLinkToken();
         log.info("Found Link Token: {}", linkToken);
         return ResponseEntity.status(201).body(linkTokenCreateResponse);

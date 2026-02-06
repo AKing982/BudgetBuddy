@@ -4,6 +4,7 @@ import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.exceptions.InvalidUserIDException;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.UserService;
 import com.plaid.client.request.PlaidApi;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -14,12 +15,16 @@ import java.util.Optional;
 public abstract class AbstractPlaidManager
 {
     protected PlaidLinkService plaidLinkService;
+    protected UserService userService;
     protected PlaidApi plaidApi;
+    protected int MAX_ATTEMPTS = 5;
 
     public AbstractPlaidManager(PlaidLinkService plaidLinkService,
+                                UserService userService,
                                 @Qualifier("plaid") PlaidApi plaidApi)
     {
         this.plaidLinkService = plaidLinkService;
+        this.userService = userService;
         this.plaidApi = plaidApi;
     }
 

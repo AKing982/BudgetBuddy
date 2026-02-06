@@ -5,7 +5,9 @@ import com.app.budgetbuddy.entities.PlaidCursorEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.PlaidCursorException;
+import com.app.budgetbuddy.exceptions.UserNotFoundException;
 import com.app.budgetbuddy.repositories.PlaidCursorRepository;
+import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.workbench.converter.PlaidCursorToEntityConverter;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,13 +29,16 @@ import java.util.Optional;
 public class PlaidCursorServiceImpl implements PlaidCursorService
 {
     private final PlaidCursorRepository plaidCursorRepository;
+    private final UserRepository userRepository;
     private final PlaidCursorToEntityConverter plaidCursorToEntityConverter;
 
     @Autowired
     public PlaidCursorServiceImpl(PlaidCursorRepository plaidCursorRepository,
+                                  UserRepository userRepository,
                                   PlaidCursorToEntityConverter plaidCursorToEntityConverter)
     {
         this.plaidCursorRepository = plaidCursorRepository;
+        this.userRepository = userRepository;
         this.plaidCursorToEntityConverter = plaidCursorToEntityConverter;
     }
 
@@ -103,10 +108,16 @@ public class PlaidCursorServiceImpl implements PlaidCursorService
     {
         try
         {
+            UserEntity userEntity = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User with Id " + userId + " not found"));
             Optional<PlaidCursorEntity> plaidCursorEntityOptional = plaidCursorRepository.findByUserIdAndItemId(userId, itemId);
             if(plaidCursorEntityOptional.isEmpty())
             {
-                throw new PlaidCursorException("No Plaid cursor was found with userId " + userId + " and itemId " + itemId );
+                PlaidCursorEntity plaidCursorEntity = new PlaidCursorEntity();
+                plaidCursorEntity.setItemId(itemId);
+                plaidCursorEntity.setCursor("");
+                plaidCursorEntity.setUser(userEntity);
+                save(plaidCursorEntity);
+                return plaidCursorRepository.findByUserIdAndItemId(userId, itemId).orElse(plaidCursorEntity);
             }
             return plaidCursorEntityOptional.get();
         }catch(DataAccessException e){

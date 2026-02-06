@@ -11,6 +11,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -28,19 +31,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class TransactionImportServiceTest
 {
-    @MockBean
-    private TransactionService transactionService;
-
-    @MockBean
+    @Mock
     private PlaidTransactionManager plaidTransactionManager;
 
-    @MockBean
+    @Mock
     private SubBudgetService subBudgetService;
 
-    @Autowired
     private TransactionImportService transactionImportService;
 
     private Long TEST_USER_ID = 1L;
@@ -64,11 +63,14 @@ class TransactionImportServiceTest
         mockBudget.setSubBudgets(mockSubBudgets);
         mockBudget.setBudgetName("2025 Budget Test");
         mockBudget.setBudgetYear(2025);
+
+        transactionImportService = new TransactionImportService(plaidTransactionManager, subBudgetService);
     }
 
     @AfterEach
     void tearDown() {
     }
+
 
     @Test
     @DisplayName("Should return five month ranges for test user")

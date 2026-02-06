@@ -14,6 +14,7 @@ import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -437,6 +438,214 @@ class PlaidTransactionManagerTest
         assertFalse(actual.getAdded().isEmpty());
 
         verify(plaidApi, times(3)).transactionsSync(any(TransactionsSyncRequest.class));
+    }
+
+    @Test
+    void testGetAsyncRecurringResposne_whenUserIdNotValid_thenThrowUserNotFoundException() throws IOException{
+        when(userService.findById(userId)).thenReturn(Optional.empty());
+        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId);
+
+        CompletionException ex = assertThrows(CompletionException.class, future::join);
+        assertTrue(ex.getCause() instanceof UserNotFoundException);
+        assertEquals("User with id " + userId + " was not found.", ex.getCause().getMessage());
+    }
+
+
+    @Test
+    void testGetAsyncRecurringResponse_whenUserIdValid() throws IOException {
+        Long userId = 1L;
+
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
+        TransactionsRecurringGetRequest transactionsRecurringGetRequest = new TransactionsRecurringGetRequest()
+                .accessToken("access_token")
+                .clientId("BudgetBuddy");
+
+        TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
+        expectedResponse.setInflowStreams(Collections.singletonList(createTransactionStream()));
+        expectedResponse.setOutflowStreams(Collections.singletonList(createTransactionStream()));
+
+        Call<TransactionsRecurringGetResponse> callSuccessful = mock(Call.class);
+        Response<TransactionsRecurringGetResponse> response = Response.success(expectedResponse);
+
+        when(plaidApi.transactionsRecurringGet(transactionsRecurringGetRequest)).thenReturn(callSuccessful);
+        when(callSuccessful.execute()).thenReturn(response);
+
+        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId);
+        TransactionsRecurringGetResponse actual = future.join();
+        assertNotNull(actual);
+        assertEquals(expectedResponse.getInflowStreams(), actual.getInflowStreams());
+        assertEquals(expectedResponse.getOutflowStreams(), actual.getOutflowStreams());
+        verify(plaidLinkService, times(1)).findPlaidLinkByUserID(userId);
+        verify(plaidApi).transactionsRecurringGet(transactionsRecurringGetRequest);
+    }
+
+    @Test
+    @DisplayName("Get Async Recurring Response - When Initial response fails, retry and return response")
+    void testGetAsyncRecurringResponse_whenInitialResponseFailed_thenRetryAndReturnResponse() throws IOException
+    {
+        when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
+        PlaidLinkEntity plaidLinkEntity = new PlaidLinkEntity();
+        plaidLinkEntity.setAccessToken("e2323232");
+        plaidLinkEntity.setUser(userEntity);
+        plaidLinkEntity.setItemId("item1-2323");
+
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
+        TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
+        expectedResponse.setInflowStreams(List.of(new TransactionStream())); // Add dummy data
+        expectedResponse.setOutflowStreams(List.of(new TransactionStream()));
+        Response<TransactionsRecurringGetResponse> failResponse = mock(Response.class);
+        Response<TransactionsRecurringGetResponse> successResponse = mock(Response.class);
+
+        Call<TransactionsRecurringGetResponse> callFail1 = mock(Call.class);
+        Call<TransactionsRecurringGetResponse> callFail2 = mock(Call.class);
+        Call<TransactionsRecurringGetResponse> callSuccess = mock(Call.class);
+
+        when(callFail1.execute()).thenReturn(failResponse);
+        when(callFail2.execute()).thenReturn(failResponse);
+        when(callSuccess.execute()).thenReturn(successResponse);
+
+        when(failResponse.isSuccessful()).thenReturn(false);
+        when(successResponse.isSuccessful()).thenReturn(true);
+        when(successResponse.body()).thenReturn(expectedResponse);
+
+        when(plaidApi.transactionsRecurringGet(any(TransactionsRecurringGetRequest.class)))
+                .thenReturn(callFail1)
+                .thenReturn(callFail2)
+                .thenReturn(callSuccess);
+
+        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId);
+        TransactionsRecurringGetResponse actual = future.join();
+        assertNotNull(actual);
+        assertTrue(!future.isCompletedExceptionally());
+        assertTrue(!actual.getInflowStreams().isEmpty());
+        assertTrue(!actual.getOutflowStreams().isEmpty());
+
+        verify(plaidApi, times(3)).transactionsRecurringGet(any(TransactionsRecurringGetRequest.class));
+        verify(callFail1, times(1)).execute();
+        verify(callFail2, times(1)).execute();
+        verify(callSuccess, times(1)).execute();
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenRecurringTransactionsListIsEmpty_thenReturnEmptyList() throws IOException{
+        List<RecurringTransactionDTO> recurringTransactionDTOs = new ArrayList<>();
+        CompletableFuture<List<RecurringTransactionEntity>> future = transactionManager.saveRecurringTransactions(recurringTransactionDTOs);
+        List<RecurringTransactionEntity> actual = future.join();
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenValidRecurringTransactions_thenReturnRecurringEntities() throws IOException{
+        List<RecurringTransactionDTO> recurringTransactionDTOs = new ArrayList<>();
+        recurringTransactionDTOs.addAll(List.of(createRecurringTransaction()));
+
+        RecurringTransactionEntity mockTransactionEntity = createRecurringTransactionEntity();
+        List<RecurringTransactionEntity> expectedEntities = new ArrayList<>();
+        expectedEntities.add(createRecurringTransactionEntity());
+
+        when(recurringTransactionConverter.convert(createRecurringTransaction()))
+                .thenReturn(mockTransactionEntity);
+
+        doNothing().when(recurringTransactionService).save(mockTransactionEntity);
+
+        CompletableFuture<List<RecurringTransactionEntity>> future = transactionManager.saveRecurringTransactions(recurringTransactionDTOs);
+        List<RecurringTransactionEntity> actual = future.join();
+        assertNotNull(actual);
+        assertTrue(!future.isCompletedExceptionally());
+        assertTrue(future.isDone());
+        assertTrue(!actual.isEmpty());
+        assertEquals(1, actual.size());
+
+        verify(recurringTransactionConverter, times(1)).convert(createRecurringTransaction());
+        verify(recurringTransactionService, times(1)).save(any(RecurringTransactionEntity.class));
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenNullRecurringTransactionDTO_thenSkipAndReturnEntities() throws IOException{
+        List<RecurringTransactionDTO> recurringTransactionDTOs = new ArrayList<>();
+        RecurringTransactionDTO mockRecurringTransactionDTO = mock(RecurringTransactionDTO.class);
+        RecurringTransactionDTO mockRecurringTransactionDTO2 = createRecurringTransaction();
+        recurringTransactionDTOs.add(mockRecurringTransactionDTO);
+        recurringTransactionDTOs.add(null);
+        recurringTransactionDTOs.add(mockRecurringTransactionDTO2);
+
+        RecurringTransactionEntity mockRecurringTransactionEntity = mock(RecurringTransactionEntity.class);
+        RecurringTransactionEntity mockRecurringTransactionEntity2 = createRecurringTransactionEntity();
+        when(recurringTransactionConverter.convert(mockRecurringTransactionDTO))
+                .thenReturn(mockRecurringTransactionEntity);
+
+        when(recurringTransactionConverter.convert(mockRecurringTransactionDTO2))
+                .thenReturn(mockRecurringTransactionEntity2);
+
+        doNothing().when(recurringTransactionService).save(any(RecurringTransactionEntity.class));
+
+        List<RecurringTransactionEntity> expectedEntities = new ArrayList<>();
+        expectedEntities.add(mockRecurringTransactionEntity);
+        expectedEntities.add(mockRecurringTransactionEntity2);
+
+        CompletableFuture<List<RecurringTransactionEntity>> future = transactionManager.saveRecurringTransactions(recurringTransactionDTOs);
+        List<RecurringTransactionEntity> actual = future.join();
+        assertNotNull(actual);
+        assertTrue(!future.isCompletedExceptionally());
+        assertTrue(future.isDone());
+        assertEquals(2, actual.size());
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenNullConvertedEntity_thenSkipAndReturn() throws IOException{
+        List<RecurringTransactionDTO> recurringTransactionDTOs = new ArrayList<>();
+        RecurringTransactionDTO mockRecurringTransactionDTO = mock(RecurringTransactionDTO.class);
+        RecurringTransactionDTO mockRecurringTransactionDTO2 = createRecurringTransaction();
+        recurringTransactionDTOs.add(mockRecurringTransactionDTO);
+        recurringTransactionDTOs.add(mockRecurringTransactionDTO2);
+
+        List<RecurringTransactionEntity> expectedEntities = new ArrayList<>();
+        RecurringTransactionEntity mockRecurringTransactionEntity = mock(RecurringTransactionEntity.class);
+        RecurringTransactionEntity mockRecurringTransactionEntity2 = createRecurringTransactionEntity();
+
+        when(recurringTransactionConverter.convert(mockRecurringTransactionDTO))
+                .thenReturn(null);
+        when(recurringTransactionConverter.convert(mockRecurringTransactionDTO2))
+                .thenReturn(mockRecurringTransactionEntity2);
+
+        doNothing().when(recurringTransactionService).save(mockRecurringTransactionEntity2);
+
+        CompletableFuture<List<RecurringTransactionEntity>> future = transactionManager.saveRecurringTransactions(recurringTransactionDTOs);
+        List<RecurringTransactionEntity> actual = future.join();
+        assertNotNull(actual);
+        assertTrue(!future.isCompletedExceptionally());
+        assertTrue(future.isDone());
+        assertEquals(1, actual.size());
+    }
+
+    @Test
+    void testSaveRecurringTransactions_whenDuplicateConvertedTransaction_thenReturnDistinctList() throws IOException{
+        List<RecurringTransactionDTO> recurringTransactionDTOs = new ArrayList<>();
+        RecurringTransactionDTO mockRecurringTransactionDTO = createRecurringTransaction();
+        RecurringTransactionDTO mockRecurringTransactionDTO2 = createRecurringTransaction();
+        recurringTransactionDTOs.add(mockRecurringTransactionDTO);
+        recurringTransactionDTOs.add(mockRecurringTransactionDTO2);
+
+        List<RecurringTransactionEntity> expectedEntities = new ArrayList<>();
+        RecurringTransactionEntity mockRecurringTransactionEntity = createRecurringTransactionEntity();
+        RecurringTransactionEntity mockRecurringTransactionEntity2 = createRecurringTransactionEntity();
+
+        when(recurringTransactionConverter.convert(mockRecurringTransactionDTO))
+                .thenReturn(mockRecurringTransactionEntity);
+
+        when(recurringTransactionConverter.convert(mockRecurringTransactionDTO2))
+                .thenReturn(mockRecurringTransactionEntity2);
+
+        doNothing().when(recurringTransactionService).save(mockRecurringTransactionEntity2);
+
+        CompletableFuture<List<RecurringTransactionEntity>> future = transactionManager.saveRecurringTransactions(recurringTransactionDTOs);
+        List<RecurringTransactionEntity> actual = future.join();
+        assertNotNull(actual);
+        assertTrue(!future.isCompletedExceptionally());
+        assertTrue(future.isDone());
+        assertEquals(1, actual.size());
     }
 
 

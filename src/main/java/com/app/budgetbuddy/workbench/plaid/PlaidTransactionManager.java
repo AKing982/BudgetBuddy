@@ -34,8 +34,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     private final TransactionService transactionService;
     private final TransactionConverter transactionConverter;
     private final RecurringTransactionConverter recurringTransactionConverter;
-    private final UserService userService;
-    private final int MAX_ATTEMPTS = 5;
     private final String clientId = "BudgetBuddy";
     private final PlaidCursorService plaidCursorService;
     private List<com.plaid.client.model.Transaction> addedSyncedTransactions = new ArrayList<>();
@@ -50,7 +48,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                                    PlaidCursorService plaidCursorService,
                                    UserService userService)
     {
-        super(plaidLinkService, plaidApi);
+        super(plaidLinkService, userService, plaidApi);
         this.transactionConverter = transactionConverter;
         this.recurringTransactionService = recurringTransactionService;
         this.transactionService = transactionService;
@@ -114,10 +112,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                     }
                     else
                     {
-                        if(attempts < MAX_ATTEMPTS)
-                        {
-                            Thread.sleep(1000L *(attempts + 1));
-                        }
                         if(attempts == MAX_ATTEMPTS)
                         {
                             showPlaidResponseErrors(transactionsResponse, attempts);
@@ -126,9 +120,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 }catch(IOException e){
                     log.error("There was an error fetching the plaid transactions from transactions get call: {}", e.getMessage());
                     return CompletableFuture.failedFuture(e);
-                }catch(InterruptedException ef){
-                    log.error("Failed to fetch plaid transactions from transactions get call: {}", ef.getMessage());
-                    return CompletableFuture.failedFuture(ef);
                 }
             }
             return CompletableFuture.failedFuture(new RuntimeException("There was an error getting the transactions response"));
@@ -191,46 +182,34 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         Optional<UserEntity> userEntityOptional = userService.findById(userId);
         if(userEntityOptional.isEmpty())
         {
-            log.info("No user found with userId {}. Unable to fetch recurring transactions", userId);
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.failedFuture(new UserNotFoundException("User with id "+ userId + " was not found."));
         }
-        try
+
+        PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
+        String accessToken = plaidLinkEntity.getAccessToken();
+        TransactionsRecurringGetRequest request = createRecurringTransactionRequest(accessToken);
+        Response<TransactionsRecurringGetResponse> transactionRecurringResponse = plaidApi.transactionsRecurringGet(request).execute();
+        if(transactionRecurringResponse.isSuccessful())
         {
-            // Fetch the Access Token from the user's plaid link
-            PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
-            String accessToken = plaidLinkEntity.getAccessToken();
-            TransactionsRecurringGetRequest request = createRecurringTransactionRequest(accessToken);
-            Call<TransactionsRecurringGetResponse> transactionsRecurringCall = plaidApi.transactionsRecurringGet(request);
-            Response<TransactionsRecurringGetResponse> transactionRecurringResponse = transactionsRecurringCall.execute();
-            if(transactionRecurringResponse.isSuccessful())
-            {
-                TransactionsRecurringGetResponse rBody = transactionRecurringResponse.body();
-                return CompletableFuture.completedFuture(rBody);
-            }
-            else
-            {
-                int attempts = 0;
-                Response<TransactionsRecurringGetResponse> retryResponse;
-                while(attempts < MAX_ATTEMPTS)
-                {
-                    Call<TransactionsRecurringGetResponse> responseCall = plaidApi.transactionsRecurringGet(request);
-                    retryResponse = responseCall.execute();
-                    if(retryResponse.isSuccessful())
-                    {
-                        TransactionsRecurringGetResponse responseBody = retryResponse.body();
-                        return CompletableFuture.completedFuture(responseBody);
-                    }
-                    else
-                    {
-                        attempts++;
-                    }
-                }
-                return CompletableFuture.completedFuture(null);
-            }
-        }catch(IOException e){
-            log.error("There was an error fetching the recurring transaction response from the plaid server: {}", e.getMessage());
-            return CompletableFuture.failedFuture(e);
+            return CompletableFuture.completedFuture(transactionRecurringResponse.body());
         }
+        else
+        {
+            int attempts = 0;
+            while(attempts < MAX_ATTEMPTS)
+            {
+                Response<TransactionsRecurringGetResponse> recurringRetryResponse = plaidApi.transactionsRecurringGet(request).execute();
+                if(recurringRetryResponse.isSuccessful())
+                {
+                    return CompletableFuture.completedFuture(recurringRetryResponse.body());
+                }
+                else
+                {
+                    attempts++;
+                }
+            }
+        }
+        return CompletableFuture.failedFuture(new RuntimeException("There was an error fetching recurring transactions."));
     }
 
     // TODO: Implement code to update transactions and recurring transactions table after fetching latest transactions or synced transactions
@@ -243,24 +222,16 @@ public class PlaidTransactionManager extends AbstractPlaidManager
             return CompletableFuture.completedFuture(new ArrayList<>());
         }
         List<RecurringTransactionEntity> recurringTransactionEntities;
-        try
-        {
-            recurringTransactionEntities = recurringTransactions.stream()
-                    .map(recurringTransactionConverter::convert)
-                    .distinct()
-                    .toList();
-            if(recurringTransactionEntities.isEmpty())
-            {
-                log.info("No Recurring Transactions were converted to entities.");
-                return CompletableFuture.completedFuture(new ArrayList<>());
-            }
-            recurringTransactionEntities.forEach(recurringTransactionService::save);
-        }catch(DataException e){
-            log.error("There was an error saving the recurring transactions to the database: {}", e.getMessage());
-            return CompletableFuture.completedFuture(new ArrayList<>());
-        }
+        recurringTransactionEntities = recurringTransactions.stream()
+                .filter(Objects::nonNull)
+                .map(recurringTransactionConverter::convert)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        recurringTransactionEntities.forEach(recurringTransactionService::save);
         return CompletableFuture.completedFuture(recurringTransactionEntities);
     }
+
 
     private TransactionsSyncRequest createTransactionSyncRequest(String secret, String accessToken, String cursor, TransactionsSyncRequestOptions options)
     {

@@ -19,7 +19,7 @@ import java.util.regex.PatternSyntaxException;
 @Getter
 @Setter
 @Slf4j
-public abstract class AbstractTransactionMatcher<T extends Transaction, S extends TransactionRule> implements TransactionMatcher<T, S>
+public abstract class AbstractTransactionMatcher<T extends Transaction>
 {
     protected final TransactionRuleService transactionRuleService;
     private final AccountRepository accountRepository;
