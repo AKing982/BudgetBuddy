@@ -22,14 +22,11 @@ import java.util.*;
 public class SessionController
 {
     private final SessionManagementService sessionManagementService;
-    private final UserService userService;
 
     @Autowired
-    public SessionController(SessionManagementService sessionManagementService,
-                             UserService userService)
+    public SessionController(SessionManagementService sessionManagementService)
     {
         this.sessionManagementService = sessionManagementService;
-        this.userService = userService;
     }
 
     @GetMapping("/current-session")
@@ -58,25 +55,24 @@ public class SessionController
     public ResponseEntity<?> createSession(@RequestBody Map<String, Object> sessionData,
                                            HttpServletRequest request)
     {
+        // 1. Create the session (Spring Session Redis creates the cookie automatically)
         HttpSession session = request.getSession(true);
-        log.info("Session creation ID: {} isNew: {}", session.getId(), session.isNew());
+
+        // 2. Batch set attributes
         sessionData.forEach((key, value) -> {
-            if(!key.equals("sessionId")){
+            if (!key.equals("sessionId")) {
                 session.setAttribute(key, value);
             }
         });
-        // Link user to session if userId is provided
-        if (sessionData.containsKey("userId"))
-        {
-            Long userId = (Long) sessionData.get("userId");
-            Optional<User> userOptional = userService.getUserById(userId);
-            if(userOptional.isEmpty())
-            {
-                return ResponseEntity.notFound().build();
-            }
-            User user = userOptional.get();
-            Long uId = user.getId();
-            sessionManagementService.linkUserToSession(session.getId(), uId);
+
+        // 3. Robustly handle the UserId linking
+        Object userIdObj = sessionData.get("userId");
+        if (userIdObj != null) {
+            // Safe conversion from Integer/Long/String
+            Long userId = Long.valueOf(userIdObj.toString());
+
+            // Pass the ACTUAL session object to the service
+            sessionManagementService.linkUserToSession(session, userId);
         }
 
         return ResponseEntity.ok(Map.of(
@@ -171,7 +167,6 @@ public class SessionController
             ));
         }
 
-
         String sessionId = session.getId();
         log.info("SessionId: {}", sessionId);
         session.invalidate();
@@ -190,15 +185,12 @@ public class SessionController
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "No active session"));
         }
-
         Map<String, Object> attributes = new HashMap<>();
         Enumeration<String> attributeNames = session.getAttributeNames();
-
         while (attributeNames.hasMoreElements()) {
             String name = attributeNames.nextElement();
             attributes.put(name, session.getAttribute(name));
         }
-
         return ResponseEntity.ok(Map.of(
                 "sessionId", session.getId(),
                 "attributes", attributes

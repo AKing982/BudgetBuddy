@@ -53,9 +53,6 @@ public class CategoryController
         {
             categoryRunner.categorizeSingleCSVTransaction(categorySaveData);
             log.info("Successfully categorized csv transaction with category save data: {}", categorySaveData);
-
-            // TODO: Add code to fetch the categorized transaction CSV list
-
             return ResponseEntity.ok().build();
         }catch(CategoryRunnerException e){
             log.error("There was an error categorizing the CSV transaction: ", e);
