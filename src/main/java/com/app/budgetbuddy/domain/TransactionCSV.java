@@ -15,6 +15,7 @@ import java.time.LocalDate;
 public class TransactionCSV implements Comparable<TransactionCSV>
 {
     private Long id;
+    private String transactionId;
     private String account;
     private int suffix;
     private long sequenceNo;
@@ -24,8 +25,10 @@ public class TransactionCSV implements Comparable<TransactionCSV>
     private String merchantName;
     private String extendedDescription;
     private LocalDate electronicTransactionDate;
+    private LocalDate effectiveDate;
     private BigDecimal balance;
     private String category;
+    private String type;
 
     @Override
     public int compareTo(@NotNull TransactionCSV o) {

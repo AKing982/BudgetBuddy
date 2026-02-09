@@ -8,6 +8,7 @@ import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.services.TransactionService;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
+import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +37,7 @@ import static org.mockito.Mockito.*;
 class TransactionImportServiceTest
 {
     @Mock
-    private PlaidTransactionManager plaidTransactionManager;
+    private PlaidTransactionRunner plaidTransactionManager;
 
     @Mock
     private SubBudgetService subBudgetService;

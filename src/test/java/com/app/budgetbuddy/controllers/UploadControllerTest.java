@@ -5,8 +5,11 @@ import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.entities.CSVTransactionEntity;
+import com.app.budgetbuddy.exceptions.CSVUploadException;
 import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.services.*;
+import com.app.budgetbuddy.workbench.runner.CSVUploadRunner;
+import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.bytebuddy.utility.dispatcher.JavaDispatcher;
 import org.junit.jupiter.api.AfterEach;
@@ -25,6 +28,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -50,26 +54,13 @@ class UploadControllerTest
     private MockMvc mockMvc;
 
     @MockBean
-    private UserService userService;
-
-    @MockBean
-    private AccountService accountService;
-
-    @MockBean
-    private CSVAccountRepository csvAccountRepository;
-
-    @MockBean
-    @Qualifier("accountCSVUploaderServiceImpl")
-    private CSVUploaderService<TransactionCSV, AccountCSV, CSVAccountEntity> accountCSVUploaderService;
-
-    @MockBean
-    private CSVTransactionService csvTransactionService;
+    private CSVUploadRunner csvUploadRunner;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-//        objectMapper.registerModule(new JavaTimeModule());
+
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
@@ -78,12 +69,14 @@ class UploadControllerTest
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2021, 1, 1);
         LocalDate endDate = LocalDate.of(2021, 1, 31);
+        String institution = "Granite Credit Union";
         MockMultipartFile emptyFile = new MockMultipartFile("file", "empty.csv", MediaType.TEXT_PLAIN_VALUE, "".getBytes());
 
         mockMvc.perform(multipart("/api/upload/" + userId + "/csv")
                         .file(emptyFile)
                         .param("startDate", startDate.toString())
                         .param("endDate", endDate.toString())
+                        .param("institution", institution)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("No File was uploaded"))
@@ -91,65 +84,34 @@ class UploadControllerTest
     }
 
     @Test
-    void testUploadCSV_whenUserHasNoUploadAccess_thenReturnForbidden() throws Exception{
+    void testUploadCSV_whenInstitutionIsEmpty_thenReturnBadRequest() throws Exception {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2021, 1, 1);
         LocalDate endDate = LocalDate.of(2021, 1, 31);
-        // Create a CSV file with headers and sample data
-        String csvContent = "Account,Suffix,Sequence Number,Transaction Date,Transaction Amount,Description,Extended Description,Electronic Transaction Date,Balance\n" +
-                "123456,9,0001,01/15/2021,50.00,Test Transaction,Test Description,01/15/2021,1000.00\n";
-
-        MockMultipartFile csvFile = new MockMultipartFile(
-                "file",
-                "test.csv",
-                "text/csv",
-                csvContent.getBytes()
-        );
-
-        Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(false);
+        String institution = "";
+        MockMultipartFile csvFile = new MockMultipartFile("file", "test.csv", MediaType.TEXT_PLAIN_VALUE, "some content".getBytes());
 
         mockMvc.perform(multipart("/api/upload/" + userId + "/csv")
                         .file(csvFile)
                         .param("startDate", startDate.toString())
                         .param("endDate", endDate.toString())
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.status").value("User 1 does not have upload access"))
-                .andExpect(jsonPath("$.isUploaded").value(false));
-    }
-
-    @Test
-    void testUploadCSV_whenUserHasUploadAccess_whenNoTransactionCSVsAreParsed_thenReturnBadRequest() throws Exception{
-        Long userId = 1L;
-        LocalDate startDate = LocalDate.of(2021, 1, 1);
-        LocalDate endDate = LocalDate.of(2021, 1, 31);
-        String csvContent = "Account,Suffix,Sequence Number,Transaction Date,Transaction Amount,Description,Extended Description,Electronic Transaction Date,Balance\n";
-
-        MockMultipartFile csvFile = new MockMultipartFile(
-                "file",
-                "test.csv",
-                "text/csv",
-                csvContent.getBytes()
-        );
-        Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(true);
-
-        mockMvc.perform(multipart("/api/upload/" + userId + "/csv")
-                        .file(csvFile)
-                        .param("startDate", startDate.toString())
-                        .param("endDate", endDate.toString())
+                        .param("institution", institution)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value("No transactions were parsed from the uploaded CSV file"))
+                .andExpect(jsonPath("$.status").value("No institution selected"))
                 .andExpect(jsonPath("$.isUploaded").value(false));
     }
 
+
     @Test
-    void testUploadCSV_whenUserHasUploadAccess_whenTransactionCSVsAreParsed_thenReturnStatusOk() throws Exception{
+    void testUploadCSV_whenCSVUploadRunnerReturnsTrue_thenReturnSuccessStatus() throws Exception {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2021, 1, 1);
         LocalDate endDate = LocalDate.of(2021, 1, 31);
-        String csvContent = "Account,Suffix,Sequence Number,Transaction Date,Transaction Amount,Description,Extended Description,Electronic Transaction Date,Balance\n" +
-                "123456,9,0001,01/15/2021,50.00,Test Transaction,Test Description,01/15/2021,1000.00\n";
+        String csvContent = "Account\tSuffix\tSequence Number\tTransaction Date\tTransaction Amount\tDescription\tExtended Description\tElectronic Transaction Date\tElectronic Transaction Time\tBalance\n" +
+                "123456\t001\t1\t01/15/2021\t-50.00\tGrocery Store\tWalmart Purchase\t01/15/2021\t14:30:00\t1000.00\n" +
+                "123456\t001\t2\t01/16/2021\t-25.50\tGas Station\tShell Gas\t01/16/2021\t08:15:00\t974.50\n";
+        String institution = "Granite Credit Union";
 
         MockMultipartFile csvFile = new MockMultipartFile(
                 "file",
@@ -157,58 +119,43 @@ class UploadControllerTest
                 "text/csv",
                 csvContent.getBytes()
         );
-        // Mock empty list so CSV accounts will be created
-        List<AccountEntity> emptyAccountList = Collections.emptyList();
 
-        // Mock account CSV data
-        Set<AccountCSV> accountCSVList = Set.of(
-                new AccountCSV(1L, userId, "123456", 9, "CHECKING", new BigDecimal("1000.00"))
-        );
-
-        CSVAccountEntity csvAccountEntity = new CSVAccountEntity();
-        csvAccountEntity.setId(1L);
-        csvAccountEntity.setAccountNumber("123456");
-        csvAccountEntity.setSuffix(9);
-        List<CSVAccountEntity> csvAccountEntities = List.of(csvAccountEntity);
-
-        // Mock CSV transaction entities
-        CSVTransactionEntity csvTransactionEntity = new CSVTransactionEntity();
-        csvTransactionEntity.setId(1L);
-        csvTransactionEntity.setDescription("Test Transaction");
-        List<CSVTransactionEntity> csvTransactionEntities = List.of(csvTransactionEntity);
-
-        Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(true);
-        Mockito.when(accountService.findByUser(anyLong())).thenReturn(emptyAccountList);
-        Mockito.when(accountCSVUploaderService.createCSVList(anyList(), anyLong())).thenReturn(accountCSVList);
-        Mockito.when(accountCSVUploaderService.createEntityList(anySet())).thenReturn(csvAccountEntities);
-        Mockito.doNothing().when(accountCSVUploaderService).saveEntities(anyList());
-        Mockito.when(csvTransactionService.createCSVTransactionEntities(anyList(), anyLong())).thenReturn(csvTransactionEntities);
-        Mockito.doNothing().when(csvTransactionService).saveAllCSVTransactionEntities(anyList());
+        // Mock the runner to return true (upload succeeded)
+        Mockito.when(csvUploadRunner.parseCSV(
+                any(MultipartFile.class),
+                eq(institution),
+                eq(startDate),
+                eq(endDate),
+                eq(userId)
+        )).thenReturn(true);
 
         mockMvc.perform(multipart("/api/upload/" + userId + "/csv")
                         .file(csvFile)
                         .param("startDate", startDate.toString())
                         .param("endDate", endDate.toString())
+                        .param("institution", institution)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("Successfully uploaded CSV file"))
+                .andExpect(jsonPath("$.status").value("CSV file has successfully uploaded"))
                 .andExpect(jsonPath("$.isUploaded").value(true));
 
-        // Verify interactions
-        Mockito.verify(accountCSVUploaderService).createCSVList(anyList(), eq(userId));
-        Mockito.verify(accountCSVUploaderService).createEntityList(anySet());
-        Mockito.verify(accountCSVUploaderService).saveEntities(anyList());
-        Mockito.verify(csvTransactionService).createCSVTransactionEntities(anyList(), eq(userId));
-        Mockito.verify(csvTransactionService).saveAllCSVTransactionEntities(anyList());
+        Mockito.verify(csvUploadRunner).parseCSV(
+                any(MultipartFile.class),
+                eq(institution),
+                eq(startDate),
+                eq(endDate),
+                eq(userId)
+        );
     }
 
     @Test
-    void testUploadCSV_whenNoTransactionCSVEntitiesAreCreated_thenReturnBadRequest() throws Exception{
+    void testUploadCSV_whenCSVUploadRunnerReturnsFalse_thenReturnUploadFailedStatus() throws Exception {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2021, 1, 1);
         LocalDate endDate = LocalDate.of(2021, 1, 31);
-        String csvContent = "Account,Suffix,Sequence Number,Transaction Date,Transaction Amount,Description,Extended Description,Electronic Transaction Date,Balance\n" +
-                "123456,9,0001,01/15/2021,50.00,Test Transaction,Test Description,01/15/2021,1000.00\n";
+        String csvContent = "Account\tSuffix\tSequence Number\tTransaction Date\tTransaction Amount\tDescription\tExtended Description\tElectronic Transaction Date\tElectronic Transaction Time\tBalance\n" +
+                "123456\t001\t1\t01/15/2021\t-50.00\tGrocery Store\tWalmart Purchase\t01/15/2021\t14:30:00\t1000.00\n";
+        String institution = "Granite Credit Union";
 
         MockMultipartFile csvFile = new MockMultipartFile(
                 "file",
@@ -217,76 +164,77 @@ class UploadControllerTest
                 csvContent.getBytes()
         );
 
-        // Mock empty list so CSV accounts will be created
-        List<AccountEntity> emptyAccountList = Collections.emptyList();
-
-        // Mock account CSV data
-        Set<AccountCSV> accountCSVList = Set.of(
-                new AccountCSV(1L, userId, "123456", 9, "CHECKING", new BigDecimal("1000.00"))
-        );
-
-        CSVAccountEntity csvAccountEntity = new CSVAccountEntity();
-        csvAccountEntity.setId(1L);
-        csvAccountEntity.setAccountNumber("123456");
-        csvAccountEntity.setSuffix(9);
-        List<CSVAccountEntity> csvAccountEntities = List.of(csvAccountEntity);
-
-        List<CSVTransactionEntity> csvTransactionEntities = Collections.emptyList();
-
-        Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(true);
-        Mockito.when(accountService.findByUser(anyLong())).thenReturn(emptyAccountList);
-        Mockito.when(accountCSVUploaderService.createCSVList(anyList(), anyLong())).thenReturn(accountCSVList);
-        Mockito.when(accountCSVUploaderService.createEntityList(anySet())).thenReturn(csvAccountEntities);
-        Mockito.doNothing().when(accountCSVUploaderService).saveEntities(anyList());
-        Mockito.when(csvTransactionService.createCSVTransactionEntities(anyList(), anyLong())).thenReturn(csvTransactionEntities);
+        // Mock the runner to return false (upload failed)
+        Mockito.when(csvUploadRunner.parseCSV(
+                any(MultipartFile.class),
+                eq(institution),
+                eq(startDate),
+                eq(endDate),
+                eq(userId)
+        )).thenReturn(false);
 
         mockMvc.perform(multipart("/api/upload/" + userId + "/csv")
                         .file(csvFile)
                         .param("startDate", startDate.toString())
                         .param("endDate", endDate.toString())
+                        .param("institution", institution)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value("No CSVTransactionEntities were created from the uploaded CSV file"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CSV file has not been uploaded"))
                 .andExpect(jsonPath("$.isUploaded").value(false));
-        // Verify interactions
-        Mockito.verify(accountCSVUploaderService).createCSVList(anyList(), eq(userId));
-        Mockito.verify(accountCSVUploaderService).createEntityList(anySet());
-        Mockito.verify(accountCSVUploaderService).saveEntities(anyList());
-        Mockito.verify(csvTransactionService).createCSVTransactionEntities(anyList(), eq(userId));
+
+        Mockito.verify(csvUploadRunner).parseCSV(
+                any(MultipartFile.class),
+                eq(institution),
+                eq(startDate),
+                eq(endDate),
+                eq(userId)
+        );
     }
 
     @Test
-    void testUploadCSV_whenTransactionCSVsExistingForStartDateAndEndDateRange_thenReturnConflict() throws Exception{
+    void testUploadCSV_whenExceptionIsThrown_thenReturnUploadFailedStatus() throws Exception {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2021, 1, 1);
         LocalDate endDate = LocalDate.of(2021, 1, 31);
-        String csvContent = "Account,Suffix,Sequence Number,Transaction Date,Transaction Amount,Description,Extended Description,Electronic Transaction Date,Balance\n" +
-                "123456,9,0001,01/15/2021,50.00,Test Transaction,Test Description,01/15/2021,1000.00\n";
+        String csvContent = "Account\tSuffix\tSequence Number\tTransaction Date\tTransaction Amount\tDescription\tExtended Description\tElectronic Transaction Date\tElectronic Transaction Time\tBalance\n" +
+                "123456\t001\t1\t01/15/2021\t-50.00\tGrocery Store\tWalmart Purchase\t01/15/2021\t14:30:00\t1000.00\n";
+        String institution = "Granite Credit Union";
         MockMultipartFile csvFile = new MockMultipartFile(
                 "file",
                 "test.csv",
                 "text/csv",
                 csvContent.getBytes()
         );
-        // Mock existing transactions
-        CSVTransactionEntity existingTransaction = new CSVTransactionEntity();
-        existingTransaction.setId(1L);
-        existingTransaction.setDescription("Existing Transaction");
-        Page<CSVTransactionEntity> existingTransactions = new PageImpl<>(List.of(existingTransaction));
-        Mockito.when(userService.doesUserHaveOverride(anyLong())).thenReturn(true);
-        Mockito.when(csvTransactionService.findCSVTransactionEntitiesByUserAndDateRange(anyLong(), any(LocalDate.class), any(LocalDate.class), anyInt()))
-                .thenReturn(existingTransactions);
+
+        // Mock the runner to throw an exception
+        Mockito.when(csvUploadRunner.parseCSV(
+                any(MultipartFile.class),
+                eq(institution),
+                eq(startDate),
+                eq(endDate),
+                eq(userId)
+        )).thenThrow(new CSVUploadException("There was an error processing the csv file:"));
 
         mockMvc.perform(multipart("/api/upload/" + userId + "/csv")
                         .file(csvFile)
                         .param("startDate", startDate.toString())
                         .param("endDate", endDate.toString())
+                        .param("institution", institution)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value("Transactions already exist for the selected date range. Please choose a different date range or delete existing transactions first."))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value("There was an error processing the csv file:"))
                 .andExpect(jsonPath("$.isUploaded").value(false));
 
+        Mockito.verify(csvUploadRunner).parseCSV(
+                any(MultipartFile.class),
+                eq(institution),
+                eq(startDate),
+                eq(endDate),
+                eq(userId)
+        );
     }
+
 
     @AfterEach
     void tearDown() {

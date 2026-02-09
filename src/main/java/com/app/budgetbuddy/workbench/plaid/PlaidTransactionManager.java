@@ -36,8 +36,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     private final RecurringTransactionConverter recurringTransactionConverter;
     private final String clientId = "BudgetBuddy";
     private final PlaidCursorService plaidCursorService;
-    private List<com.plaid.client.model.Transaction> addedSyncedTransactions = new ArrayList<>();
-    private List<com.plaid.client.model.Transaction> modifiedSyncedTransactions = new ArrayList<>();
 
     @Autowired
     public PlaidTransactionManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi,
@@ -248,10 +246,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
             if(response.isSuccessful())
             {
                 TransactionsSyncResponse body = response.body();
-                List<com.plaid.client.model.Transaction> addedTransactions = body.getAdded();
-                List<com.plaid.client.model.Transaction> modifiedTransactions = body.getModified();
-                addedSyncedTransactions.addAll(addedTransactions);
-                modifiedSyncedTransactions.addAll(modifiedTransactions);
                 hasMore = body.getHasMore();
                 nextCursor = body.getNextCursor();
                 if(nextCursor == null)
@@ -279,10 +273,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                     if(response2.isSuccessful())
                     {
                         TransactionsSyncResponse body = response2.body();
-                        List<com.plaid.client.model.Transaction> addedTransactions = body.getAdded();
-                        List<com.plaid.client.model.Transaction> modifiedTransactions = body.getModified();
-                        addedSyncedTransactions.addAll(addedTransactions);
-                        modifiedSyncedTransactions.addAll(modifiedTransactions);
                         hasMore = body.getHasMore();
                         nextCursor = body.getNextCursor();
                         if(nextCursor == null)

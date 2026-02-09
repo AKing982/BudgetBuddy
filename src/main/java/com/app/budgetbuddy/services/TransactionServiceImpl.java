@@ -247,23 +247,23 @@ public class TransactionServiceImpl implements TransactionService
         return Collections.emptyList();
     }
 
-    @Override
-    @Transactional
-    public List<Transaction> getTransactionsByCategory(String categoryId)
-    {
-        if(categoryId.isEmpty())
-        {
-            return List.of();
-        }
-        try
-        {
-            List<TransactionsEntity> transactionsEntities = transactionRepository.findByCategoryId(categoryId);
-            return convertedTransactions(transactionsEntities);
-        }catch(DataAccessException ex){
-            LOGGER.error("There was an error fetching transactions for category: {}, {}", categoryId, ex.getMessage());
-            return List.of();
-        }
-    }
+//    @Override
+//    @Transactional
+//    public List<Transaction> getTransactionsByCategory(String categoryId)
+//    {
+//        if(categoryId.isEmpty())
+//        {
+//            return List.of();
+//        }
+//        try
+//        {
+//            List<TransactionsEntity> transactionsEntities = transactionRepository.findByCategoryId(categoryId);
+//            return convertedTransactions(transactionsEntities);
+//        }catch(DataAccessException ex){
+//            LOGGER.error("There was an error fetching transactions for category: {}, {}", categoryId, ex.getMessage());
+//            return List.of();
+//        }
+//    }
 
     @Override
     @Transactional
@@ -278,20 +278,12 @@ public class TransactionServiceImpl implements TransactionService
         }
     }
 
-    @Override
-    @Transactional
-    public Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId)
-    {
-        return transactionRepository.findTransactionByIdAndCategoryId(id, categoryId);
-    }
-
-    @Override
-    @Transactional
-    public List<TransactionsEntity> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate)
-    {
-        Collection<TransactionsEntity> transactionsEntities = transactionRepository.findTransactionsByDateRange(startDate, endDate);
-        return transactionsEntities.stream().toList();
-    }
+//    @Override
+//    @Transactional
+//    public Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId)
+//    {
+//        return transactionRepository.findTransactionByIdAndCategoryId(id, categoryId);
+//    }
 
     @Override
     @Transactional
@@ -558,22 +550,22 @@ public class TransactionServiceImpl implements TransactionService
         }
     }
 
-    @Override
-    @Transactional
-    public List<Transaction> getRecentTransactionsForUser(Long userId, int limit)
-    {
-        Pageable pageLimit = PageRequest.of(0, limit);
-        try
-        {
-            List<TransactionsEntity> transactionsEntities = transactionRepository.findRecentTransactionsByUserId(userId, pageLimit);
-            return convertedTransactions(transactionsEntities);
-
-        }catch(DataAccessException e)
-        {
-            LOGGER.error("Failed to retrieve recent transactions for user ID {}: {}", userId, e.getMessage());
-            return List.of();
-        }
-    }
+//    @Override
+//    @Transactional
+//    public List<Transaction> getRecentTransactionsForUser(Long userId, int limit)
+//    {
+//        Pageable pageLimit = PageRequest.of(0, limit);
+//        try
+//        {
+//            List<TransactionsEntity> transactionsEntities = transactionRepository.findRecentTransactionsByUserId(userId, pageLimit);
+//            return convertedTransactions(transactionsEntities);
+//
+//        }catch(DataAccessException e)
+//        {
+//            LOGGER.error("Failed to retrieve recent transactions for user ID {}: {}", userId, e.getMessage());
+//            return List.of();
+//        }
+//    }
 
     @Override
     @Transactional

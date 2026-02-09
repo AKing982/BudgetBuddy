@@ -113,27 +113,15 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         }
         LinkTokenCreateRequest linkTokenCreateRequest = createLinkTokenRequest(clientUserId);
         Response<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest).execute();
-        if(linkTokenResponse.isSuccessful())
+        if(linkTokenResponse.isSuccessful() && linkTokenResponse.body() != null)
         {
             return CompletableFuture.completedFuture(linkTokenResponse.body());
         }
         else
         {
-            int attempts = 0;
-            while(attempts < MAX_ATTEMPTS)
-            {
-                Response<LinkTokenCreateResponse> linkTokenRetryResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest).execute();
-                if(linkTokenRetryResponse.isSuccessful())
-                {
-                    return CompletableFuture.completedFuture(linkTokenRetryResponse.body());
-                }
-                else
-                {
-                    attempts++;
-                }
-            }
+            String errorBody = linkTokenResponse.errorBody() != null ? linkTokenResponse.errorBody().string() : "No error body";
+            return CompletableFuture.failedFuture(new PlaidLinkException("Plaid Link token creation failed: " + errorBody));
         }
-        return CompletableFuture.failedFuture(new PlaidLinkException("Plaid Link token creation failed."));
     }
 
     /**

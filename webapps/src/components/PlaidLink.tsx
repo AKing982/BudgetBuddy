@@ -13,7 +13,7 @@ interface PlaidLinkProps {
     linkToken: string;
     onSuccess: (public_token: string, metadata: PlaidLinkOnSuccessMetadata) => Promise<void>;
     onConnect?: () => void;
-    ref: RefObject<PlaidLinkRef>;
+    onTokenExpired?: () => Promise<void>; // Callback to refresh token
 }
 
 export interface PlaidLinkRef {
@@ -26,27 +26,41 @@ interface Metadata {
 }
 
 
-const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken, onSuccess, onConnect }, ref) => {
+const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken, onSuccess, onConnect, onTokenExpired }, ref) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [isLinked, setIsLinked] = useState<boolean>(false);
 
-    const onExit: PlaidLinkOnExit = useCallback((err, metadata) => {
-        if (err != null) {
-            alert(`Error Code: ${err.error_code}\nError: ${err.error_message}`);
-            console.error('Full error object:', JSON.stringify(err, null, 2));
-            setError(err.display_message || err.error_message || 'Error linking account')
-        }
+    const onExit: PlaidLinkOnExit = useCallback(async (err, metadata) => {
         console.log('Plaid Link exited');
         console.log('Error:', err);
         console.log('Metadata:', metadata);
 
-        if (err) {
+        if (err != null) {
+            console.error('Full error object:', JSON.stringify(err, null, 2));
             console.error('Error code:', err.error_code);
             console.error('Error message:', err.error_message);
             console.error('Display message:', err.display_message);
+
+            // Handle expired or invalid token
+            if (err.error_code === 'INVALID_LINK_TOKEN' && onTokenExpired) {
+                console.log('Link token expired, requesting new token...');
+                setError('Link token expired. Refreshing...');
+                try {
+                    await onTokenExpired();
+                    setError(null);
+                } catch (refreshError) {
+                    console.error('Failed to refresh token:', refreshError);
+                    setError('Failed to refresh connection. Please try again.');
+                }
+            } else {
+                // Show error for other cases
+                const errorMessage = err.display_message || err.error_message || 'Error linking account';
+                setError(errorMessage);
+                alert(`Error Code: ${err.error_code}\nError: ${err.error_message}`);
+            }
         }
-    }, []);
+    }, [onTokenExpired]);
 
     const handleSuccess: PlaidLinkOnSuccess = useCallback(async (public_token, metadata) => {
         setIsLoading(true);
@@ -69,9 +83,17 @@ const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken,
         })
     };
 
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('oauth_state_id')) {
-        config.receivedRedirectUri = window.location.href;
+    if (config) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('oauth_state_id')) {
+            config.receivedRedirectUri = window.location.href;
+        }
+
+        console.log('═══ PLAID CONFIG ═══');
+        console.log('window.location.href:', window.location.href);
+        console.log('receivedRedirectUri:', config.receivedRedirectUri);
+        console.log('Has oauth_state_id?', window.location.href.includes('oauth_state_id'));
+        console.log('Full config:', JSON.stringify(config, null, 2));
     }
 
     console.log('═══ PLAID CONFIG ═══');
@@ -84,11 +106,20 @@ const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken,
 
     useImperativeHandle(ref, () => ({
         open: () => {
+            if (!linkToken) {
+                console.error('Cannot open Plaid Link: No link token available');
+                setError('No link token available. Please try again.');
+                return;
+            }
             if (ready) {
+                setError(null); // Clear any previous errors
                 open();
+            } else {
+                console.warn('Plaid Link not ready yet');
             }
         }
-    }));
+    }), [ready, open, linkToken]);
+
 
     useEffect(() => {
         if (ready && onConnect) {

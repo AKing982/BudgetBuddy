@@ -383,6 +383,44 @@ const LoginForm: React.FC = () => {
         }
     }
 
+    const handleTokenExpired = useCallback(async () => {
+        console.log('Link token expired, fetching new token...');
+        try {
+            const userId = Number(sessionStorage.getItem('userId'));
+
+            // Check if we're in update mode or regular linking mode
+            const plaidStatus = await plaidService.checkPlaidLinkStatusByUserId(userId);
+
+            if (plaidStatus.requiresLinkUpdate) {
+                // Refresh update mode token
+                console.log('Refreshing update mode token...');
+                const accessToken = await plaidService.getAccessTokenForUser(userId);
+                if (!accessToken) {
+                    console.error('Access token not available for update mode refresh');
+                    return;
+                }
+                const newLinkToken = await plaidService.updatePlaidLink(userId, accessToken);
+                if (newLinkToken) {
+                    console.log('New update mode link token created');
+                    setLinkToken(newLinkToken);
+                    sessionStorage.setItem('plaidLinkToken', newLinkToken);
+                }
+            } else {
+                // Refresh regular linking token
+                console.log('Refreshing regular link token...');
+                const linkResponse = await plaidService.createLinkToken();
+                if (linkResponse?.linkToken) {
+                    console.log('New link token created');
+                    setLinkToken(linkResponse.linkToken);
+                    sessionStorage.setItem('plaidLinkToken', linkResponse.linkToken);
+                }
+            }
+        } catch (error) {
+            console.error('Error refreshing link token:', error);
+            setLoginError('Failed to refresh connection. Please try logging in again.');
+        }
+    }, [plaidService]);
+
     const handlePlaidLinkVerification = async (userId: number) : Promise<PlaidLinkStatus>  => {
         try
         {
@@ -765,6 +803,7 @@ const LoginForm: React.FC = () => {
                                             linkToken={linkToken}
                                             onSuccess={handlePlaidSuccess}
                                             onConnect={handlePlaidReady}
+                                            onTokenExpired={handleTokenExpired}
                                             ref={plaidLinkRef}
                                         />
                                     )}

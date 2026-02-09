@@ -1,6 +1,5 @@
 package com.app.budgetbuddy.config;
 
-import com.app.budgetbuddy.workbench.PlaidCategoryManager;
 import com.app.budgetbuddy.workbench.converter.AccountBaseConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionEntityToModelConverter;

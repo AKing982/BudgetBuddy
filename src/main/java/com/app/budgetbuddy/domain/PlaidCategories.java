@@ -2,44 +2,326 @@ package com.app.budgetbuddy.domain;
 
 import lombok.Getter;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 @Getter
 public enum PlaidCategories
 {
-    FINANCIAL("Financial", "Service"),
-    AUTOMOTIVE("Automotive", "Shops"),
-    CREDIT("Credit", "Transfer"),
-    THIRD_PARTY_TRANSFER("Third Party", "Transfer"),
-    SUPERMARKETS_AND_GROCERIES("Supermarkets and Groceries", "Shops"),
-    WITHDRAWAL("Withdrawal", "Transfer"),
-    GAS_STATIONS("Gas Stations", "Travel"),
-    SERVICE("", "Service"),
-    PAYROLL("Payroll", "Transfer"),
-    DIGITAL_PURCHASE("Digital Purchase", "Shops"),
-    INTEREST_EARNED("Interest Earned", "Interest"),
-    SPORTS_CLUBS("Sports Clubs", "Recreation"),
-    UTILITIES("Utilities", "Service"),
-    GLASSES_AND_OPTOMETRIST("Glasses and Optometrist", "Shops"),
-    PERSONAL_CARE("Personal Care", "Service"),
-    RESTAURANTS("Restaurants", "Food and Drink"),
-    GYMS_AND_FITNESS_CENTERS("Gyms and Fitness Centers", "Recreation"),
-    COMPUTERS_AND_ELECTRONICS("Computers and Electronics", "Shops"),
-    FOOD_AND_DRINK("", "Food and Drink"),
-    INSURANCE("Insurance", "Service"),
-    SUBSCRIPTION("Subscription", "Service"),
-    PHARMACIES("Pharmacies", "Shops"),
-    CREDIT_CARD("Credit Card", "Payment"),
-    DEPARTMENT_STORES("Department Stores", "Shops"),
-    TAXI("Taxi", "Travel"),
-    AIRLINES_AND_AVIATION_SERVICES("Airlines and Aviation Services", "Travel");
+    SUPERMARKETS_AND_GROCERIES("19047000", "Supermarkets and Groceries", "Shops"),
+    SPORTING_GOODS("19046000", "Shops", "Sporting Goods"),
+    SHOPPING_CENTERS_MALLS("19045000", "Shops", "Photos and Frames"),
+    WHOLE_SALE_SHOPS("19053000", "Shops", "Wholesale"),
+    REFUND("20001000", "Tax", "Refund"),
+    TAX_PAYMENT("20002000", "Tax", "Payment"),
+    TRANSFER("21000000", "Transfer", ""),
+    INTERNAL_ACCOUNT_TRANSFER("21001000", "Transfer", "Internal Account Transfers"),
+    ACH_TRANSFER("21002000", "Transfer", "ACH"),
+    TRANSFER_CHECK("21004000", "Transfer", "Check"),
+    TRANSFER_CREDIT("21005000", "Transfer", "Credit"),
+    TRANSFER_DEBIT("21006000", "Transfer", "Debit"),
+    TRANSFER_DEPOSIT("21007000", "Transfer", "Deposit"),
+    TRANSFER_PAYROLL("21009000", "Transfer", "Payroll"),
+    AIRLINES_AND_AVIATION_SERVICES("22001000", "Travel", "Airlines and Aviation Services"),
+    TRAVEL_AIRPORTS("22002000", "Travel", "Airports"),
+    TRAVEL_GAS_STATIONS("22009000", "Travel", "Gas Stations"),
+    BANK_FEES_OVERDRAFT("10001000", "Bank Fees", ""),
+    BANK_FEES_LATE_PAYMENT("10003000", "Bank Fees", "Late Payment"),
 
+    // Community
+    COMMUNITY("12000000", "Community", ""),
+    COMMUNITY_ANIMAL_SHELTER("12001000", "Community", "Animal Shelter"),
+    COMMUNITY_ASSISTED_LIVING("12002000", "Community", "Assisted Living Services"),
+    COMMUNITY_CEMETERY("12003000", "Community", "Cemetery"),
+    COMMUNITY_COURTS("12004000", "Community", "Courts"),
+    COMMUNITY_DAY_CARE("12005000", "Community", "Day Care and Preschools"),
+    COMMUNITY_DISABLED_SERVICES("12006000", "Community", "Disabled Persons Services"),
+    COMMUNITY_DRUG_ALCOHOL("12007000", "Community", "Drug and Alcohol Services"),
+    COMMUNITY_EDUCATION("12008000", "Community", "Education"),
+    COMMUNITY_GOVERNMENT("12009000", "Community", "Government Departments and Agencies"),
+    COMMUNITY_LOBBYISTS("12010000", "Community", "Government Lobbyists"),
+    COMMUNITY_HOUSING("12011000", "Community", "Housing Assistance and Shelters"),
+    COMMUNITY_LAW_ENFORCEMENT("12012000", "Community", "Law Enforcement"),
+    COMMUNITY_LIBRARIES("12013000", "Community", "Libraries"),
+    COMMUNITY_MILITARY("12014000", "Community", "Military"),
+    COMMUNITY_ORGANIZATIONS("12015000", "Community", "Organizations and Associations"),
+    COMMUNITY_POST_OFFICES("12016000", "Community", "Post Offices"),
+    COMMUNITY_SOCIAL_SERVICES("12017000", "Community", "Public and Social Services"),
+    COMMUNITY_RELIGIOUS("12018000", "Community", "Religious"),
+    COMMUNITY_SENIOR_SERVICES("12019000", "Community", "Senior Citizen Services"),
+
+    // Food and Drink
+    FOOD_AND_DRINK("13000000", "Food and Drink", ""),
+    FOOD_AND_DRINK_BAR("13001000", "Food and Drink", "Bar"),
+    FOOD_AND_DRINK_BREWERIES("13002000", "Food and Drink", "Breweries"),
+    FOOD_AND_DRINK_INTERNET_CAFES("13003000", "Food and Drink", "Internet Cafes"),
+    FOOD_AND_DRINK_NIGHTLIFE("13004000", "Food and Drink", "Nightlife"),
+    FOOD_AND_DRINK_RESTAURANTS("13005000", "Food and Drink", "Restaurants"),
+
+    // Healthcare
+    HEALTHCARE("14000000", "Healthcare", ""),
+    HEALTHCARE_SERVICES("14001000", "Healthcare", "Healthcare Services"),
+    HEALTHCARE_PHYSICIANS("14002000", "Healthcare", "Physicians"),
+
+    INTEREST("15000000", "Interest", ""),
+    INTEREST_EARNED("15001000", "Interest", "Interest Earned"),
+    INTEREST_CHARGED("15002000", "Interest", "Interest Charged"),
+
+    // Payment
+    PAYMENT("16000000", "Payment", ""),
+    PAYMENT_CREDIT_CARD("16001000", "Payment", "Credit Card"),
+    PAYMENT_RENT("16002000", "Payment", "Rent"),
+    PAYMENT_LOAN("16003000", "Payment", "Loan"),
+
+    // Recreation
+    RECREATION("17000000", "Recreation", ""),
+    RECREATION_ARTS_ENTERTAINMENT("17001000", "Recreation", "Arts and Entertainment"),
+    RECREATION_ATHLETIC_FIELDS("17002000", "Recreation", "Athletic Fields"),
+    RECREATION_BASEBALL("17003000", "Recreation", "Baseball"),
+    RECREATION_BASKETBALL("17004000", "Recreation", "Basketball"),
+    RECREATION_BATTING_CAGES("17005000", "Recreation", "Batting Cages"),
+    RECREATION_BOATING("17006000", "Recreation", "Boating"),
+    RECREATION_CAMPGROUNDS("17007000", "Recreation", "Campgrounds and RV Parks"),
+    RECREATION_CANOES_KAYAKS("17008000", "Recreation", "Canoes and Kayaks"),
+    RECREATION_COMBAT_SPORTS("17009000", "Recreation", "Combat Sports"),
+    RECREATION_CYCLING("17010000", "Recreation", "Cycling"),
+    RECREATION_DANCE("17011000", "Recreation", "Dance"),
+    RECREATION_EQUESTRIAN("17012000", "Recreation", "Equestrian"),
+    RECREATION_FOOTBALL("17013000", "Recreation", "Football"),
+    RECREATION_GO_CARTS("17014000", "Recreation", "Go Carts"),
+    RECREATION_GOLF("17015000", "Recreation", "Golf"),
+    RECREATION_GUN_RANGES("17016000", "Recreation", "Gun Ranges"),
+    RECREATION_GYMNASTICS("17017000", "Recreation", "Gymnastics"),
+    RECREATION_GYMS_FITNESS("17018000", "Recreation", "Gyms and Fitness Centers"),
+    RECREATION_HIKING("17019000", "Recreation", "Hiking"),
+    RECREATION_HOCKEY("17020000", "Recreation", "Hockey"),
+    RECREATION_HOT_AIR_BALLOONS("17021000", "Recreation", "Hot Air Balloons"),
+    RECREATION_HUNTING_FISHING("17022000", "Recreation", "Hunting and Fishing"),
+    RECREATION_LANDMARKS("17023000", "Recreation", "Landmarks"),
+    RECREATION_MINIATURE_GOLF("17024000", "Recreation", "Miniature Golf"),
+    RECREATION_OUTDOORS("17025000", "Recreation", "Outdoors"),
+    RECREATION_PAINTBALL("17026000", "Recreation", "Paintball"),
+    RECREATION_PARKS("17027000", "Recreation", "Parks"),
+    RECREATION_PERSONAL_TRAINERS("17028000", "Recreation", "Personal Trainers"),
+    RECREATION_RACE_TRACKS("17029000", "Recreation", "Race Tracks"),
+    RECREATION_RACQUET_SPORTS("17030000", "Recreation", "Racquet Sports"),
+    RECREATION_RACQUETBALL("17031000", "Recreation", "Racquetball"),
+    RECREATION_RAFTING("17032000", "Recreation", "Rafting"),
+    RECREATION_CENTERS("17033000", "Recreation", "Recreation Centers"),
+    RECREATION_ROCK_CLIMBING("17034000", "Recreation", "Rock Climbing"),
+    RECREATION_RUNNING("17035000", "Recreation", "Running"),
+    RECREATION_SCUBA_DIVING("17036000", "Recreation", "Scuba Diving"),
+    RECREATION_SKATING("17037000", "Recreation", "Skating"),
+    RECREATION_SKYDIVING("17038000", "Recreation", "Skydiving"),
+    RECREATION_SNOW_SPORTS("17039000", "Recreation", "Snow Sports"),
+    RECREATION_SOCCER("17040000", "Recreation", "Soccer"),
+    RECREATION_SPORTS_CAMPS("17041000", "Recreation", "Sports and Recreation Camps"),
+    RECREATION_SPORTS_CLUBS("17042000", "Recreation", "Sports Clubs"),
+    RECREATION_STADIUMS_ARENAS("17043000", "Recreation", "Stadiums and Arenas"),
+    RECREATION_SWIMMING("17044000", "Recreation", "Swimming"),
+    RECREATION_TENNIS("17045000", "Recreation", "Tennis"),
+    RECREATION_WATER_SPORTS("17046000", "Recreation", "Water Sports"),
+    RECREATION_YOGA_PILATES("17047000", "Recreation", "Yoga and Pilates"),
+    RECREATION_ZOO("17048000", "Recreation", "Zoo"),
+
+    // Service
+    SERVICE("18000000", "Service", ""),
+    SERVICE_ADVERTISING_MARKETING("18001000", "Service", "Advertising and Marketing"),
+    SERVICE_ART_RESTORATION("18003000", "Service", "Art Restoration"),
+    SERVICE_AUDIOVISUAL("18004000", "Service", "Audiovisual"),
+    SERVICE_AUTOMATION("18005000", "Service", "Automation and Control Systems"),
+    SERVICE_AUTOMOTIVE("18006000", "Service", "Automotive"),
+    SERVICE_BUSINESS_CONSULTING("18007000", "Service", "Business and Strategy Consulting"),
+    SERVICE_BUSINESS_SERVICES("18008000", "Service", "Business Services"),
+    SERVICE_CABLE("18009000", "Service", "Cable"),
+    SERVICE_CHEMICALS("18010000", "Service", "Chemicals and Gasses"),
+    SERVICE_CLEANING("18011000", "Service", "Cleaning"),
+    SERVICE_COMPUTERS("18012000", "Service", "Computers"),
+    SERVICE_CONSTRUCTION("18013000", "Service", "Construction"),
+    SERVICE_CREDIT_COUNSELING("18014000", "Service", "Credit Counseling and Bankruptcy Services"),
+    SERVICE_DATING_ESCORT("18015000", "Service", "Dating and Escort"),
+    SERVICE_EMPLOYMENT_AGENCIES("18016000", "Service", "Employment Agencies"),
+    SERVICE_ENGINEERING("18017000", "Service", "Engineering"),
+    SERVICE_ENTERTAINMENT("18018000", "Service", "Entertainment"),
+    SERVICE_EVENTS("18019000", "Service", "Events and Event Planning"),
+    SERVICE_FINANCIAL("18020000", "Service", "Financial"),
+    SERVICE_FOOD_BEVERAGE("18021000", "Service", "Food and Beverage"),
+    SERVICE_FUNERAL("18022000", "Service", "Funeral Services"),
+    SERVICE_GEOLOGICAL("18023000", "Service", "Geological"),
+    SERVICE_HOME_IMPROVEMENT("18024000", "Service", "Home Improvement"),
+    SERVICE_HOUSEHOLD("18025000", "Service", "Household"),
+    SERVICE_HUMAN_RESOURCES("18026000", "Service", "Human Resources"),
+    SERVICE_IMMIGRATION("18027000", "Service", "Immigration"),
+    SERVICE_IMPORT_EXPORT("18028000", "Service", "Import and Export"),
+    SERVICE_INDUSTRIAL_MACHINERY("18029000", "Service", "Industrial Machinery and Vehicles"),
+    SERVICE_INSURANCE("18030000", "Service", "Insurance"),
+    SERVICE_INTERNET("18031000", "Service", "Internet Services"),
+    SERVICE_LEATHER("18032000", "Service", "Leather"),
+    SERVICE_LEGAL("18033000", "Service", "Legal"),
+    SERVICE_LOGGING("18034000", "Service", "Logging and Sawmills"),
+    SERVICE_MACHINE_SHOPS("18035000", "Service", "Machine Shops"),
+    SERVICE_MANAGEMENT("18036000", "Service", "Management"),
+    SERVICE_MANUFACTURING("18037000", "Service", "Manufacturing"),
+    SERVICE_MEDIA_PRODUCTION("18038000", "Service", "Media Production"),
+    SERVICE_METALS("18039000", "Service", "Metals"),
+    SERVICE_MINING("18040000", "Service", "Mining"),
+    SERVICE_NEWS_REPORTING("18041000", "Service", "News Reporting"),
+    SERVICE_OIL_GAS("18042000", "Service", "Oil and Gas"),
+    SERVICE_PACKAGING("18043000", "Service", "Packaging"),
+    SERVICE_PAPER("18044000", "Service", "Paper"),
+    SERVICE_PERSONAL_CARE("18045000", "Service", "Personal Care"),
+    SERVICE_PETROLEUM("18046000", "Service", "Petroleum"),
+    SERVICE_PHOTOGRAPHY("18047000", "Service", "Photography"),
+    SERVICE_PLASTICS("18048000", "Service", "Plastics"),
+    SERVICE_RAIL("18049000", "Service", "Rail"),
+    SERVICE_REAL_ESTATE("18050000", "Service", "Real Estate"),
+    SERVICE_REFRIGERATION("18051000", "Service", "Refrigeration and Ice"),
+    SERVICE_RENEWABLE_ENERGY("18052000", "Service", "Renewable Energy"),
+    SERVICE_REPAIR("18053000", "Service", "Repair Services"),
+    SERVICE_RESEARCH("18054000", "Service", "Research"),
+    SERVICE_RUBBER("18055000", "Service", "Rubber"),
+    SERVICE_SCIENTIFIC("18056000", "Service", "Scientific"),
+    SERVICE_SECURITY("18057000", "Service", "Security and Safety"),
+    SERVICE_SHIPPING("18058000", "Service", "Shipping and Freight"),
+    SERVICE_SOFTWARE_DEV("18059000", "Service", "Software Development"),
+    SERVICE_STORAGE("18060000", "Service", "Storage"),
+    SERVICE_SUBSCRIPTION("18061000", "Service", "Subscription"),
+    SERVICE_TAILORS("18062000", "Service", "Tailors"),
+    SERVICE_TELECOMMUNICATION("18063000", "Service", "Telecommunication Services"),
+    SERVICE_TEXTILES("18064000", "Service", "Textiles"),
+    SERVICE_TOURIST("18065000", "Service", "Tourist Information and Services"),
+    SERVICE_TRANSPORTATION("18066000", "Service", "Transportation"),
+    SERVICE_TRAVEL_AGENTS("18067000", "Service", "Travel Agents and Tour Operators"),
+    SERVICE_UTILITIES("18068000", "Service", "Utilities"),
+    SERVICE_VETERINARIANS("18069000", "Service", "Veterinarians"),
+    SERVICE_WATER_WASTE("18070000", "Service", "Water and Waste Management"),
+    SERVICE_WEB_DESIGN("18071000", "Service", "Web Design and Development"),
+    SERVICE_WELDING("18072000", "Service", "Welding"),
+    SERVICE_AGRICULTURE("18073000", "Service", "Agriculture and Forestry"),
+    SERVICE_ART_GRAPHIC_DESIGN("18074000", "Service", "Art and Graphic Design"),
+
+    // Shops
+    SHOPS("19000000", "Shops", ""),
+    SHOPS_ADULT("19001000", "Shops", "Adult"),
+    SHOPS_ANTIQUES("19002000", "Shops", "Antiques"),
+    SHOPS_ARTS_CRAFTS("19003000", "Shops", "Arts and Crafts"),
+    SHOPS_AUCTIONS("19004000", "Shops", "Auctions"),
+    SHOPS_AUTOMOTIVE("19005000", "Shops", "Automotive"),
+    SHOPS_BEAUTY_PRODUCTS("19006000", "Shops", "Beauty Products"),
+    SHOPS_BICYCLES("19007000", "Shops", "Bicycles"),
+    SHOPS_BOAT_DEALERS("19008000", "Shops", "Boat Dealers"),
+    SHOPS_BOOKSTORES("19009000", "Shops", "Bookstores"),
+    SHOPS_CARDS_STATIONERY("19010000", "Shops", "Cards and Stationery"),
+    SHOPS_CHILDREN("19011000", "Shops", "Children"),
+    SHOPS_CLOTHING_ACCESSORIES("19012000", "Shops", "Clothing and Accessories"),
+    SHOPS_COMPUTERS_ELECTRONICS("19013000", "Shops", "Computers and Electronics"),
+    SHOPS_CONSTRUCTION_SUPPLIES("19014000", "Shops", "Construction Supplies"),
+    SHOPS_CONVENIENCE_STORES("19015000", "Shops", "Convenience Stores"),
+    SHOPS_COSTUMES("19016000", "Shops", "Costumes"),
+    SHOPS_DANCE_MUSIC("19017000", "Shops", "Dance and Music"),
+    SHOPS_DEPARTMENT_STORES("19018000", "Shops", "Department Stores"),
+    SHOPS_DIGITAL_PURCHASE("19019000", "Shops", "Digital Purchase"),
+    SHOPS_DISCOUNT_STORES("19020000", "Shops", "Discount Stores"),
+    SHOPS_ELECTRICAL_EQUIPMENT("19021000", "Shops", "Electrical Equipment"),
+    SHOPS_EQUIPMENT_RENTAL("19022000", "Shops", "Equipment Rental"),
+    SHOPS_FLEA_MARKETS("19023000", "Shops", "Flea Markets"),
+    SHOPS_FLORISTS("19024000", "Shops", "Florists"),
+    SHOPS_FOOD_BEVERAGE("19025000", "Shops", "Food and Beverage Store"),
+    SHOPS_FUEL_DEALER("19026000", "Shops", "Fuel Dealer"),
+    SHOPS_FURNITURE_HOME_DECOR("19027000", "Shops", "Furniture and Home Decor"),
+    SHOPS_GIFT_NOVELTY("19028000", "Shops", "Gift and Novelty"),
+    SHOPS_GLASSES_OPTOMETRIST("19029000", "Shops", "Glasses and Optometrist"),
+    SHOPS_HARDWARE_STORE("19030000", "Shops", "Hardware Store"),
+    SHOPS_HOBBY_COLLECTIBLES("19031000", "Shops", "Hobby and Collectibles"),
+    SHOPS_INDUSTRIAL_SUPPLIES("19032000", "Shops", "Industrial Supplies"),
+    SHOPS_JEWELRY_WATCHES("19033000", "Shops", "Jewelry and Watches"),
+    SHOPS_LUGGAGE("19034000", "Shops", "Luggage"),
+    SHOPS_MARINE_SUPPLIES("19035000", "Shops", "Marine Supplies"),
+    SHOPS_MUSIC_VIDEO_DVD("19036000", "Shops", "Music, Video and DVD"),
+    SHOPS_MUSICAL_INSTRUMENTS("19037000", "Shops", "Musical Instruments"),
+    SHOPS_NEWSSTANDS("19038000", "Shops", "Newsstands"),
+    SHOPS_OFFICE_SUPPLIES("19039000", "Shops", "Office Supplies"),
+    SHOPS_OUTLET("19040000", "Shops", "Outlet"),
+    SHOPS_PAWN_SHOPS("19041000", "Shops", "Pawn Shops"),
+    SHOPS_PETS("19042000", "Shops", "Pets"),
+    SHOPS_PHARMACIES("19043000", "Shops", "Pharmacies"),
+    SHOPS_PHOTOS_FRAMES("19044000", "Shops", "Photos and Frames"),
+    SHOPS_SHOPPING_CENTERS("19045000", "Shops", "Shopping Centers and Malls"),
+    SHOPS_SPORTING_GOODS("19046000", "Shops", "Sporting Goods"),
+    SHOPS_SUPERMARKETS_GROCERIES("19047000", "Shops", "Supermarkets and Groceries"),
+    SHOPS_TOBACCO("19048000", "Shops", "Tobacco"),
+    SHOPS_TOYS("19049000", "Shops", "Toys"),
+    SHOPS_VINTAGE_THRIFT("19050000", "Shops", "Vintage and Thrift"),
+    SHOPS_WAREHOUSES("19051000", "Shops", "Warehouses and Wholesale Stores"),
+    SHOPS_WEDDING_BRIDAL("19052000", "Shops", "Wedding and Bridal"),
+    SHOPS_WHOLESALE("19053000", "Shops", "Wholesale"),
+    SHOPS_LAWN_GARDEN("19054000", "Shops", "Lawn and Garden"),
+
+    // Transfer
+    TRANSFER_INTERNAL("21001000", "Transfer", "Internal Account Transfer"),
+    TRANSFER_ACH("21002000", "Transfer", "ACH"),
+    TRANSFER_BILLPAY("21003000", "Transfer", "Billpay"),
+    TRANSFER_KEEP_CHANGE("21008000", "Transfer", "Keep the Change Savings Program"),
+    TRANSFER_THIRD_PARTY("21010000", "Transfer", "Third Party"),
+    TRANSFER_WIRE("21011000", "Transfer", "Wire"),
+    TRANSFER_WITHDRAWAL("21012000", "Transfer", "Withdrawal"),
+    TRANSFER_SAVE_AS_YOU_GO("21013000", "Transfer", "Save As You Go"),
+
+    TRAVEL("22000000", "Travel", ""),
+    TRAVEL_AIRLINES("22001000", "Travel", "Airlines and Aviation Services"),
+    TRAVEL_BOAT("22003000", "Travel", "Boat"),
+    TRAVEL_BUS_STATIONS("22004000", "Travel", "Bus Stations"),
+    TRAVEL_CAR_TRUCK_RENTALS("22005000", "Travel", "Car and Truck Rentals"),
+    TRAVEL_CAR_SERVICE("22006000", "Travel", "Car Service"),
+    TRAVEL_CHARTER_BUSES("22007000", "Travel", "Charter Buses"),
+    TRAVEL_CRUISES("22008000", "Travel", "Cruises"),
+    TRAVEL_HELIPORTS("22010000", "Travel", "Heliports"),
+    TRAVEL_LIMOS("22011000", "Travel", "Limos and Chauffeurs"),
+    TRAVEL_LODGING("22012000", "Travel", "Lodging"),
+    TRAVEL_PARKING("22013000", "Travel", "Parking"),
+    TRAVEL_PUBLIC_TRANSPORTATION("22014000", "Travel", "Public Transportation Services"),
+    TRAVEL_RAIL("22015000", "Travel", "Rail"),
+    TRAVEL_TAXI("22016000", "Travel", "Taxi"),
+    TRAVEL_TOLLS_FEES("22017000", "Travel", "Tolls and Fees"),
+    TRAVEL_TRANSPORTATION_CENTERS("22018000", "Travel", "Transportation Centers");
+
+    private final String categoryId;
     private final String primaryCategory;
     private final String secondaryCategory;
 
-    PlaidCategories(final String primaryCategory, final String secondaryCategory){
+    private static final List<PlaidCategories> CATEGORIES = Collections.unmodifiableList(Arrays.asList(values()));
+    private static List<PlaidCategories> getCategories() {return CATEGORIES;}
+
+    public static Optional<PlaidCategories> findByPrimaryCategory(String primaryCategory) {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.primaryCategory.equalsIgnoreCase(primaryCategory))
+                .findFirst();
+    }
+
+    public static Optional<PlaidCategories> findByCategoryId(String categoryId) {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.categoryId.equals(categoryId))
+                .findFirst();
+    }
+
+    public static Optional<PlaidCategories> findBySecondaryCategory(String secondaryCategory) {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
+                .findFirst();
+    }
+
+    public static String findCategoryIdByPrimaryAndSecondaryCategory(String primaryCategory, String secondaryCategory) {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.primaryCategory.equalsIgnoreCase(primaryCategory) && pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
+                .map(plaidCategories -> plaidCategories.categoryId)
+                .reduce("", (a, b) -> a + b);
+    }
+
+    PlaidCategories(String categoryId, String primaryCategory, String secondaryCategory){
+        this.categoryId = categoryId;
         this.primaryCategory = primaryCategory;
         this.secondaryCategory = secondaryCategory;
     }
-
-
-
 }

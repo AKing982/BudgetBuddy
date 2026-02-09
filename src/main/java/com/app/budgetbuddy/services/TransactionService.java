@@ -34,8 +34,6 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions);
 
     Optional<TransactionsEntity> getTransactionById(String id);
-    Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId);
-    List<TransactionsEntity> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate);
     List<TransactionsEntity> getTransactionsForUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     Collection<TransactionsEntity> getTransactionsByPendingTrue();
     Collection<TransactionsEntity> getTransactionsByAuthorizedDate(LocalDate date);
@@ -51,8 +49,7 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
 
     List<Transaction> getTransactionsByAmountRange(BigDecimal startAmount, BigDecimal endAmount);
     List<Transaction> getPendingTransactionsForUser(Long userId);
-    List<Transaction> getTransactionsByCategory(String categoryId);
-    List<Transaction> getRecentTransactionsForUser(Long userId, int limit);
+
     List<Transaction> getConvertedPlaidTransactions(Long userId, LocalDate startDate, LocalDate endDate);
     List<Transaction> getTransactionsByDate(LocalDate date, Long userID);
     Optional<Transaction> findTransactionById(String transactionId);

@@ -14,6 +14,7 @@ import java.time.LocalDate;
 public class Category
 {
     private Long categoryId;
+    private String plaidCategoryId;
     private String categoryName;
     private String categorizedBy;
     private LocalDate categorizedDate;
@@ -23,6 +24,16 @@ public class Category
         return Category.builder()
                 .categorizedBy(categorizedBy)
                 .categoryId(categoryId)
+                .categorizedDate(categorizedDate)
+                .categoryName(categoryName)
+                .build();
+    }
+
+    public static Category createCategory(String plaidCategoryId, String categoryName, String categorizedBy, LocalDate categorizedDate)
+    {
+        return Category.builder()
+                .categorizedBy(categorizedBy)
+                .plaidCategoryId(plaidCategoryId)
                 .categorizedDate(categorizedDate)
                 .categoryName(categoryName)
                 .build();

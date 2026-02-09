@@ -11,6 +11,7 @@ import java.util.List;
 @Setter
 @ToString(callSuper = true)
 @SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class RecurringTransaction extends Transaction
 {

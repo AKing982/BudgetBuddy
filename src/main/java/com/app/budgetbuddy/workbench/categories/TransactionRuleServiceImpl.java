@@ -2,7 +2,6 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.CSVTransactionRule;
 import com.app.budgetbuddy.domain.TransactionRule;
-import com.app.budgetbuddy.domain.UserCategoryRule;
 import com.app.budgetbuddy.entities.TransactionRuleEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.DataException;

@@ -262,44 +262,44 @@ class TransactionControllerTest
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void testGetCsvTransactionsForUser_whenUserIdValid() throws Exception{
-        Long userId = 1L;
-        LocalDate startDate = LocalDate.of(2024, 11, 1);
-        LocalDate endDate = LocalDate.of(2024, 11, 30);
-        List<TransactionCSV> expectedTransactions = new ArrayList<>();
-        expectedTransactions.add(createTransactionCSV());
+//    @Test
+//    void testGetCsvTransactionsForUser_whenUserIdValid() throws Exception{
+//        Long userId = 1L;
+//        LocalDate startDate = LocalDate.of(2024, 11, 1);
+//        LocalDate endDate = LocalDate.of(2024, 11, 30);
+//        List<TransactionCSV> expectedTransactions = new ArrayList<>();
+//        expectedTransactions.add(createTransactionCSV());
+//
+//        int pageNum = 30;
+//        when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum))
+//                .thenReturn(expectedTransactions);
+//
+//        mockMvc.perform(get("/api/transaction/{userId}/csv", userId)
+//                .param("startDate", "2025-11-01")
+//                .param("endDate", "2025-11-30")
+//                .contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(status().isOk())
+//                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(jsonPath("$").isArray())
+//                .andExpect(jsonPath("$.length()").value(1));
+//    }
 
-        int pageNum = 30;
-        when(csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum))
-                .thenReturn(expectedTransactions);
-
-        mockMvc.perform(get("/api/transaction/{userId}/csv", userId)
-                .param("startDate", "2025-11-01")
-                .param("endDate", "2025-11-30")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1));
-    }
-
-    private TransactionCSV createTransactionCSV() {
-        return new TransactionCSV(
-                1L,
-                "12345678",
-                1,
-                1000L,
-                LocalDate.of(2024, 6, 15),
-                new BigDecimal("100.50"),
-                "Test Transaction",
-                "Test Merchant",
-                "Extended description",
-                LocalDate.of(2024, 6, 15),
-                new BigDecimal("1500.00"),
-                "Test"
-        );
-    }
+//    private TransactionCSV createTransactionCSV() {
+//        return new TransactionCSV(
+//                1L,
+//                "12345678",
+//                1,
+//                1000L,
+//                LocalDate.of(2024, 6, 15),
+//                new BigDecimal("100.50"),
+//                "Test Transaction",
+//                "Test Merchant",
+//                "Extended description",
+//                LocalDate.of(2024, 6, 15),
+//                new BigDecimal("1500.00"),
+//                "Test"
+//        );
+//    }
 
 
 

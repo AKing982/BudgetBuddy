@@ -25,6 +25,8 @@ public enum CategoryType
     TRIP("Trip"),
     UNCATEGORIZED("Uncategorized"),
     WITHDRAWAL("Withdrawal"),
+    DEPOSIT("Deposit"),
+    REFUND("Refund"),
     TRANSFER("Transfer"),
     PET("Pet");
 

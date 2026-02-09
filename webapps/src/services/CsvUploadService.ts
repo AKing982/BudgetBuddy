@@ -12,6 +12,7 @@ interface UploadCSVParams {
     file: File;
     startDate: string;
     endDate: string;
+    institution: string;
 }
 class CsvUploadService
 {
@@ -53,7 +54,7 @@ class CsvUploadService
 
     public async uploadCsv(params: UploadCSVParams): Promise<UploadStatus>
     {
-        const {userId, file, startDate, endDate} = params;
+        const {userId, file, startDate, endDate, institution} = params;
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if(!dateRegex.test(startDate) || !dateRegex.test(endDate))
         {
@@ -70,6 +71,7 @@ class CsvUploadService
             formData.append('file', file);
             formData.append('startDate', startDate);
             formData.append('endDate', endDate);
+            formData.append('institution', institution);
 
             const response = await axios.post<UploadStatus>(
                 `${API_BASE_URL}/upload/${userId}/csv`,

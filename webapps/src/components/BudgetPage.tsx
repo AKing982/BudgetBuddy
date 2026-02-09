@@ -276,7 +276,7 @@ const BudgetPage: React.FC = () => {
         await fetchBudgetData(currentMonth);
     }
 
-    const handleImportComplete = async (data: {file: File; startDate: string, endDate: string}) => {
+    const handleImportComplete = async (data: {file: File; startDate: string, endDate: string, institution: string}) => {
         try
         {
             console.log('Starting CSV import...');
@@ -290,8 +290,10 @@ const BudgetPage: React.FC = () => {
                 userId: userId,
                 file: data.file,
                 startDate: data.startDate,
-                endDate: data.endDate
+                endDate: data.endDate,
+                institution: data.institution
             });
+            console.log('CSV Result: ', result);
 
             if (result.success) {
                 console.log('CSV import successful:', result.message);

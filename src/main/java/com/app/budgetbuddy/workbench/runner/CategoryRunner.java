@@ -23,7 +23,6 @@ public class CategoryRunner
     private final CSVTransactionService csvTransactionService;
     private final UserLogService userLogService;
     private final SubBudgetService subBudgetService;
-    private List<TransactionCategory> categorizedCSVTransactions = new ArrayList<>();
     private final TransactionService transactionService;
     private final TransactionCategoryService transactionCategoryService;
 
@@ -97,7 +96,7 @@ public class CategoryRunner
                 log.warn("There are no transactions to categorize for user {} between {} and {}", userId, startDate, endDate);
                 return;
             }
-            categorizedCSVTransactions = transactionCSVS.stream()
+            List<TransactionCategory> categorizedCSVTransactions = transactionCSVS.stream()
                     .map(transactionCSV -> {
                         Long csvTransactionId = transactionCSV.getId();
                         LocalDate transactionDate = transactionCSV.getTransactionDate();

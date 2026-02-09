@@ -8,8 +8,7 @@ import java.time.LocalDate;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Configuration
-@Setter
+
 public class TransactionImportThreadConfig
 {
     // Number of default weekly worker threads for a month

@@ -6,6 +6,7 @@ import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.repositories.UserRepository;
+import com.app.budgetbuddy.services.PlaidCategoryManager;
 import com.app.budgetbuddy.services.PlaidLinkService;
 import com.app.budgetbuddy.services.PlaidService;
 import com.app.budgetbuddy.services.RecurringTransactionService;
@@ -45,6 +46,7 @@ public class PlaidController
     private PlaidLinkService plaidLinkService;
     private PlaidAccountManager plaidAccountManager;
     private PlaidTransactionManager plaidTransactionManager;
+    private PlaidCategoryManager plaidCategoryManager;
     private UserRepository userRepository;
 
     @Autowired
@@ -52,12 +54,27 @@ public class PlaidController
                            PlaidAccountManager plaidAccountManager,
                            PlaidLinkService plaidLinkService,
                            PlaidTransactionManager plaidTransactionManager,
+                           PlaidCategoryManager plaidCategoryManager,
                            UserRepository userRepository) {
         this.plaidLinkTokenProcessor = plaidLinkTokenProcessor;
         this.plaidAccountManager = plaidAccountManager;
         this.plaidLinkService = plaidLinkService;
         this.plaidTransactionManager = plaidTransactionManager;
+        this.plaidCategoryManager = plaidCategoryManager;
         this.userRepository = userRepository;
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<PlaidCategory>> getCategories()
+    {
+        try
+        {
+            List<PlaidCategory> plaidCategories = plaidCategoryManager.getPlaidCategories();
+            return new ResponseEntity<>(plaidCategories, HttpStatus.OK);
+        }catch(Exception ex){
+            log.error("There was an error fetching the plaid categories: {}", ex.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/create_link_token")

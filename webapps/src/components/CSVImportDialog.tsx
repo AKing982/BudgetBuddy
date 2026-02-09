@@ -9,20 +9,41 @@ import {
     Box,
     Typography,
     IconButton,
-    Alert
+    Alert,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel
 } from '@mui/material';
 import { Upload, X } from 'lucide-react';
 
 interface CSVImportDialogProps{
     open: boolean;
     onClose: () => void;
-    onImport: (data: { file: File; startDate: string; endDate: string }) => void;
+    onImport: (data: {
+        file: File;
+        startDate: string;
+        endDate: string;
+        institution: string;
+        accountName: string;
+    }) => void;
 }
+
+// Common financial institutions
+const INSTITUTIONS = [
+    'Chase',
+    'Bank of America',
+    'Wells Fargo',
+    'Granite Credit Union',
+    'Mountain America Credit Union'
+];
 
 const CSVImportDialog: React.FC<CSVImportDialogProps> = ({ open, onClose, onImport}) => {
     const [file, setFile] = useState<File | null>(null);
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
+    const [institution, setInstitution] = useState<string>('');
+    const [accountName, setAccountName] = useState<string>('');
     const [error, setError] = useState<string>('');
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,6 +58,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({ open, onClose, onImpo
             }
         }
     };
+
     const handleRemoveFile = () => {
         setFile(null);
     };
@@ -54,13 +76,25 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({ open, onClose, onImpo
             setError('Start date must be before end date');
             return;
         }
+        if (!institution) {
+            setError('Please select an institution');
+            return;
+        }
+        if (!accountName.trim()) {
+            setError('Please enter an account name');
+            return;
+        }
 
         // Import logic here
-        console.log('Importing:', { file, startDate, endDate });
-        onImport({ file, startDate, endDate });
+        console.log('Importing:', { file, startDate, endDate, institution, accountName });
+        onImport({ file, startDate, endDate, institution, accountName });
+
+        // Reset form
         setFile(null);
         setStartDate('');
         setEndDate('');
+        setInstitution('');
+        setAccountName('');
         setError('');
     };
 
@@ -68,6 +102,8 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({ open, onClose, onImpo
         setFile(null);
         setStartDate('');
         setEndDate('');
+        setInstitution('');
+        setAccountName('');
         setError('');
         onClose();
     };
@@ -138,6 +174,38 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({ open, onClose, onImpo
                         )}
                     </Box>
 
+                    {/* Institution Selection */}
+                    <Box>
+                        <FormControl fullWidth>
+                            <InputLabel id="institution-label">Institution</InputLabel>
+                            <Select
+                                labelId="institution-label"
+                                id="institution-select"
+                                value={institution}
+                                label="Institution"
+                                onChange={(e) => setInstitution(e.target.value)}
+                            >
+                                {INSTITUTIONS.map((inst) => (
+                                    <MenuItem key={inst} value={inst}>
+                                        {inst}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+
+                    {/* Account Name */}
+                    <Box>
+                        <TextField
+                            label="Account Name"
+                            fullWidth
+                            value={accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            placeholder="e.g., Checking Account, Visa Credit Card"
+                            helperText="Enter a descriptive name for this account"
+                        />
+                    </Box>
+
                     {/* Date Range */}
                     <Box>
                         <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -172,7 +240,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({ open, onClose, onImpo
                 <Button
                     variant="contained"
                     onClick={handleImport}
-                    disabled={!file || !startDate || !endDate}
+                    disabled={!file || !startDate || !endDate || !institution || !accountName.trim()}
                 >
                     Import
                 </Button>

@@ -314,7 +314,7 @@ const DashboardPage: React.FC = () => {
         }
     }, [userId]); // Only depend on userId to avoid re-running unnecessarily
 
-    const handleImportComplete = async (data: {file: File, startDate: string, endDate: string}) => {
+    const handleImportComplete = async (data: {file: File, startDate: string, endDate: string, institution: string}) => {
         setImportDialogOpen(false);
         try {
             setIsLoading(true);
@@ -322,7 +322,8 @@ const DashboardPage: React.FC = () => {
                 userId: userId,
                 file: data.file,
                 startDate: data.startDate,
-                endDate: data.endDate
+                endDate: data.endDate,
+                institution: data.institution
             });
 
             if(result.success) {
