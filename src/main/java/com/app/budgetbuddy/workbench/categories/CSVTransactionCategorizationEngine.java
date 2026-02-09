@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @Qualifier("csvCategorizer")
-public class CSVTransactionCategorizerServiceImpl implements CategorizerService<TransactionCSV>
+public class CSVTransactionCategorizationEngine implements CategorizationEngine<TransactionCSV>
 {
     private final TransactionRuleService transactionRuleService;
     private final CSVAccountRepository csvAccountRepository;
@@ -34,7 +34,7 @@ public class CSVTransactionCategorizerServiceImpl implements CategorizerService<
     private final String USER_CATEGORIZED = "USER";
 
     @Autowired
-    public CSVTransactionCategorizerServiceImpl(TransactionRuleService transactionRuleService,
+    public CSVTransactionCategorizationEngine(TransactionRuleService transactionRuleService,
                                                 CSVAccountRepository csvAccountRepository,
                                                 CategoryService categoryService,
                                                 UserCategoryService userCategoryService)

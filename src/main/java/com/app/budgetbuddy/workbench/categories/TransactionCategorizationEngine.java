@@ -7,7 +7,6 @@ import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.services.AccountService;
 import com.app.budgetbuddy.services.UserCategoryService;
 import com.app.budgetbuddy.workbench.MerchantMatcherService;
-import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,14 +17,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class TransactionCategorizerServiceImpl implements CategorizerService<Transaction>
+public class TransactionCategorizationEngine implements CategorizationEngine<Transaction>
 {
     private Map<String, CategoryType> primaryCategoryMap = new HashMap<>();
     private Map<String, CategoryType> secondaryCategoryMap = new HashMap<>();
+    private Map<PlaidCategory, CategoryType> plaidCategoryMap = new HashMap<>();
+    private Map<String, CategoryType> categoryIdMap = new HashMap<>();
     private AccountService accountService;
     private MerchantMatcherService merchantMatcherService;
     private UserCategoryService userCategoryService;
@@ -34,10 +34,10 @@ public class TransactionCategorizerServiceImpl implements CategorizerService<Tra
     private final String USER_CATEGORIZED = "USER";
 
     @Autowired
-    public TransactionCategorizerServiceImpl(UserCategoryService userCategoryService,
-                                             AccountService accountService,
-                                             TransactionRuleService transactionRuleService,
-                                             MerchantMatcherService merchantMatcherService)
+    public TransactionCategorizationEngine(UserCategoryService userCategoryService,
+                                           AccountService accountService,
+                                           TransactionRuleService transactionRuleService,
+                                           MerchantMatcherService merchantMatcherService)
     {
         this.userCategoryService = userCategoryService;
         this.accountService = accountService;
@@ -45,6 +45,37 @@ public class TransactionCategorizerServiceImpl implements CategorizerService<Tra
         this.merchantMatcherService = merchantMatcherService;
         initializePrimaryCategoryMap();
         initializeSecondaryMap();
+        initializePlaidCategoryMap();
+        initializeCategoryIdMap();
+    }
+
+    void initializePlaidCategoryMap()
+    {
+        plaidCategoryMap.put(PlaidCategory.builder().categoryId("19047000").secondaryCategory("Supermarkets and Groceries").build(), CategoryType.GROCERIES);
+        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithIdAndPrimary("16000000", "Payment"), CategoryType.PAYMENT);
+        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Shops", "Supermarkets and Groceries"), CategoryType.GROCERIES);
+    }
+
+    void initializeCategoryIdMap()
+    {
+
+        // Transfer matches
+        categoryIdMap.put("21001000", CategoryType.TRANSFER);
+        categoryIdMap.put("21002000", CategoryType.TRANSFER);
+        categoryIdMap.put("21004000", CategoryType.TRANSFER);
+        categoryIdMap.put("21005000", CategoryType.TRANSFER);
+        categoryIdMap.put("21006000", CategoryType.TRANSFER);
+        categoryIdMap.put("21007000", CategoryType.TRANSFER);
+        categoryIdMap.put("21009000",  CategoryType.TRANSFER);
+
+        categoryIdMap.put("22002000", CategoryType.TRIP);
+        categoryIdMap.put("22001000", CategoryType.TRIP);
+        categoryIdMap.put("13001000", CategoryType.ORDER_OUT);
+        categoryIdMap.put("13000000", CategoryType.ORDER_OUT);
+        categoryIdMap.put("13002000", CategoryType.ORDER_OUT);
+        categoryIdMap.put("13003000", CategoryType.ORDER_OUT);
+        categoryIdMap.put("13004000", CategoryType.ORDER_OUT);
+        categoryIdMap.put("13005000", CategoryType.ORDER_OUT);
     }
 
     void initializeSecondaryMap()
@@ -167,6 +198,10 @@ public class TransactionCategorizerServiceImpl implements CategorizerService<Tra
         primaryCategoryMap.put("Food and Drink", CategoryType.ORDER_OUT);
         primaryCategoryMap.put("Payment", CategoryType.PAYMENT);
         primaryCategoryMap.put("Recreation", CategoryType.OTHER);
+        primaryCategoryMap.put("Healthcare", CategoryType.OTHER);
+        primaryCategoryMap.put("Community",  CategoryType.OTHER);
+        primaryCategoryMap.put("Service", CategoryType.OTHER);
+        primaryCategoryMap.put("Tax", CategoryType.OTHER);
     }
 
     @Override
@@ -176,109 +211,99 @@ public class TransactionCategorizerServiceImpl implements CategorizerService<Tra
         {
             throw new CategoryException("Transaction was found null... Terminating categorization");
         }
-//        String categoryId = transaction.getCategoryId();
-//        String primaryCategory = transaction.getPrimaryCategory();
-//        String secondaryCategory = transaction.getSecondaryCategory();
-//        Category category;
-//        try
-//        {
-            int transactionPriority = assignPriorityToTransaction(transaction);
-            if(transactionPriority == 0)
+        String categoryId = transaction.getCategoryId();
+        String primaryCategory = transaction.getPrimaryCategory();
+        String secondaryCategory = transaction.getSecondaryCategory();
+        int transactionPriority = assignPriorityToTransaction(transaction);
+        log.info("Transaction Priority: " + transactionPriority);
+        if(transactionPriority == 0)
+        {
+            return Category.createUncategorized();
+        }
+        String acctId = transaction.getAccountId();
+        Optional<AccountEntity> accountEntityOptional = accountService.findByAccountId(acctId);
+        if(accountEntityOptional.isEmpty())
+        {
+            throw new AccountNotFoundException("Account with id " + acctId + " not found");
+        }
+        AccountEntity accountEntity = accountEntityOptional.get();
+        Long userId = accountEntity.getUser().getId();
+        List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
+        String plaidCategoryID = PlaidCategories.findCategoryIdByPrimaryAndSecondaryCategory(primaryCategory, secondaryCategory);
+        if(transactionRules.isEmpty())
+        {
+            CategoryType categoryType = null;
+            String catId = plaidCategoryID;
+            switch(transactionPriority)
             {
-                return Category.createUncategorized();
+                case 1:
+                    categoryType = secondaryCategoryMap.get(secondaryCategory);
+                    break;
+                case 2:
+                    PlaidCategory pCategoryWithPrimaryAndSec = PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary(primaryCategory, secondaryCategory);
+                    log.info("Plaid Category: " + pCategoryWithPrimaryAndSec.toString());
+                    categoryType = plaidCategoryMap.get(pCategoryWithPrimaryAndSec);
+                    log.info("Category Type: " + categoryType);
+                    catId = "";
+                    break;
+                case 5:
+                    PlaidCategory plaidCategory = PlaidCategory.builder()
+                            .categoryId(categoryId)
+                            .secondaryCategory(secondaryCategory)
+                            .build();
+                    categoryType = plaidCategoryMap.get(plaidCategory);
+                    log.info("Plaid Category map contains key {}", plaidCategory);
+                    catId = PlaidCategories.findCategoryIdBySecondaryCategory(secondaryCategory);
+                    break;
+                case 6:
+                    PlaidCategory pCategoryWithPrimary = PlaidCategory.createPlaidCategoryWithIdAndPrimary(categoryId, primaryCategory);
+                    categoryType = plaidCategoryMap.get(pCategoryWithPrimary);
+                    catId = categoryId;
+                    break;
+                case 7:
+                    categoryType = primaryCategoryMap.get(primaryCategory);
+                    break;
+                case 9:
+                    PlaidCategories plaidCategories = PlaidCategories.findByCategoryId(categoryId);
+                    log.info("Found Plaid Category {}", plaidCategories);
+                    if(plaidCategories != null)
+                    {
+                        String pCategory = plaidCategories.getPrimaryCategory();
+                        log.info("Primary Category: {}", pCategory);
+                        categoryType = primaryCategoryMap.get(pCategory);
+                        if (categoryType != null) {
+                            log.info("Found match in secondary category map");
+                            catId = categoryId;
+                        }
+                    }
+                    break;
+                default:
+                    return Category.createUncategorized();
             }
-            String acctId = transaction.getAccountId();
-            Optional<AccountEntity> accountEntityOptional = accountService.findByAccountId(acctId);
-            if(accountEntityOptional.isEmpty())
+            if(categoryType != null)
             {
-                throw new AccountNotFoundException("Account with id " + acctId + " not found");
+                return Category.createCategory(catId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
             }
-//            AccountEntity accountEntity = accountEntityOptional.get();
-//            Long userId = accountEntity.getUser().getId();
-//            List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
-//            String plaidCategoryID = PlaidCategories.findCategoryIdByPrimaryAndSecondaryCategory(primaryCategory, secondaryCategory);
-//            if(transactionRules.isEmpty())
-//            {
-//                // If the user does not have any transaction rules, then we will iterate through the category Rule map
-//                if(transactionPriority == 1)
-//                {
-//                    if(secondaryCategoryMap.containsKey(secondaryCategory))
-//                    {
-//                        log.info("Found Secondary Category: {}", secondaryCategory);
-//                        CategoryType secondaryCategoryType = secondaryCategoryMap.get(secondaryCategory);
-//                        String secondaryCategoryName = secondaryCategoryType.toString();
-//                        category = Category.createCategory(plaidCategoryID, secondaryCategoryName, "SYSTEM", LocalDate.now());
-//                        return category;
-//                    }
-//                }
-//                else if(transactionPriority == 2)
-//                {
-//                    if(primaryCategoryMap.containsKey(primaryCategory))
-//                    {
-//                        log.info("Found Primary Category: {}", primaryCategory);
-//                        CategoryType primaryCategoryType = primaryCategoryMap.get(primaryCategory);
-//                        String primaryCategoryName = primaryCategoryType.toString();
-//                        category = Category.createCategory(plaidCategoryID, primaryCategoryName, "SYSTEM", LocalDate.now());
-//                        return category;
-//                    }
-//                }
-//            }
-//            else
-//            {
-//                Map<Integer, List<TransactionRule>> transactionRulesByPriority = transactionRules.stream()
-//                        .filter(rule -> rule != null && rule.isActive())
-//                        .collect(Collectors.groupingBy(TransactionRule::getPriority));
-//                List<Integer> sortedPriorities = transactionRulesByPriority.keySet().stream()
-//                        .sorted().toList();
-//                for(Integer sortedPriority : sortedPriorities)
-//                {
-//                    List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
-//                    for(TransactionRule rule : rules)
-//                    {
-//                        int match_counter = 0;
-//                        Long ruleId = rule.getId();
-//                        if(matches(transaction, rule))
-//                        {
-//                            match_counter++;
-//                            rule.setMatchCount(match_counter);
-//                            transactionRuleService.updateMatchCount(ruleId, rule.getMatchCount());
-//                            String matchedCategory = rule.getCategoryName();
-//                            return Category.createCategory(plaidCategoryID, matchedCategory, "USER", LocalDate.now());
-//                        }
-//                    }
-//                }
-//            }
-//            return Category.createUncategorized();
-//        }catch(CategoryException e)
-//        {
-//            log.error("There was an error categorizing the transaction: {}", transaction, e);
-//            throw e;
-//        }
-        return null;
+        }
+        return Category.createUncategorized();
     }
 
     private int assignPriorityToTransaction(Transaction transaction)
     {
-        String primaryCategory = transaction.getPrimaryCategory();
-        String secondaryCategory = transaction.getSecondaryCategory();
-        String categoryId = transaction.getCategoryId();
-        String merchantName = transaction.getMerchantName();
-        if(primaryCategory != null && secondaryCategory != null && categoryId != null)
-        {
-            return 1;
-        }
-        else if(primaryCategory != null && secondaryCategory != null)
-        {
-            return 2;
-        }
-        else if(primaryCategory != null && merchantName != null)
-        {
-            return 3;
-        }
-        else if(secondaryCategory != null && merchantName != null)
-        {
-            return 4;
-        }
+        boolean hasPrimary = transaction.getPrimaryCategory() != null;
+        boolean hasSecondary = transaction.getSecondaryCategory() != null;
+        boolean hasCategoryId = transaction.getCategoryId() != null;
+        boolean hasMerchant = transaction.getMerchantName() != null;
+        // Check combinations in priority order
+        if (hasPrimary && hasSecondary && hasCategoryId) return 1;
+        if (hasPrimary && hasSecondary) return 2;
+        if (hasPrimary && hasMerchant) return 3;
+        if (hasSecondary && hasMerchant) return 4;
+        if (hasSecondary && hasCategoryId) return 5;
+        if (hasPrimary && hasCategoryId) return 6;
+        if (hasPrimary) return 7;
+        if (hasSecondary) return 8;
+        if (hasCategoryId) return 9;
         return 0;
     }
 

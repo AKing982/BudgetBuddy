@@ -300,15 +300,38 @@ public enum PlaidCategories
                 .findFirst();
     }
 
-    public static Optional<PlaidCategories> findByCategoryId(String categoryId) {
+    public static PlaidCategories findByCategoryId(String categoryId) {
         return CATEGORIES.stream()
-                .filter(pc -> pc.categoryId.equals(categoryId))
-                .findFirst();
+                .filter(pc -> pc.categoryId.equalsIgnoreCase(categoryId))
+                .findFirst().orElse(null);
     }
 
     public static Optional<PlaidCategories> findBySecondaryCategory(String secondaryCategory) {
         return CATEGORIES.stream()
                 .filter(pc -> pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
+                .findFirst();
+    }
+
+    public static Optional<PlaidCategories> findByCategoryIdAndSecondaryCategory(String categoryId, String secondaryCategory)
+    {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.categoryId.equalsIgnoreCase(categoryId) && pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
+                .findFirst();
+    }
+
+    public static String findCategoryIdBySecondaryCategory(String secondaryCategory)
+    {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
+                .map(PlaidCategories::getCategoryId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static Optional<PlaidCategories> findByCategoryIdAndPrimaryCategory(String categoryId, String primaryCategory)
+    {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.categoryId.equalsIgnoreCase(categoryId) && pc.primaryCategory.equalsIgnoreCase(primaryCategory))
                 .findFirst();
     }
 

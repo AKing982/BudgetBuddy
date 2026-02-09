@@ -2,7 +2,7 @@ package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.categories.CategorizerService;
+import com.app.budgetbuddy.workbench.categories.CategorizationEngine;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +38,7 @@ class CategoryRunnerTest
     private CategoryRunner categoryRunner;
 
     @Mock
-    private CategorizerService<TransactionCSV> csvCategorizerService;
+    private CategorizationEngine<TransactionCSV> csvCategorizerService;
 
     @Mock
     private CSVTransactionService csvTransactionService;

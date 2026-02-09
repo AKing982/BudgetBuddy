@@ -3,7 +3,7 @@ package com.app.budgetbuddy.workbench.runner;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.categories.CategorizerService;
+import com.app.budgetbuddy.workbench.categories.CategorizationEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CategoryRunner
 {
-    private final CategorizerService<TransactionCSV> csvCategorizerService;
+    private final CategorizationEngine<TransactionCSV> csvCategorizerService;
     private final CSVTransactionService csvTransactionService;
     private final UserLogService userLogService;
     private final SubBudgetService subBudgetService;
@@ -27,7 +27,7 @@ public class CategoryRunner
     private final TransactionCategoryService transactionCategoryService;
 
     @Autowired
-    public CategoryRunner(@Qualifier("csvCategorizer") CategorizerService<TransactionCSV> categorizerService,
+    public CategoryRunner(@Qualifier("csvCategorizer") CategorizationEngine<TransactionCSV> categorizerService,
                           CSVTransactionService csvTransactionService,
                           UserLogService userLogService,
                           SubBudgetService subBudgetService,

@@ -5,6 +5,9 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@Builder
+@ToString
+@EqualsAndHashCode
 public class PlaidCategory
 {
     private String categoryId;
@@ -15,5 +18,15 @@ public class PlaidCategory
         this.categoryId = categoryId;
         this.primaryCategory = primaryCategory;
         this.secondaryCategory = secondaryCategory;
+    }
+
+    public static PlaidCategory createPlaidCategoryWithIdAndPrimary(String categoryId, String primaryCategory)
+    {
+        return PlaidCategory.builder().categoryId(categoryId).primaryCategory(primaryCategory).build();
+    }
+
+    public static PlaidCategory createPlaidCategoryWithPrimaryAndSecondary(String primaryCategory, String secondaryCategory)
+    {
+        return PlaidCategory.builder().primaryCategory(primaryCategory).secondaryCategory(secondaryCategory).build();
     }
 }

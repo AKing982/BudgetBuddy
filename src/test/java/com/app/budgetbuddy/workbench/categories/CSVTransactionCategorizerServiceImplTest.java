@@ -34,8 +34,8 @@ class CSVTransactionCategorizerServiceImplTest
 {
 
     @Autowired
-    @Qualifier("CSVTransactionCategorizerServiceImpl")
-    private CategorizerService<TransactionCSV> transactionCSVCategorizerService;
+    @Qualifier("csvCategorizer")
+    private CategorizationEngine<TransactionCSV> transactionCSVCategorizerService;
 
     @MockBean
     private CSVAccountRepository csvAccountRepository;
