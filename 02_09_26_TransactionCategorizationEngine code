@@ -1,0 +1,407 @@
+package com.app.budgetbuddy.workbench.categories;
+
+import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.exceptions.AccountNotFoundException;
+import com.app.budgetbuddy.exceptions.CategoryException;
+import com.app.budgetbuddy.services.AccountService;
+import com.app.budgetbuddy.services.UserCategoryService;
+import com.app.budgetbuddy.workbench.MerchantMatcherService;
+import com.app.budgetbuddy.workbench.runner.CategoryRunner;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+@Slf4j
+public class TransactionCategorizationEngine implements CategorizationEngine<Transaction>
+{
+    private Map<String, CategoryType> primaryCategoryMap = new HashMap<>();
+    private Map<String, CategoryType> secondaryCategoryMap = new HashMap<>();
+    private Map<String, CategoryType> categoryIdMap = new HashMap<>();
+    private Map<PlaidCategory, CategoryType> plaidCategoryMap = new HashMap<>();
+    private AccountService accountService;
+    private MerchantMatcherService merchantMatcherService;
+    private UserCategoryService userCategoryService;
+    private TransactionRuleService transactionRuleService;
+    private final String SYSTEM_CATEGORIZED = "SYSTEM";
+    private final String USER_CATEGORIZED = "USER";
+
+    @Autowired
+    public TransactionCategorizationEngine(UserCategoryService userCategoryService,
+                                             AccountService accountService,
+                                             TransactionRuleService transactionRuleService,
+                                             MerchantMatcherService merchantMatcherService)
+    {
+        this.userCategoryService = userCategoryService;
+        this.accountService = accountService;
+        this.transactionRuleService = transactionRuleService;
+        this.merchantMatcherService = merchantMatcherService;
+        initializePrimaryCategoryMap();
+        initializeSecondaryMap();
+        initializeCategoryIdMap();
+        initializePlaidCategoryMap();
+    }
+
+    void initializePlaidCategoryMap()
+    {
+        plaidCategoryMap.put(PlaidCategory.builder().categoryId("19047000").secondaryCategory("Supermarkets and Groceries").build(), CategoryType.GROCERIES);
+        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithIdAndPrimary("16000000", "Payment"), CategoryType.PAYMENT);
+        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Shops", "Supermarkets and Groceries"), CategoryType.GROCERIES);
+    }
+
+    void initializeCategoryIdMap()
+    {
+        
+    }
+
+    void initializeSecondaryMap()
+    {
+        // Groceries & Food Stores
+        secondaryCategoryMap.put("Supermarkets and Groceries", CategoryType.GROCERIES);
+        secondaryCategoryMap.put("Food and Beverage Store", CategoryType.GROCERIES);
+        secondaryCategoryMap.put("Convenience Stores", CategoryType.GROCERIES);
+
+        // Restaurants & Dining
+        secondaryCategoryMap.put("Restaurants", CategoryType.RESTAURANTS);
+        secondaryCategoryMap.put("Bar", CategoryType.ORDER_OUT);
+        secondaryCategoryMap.put("Breweries", CategoryType.ORDER_OUT);
+        secondaryCategoryMap.put("Internet Cafes", CategoryType.COFFEE);
+        secondaryCategoryMap.put("Nightlife", CategoryType.ORDER_OUT);
+
+        // Gas & Automotive
+        secondaryCategoryMap.put("Gas Stations", CategoryType.GAS);
+        secondaryCategoryMap.put("Automotive", CategoryType.OTHER);
+
+        // Utilities
+        secondaryCategoryMap.put("Utilities", CategoryType.UTILITIES);
+        secondaryCategoryMap.put("Electric", CategoryType.ELECTRIC);
+        secondaryCategoryMap.put("Cable", CategoryType.UTILITIES);
+        secondaryCategoryMap.put("Internet Services", CategoryType.UTILITIES);
+        secondaryCategoryMap.put("Telecommunication Services", CategoryType.UTILITIES);
+
+        // Subscriptions
+        secondaryCategoryMap.put("Subscription", CategoryType.SUBSCRIPTION);
+
+        // Insurance
+        secondaryCategoryMap.put("Insurance", CategoryType.INSURANCE);
+
+        // Personal Care & Health
+        secondaryCategoryMap.put("Personal Care", CategoryType.HAIRCUT);
+        secondaryCategoryMap.put("Glasses and Optometrist", CategoryType.OTHER);
+        secondaryCategoryMap.put("Pharmacies", CategoryType.OTHER);
+        secondaryCategoryMap.put("Healthcare Services", CategoryType.OTHER);
+        secondaryCategoryMap.put("Physicians", CategoryType.OTHER);
+
+        // Housing
+        secondaryCategoryMap.put("Rent", CategoryType.RENT);
+        secondaryCategoryMap.put("Loan", CategoryType.PAYMENT);
+
+        // Payments
+        secondaryCategoryMap.put("Credit Card", CategoryType.PAYMENT);
+
+        // Travel
+        secondaryCategoryMap.put("Airlines and Aviation Services", CategoryType.TRIP);
+        secondaryCategoryMap.put("Airports", CategoryType.TRIP);
+        secondaryCategoryMap.put("Lodging", CategoryType.TRIP);
+        secondaryCategoryMap.put("Car and Truck Rentals", CategoryType.TRIP);
+        secondaryCategoryMap.put("Taxi", CategoryType.TRIP);
+        secondaryCategoryMap.put("Car Service", CategoryType.TRIP);
+        secondaryCategoryMap.put("Parking", CategoryType.TRIP);
+        secondaryCategoryMap.put("Tolls and Fees", CategoryType.TRIP);
+        secondaryCategoryMap.put("Public Transportation Services", CategoryType.TRIP);
+        secondaryCategoryMap.put("Rail", CategoryType.TRIP);
+        secondaryCategoryMap.put("Boat", CategoryType.TRIP);
+        secondaryCategoryMap.put("Cruises", CategoryType.TRIP);
+        secondaryCategoryMap.put("Charter Buses", CategoryType.TRIP);
+        secondaryCategoryMap.put("Limos and Chauffeurs", CategoryType.TRIP);
+
+        // Income & Transfers
+        secondaryCategoryMap.put("Deposit", CategoryType.DEPOSIT);
+        secondaryCategoryMap.put("Payroll", CategoryType.INCOME);
+        secondaryCategoryMap.put("Interest Earned", CategoryType.INCOME);
+        secondaryCategoryMap.put("Refund", CategoryType.REFUND);
+
+        // Transfers & Withdrawals
+        secondaryCategoryMap.put("Withdrawal", CategoryType.WITHDRAWAL);
+        secondaryCategoryMap.put("Internal Account Transfer", CategoryType.TRANSFER);
+        secondaryCategoryMap.put("ACH", CategoryType.TRANSFER);
+        secondaryCategoryMap.put("Wire", CategoryType.TRANSFER);
+        secondaryCategoryMap.put("Third Party", CategoryType.TRANSFER);
+        secondaryCategoryMap.put("Check", CategoryType.TRANSFER);
+        secondaryCategoryMap.put("Credit", CategoryType.TRANSFER);
+        secondaryCategoryMap.put("Debit", CategoryType.TRANSFER);
+
+        // Pets
+        secondaryCategoryMap.put("Pets", CategoryType.PET);
+        secondaryCategoryMap.put("Veterinarians", CategoryType.PET);
+        secondaryCategoryMap.put("Animal Shelter", CategoryType.PET);
+
+        // Shopping & Retail
+        secondaryCategoryMap.put("Digital Purchase", CategoryType.OTHER);
+        secondaryCategoryMap.put("Sporting Goods", CategoryType.OTHER);
+        secondaryCategoryMap.put("Office Supplies", CategoryType.OTHER);
+        secondaryCategoryMap.put("Department Stores", CategoryType.OTHER);
+        secondaryCategoryMap.put("Discount Stores", CategoryType.OTHER);
+        secondaryCategoryMap.put("Clothing and Accessories", CategoryType.OTHER);
+        secondaryCategoryMap.put("Computers and Electronics", CategoryType.OTHER);
+        secondaryCategoryMap.put("Furniture and Home Decor", CategoryType.OTHER);
+        secondaryCategoryMap.put("Hardware Store", CategoryType.OTHER);
+        secondaryCategoryMap.put("Bookstores", CategoryType.OTHER);
+        secondaryCategoryMap.put("Toys", CategoryType.OTHER);
+        secondaryCategoryMap.put("Jewelry and Watches", CategoryType.OTHER);
+
+        // Recreation & Entertainment
+        secondaryCategoryMap.put("Entertainment", CategoryType.OTHER);
+        secondaryCategoryMap.put("Gyms and Fitness Centers", CategoryType.OTHER);
+        secondaryCategoryMap.put("Sports Clubs", CategoryType.OTHER);
+        secondaryCategoryMap.put("Arts and Entertainment", CategoryType.OTHER);
+        secondaryCategoryMap.put("Parks", CategoryType.OTHER);
+        secondaryCategoryMap.put("Zoo", CategoryType.OTHER);
+
+        // Services
+        secondaryCategoryMap.put("Home Improvement", CategoryType.OTHER);
+        secondaryCategoryMap.put("Cleaning", CategoryType.OTHER);
+        secondaryCategoryMap.put("Legal", CategoryType.OTHER);
+        secondaryCategoryMap.put("Financial", CategoryType.OTHER);
+        secondaryCategoryMap.put("Real Estate", CategoryType.OTHER);
+    }
+
+    void initializePrimaryCategoryMap()
+    {
+        primaryCategoryMap.put("Shops", CategoryType.OTHER);
+        primaryCategoryMap.put("Travel", CategoryType.TRIP);
+        primaryCategoryMap.put("Transfer", CategoryType.TRANSFER);
+        primaryCategoryMap.put("Food and Drink", CategoryType.ORDER_OUT);
+        primaryCategoryMap.put("Payment", CategoryType.PAYMENT);
+        primaryCategoryMap.put("Recreation", CategoryType.OTHER);
+    }
+
+    @Override
+    public Category categorize(Transaction transaction)
+    {
+        if(transaction == null)
+        {
+            throw new CategoryException("Transaction was found null... Terminating categorization");
+        }
+        String categoryId = transaction.getCategoryId();
+        String primaryCategory = transaction.getPrimaryCategory();
+        String secondaryCategory = transaction.getSecondaryCategory();
+        Category category;
+//        try
+//        {
+            int transactionPriority = assignPriorityToTransaction(transaction);
+            log.info("Transaction Priority: " + transactionPriority);
+            if(transactionPriority == 0)
+            {
+                return Category.createUncategorized();
+            }
+            String acctId = transaction.getAccountId();
+            Optional<AccountEntity> accountEntityOptional = accountService.findByAccountId(acctId);
+            if(accountEntityOptional.isEmpty())
+            {
+                throw new AccountNotFoundException("Account with id " + acctId + " not found");
+            }
+           AccountEntity accountEntity = accountEntityOptional.get();
+           Long userId = accountEntity.getUser().getId();
+           List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
+           String plaidCategoryID = PlaidCategories.findCategoryIdByPrimaryAndSecondaryCategory(primaryCategory, secondaryCategory);
+           if(transactionRules.isEmpty())
+           {
+               // If the user does not have any transaction rules, then we will iterate through the category Rule map
+               if(transactionPriority == 1)
+               {
+                   if(secondaryCategoryMap.containsKey(secondaryCategory))
+                   {
+                       log.info("Found Secondary Category: {}", secondaryCategory);
+                       CategoryType secondaryCategoryType = secondaryCategoryMap.get(secondaryCategory);
+                       String secondaryCategoryName = secondaryCategoryType.getType();
+                       category = Category.createCategory(plaidCategoryID, secondaryCategoryName, "SYSTEM", LocalDate.now());
+                       return category;
+                   }
+               }
+               else if(transactionPriority == 2)
+               {
+                 PlaidCategory pCategoryWithPrimaryAndSec = PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary(primaryCategory, secondaryCategory);
+                 if(plaidCategoryMap.containsKey(pCategoryWithPrimaryAndSec))
+                 {
+                    CategoryType categoryType = plaidCategoryMap.get(pCategoryWithPrimaryAndSec);
+                    String categoryName = categoryType.getType();
+                    category = Category.createCategory("", categoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+                    return category;
+                 }
+               }
+               else if(transactionPriority == 7)
+               {
+                    if(primaryCategoryMap.containsKey(primaryCategory))
+                    {
+                        log.info("Found Primary Category map Match: {}", primaryCategory);
+                        CategoryType primaryCategoryType = primaryCategoryMap.get(primaryCategory);
+                        String primaryCategoryName = primaryCategoryType.getType();
+                        category = Category.createCategory(plaidCategoryID, primaryCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+                        return category;
+                    }             
+               }
+               else if(transactionPriority == 5)
+               {
+                  PlaidCategory plaidCategory = PlaidCategory.builder()
+                    .categoryId(categoryId)
+                    .secondaryCategory(secondaryCategory)
+                    .build();
+                  log.info("Plaid Category {}", plaidCategory.toString());
+                  if(plaidCategoryMap.containsKey(plaidCategory))
+                  {
+                     log.info("Plaid Category map contains key {}", plaidCategory);
+                     CategoryType categoryType = plaidCategoryMap.get(plaidCategory);
+                     String categoryName = categoryType.getType();
+                     String pCategoryId = PlaidCategories.findCategoryIdBySecondaryCategory(secondaryCategory);
+                     category = Category.createCategory(pCategoryId, categoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+                     return category;
+                  }
+                  log.info("No Match found with Plaid Category map");
+               }
+               else if(transactionPriority == 6)
+               {
+                  PlaidCategory pCategoryWithPrimary = PlaidCategory.createPlaidCategoryWithIdAndPrimary(categoryId, primaryCategory);
+                  if(plaidCategoryMap.containsKey(pCategoryWithPrimary))
+                  {
+                    CategoryType categoryType = plaidCategoryMap.get(pCategoryWithPrimary);
+                    String categoryName = categoryType.getType();
+                    category = Category.createCategory(categoryId, categoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+                    return category;
+                  }
+               }
+               else if(transactionPriority == 9)
+               {
+                    // If the categoryId is the only criteria in the transaction
+                    // Then use the categoryId and look up the correct PlaidCategory using PlaidCategories
+                    PlaidCategories plaidCategories = PlaidCategories.findByCategoryId(categoryId);
+                    log.info("Found Plaid Category {}", plaidCategories);
+                    String sCategory = plaidCategories.getSecondaryCategory();
+                    log.info("Secondary Category: {}", sCategory);
+                    String pCategory = plaidCategories.getPrimaryCategory();
+                    // Check if there's a match in the secondary category map
+                    if(secondaryCategoryMap.containsKey(sCategory))
+                    {
+                        log.info("Found match in secondary category map");
+                        CategoryType sCategoryType = secondaryCategoryMap.get(sCategory);
+                        String catName = sCategoryType.getType();
+                        category = Category.createCategory(categoryId, catName, SYSTEM_CATEGORIZED, LocalDate.now());
+                        return category;
+                    }
+
+               }
+            //    else if(transactionPriority == 2)
+            //    {
+            //        if(primaryCategoryMap.containsKey(primaryCategory))
+            //        {
+            //            log.info("Found Primary Category: {}", primaryCategory);
+            //            CategoryType primaryCategoryType = primaryCategoryMap.get(primaryCategory);
+            //            String primaryCategoryName = primaryCategoryType.toString();
+            //            category = Category.createCategory(plaidCategoryID, primaryCategoryName, "SYSTEM", LocalDate.now());
+            //            return category;
+            //        }
+            //    }
+           }
+//            else
+//            {
+//                Map<Integer, List<TransactionRule>> transactionRulesByPriority = transactionRules.stream()
+//                        .filter(rule -> rule != null && rule.isActive())
+//                        .collect(Collectors.groupingBy(TransactionRule::getPriority));
+//                List<Integer> sortedPriorities = transactionRulesByPriority.keySet().stream()
+//                        .sorted().toList();
+//                for(Integer sortedPriority : sortedPriorities)
+//                {
+//                    List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
+//                    for(TransactionRule rule : rules)
+//                    {
+//                        int match_counter = 0;
+//                        Long ruleId = rule.getId();
+//                        if(matches(transaction, rule))
+//                        {
+//                            match_counter++;
+//                            rule.setMatchCount(match_counter);
+//                            transactionRuleService.updateMatchCount(ruleId, rule.getMatchCount());
+//                            String matchedCategory = rule.getCategoryName();
+//                            return Category.createCategory(plaidCategoryID, matchedCategory, "USER", LocalDate.now());
+//                        }
+//                    }
+//                }
+//            }
+//            return Category.createUncategorized();
+//        }catch(CategoryException e)
+//        {
+//            log.error("There was an error categorizing the transaction: {}", transaction, e);
+//            throw e;
+//        }
+        return null;
+    }
+
+    private int assignPriorityToTransaction(Transaction transaction)
+    {
+        String primaryCategory = transaction.getPrimaryCategory();
+        String secondaryCategory = transaction.getSecondaryCategory();
+        String categoryId = transaction.getCategoryId();
+        String merchantName = transaction.getMerchantName();
+        if(primaryCategory != null && secondaryCategory != null && categoryId != null)
+        {
+            return 1;
+        }
+        else if(primaryCategory != null && secondaryCategory != null)
+        {
+            return 2;
+        }
+        else if(primaryCategory != null && merchantName != null)
+        {
+            return 3;
+        }
+        else if(secondaryCategory != null && merchantName != null)
+        {
+            return 4;
+        }
+        else if(secondaryCategory != null && categoryId != null)
+        {
+            return 5;
+        }
+        else if(primaryCategory != null && categoryId != null)
+        {
+            return 6;
+        }
+        else if(primaryCategory != null)
+        {
+            return 7;
+        }else if(secondaryCategory != null)
+        {
+            return 8;
+        }else if(categoryId != null)
+        {
+            return 9;
+        }
+        return 0;
+    }
+
+    @Override
+    public boolean matches(Transaction transaction, TransactionRule transactionRule)
+    {
+        if(transaction == null || transactionRule == null)
+        {
+            return false;
+        }
+        BigDecimal amount = transaction.getAmount();
+        String description = transaction.getDescription();
+        String primaryCategory = transaction.getPrimaryCategory();
+        String secondaryCategory = transaction.getSecondaryCategory();
+        String categoryId = transaction.getCategoryId();
+        String merchantName = transaction.getMerchantName();
+
+        return false;
+    }
+}
