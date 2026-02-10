@@ -5,8 +5,6 @@ import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.domain.SubBudget;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.services.SubBudgetService;
-import com.app.budgetbuddy.services.TransactionService;
-import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
 import org.junit.jupiter.api.AfterEach;
@@ -16,9 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -34,7 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionImportServiceTest
+class TransactionImportEngineTest
 {
     @Mock
     private PlaidTransactionRunner plaidTransactionManager;
@@ -45,8 +40,7 @@ class TransactionImportServiceTest
     @Mock
     private CategoryRunner categoryRunner;
 
-
-    private TransactionImportService transactionImportService;
+    private TransactionImportEngine transactionImportEngine;
 
     private Long TEST_USER_ID = 1L;
     private int currentYear = LocalDate.now().getYear();
@@ -70,7 +64,7 @@ class TransactionImportServiceTest
         mockBudget.setBudgetName("2025 Budget Test");
         mockBudget.setBudgetYear(2025);
 
-        transactionImportService = new TransactionImportService(plaidTransactionManager, categoryRunner, subBudgetService);
+        transactionImportEngine = new TransactionImportEngine(plaidTransactionManager, categoryRunner, subBudgetService);
     }
 
     @AfterEach
@@ -85,7 +79,7 @@ class TransactionImportServiceTest
         when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
                 .thenReturn(mockSubBudgets);
 
-        List<DateRange> monthRanges = transactionImportService.getMonthDateRangesByCurrentDate(TEST_USER_ID);
+        List<DateRange> monthRanges = transactionImportEngine.getMonthDateRangesByCurrentDate(TEST_USER_ID);
         assertNotNull(monthRanges);
         assertEquals(5, monthRanges.size());
     }
@@ -95,7 +89,7 @@ class TransactionImportServiceTest
     void testShouldReturnEmptyListWhenNoMonthsRangeFound(){
         when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
                 .thenReturn(new ArrayList<>());
-        List<DateRange> actual = transactionImportService.getMonthDateRangesByCurrentDate(TEST_USER_ID);
+        List<DateRange> actual = transactionImportEngine.getMonthDateRangesByCurrentDate(TEST_USER_ID);
         assertNotNull(actual);
         assertEquals(0, actual.size());
     }
@@ -103,7 +97,7 @@ class TransactionImportServiceTest
     @Test
     @DisplayName("Should import transactions for valid user")
     void testShouldImportTransactionsForValidUser() throws IOException {
-        List<Transaction> transactions = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
+        List<Transaction> transactions = transactionImportEngine.importMonthlyTransactions(TEST_USER_ID);
         assertNotNull(transactions);
         assertEquals(mockTransactions.size() * mockSubBudgets.size(), transactions.size());
         verify(subBudgetService).findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear);
@@ -160,7 +154,7 @@ class TransactionImportServiceTest
     void shouldHandleEmptyMonthDateRanges() throws InterruptedException, IOException {
         when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
                 .thenReturn(Collections.emptyList());
-        List<Transaction> actual = transactionImportService.importMonthlyTransactions(TEST_USER_ID);
+        List<Transaction> actual = transactionImportEngine.importMonthlyTransactions(TEST_USER_ID);
         assertNotNull(actual);
         assertEquals(0, actual.size());
     }

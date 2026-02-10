@@ -1,6 +1,6 @@
 package com.app.budgetbuddy.controllers;
 
-import com.app.budgetbuddy.workbench.TransactionImportService;
+import com.app.budgetbuddy.workbench.TransactionImportEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -11,12 +11,13 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class PlaidImportController
 {
-    private final TransactionImportService plaidTransactionImportService;
+    private final TransactionImportEngine plaidTransactionImportService;
 
     @Autowired
-    public PlaidImportController(TransactionImportService plaidTransactionImportService)
+    public PlaidImportController(TransactionImportEngine plaidTransactionImportEngine
+    )
     {
-        this.plaidTransactionImportService = plaidTransactionImportService;
+        this.plaidTransactionImportService = plaidTransactionImportEngine;
     }
 
 //    @PostMapping("/{userId}/import")

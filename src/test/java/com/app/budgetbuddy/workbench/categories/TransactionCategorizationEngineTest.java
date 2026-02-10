@@ -22,11 +22,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionCategorizerServiceImplTest
+class TransactionCategorizationEngineTest
 {
     @Mock
     private MerchantMatcherService merchantMatcherService;
@@ -227,8 +226,7 @@ class TransactionCategorizerServiceImplTest
     }
 
     @Test
-    void testCategorize_whenTransactionHasOnlyCategoryId_thenReturnCategory()
-    {
+    void testCategorize_whenTransactionHasOnlyCategoryId_thenReturnCategory() {
         Transaction transaction = new Transaction();
         transaction.setPrimaryCategory(null);
         transaction.setAccountId("e2323232");
@@ -270,7 +268,7 @@ class TransactionCategorizerServiceImplTest
         wincoFoodsRule.setMerchantRule("WINCO FOODS");
         wincoFoodsRule.setActive(true);
         wincoFoodsRule.setUserId(1L);
-        wincoFoodsRule.setCategoryName("Groceries");
+        wincoFoodsRule.setCategoryName("Shopping");
         wincoFoodsRule.setPriority(2);
         rules.add(wincoFoodsRule);
 
@@ -279,9 +277,35 @@ class TransactionCategorizerServiceImplTest
 
         // Then
         assertNotNull(result);
-        assertEquals("Groceries", result.getCategoryName());
-        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertEquals("Shopping", result.getCategoryName());
+        assertEquals("USER", result.getCategorizedBy());
+        assertEquals(2L, result.getCategoryId());
         assertEquals("19047000", result.getPlaidCategoryId());
+    }
+
+    @Test
+    void testMatches_whenTransactionIsNull_thenReturnFalse(){
+        TransactionRule rule = new TransactionRule();
+        boolean result = transactionCategorizerService.matches(null, rule);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenTransactionRuleIsNull_thenReturnFalse(){
+        Transaction transaction = new Transaction();
+        boolean result = transactionCategorizerService.matches(transaction, null);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenTransactionMatchesRule_thenReturnTrue(){
+        Transaction transaction = new Transaction();
+        transaction.setMerchantName("WINCO FOODS");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO FOODS");
+        boolean result = transactionCategorizerService.matches(transaction, rule);
+        assertTrue(result);
     }
 
 

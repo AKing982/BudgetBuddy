@@ -285,6 +285,20 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
                 return Category.createCategory(catId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
             }
         }
+        else
+        {
+            for(TransactionRule rule : transactionRules)
+            {
+                int match_count = 0;
+                Long ruleId = 1L;
+                if(matches(transaction, rule))
+                {
+                    match_count++;
+                    rule.setMatchCount(match_count);
+
+                }
+            }
+        }
         return Category.createUncategorized();
     }
 
@@ -314,13 +328,20 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
         {
             return false;
         }
-        BigDecimal amount = transaction.getAmount();
-        String description = transaction.getDescription();
-        String primaryCategory = transaction.getPrimaryCategory();
-        String secondaryCategory = transaction.getSecondaryCategory();
-        String categoryId = transaction.getCategoryId();
-        String merchantName = transaction.getMerchantName();
-
-        return false;
+//        BigDecimal amount = transaction.getAmount();
+//        String description = transaction.getDescription();
+//        String primaryCategory = transaction.getPrimaryCategory();
+//        String secondaryCategory = transaction.getSecondaryCategory();
+//        String categoryId = transaction.getCategoryId();
+//        String merchantName = transaction.getMerchantName();
+//        boolean merchantMatch = transactionRule.getMerchantRule().equalsIgnoreCase(merchantName);
+//        boolean descriptionMatch = transactionRule.getDescriptionRule().equalsIgnoreCase(description);
+//        if(transactionRule.getMerchantRule().equalsIgnoreCase(merchantName))
+//        {
+//            return true;
+//        }
+//
+//        return false;
+        return true;
     }
 }

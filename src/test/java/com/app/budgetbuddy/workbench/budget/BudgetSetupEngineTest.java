@@ -5,7 +5,7 @@ import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
-import com.app.budgetbuddy.workbench.TransactionImportService;
+import com.app.budgetbuddy.workbench.TransactionImportEngine;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -56,7 +56,7 @@ class BudgetSetupEngineTest
     private MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
 
     @MockBean
-    private TransactionImportService transactionImportService;
+    private TransactionImportEngine transactionImportEngine;
 
     @MockBean
     private BudgetCategoryThreadService budgetCategoryThreadService;
@@ -135,7 +135,7 @@ class BudgetSetupEngineTest
                 .budgetGoals(budgetGoals)
                 .build();
 
-        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, transactionImportService, abstractBudgetStatisticsService, budgetCategoryThreadService);
+        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, transactionImportEngine, abstractBudgetStatisticsService, budgetCategoryThreadService);
     }
 
     @Test

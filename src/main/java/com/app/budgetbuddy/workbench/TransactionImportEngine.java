@@ -4,37 +4,29 @@ import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.services.SubBudgetService;
-import com.app.budgetbuddy.services.TransactionService;
-import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
-public class TransactionImportService
+public class TransactionImportEngine
 {
     private PlaidTransactionRunner plaidTransactionRunner;
     private CategoryRunner categoryRunner;
     private SubBudgetService subBudgetService;
 
     @Autowired
-    public TransactionImportService(PlaidTransactionRunner plaidTransactionRunner,
+    public TransactionImportEngine(PlaidTransactionRunner plaidTransactionRunner,
                                     CategoryRunner categoryRunner,
-                                    SubBudgetService subBudgetService) {
+                                    SubBudgetService subBudgetService)
+    {
         this.plaidTransactionRunner = plaidTransactionRunner;
         this.categoryRunner = categoryRunner;
         this.subBudgetService = subBudgetService;
@@ -56,8 +48,8 @@ public class TransactionImportService
         return monthRanges;
     }
 
-
-    public List<Transaction> importMonthlyTransactions(final Long userId) {
+    public List<Transaction> importMonthlyTransactions(final Long userId)
+    {
 //        List<CompletableFuture<List<Transaction>>> monthlyFutures = new ArrayList<>();
 //        log.info("Starting transaction import for user: {}", userId);
 //        long startTime = System.currentTimeMillis();
