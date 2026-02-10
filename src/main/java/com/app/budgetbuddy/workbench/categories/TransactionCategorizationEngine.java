@@ -51,9 +51,11 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
 
     void initializePlaidCategoryMap()
     {
-        plaidCategoryMap.put(PlaidCategory.builder().categoryId("19047000").secondaryCategory("Supermarkets and Groceries").build(), CategoryType.GROCERIES);
         plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithIdAndPrimary("16000000", "Payment"), CategoryType.PAYMENT);
         plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Shops", "Supermarkets and Groceries"), CategoryType.GROCERIES);
+        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Food and Drink", "Restaurants"), CategoryType.RESTAURANTS);
+        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Travel", "Airlines and Aviation Services"), CategoryType.TRIP);
+        plaidCategoryMap.put(PlaidCategory.createWithIdAndSecondary("19047000", "Supermarkets and Groceries"), CategoryType.GROCERIES);
     }
 
     void initializeCategoryIdMap()
@@ -295,7 +297,10 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
                 {
                     match_count++;
                     rule.setMatchCount(match_count);
-
+                    transactionRuleService.updateMatchCount(ruleId, match_count);
+                    String matched_category = rule.getCategoryName();
+                    Long user_category_id = userCategoryService.getCategoryIdByNameAndUser(matched_category, userId);
+                    return Category.createCategory(user_category_id, categoryId, matched_category, USER_CATEGORIZED, LocalDate.now());
                 }
             }
         }
@@ -324,24 +329,65 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
     @Override
     public boolean matches(Transaction transaction, TransactionRule transactionRule)
     {
-        if(transaction == null || transactionRule == null)
+        if(transaction == null || transactionRule == null || !transactionRule.isActive())
         {
             return false;
         }
-//        BigDecimal amount = transaction.getAmount();
-//        String description = transaction.getDescription();
-//        String primaryCategory = transaction.getPrimaryCategory();
-//        String secondaryCategory = transaction.getSecondaryCategory();
-//        String categoryId = transaction.getCategoryId();
-//        String merchantName = transaction.getMerchantName();
-//        boolean merchantMatch = transactionRule.getMerchantRule().equalsIgnoreCase(merchantName);
-//        boolean descriptionMatch = transactionRule.getDescriptionRule().equalsIgnoreCase(description);
-//        if(transactionRule.getMerchantRule().equalsIgnoreCase(merchantName))
-//        {
-//            return true;
-//        }
-//
-//        return false;
-        return true;
+
+        BigDecimal amount = transaction.getAmount();
+        String description = transaction.getDescription();
+        String primaryCategory = transaction.getPrimaryCategory();
+        String secondaryCategory = transaction.getSecondaryCategory();
+        String categoryId = transaction.getCategoryId();
+        String merchantName = transaction.getMerchantName();
+        String name = transaction.getName();
+        if(transactionRule.getMerchantRule() != null &&
+                !transactionRule.getMerchantRule().isEmpty() &&
+                transactionRule.getMerchantRule().equalsIgnoreCase(merchantName))
+        {
+            return true;
+        }
+
+        // Match if description rule matches (case-insensitive)
+        if(transactionRule.getDescriptionRule() != null &&
+                !transactionRule.getDescriptionRule().isEmpty() &&
+                transactionRule.getDescriptionRule().equalsIgnoreCase(description))
+        {
+            return true;
+        }
+        if(transactionRule.getExtendedDescriptionRule() != null &&
+                !transactionRule.getExtendedDescriptionRule().isEmpty())
+        {
+            String extRule = transactionRule.getExtendedDescriptionRule().toLowerCase();
+            boolean descMatch = description != null && description.toLowerCase().contains(extRule);
+            boolean nameMatch = name != null && name.toLowerCase().contains(extRule);
+
+            if(descMatch || nameMatch)
+            {
+                return matchesAmountRange(amount, transactionRule);
+            }
+        }
+
+        return false;
+    }
+
+    private boolean matchesAmountRange(BigDecimal amount, TransactionRule rule)
+    {
+        if(amount == null)
+        {
+            return false;
+        }
+
+        double amountValue = amount.doubleValue();
+
+        // If both min and max are 0, assume no amount restriction
+        if(rule.getAmountMin() == 0 && rule.getAmountMax() == 0)
+        {
+            return true;
+        }
+
+        // Check if amount falls within the specified range
+        return amountValue >= rule.getAmountMin() &&
+                amountValue <= rule.getAmountMax();
     }
 }

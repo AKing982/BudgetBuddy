@@ -39,6 +39,17 @@ public class Category
                 .build();
     }
 
+    public static Category createCategory(Long user_category_id, String plaidCategoryId, String categoryName, String categorizedBy, LocalDate categorizedDate)
+    {
+        return Category.builder()
+                .categorizedBy(categorizedBy)
+                .plaidCategoryId(plaidCategoryId)
+                .categoryName(categoryName)
+                .categorizedDate(categorizedDate)
+                .categoryId(user_category_id)
+                .build();
+    }
+
     public static Category createUncategorized(){
         return Category.builder()
                 .categoryId(0L)

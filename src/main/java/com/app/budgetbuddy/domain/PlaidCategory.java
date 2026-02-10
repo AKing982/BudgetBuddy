@@ -20,6 +20,11 @@ public class PlaidCategory
         this.secondaryCategory = secondaryCategory;
     }
 
+    public static PlaidCategory createWithIdAndSecondary(String categoryId, String secondaryCategory)
+    {
+        return PlaidCategory.builder().categoryId(categoryId).secondaryCategory(secondaryCategory).build();
+    }
+
     public static PlaidCategory createPlaidCategoryWithIdAndPrimary(String categoryId, String primaryCategory)
     {
         return PlaidCategory.builder().categoryId(categoryId).primaryCategory(primaryCategory).build();
