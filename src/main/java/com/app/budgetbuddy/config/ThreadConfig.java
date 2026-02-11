@@ -52,29 +52,16 @@ public class ThreadConfig
 
     @Bean(name="monthlyExecutor")
     public ThreadPoolExecutor monthlyThreadPoolExecutor(){
-        DateRange dateRange = DateRange.createDateRange(budgetBeginDate, LocalDate.now());
-        int poolSize = dateRange.splitIntoMonths().size();
+        // Limit concurrent Plaid requests to stay under rate limits
+        int poolSize = 4; // Conservative for API rate limits
+
         return new ThreadPoolExecutor(
-                poolSize,
-                poolSize,
-                0L,
-                TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(),
+                2,     // core pool
+                poolSize, // max - keep low for API limits
+                60L, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(50),
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
-    }
-
-    @Bean(name="weeklyExecutor")
-    public ThreadPoolExecutor weeklyThreadPoolExecutor()
-    {
-        DateRange dateRange = DateRange.createDateRange(budgetBeginDate, LocalDate.now());
-        int poolSize = dateRange.getNumberOfWeeksBetween();
-        return new ThreadPoolExecutor(poolSize,
-                poolSize,
-                0L,
-                TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(),
-                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     @Bean

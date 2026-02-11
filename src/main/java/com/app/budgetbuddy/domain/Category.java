@@ -53,6 +53,7 @@ public class Category
     public static Category createUncategorized(){
         return Category.builder()
                 .categoryId(0L)
+                .plaidCategoryId("")
                 .categoryName("Uncategorized")
                 .categorizedDate(LocalDate.now())
                 .categorizedBy("SYSTEM")

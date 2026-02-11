@@ -74,7 +74,6 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
     }
 
-    @Async("taskExecutor")
     public CompletableFuture<TransactionsGetResponse> getAsyncTransactionsResponse(Long userId, LocalDate startDate, LocalDate endDate) throws IOException
     {
         Optional<UserEntity> user = userService.findById(userId);
@@ -174,7 +173,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
     }
 
-    @Async("taskExecutor")
+
     public CompletableFuture<TransactionsRecurringGetResponse> getAsyncRecurringResponse(Long userId) throws IOException
     {
         Optional<UserEntity> userEntityOptional = userService.findById(userId);
@@ -220,7 +219,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 .accessToken(accessToken);
     }
 
-    @Async("taskExecutor")
+
     public CompletableFuture<TransactionsSyncResponse> syncTransactionsForUser(final String secret, final String itemId, final String accessToken, final Long userId) throws IOException
     {
         Optional<UserEntity> userEntityOptional = userService.findById(userId);

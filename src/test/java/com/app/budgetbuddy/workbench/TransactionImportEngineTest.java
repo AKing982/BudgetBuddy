@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 class TransactionImportEngineTest
 {
     @Mock
-    private PlaidTransactionRunner plaidTransactionManager;
+    private TransactionImportAsyncService transactionImportAsyncService;
 
     @Mock
     private SubBudgetService subBudgetService;
@@ -64,7 +64,7 @@ class TransactionImportEngineTest
         mockBudget.setBudgetName("2025 Budget Test");
         mockBudget.setBudgetYear(2025);
 
-        transactionImportEngine = new TransactionImportEngine(plaidTransactionManager, categoryRunner, subBudgetService);
+        transactionImportEngine = new TransactionImportEngine(transactionImportAsyncService, categoryRunner, subBudgetService);
     }
 
     @AfterEach

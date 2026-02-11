@@ -10,73 +10,72 @@ import java.util.Optional;
 @Getter
 public enum PlaidCategories
 {
-    SUPERMARKETS_AND_GROCERIES("19047000", "Supermarkets and Groceries", "Shops"),
-    SPORTING_GOODS("19046000", "Shops", "Sporting Goods"),
-    SHOPPING_CENTERS_MALLS("19045000", "Shops", "Photos and Frames"),
-    WHOLE_SALE_SHOPS("19053000", "Shops", "Wholesale"),
-    REFUND("20001000", "Tax", "Refund"),
-    TAX_PAYMENT("20002000", "Tax", "Payment"),
-    TRANSFER("21000000", "Transfer", ""),
-    INTERNAL_ACCOUNT_TRANSFER("21001000", "Transfer", "Internal Account Transfers"),
-    ACH_TRANSFER("21002000", "Transfer", "ACH"),
-    TRANSFER_CHECK("21004000", "Transfer", "Check"),
-    TRANSFER_CREDIT("21005000", "Transfer", "Credit"),
-    TRANSFER_DEBIT("21006000", "Transfer", "Debit"),
-    TRANSFER_DEPOSIT("21007000", "Transfer", "Deposit"),
-    TRANSFER_PAYROLL("21009000", "Transfer", "Payroll"),
-    AIRLINES_AND_AVIATION_SERVICES("22001000", "Travel", "Airlines and Aviation Services"),
-    TRAVEL_AIRPORTS("22002000", "Travel", "Airports"),
-    TRAVEL_GAS_STATIONS("22009000", "Travel", "Gas Stations"),
-    BANK_FEES_OVERDRAFT("10001000", "Bank Fees", ""),
-    BANK_FEES_LATE_PAYMENT("10003000", "Bank Fees", "Late Payment"),
+    SPORTING_GOODS("19046000", "Shops", "Sporting Goods", CategoryType.OTHER),
+    SHOPPING_CENTERS_MALLS("19045000", "Shops", "Photos and Frames", CategoryType.OTHER),
+    WHOLE_SALE_SHOPS("19053000", "Shops", "Wholesale", CategoryType.OTHER),
+    REFUND("20001000", "Tax", "Refund", CategoryType.REFUND),
+    TAX_PAYMENT("20002000", "Tax", "", CategoryType.PAYMENT),
+    TRANSFER("21000000", "Transfer", "", CategoryType.TRANSFER),
+    INTERNAL_ACCOUNT_TRANSFER("21001000", "Transfer", "Internal Account Transfers", CategoryType.TRANSFER),
+    ACH_TRANSFER("21002000", "Transfer", "ACH", CategoryType.TRANSFER),
+    TRANSFER_CHECK("21004000", "Transfer", "Check", CategoryType.TRANSFER),
+    TRANSFER_CREDIT("21005000", "Transfer", "Credit", CategoryType.TRANSFER),
+    TRANSFER_DEBIT("21006000", "Transfer", "Debit", CategoryType.TRANSFER),
+    TRANSFER_DEPOSIT("21007000", "Transfer", "Deposit", CategoryType.TRANSFER),
+    TRANSFER_PAYROLL("21009000", "Transfer", "Payroll", CategoryType.INCOME),
+    AIRLINES_AND_AVIATION_SERVICES("22001000", "Travel", "Airlines and Aviation Services", CategoryType.TRIP),
+    TRAVEL_AIRPORTS("22002000", "Travel", "Airports", CategoryType.TRIP),
+    TRAVEL_GAS_STATIONS("22009000", "Travel", "Gas Stations", CategoryType.GAS),
+    BANK_FEES_OVERDRAFT("10001000", "Bank Fees", "", CategoryType.PAYMENT),
+    BANK_FEES_LATE_PAYMENT("10003000", "Bank Fees", "Late Payment", CategoryType.PAYMENT),
 
     // Community
-    COMMUNITY("12000000", "Community", ""),
-    COMMUNITY_ANIMAL_SHELTER("12001000", "Community", "Animal Shelter"),
-    COMMUNITY_ASSISTED_LIVING("12002000", "Community", "Assisted Living Services"),
-    COMMUNITY_CEMETERY("12003000", "Community", "Cemetery"),
-    COMMUNITY_COURTS("12004000", "Community", "Courts"),
-    COMMUNITY_DAY_CARE("12005000", "Community", "Day Care and Preschools"),
-    COMMUNITY_DISABLED_SERVICES("12006000", "Community", "Disabled Persons Services"),
-    COMMUNITY_DRUG_ALCOHOL("12007000", "Community", "Drug and Alcohol Services"),
-    COMMUNITY_EDUCATION("12008000", "Community", "Education"),
-    COMMUNITY_GOVERNMENT("12009000", "Community", "Government Departments and Agencies"),
-    COMMUNITY_LOBBYISTS("12010000", "Community", "Government Lobbyists"),
-    COMMUNITY_HOUSING("12011000", "Community", "Housing Assistance and Shelters"),
-    COMMUNITY_LAW_ENFORCEMENT("12012000", "Community", "Law Enforcement"),
-    COMMUNITY_LIBRARIES("12013000", "Community", "Libraries"),
-    COMMUNITY_MILITARY("12014000", "Community", "Military"),
-    COMMUNITY_ORGANIZATIONS("12015000", "Community", "Organizations and Associations"),
-    COMMUNITY_POST_OFFICES("12016000", "Community", "Post Offices"),
-    COMMUNITY_SOCIAL_SERVICES("12017000", "Community", "Public and Social Services"),
-    COMMUNITY_RELIGIOUS("12018000", "Community", "Religious"),
-    COMMUNITY_SENIOR_SERVICES("12019000", "Community", "Senior Citizen Services"),
+    COMMUNITY("12000000", "Community", "", CategoryType.OTHER),
+    COMMUNITY_ANIMAL_SHELTER("12001000", "Community", "Animal Shelter", CategoryType.PET),
+    COMMUNITY_ASSISTED_LIVING("12002000", "Community", "Assisted Living Services", CategoryType.OTHER),
+    COMMUNITY_CEMETERY("12003000", "Community", "Cemetery", CategoryType.OTHER),
+    COMMUNITY_COURTS("12004000", "Community", "Courts", CategoryType.OTHER),
+    COMMUNITY_DAY_CARE("12005000", "Community", "Day Care and Preschools", CategoryType.OTHER),
+    COMMUNITY_DISABLED_SERVICES("12006000", "Community", "Disabled Persons Services", CategoryType.OTHER),
+    COMMUNITY_DRUG_ALCOHOL("12007000", "Community", "Drug and Alcohol Services", CategoryType.OTHER),
+    COMMUNITY_EDUCATION("12008000", "Community", "Education", CategoryType.OTHER),
+    COMMUNITY_GOVERNMENT("12009000", "Community", "Government Departments and Agencies", CategoryType.OTHER),
+    COMMUNITY_LOBBYISTS("12010000", "Community", "Government Lobbyists", CategoryType.OTHER),
+    COMMUNITY_HOUSING("12011000", "Community", "Housing Assistance and Shelters", CategoryType.RENT),
+    COMMUNITY_LAW_ENFORCEMENT("12012000", "Community", "Law Enforcement", CategoryType.OTHER),
+    COMMUNITY_LIBRARIES("12013000", "Community", "Libraries", CategoryType.OTHER),
+    COMMUNITY_MILITARY("12014000", "Community", "Military", CategoryType.OTHER),
+    COMMUNITY_ORGANIZATIONS("12015000", "Community", "Organizations and Associations", CategoryType.OTHER),
+    COMMUNITY_POST_OFFICES("12016000", "Community", "Post Offices", CategoryType.OTHER),
+    COMMUNITY_SOCIAL_SERVICES("12017000", "Community", "Public and Social Services", CategoryType.OTHER),
+    COMMUNITY_RELIGIOUS("12018000", "Community", "Religious", CategoryType.OTHER),
+    COMMUNITY_SENIOR_SERVICES("12019000", "Community", "Senior Citizen Services", CategoryType.OTHER),
 
     // Food and Drink
-    FOOD_AND_DRINK("13000000", "Food and Drink", ""),
-    FOOD_AND_DRINK_BAR("13001000", "Food and Drink", "Bar"),
-    FOOD_AND_DRINK_BREWERIES("13002000", "Food and Drink", "Breweries"),
-    FOOD_AND_DRINK_INTERNET_CAFES("13003000", "Food and Drink", "Internet Cafes"),
-    FOOD_AND_DRINK_NIGHTLIFE("13004000", "Food and Drink", "Nightlife"),
-    FOOD_AND_DRINK_RESTAURANTS("13005000", "Food and Drink", "Restaurants"),
+    FOOD_AND_DRINK("13000000", "Food and Drink", "", CategoryType.ORDER_OUT),
+    FOOD_AND_DRINK_BAR("13001000", "Food and Drink", "Bar", CategoryType.ORDER_OUT),
+    FOOD_AND_DRINK_BREWERIES("13002000", "Food and Drink", "Breweries", CategoryType.ORDER_OUT),
+    FOOD_AND_DRINK_INTERNET_CAFES("13003000", "Food and Drink", "Internet Cafes", CategoryType.ORDER_OUT),
+    FOOD_AND_DRINK_NIGHTLIFE("13004000", "Food and Drink", "Nightlife", CategoryType.ORDER_OUT),
+    FOOD_AND_DRINK_RESTAURANTS("13005000", "Food and Drink", "Restaurants", CategoryType.ORDER_OUT),
 
     // Healthcare
-    HEALTHCARE("14000000", "Healthcare", ""),
-    HEALTHCARE_SERVICES("14001000", "Healthcare", "Healthcare Services"),
-    HEALTHCARE_PHYSICIANS("14002000", "Healthcare", "Physicians"),
+    HEALTHCARE("14000000", "Healthcare", "", CategoryType.OTHER),
+    HEALTHCARE_SERVICES("14001000", "Healthcare", "Healthcare Services", CategoryType.OTHER),
+    HEALTHCARE_PHYSICIANS("14002000", "Healthcare", "Physicians", CategoryType.OTHER),
 
-    INTEREST("15000000", "Interest", ""),
-    INTEREST_EARNED("15001000", "Interest", "Interest Earned"),
-    INTEREST_CHARGED("15002000", "Interest", "Interest Charged"),
+    INTEREST("15000000", "Interest", "", CategoryType.INCOME),
+    INTEREST_EARNED("15001000", "Interest", "Interest Earned", CategoryType.INCOME),
+    INTEREST_CHARGED("15002000", "Interest", "Interest Charged", CategoryType.INCOME),
 
     // Payment
-    PAYMENT("16000000", "Payment", ""),
-    PAYMENT_CREDIT_CARD("16001000", "Payment", "Credit Card"),
-    PAYMENT_RENT("16002000", "Payment", "Rent"),
-    PAYMENT_LOAN("16003000", "Payment", "Loan"),
+    PAYMENT("16000000", "Payment", "", CategoryType.PAYMENT),
+    PAYMENT_CREDIT_CARD("16001000", "Payment", "Credit Card", CategoryType.PAYMENT),
+    PAYMENT_RENT("16002000", "Payment", "Rent", CategoryType.RENT),
+    PAYMENT_LOAN("16003000", "Payment", "Loan", CategoryType.PAYMENT),
 
     // Recreation
-    RECREATION("17000000", "Recreation", ""),
+    RECREATION("17000000", "Recreation", "", CategoryType.OTHER),
     RECREATION_ARTS_ENTERTAINMENT("17001000", "Recreation", "Arts and Entertainment"),
     RECREATION_ATHLETIC_FIELDS("17002000", "Recreation", "Athletic Fields"),
     RECREATION_BASEBALL("17003000", "Recreation", "Baseball"),
@@ -91,10 +90,10 @@ public enum PlaidCategories
     RECREATION_EQUESTRIAN("17012000", "Recreation", "Equestrian"),
     RECREATION_FOOTBALL("17013000", "Recreation", "Football"),
     RECREATION_GO_CARTS("17014000", "Recreation", "Go Carts"),
-    RECREATION_GOLF("17015000", "Recreation", "Golf"),
-    RECREATION_GUN_RANGES("17016000", "Recreation", "Gun Ranges"),
+    RECREATION_GOLF("17015000", "Recreation", "Golf", CategoryType.OTHER),
+    RECREATION_GUN_RANGES("17016000", "Recreation", "Gun Ranges", CategoryType.OTHER),
     RECREATION_GYMNASTICS("17017000", "Recreation", "Gymnastics"),
-    RECREATION_GYMS_FITNESS("17018000", "Recreation", "Gyms and Fitness Centers"),
+    RECREATION_GYMS_FITNESS("17018000", "Recreation", "Gyms and Fitness Centers", CategoryType.SUBSCRIPTION),
     RECREATION_HIKING("17019000", "Recreation", "Hiking"),
     RECREATION_HOCKEY("17020000", "Recreation", "Hockey"),
     RECREATION_HOT_AIR_BALLOONS("17021000", "Recreation", "Hot Air Balloons"),
@@ -127,7 +126,7 @@ public enum PlaidCategories
     RECREATION_ZOO("17048000", "Recreation", "Zoo"),
 
     // Service
-    SERVICE("18000000", "Service", ""),
+    SERVICE("18000000", "Service", "", CategoryType.OTHER),
     SERVICE_ADVERTISING_MARKETING("18001000", "Service", "Advertising and Marketing"),
     SERVICE_ART_RESTORATION("18003000", "Service", "Art Restoration"),
     SERVICE_AUDIOVISUAL("18004000", "Service", "Audiovisual"),
@@ -144,10 +143,10 @@ public enum PlaidCategories
     SERVICE_DATING_ESCORT("18015000", "Service", "Dating and Escort"),
     SERVICE_EMPLOYMENT_AGENCIES("18016000", "Service", "Employment Agencies"),
     SERVICE_ENGINEERING("18017000", "Service", "Engineering"),
-    SERVICE_ENTERTAINMENT("18018000", "Service", "Entertainment"),
+    SERVICE_ENTERTAINMENT("18018000", "Service", "Entertainment", CategoryType.OTHER),
     SERVICE_EVENTS("18019000", "Service", "Events and Event Planning"),
     SERVICE_FINANCIAL("18020000", "Service", "Financial"),
-    SERVICE_FOOD_BEVERAGE("18021000", "Service", "Food and Beverage"),
+    SERVICE_FOOD_BEVERAGE("18021000", "Service", "Food and Beverage", CategoryType.ORDER_OUT),
     SERVICE_FUNERAL("18022000", "Service", "Funeral Services"),
     SERVICE_GEOLOGICAL("18023000", "Service", "Geological"),
     SERVICE_HOME_IMPROVEMENT("18024000", "Service", "Home Improvement"),
@@ -156,8 +155,8 @@ public enum PlaidCategories
     SERVICE_IMMIGRATION("18027000", "Service", "Immigration"),
     SERVICE_IMPORT_EXPORT("18028000", "Service", "Import and Export"),
     SERVICE_INDUSTRIAL_MACHINERY("18029000", "Service", "Industrial Machinery and Vehicles"),
-    SERVICE_INSURANCE("18030000", "Service", "Insurance"),
-    SERVICE_INTERNET("18031000", "Service", "Internet Services"),
+    SERVICE_INSURANCE("18030000", "Service", "Insurance", CategoryType.INSURANCE),
+    SERVICE_INTERNET("18031000", "Service", "Internet Services", CategoryType.SUBSCRIPTION),
     SERVICE_LEATHER("18032000", "Service", "Leather"),
     SERVICE_LEGAL("18033000", "Service", "Legal"),
     SERVICE_LOGGING("18034000", "Service", "Logging and Sawmills"),
@@ -171,7 +170,7 @@ public enum PlaidCategories
     SERVICE_OIL_GAS("18042000", "Service", "Oil and Gas"),
     SERVICE_PACKAGING("18043000", "Service", "Packaging"),
     SERVICE_PAPER("18044000", "Service", "Paper"),
-    SERVICE_PERSONAL_CARE("18045000", "Service", "Personal Care"),
+    SERVICE_PERSONAL_CARE("18045000", "Service", "Personal Care", CategoryType.OTHER),
     SERVICE_PETROLEUM("18046000", "Service", "Petroleum"),
     SERVICE_PHOTOGRAPHY("18047000", "Service", "Photography"),
     SERVICE_PLASTICS("18048000", "Service", "Plastics"),
@@ -187,14 +186,14 @@ public enum PlaidCategories
     SERVICE_SHIPPING("18058000", "Service", "Shipping and Freight"),
     SERVICE_SOFTWARE_DEV("18059000", "Service", "Software Development"),
     SERVICE_STORAGE("18060000", "Service", "Storage"),
-    SERVICE_SUBSCRIPTION("18061000", "Service", "Subscription"),
+    SERVICE_SUBSCRIPTION("18061000", "Service", "Subscription", CategoryType.SUBSCRIPTION),
     SERVICE_TAILORS("18062000", "Service", "Tailors"),
     SERVICE_TELECOMMUNICATION("18063000", "Service", "Telecommunication Services"),
     SERVICE_TEXTILES("18064000", "Service", "Textiles"),
     SERVICE_TOURIST("18065000", "Service", "Tourist Information and Services"),
     SERVICE_TRANSPORTATION("18066000", "Service", "Transportation"),
     SERVICE_TRAVEL_AGENTS("18067000", "Service", "Travel Agents and Tour Operators"),
-    SERVICE_UTILITIES("18068000", "Service", "Utilities"),
+    SERVICE_UTILITIES("18068000", "Service", "Utilities", CategoryType.UTILITIES),
     SERVICE_VETERINARIANS("18069000", "Service", "Veterinarians"),
     SERVICE_WATER_WASTE("18070000", "Service", "Water and Waste Management"),
     SERVICE_WEB_DESIGN("18071000", "Service", "Web Design and Development"),
@@ -208,11 +207,11 @@ public enum PlaidCategories
     SHOPS_ANTIQUES("19002000", "Shops", "Antiques"),
     SHOPS_ARTS_CRAFTS("19003000", "Shops", "Arts and Crafts"),
     SHOPS_AUCTIONS("19004000", "Shops", "Auctions"),
-    SHOPS_AUTOMOTIVE("19005000", "Shops", "Automotive"),
+    SHOPS_AUTOMOTIVE("19005000", "Shops", "Automotive", CategoryType.OTHER),
     SHOPS_BEAUTY_PRODUCTS("19006000", "Shops", "Beauty Products"),
     SHOPS_BICYCLES("19007000", "Shops", "Bicycles"),
     SHOPS_BOAT_DEALERS("19008000", "Shops", "Boat Dealers"),
-    SHOPS_BOOKSTORES("19009000", "Shops", "Bookstores"),
+    SHOPS_BOOKSTORES("19009000", "Shops", "Bookstores", CategoryType.OTHER),
     SHOPS_CARDS_STATIONERY("19010000", "Shops", "Cards and Stationery"),
     SHOPS_CHILDREN("19011000", "Shops", "Children"),
     SHOPS_CLOTHING_ACCESSORIES("19012000", "Shops", "Clothing and Accessories"),
@@ -222,17 +221,17 @@ public enum PlaidCategories
     SHOPS_COSTUMES("19016000", "Shops", "Costumes"),
     SHOPS_DANCE_MUSIC("19017000", "Shops", "Dance and Music"),
     SHOPS_DEPARTMENT_STORES("19018000", "Shops", "Department Stores"),
-    SHOPS_DIGITAL_PURCHASE("19019000", "Shops", "Digital Purchase"),
-    SHOPS_DISCOUNT_STORES("19020000", "Shops", "Discount Stores"),
+    SHOPS_DIGITAL_PURCHASE("19019000", "Shops", "Digital Purchase", CategoryType.OTHER),
+    SHOPS_DISCOUNT_STORES("19020000", "Shops", "Discount Stores", CategoryType.OTHER),
     SHOPS_ELECTRICAL_EQUIPMENT("19021000", "Shops", "Electrical Equipment"),
     SHOPS_EQUIPMENT_RENTAL("19022000", "Shops", "Equipment Rental"),
     SHOPS_FLEA_MARKETS("19023000", "Shops", "Flea Markets"),
     SHOPS_FLORISTS("19024000", "Shops", "Florists"),
-    SHOPS_FOOD_BEVERAGE("19025000", "Shops", "Food and Beverage Store"),
+    SHOPS_FOOD_BEVERAGE("19025000", "Shops", "Food and Beverage Store", CategoryType.ORDER_OUT),
     SHOPS_FUEL_DEALER("19026000", "Shops", "Fuel Dealer"),
     SHOPS_FURNITURE_HOME_DECOR("19027000", "Shops", "Furniture and Home Decor"),
     SHOPS_GIFT_NOVELTY("19028000", "Shops", "Gift and Novelty"),
-    SHOPS_GLASSES_OPTOMETRIST("19029000", "Shops", "Glasses and Optometrist"),
+    SHOPS_GLASSES_OPTOMETRIST("19029000", "Shops", "Glasses and Optometrist", CategoryType.OTHER),
     SHOPS_HARDWARE_STORE("19030000", "Shops", "Hardware Store"),
     SHOPS_HOBBY_COLLECTIBLES("19031000", "Shops", "Hobby and Collectibles"),
     SHOPS_INDUSTRIAL_SUPPLIES("19032000", "Shops", "Industrial Supplies"),
@@ -245,12 +244,12 @@ public enum PlaidCategories
     SHOPS_OFFICE_SUPPLIES("19039000", "Shops", "Office Supplies"),
     SHOPS_OUTLET("19040000", "Shops", "Outlet"),
     SHOPS_PAWN_SHOPS("19041000", "Shops", "Pawn Shops"),
-    SHOPS_PETS("19042000", "Shops", "Pets"),
-    SHOPS_PHARMACIES("19043000", "Shops", "Pharmacies"),
+    SHOPS_PETS("19042000", "Shops", "Pets", CategoryType.PET),
+    SHOPS_PHARMACIES("19043000", "Shops", "Pharmacies", CategoryType.OTHER),
     SHOPS_PHOTOS_FRAMES("19044000", "Shops", "Photos and Frames"),
     SHOPS_SHOPPING_CENTERS("19045000", "Shops", "Shopping Centers and Malls"),
     SHOPS_SPORTING_GOODS("19046000", "Shops", "Sporting Goods"),
-    SHOPS_SUPERMARKETS_GROCERIES("19047000", "Shops", "Supermarkets and Groceries"),
+    SHOPS_SUPERMARKETS_GROCERIES("19047000", "Shops", "Supermarkets and Groceries", CategoryType.GROCERIES),
     SHOPS_TOBACCO("19048000", "Shops", "Tobacco"),
     SHOPS_TOYS("19049000", "Shops", "Toys"),
     SHOPS_VINTAGE_THRIFT("19050000", "Shops", "Vintage and Thrift"),
@@ -260,63 +259,83 @@ public enum PlaidCategories
     SHOPS_LAWN_GARDEN("19054000", "Shops", "Lawn and Garden"),
 
     // Transfer
-    TRANSFER_INTERNAL("21001000", "Transfer", "Internal Account Transfer"),
-    TRANSFER_ACH("21002000", "Transfer", "ACH"),
-    TRANSFER_BILLPAY("21003000", "Transfer", "Billpay"),
-    TRANSFER_KEEP_CHANGE("21008000", "Transfer", "Keep the Change Savings Program"),
-    TRANSFER_THIRD_PARTY("21010000", "Transfer", "Third Party"),
-    TRANSFER_WIRE("21011000", "Transfer", "Wire"),
-    TRANSFER_WITHDRAWAL("21012000", "Transfer", "Withdrawal"),
-    TRANSFER_SAVE_AS_YOU_GO("21013000", "Transfer", "Save As You Go"),
+    TRANSFER_INTERNAL("21001000", "Transfer", "Internal Account Transfer", CategoryType.TRANSFER),
+    TRANSFER_ACH("21002000", "Transfer", "ACH", CategoryType.TRANSFER),
+    TRANSFER_BILLPAY("21003000", "Transfer", "Billpay", CategoryType.TRANSFER),
+    TRANSFER_KEEP_CHANGE("21008000", "Transfer", "Keep the Change Savings Program", CategoryType.TRANSFER),
+    TRANSFER_THIRD_PARTY("21010000", "Transfer", "Third Party", CategoryType.TRANSFER),
+    TRANSFER_WIRE("21011000", "Transfer", "Wire", CategoryType.TRANSFER),
+    TRANSFER_WITHDRAWAL("21012000", "Transfer", "Withdrawal", CategoryType.TRANSFER),
+    TRANSFER_SAVE_AS_YOU_GO("21013000", "Transfer", "Save As You Go", CategoryType.TRANSFER),
 
-    TRAVEL("22000000", "Travel", ""),
-    TRAVEL_AIRLINES("22001000", "Travel", "Airlines and Aviation Services"),
+    TRAVEL("22000000", "Travel", "", CategoryType.TRIP),
+    TRAVEL_AIRLINES("22001000", "Travel", "Airlines and Aviation Services", CategoryType.TRIP),
     TRAVEL_BOAT("22003000", "Travel", "Boat"),
     TRAVEL_BUS_STATIONS("22004000", "Travel", "Bus Stations"),
     TRAVEL_CAR_TRUCK_RENTALS("22005000", "Travel", "Car and Truck Rentals"),
     TRAVEL_CAR_SERVICE("22006000", "Travel", "Car Service"),
     TRAVEL_CHARTER_BUSES("22007000", "Travel", "Charter Buses"),
-    TRAVEL_CRUISES("22008000", "Travel", "Cruises"),
+    TRAVEL_CRUISES("22008000", "Travel", "Cruises", CategoryType.TRIP),
     TRAVEL_HELIPORTS("22010000", "Travel", "Heliports"),
     TRAVEL_LIMOS("22011000", "Travel", "Limos and Chauffeurs"),
     TRAVEL_LODGING("22012000", "Travel", "Lodging"),
-    TRAVEL_PARKING("22013000", "Travel", "Parking"),
-    TRAVEL_PUBLIC_TRANSPORTATION("22014000", "Travel", "Public Transportation Services"),
+    TRAVEL_PARKING("22013000", "Travel", "Parking", CategoryType.TRIP),
+    TRAVEL_PUBLIC_TRANSPORTATION("22014000", "Travel", "Public Transportation Services", CategoryType.TRIP),
     TRAVEL_RAIL("22015000", "Travel", "Rail"),
-    TRAVEL_TAXI("22016000", "Travel", "Taxi"),
-    TRAVEL_TOLLS_FEES("22017000", "Travel", "Tolls and Fees"),
-    TRAVEL_TRANSPORTATION_CENTERS("22018000", "Travel", "Transportation Centers");
+    TRAVEL_TAXI("22016000", "Travel", "Taxi", CategoryType.OTHER),
+    TRAVEL_TOLLS_FEES("22017000", "Travel", "Tolls and Fees", CategoryType.OTHER),
+    TRAVEL_TRANSPORTATION_CENTERS("22018000", "Travel", "Transportation Centers"),
+    UNCATEGORIZED("", "", "", CategoryType.UNCATEGORIZED);
 
     private final String categoryId;
     private final String primaryCategory;
     private final String secondaryCategory;
+    private final CategoryType categoryType;
 
     private static final List<PlaidCategories> CATEGORIES = Collections.unmodifiableList(Arrays.asList(values()));
     private static List<PlaidCategories> getCategories() {return CATEGORIES;}
 
-    public static Optional<PlaidCategories> findByPrimaryCategory(String primaryCategory) {
+    public static PlaidCategories findByAll(String categoryId, String primary, String secondary)
+    {
+        return CATEGORIES.stream()
+                .filter(pc -> pc.categoryId.equalsIgnoreCase(categoryId) && pc.primaryCategory.equalsIgnoreCase(primary) && pc.secondaryCategory.equalsIgnoreCase(secondary))
+                .findFirst().orElse(UNCATEGORIZED);
+    }
+
+
+    public static PlaidCategories findByPrimaryCategory(String primaryCategory) {
         return CATEGORIES.stream()
                 .filter(pc -> pc.primaryCategory.equalsIgnoreCase(primaryCategory))
-                .findFirst();
+                .findFirst()
+                .orElse(UNCATEGORIZED);
     }
 
     public static PlaidCategories findByCategoryId(String categoryId) {
         return CATEGORIES.stream()
                 .filter(pc -> pc.categoryId.equalsIgnoreCase(categoryId))
-                .findFirst().orElse(null);
+                .findFirst().orElse(UNCATEGORIZED);
     }
 
-    public static Optional<PlaidCategories> findBySecondaryCategory(String secondaryCategory) {
+    public static PlaidCategories findBySecondaryCategory(String secondaryCategory) {
         return CATEGORIES.stream()
                 .filter(pc -> pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
-                .findFirst();
+                .findFirst()
+                .orElse(UNCATEGORIZED);
     }
 
-    public static Optional<PlaidCategories> findByCategoryIdAndSecondaryCategory(String categoryId, String secondaryCategory)
+    public static PlaidCategories findByPrimaryAndSecondary(String primaryCategory, String secondaryCategory){
+        return CATEGORIES.stream()
+                .filter(pc -> pc.secondaryCategory.equalsIgnoreCase(secondaryCategory) && pc.primaryCategory.equalsIgnoreCase(primaryCategory))
+                .findFirst()
+                .orElse(UNCATEGORIZED);
+    }
+
+    public static PlaidCategories findByCategoryIdAndSecondaryCategory(String categoryId, String secondaryCategory)
     {
         return CATEGORIES.stream()
                 .filter(pc -> pc.categoryId.equalsIgnoreCase(categoryId) && pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
-                .findFirst();
+                .findFirst()
+                .orElse(UNCATEGORIZED);
     }
 
     public static String findCategoryIdBySecondaryCategory(String secondaryCategory)
@@ -325,26 +344,34 @@ public enum PlaidCategories
                 .filter(pc -> pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
                 .map(PlaidCategories::getCategoryId)
                 .findFirst()
-                .orElse(null);
+                .orElse("");
     }
 
-    public static Optional<PlaidCategories> findByCategoryIdAndPrimaryCategory(String categoryId, String primaryCategory)
+    public static PlaidCategories findByCategoryIdAndPrimaryCategory(String categoryId, String primaryCategory)
     {
         return CATEGORIES.stream()
                 .filter(pc -> pc.categoryId.equalsIgnoreCase(categoryId) && pc.primaryCategory.equalsIgnoreCase(primaryCategory))
-                .findFirst();
+                .findFirst()
+                .orElse(UNCATEGORIZED);
     }
 
     public static String findCategoryIdByPrimaryAndSecondaryCategory(String primaryCategory, String secondaryCategory) {
         return CATEGORIES.stream()
                 .filter(pc -> pc.primaryCategory.equalsIgnoreCase(primaryCategory) && pc.secondaryCategory.equalsIgnoreCase(secondaryCategory))
                 .map(plaidCategories -> plaidCategories.categoryId)
-                .reduce("", (a, b) -> a + b);
+                .findFirst()
+                .orElse("");
+    }
+
+    PlaidCategories(String categoryId, String primary, String secondary, CategoryType categoryType)
+    {
+        this.categoryId = categoryId;
+        this.primaryCategory = primary;
+        this.secondaryCategory = secondary;
+        this.categoryType = categoryType;
     }
 
     PlaidCategories(String categoryId, String primaryCategory, String secondaryCategory){
-        this.categoryId = categoryId;
-        this.primaryCategory = primaryCategory;
-        this.secondaryCategory = secondaryCategory;
+        this(categoryId, primaryCategory, secondaryCategory, CategoryType.UNCATEGORIZED);
     }
 }

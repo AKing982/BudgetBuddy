@@ -18,16 +18,16 @@ import java.util.List;
 @Slf4j
 public class TransactionImportEngine
 {
-    private PlaidTransactionRunner plaidTransactionRunner;
+    private TransactionImportAsyncService transactionImportAsyncService;
     private CategoryRunner categoryRunner;
     private SubBudgetService subBudgetService;
 
     @Autowired
-    public TransactionImportEngine(PlaidTransactionRunner plaidTransactionRunner,
-                                    CategoryRunner categoryRunner,
-                                    SubBudgetService subBudgetService)
+    public TransactionImportEngine(TransactionImportAsyncService transactionImportAsyncService,
+                                   CategoryRunner categoryRunner,
+                                   SubBudgetService subBudgetService)
     {
-        this.plaidTransactionRunner = plaidTransactionRunner;
+        this.transactionImportAsyncService = transactionImportAsyncService;
         this.categoryRunner = categoryRunner;
         this.subBudgetService = subBudgetService;
     }

@@ -6,10 +6,7 @@ import com.app.budgetbuddy.entities.*;
 import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.repositories.UserRepository;
-import com.app.budgetbuddy.services.PlaidCategoryManager;
-import com.app.budgetbuddy.services.PlaidLinkService;
-import com.app.budgetbuddy.services.PlaidService;
-import com.app.budgetbuddy.services.RecurringTransactionService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionStreamConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionStreamToEntityConverter;
@@ -42,6 +39,7 @@ import java.util.*;
 @Slf4j
 public class PlaidController
 {
+    private PlaidLogoService plaidLogoService;
     private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
     private PlaidLinkService plaidLinkService;
     private PlaidAccountManager plaidAccountManager;
@@ -62,6 +60,19 @@ public class PlaidController
         this.plaidTransactionManager = plaidTransactionManager;
         this.plaidCategoryManager = plaidCategoryManager;
         this.userRepository = userRepository;
+    }
+
+    @GetMapping("/{id}/logo")
+    public ResponseEntity<?> getTransactionLogo(@PathVariable String id,
+                                                @RequestParam String logoUrl)
+    {
+        try
+        {
+
+        }catch(Exception ex){
+            log.error("There was an error fetching the transaction logo: {}", ex.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping("/categories")

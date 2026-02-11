@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -214,8 +215,10 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
             throw new CategoryException("Transaction was found null... Terminating categorization");
         }
         String categoryId = transaction.getCategoryId();
+        log.info("Category ID: " + categoryId);
         String primaryCategory = transaction.getPrimaryCategory();
         String secondaryCategory = transaction.getSecondaryCategory();
+        String merchantName = transaction.getMerchantName();
         int transactionPriority = assignPriorityToTransaction(transaction);
         log.info("Transaction Priority: " + transactionPriority);
         if(transactionPriority == 0)
@@ -231,53 +234,56 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
         AccountEntity accountEntity = accountEntityOptional.get();
         Long userId = accountEntity.getUser().getId();
         List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
-        String plaidCategoryID = PlaidCategories.findCategoryIdByPrimaryAndSecondaryCategory(primaryCategory, secondaryCategory);
         if(transactionRules.isEmpty())
         {
             CategoryType categoryType = null;
-            String catId = plaidCategoryID;
+            String catId = categoryId;
+            log.info("priority: {}", transactionPriority);
             switch(transactionPriority)
             {
                 case 1:
-                    categoryType = secondaryCategoryMap.get(secondaryCategory);
+                    PlaidCategories pCategories = PlaidCategories.findByAll(categoryId, primaryCategory, secondaryCategory);
+                    categoryType = pCategories.getCategoryType();
                     break;
                 case 2:
-                    PlaidCategory pCategoryWithPrimaryAndSec = PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary(primaryCategory, secondaryCategory);
-                    log.info("Plaid Category: " + pCategoryWithPrimaryAndSec.toString());
-                    categoryType = plaidCategoryMap.get(pCategoryWithPrimaryAndSec);
-                    log.info("Category Type: " + categoryType);
+                    PlaidCategories pCategoryWithPrimaryAndSecondary = PlaidCategories.findByPrimaryAndSecondary(primaryCategory, secondaryCategory);
+                    categoryType = pCategoryWithPrimaryAndSecondary.getCategoryType();
                     catId = "";
                     break;
                 case 5:
-                    PlaidCategory plaidCategory = PlaidCategory.builder()
-                            .categoryId(categoryId)
-                            .secondaryCategory(secondaryCategory)
-                            .build();
-                    categoryType = plaidCategoryMap.get(plaidCategory);
-                    log.info("Plaid Category map contains key {}", plaidCategory);
-                    catId = PlaidCategories.findCategoryIdBySecondaryCategory(secondaryCategory);
+                    PlaidCategories pCatByIdAndSec = PlaidCategories.findByCategoryIdAndSecondaryCategory(categoryId, secondaryCategory);
+                    categoryType = pCatByIdAndSec.getCategoryType();
                     break;
                 case 6:
-                    PlaidCategory pCategoryWithPrimary = PlaidCategory.createPlaidCategoryWithIdAndPrimary(categoryId, primaryCategory);
-                    categoryType = plaidCategoryMap.get(pCategoryWithPrimary);
-                    catId = categoryId;
+                    PlaidCategories pCategoryWithIdAndPrimary = PlaidCategories.findByCategoryIdAndPrimaryCategory(categoryId, primaryCategory);
+                    categoryType = pCategoryWithIdAndPrimary.getCategoryType();
                     break;
                 case 7:
-                    categoryType = primaryCategoryMap.get(primaryCategory);
+                    PlaidCategories pCategoryByPrimary = PlaidCategories.findByPrimaryCategory(primaryCategory);
+                    categoryType = pCategoryByPrimary.getCategoryType();
+                    if(categoryType == null){
+                        categoryType = primaryCategoryMap.get(primaryCategory);
+                    }
+                    catId = "";
+                    break;
+                case 8:
+                    PlaidCategories pCategoryBySecondary = PlaidCategories.findBySecondaryCategory(secondaryCategory);
+                    categoryType = pCategoryBySecondary.getCategoryType();
+                    if(categoryType == null){
+                        categoryType = secondaryCategoryMap.get(secondaryCategory);
+                    }
+                    catId = "";
                     break;
                 case 9:
                     PlaidCategories plaidCategories = PlaidCategories.findByCategoryId(categoryId);
-                    log.info("Found Plaid Category {}", plaidCategories);
-                    if(plaidCategories != null)
-                    {
-                        String pCategory = plaidCategories.getPrimaryCategory();
-                        log.info("Primary Category: {}", pCategory);
-                        categoryType = primaryCategoryMap.get(pCategory);
-                        if (categoryType != null) {
-                            log.info("Found match in secondary category map");
-                            catId = categoryId;
-                        }
+                    categoryType = plaidCategories.getCategoryType();
+                    break;
+                case 10:
+                    Optional<CategoryType> categoryTypeOptional = merchantMatcherService.matchMerchant(merchantName);
+                    if(categoryTypeOptional.isPresent()){
+                        categoryType = categoryTypeOptional.get();
                     }
+                    catId = "";
                     break;
                 default:
                     return Category.createUncategorized();
@@ -289,18 +295,26 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
         }
         else
         {
-            for(TransactionRule rule : transactionRules)
+            Map<Integer, List<TransactionRule>> sortedTransactionRulesByPriority = transactionRules.stream()
+                    .filter(r -> r != null && r.isActive() && r.getPriority() > 0)
+                    .collect(Collectors.groupingBy(TransactionRule::getPriority));
+            List<Integer> sortedPriorities = sortedTransactionRulesByPriority.keySet()
+                    .stream().sorted().toList();
+            for(Integer priority : sortedPriorities)
             {
-                int match_count = 0;
-                Long ruleId = 1L;
-                if(matches(transaction, rule))
+                List<TransactionRule> rules = sortedTransactionRulesByPriority.get(priority);
+                for(TransactionRule rule : rules)
                 {
-                    match_count++;
-                    rule.setMatchCount(match_count);
-                    transactionRuleService.updateMatchCount(ruleId, match_count);
-                    String matched_category = rule.getCategoryName();
-                    Long user_category_id = userCategoryService.getCategoryIdByNameAndUser(matched_category, userId);
-                    return Category.createCategory(user_category_id, categoryId, matched_category, USER_CATEGORIZED, LocalDate.now());
+                    int match_count = 0;
+                    Long ruleId = 1L;
+                    if(matches(transaction, rule))
+                    {
+                        match_count++;
+                        transactionRuleService.updateMatchCount(ruleId, match_count);
+                        String matched_category = rule.getCategoryName();
+                        Long user_category_id = userCategoryService.getCategoryIdByNameAndUser(matched_category, userId);
+                        return Category.createCategory(user_category_id, categoryId, matched_category, USER_CATEGORIZED, LocalDate.now());
+                    }
                 }
             }
         }

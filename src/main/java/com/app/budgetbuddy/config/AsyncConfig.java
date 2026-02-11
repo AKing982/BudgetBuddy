@@ -14,10 +14,10 @@ public class AsyncConfig
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10); // Number of core threads
-        executor.setMaxPoolSize(20);  // Maximum number of threads
-        executor.setQueueCapacity(500); // Capacity of the task queue
-        executor.setThreadNamePrefix("BudgetRunner-");
+        executor.setCorePoolSize(2);   // Reduced for Plaid rate limits
+        executor.setMaxPoolSize(4);    // Conservative for API limits
+        executor.setQueueCapacity(100); // Smaller queue
+        executor.setThreadNamePrefix("PlaidAPI-");
         executor.initialize();
         return executor;
     }
