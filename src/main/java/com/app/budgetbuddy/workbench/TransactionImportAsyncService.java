@@ -12,11 +12,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -70,36 +67,35 @@ public class TransactionImportAsyncService
     }
 
     @Async("taskExecutor")
-    public CompletableFuture<Void> combineAndSaveTransactionsAsync(final List<Transaction> weeklyTransactions, final List<Transaction> monthlyTransactions)
+    public CompletableFuture<Void> saveRecurringTransactions(List<RecurringTransaction> recurringTransactions)
     {
+        if(recurringTransactions.isEmpty())
+        {
+            return CompletableFuture.completedFuture(null);
+        }
         try
         {
-            log.info("Combining {} weekly and {} monthly transactions",
-                    weeklyTransactions.size(), monthlyTransactions.size());
-
-            // Combine all transactions
-            List<Transaction> allTransactions = new ArrayList<>();
-            allTransactions.addAll(weeklyTransactions);
-            allTransactions.addAll(monthlyTransactions);
-
-            // Remove duplicates if necessary (based on transaction ID)
-            List<Transaction> uniqueTransactions = allTransactions.stream()
-                    .collect(Collectors.toMap(
-                            Transaction::getTransactionId, // assuming you have this method
-                            Function.identity(),
-                            (existing, replacement) -> existing)) // keep first occurrence
-                    .values()
-                    .stream()
-                    .toList();
-
-            // Save to database using PlaidTransactionRunner
-            plaidTransactionRunner.saveTransactions(uniqueTransactions);
-
-            log.info("Successfully saved {} unique transactions", uniqueTransactions.size());
+            recurringTransactionService.createAndSaveRecurringTransactions(recurringTransactions);
             return CompletableFuture.completedFuture(null);
+        }catch(Exception e){
+            log.error("Error saving recurring transactions", e);
+            return CompletableFuture.failedFuture(e);
+        }
+    }
 
-        } catch (Exception e) {
-            log.error("Error combining and saving transactions", e);
+    @Async("taskExecutor")
+    public CompletableFuture<Void> saveTransactions(List<Transaction> transactions)
+    {
+        if(transactions.isEmpty())
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+        try
+        {
+            transactionService.createAndSaveTransactions(transactions);
+            return CompletableFuture.completedFuture(null);
+        }catch(Exception e){
+            log.error("Error saving transactions", e);
             return CompletableFuture.failedFuture(e);
         }
     }

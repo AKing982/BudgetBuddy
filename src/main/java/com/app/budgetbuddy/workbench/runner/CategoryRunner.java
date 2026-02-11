@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class CategoryRunner
 {
     private final CategorizationEngine<TransactionCSV> csvCategorizerService;
+    private final CategorizationEngine<Transaction> transactionCategorizerService;
     private final CSVTransactionService csvTransactionService;
     private final UserLogService userLogService;
     private final SubBudgetService subBudgetService;
@@ -28,6 +29,7 @@ public class CategoryRunner
 
     @Autowired
     public CategoryRunner(@Qualifier("csvCategorizer") CategorizationEngine<TransactionCSV> categorizerService,
+                          @Qualifier("transactionCategorizer") CategorizationEngine<Transaction> transactionCategorizerService,
                           CSVTransactionService csvTransactionService,
                           UserLogService userLogService,
                           SubBudgetService subBudgetService,
@@ -40,6 +42,7 @@ public class CategoryRunner
         this.subBudgetService = subBudgetService;
         this.transactionService = transactionService;
         this.transactionCategoryService = transactionCategoryService;
+        this.transactionCategorizerService = transactionCategorizerService;
     }
 
     public void categorizeSingleCSVTransaction(final CategorySaveData categorySaveData)

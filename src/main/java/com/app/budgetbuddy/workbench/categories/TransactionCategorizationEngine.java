@@ -9,6 +9,7 @@ import com.app.budgetbuddy.services.UserCategoryService;
 import com.app.budgetbuddy.workbench.MerchantMatcherService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,18 +22,14 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class TransactionCategorizationEngine implements CategorizationEngine<Transaction>
+@Qualifier("transactionCategorizer")
+public class TransactionCategorizationEngine extends AbstractCategorizationEngine<Transaction> implements CategorizationEngine<Transaction>
 {
     private Map<String, CategoryType> primaryCategoryMap = new HashMap<>();
     private Map<String, CategoryType> secondaryCategoryMap = new HashMap<>();
     private Map<PlaidCategory, CategoryType> plaidCategoryMap = new HashMap<>();
     private Map<String, CategoryType> categoryIdMap = new HashMap<>();
     private AccountService accountService;
-    private MerchantMatcherService merchantMatcherService;
-    private UserCategoryService userCategoryService;
-    private TransactionRuleService transactionRuleService;
-    private final String SYSTEM_CATEGORIZED = "SYSTEM";
-    private final String USER_CATEGORIZED = "USER";
 
     @Autowired
     public TransactionCategorizationEngine(UserCategoryService userCategoryService,
@@ -40,10 +37,8 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
                                            TransactionRuleService transactionRuleService,
                                            MerchantMatcherService merchantMatcherService)
     {
-        this.userCategoryService = userCategoryService;
+        super(userCategoryService, transactionRuleService, merchantMatcherService);
         this.accountService = accountService;
-        this.transactionRuleService = transactionRuleService;
-        this.merchantMatcherService = merchantMatcherService;
         initializePrimaryCategoryMap();
         initializeSecondaryMap();
         initializePlaidCategoryMap();
@@ -233,7 +228,7 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
         }
         AccountEntity accountEntity = accountEntityOptional.get();
         Long userId = accountEntity.getUser().getId();
-        List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
+        List<TransactionRule> transactionRules = getUserTransactionRules(userId);
         if(transactionRules.isEmpty())
         {
             CategoryType categoryType = null;
@@ -295,27 +290,10 @@ public class TransactionCategorizationEngine implements CategorizationEngine<Tra
         }
         else
         {
-            Map<Integer, List<TransactionRule>> sortedTransactionRulesByPriority = transactionRules.stream()
-                    .filter(r -> r != null && r.isActive() && r.getPriority() > 0)
-                    .collect(Collectors.groupingBy(TransactionRule::getPriority));
-            List<Integer> sortedPriorities = sortedTransactionRulesByPriority.keySet()
-                    .stream().sorted().toList();
-            for(Integer priority : sortedPriorities)
+            Category matchTransactionRule = matchTransactionRule(transaction, userId, transactionRules);
+            if(matchTransactionRule != null)
             {
-                List<TransactionRule> rules = sortedTransactionRulesByPriority.get(priority);
-                for(TransactionRule rule : rules)
-                {
-                    int match_count = 0;
-                    Long ruleId = 1L;
-                    if(matches(transaction, rule))
-                    {
-                        match_count++;
-                        transactionRuleService.updateMatchCount(ruleId, match_count);
-                        String matched_category = rule.getCategoryName();
-                        Long user_category_id = userCategoryService.getCategoryIdByNameAndUser(matched_category, userId);
-                        return Category.createCategory(user_category_id, categoryId, matched_category, USER_CATEGORIZED, LocalDate.now());
-                    }
-                }
+                return matchTransactionRule;
             }
         }
         return Category.createUncategorized();

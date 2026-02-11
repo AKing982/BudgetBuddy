@@ -41,7 +41,7 @@ public abstract class AbstractCategorizationEngine<T extends Transaction>
 
     protected Category matchTransactionRule(T transaction, Long userId, List<TransactionRule> rules)
     {
-        Object obj = (Object) transaction;
+        Object obj = transaction;
         Category category = null;
         Map<Integer, List<TransactionRule>> sortedTransactionRulesByPriority = rules.stream()
                 .filter(r -> r != null && r.isActive() && r.getPriority() > 0)

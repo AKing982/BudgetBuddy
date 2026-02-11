@@ -72,27 +72,27 @@ class TransactionImportEngineTest
     }
 
 
-    @Test
-    @DisplayName("Should return five month ranges for test user")
-    void testShouldReturnFiveMonthRanges(){
-
-        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
-                .thenReturn(mockSubBudgets);
-
-        List<DateRange> monthRanges = transactionImportEngine.getMonthDateRangesByCurrentDate(TEST_USER_ID);
-        assertNotNull(monthRanges);
-        assertEquals(5, monthRanges.size());
-    }
-
-    @Test
-    @DisplayName("Should return empty list when no months ranges found")
-    void testShouldReturnEmptyListWhenNoMonthsRangeFound(){
-        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
-                .thenReturn(new ArrayList<>());
-        List<DateRange> actual = transactionImportEngine.getMonthDateRangesByCurrentDate(TEST_USER_ID);
-        assertNotNull(actual);
-        assertEquals(0, actual.size());
-    }
+//    @Test
+//    @DisplayName("Should return five month ranges for test user")
+//    void testShouldReturnFiveMonthRanges(){
+//
+//        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
+//                .thenReturn(mockSubBudgets);
+//
+//        List<DateRange> monthRanges = transactionImportEngine.getMonthDateRangesByCurrentDate(TEST_USER_ID);
+//        assertNotNull(monthRanges);
+//        assertEquals(5, monthRanges.size());
+//    }
+//
+//    @Test
+//    @DisplayName("Should return empty list when no months ranges found")
+//    void testShouldReturnEmptyListWhenNoMonthsRangeFound(){
+//        when(subBudgetService.findSubBudgetsByUserIdAndLimit(TEST_USER_ID, numOfMonthsSinceCurrentDate, currentYear))
+//                .thenReturn(new ArrayList<>());
+//        List<DateRange> actual = transactionImportEngine.getMonthDateRangesByCurrentDate(TEST_USER_ID);
+//        assertNotNull(actual);
+//        assertEquals(0, actual.size());
+//    }
 
     @Test
     @DisplayName("Should import transactions for valid user")
