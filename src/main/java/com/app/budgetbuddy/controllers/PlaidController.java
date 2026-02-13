@@ -13,6 +13,7 @@ import com.app.budgetbuddy.workbench.converter.TransactionStreamToEntityConverte
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
+import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
 import com.plaid.client.model.*;
 import com.plaid.client.model.Transaction;
 import lombok.extern.slf4j.Slf4j;
@@ -39,11 +40,10 @@ import java.util.*;
 @Slf4j
 public class PlaidController
 {
-    private PlaidLogoService plaidLogoService;
     private PlaidLinkTokenProcessor plaidLinkTokenProcessor;
     private PlaidLinkService plaidLinkService;
     private PlaidAccountManager plaidAccountManager;
-    private PlaidTransactionManager plaidTransactionManager;
+    private PlaidTransactionRunner plaidTransactionRunner;
     private PlaidCategoryManager plaidCategoryManager;
     private UserRepository userRepository;
 
@@ -51,13 +51,13 @@ public class PlaidController
     public PlaidController(PlaidLinkTokenProcessor plaidLinkTokenProcessor,
                            PlaidAccountManager plaidAccountManager,
                            PlaidLinkService plaidLinkService,
-                           PlaidTransactionManager plaidTransactionManager,
+                           PlaidTransactionRunner plaidTransactionRunner,
                            PlaidCategoryManager plaidCategoryManager,
                            UserRepository userRepository) {
         this.plaidLinkTokenProcessor = plaidLinkTokenProcessor;
         this.plaidAccountManager = plaidAccountManager;
+        this.plaidTransactionRunner = plaidTransactionRunner;
         this.plaidLinkService = plaidLinkService;
-        this.plaidTransactionManager = plaidTransactionManager;
         this.plaidCategoryManager = plaidCategoryManager;
         this.userRepository = userRepository;
     }
@@ -73,6 +73,7 @@ public class PlaidController
             log.error("There was an error fetching the transaction logo: {}", ex.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        return null;
     }
 
     @GetMapping("/categories")
@@ -201,32 +202,10 @@ public class PlaidController
         {
             return ResponseEntity.badRequest().body("UserId is invalid: " + userId);
         }
-        try
-        {
-            TransactionsRecurringGetResponse transactionsRecurringGetResponse = plaidTransactionManager.getAsyncRecurringResponse(userId).join();
-            RecurringTransactionResponse recurringTransactionResponse = createRecurringTransactionResponse(transactionsRecurringGetResponse);
-            return ResponseEntity.status(200).body(recurringTransactionResponse);
+        List<RecurringTransaction> transactionsRecurringGetResponse = plaidTransactionRunner.getRecurringTransactionsResponse(userId);
+        return ResponseEntity.status(200).body(transactionsRecurringGetResponse);
 
-        } catch (IOException e)
-        {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
     }
-
-    private RecurringTransactionResponse createRecurringTransactionResponse(TransactionsRecurringGetResponse transactionsRecurringGetResponse)
-    {
-        List<TransactionStream> inflowingStream = transactionsRecurringGetResponse.getInflowStreams();
-        List<TransactionStream> outflowingStream = transactionsRecurringGetResponse.getOutflowStreams();
-        RecurringTransactionResponse recurringTransactionResponse = new RecurringTransactionResponse();
-
-        recurringTransactionResponse.setInflowStreams(TransactionStreamConverter.convertTransactionStreams(inflowingStream));
-        recurringTransactionResponse.setOutflowStreams(TransactionStreamConverter.convertTransactionStreams(outflowingStream));
-
-        recurringTransactionResponse.setUpdatedDatetime(OffsetDateTime.now());
-        recurringTransactionResponse.setRequestId("1234");
-        return recurringTransactionResponse;
-    }
-
 
     @GetMapping("/{userID}/access-token")
     public ResponseEntity<?> getAccessToken(@PathVariable Long userID)
@@ -291,6 +270,7 @@ public class PlaidController
         log.info("UserID: {}", plaidLinkRequest.userID());
 
         String accessToken = plaidLinkRequest.accessToken();
+
         if(accessToken == null || accessToken.isEmpty())
         {
             return ResponseEntity.badRequest().body("Plaid Access Token is invalid");
@@ -300,13 +280,16 @@ public class PlaidController
         {
             String itemId = plaidLinkRequest.itemID();
             String userID = plaidLinkRequest.userID();
+            String institution = plaidLinkTokenProcessor.getInstitutionName(accessToken).join();
             Long uID = Long.parseLong(userID);
-            createAndSavePlaidLink(accessToken, itemId, uID);
+            createAndSavePlaidLink(accessToken, institution, itemId, uID);
             return ResponseEntity.status(HttpStatus.CREATED).build();
 
         } catch(PlaidLinkException e)
         {
             return ResponseEntity.internalServerError().body(e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -326,39 +309,14 @@ public class PlaidController
 
         try
         {
-            TransactionsGetResponse transactionsGetResponse = plaidTransactionManager.getAsyncTransactionsResponse(userId, startDate, endDate).join();
-            List<Transaction> transactions = transactionsGetResponse.getTransactions();
-            List<TransactionResponse> transactionResponses = createTransactionResponse(transactions);
-            return ResponseEntity.status(200).body(transactionResponses);
+            List<com.app.budgetbuddy.domain.Transaction> transactions = plaidTransactionRunner.getTransactionsResponse(userId, startDate, endDate);
+            return ResponseEntity.status(200).body(transactions);
 
         } catch (IOException e)
         {
             log.error("There was an error getting the transactions", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
-    }
-
-    private List<TransactionResponse> createTransactionResponse(List<Transaction> transactions)
-    {
-        // Build the Transaction Response
-        return transactions.stream()
-                .map(transaction -> {
-                    String transactionId = transaction.getTransactionId();
-                    String accountId = transaction.getAccountId();
-                    BigDecimal amount = BigDecimal.valueOf(transaction.getAmount());
-                    List<String> categories = transaction.getCategory();
-                    String categoryId = transaction.getCategoryId();
-                    LocalDate date = transaction.getDate();
-                    String name = transaction.getName();
-                    String merchantName = transaction.getMerchantName();
-                    boolean isPending = transaction.getPending();
-                    String logoUrl = transaction.getLogoUrl();
-                    LocalDate authorizedDate = transaction.getAuthorizedDate();
-                    LocalDate posted = transaction.getDate();
-                    String transactionType = transaction.getTransactionType().toString();
-                    return new TransactionResponse(transactionId, accountId, amount, categories, categoryId, date, name, merchantName, isPending, logoUrl, authorizedDate, posted);
-                })
-                .toList();
     }
 
     @PostMapping("/update_link_token")
@@ -392,40 +350,25 @@ public class PlaidController
         }
     }
 
-    @PostMapping("transactions/sync")
-    public ResponseEntity<?> syncTransactions(@RequestParam Long userId,
-                                              @RequestParam(value="cursor", required=false) String cursor)
-    {
-//        if(userId < 1L || cursor.isEmpty())
-//        {
-//            return ResponseEntity.badRequest().build();
-//        }
-//        try
-//        {
-//            TransactionsSyncResponse syncResponse = plaidTransactionManager.syncTransactionsForUser(userId, cursor);
-//            return ResponseEntity.ok(syncResponse);
-//        }catch(IOException e){
-//            log.error("There was an error syncing the transactions for user: {}", userId, e);
-//            return ResponseEntity.internalServerError().body(e.getMessage());
-//        }
-        return null;
-    }
-
-    @PostMapping("recurring/sync")
-    public ResponseEntity<?> syncRecurringTransactionsForUser(@RequestParam Long userId){
-//        if(userId == null || userId < 1L)
-//        {
-//            return ResponseEntity.badRequest().build();
-//        }
-//        try
-//        {
-//            TransactionsRecurringGetResponse transactionsRecurringGetResponse = plaidTransactionManager.getRecurringTransactionsForUser(userId);
-//            return ResponseEntity.ok(transactionsRecurringGetResponse);
-//        }catch(IOException e){
-//            log.error("There was an error syncing the recurring transactions for user: {}", userId, e);
-//            return ResponseEntity.internalServerError().body(e.getMessage());
-//        }
-        return null;
+    @PostMapping("/transactions/{userId}/sync")
+    public ResponseEntity<?> syncTransactions(@PathVariable Long userId) throws IOException {
+        if(userId < 1L)
+        {
+            return ResponseEntity.badRequest().build();
+        }
+        boolean userExists = userRepository.existsById(userId);
+        if(!userExists)
+        {
+            return ResponseEntity.notFound().build();
+        }
+        try
+        {
+            List<com.app.budgetbuddy.domain.Transaction> syncResponse = plaidTransactionRunner.syncTransactions(userId);
+            return ResponseEntity.ok(syncResponse);
+        }catch(IOException e){
+            log.error("There was an error syncing the transactions for user: {}", userId, e);
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @PostMapping("/save-accounts")
@@ -456,8 +399,8 @@ public class PlaidController
         return new ExchangeResponse(accessToken, itemID, userID);
     }
 
-    private void createAndSavePlaidLink(String accessToken, String itemID, Long userID){
-        Optional<PlaidLinkEntity> plaidLink = plaidLinkService.createPlaidLink(accessToken, itemID, userID);
+    private void createAndSavePlaidLink(String accessToken, String institution, String itemID, Long userID){
+        Optional<PlaidLinkEntity> plaidLink = plaidLinkService.createPlaidLink(accessToken, institution, itemID, userID);
         if(plaidLink.isEmpty())
         {
             throw new PlaidLinkException("Plaid Link Not Found");

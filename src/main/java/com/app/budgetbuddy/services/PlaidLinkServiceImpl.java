@@ -54,11 +54,12 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     }
 
     @Override
-    public Optional<PlaidLinkEntity> createPlaidLink(String accessToken, String itemID, Long userID) {
+    public Optional<PlaidLinkEntity> createPlaidLink(String accessToken, String institution, String itemID, Long userID) {
         PlaidLinkEntity plaidLinkEntity = new PlaidLinkEntity();
         plaidLinkEntity.setAccessToken(accessToken);
         plaidLinkEntity.setUser(findUserByUserID(userID));
         plaidLinkEntity.setItemId(itemID);
+        plaidLinkEntity.setInstitution(institution);
         plaidLinkEntity.setCreatedAt(LocalDateTime.now());
         plaidLinkEntity.setUpdatedAt(LocalDateTime.now());
         return Optional.of(plaidLinkEntity);

@@ -50,6 +50,7 @@ public class PlaidTransactionRunner
     @Value("${plaid.secret}")
     private String secret;
 
+
     @Autowired
     public PlaidTransactionRunner(PlaidTransactionManager plaidTransactionManager,
                                   PlaidTransactionToTransactionConverter pConverter,
@@ -83,16 +84,19 @@ public class PlaidTransactionRunner
             {
                 return Collections.emptyList();
             }
+            log.info("RAW Transactions: {}", transactions.toString());
+            log.info("RAW Transactions size: {}", transactions.size());
+            log.info("Fetched {} transactions", transactions.size());
             // Convert the plaid transactions to Transactions model
-            return transactions.stream()
-                    .filter(Objects::nonNull)
+            List<Transaction> transactionsList = transactions.stream()
                     .map(plaidTransactionToTransactionConverter::convert)
                     .toList();
+            log.info("Converted Transactions: {}", transactionsList.toString());
+            log.info("Converted Transactions size: {}", transactionsList.size());
+            return transactionsList;
         }catch(IOException e){
             log.error("There was an error fetching the transactions from the response: {}", e.getMessage());
             return Collections.emptyList();
-        }catch(TransactionRunnerException ex){
-            throw ex;
         }
     }
 
@@ -118,11 +122,12 @@ public class PlaidTransactionRunner
             {
                 outflowingStreams = Collections.emptyList();
             }
+            log.info("Fetched {} outflowing streams and {} inflowing streams", outflowingStreams.size(), inflowingStreams.size());
             // Convert the outflowing and inflowing streams to a RecurringTransaction object
             return recurringTransactionUtil.convertTransactionStreams(outflowingStreams, inflowingStreams);
         }catch(IOException e){
             log.error("There was an error fetching recurring transaction from the response: {}", e.getMessage());
-            throw new TransactionRunnerException("There was an error fetching the recurring transactions.");
+            return Collections.emptyList();
         }
     }
 

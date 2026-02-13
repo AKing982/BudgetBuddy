@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface PlaidLinkService extends ServiceModel<PlaidLinkEntity>
 {
-    Optional<PlaidLinkEntity> createPlaidLink(String accessToken, String itemID, Long userID);
+    Optional<PlaidLinkEntity> createPlaidLink(String accessToken, String institution, String itemID, Long userID);
 
     Optional<PlaidLinkEntity> findPlaidLinkByUserID(Long userID);
 

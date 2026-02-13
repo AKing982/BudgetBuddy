@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.CSVAccountEntity;
 import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.services.TransactionRuleService;
 import com.app.budgetbuddy.services.UserCategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

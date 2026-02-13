@@ -37,6 +37,18 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     private final String clientId = "BudgetBuddy";
     private final PlaidCursorService plaidCursorService;
 
+    @Value("${plaid.rate-limit.delay-ms:1000}")
+    private long rateLimitDelayMs;
+
+    @Value("${plaid.rate-limit.recurring.delay-ms:2000}")
+    private long recurringRateLimitDelayMs;
+
+    @Value("${plaid.rate-limit.sync.delay-ms:3000}")
+    private long syncRateLimitDelayMs;
+
+    @Value("${plaid.secret}")
+    private String secret;
+
     @Autowired
     public PlaidTransactionManager(PlaidLinkService plaidLinkService, PlaidApi plaidApi,
                                    TransactionConverter transactionConverter,
@@ -65,7 +77,12 @@ public class PlaidTransactionManager extends AbstractPlaidManager
             }
             return new TransactionsGetRequest()
                     .accessToken(accessToken)
+                    .options(new TransactionsGetRequestOptions()
+                            .includeOriginalDescription(true)
+                            .includeLogoAndCounterpartyBeta(true)
+                            .includePersonalFinanceCategory(true))
                     .clientId("BudgetBuddy")
+                    .secret(secret)
                     .startDate(startDate)
                     .endDate(endDate);
         }catch(InvalidAccessTokenException ex){
@@ -74,6 +91,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
     }
 
+//    @Time(value="plaid.transactions.get", description="Time taken to get transactions ")
     public CompletableFuture<TransactionsGetResponse> getAsyncTransactionsResponse(Long userId, LocalDate startDate, LocalDate endDate) throws IOException
     {
         Optional<UserEntity> user = userService.findById(userId);
@@ -86,6 +104,14 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         if(accessToken.isEmpty())
         {
             throw new InvalidAccessTokenException("Invalid access token");
+        }
+
+        try
+        {
+            Thread.sleep(rateLimitDelayMs);
+        }catch(InterruptedException e){
+            Thread.currentThread().interrupt();
+            return CompletableFuture.failedFuture(e);
         }
         TransactionsGetRequest transactionGetRequest = createTransactionRequest(accessToken, startDate, endDate);
         Call<TransactionsGetResponse> transactionsGetResponseCall = plaidApi.transactionsGet(transactionGetRequest);
@@ -142,6 +168,16 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 long delay = Math.min(5000 * (long) Math.pow(2, attempts - 1), 300000);
                 Thread.sleep(delay);
             }
+            if("RATE_LIMIT_EXCEEDED".equals(errorCode)) {
+                log.warn("Plaid API rate limit exceeded on attempt {}", attempts);
+                long delay = Math.min(60000 * (long) Math.pow(2, attempts - 1), 300000); // Exponential backoff
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted during rate limit backoff", e);
+                }
+            }
             log.error("Plaid API Error - Type: {}, Code: {}, Message: {}", errorType, errorCode, errorMessage);
             if(jsonError.has("display_message"))
             {
@@ -152,6 +188,48 @@ public class PlaidTransactionManager extends AbstractPlaidManager
             log.error("The response was interrupted: {}", e.getMessage());
         }catch(IOException ex){
             log.error("There was an error while fetching the transaction response errors: {}", ex.getMessage());
+        }
+    }
+
+    private void showRecurringTransactionErrors(Response<TransactionsRecurringGetResponse> recurringResponse, int attempts) throws IOException
+    {
+        if(recurringResponse.errorBody() == null)
+        {
+            log.error("No Recurring Transaction Response found");
+            return;
+        }
+        try
+        {
+            String errorBody = recurringResponse.errorBody().string();
+            JsonObject jsonError = JsonParser.parseString(errorBody).getAsJsonObject();
+            String errorType = jsonError.has("error_type") ? jsonError.get("error_type").getAsString() : "Unknown";
+            String errorCode = jsonError.has("error_code") ? jsonError.get("error_code").getAsString() : "Unknown";
+            String errorMessage = jsonError.has("error_message") ? jsonError.get("error_message").getAsString() : "No Error Message";
+
+            if("PRODUCT_NOT_READY".equals(errorCode))
+            {
+                log.info("Recurring transactions product not ready, implementing backoff strategy...");
+                long delay = Math.min(5000 * (long) Math.pow(2, attempts - 1), 300000);
+                Thread.sleep(delay);
+            }
+            else if("RATE_LIMIT_EXCEEDED".equals(errorCode))
+            {
+                log.warn("Rate limit exceeded for recurring transactions on attempt {}", attempts);
+                long delay = Math.min(60000 * (long) Math.pow(2, attempts - 1), 300000);
+                Thread.sleep(delay);
+            }
+
+            log.error("Plaid Recurring Transaction API Error - Type: {}, Code: {}, Message: {}", errorType, errorCode, errorMessage);
+            if(jsonError.has("display_message"))
+            {
+                String displayMessage = jsonError.get("display_message").getAsString();
+                log.error("Display Message: {}", displayMessage);
+            }
+        }catch(InterruptedException e){
+            log.error("The recurring transaction response was interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        }catch(IOException ex){
+            log.error("There was an error while fetching the recurring transaction response errors: {}", ex.getMessage());
         }
     }
 
@@ -173,7 +251,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
     }
 
-
+//    @Timed(value="plaid.transactions.recurring.get", description="Time taken to get recurring transactions")
     public CompletableFuture<TransactionsRecurringGetResponse> getAsyncRecurringResponse(Long userId) throws IOException
     {
         Optional<UserEntity> userEntityOptional = userService.findById(userId);
@@ -185,6 +263,13 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
         String accessToken = plaidLinkEntity.getAccessToken();
         TransactionsRecurringGetRequest request = createRecurringTransactionRequest(accessToken);
+        try
+        {
+            Thread.sleep(recurringRateLimitDelayMs);
+        }catch(InterruptedException e){
+            Thread.currentThread().interrupt();
+            return CompletableFuture.failedFuture(e);
+        }
         Response<TransactionsRecurringGetResponse> transactionRecurringResponse = plaidApi.transactionsRecurringGet(request).execute();
         if(transactionRecurringResponse.isSuccessful())
         {
@@ -203,6 +288,10 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 else
                 {
                     attempts++;
+                    if(attempts == MAX_ATTEMPTS)
+                    {
+                        showRecurringTransactionErrors(recurringRetryResponse, attempts);
+                    }
                 }
             }
         }
@@ -219,7 +308,7 @@ public class PlaidTransactionManager extends AbstractPlaidManager
                 .accessToken(accessToken);
     }
 
-
+//    @Timed(value="plaid.transactions.sync", description="Time taken to sync transactions")
     public CompletableFuture<TransactionsSyncResponse> syncTransactionsForUser(final String secret, final String itemId, final String accessToken, final Long userId) throws IOException
     {
         Optional<UserEntity> userEntityOptional = userService.findById(userId);
@@ -234,6 +323,13 @@ public class PlaidTransactionManager extends AbstractPlaidManager
         }
         TransactionsSyncRequestOptions options = new TransactionsSyncRequestOptions()
                 .includePersonalFinanceCategory(true);
+        try
+        {
+            Thread.sleep(syncRateLimitDelayMs);
+        }catch(InterruptedException e){
+            Thread.currentThread().interrupt();
+            return CompletableFuture.failedFuture(e);
+        }
         boolean hasMore = true;
         String nextCursor;
         while(hasMore)

@@ -1,5 +1,4 @@
-import {User} from "lucide-react";
-import {apiUrl} from "../config/api";
+import {API_BASE_URL, apiUrl} from "../config/api";
 
 class UserService {
     private baseURL: string = 'http://localhost:8080/api/users';
@@ -16,13 +15,28 @@ class UserService {
         return UserService.instance;
     }
 
+    public async checkUserHasPlaidCSVSyncEnabled(userId: number) : Promise<boolean> {
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/plaid-csv-sync-enabled`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            return await response.json();
+        }catch(error){
+            console.error("There was an error checking if the user has plaid csv sync enabled: ", error);
+            throw error;
+        }
+    }
+
     public async findEmailByUserId(userId: number) : Promise<string>
     {
         if(userId < 1){
             throw new Error("Invalid UserId: " + userId);
         }
         try {
-            const response = await fetch(`${apiUrl}/users/${userId}/email`, {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/email`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -53,7 +67,7 @@ class UserService {
         }
         try
         {
-            const response = await fetch(`${apiUrl}/users/${userId}/override-enabled?overrideEnabled=${uploadEnabled}`, {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/override-enabled?overrideEnabled=${uploadEnabled}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -79,7 +93,7 @@ class UserService {
         }
         try
         {
-            const response = await fetch(`${apiUrl}/users/${userId}/override-enabled`, {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/override-enabled`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -102,7 +116,7 @@ class UserService {
             throw new Error("Invalid UserId: " + userId);
         }
         try {
-            const response = await fetch(`${apiUrl}/users/${userId}/name`, {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/name`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -130,7 +144,7 @@ class UserService {
             throw new Error("Invalid UserId: " + userId);
         }
         try {
-            const response = await fetch(`${apiUrl}/${userId}/find-name`, {
+            const response = await fetch(`${API_BASE_URL}/${userId}/find-name`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

@@ -37,4 +37,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>
 
     @Query("SELECT max(u.id) FROM UserEntity u")
     Long findMaxId();
+
+    @Query("SELECT u.enablePlaidCsvSync FROM UserEntity u WHERE u.id =:userId")
+    boolean findEnablePlaidCsvSync(@Param("userId") Long userId);
 }

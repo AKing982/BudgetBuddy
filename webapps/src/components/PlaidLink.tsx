@@ -5,7 +5,7 @@ import {
     PlaidLinkOptions,
     usePlaidLink
 } from "react-plaid-link";
-import {forwardRef, RefObject, useCallback, useEffect, useImperativeHandle, useState} from "react";
+import {forwardRef, RefObject, useCallback, useEffect, useImperativeHandle, useMemo, useState} from "react";
 import {Simulate} from "react-dom/test-utils";
 
 
@@ -14,6 +14,7 @@ interface PlaidLinkProps {
     onSuccess: (public_token: string, metadata: PlaidLinkOnSuccessMetadata) => Promise<void>;
     onConnect?: () => void;
     onTokenExpired?: () => Promise<void>; // Callback to refresh token
+    onExit?: (error: any, metadata: any) => void;
 }
 
 export interface PlaidLinkRef {
@@ -26,21 +27,38 @@ interface Metadata {
 }
 
 
-const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken, onSuccess, onConnect, onTokenExpired }, ref) => {
+const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken, onSuccess, onConnect, onTokenExpired, onExit: onExitProp }, ref) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [isLinked, setIsLinked] = useState<boolean>(false);
+
 
     const onExit: PlaidLinkOnExit = useCallback(async (err, metadata) => {
         console.log('Plaid Link exited');
         console.log('Error:', err);
         console.log('Metadata:', metadata);
+        if(onExitProp){
+            onExitProp(err, metadata);
+        }
 
         if (err != null) {
             console.error('Full error object:', JSON.stringify(err, null, 2));
             console.error('Error code:', err.error_code);
             console.error('Error message:', err.error_message);
             console.error('Display message:', err.display_message);
+
+            // Handle rate limit specifically
+            if (err.error_code === 'RATE_LIMIT') {
+                console.log('Plaid rate limit hit - waiting before retry');
+                setError('Too many connection attempts. Please wait a moment and try again.');
+
+                // Optional: Auto-retry after a delay
+                setTimeout(() => {
+                    setError('Ready to try again. Click to reconnect.');
+                }, 60000); // Wait 1 minute
+
+                return; // Don't show alert for rate limits
+            }
 
             // Handle expired or invalid token
             if (err.error_code === 'INVALID_LINK_TOKEN' && onTokenExpired) {
@@ -53,11 +71,10 @@ const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken,
                     console.error('Failed to refresh token:', refreshError);
                     setError('Failed to refresh connection. Please try again.');
                 }
-            } else {
-                // Show error for other cases
+            } else if (err.error_code !== 'RATE_LIMIT') {
+                // Show error for other cases (but not rate limit)
                 const errorMessage = err.display_message || err.error_message || 'Error linking account';
                 setError(errorMessage);
-                alert(`Error Code: ${err.error_code}\nError: ${err.error_message}`);
             }
         }
     }, [onTokenExpired]);
@@ -74,14 +91,15 @@ const PlaidLink = forwardRef<{ open: () => void }, PlaidLinkProps>(({ linkToken,
         setIsLoading(false);
     }, [onSuccess]);
 
-    const config: PlaidLinkOptions = {
+    const config: PlaidLinkOptions = useMemo(() => ({
         token: linkToken,
         onSuccess: handleSuccess,
         onExit,
+        // Note: window.location check inside useMemo ensures stability
         ...(window.location.pathname === '/oauth-redirect' && {
             receivedRedirectUri: window.location.href
         })
-    };
+    }), [linkToken, handleSuccess, onExit]); // Only re-run if these change
 
     if (config) {
         const params = new URLSearchParams(window.location.search);

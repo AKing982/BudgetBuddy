@@ -1,13 +1,13 @@
 package com.app.budgetbuddy.workbench.runner;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
 import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.categories.CategorizationEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -126,6 +126,49 @@ public class CategoryRunner
         }catch(Exception e){
             log.error("There was an error fetching the transaction categories: {}", e.getMessage());
             throw e;
+        }
+    }
+
+
+    public void categorizeTransactionsByRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<Transaction> transactions = transactionService.getConvertedPlaidTransactions(userId, startDate, endDate);
+            if(transactions.isEmpty())
+            {
+                log.info("There are no transactions to convert...");
+                return;
+            }
+            List<TransactionCategory> transactionCategories = transactions.stream()
+                    .map(transaction -> {
+                        String transactionId = transaction.getTransactionId();
+                        Category category = transactionCategorizerService.categorize(transaction);
+                        String matched_category = category.getCategoryName();
+                        return TransactionCategory.builder()
+                                .categorizedBy(category.getCategorizedBy())
+                                .categorizedDate(category.getCategorizedDate())
+                                .category(matched_category)
+                                .createdAt(LocalDateTime.now())
+                                .transactionId(transactionId)
+                                .build();
+                    })
+                    .toList();
+            transactionCategoryService.saveAll(transactionCategories);
+        }catch(CategoryException e){
+            log.error("There was an error categorizing transactions: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    public void categorizeRecurringTransactions(Long userId)
+    {
+        try
+        {
+
+        }catch(CategoryException e){
+            log.error("There was an error categorizing the latest recurring transactions: ", e.getMessage());
+
         }
     }
 }

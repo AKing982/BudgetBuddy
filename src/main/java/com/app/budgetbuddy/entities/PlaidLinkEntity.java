@@ -32,6 +32,9 @@ public class PlaidLinkEntity
     @NotNull
     private String itemId;
 
+    @Column(name="institution")
+    private String institution;
+
     @Column(name="createdAt")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdAt;

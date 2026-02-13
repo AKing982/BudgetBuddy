@@ -4,12 +4,15 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.repositories.UserRepository;
+import com.app.budgetbuddy.services.PlaidCategoryManager;
 import com.app.budgetbuddy.services.PlaidLinkService;
+import com.app.budgetbuddy.services.PlaidLogoService;
 import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.workbench.converter.TransactionDTOConverter;
 import com.app.budgetbuddy.workbench.plaid.PlaidAccountManager;
 import com.app.budgetbuddy.workbench.plaid.PlaidLinkTokenProcessor;
 import com.app.budgetbuddy.workbench.plaid.PlaidTransactionManager;
+import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
 import com.plaid.client.model.*;
 import com.plaid.client.model.AccountType;
 import com.plaid.client.model.Transaction;
@@ -30,6 +33,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
@@ -49,7 +53,7 @@ class PlaidControllerTest {
     private PlaidAccountManager plaidAccountManager;
 
     @MockBean
-    private PlaidTransactionManager plaidTransactionManager;
+    private PlaidTransactionRunner plaidTransactionRunner;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,6 +62,9 @@ class PlaidControllerTest {
 
     @MockBean
     private PlaidLinkService plaidLinkService;
+
+    @MockBean
+    private PlaidCategoryManager plaidCategoryManager;
 
     @MockBean
     private UserRepository userRepository;
@@ -208,7 +215,7 @@ class PlaidControllerTest {
     @Test
     void testSaveAccessToken_whenPlaidLinkRequestValid_thenReturnStatusCreated() throws Exception {
         PlaidLinkRequest plaidLinkRequest = new PlaidLinkRequest("e23232320", "chhsdfsdfasdf", "1");
-        when(plaidLinkService.createPlaidLink(anyString(), anyString(), anyLong())).thenReturn(Optional.of(new PlaidLinkEntity()));
+        when(plaidLinkService.createPlaidLink(anyString(), anyString(), anyString(), anyLong())).thenReturn(Optional.of(new PlaidLinkEntity()));
 
         String jsonString = objectMapper.writeValueAsString(plaidLinkRequest);
 
@@ -342,8 +349,10 @@ class PlaidControllerTest {
 
         TransactionsGetResponse transactionsGetResponse = new TransactionsGetResponse();
 
+        List<com.app.budgetbuddy.domain.Transaction> transactions = new ArrayList<>();
+        transactions.add(new com.app.budgetbuddy.domain.Transaction());
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
-        when(plaidTransactionManager.getAsyncTransactionsResponse(userId, startDate, endDate)).thenReturn(CompletableFuture.completedFuture(transactionsGetResponse));
+        when(plaidTransactionRunner.getTransactionsResponse(userId, startDate, endDate)).thenReturn(transactions);
 
         mockMvc.perform(get("/api/plaid/transactions")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -367,7 +376,10 @@ class PlaidControllerTest {
         Long userId = 1L;
         TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
 
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId)).thenReturn(CompletableFuture.completedFuture(expectedResponse));
+        List<RecurringTransaction> recurringTransactions = new ArrayList<>();
+        recurringTransactions.add(new RecurringTransaction());
+
+        when(plaidTransactionRunner.getRecurringTransactionsResponse(userId)).thenReturn(recurringTransactions);
         mockMvc.perform(get("/api/plaid/users/{userId}/recurring-transactions", userId)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -421,6 +433,50 @@ class PlaidControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonString))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSyncTransactions_whenUserIdIsInvalid_thenReturnBadRequest() throws Exception {
+        Long userId = -1L;
+        mockMvc.perform(post("/api/plaid/transactions/{userId}/sync", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSyncTransactions_whenUserIdNotFound_thenReturnNotFound() throws Exception {
+        Long userId = 1L;
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        mockMvc.perform(post("/api/plaid/transactions/{userId}/sync", userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testSyncTransactions_whenUserIdValid_thenReturnSyncedTransactions() throws Exception {
+        Long userId = 1L;
+
+        List<com.app.budgetbuddy.domain.Transaction> transactions = new ArrayList<>();
+        transactions.add(new com.app.budgetbuddy.domain.Transaction());
+
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(plaidTransactionRunner.syncTransactions(userId)).thenReturn(transactions);
+        mockMvc.perform(post("/api/plaid/transactions/{userId}/sync", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void testSyncTransactions_whenExceptionThrown_thenReturnInternalServerError() throws Exception {
+        Long userId = 1L;
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(plaidTransactionRunner.syncTransactions(userId)).thenThrow(new IOException("Error"));
+        mockMvc.perform(post("/api/plaid/transactions/{userId}/sync", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
     }
 
     private PlaidAccount createPlaidAccount(){

@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.exceptions.AccountNotFoundException;
 import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.services.AccountService;
+import com.app.budgetbuddy.services.TransactionRuleService;
 import com.app.budgetbuddy.services.UserCategoryService;
 import com.app.budgetbuddy.workbench.MerchantMatcherService;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j

@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.BoolStatus;
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.TransactionCategoryQueries;
@@ -85,6 +86,21 @@ public class TransactionCategoryController
             return transactionCSVOptional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
         }catch(Exception ex){
             log.error("Exception in updateCSVTransactionCategory", ex);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{userId}/transactions")
+    public ResponseEntity<List<Transaction>> getTransactionsByCategoryList(@PathVariable Long userId,
+                                                                           @RequestParam LocalDate startDate,
+                                                                           @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            List<Transaction> transactionsList = transactionCategoryQueries.getTransactionsByCategoryList(userId, startDate, endDate);
+            return ResponseEntity.ok(transactionsList);
+        }catch(Exception ex){
+            log.error("There was an error fetching the transactions by category list", ex);
             return ResponseEntity.internalServerError().build();
         }
     }

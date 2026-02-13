@@ -4,17 +4,13 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.CategoryService;
 
-import com.app.budgetbuddy.workbench.categories.TransactionRuleService;
+import com.app.budgetbuddy.services.TransactionRuleService;
 
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -24,8 +20,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Slf4j

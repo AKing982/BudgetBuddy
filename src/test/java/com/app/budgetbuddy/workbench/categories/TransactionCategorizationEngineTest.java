@@ -8,6 +8,7 @@ import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.AccountNotFoundException;
 import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.services.AccountService;
+import com.app.budgetbuddy.services.TransactionRuleService;
 import com.app.budgetbuddy.services.UserCategoryService;
 import com.app.budgetbuddy.workbench.MerchantMatcherService;
 import org.junit.jupiter.api.AfterEach;

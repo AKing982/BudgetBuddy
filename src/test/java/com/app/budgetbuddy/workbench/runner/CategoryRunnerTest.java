@@ -4,30 +4,18 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.categories.CategorizationEngine;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 
 
@@ -39,6 +27,9 @@ class CategoryRunnerTest
 
     @Mock
     private CategorizationEngine<TransactionCSV> csvCategorizerService;
+
+    @Mock
+    private CategorizationEngine<Transaction> transactionCategorizerService;
 
     @Mock
     private CSVTransactionService csvTransactionService;
@@ -58,7 +49,7 @@ class CategoryRunnerTest
     @BeforeEach
     void setUp() {
 
-        categoryRunner = new CategoryRunner(csvCategorizerService, csvTransactionService, userLogService, subBudgetService, transactionService, transactionCategoryService);
+        categoryRunner = new CategoryRunner(csvCategorizerService,  transactionCategorizerService, csvTransactionService, userLogService, subBudgetService, transactionService, transactionCategoryService);
     }
 
     @Test

@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
+@Deprecated
 public class TransactionImportAsyncService
 {
     private PlaidTransactionRunner plaidTransactionRunner;

@@ -2,7 +2,7 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.entities.TransactionRuleEntity;
-import com.app.budgetbuddy.workbench.categories.TransactionRuleService;
+import com.app.budgetbuddy.services.TransactionRuleService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;

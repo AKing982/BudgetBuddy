@@ -150,6 +150,7 @@ const LoginForm: React.FC = () => {
     const plaidLinkRef = useRef<PlaidLinkRef>(null);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [rateLimitError, setRateLimitError] = useState<boolean>(false);
     let [loginAttempts, setLoginAttempts] = useState<number>(0);
     const plaidTransactionImport = PlaidImportService.getInstance();
     const plaidService = PlaidService.getInstance();
@@ -166,6 +167,23 @@ const LoginForm: React.FC = () => {
             [name]: value,
         }));
     };
+
+    const handlePlaidError = useCallback((error: any, metadata: any) => {
+        console.log('Plaid Link Error:', error);
+
+        if (error?.error_code === 'RATE_LIMIT') {
+            setLoginError('Plaid connection is temporarily limited. Please wait a few minutes and try again, or click the lock icon above to use manual upload mode.');
+
+            // Clear the link token to prevent repeated attempts
+            setLinkToken(null);
+            sessionStorage.removeItem('plaidLinkToken');
+
+            return;
+        }
+
+        // Handle other errors...
+        setLoginError('Connection failed. Please try again.');
+    }, []);
 
     const handleOverrideAccessOnClick = () => {
         setOverrideAccessClick(prev => !prev);
@@ -303,20 +321,14 @@ const LoginForm: React.FC = () => {
                         console.log('Link token created successfully:', linkResponse.linkToken);
                         setLinkToken(linkResponse.linkToken);
                         sessionStorage.setItem('plaidLinkToken', linkResponse.linkToken);
-                        // Add a small delay to ensure state updates before opening
-                        setTimeout(() => {
-                            if (plaidLinkRef.current) {
-                                console.log('Opening Plaid Link window...');
-                                plaidLinkRef.current.open();
-                            } else {
-                                console.error('Plaid Link reference is not available');
-                            }
-                        }, 500);
                     }
                     // Note: Navigation waits until Plaid linking/updating completes (via callback)
                 } else {
                     // Case 3: Link exists and is up-to-date
                     console.log('Plaid linked and up-to-date, syncing transactions...');
+
+
+
                     navigate('/dashboard');
                 }
             }
@@ -480,56 +492,6 @@ const LoginForm: React.FC = () => {
             console.error("Error opening Plaid update mode:", error);
         }
     };
-    // const openUpdateMode = async (userId: number) => {
-    //     try
-    //     {
-    //         console.log('UserID: ', userId);
-    //         const accessToken = await plaidService.getAccessTokenForUser(userId);
-    //         if(!accessToken){
-    //             console.error("Access Token is null or unavailable for user: ", userId);
-    //             return;
-    //         }
-    //         const linkToken = await plaidService.updatePlaidLink(userId, accessToken);
-    //         if (!linkToken) {
-    //             console.error("Failed to fetch update link token");
-    //             return;
-    //         }
-    //
-    //         // Use the Plaid React hook to open update mode
-    //         setLinkToken(linkToken);
-    //         const waitForPlaidReady = (timeoutMs = 60000) => {
-    //             return new Promise<void>((resolve, reject) => {
-    //                 // If already ready, resolve immediately
-    //                 if (ready) {
-    //                     resolve();
-    //                     return;
-    //                 }
-    //
-    //                 // Set a timeout for the maximum wait time
-    //                 const timeout = setTimeout(() => {
-    //                     clearInterval(checkInterval);
-    //                     reject(new Error("Timed out waiting for Plaid to be ready"));
-    //                 }, timeoutMs);
-    //
-    //                 // Check periodically if Plaid is ready
-    //                 const checkInterval = setInterval(() => {
-    //                     if (ready) {
-    //                         clearTimeout(timeout);
-    //                         clearInterval(checkInterval);
-    //                         resolve();
-    //                     }
-    //                 }, 200); // Check every 200ms
-    //             });
-    //         };
-    //
-    //         // Wait for Plaid to be ready with a generous timeout
-    //         await waitForPlaidReady();
-    //         console.log("Plaid is ready, opening update mode...");
-    //         open();
-    //     } catch (error) {
-    //         console.error("Error opening Plaid update mode:", error);
-    //     }
-    // };
 
     const handlePlaidSuccess = useCallback(async(publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
         if(isProcessing) return;
@@ -804,6 +766,7 @@ const LoginForm: React.FC = () => {
                                             onSuccess={handlePlaidSuccess}
                                             onConnect={handlePlaidReady}
                                             onTokenExpired={handleTokenExpired}
+                                            onExit={handlePlaidError}
                                             ref={plaidLinkRef}
                                         />
                                     )}

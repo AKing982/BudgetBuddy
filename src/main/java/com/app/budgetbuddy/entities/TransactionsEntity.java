@@ -29,7 +29,7 @@ public class TransactionsEntity
     @JsonManagedReference
     private AccountEntity account;
 
-    @Column(name="categoryId")
+    @Column(name="category_id")
     private String categoryId;
 
     @Column(name="primary_category")
@@ -52,6 +52,9 @@ public class TransactionsEntity
 
     @Column(name="merchantName")
     private String merchantName;
+
+    @Column(name="name")
+    private String name;
 
     @Column(name="pending")
     private boolean pending;

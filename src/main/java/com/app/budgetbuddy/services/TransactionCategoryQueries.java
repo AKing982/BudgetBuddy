@@ -1,10 +1,13 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionCSV;
+import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -75,6 +78,46 @@ public class TransactionCategoryQueries
         }
     }
 
+    public List<Transaction> getTransactionsByCategoryList(final Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        final String query = """
+                SELECT t.id, cte.matchedCategory, t.amount, t.merchantName, t.description, t.posted, t.logoUrl
+                FROM TransactionCategoryEntity cte
+                INNER JOIN TransactionsEntity t
+                    ON cte.transaction.id = t.id
+                INNER JOIN AccountEntity a
+                    ON t.account.id = a.id
+                WHERE cte.transaction.posted BETWEEN :startDate AND :endDate AND a.user.id = :userId
+                """;
+        try
+        {
+            List<Object[]> queryResults = em.createQuery(query, Object[].class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("userId", userId)
+                    .getResultList();
+            return getTransactionMapping(queryResults);
+
+        }catch(DataAccessException ex){
+            log.error("There was an error fetching the transaction csv list by category {}: ", ex.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private List<Transaction> getTransactionMapping(List<Object[]> queryResults)
+    {
+        return queryResults.stream()
+                .map(result -> Transaction.builder()
+                        .primaryCategory((String) result[1])
+                        .amount((BigDecimal) result[2])
+                        .merchantName((String) result[3])
+                        .description((String) result[4])
+                        .posted((LocalDate) result[5])
+                        .logoUrl((String) result[6])
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     public List<TransactionCSV> getTransactionCSVByCategoryList(final LocalDate startDate, final LocalDate endDate, final Long userID)
     {
         final String query = """
@@ -101,6 +144,7 @@ public class TransactionCategoryQueries
             return Collections.emptyList();
         }
     }
+
 
     private List<TransactionCSV> getTransactionCSVMapping(List<Object[]> queryResults)
     {

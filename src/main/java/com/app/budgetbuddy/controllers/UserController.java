@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,6 +105,23 @@ public class UserController {
         UserEntity userEntity = userEntityOptional.get();
         boolean isOverrideEnabled = userEntity.isOverrideUploadEnabled();
         return ResponseEntity.ok(isOverrideEnabled);
+    }
+
+    @GetMapping("/{id}/plaid-csv-sync-enabled")
+    public ResponseEntity<Boolean> isPlaidCSVSyncEnabled(@PathVariable Long id)
+    {
+       try
+       {
+           boolean isPlaidCSVSyncEnabled = userService.hasPlaidCSVSyncEnabled(id);
+           if(isPlaidCSVSyncEnabled)
+           {
+               return ResponseEntity.ok(true);
+           }
+           return ResponseEntity.ok(false);
+       }catch(DataException e){
+           log.error("There was an error fetching the user plaid csv sync status: {}", e.getMessage());
+           return ResponseEntity.internalServerError().build();
+       }
     }
 
     @GetMapping("/{id}")

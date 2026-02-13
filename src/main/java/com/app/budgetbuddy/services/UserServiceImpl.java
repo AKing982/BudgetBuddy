@@ -175,4 +175,17 @@ public class UserServiceImpl implements UserService
         userRepository.save(userEntity);
     }
 
+    @Override
+    @Transactional
+    public boolean hasPlaidCSVSyncEnabled(Long userId)
+    {
+        try
+        {
+            return userRepository.findEnablePlaidCsvSync(userId);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the user override access: ", e);
+            return false;
+        }
+    }
+
 }

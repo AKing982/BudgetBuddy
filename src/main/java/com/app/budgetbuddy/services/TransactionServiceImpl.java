@@ -166,8 +166,13 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     @Transactional
     public List<TransactionsEntity> createAndSaveTransactions(List<Transaction> transactions) {
+        log.info("Saving {} transactions to the database: ", transactions.size());
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         for(Transaction transaction : transactions){
+            if(transaction == null){
+                log.warn("Skipping null transaction");
+                continue;
+            }
             TransactionsEntity transactionsEntity = transactionToEntityConverter.convert(transaction);
             save(transactionsEntity);
             transactionsEntities.add(transactionsEntity);

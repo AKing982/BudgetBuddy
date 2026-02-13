@@ -1,9 +1,7 @@
-package com.app.budgetbuddy.workbench.categories;
+package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.CSVTransactionRule;
 import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.entities.TransactionRuleEntity;
-import com.app.budgetbuddy.services.ServiceModel;
 
 import java.util.List;
 import java.util.Optional;

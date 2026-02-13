@@ -41,6 +41,9 @@ public class UserEntity {
     @Column(name="override_upload_enabled")
     private boolean overrideUploadEnabled;
 
+    @Column(name="enable_plaid_csv_sync")
+    private boolean enablePlaidCsvSync;
+
     @Column(name="createdat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;

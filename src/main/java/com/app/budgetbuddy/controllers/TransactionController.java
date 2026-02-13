@@ -7,6 +7,7 @@ import com.app.budgetbuddy.exceptions.TransactionsNotFoundException;
 import com.app.budgetbuddy.services.CSVTransactionService;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.TransactionService;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,21 +26,18 @@ import java.util.Optional;
 @RestController
 @RequestMapping(value="/api/transaction")
 @CrossOrigin(value="http://localhost:3000")
+@Slf4j
 public class TransactionController
 {
     private final TransactionService transactionService;
     private final CSVTransactionService csvTransactionService;
-    private final CategoryService categoryService;
-    private final Logger LOGGER = LoggerFactory.getLogger(TransactionController.class);
 
     @Autowired
     public TransactionController(TransactionService transactionService,
-                                 CSVTransactionService csvTransactionService,
-                                 CategoryService categoryService)
+                                 CSVTransactionService csvTransactionService)
     {
         this.transactionService = transactionService;
         this.csvTransactionService = csvTransactionService;
-        this.categoryService = categoryService;
     }
 
     @GetMapping("/")
@@ -77,38 +75,6 @@ public class TransactionController
         return ResponseEntity.ok(pendingTransactions);
     }
 
-    @GetMapping("/by-amount")
-    public ResponseEntity<?> getTransactionsByAmount(@RequestParam @NotNull BigDecimal startAmount) {
-        List<TransactionsEntity> transactionsEntities = (List<TransactionsEntity>) transactionService.getTransactionsByAmount(startAmount);
-        return ResponseEntity.ok(transactionsEntities);
-    }
-
-    @GetMapping("/by-date")
-    public ResponseEntity<?> getTransactionsByDate(@RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate date) {
-        List<TransactionsEntity> transactionsEntityList = (List<TransactionsEntity>) transactionService.getTransactionsByAuthorizedDate(date);
-        return ResponseEntity.ok(transactionsEntityList);
-    }
-
-//    @PutMapping("/update/category")
-//    public ResponseEntity<TransactionCSV> updateTransactionCSVByCategory(@RequestParam Long transactionId,
-//                                                                         @RequestParam String category)
-//    {
-//        try
-//        {
-//            Optional<TransactionCSV> updatedTransactionCSVOptional = csvTransactionService.updateTransactionCSVByCategory(transactionId, category);
-//            if(updatedTransactionCSVOptional.isEmpty())
-//            {
-//                return ResponseEntity.notFound().build();
-//            }
-//            LOGGER.info("Updated Transaction CSV with id: {} and category: {}", transactionId, category);
-//            TransactionCSV updatedTransactionCSV = updatedTransactionCSVOptional.get();
-//            return ResponseEntity.ok(updatedTransactionCSV);
-//        }catch(Exception e){
-//            LOGGER.error("There was an error updating the transaction CSV", e);
-//            return ResponseEntity.internalServerError().body(null);
-//        }
-//    }
-
     @GetMapping("/{userId}")
     public ResponseEntity<?> getTransactionsForUser(@PathVariable Long userId) {
         return null;
@@ -120,7 +86,7 @@ public class TransactionController
                                                                @RequestParam @NotNull @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate endDate) {
         List<TransactionsEntity> transactionsEntities = transactionService.getTransactionsForUserAndDateRange(userId, startDate, endDate);
         List<TransactionResponse> transactionResponses = createTransactionResponse(transactionsEntities);
-        LOGGER.info("Sending Transaction Response to client: {}", transactionResponses);
+        log.info("Sending Transaction Response to client: {}", transactionResponses);
         return ResponseEntity.ok(transactionResponses);
     }
 
@@ -146,19 +112,6 @@ public class TransactionController
         return transactionResponses;
     }
 
-    private String fetchCategory(final String categoryId){
-//        if(categoryId == null){
-//            LOGGER.warn("Category with ID {} has no category", categoryId);
-//            return null;
-//        }
-//        Optional<CategoryEntity> categoryEntity = categoryService.findCategoryById(categoryId);
-//        if(categoryEntity.isPresent()){
-//            return categoryEntity.get().getPlaidCategoryId();
-//        }
-//        LOGGER.info("Returning CategoryId: {}", categoryId);
-//        return categoryId;
-        return "";
-    }
 
     @PostMapping("/save-transactions")
     public ResponseEntity<?> saveTransactions(@RequestBody TransactionBaseRequest transactionBaseRequest) {
@@ -168,20 +121,9 @@ public class TransactionController
             List<TransactionsEntity> transactionsEntities = transactionService.createAndSaveTransactions(transactions);
             return ResponseEntity.ok(transactionsEntities);
         }catch(Exception e){
-            LOGGER.error("There was an error saving the transactions", e);
+            log.error("There was an error saving the transactions", e);
             return ResponseEntity.internalServerError().body(null);
         }
     }
-
-    @PostMapping("/transaction-runner")
-    public ResponseEntity<?> runTransactionRunner(@RequestBody TransactionBaseRequest transactionBaseRequest) {
-        return null;
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateTransaction(@PathVariable Long id, @RequestBody TransactionDTO transaction) {
-        return null;
-    }
-
 
 }

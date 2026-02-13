@@ -93,6 +93,47 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
     }
 
     /**
+     * Fetches institution information using the access token
+     */
+    @Async("taskExecutor")
+    public CompletableFuture<String> getInstitutionName(String accessToken) throws IOException {
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new IllegalArgumentException("Access token cannot be empty");
+        }
+
+        try {
+            // First, get the item to retrieve institution_id
+            ItemGetRequest itemGetRequest = new ItemGetRequest().accessToken(accessToken);
+            Response<ItemGetResponse> itemResponse = plaidApi.itemGet(itemGetRequest).execute();
+
+            if (!itemResponse.isSuccessful() || itemResponse.body() == null) {
+                String errorBody = itemResponse.errorBody() != null ? itemResponse.errorBody().string() : "No error body";
+                return CompletableFuture.failedFuture(new PlaidApiException("Failed to get item: " + errorBody));
+            }
+
+            String institutionId = itemResponse.body().getItem().getInstitutionId();
+
+            // Then get institution details
+            InstitutionsGetByIdRequest institutionRequest = new InstitutionsGetByIdRequest()
+                    .institutionId(institutionId)
+                    .countryCodes(Arrays.asList(CountryCode.US));
+
+            Response<InstitutionsGetByIdResponse> institutionResponse = plaidApi.institutionsGetById(institutionRequest).execute();
+
+            if (!institutionResponse.isSuccessful() || institutionResponse.body() == null) {
+                String errorBody = institutionResponse.errorBody() != null ? institutionResponse.errorBody().string() : "No error body";
+                return CompletableFuture.failedFuture(new PlaidApiException("Failed to get institution: " + errorBody));
+            }
+
+            String institutionName = institutionResponse.body().getInstitution().getName();
+            return CompletableFuture.completedFuture(institutionName);
+
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(new PlaidApiException("Error fetching institution name: " + e.getMessage()));
+        }
+    }
+
+    /**
      * Creates a link token.
      *
      * @param clientUserId the ID of the client user

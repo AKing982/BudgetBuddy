@@ -65,6 +65,8 @@ import transactionRuleService, {TransactionRule} from "../services/TransactionRu
 import TransactionRuleService from "../services/TransactionRuleService";
 import MonthPickerDialog from "./MonthPickerDialog";
 import TransactionRulesDialog from "./TransactionRulesDialog";
+import {Sync} from "@mui/icons-material";
+import UserService from "../services/UserService";
 
 // Custom gradient backgrounds
 const gradients = {
@@ -109,11 +111,13 @@ const TransactionsPage: React.FC = () => {
     const [transactionRules, setTransactionRules] = useState<TransactionRule[]>([]);
     const [customCategories, setCustomCategories] = useState<string[]>([]);
     const [loadingRules, setLoadingRules] = useState(false); // ADD THIS
+    const [isSyncing, setIsSyncing] = useState(false);
     const categoryService = CategoryService.getInstance();
     const transactionService = TransactionService.getInstance();
     const transactionCategoryService = TransactionCategoryService.getInstance();
     const transactionRuleService = TransactionRuleService.getInstance();
     const userCategoryService = UserCategoryService.getInstance();
+    const userService = UserService.getInstance();
 
     const theme = useTheme();
 
@@ -125,6 +129,22 @@ const TransactionsPage: React.FC = () => {
             document.title = 'BudgetBuddy';
         }
     }, []);
+
+    useEffect(() => {
+        const rawUserId = sessionStorage.getItem('userId');
+        const userId = Number(rawUserId);
+
+        if (!rawUserId || isNaN(userId) || userId <= 0) {
+            // This will pop up on the iPad screen immediately
+            alert(`Session Error: Invalid User ID found (${rawUserId}). 
+               Please log in again. 
+               Browser: ${navigator.userAgent}`);
+        }
+    }, []);
+
+    const handleSyncTransactions = () => {
+
+    }
 
     const handleOpenRulesDialog = async () => {
         setRulesDialogOpen(true);
@@ -195,9 +215,13 @@ const TransactionsPage: React.FC = () => {
             const year = customMonth.getFullYear();
             const month = customMonth.getMonth();
 
-            const startDate = new Date(year, month, 1, 0, 0, 0, 0);
+            // const startDate = new Date(year, month, 1, 0, 0, 0, 0);
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 31);
+            startDate.setHours(0 ,0, 0, 0);
 
-            const lastDay = new Date(year, month, 30).getDate();
+            const lastDay = new Date(year, month + 1, 0).getDate();
             const endDate = new Date(year, month, lastDay, 23, 59, 59, 999);
 
             console.log('Custom Month Range:', {
@@ -282,21 +306,54 @@ const TransactionsPage: React.FC = () => {
             try {
                 const transactionService = TransactionService.getInstance();
                 let userId = Number(sessionStorage.getItem('userId'));
+                if(!userId)
+                {
+                    userId = 1;
+                }
                 // let startDate = transactionService.getStartDate();
                 // let endDate = new Date().toISOString().split('T')[0];
+                const toLocalISO = (date: Date) => {
+                    const offset = date.getTimezoneOffset();
+                    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+                    return localDate.toISOString().split('T')[0];
+                };
+                const startDateStr = toLocalISO(dateRange.startDate);
+                const endDateStr = toLocalISO(dateRange.endDate);
 
-                const startDateStr = dateRange.startDate.toISOString().split('T')[0];
-                const endDateStr = dateRange.endDate.toISOString().split('T')[0];
-                // const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
-                // const csvTransactionResponse: CSVTransaction[] = await categoryService.fetchCategorizedCSVTransactions(userId, startDate, endDate);
+                // const startDateStr = dateRange.startDate.toISOString().split('T')[0];
+                // const endDateStr = dateRange.endDate.toISOString().split('T')[0];
+
+                const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
+                console.log('Has Plaid CSV Sync Enabled:', hasPlaidCSVSync);
+                const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDateStr, endDateStr);
                 const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDateStr, endDateStr);
-                console.log('CSV Transaction Response:', csvTransactionResponse);
-                // setTransactions(transactionResponse || []);
-                setCsvTransactions(csvTransactionResponse);
-            } catch(error) {
+                const safeTransactionResponse = Array.isArray(transactionResponse) ? transactionResponse : [];
+                const safeCsvTransactionResponse = Array.isArray(csvTransactionResponse) ? csvTransactionResponse : [];
+                if(hasPlaidCSVSync) {
+                    const plaidTransactionDates = new Set(
+                        safeTransactionResponse.map(transaction =>
+                            transaction.posted || transaction.date
+                        ).filter(date => date)
+                    );
+
+                    const filteredCSVTransactions = safeCsvTransactionResponse.filter(csvTransaction => {
+                        const csvDate = csvTransaction.transactionDate;
+                        return csvDate && !plaidTransactionDates.has(csvDate);
+                    });
+
+                    setTransactions(safeTransactionResponse);
+                    setCsvTransactions(filteredCSVTransactions);
+                } else {
+                    setTransactions(safeTransactionResponse);
+                    setCsvTransactions(safeCsvTransactionResponse);
+                }
+            } catch(error: any) {
                 console.error('Error fetching transactions:', error);
                 setTransactions([]);
                 setCsvTransactions([]);
+                if (window.navigator.userAgent.includes('iPad')) {
+                    alert("API Error: " + error.message);
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -628,7 +685,7 @@ const TransactionsPage: React.FC = () => {
         }
     };
 
-    // Filter transactions
+
     const filteredTransactions = useMemo(() => {
         let filtered = sortedTransactions;
 
@@ -890,53 +947,6 @@ const TransactionsPage: React.FC = () => {
             lastMonthExpense
         };
     }, [filteredTransactions, activeFilters.dateRange, selectedMonth, combinedTransactions]);
-
-    // const transactionStats = useMemo(() => {
-    //     let income = 0;
-    //     let expense = 0;
-    //     let pending = 0;
-    //     let lastMonthExpense = 0;
-    //
-    //     filteredTransactions.forEach(transaction => {
-    //         if (transaction.pending) {
-    //             pending += 1;
-    //             return;
-    //         }
-    //
-    //         // Calculate current stats
-    //         if (transaction.amount < 0) {
-    //             income += Math.abs(transaction.amount);
-    //         } else {
-    //             expense += transaction.amount;
-    //         }
-    //
-    //         // Simulate last month data for comparison
-    //         const transactionDate = new Date(transaction.posted || transaction.date);
-    //         const today = new Date();
-    //         const lastMonth = new Date();
-    //         lastMonth.setMonth(today.getMonth() - 1);
-    //
-    //         if (transactionDate.getMonth() === lastMonth.getMonth() &&
-    //             transactionDate.getFullYear() === lastMonth.getFullYear() &&
-    //             transaction.amount > 0) {
-    //             lastMonthExpense += transaction.amount;
-    //         }
-    //     });
-    //
-    //     // Calculate percentage change for expense trend
-    //     const expenseTrend = lastMonthExpense > 0
-    //         ? ((expense - lastMonthExpense) / lastMonthExpense) * 100
-    //         : 0;
-    //
-    //     return {
-    //         income,
-    //         expense,
-    //         pending,
-    //         total: combinedTransactions.length,
-    //         expenseTrend,
-    //         lastMonthExpense
-    //     };
-    // }, [combinedTransactions]);
 
     // Get category breakdown for expense chart
     const categoryBreakdown = useMemo(() => {
@@ -1358,35 +1368,36 @@ const TransactionsPage: React.FC = () => {
                                 ? selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                                 : activeFilters.dateRange}
                         </Button>
-                        <Button
-                            variant="outlined"
-                            startIcon={<Filter size={18} />}
-                            endIcon={activeFilters.categories.length > 0 || activeFilters.type ? (
-                                <MuiBadge color="primary" variant="dot">
-                                    <ChevronDown size={16} />
-                                </MuiBadge>
-                            ) : (
-                                <ChevronDown size={16} />
-                            )}
-                            onClick={handleOpenFilterMenu}
-                            sx={{
-                                borderRadius: 3,
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                px: 2.5,
-                                py: 1.2,
-                                fontSize: '0.95rem',
-                                color: theme.palette.text.primary,
-                                borderColor: alpha(theme.palette.divider, 0.8),
-                                backgroundColor: alpha(theme.palette.background.paper, 0.8),
-                                '&:hover': {
-                                    borderColor: theme.palette.primary.main,
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.05)
-                                }
-                            }}
-                        >
-                            Filters
-                        </Button>
+
+                        {/*<Button*/}
+                        {/*    variant="outlined"*/}
+                        {/*    startIcon={<Filter size={18} />}*/}
+                        {/*    endIcon={activeFilters.categories.length > 0 || activeFilters.type ? (*/}
+                        {/*        <MuiBadge color="primary" variant="dot">*/}
+                        {/*            <ChevronDown size={16} />*/}
+                        {/*        </MuiBadge>*/}
+                        {/*    ) : (*/}
+                        {/*        <ChevronDown size={16} />*/}
+                        {/*    )}*/}
+                        {/*    onClick={handleOpenFilterMenu}*/}
+                        {/*    sx={{*/}
+                        {/*        borderRadius: 3,*/}
+                        {/*        textTransform: 'none',*/}
+                        {/*        fontWeight: 600,*/}
+                        {/*        px: 2.5,*/}
+                        {/*        py: 1.2,*/}
+                        {/*        fontSize: '0.95rem',*/}
+                        {/*        color: theme.palette.text.primary,*/}
+                        {/*        borderColor: alpha(theme.palette.divider, 0.8),*/}
+                        {/*        backgroundColor: alpha(theme.palette.background.paper, 0.8),*/}
+                        {/*        '&:hover': {*/}
+                        {/*            borderColor: theme.palette.primary.main,*/}
+                        {/*            backgroundColor: alpha(theme.palette.primary.main, 0.05)*/}
+                        {/*        }*/}
+                        {/*    }}*/}
+                        {/*>*/}
+                        {/*    Filters*/}
+                        {/*</Button>*/}
 
                         {/*<Button*/}
                         {/*    variant="outlined"*/}
@@ -1430,6 +1441,30 @@ const TransactionsPage: React.FC = () => {
                             }}
                         >
                             Rules
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            startIcon={<Sync />}
+                            onClick={handleSyncTransactions}
+                            disabled={isSyncing}
+                            sx={{
+                                borderRadius: 3,
+                                textTransform: 'none',
+                                whiteSpace: 'nowrap',
+                                fontWeight: 600,
+                                px: 2.5,
+                                py: 1.2,
+                                fontSize: '0.95rem',
+                                color: theme.palette.text.primary,
+                                borderColor: alpha(theme.palette.divider, 0.8),
+                                backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                                '&:hover': {
+                                    borderColor: theme.palette.primary.main,
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                                }
+                            }}
+                        >
+                            {isSyncing ? 'Syncing...' : 'Sync'}
                         </Button>
                     </Stack>
                 </Box>

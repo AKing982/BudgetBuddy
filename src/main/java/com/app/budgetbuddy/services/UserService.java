@@ -22,4 +22,6 @@ public interface UserService extends ServiceModel<UserEntity>
     Optional<User> getUserById(Long id);
 
     void resetPassword(String email, String newPassword);
+
+    boolean hasPlaidCSVSyncEnabled(Long userId);
 }

@@ -1,4 +1,4 @@
-import {CSVTransaction} from "../utils/Items";
+import {CSVTransaction, Transaction} from "../utils/Items";
 import axios from "axios";
 import {API_BASE_URL} from "../config/api";
 import {CategorySaveData} from "../components/CategoryDialog";
@@ -117,6 +117,27 @@ class TransactionCategoryService {
         }catch(error){
             console.error(`There was an error updating the transaction with id ${csvId} with new category ${category}: `, error);
             throw error;
+        }
+    }
+
+    public async fetchTransactionCategoryList(userId: number, start: string, end: string) : Promise<Transaction[]>
+    {
+        if(userId < 1 || start == '' || end == '')
+        {
+            throw new Error("Invalid input... Please check the userId and start and end dates");
+        }
+        try
+        {
+            const response = await axios.get<Transaction[]>(`${API_BASE_URL}/transaction-category/${userId}/transactions`, {
+                params: {
+                    startDate: start,
+                    endDate: end
+                }
+            });
+            return response.data;
+        }catch(error){
+            console.error("There was an error fetching the Transaction Category List: ", error);
+            return [];
         }
     }
 
