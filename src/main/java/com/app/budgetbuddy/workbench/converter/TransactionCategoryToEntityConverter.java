@@ -44,7 +44,10 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
         TransactionCategoryEntity transactionCategoryEntity = new TransactionCategoryEntity();
         try
         {
-            transactionCategoryEntity.setId(transactionCategory.getId());
+            if(transactionCategory.getId() != null)
+            {
+                transactionCategoryEntity.setId(transactionCategory.getId());
+            }
             transactionCategoryEntity.setCategorizedBy(transactionCategory.getCategorizedBy());
             transactionCategoryEntity.setMatchedCategory(transactionCategory.getCategory());
             transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorizedDate());

@@ -228,17 +228,6 @@ public class CSVParserService
         }
     }
 
-    private CsvFormat detectCsvFormat(MultipartFile file, String institutionName)
-    {
-        CsvParserSettings settings = new CsvParserSettings();
-        return null;
-    }
-
-    public List<Record> buildRecordsByInstitution(String institution, InputStream inputStream)
-    {
-        return null;
-    }
-
     private CsvParserSettings createParserSettings(){
         CsvParserSettings settings = new CsvParserSettings();
         settings.setLineSeparatorDetectionEnabled(true);

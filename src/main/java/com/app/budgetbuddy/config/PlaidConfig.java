@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Configuration
 public class PlaidConfig
 {
@@ -22,21 +25,22 @@ public class PlaidConfig
 
     @Bean(name="plaid")
     public PlaidApi plaidApi(){
-        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
-        httpClient.addInterceptor(chain -> {
-            okhttp3.Request original = chain.request();
-            okhttp3.Request request = original.newBuilder()
-                    .header("PLAID-CLIENT-ID", plaidClientId)
-                    .header("PLAID-SECRET", plaidSecret)
-                    .method(original.method(), original.body())
-                    .build();
-            return chain.proceed(request);
-        });
-
-        ApiClient apiClient = new ApiClient();
-        apiClient.setPlaidAdapter(plaidUrl);
-        apiClient.configureFromOkclient(httpClient.build());
-
+//        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+//        httpClient.addInterceptor(chain -> {
+//            okhttp3.Request original = chain.request();
+//            okhttp3.Request request = original.newBuilder()
+//                    .header("PLAID-CLIENT-ID", plaidClientId)
+//                    .header("PLAID-SECRET", plaidSecret)
+//                    .method(original.method(), original.body())
+//                    .build();
+//            return chain.proceed(request);
+//        });
+        Map<String, String> apiKeys = new HashMap<>();
+        apiKeys.put("clientId", plaidClientId);
+        apiKeys.put("secret", plaidSecret);
+        apiKeys.put("plaidVersion", "2020-09-14");
+        ApiClient apiClient = new ApiClient(apiKeys);
+        apiClient.setPlaidAdapter(ApiClient.Production);
         return apiClient.createService(PlaidApi.class);
     }
 }

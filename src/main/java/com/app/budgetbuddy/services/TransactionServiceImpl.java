@@ -170,7 +170,6 @@ public class TransactionServiceImpl implements TransactionService
         List<TransactionsEntity> transactionsEntities = new ArrayList<>();
         for(Transaction transaction : transactions){
             if(transaction == null){
-                log.warn("Skipping null transaction");
                 continue;
             }
             TransactionsEntity transactionsEntity = transactionToEntityConverter.convert(transaction);

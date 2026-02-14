@@ -27,49 +27,33 @@ public class PlaidTransactionToTransactionConverter implements Converter<com.pla
                 ? transaction.getMerchantName()
                 : transaction.getOriginalDescription();
 
-        if(categories != null && categories.size() == 2)
+        String primaryCategory = "";
+        String secondaryCategory = "";
+        if(categories != null && !categories.isEmpty())
         {
-            return Transaction.builder()
-                    .accountId(transaction.getAccountId())
-                    .amount(BigDecimal.valueOf(transaction.getAmount()))
-                    .authorizedDate(authorizedDate)
-                    .categoryId(transaction.getCategoryId())
-                    .date(transaction.getDate())
-                    .transactionId(transaction.getTransactionId())
-                    .description(transaction.getOriginalDescription())
-                    .posted(transaction.getDate())
-                    .merchantName(merchantName)
-                    .name(transaction.getName())
-                    .pending(transaction.getPending())
-                    .primaryCategory(categories.get(0))
-                    .secondaryCategory(categories.get(1))
-                    .transactionId(transaction.getTransactionId())
-                    .isoCurrencyCodes(transaction.getIsoCurrencyCode())
-                    .logoUrl(transaction.getLogoUrl())
-                    .isSystemCategorized(false)
-                    .build();
-        }else if(categories != null && categories.size() == 1)
-        {
-            return Transaction.builder()
-                    .accountId(transaction.getAccountId())
-                    .amount(BigDecimal.valueOf(transaction.getAmount()))
-                    .authorizedDate(authorizedDate)
-                    .categoryId(transaction.getCategoryId())
-                    .date(transaction.getDate())
-                    .description(transaction.getOriginalDescription())
-                    .posted(transaction.getDate())
-                    .merchantName(merchantName)
-                    .name(transaction.getName())
-                    .pending(transaction.getPending())
-                    .primaryCategory(categories.get(0))
-                    .secondaryCategory("")
-                    .transactionId(transaction.getTransactionId())
-                    .isoCurrencyCodes(transaction.getIsoCurrencyCode())
-                    .logoUrl(transaction.getLogoUrl())
-                    .isSystemCategorized(false)
-                    .build();
+            primaryCategory = categories.get(0);
+            if(categories.size() >= 2){
+                secondaryCategory = categories.get(1);
+            }
         }
-        return null;
+        return Transaction.builder()
+                .accountId(transaction.getAccountId())
+                .amount(BigDecimal.valueOf(transaction.getAmount()))
+                .authorizedDate(authorizedDate)
+                .categoryId(transaction.getCategoryId())
+                .date(transaction.getDate())
+                .transactionId(transaction.getTransactionId())
+                .description(transaction.getOriginalDescription())
+                .posted(transaction.getDate())
+                .merchantName(merchantName)
+                .name(transaction.getName())
+                .pending(transaction.getPending())
+                .primaryCategory(primaryCategory)
+                .secondaryCategory(secondaryCategory)
+                .isoCurrencyCodes(transaction.getIsoCurrencyCode())
+                .logoUrl(transaction.getLogoUrl())
+                .isSystemCategorized(false)
+                .build();
     }
 
 }
