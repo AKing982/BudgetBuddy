@@ -1,38 +1,39 @@
 import React, { useState } from 'react';
 import {
     Box,
+    Paper,
     Typography,
-    Card,
+    Divider,
     Stack,
-    Skeleton,
-    LinearProgress,
-    Chip,
     alpha,
     useTheme,
-    Divider,
+    Card,
+    LinearProgress,
+    Chip,
     ToggleButtonGroup,
     ToggleButton,
-    Grid,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Paper
+    TextField,
+    IconButton,
+    Button,
+    Tooltip,
+    CircularProgress
 } from '@mui/material';
-import {
-    TrendingUp,
-    TrendingDown,
-    Repeat,
-    Star,
-    PieChart as PieChartIcon,
-    BarChart3,
-    List,
-    DollarSign,
-    Activity
-} from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import PieChartIcon from '@mui/icons-material/PieChart';
+import RepeatIcon from '@mui/icons-material/Repeat';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import CloseIcon from '@mui/icons-material/Close';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import { BudgetStats } from '../utils/Items';
 
-interface BudgetCategory {
+const maroonColor = '#800000';
+const tealColor = '#0d9488';
+
+interface CategoryData {
     categoryName: string;
     budgetedAmount: number;
     actualAmount: number;
@@ -41,35 +42,27 @@ interface BudgetCategory {
     isCustom?: boolean;
 }
 
-interface BudgetOverviewCategory {
+interface OverviewCategory {
     category: string;
     budgetedExpenses: number;
     actualExpenses: number;
     remainingExpenses: number;
 }
 
-interface BudgetStats {
-    totalBudget: number;
-    totalSpent: number;
-    totalSaved: number;
-    remaining: number;
-    healthScore: number;
-}
-
 interface DynamicBudgetPanelProps {
     isLoading: boolean;
-    topSpendingCategories: BudgetCategory[];
-    overviewCategories: BudgetOverviewCategory[];
-    recurringCategories: BudgetCategory[];
+    topSpendingCategories: CategoryData[];
+    overviewCategories: OverviewCategory[];
+    recurringCategories: CategoryData[];
     budgetStats: BudgetStats;
-    allCategories: BudgetCategory[];
+    allCategories: CategoryData[];
+    onUpdateBudgetAmount?: (categoryName: string, newAmount: number) => Promise<void>;
+    onOptimizeBudget?: (categoryName: string) => Promise<number>;
 }
 
-type ViewMode = 'recurring' | 'stats' | 'individual';
+type ViewType = 'stats' | 'recurring' | 'category' | 'goals';
 
-const COLORS = ['#2563eb', '#7c3aed', '#059669', '#ea580c', '#0d9488', '#f97316', '#8b5cf6', '#10b981'];
-const maroonColor = '#800000';
-const tealColor = '#0d9488';
+const CHART_COLORS = [tealColor, maroonColor, '#f59e0b', '#8b5cf6', '#ec4899'];
 
 const DynamicBudgetPanel: React.FC<DynamicBudgetPanelProps> = ({
                                                                    isLoading,
@@ -77,23 +70,45 @@ const DynamicBudgetPanel: React.FC<DynamicBudgetPanelProps> = ({
                                                                    overviewCategories,
                                                                    recurringCategories,
                                                                    budgetStats,
-                                                                   allCategories
+                                                                   allCategories,
+                                                                   onUpdateBudgetAmount,
+                                                                   onOptimizeBudget
                                                                }) => {
     const theme = useTheme();
-    const [viewMode, setViewMode] = useState<ViewMode>('recurring');
-    const [selectedCategory, setSelectedCategory] = useState<string>('');
-    const [individualViewType, setIndividualViewType] = useState<'pie' | 'line' | 'numeric'>('pie');
+    const [selectedView, setSelectedView] = useState<ViewType>('stats');
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [chartView, setChartView] = useState<'monthly' | 'weekly'>('monthly');
+    const [isEditingBudget, setIsEditingBudget] = useState(false);
+    const [editedBudgetAmount, setEditedBudgetAmount] = useState<string>('');
+    const [isSavingBudget, setIsSavingBudget] = useState(false);
+    const [isOptimizing, setIsOptimizing] = useState(false);
 
-    const formatCurrency = (amount: number): string => {
-        const absAmount = Math.abs(amount);
-        const formatted = absAmount.toFixed(2);
-        return amount < 0 ? `-$${formatted}` : `$${formatted}`;
+    const handleViewChange = (event: React.MouseEvent<HTMLElement>, newView: ViewType | null) => {
+        if (newView !== null) {
+            setSelectedView(newView);
+            setSelectedCategory(null);
+        }
     };
 
-    const calculatePercentage = (actual: number, budgeted: number): number => {
-        if (budgeted === 0) return 0;
-        return Math.min((actual / budgeted) * 100, 100);
-    };
+    // Calculate metrics for Budget Goals tab
+    const today = new Date();
+    const monthStart = budgetStats.dateRange.startDate;
+    const monthEnd = budgetStats.dateRange.endDate;
+
+    const daysInMonth = Math.ceil((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24));
+    const daysElapsed = Math.min(Math.ceil((today.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)), daysInMonth);
+    const daysRemaining = Math.max(daysInMonth - daysElapsed, 0);
+
+    const dailyBudget = budgetStats.totalBudget / daysInMonth;
+    const actualDailySpending = budgetStats.totalSpent / (daysElapsed || 1);
+    const projectedEndOfMonthSpend = actualDailySpending * daysInMonth;
+
+    // Monthly goal is total saved
+    const monthlyGoal = budgetStats.totalSaved;
+    const currentSavings = budgetStats.totalSaved;
+    const goalProgress = (currentSavings / (monthlyGoal || 1)) * 100;
+    const projectedSavings = (currentSavings / (daysElapsed || 1)) * daysInMonth;
+    const onTrack = projectedSavings >= monthlyGoal;
 
     const getProgressColor = (percent: number) => {
         if (percent < 70) return tealColor;
@@ -101,659 +116,1267 @@ const DynamicBudgetPanel: React.FC<DynamicBudgetPanelProps> = ({
         return '#dc2626';
     };
 
-    const handleViewModeChange = (event: React.MouseEvent<HTMLElement>, newMode: ViewMode | null) => {
-        if (newMode !== null) {
-            setViewMode(newMode);
-            if (newMode === 'individual' && allCategories.length > 0) {
-                setSelectedCategory(allCategories[0].categoryName);
-            }
-        }
+    const formatCurrency = (amount: number) => {
+        return `$${Math.abs(amount).toFixed(2)}`;
     };
 
-    const renderCategoryCard = (category: BudgetCategory | BudgetOverviewCategory) => {
-        const categoryName = 'categoryName' in category ? category.categoryName : category.category;
-        const budgeted = 'budgetedAmount' in category ? category.budgetedAmount : category.budgetedExpenses;
-        const actual = 'actualAmount' in category ? category.actualAmount : category.actualExpenses;
-        const remaining = 'remainingAmount' in category ? category.remainingAmount : category.remainingExpenses;
-        const isRecurring = 'isRecurring' in category ? category.isRecurring : false;
-        const isCustom = 'isCustom' in category ? category.isCustom : false;
+    // Prepare pie chart data for Stats view - 3 slices with consistent colors
+    const pieChartData = [
+        {
+            name: 'Spent',
+            value: budgetStats.totalSpent,
+            color: '#dc2626' // Red for spent
+        },
+        {
+            name: 'Saved',
+            value: budgetStats.totalSaved,
+            color: '#f59e0b' // Goldish yellow for saved
+        },
+        {
+            name: 'Remaining',
+            value: budgetStats.remaining,
+            color: '#10b981' // Aqua green for remaining
+        }
+    ];
 
-        const percentage = calculatePercentage(actual, budgeted);
-        const isOverBudget = actual > budgeted;
-        const isNearLimit = percentage >= 80 && !isOverBudget;
+    const renderStatsView = () => (
+        <Box>
+            {/* Overall Progress */}
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Overall Progress
+            </Typography>
 
-        return (
-            <Card
-                key={categoryName}
-                sx={{
-                    p: 2.5,
-                    borderRadius: 2,
-                    background: `linear-gradient(135deg, ${getProgressColor(percentage)}05 0%, ${getProgressColor(percentage)}02 100%)`,
-                    border: `1px solid ${alpha(getProgressColor(percentage), 0.2)}`,
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                        transform: 'translateY(-2px)',
-                        borderColor: alpha(getProgressColor(percentage), 0.4)
-                    }
-                }}
-            >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1.5 }}>
-                    <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: '0.9rem' }}>
-                                {categoryName}
-                            </Typography>
-                            {isRecurring && (
-                                <Chip
-                                    icon={<Repeat size={10} />}
-                                    label="Recurring"
-                                    size="small"
-                                    sx={{
-                                        height: 18,
-                                        fontSize: '0.6rem',
-                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                        color: theme.palette.primary.main,
-                                        fontWeight: 600,
-                                        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                                        '& .MuiChip-icon': {
-                                            color: theme.palette.primary.main,
-                                            fontSize: 10
-                                        }
-                                    }}
-                                />
-                            )}
-                            {isCustom && (
-                                <Chip
-                                    icon={<Star size={10} />}
-                                    label="Custom"
-                                    size="small"
-                                    sx={{
-                                        height: 18,
-                                        fontSize: '0.6rem',
-                                        bgcolor: alpha(theme.palette.warning.main, 0.1),
-                                        color: theme.palette.warning.main,
-                                        fontWeight: 600,
-                                        border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
-                                        '& .MuiChip-icon': {
-                                            color: theme.palette.warning.main,
-                                            fontSize: 10
-                                        }
-                                    }}
-                                />
-                            )}
-                        </Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                            Budget: {formatCurrency(budgeted)}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                        <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            color={isOverBudget ? '#dc2626' : maroonColor}
-                            sx={{ fontSize: '1.1rem' }}
-                        >
-                            {formatCurrency(actual)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                            spent
-                        </Typography>
-                    </Box>
+            <Card sx={{
+                p: 2.5,
+                mb: 3,
+                background: `linear-gradient(135deg, ${alpha(maroonColor, 0.1)} 0%, ${alpha(maroonColor, 0.05)} 100%)`,
+                border: `1px solid ${alpha(maroonColor, 0.2)}`
+            }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Total Spending
+                    </Typography>
+                    <Typography variant="h5" fontWeight={700} color={maroonColor}>
+                        {((budgetStats.totalSpent / budgetStats.totalBudget) * 100).toFixed(0)}%
+                    </Typography>
                 </Box>
-
                 <LinearProgress
                     variant="determinate"
-                    value={percentage}
+                    value={Math.min((budgetStats.totalSpent / budgetStats.totalBudget) * 100, 100)}
                     sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        bgcolor: `${getProgressColor(percentage)}20`,
-                        mb: 1.5,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: `${maroonColor}20`,
                         '& .MuiLinearProgress-bar': {
-                            bgcolor: getProgressColor(percentage),
-                            borderRadius: 4
+                            backgroundColor: maroonColor,
+                            borderRadius: 5
                         }
                     }}
                 />
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                        {remaining >= 0 ? 'Remaining' : 'Over budget'}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                        ${budgetStats.totalSpent.toFixed(2)} spent
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {isOverBudget ? (
-                            <TrendingUp size={14} color="#dc2626" style={{ transform: 'rotate(180deg)' }} />
-                        ) : (
-                            <TrendingUp size={14} color="#059669" />
-                        )}
-                        <Typography
-                            variant="caption"
-                            fontWeight={600}
-                            color={isOverBudget ? '#dc2626' : '#059669'}
-                            sx={{ fontSize: '0.75rem' }}
-                        >
-                            {formatCurrency(Math.abs(remaining))}
-                        </Typography>
-                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                        ${budgetStats.totalBudget.toFixed(2)} total
+                    </Typography>
                 </Box>
             </Card>
-        );
-    };
 
-    const renderTopSpending = () => {
-        if (topSpendingCategories.length === 0) {
-            return (
+            <Divider sx={{ my: 3 }} />
+
+            {/* Budget Distribution Pie Chart */}
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Budget Distribution
+            </Typography>
+
+            <Box sx={{ height: 250, mb: 3 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={pieChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={90}
+                            paddingAngle={2}
+                            dataKey="value"
+                        >
+                            {pieChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                        <Legend />
+                    </PieChart>
+                </ResponsiveContainer>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Budget Stats Grid */}
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Budget Stats
+            </Typography>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <Box sx={{
-                    textAlign: 'center',
-                    py: 6,
-                    px: 3,
-                    background: alpha(theme.palette.divider, 0.02),
+                    p: 2,
+                    backgroundColor: alpha('#2563eb', 0.05),
                     borderRadius: 2,
-                    border: `1px dashed ${alpha(theme.palette.divider, 0.3)}`
+                    border: `1px solid ${alpha('#2563eb', 0.2)}`
                 }}>
-                    <BarChart3 size={48} color={theme.palette.text.disabled} style={{ marginBottom: 16 }} />
-                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        No top spending categories available
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Total Budget
                     </Typography>
+                    <Typography variant="h6" fontWeight={600} color="#2563eb">
+                        ${budgetStats.totalBudget.toFixed(2)}
+                    </Typography>
+                </Box>
+                <Box sx={{
+                    p: 2,
+                    backgroundColor: alpha('#dc2626', 0.05),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha('#dc2626', 0.2)}`
+                }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Total Spent
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600} color="#dc2626">
+                        ${budgetStats.totalSpent.toFixed(2)}
+                    </Typography>
+                </Box>
+                <Box sx={{
+                    p: 2,
+                    backgroundColor: alpha('#059669', 0.05),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha('#059669', 0.2)}`
+                }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Total Saved
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600} color="#059669">
+                        ${budgetStats.totalSaved.toFixed(2)}
+                    </Typography>
+                </Box>
+                <Box sx={{
+                    p: 2,
+                    backgroundColor: alpha(tealColor, 0.05),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(tealColor, 0.2)}`
+                }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Remaining
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600} color={tealColor}>
+                        ${budgetStats.remaining.toFixed(2)}
+                    </Typography>
+                </Box>
+            </Box>
+        </Box>
+    );
+
+    const renderRecurringView = () => (
+        <Box>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Recurring Categories ({recurringCategories.length})
+            </Typography>
+
+            <Stack spacing={2}>
+                {recurringCategories.length > 0 ? (
+                    recurringCategories.map((category, index) => {
+                        const percentage = category.budgetedAmount > 0
+                            ? (category.actualAmount / category.budgetedAmount) * 100
+                            : 0;
+                        const progressColor = getProgressColor(percentage);
+
+                        return (
+                            <Card key={index} sx={{
+                                p: 2,
+                                background: `linear-gradient(135deg, ${alpha(progressColor, 0.1)} 0%, ${alpha(progressColor, 0.05)} 100%)`,
+                                border: `1px solid ${alpha(progressColor, 0.2)}`
+                            }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                                    <Box>
+                                        <Typography variant="body2" fontWeight={600}>
+                                            {category.categoryName}
+                                        </Typography>
+                                        <Chip
+                                            label="Recurring"
+                                            size="small"
+                                            sx={{
+                                                mt: 0.5,
+                                                height: 20,
+                                                fontSize: '0.65rem',
+                                                bgcolor: alpha(maroonColor, 0.1),
+                                                color: maroonColor
+                                            }}
+                                        />
+                                    </Box>
+                                    <Typography variant="h6" fontWeight={700} color={progressColor}>
+                                        ${category.actualAmount.toFixed(2)}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={Math.min(percentage, 100)}
+                                    sx={{
+                                        height: 6,
+                                        borderRadius: 3,
+                                        bgcolor: `${progressColor}20`,
+                                        '& .MuiLinearProgress-bar': {
+                                            bgcolor: progressColor,
+                                            borderRadius: 3
+                                        }
+                                    }}
+                                />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Budgeted: ${category.budgetedAmount.toFixed(2)}
+                                    </Typography>
+                                    <Typography variant="caption" fontWeight={600} color={category.remainingAmount >= 0 ? '#059669' : '#dc2626'}>
+                                        {category.remainingAmount >= 0 ? '' : '+'}{formatCurrency(Math.abs(category.remainingAmount))}
+                                    </Typography>
+                                </Box>
+                            </Card>
+                        );
+                    })
+                ) : (
+                    <Box sx={{
+                        p: 3,
+                        textAlign: 'center',
+                        color: 'text.secondary',
+                        bgcolor: alpha(theme.palette.divider, 0.05),
+                        borderRadius: 2
+                    }}>
+                        <RepeatIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
+                        <Typography variant="body2">
+                            No recurring categories found
+                        </Typography>
+                    </Box>
+                )}
+            </Stack>
+        </Box>
+    );
+
+    const renderCategoryView = () => {
+        // Fixed categories list
+        const fixedCategories = ['Rent', 'Utilities', 'Electric', 'Gas', 'Income', 'Insurance'];
+
+        // Split categories into fixed and variable
+        const categorizedBudgets = {
+            fixed: allCategories.filter(cat =>
+                fixedCategories.some(fixed =>
+                    cat.categoryName.toLowerCase().includes(fixed.toLowerCase())
+                )
+            ),
+            variable: allCategories.filter(cat =>
+                !fixedCategories.some(fixed =>
+                    cat.categoryName.toLowerCase().includes(fixed.toLowerCase())
+                )
+            )
+        };
+
+        if (!selectedCategory) {
+            return (
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Select a Category
+                    </Typography>
+
+                    {/* Fixed Categories Section */}
+                    {categorizedBudgets.fixed.length > 0 && (
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{
+                                display: 'block',
+                                mb: 1.5,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5
+                            }}>
+                                Fixed Budget Categories ({categorizedBudgets.fixed.length})
+                            </Typography>
+                            <Stack spacing={1}>
+                                {categorizedBudgets.fixed.map((category, index) => {
+                                    const percentage = category.budgetedAmount > 0
+                                        ? (category.actualAmount / category.budgetedAmount) * 100
+                                        : 0;
+                                    const progressColor = getProgressColor(percentage);
+
+                                    return (
+                                        <Box
+                                            key={index}
+                                            onClick={() => setSelectedCategory(category.categoryName)}
+                                            sx={{
+                                                p: 1.5,
+                                                borderRadius: 2,
+                                                bgcolor: alpha(progressColor, 0.05),
+                                                border: `1px solid ${alpha(progressColor, 0.2)}`,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                '&:hover': {
+                                                    bgcolor: alpha(maroonColor, 0.1),
+                                                    borderColor: alpha(maroonColor, 0.4),
+                                                    transform: 'translateX(4px)'
+                                                }
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                                <Typography variant="body2" fontWeight={600}>
+                                                    {category.categoryName}
+                                                </Typography>
+                                                <Chip
+                                                    label={`${percentage.toFixed(0)}%`}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 20,
+                                                        fontSize: '0.65rem',
+                                                        bgcolor: alpha(progressColor, 0.2),
+                                                        color: progressColor,
+                                                        fontWeight: 600
+                                                    }}
+                                                />
+                                            </Box>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    ${category.actualAmount.toFixed(2)} / ${category.budgetedAmount.toFixed(2)}
+                                                </Typography>
+                                                <Typography variant="caption" fontWeight={600} color={category.remainingAmount >= 0 ? '#059669' : '#dc2626'}>
+                                                    {category.remainingAmount >= 0 ? '' : '+'}{formatCurrency(Math.abs(category.remainingAmount))}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    );
+                                })}
+                            </Stack>
+                        </Box>
+                    )}
+
+                    {/* Variable Categories Section */}
+                    {categorizedBudgets.variable.length > 0 && (
+                        <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{
+                                display: 'block',
+                                mb: 1.5,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5
+                            }}>
+                                Variable Budget Categories ({categorizedBudgets.variable.length})
+                            </Typography>
+                            <Stack spacing={1}>
+                                {categorizedBudgets.variable.map((category, index) => {
+                                    const percentage = category.budgetedAmount > 0
+                                        ? (category.actualAmount / category.budgetedAmount) * 100
+                                        : 0;
+                                    const progressColor = getProgressColor(percentage);
+
+                                    return (
+                                        <Box
+                                            key={index}
+                                            onClick={() => setSelectedCategory(category.categoryName)}
+                                            sx={{
+                                                p: 1.5,
+                                                borderRadius: 2,
+                                                bgcolor: alpha(progressColor, 0.05),
+                                                border: `1px solid ${alpha(progressColor, 0.2)}`,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                '&:hover': {
+                                                    bgcolor: alpha(maroonColor, 0.1),
+                                                    borderColor: alpha(maroonColor, 0.4),
+                                                    transform: 'translateX(4px)'
+                                                }
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                                <Typography variant="body2" fontWeight={600}>
+                                                    {category.categoryName}
+                                                </Typography>
+                                                <Chip
+                                                    label={`${percentage.toFixed(0)}%`}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 20,
+                                                        fontSize: '0.65rem',
+                                                        bgcolor: alpha(progressColor, 0.2),
+                                                        color: progressColor,
+                                                        fontWeight: 600
+                                                    }}
+                                                />
+                                            </Box>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    ${category.actualAmount.toFixed(2)} / ${category.budgetedAmount.toFixed(2)}
+                                                </Typography>
+                                                <Typography variant="caption" fontWeight={600} color={category.remainingAmount >= 0 ? '#059669' : '#dc2626'}>
+                                                    {category.remainingAmount >= 0 ? '' : '+'}{formatCurrency(Math.abs(category.remainingAmount))}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    );
+                                })}
+                            </Stack>
+                        </Box>
+                    )}
                 </Box>
             );
         }
 
-        return (
-            <Stack spacing={2}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Top {topSpendingCategories.length} Categories
-                </Typography>
-                {topSpendingCategories.map(category => renderCategoryCard(category))}
-            </Stack>
+        // Category detail view - COMPLETE WITH CHARTS
+        const category = allCategories.find(c => c.categoryName === selectedCategory);
+        if (!category) return null;
+
+        const percentage = category.budgetedAmount > 0
+            ? (category.actualAmount / category.budgetedAmount) * 100
+            : 0;
+        const progressColor = getProgressColor(percentage);
+
+        // Check if this is a variable category
+        const isVariableCategory = !fixedCategories.some(fixed =>
+            category.categoryName.toLowerCase().includes(fixed.toLowerCase())
         );
-    };
 
-    const renderOverview = () => {
-        if (overviewCategories.length === 0) {
-            return (
-                <Box sx={{
-                    textAlign: 'center',
-                    py: 6,
-                    px: 3,
-                    background: alpha(theme.palette.divider, 0.02),
-                    borderRadius: 2,
-                    border: `1px dashed ${alpha(theme.palette.divider, 0.3)}`
-                }}>
-                    <Activity size={48} color={theme.palette.text.disabled} style={{ marginBottom: 16 }} />
-                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        No overview categories available
-                    </Typography>
-                </Box>
-            );
-        }
+        // Calculate saved amount for this category
+        const categorySaved = category.budgetedAmount - category.actualAmount;
+        const savedAmount = Math.max(categorySaved, 0);
 
-        return (
-            <Stack spacing={2}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Budget Overview
-                </Typography>
-                {overviewCategories.map(category => renderCategoryCard(category))}
-            </Stack>
-        );
-    };
-
-    const renderRecurring = () => {
-        if (recurringCategories.length === 0) {
-            return (
-                <Box sx={{
-                    textAlign: 'center',
-                    py: 6,
-                    px: 3,
-                    background: alpha(theme.palette.divider, 0.02),
-                    borderRadius: 2,
-                    border: `1px dashed ${alpha(theme.palette.divider, 0.3)}`
-                }}>
-                    <Repeat size={48} color={theme.palette.text.disabled} style={{ marginBottom: 16 }} />
-                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        No recurring categories found
-                    </Typography>
-                </Box>
-            );
-        }
-
-        return (
-            <Stack spacing={2}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {recurringCategories.length} Recurring Categories
-                </Typography>
-                {recurringCategories.map(category => renderCategoryCard(category))}
-            </Stack>
-        );
-    };
-
-    const renderStats = () => {
+        // Prepare data for pie chart - 3 slices: red, goldish yellow, aqua green
         const pieData = [
-            { name: 'Spent', value: budgetStats.totalSpent, color: '#7c3aed' },
-            { name: 'Saved', value: budgetStats.totalSaved, color: '#0d9488' },
-            { name: 'Remaining', value: budgetStats.remaining > 0 ? budgetStats.remaining : 0, color: '#059669' }
-        ].filter(item => item.value > 0);
+            { name: 'Spent', value: category.actualAmount, color: '#dc2626' }, // Red
+            { name: 'Saved', value: savedAmount, color: '#f59e0b' }, // Goldish yellow
+            { name: 'Remaining', value: Math.max(category.remainingAmount, 0), color: '#10b981' } // Aqua green
+        ];
 
-        const percentSpent = (budgetStats.totalSpent / budgetStats.totalBudget) * 100;
+        // Generate mock daily spending data for line chart (replace with actual data from backend)
+        const generateDailySpendingData = () => {
+            const dailyData = [];
+            const avgDailySpend = category.actualAmount / daysElapsed;
+
+            for (let i = 0; i <= Math.min(daysElapsed, daysInMonth); i++) {
+                const date = new Date(monthStart);
+                date.setDate(date.getDate() + i);
+
+                // Add some variance to make it realistic (replace with actual backend data)
+                const variance = (Math.random() - 0.5) * avgDailySpend * 0.4;
+                const cumulativeSpending = (avgDailySpend * i) + variance;
+
+                dailyData.push({
+                    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    spending: Math.max(0, cumulativeSpending),
+                    day: i
+                });
+            }
+            return dailyData;
+        };
+
+        // Generate week comparison data (current week vs last week)
+        const generateWeekComparisonData = () => {
+            const weekData = [];
+            const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const avgDailySpend = category.actualAmount / daysElapsed;
+
+            for (let i = 0; i < 7; i++) {
+                // Add variance for current and last week (replace with actual backend data)
+                const currentWeekVariance = (Math.random() - 0.3) * avgDailySpend * 0.5;
+                const lastWeekVariance = (Math.random() - 0.5) * avgDailySpend * 0.5;
+
+                weekData.push({
+                    day: daysOfWeek[i],
+                    currentWeek: Math.max(0, avgDailySpend + currentWeekVariance),
+                    lastWeek: Math.max(0, avgDailySpend * 0.9 + lastWeekVariance)
+                });
+            }
+            return weekData;
+        };
+
+        const dailySpendingData = isVariableCategory ? generateDailySpendingData() : [];
+        const weekComparisonData = isVariableCategory ? generateWeekComparisonData() : [];
 
         return (
-            <Stack spacing={3}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Budget Statistics
+            <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Chip
+                        label="← Back to Categories"
+                        onClick={() => {
+                            setSelectedCategory(null);
+                            setIsEditingBudget(false);
+                            setEditedBudgetAmount('');
+                        }}
+                        sx={{
+                            cursor: 'pointer',
+                            bgcolor: alpha(maroonColor, 0.1),
+                            color: maroonColor,
+                            fontWeight: 600,
+                            '&:hover': {
+                                bgcolor: alpha(maroonColor, 0.2)
+                            }
+                        }}
+                    />
+
+                    {/* Optimize Button */}
+                    <Tooltip title="Use AI to optimize this budget category based on your spending patterns">
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={isOptimizing ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                            onClick={async () => {
+                                if (onOptimizeBudget && selectedCategory) {
+                                    setIsOptimizing(true);
+                                    try {
+                                        const optimizedAmount = await onOptimizeBudget(selectedCategory);
+                                        setEditedBudgetAmount(optimizedAmount.toString());
+                                        setIsEditingBudget(true);
+                                    } catch (error) {
+                                        console.error('Error optimizing budget:', error);
+                                        alert('Failed to optimize budget. Please try again.');
+                                    } finally {
+                                        setIsOptimizing(false);
+                                    }
+                                } else {
+                                    alert('Optimize feature not configured. Please provide onOptimizeBudget callback.');
+                                }
+                            }}
+                            disabled={isOptimizing}
+                            sx={{
+                                borderColor: alpha(maroonColor, 0.3),
+                                color: maroonColor,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                '&:hover': {
+                                    borderColor: maroonColor,
+                                    bgcolor: alpha(maroonColor, 0.05)
+                                }
+                            }}
+                        >
+                            {isOptimizing ? 'Optimizing...' : 'Optimize'}
+                        </Button>
+                    </Tooltip>
+                </Box>
+
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                    {category.categoryName}
                 </Typography>
 
-                {/* Overall Progress */}
+                {/* Summary Card with Editable Budget */}
                 <Card sx={{
                     p: 2.5,
-                    background: `linear-gradient(135deg, ${getProgressColor(percentSpent)}10 0%, ${getProgressColor(percentSpent)}05 100%)`,
-                    border: `1px solid ${alpha(getProgressColor(percentSpent), 0.2)}`
+                    mb: 3,
+                    background: `linear-gradient(135deg, ${alpha(progressColor, 0.1)} 0%, ${alpha(progressColor, 0.05)} 100%)`,
+                    border: `1px solid ${alpha(progressColor, 0.2)}`
                 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                            Total Spending
-                        </Typography>
-                        <Typography variant="h5" fontWeight={700} color={maroonColor}>
-                            {percentSpent.toFixed(0)}%
-                        </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                        <Box>
+                            <Typography variant="caption" color="text.secondary">
+                                Budgeted
+                            </Typography>
+                            {isEditingBudget ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                    <TextField
+                                        value={editedBudgetAmount}
+                                        onChange={(e) => {
+                                            // Only allow numbers and decimal point
+                                            const value = e.target.value;
+                                            if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                                                setEditedBudgetAmount(value);
+                                            }
+                                        }}
+                                        size="small"
+                                        placeholder="0.00"
+                                        InputProps={{
+                                            startAdornment: <Typography sx={{ mr: 0.5 }}>$</Typography>,
+                                        }}
+                                        sx={{
+                                            width: '140px',
+                                            '& .MuiOutlinedInput-root': {
+                                                fontSize: '1.25rem',
+                                                fontWeight: 700,
+                                                '& input': {
+                                                    padding: '4px 8px'
+                                                }
+                                            }
+                                        }}
+                                        autoFocus
+                                    />
+                                    <IconButton
+                                        size="small"
+                                        onClick={async () => {
+                                            const newAmount = parseFloat(editedBudgetAmount);
+                                            if (!isNaN(newAmount) && newAmount > 0) {
+                                                if (onUpdateBudgetAmount && selectedCategory) {
+                                                    setIsSavingBudget(true);
+                                                    try {
+                                                        await onUpdateBudgetAmount(selectedCategory, newAmount);
+                                                        setIsEditingBudget(false);
+                                                        setEditedBudgetAmount('');
+                                                        // The parent component should refresh the data after saving
+                                                    } catch (error) {
+                                                        console.error('Error saving budget amount:', error);
+                                                        alert('Failed to save budget amount. Please try again.');
+                                                    } finally {
+                                                        setIsSavingBudget(false);
+                                                    }
+                                                } else {
+                                                    alert('Save feature not configured. Please provide onUpdateBudgetAmount callback.');
+                                                }
+                                            } else {
+                                                alert('Please enter a valid amount greater than 0');
+                                            }
+                                        }}
+                                        disabled={isSavingBudget}
+                                        sx={{
+                                            bgcolor: alpha('#059669', 0.1),
+                                            color: '#059669',
+                                            '&:hover': {
+                                                bgcolor: alpha('#059669', 0.2)
+                                            }
+                                        }}
+                                    >
+                                        {isSavingBudget ? <CircularProgress size={16} /> : <SaveIcon fontSize="small" />}
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => {
+                                            setIsEditingBudget(false);
+                                            setEditedBudgetAmount('');
+                                        }}
+                                        sx={{
+                                            bgcolor: alpha('#dc2626', 0.1),
+                                            color: '#dc2626',
+                                            '&:hover': {
+                                                bgcolor: alpha('#dc2626', 0.2)
+                                            }
+                                        }}
+                                    >
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            ) : (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="h5" fontWeight={700}>
+                                        ${category.budgetedAmount.toFixed(2)}
+                                    </Typography>
+                                    <Tooltip title="Edit budgeted amount">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setIsEditingBudget(true);
+                                                setEditedBudgetAmount(category.budgetedAmount.toString());
+                                            }}
+                                            sx={{
+                                                color: maroonColor,
+                                                opacity: 0.6,
+                                                '&:hover': {
+                                                    opacity: 1,
+                                                    bgcolor: alpha(maroonColor, 0.1)
+                                                }
+                                            }}
+                                        >
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            )}
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Spent
+                            </Typography>
+                            <Typography variant="h5" fontWeight={700} color={progressColor}>
+                                ${category.actualAmount.toFixed(2)}
+                            </Typography>
+                        </Box>
                     </Box>
                     <LinearProgress
                         variant="determinate"
-                        value={Math.min(percentSpent, 100)}
+                        value={Math.min(percentage, 100)}
                         sx={{
                             height: 10,
                             borderRadius: 5,
-                            backgroundColor: `${getProgressColor(percentSpent)}20`,
+                            bgcolor: `${progressColor}20`,
                             '& .MuiLinearProgress-bar': {
-                                backgroundColor: getProgressColor(percentSpent),
+                                bgcolor: progressColor,
                                 borderRadius: 5
                             }
                         }}
                     />
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                            ${budgetStats.totalSpent.toFixed(2)} spent
+                        <Typography variant="caption" fontWeight={600} color={progressColor}>
+                            {percentage.toFixed(0)}% Used
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            ${budgetStats.totalBudget.toFixed(2)} total
+                            {formatCurrency(Math.abs(category.remainingAmount))} {category.remainingAmount >= 0 ? 'remaining' : 'over budget'}
                         </Typography>
                     </Box>
                 </Card>
 
-                <Divider sx={{ my: 2 }} />
+                <Divider sx={{ my: 3 }} />
 
                 {/* Pie Chart */}
-                <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 2, display: 'block' }}>
-                        Budget Distribution
-                    </Typography>
-                    <ResponsiveContainer width="100%" height={220}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Budget Breakdown
+                </Typography>
+
+                <Box sx={{ height: 200, mb: 3 }}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={pieData}
                                 cx="50%"
                                 cy="50%"
-                                labelLine={false}
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={75}
-                                fill="#8884d8"
+                                innerRadius={50}
+                                outerRadius={80}
+                                paddingAngle={2}
                                 dataKey="value"
                             >
                                 {pieData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
-                            <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
+                            <RechartsTooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                            <Legend />
                         </PieChart>
                     </ResponsiveContainer>
                 </Box>
 
-                <Divider sx={{ my: 2 }} />
+                {/* Line Chart for Variable Categories Only */}
+                {isVariableCategory && (
+                    <>
+                        <Divider sx={{ my: 3 }} />
 
-                {/* Stats Grid - Moved Below Pie Chart */}
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 2, display: 'block' }}>
-                    Budget Stats
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                Spending Trend
+                            </Typography>
+
+                            {/* Chart View Toggle */}
+                            <ToggleButtonGroup
+                                value={chartView}
+                                exclusive
+                                onChange={(e, newView) => newView && setChartView(newView)}
+                                size="small"
+                                sx={{
+                                    '& .MuiToggleButton-root': {
+                                        py: 0.5,
+                                        px: 1.5,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 600,
+                                        textTransform: 'none',
+                                        border: `1px solid ${alpha(maroonColor, 0.3)}`,
+                                        color: maroonColor,
+                                        '&.Mui-selected': {
+                                            bgcolor: alpha(maroonColor, 0.1),
+                                            color: maroonColor,
+                                            '&:hover': {
+                                                bgcolor: alpha(maroonColor, 0.15)
+                                            }
+                                        },
+                                        '&:hover': {
+                                            bgcolor: alpha(maroonColor, 0.05)
+                                        }
+                                    }
+                                }}
+                            >
+                                <ToggleButton value="monthly">Monthly</ToggleButton>
+                                <ToggleButton value="weekly">Week Compare</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Box>
+
+                        {chartView === 'monthly' ? (
+                            <Box sx={{ height: 250, mb: 3 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={dailySpendingData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} />
+                                        <XAxis
+                                            dataKey="date"
+                                            tick={{ fontSize: 10 }}
+                                            stroke={theme.palette.text.secondary}
+                                        />
+                                        <YAxis
+                                            tick={{ fontSize: 10 }}
+                                            stroke={theme.palette.text.secondary}
+                                            tickFormatter={(value) => `$${value.toFixed(0)}`}
+                                        />
+                                        <RechartsTooltip
+                                            formatter={(value: number) => [`$${value.toFixed(2)}`, 'Cumulative Spending']}
+                                            contentStyle={{
+                                                backgroundColor: alpha(theme.palette.background.paper, 0.95),
+                                                border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                                                borderRadius: 8
+                                            }}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="spending"
+                                            stroke={progressColor}
+                                            strokeWidth={2}
+                                            dot={{ fill: progressColor, r: 3 }}
+                                            activeDot={{ r: 5 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </Box>
+                        ) : (
+                            <Box sx={{ height: 250, mb: 3 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={weekComparisonData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} />
+                                        <XAxis
+                                            dataKey="day"
+                                            tick={{ fontSize: 10 }}
+                                            stroke={theme.palette.text.secondary}
+                                        />
+                                        <YAxis
+                                            tick={{ fontSize: 10 }}
+                                            stroke={theme.palette.text.secondary}
+                                            tickFormatter={(value) => `$${value.toFixed(0)}`}
+                                        />
+                                        <RechartsTooltip
+                                            formatter={(value: number) => `$${value.toFixed(2)}`}
+                                            contentStyle={{
+                                                backgroundColor: alpha(theme.palette.background.paper, 0.95),
+                                                border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                                                borderRadius: 8
+                                            }}
+                                        />
+                                        <Legend />
+                                        <Bar dataKey="currentWeek" fill={progressColor} name="Current Week" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="lastWeek" fill={alpha(progressColor, 0.5)} name="Last Week" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </Box>
+                        )}
+                    </>
+                )}
+
+                <Divider sx={{ my: 3 }} />
+
+                {/* Stats Grid */}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Category Stats
                 </Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                        <Box sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            background: alpha('#2563eb', 0.05),
-                            border: `1px solid ${alpha('#2563eb', 0.2)}`
-                        }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
-                                Total Budget
-                            </Typography>
-                            <Typography variant="h6" fontWeight={700} color="#2563eb">
-                                ${budgetStats.totalBudget.toLocaleString()}
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <Box sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            background: alpha('#dc2626', 0.05),
-                            border: `1px solid ${alpha('#dc2626', 0.2)}`
-                        }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
-                                Total Spent
-                            </Typography>
-                            <Typography variant="h6" fontWeight={700} color="#dc2626">
-                                ${budgetStats.totalSpent.toLocaleString()}
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <Box sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            background: alpha(tealColor, 0.05),
-                            border: `1px solid ${alpha(tealColor, 0.2)}`
-                        }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
-                                Total Saved
-                            </Typography>
-                            <Typography variant="h6" fontWeight={700} color={tealColor}>
-                                ${budgetStats.totalSaved.toLocaleString()}
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <Box sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            background: alpha('#059669', 0.05),
-                            border: `1px solid ${alpha('#059669', 0.2)}`
-                        }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
-                                Remaining
-                            </Typography>
-                            <Typography variant="h6" fontWeight={700} color="#059669">
-                                ${budgetStats.remaining.toLocaleString()}
-                            </Typography>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Stack>
-        );
-    };
 
-    const renderIndividual = () => {
-        if (allCategories.length === 0) {
-            return (
-                <Box sx={{
-                    textAlign: 'center',
-                    py: 6,
-                    px: 3,
-                    background: alpha(theme.palette.divider, 0.02),
-                    borderRadius: 2,
-                    border: `1px dashed ${alpha(theme.palette.divider, 0.3)}`
-                }}>
-                    <DollarSign size={48} color={theme.palette.text.disabled} style={{ marginBottom: 16 }} />
-                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        No categories available
-                    </Typography>
-                </Box>
-            );
-        }
-
-        const category = allCategories.find(cat => cat.categoryName === selectedCategory) || allCategories[0];
-        const percentage = calculatePercentage(category.actualAmount, category.budgetedAmount);
-
-        const pieData = [
-            { name: 'Spent', value: category.actualAmount, color: '#7c3aed' },
-            { name: 'Remaining', value: category.remainingAmount > 0 ? category.remainingAmount : 0, color: '#059669' }
-        ].filter(item => item.value > 0);
-
-        return (
-            <Stack spacing={3}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Category Details
-                </Typography>
-
-                {/* Category Selector */}
-                <FormControl fullWidth size="small">
-                    <InputLabel>Select Category</InputLabel>
-                    <Select
-                        value={selectedCategory || (allCategories[0]?.categoryName || '')}
-                        label="Select Category"
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                    >
-                        {allCategories.map(cat => (
-                            <MenuItem key={cat.categoryName} value={cat.categoryName}>
-                                {cat.categoryName}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
-                {/* View Type Toggle */}
-                <ToggleButtonGroup
-                    value={individualViewType}
-                    exclusive
-                    onChange={(e, newType) => newType && setIndividualViewType(newType)}
-                    size="small"
-                    fullWidth
-                    sx={{
-                        '& .MuiToggleButton-root': {
-                            py: 1,
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            textTransform: 'none'
-                        }
-                    }}
-                >
-                    <ToggleButton value="pie">
-                        <PieChartIcon size={14} style={{ marginRight: 6 }} /> Pie Chart
-                    </ToggleButton>
-                    <ToggleButton value="line">
-                        <BarChart3 size={14} style={{ marginRight: 6 }} /> Bar Chart
-                    </ToggleButton>
-                    <ToggleButton value="numeric">
-                        <DollarSign size={14} style={{ marginRight: 6 }} /> Numbers
-                    </ToggleButton>
-                </ToggleButtonGroup>
-
-                <Divider />
-
-                {/* Individual View Content */}
-                {individualViewType === 'pie' && (
-                    <Box>
-                        <ResponsiveContainer width="100%" height={220}>
-                            <PieChart>
-                                <Pie
-                                    data={pieData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                    outerRadius={75}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                >
-                                    {pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </Box>
-                )}
-
-                {individualViewType === 'line' && (
-                    <Box>
-                        <ResponsiveContainer width="100%" height={220}>
-                            <LineChart data={[
-                                { name: 'Budgeted', amount: category.budgetedAmount },
-                                { name: 'Actual', amount: category.actualAmount },
-                                { name: 'Remaining', amount: category.remainingAmount > 0 ? category.remainingAmount : 0 }
-                            ]}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} />
-                                <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
-                                <Line type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={3} dot={{ fill: '#2563eb', r: 5 }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </Box>
-                )}
-
-                {individualViewType === 'numeric' && (
-                    <Stack spacing={2}>
-                        <Box sx={{
-                            p: 2.5,
-                            borderRadius: 2,
-                            background: alpha('#2563eb', 0.05),
-                            border: `1px solid ${alpha('#2563eb', 0.2)}`
-                        }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                Budgeted Amount
-                            </Typography>
-                            <Typography variant="h4" fontWeight={700} color="#2563eb">
-                                {formatCurrency(category.budgetedAmount)}
-                            </Typography>
-                        </Box>
-                        <Box sx={{
-                            p: 2.5,
-                            borderRadius: 2,
-                            background: alpha('#dc2626', 0.05),
-                            border: `1px solid ${alpha('#dc2626', 0.2)}`
-                        }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                Actual Spent
-                            </Typography>
-                            <Typography variant="h4" fontWeight={700} color="#dc2626">
-                                {formatCurrency(category.actualAmount)}
-                            </Typography>
-                        </Box>
-                        <Box sx={{
-                            p: 2.5,
-                            borderRadius: 2,
-                            background: alpha(category.remainingAmount >= 0 ? '#059669' : '#dc2626', 0.05),
-                            border: `1px solid ${alpha(category.remainingAmount >= 0 ? '#059669' : '#dc2626', 0.2)}`
-                        }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                {category.remainingAmount >= 0 ? 'Remaining' : 'Over Budget'}
-                            </Typography>
-                            <Typography variant="h4" fontWeight={700} color={category.remainingAmount >= 0 ? '#059669' : '#dc2626'}>
-                                {formatCurrency(Math.abs(category.remainingAmount))}
-                            </Typography>
-                        </Box>
-                    </Stack>
-                )}
-
-                <Divider />
-
-                {/* Category Progress */}
-                <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 2, display: 'block' }}>
-                        Progress Tracking
-                    </Typography>
-                    <Card sx={{
-                        p: 2.5,
-                        background: `linear-gradient(135deg, ${getProgressColor(percentage)}10 0%, ${getProgressColor(percentage)}05 100%)`,
-                        border: `1px solid ${alpha(getProgressColor(percentage), 0.2)}`
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box sx={{
+                        p: 2,
+                        backgroundColor: alpha('#2563eb', 0.05),
+                        borderRadius: 2,
+                        border: `1px solid ${alpha('#2563eb', 0.2)}`
                     }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                            <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                Budget Usage
-                            </Typography>
-                            <Typography variant="h6" fontWeight={700} color={getProgressColor(percentage)}>
-                                {percentage.toFixed(0)}%
-                            </Typography>
-                        </Box>
-                        <LinearProgress
-                            variant="determinate"
-                            value={percentage}
-                            sx={{
-                                height: 10,
-                                borderRadius: 5,
-                                bgcolor: `${getProgressColor(percentage)}20`,
-                                '& .MuiLinearProgress-bar': {
-                                    bgcolor: getProgressColor(percentage),
-                                    borderRadius: 5
-                                }
-                            }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            {category.actualAmount > category.budgetedAmount
-                                ? `Over budget by ${formatCurrency(category.actualAmount - category.budgetedAmount)}`
-                                : percentage >= 90
-                                    ? 'Near budget limit - monitor spending'
-                                    : percentage >= 70
-                                        ? 'On track with spending'
-                                        : 'Well within budget'}
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                            Budgeted
                         </Typography>
-                    </Card>
+                        <Typography variant="h6" fontWeight={600} color="#2563eb">
+                            ${category.budgetedAmount.toFixed(2)}
+                        </Typography>
+                    </Box>
+                    <Box sx={{
+                        p: 2,
+                        backgroundColor: alpha(progressColor, 0.05),
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(progressColor, 0.2)}`
+                    }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                            Actual Spent
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600} color={progressColor}>
+                            ${category.actualAmount.toFixed(2)}
+                        </Typography>
+                    </Box>
+                    <Box sx={{
+                        p: 2,
+                        backgroundColor: alpha(category.remainingAmount >= 0 ? '#059669' : '#dc2626', 0.05),
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(category.remainingAmount >= 0 ? '#059669' : '#dc2626', 0.2)}`
+                    }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                            Remaining
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600} color={category.remainingAmount >= 0 ? '#059669' : '#dc2626'}>
+                            {category.remainingAmount >= 0 ? '' : '-'}${Math.abs(category.remainingAmount).toFixed(2)}
+                        </Typography>
+                    </Box>
+                    <Box sx={{
+                        p: 2,
+                        backgroundColor: alpha(maroonColor, 0.05),
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(maroonColor, 0.2)}`
+                    }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                            Usage
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600} color={maroonColor}>
+                            {percentage.toFixed(1)}%
+                        </Typography>
+                    </Box>
                 </Box>
-            </Stack>
+            </Box>
         );
     };
 
-    if (isLoading) {
+    const renderGoalsView = () => {
+        const goalColor = goalProgress < 70 ? '#dc2626' : goalProgress < 90 ? '#f59e0b' : tealColor;
+
         return (
-            <Stack spacing={2}>
-                {[1, 2, 3].map((i) => (
-                    <Card key={i} sx={{ p: 2.5, borderRadius: 2 }}>
-                        <Skeleton variant="text" width="60%" height={24} />
-                        <Skeleton variant="text" width="40%" height={18} sx={{ mt: 1 }} />
-                        <Skeleton variant="rectangular" height={8} sx={{ mt: 2, mb: 1, borderRadius: 4 }} />
-                        <Skeleton variant="text" width="30%" height={16} />
-                    </Card>
-                ))}
-            </Stack>
+            <Box>
+                {/* Savings Goal Progress */}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Savings Goal Progress
+                </Typography>
+
+                <Card sx={{
+                    p: 2.5,
+                    mb: 3,
+                    background: `linear-gradient(135deg, ${alpha(goalColor, 0.1)} 0%, ${alpha(goalColor, 0.05)} 100%)`,
+                    border: `1px solid ${alpha(goalColor, 0.2)}`
+                }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                        <Box>
+                            <Typography variant="caption" color="text.secondary">
+                                Current Savings
+                            </Typography>
+                            <Typography variant="h4" fontWeight={700} color={maroonColor}>
+                                ${currentSavings.toFixed(2)}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Monthly Goal
+                            </Typography>
+                            <Typography variant="h5" fontWeight={600}>
+                                ${monthlyGoal.toFixed(2)}
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <LinearProgress
+                        variant="determinate"
+                        value={Math.min(goalProgress, 100)}
+                        sx={{
+                            height: 10,
+                            borderRadius: 5,
+                            backgroundColor: `${goalColor}20`,
+                            '& .MuiLinearProgress-bar': {
+                                backgroundColor: goalColor,
+                                borderRadius: 5
+                            }
+                        }}
+                    />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                        <Typography variant="caption" fontWeight={600} color={goalColor}>
+                            {goalProgress.toFixed(0)}% Complete
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            ${Math.max(monthlyGoal - currentSavings, 0).toFixed(2)} to go
+                        </Typography>
+                    </Box>
+                </Card>
+
+                <Divider sx={{ my: 3 }} />
+
+                {/* Month Progress */}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Month Progress
+                </Typography>
+
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    p: 2,
+                    mb: 3,
+                    backgroundColor: alpha(tealColor, 0.05),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(tealColor, 0.2)}`
+                }}>
+                    <Box>
+                        <Typography variant="caption" color="text.secondary">
+                            Days Elapsed
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600} color={maroonColor}>
+                            {daysElapsed}
+                        </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="caption" color="text.secondary">
+                            Progress
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600}>
+                            {((daysElapsed / daysInMonth) * 100).toFixed(0)}%
+                        </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="caption" color="text.secondary">
+                            Days Remaining
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600} color={maroonColor}>
+                            {daysRemaining}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Divider sx={{ my: 3 }} />
+
+                {/* Spending Analysis */}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Spending Analysis
+                </Typography>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
+                    <Box sx={{
+                        p: 2,
+                        backgroundColor: alpha(maroonColor, 0.05),
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(maroonColor, 0.2)}`
+                    }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                            Daily Budget
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600} color={maroonColor}>
+                            ${dailyBudget.toFixed(2)}
+                        </Typography>
+                    </Box>
+                    <Box sx={{
+                        p: 2,
+                        backgroundColor: actualDailySpending > dailyBudget
+                            ? alpha('#dc2626', 0.05)
+                            : alpha('#059669', 0.05),
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(actualDailySpending > dailyBudget ? '#dc2626' : '#059669', 0.2)}`
+                    }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                            Actual Daily
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600}
+                                    color={actualDailySpending > dailyBudget ? '#dc2626' : '#059669'}>
+                            ${actualDailySpending.toFixed(2)}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Divider sx={{ my: 3 }} />
+
+                {/* Projection */}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    End of Month Projection
+                </Typography>
+
+                <Card sx={{
+                    p: 2.5,
+                    mb: 3,
+                    background: onTrack
+                        ? 'linear-gradient(135deg, rgba(5, 150, 105, 0.05) 0%, rgba(5, 150, 105, 0.02) 100%)'
+                        : 'linear-gradient(135deg, rgba(220, 38, 38, 0.05) 0%, rgba(220, 38, 38, 0.02) 100%)',
+                    border: `1px solid ${alpha(onTrack ? '#059669' : '#dc2626', 0.2)}`
+                }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        {onTrack ? (
+                            <TrendingUpIcon sx={{ color: '#059669' }} />
+                        ) : (
+                            <TrendingDownIcon sx={{ color: '#dc2626' }} />
+                        )}
+                        <Typography variant="body1" fontWeight={600}>
+                            Projected Savings: ${projectedSavings.toFixed(2)}
+                        </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                        At current spending rate, projected to end month with{' '}
+                        <Typography component="span" fontWeight={600} color={onTrack ? '#059669' : '#dc2626'}>
+                            ${Math.abs(projectedSavings - monthlyGoal).toFixed(2)}
+                        </Typography>
+                        {' '}{onTrack ? 'above' : 'below'} your goal
+                    </Typography>
+                </Card>
+
+                {/* Key Insights */}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Key Insights
+                </Typography>
+
+                <Stack spacing={1.5}>
+                    {onTrack && (
+                        <Box sx={{
+                            p: 2,
+                            backgroundColor: alpha('#059669', 0.05),
+                            borderRadius: 2,
+                            borderLeft: `4px solid #059669`
+                        }}>
+                            <Typography variant="body2" fontWeight={500} color="#059669">
+                                ✓ On track to meet monthly goal
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Continue current spending habits to reach your ${monthlyGoal.toFixed(2)} savings target
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {!onTrack && (
+                        <Box sx={{
+                            p: 2,
+                            backgroundColor: alpha('#dc2626', 0.05),
+                            borderRadius: 2,
+                            borderLeft: `4px solid #dc2626`
+                        }}>
+                            <Typography variant="body2" fontWeight={500} color="#dc2626">
+                                ⚠ May not meet monthly goal
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Need to reduce daily spending to meet goal
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {actualDailySpending > dailyBudget && (
+                        <Box sx={{
+                            p: 2,
+                            backgroundColor: alpha('#f59e0b', 0.05),
+                            borderRadius: 2,
+                            borderLeft: `4px solid #f59e0b`
+                        }}>
+                            <Typography variant="body2" fontWeight={500} color="#f59e0b">
+                                Spending above daily budget
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Averaging ${(actualDailySpending - dailyBudget).toFixed(2)} over daily budget
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {actualDailySpending <= dailyBudget && (
+                        <Box sx={{
+                            p: 2,
+                            backgroundColor: alpha('#059669', 0.05),
+                            borderRadius: 2,
+                            borderLeft: `4px solid #059669`
+                        }}>
+                            <Typography variant="body2" fontWeight={500} color="#059669">
+                                Staying within daily budget
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Averaging ${(dailyBudget - actualDailySpending).toFixed(2)} under daily budget
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {daysRemaining <= 7 && goalProgress < 100 && (
+                        <Box sx={{
+                            p: 2,
+                            backgroundColor: alpha('#f59e0b', 0.05),
+                            borderRadius: 2,
+                            borderLeft: `4px solid #f59e0b`
+                        }}>
+                            <Typography variant="body2" fontWeight={500} color="#f59e0b">
+                                Final week - goal not reached
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Need to save ${((monthlyGoal - currentSavings) / daysRemaining).toFixed(2)} per day to reach goal
+                            </Typography>
+                        </Box>
+                    )}
+                </Stack>
+            </Box>
         );
-    }
+    };
 
     return (
-        <Stack spacing={3}>
-            {/* View Mode Toggle */}
-            <ToggleButtonGroup
-                value={viewMode}
-                exclusive
-                onChange={handleViewModeChange}
-                size="small"
-                fullWidth
-                sx={{
-                    '& .MuiToggleButton-root': {
-                        fontSize: '0.75rem',
-                        py: 0.75,
-                        px: 1.5,
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-                        '&.Mui-selected': {
-                            bgcolor: alpha(maroonColor, 0.1),
-                            color: maroonColor,
-                            borderColor: alpha(maroonColor, 0.4),
-                            '&:hover': {
-                                bgcolor: alpha(maroonColor, 0.15)
-                            }
-                        }
-                    }
-                }}
-            >
-                <ToggleButton value="recurring">
-                    <Repeat size={14} style={{ marginRight: 6 }} /> Recurring
-                </ToggleButton>
-                <ToggleButton value="stats">
-                    <PieChartIcon size={14} style={{ marginRight: 6 }} /> Stats
-                </ToggleButton>
-                <ToggleButton value="individual">
-                    <DollarSign size={14} style={{ marginRight: 6 }} /> Category
-                </ToggleButton>
-            </ToggleButtonGroup>
+        <Paper sx={{
+            borderRadius: 4,
+            boxShadow: 3,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+        }}>
+            {/* Maroon Gradient Header */}
+            <Box sx={{
+                background: `linear-gradient(135deg, ${maroonColor} 0%, #a00000 100%)`,
+                color: 'white',
+                p: 3
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <PieChartIcon />
+                        <Typography variant="h6" fontWeight={600}>
+                            Budget Analysis
+                        </Typography>
+                    </Box>
 
-            {/* Content Area */}
-            <Box>
-                {viewMode === 'recurring' && renderRecurring()}
-                {viewMode === 'stats' && renderStats()}
-                {viewMode === 'individual' && renderIndividual()}
+                    {/* View Toggle */}
+                    <ToggleButtonGroup
+                        value={selectedView}
+                        exclusive
+                        onChange={handleViewChange}
+                        size="small"
+                        sx={{
+                            '& .MuiToggleButton-root': {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                border: '1px solid rgba(255, 255, 255, 0.3)',
+                                py: 0.5,
+                                px: 1.5,
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                textTransform: 'none',
+                                '&.Mui-selected': {
+                                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                                    color: 'white',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(255, 255, 255, 0.25)'
+                                    }
+                                },
+                                '&:hover': {
+                                    bgcolor: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        }}
+                    >
+                        <ToggleButton value="stats">Stats</ToggleButton>
+                        <ToggleButton value="recurring">Recurring</ToggleButton>
+                        <ToggleButton value="category">Category</ToggleButton>
+                        <ToggleButton value="goals">Goals</ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
+                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                    {budgetStats.dateRange.startDate &&
+                        `${budgetStats.dateRange.startDate.toLocaleDateString()} - ${budgetStats.dateRange.endDate.toLocaleDateString()}`
+                    }
+                </Typography>
             </Box>
-        </Stack>
+
+            {/* Content Area with Scrollbar */}
+            <Box sx={{
+                flex: 1,
+                overflowY: 'auto',
+                p: 3,
+                maxHeight: 'calc(100vh - 300px)',
+                '&::-webkit-scrollbar': {
+                    width: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                    backgroundColor: 'rgba(0,0,0,0.05)',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: tealColor,
+                    borderRadius: '4px',
+                    '&:hover': {
+                        backgroundColor: '#0f766e',
+                    },
+                },
+            }}>
+                {isLoading ? (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Loading...
+                        </Typography>
+                    </Box>
+                ) : (
+                    <>
+                        {selectedView === 'stats' && renderStatsView()}
+                        {selectedView === 'recurring' && renderRecurringView()}
+                        {selectedView === 'category' && renderCategoryView()}
+                        {selectedView === 'goals' && renderGoalsView()}
+                    </>
+                )}
+            </Box>
+        </Paper>
     );
 };
 

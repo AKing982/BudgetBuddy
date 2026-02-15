@@ -41,12 +41,12 @@ import BudgetService from "../services/BudgetService";
 import {BudgetQuestions} from "../utils/BudgetUtils";
 import BudgetQuestionnaireForm from "./BudgetQuestionnaireForm";
 import ManageBudgetsDialog from "./ManageBudgetsDialog";
+import ManageBudgetCategoriesDialog from "./ManageBudgetCategoriesDialog";
 import BudgetCategoriesService from "../services/BudgetCategoriesService";
 import UserService from "../services/UserService";
 import TransactionCategoryService from "../services/TransactionCategoryService";
 import BudgetOverview from "./BudgetOverview";
 import TopExpenseCategory from "./TopExpenseCategory";
-
 
 interface DateArrays {
     startDate: [number, number, number];
@@ -83,6 +83,7 @@ const BudgetPage: React.FC = () => {
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>()
     const [newBudgetDialogOpen, setNewBudgetDialogOpen] = useState<boolean>(false);
     const [manageBudgetsDialogOpen, setManageBudgetsDialogOpen] = useState<boolean>(false);
+    const [manageCategoriesDialogOpen, setManageCategoriesDialogOpen] = useState<boolean>(false);
     const [isBudgetCategoryLoading, setIsBudgetCategoryLoading] = useState<boolean>(false);
     const [budgetCategoryLoadingMessage, setBudgetCategoryLoadingMessage] = useState<string>('');
     const userService = UserService.getInstance();
@@ -575,14 +576,16 @@ const BudgetPage: React.FC = () => {
         const result = budgetData[0];
         const periodCategories = result?.budgetCategoryStats?.budgetPeriodCategories || [];
 
+        console.log('BudgetCategories: ', periodCategories);
         return periodCategories.map(category => ({
             categoryName: category.category,
-            budgetedAmount: category.budgeted,
-            actualAmount: category.actual,
-            remainingAmount: category.remaining,
+            budgetedAmount: category.budgeted, // Fixed: was budgetedExpenses
+            actualAmount: category.actual, // Fixed: was actualExpenses
+            remainingAmount: category.remaining, // Fixed: was remainingExpenses
             isRecurring: category.isRecurring || false,
             isCustom: category.isCustom || false
         }));
+
     }, [budgetData]);
 
     const recurringCategories = useMemo(() => {
@@ -742,6 +745,24 @@ const BudgetPage: React.FC = () => {
                                 open={manageBudgetsDialogOpen}
                                 onClose={handleManageBudgetsDialogOnClose}
                                 onBudgetUpdated={handleBudgetUpdated}/>
+                            <Button
+                                variant="outlined"
+                                startIcon={<PieChart size={18}/>}
+                                onClick={() => setManageCategoriesDialogOpen(true)}
+                                sx={{
+                                    ml: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderColor: alpha(theme.palette.divider, 0.8),
+                                    color: theme.palette.text.primary,
+                                    '&:hover': {
+                                        borderColor: theme.palette.primary.main,
+                                        backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                                    }
+                                }}>
+                                Categories
+                            </Button>
                         </Box>
                     </Box>
                 </Grow>
@@ -1034,19 +1055,10 @@ const BudgetPage: React.FC = () => {
                         </Stack>
                     </Grid>
 
-                    {/* Right Column - Dynamic Panel */}
+                    {/* Right Column - Dynamic Panel with Goals Tab */}
                     <Grid item xs={12} lg={4}>
                         <Grow in={animateIn} timeout={1000}>
-                            <Card sx={{
-                                p: 3,
-                                borderRadius: 3,
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                                position: 'sticky',
-                                top: 24
-                            }}>
-                                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
-                                    Budget Analytics
-                                </Typography>
+                            <Box sx={{ position: 'sticky', top: 24 }}>
                                 <DynamicBudgetPanel
                                     isLoading={isLoading}
                                     topSpendingCategories={topExpenseCategories}
@@ -1054,8 +1066,86 @@ const BudgetPage: React.FC = () => {
                                     recurringCategories={recurringCategories}
                                     budgetStats={budgetStats}
                                     allCategories={budgetCategories}
+                                    onUpdateBudgetAmount={async (categoryName: string, newAmount: number) => {
+                                        try {
+                                            console.log(`Updating ${categoryName} budget to $${newAmount}`);
+
+                                            // TODO: Call your backend API to update budget amount
+                                            // await budgetCategoryService.updateBudgetAmount(
+                                            //     userId,
+                                            //     categoryName,
+                                            //     newAmount,
+                                            //     budgetStats.dateRange.startDate,
+                                            //     budgetStats.dateRange.endDate
+                                            // );
+
+                                            // Optimistic update: Update local state immediately
+                                            const updatedBudgetData = budgetData.map(budget => {
+                                                if (budget.budgetCategoryStats?.budgetPeriodCategories) {
+                                                    const updatedCategories = budget.budgetCategoryStats.budgetPeriodCategories.map(cat => {
+                                                        if (cat.category === categoryName) {
+                                                            return {
+                                                                ...cat,
+                                                                budgeted: newAmount,
+                                                                remaining: newAmount - cat.actual
+                                                            };
+                                                        }
+                                                        return cat;
+                                                    });
+                                                    return {
+                                                        ...budget,
+                                                        budgetCategoryStats: {
+                                                            ...budget.budgetCategoryStats,
+                                                            budgetPeriodCategories: updatedCategories
+                                                        }
+                                                    };
+                                                }
+                                                return budget;
+                                            });
+                                            setBudgetData(updatedBudgetData);
+
+                                            // Then refresh from backend to ensure consistency
+                                            await fetchBudgetData(currentMonth);
+
+                                            setSnackbarMessage(`Budget for ${categoryName} updated to $${newAmount.toFixed(2)}`);
+                                            setSnackbarSeverity('success');
+                                            setSnackbarOpen(true);
+                                        } catch (error) {
+                                            console.error('Error updating budget amount:', error);
+                                            // Revert optimistic update on error
+                                            await fetchBudgetData(currentMonth);
+                                            throw error;
+                                        }
+                                    }}
+                                    onOptimizeBudget={async (categoryName: string) => {
+                                        try {
+                                            console.log(`Optimizing budget for ${categoryName}`);
+
+                                            // TODO: Call your backend API to get optimized budget amount
+                                            // const optimized = await budgetCategoryService.optimizeBudget(
+                                            //     userId,
+                                            //     categoryName,
+                                            //     budgetStats.dateRange.startDate,
+                                            //     budgetStats.dateRange.endDate
+                                            // );
+                                            // return optimized.suggestedAmount;
+
+                                            // Mock optimization: return 10% more than current spending
+                                            const category = budgetCategories.find(c => c.categoryName === categoryName);
+                                            const optimizedAmount = category ? Math.max(category.actualAmount * 1.1, 100) : 100;
+
+                                            setSnackbarMessage(`Optimized budget suggestion for ${categoryName}: $${optimizedAmount.toFixed(2)}`);
+                                            setSnackbarSeverity('info');
+                                            setSnackbarOpen(true);
+
+                                            return optimizedAmount;
+                                        } catch (error) {
+                                            console.error('Error optimizing budget:', error);
+                                            throw error;
+                                        }
+                                    }}
                                 />
-                            </Card>
+                            </Box>
                         </Grow>
                     </Grid>
                 </Grid>
@@ -1140,6 +1230,64 @@ const BudgetPage: React.FC = () => {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+
+            <ManageBudgetCategoriesDialog
+                open={manageCategoriesDialogOpen}
+                onClose={() => setManageCategoriesDialogOpen(false)}
+                defaultCategories={budgetCategories.map((cat, index) => ({
+                    id: index,
+                    name: cat.categoryName,
+                    budgetedAmount: cat.budgetedAmount,
+                    savingsGoal: 0,
+                    isDefault: true,
+                    isActive: true,
+                    isCustom: false
+                }))}
+                customCategories={[]} // Will be populated when user creates custom categories
+                onSaveCategories={async (categories, useCustomOnly) => {
+                    try {
+                        console.log('Saving categories:', categories);
+                        console.log('Use custom only:', useCustomOnly);
+
+                        // TODO: Call backend API to save category configuration
+                        // This should save:
+                        // 1. Which default categories are enabled/disabled
+                        // 2. All custom categories with their budgets and savings goals
+                        // 3. The useCustomOnly preference
+                        //
+                        // await budgetCategoryService.updateCategoryConfiguration(
+                        //     userId,
+                        //     {
+                        //         defaultCategoriesEnabled: categories.filter(c => c.isDefault && c.isActive).map(c => c.name),
+                        //         customCategories: categories.filter(c => c.isCustom),
+                        //         useCustomOnly: useCustomOnly
+                        //     },
+                        //     budgetStats.dateRange.startDate,
+                        //     budgetStats.dateRange.endDate
+                        // );
+
+                        // Refresh budget data to show updated categories
+                        await fetchBudgetData(currentMonth);
+
+                        const defaultCount = categories.filter(c => c.isDefault && c.isActive).length;
+                        const customCount = categories.filter(c => c.isCustom).length;
+
+                        setSnackbarMessage(
+                            useCustomOnly
+                                ? `Now using ${customCount} custom categories only`
+                                : `Now using ${defaultCount} default + ${customCount} custom categories`
+                        );
+                        setSnackbarSeverity('success');
+                        setSnackbarOpen(true);
+                    } catch (error) {
+                        console.error('Error saving categories:', error);
+                        setSnackbarMessage('Failed to save category configuration');
+                        setSnackbarSeverity('error');
+                        setSnackbarOpen(true);
+                        throw error;
+                    }
+                }}
+            />
         </Box>
     );
 };

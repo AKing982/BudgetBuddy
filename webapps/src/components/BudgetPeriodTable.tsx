@@ -12,7 +12,8 @@ import {
 import {
     Box,
     Button,
-    ButtonGroup, IconButton,
+    ButtonGroup,
+    IconButton,
     Paper,
     Skeleton,
     Table,
@@ -21,7 +22,15 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Typography
+    Typography,
+    ToggleButtonGroup,
+    ToggleButton,
+    alpha,
+    useTheme,
+    Card,
+    Grid,
+    LinearProgress,
+    Chip
 } from '@mui/material';
 import {styled} from "@mui/material/styles";
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
@@ -33,6 +42,8 @@ import BudgetPeriodService from "../services/BudgetPeriodService";
 import {Period} from '../config/Types';
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { Table as TableIcon, BarChart3 } from 'lucide-react';
+import BudgetCategoryCard from './BudgetCategoryCard';
 
 
 interface BudgetCategory {
@@ -43,21 +54,18 @@ interface BudgetCategory {
 
 interface Category {
     dateRange: {
-        startDate: Array<number>;  // or [number, number, number] if you want to be more specific
-        endDate: Array<number>;    // or [number, number, number]
+        startDate: Array<number>;
+        endDate: Array<number>;
     };
-    // ... other category properties
 }
-
-
 
 interface BudgetPeriodTableProps {
     isLoading: boolean;
     data: BudgetRunnerResult[];
 }
 
-
-type BudgetPeriod = 'Daily' | 'Weekly' | 'BiWeekly' | 'Monthly';
+type BudgetPeriod = 'Daily' | 'Weekly' | 'BiWeekly' | 'Monthly' | 'Custom';
+type CustomFilterType = 'dates' | 'income';
 
 interface ProcessedRow {
     name: string;
@@ -68,7 +76,6 @@ interface ProcessedRow {
     endRange: Date;
 }
 
-
 const dummyData: BudgetCategory[] = [
     { name: 'Housing', monthlyBudget: 1500, monthlyActual: 1450 },
     { name: 'Food', monthlyBudget: 500, monthlyActual: 480 },
@@ -77,33 +84,18 @@ const dummyData: BudgetCategory[] = [
     { name: 'Entertainment', monthlyBudget: 150, monthlyActual: 200 },
 ];
 
-const CustomButton = styled(Button)(({ theme }) => ({
-    textTransform: 'none',
-    fontWeight: 600,
-    borderRadius: '8px',
-    padding: '10px 16px',
-    transition: 'all 0.3s ease',
-    backgroundColor: theme.palette.error.main, // Maroon color
-    color: theme.palette.common.white,
-    '&:hover': {
-        backgroundColor: theme.palette.error.dark,
-    },
-    '&.clicked': {
-        backgroundColor: theme.palette.common.white,
-        color: theme.palette.error.main,
-        border: `1px solid ${theme.palette.error.main}`,
-    },
-}));
-
-const PERIOD_MAPPING: Record<BudgetPeriod, Period> = {
+const PERIOD_MAPPING: Record<Exclude<BudgetPeriod, 'Custom'>, Period> = {
     'Daily': Period.DAILY,
     'Weekly': Period.WEEKLY,
     'BiWeekly': Period.BIWEEKLY,
     'Monthly': Period.MONTHLY
 };
 
+const maroonColor = '#800000';
+const tealColor = '#0d9488';
 
 const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) => {
+    const theme = useTheme();
     const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>('Monthly');
     const [startDate, setStartDate] = useState(new Date());
     const [isClicked, setIsClicked] = useState(false);
@@ -112,6 +104,16 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
     const [isLoadingData, setIsLoadingData] = useState(false);
     const budgetPeriodService = BudgetPeriodService.getInstance();
     const [expandedRanges, setExpandedRanges] = useState<Set<String>>(new Set());
+
+    // NEW: Visual/Numeric toggle
+    const [viewType, setViewType] = useState<'visual' | 'numeric'>('visual');
+
+    // NEW: Custom date range
+    const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+    const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+
+    // NEW: Custom filter type (dates or income)
+    const [customFilterType, setCustomFilterType] = useState<CustomFilterType>('dates');
 
     const toggleRangeExpansion = (rangeKey: string) => {
         setExpandedRanges(prev => {
@@ -127,10 +129,8 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
 
     const handleClick = () => {
         setIsClicked(true);
-        // Add your logic here for what should happen when the button is clicked
-        setTimeout(() => setIsClicked(false), 300); // Reset after 300ms for visual feedback
+        setTimeout(() => setIsClicked(false), 300);
     };
-
 
     const fetchBudgetPeriodData = async (period: BudgetPeriod, subBudget: SubBudget) => {
         if (!selectedDate || !subBudget) return;
@@ -139,6 +139,30 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         try {
             const userId : number = Number(sessionStorage.getItem('userId'));
             const currentDate = selectedDate;
+
+            // Handle Custom period with different filter types
+            if (period === 'Custom') {
+                if (customFilterType === 'dates') {
+                    if (!customStartDate || !customEndDate) {
+                        setIsLoadingData(false);
+                        return;
+                    }
+                    // TODO: Add custom range backend call when API is ready
+                    setIsLoadingData(false);
+                    return;
+                } else if (customFilterType === 'income') {
+                    // TODO: Add income period backend call when API is ready
+                    setIsLoadingData(false);
+                    return;
+                }
+            }
+
+            // Type guard to ensure period is mappable
+            if (period === 'Custom') {
+                setIsLoadingData(false);
+                return;
+            }
+
             const mappedPeriod = PERIOD_MAPPING[period];
 
             const subBudgetStartDate = new Date(
@@ -153,8 +177,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                 subBudget.endDate[2]
             );
 
-
-            // Format dates based on the selected period
             const monthStartDate = format(subBudgetStartDate, 'yyyy-MM-dd');
             const monthEndDate = format(subBudgetEndDate, 'yyyy-MM-dd');
 
@@ -192,6 +214,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                     );
                     setPeriodData(biWeeklyData);
                     break;
+
                 case 'Monthly':
                     const monthlyData = await getBudgetPeriodDataByPeriodSelection(
                         mappedPeriod,
@@ -205,7 +228,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
             }
         } catch (error) {
             console.error('Error fetching budget period data:', error);
-            // Handle error appropriately (e.g., show error message to user)
         } finally {
             setIsLoadingData(false);
         }
@@ -215,14 +237,13 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         if(data?.[0]?.subBudget){
             fetchBudgetPeriodData(budgetPeriod, data[0].subBudget);
         }
-    }, [budgetPeriod, selectedDate, data?.[0]?.subBudget]);
+    }, [budgetPeriod, selectedDate, data?.[0]?.subBudget, customStartDate, customEndDate, customFilterType]);
 
     const handlePeriodChange = (newPeriod: BudgetPeriod) => {
         setBudgetPeriod(newPeriod);
     }
 
     const getBudgetPeriodDataByPeriodSelection = async (period: Period, userId: number, startDate: string, endDate: string, singleDate: string): Promise<BudgetPeriodCategory[]> => {
-
         switch (period) {
             case Period.WEEKLY:
                 const weeklyBudgetPeriodCategories = await budgetPeriodService.getBudgetPeriodsByPeriod(userId, period, startDate, endDate);
@@ -247,13 +268,10 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         if (!data?.length) return [];
 
         return data.flatMap((budgetResult) => {
-            // Get categories from budgetCategoryStats
             const categories = budgetResult.budgetCategoryStats?.budgetPeriodCategories || [];
             console.log("Categories: ", categories);
 
-            // No need to do additional filtering - each category already has its date range
             return categories.map((category: BudgetPeriodCategory) => {
-
                 const startDateArr = (category.dateRange.startDate as unknown) as number[];
                 const endDateArr = (category.dateRange.endDate as unknown) as number[];
                 const startDate = new Date(
@@ -269,7 +287,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                     Number(endDateArr[2])
                 );
                 console.log('End Date: ', endDate);
-
 
                 console.log("Processing category:", {
                     name: category.category,
@@ -296,9 +313,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         console.log("Final Processed Data:", processedData);
     }, [processedData]);
 
-
-    const maroonColor = '#800000'; // You can adjust this to match your exact maroon shade
-
     const StyledButton = styled(Button)(({ theme }) => ({
         textTransform: 'none',
         fontWeight: 600,
@@ -308,14 +322,14 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         color: maroonColor,
         borderColor: maroonColor,
         '&:hover': {
-            backgroundColor: 'rgba(128, 0, 0, 0.04)', // Light maroon background on hover
+            backgroundColor: 'rgba(128, 0, 0, 0.04)',
             borderColor: maroonColor,
         },
         '&.Mui-selected, &.MuiButton-contained': {
             backgroundColor: maroonColor,
             color: 'white',
             '&:hover': {
-                backgroundColor: '#600000', // Darker maroon on hover for selected state
+                backgroundColor: '#600000',
             },
         },
     }));
@@ -329,10 +343,60 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         },
     }));
 
+    // NEW: Helper functions for visual view
+    const getProgressColor = (actual: number, budgeted: number) => {
+        if (budgeted === 0) return tealColor;
+        const percentage = (actual / budgeted) * 100;
+        if (percentage < 70) return tealColor;
+        if (percentage < 90) return '#f59e0b';
+        return '#dc2626';
+    };
+
+    const formatCurrency = (amount: number) => {
+        return `$${Math.abs(amount).toFixed(2)}`;
+    };
+
+    // NEW: Render visual view with compact cards
+    const renderVisualView = (categoriesForRange: BudgetPeriodCategory[], start?: Date, end?: Date) => {
+        if (!categoriesForRange || categoriesForRange.length === 0) {
+            return (
+                <Box sx={{
+                    textAlign: 'center',
+                    py: 4,
+                    px: 2,
+                    background: alpha(theme.palette.divider, 0.02),
+                    borderRadius: 2,
+                    border: `1px dashed ${alpha(theme.palette.divider, 0.3)}`
+                }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                        No budget categories found
+                    </Typography>
+                </Box>
+            );
+        }
+
+        return (
+            <Box sx={{ p: 1.5 }}>
+                <Grid container spacing={1.5}>
+                    {categoriesForRange.map((category, index) => (
+                        <Grid item xs={12} sm={6} md={4} key={`${category.category}-${index}`}>
+                            <BudgetCategoryCard
+                                categoryName={category.category}
+                                budgeted={category.budgeted || 0}
+                                actual={category.actual || 0}
+                                remaining={category.remaining || 0}
+                                compact={true}
+                            />
+                        </Grid>
+                    ))}
+                </Grid>
+            </Box>
+        );
+    };
+
     const getDateRanges = (subBudget: SubBudget) => {
         if (!periodData?.length || !selectedDate || !subBudget) return [];
 
-        // Get unique date ranges from periodData
         const uniqueRanges = new Map();
 
         const subBudgetStartDate = new Date(
@@ -357,7 +421,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                     }
 
                     category.biWeekRanges.forEach(range => {
-                        // Type assert the range arrays
                         const startArr = (range.startDate as unknown) as number[];
                         const endArr = (range.endDate as unknown) as number[];
 
@@ -388,7 +451,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                         return;
                     }
 
-                    // Type assert the date range arrays
                     const startArr = (category.dateRange.startDate as unknown) as number[];
                     const endArr = (category.dateRange.endDate as unknown) as number[];
 
@@ -414,7 +476,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
             }
         });
 
-        // Convert Map values to array and sort by start date
         const ranges = Array.from(uniqueRanges.values()).sort((a, b) => {
             return a[0].getTime() - b[0].getTime();
         });
@@ -425,52 +486,23 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
             daysDiff: differenceInDays(end, start)
         })));
 
-        const monthStart = startOfMonth(selectedDate);
-        const monthEnd = endOfMonth(selectedDate);
-
-        // Filter ranges based on budgetPeriod
-        // const filteredRanges = ranges.filter(([start, end]) => {
-        //     const daysDiff = differenceInDays(end, start);
-        //
-        //     switch (budgetPeriod) {
-        //         case 'Daily':
-        //             return isSameDay(start, selectedDate);
-        //         case 'Weekly':
-        //             return daysDiff === 6;
-        //         case 'BiWeekly':
-        //             return daysDiff === 13; // BiWeekly ranges should be exactly 13 days based on the data
-        //         case 'Monthly':
-        //             // return isWithinInterval(start, {
-        //             //     start: monthStart,
-        //             //     end: monthEnd
-        //             // });
-        //             return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
-        //         default:
-        //             return true;
-        //     }
-        // });
         const filteredRanges = ranges.filter(([start, end]) => {
             switch (budgetPeriod) {
                 case 'Daily':
                     return isSameDay(start, selectedDate);
-
                 case 'Weekly':
-                    // FIX: Check if the week starts within the SubBudget range
-                    // OR if it overlaps the selected month.
                     return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
-
                 case 'BiWeekly':
-                    // FIX: Similar to weekly, don't rely on exactly 13 days if the
-                    // end of the budget period cuts a bi-week short.
                     return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
-
                 case 'Monthly':
                     return isWithinInterval(start, { start: subBudgetStartDate, end: subBudgetEndDate });
-
+                case 'Custom':
+                    return true;
                 default:
                     return true;
             }
         });
+
         console.log('Filtered ranges for', budgetPeriod, ':', filteredRanges.map(([start, end]) => ({
             start: format(start, 'yyyy-MM-dd'),
             end: format(end, 'yyyy-MM-dd'),
@@ -507,35 +539,131 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
             <Box>
-                <Typography variant="h5" component="h2" gutterBottom sx={{
-                    fontWeight: 'bold',
-                    mb: 2,
-                    textAlign: 'left',
-                    fontSize: '0.875rem',
-                    color: 'text.secondary'
-                }}>
-                    Budget Period Overview
-                </Typography>
+                {/* NEW: Header with Visual/Numeric Toggle */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h5" component="h2" sx={{
+                        fontWeight: 'bold',
+                        fontSize: '0.875rem',
+                        color: 'text.secondary'
+                    }}>
+                        Budget Period Overview
+                    </Typography>
 
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <StyledButtonGroup variant="outlined" aria-label="budget period toggle">
-                        {['Daily', 'Weekly', 'BiWeekly', 'Monthly'].map((period) => (
-                            <StyledButton
-                                key={period}
-                                onClick={() => setBudgetPeriod(period as BudgetPeriod)}
-                                variant={budgetPeriod === period ? 'contained' : 'outlined'}
-                            >
-                                {period}
-                            </StyledButton>
-                        ))}
-                    </StyledButtonGroup>
+                    <ToggleButtonGroup
+                        value={viewType}
+                        exclusive
+                        onChange={(e, newView) => newView && setViewType(newView)}
+                        size="small"
+                        sx={{
+                            '& .MuiToggleButton-root': {
+                                py: 0.5,
+                                px: 2,
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                textTransform: 'none',
+                                border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                                '&.Mui-selected': {
+                                    bgcolor: alpha(maroonColor, 0.1),
+                                    color: maroonColor,
+                                    borderColor: alpha(maroonColor, 0.4),
+                                    '&:hover': {
+                                        bgcolor: alpha(maroonColor, 0.15)
+                                    }
+                                }
+                            }
+                        }}
+                    >
+                        <ToggleButton value="visual">
+                            <BarChart3 size={14} style={{ marginRight: 6 }} /> Visual
+                        </ToggleButton>
+                        <ToggleButton value="numeric">
+                            <TableIcon size={14} style={{ marginRight: 6 }} /> Numeric
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
 
-                    <DatePicker
-                        label="Select Date"
-                        value={selectedDate}
-                        onChange={(newValue: Date | null) => setSelectedDate(newValue)}
-                        disabled={budgetPeriod !== 'Daily'}
-                    />
+                {/* Period Selection - Custom shows chip options below */}
+                <Box sx={{ mb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <StyledButtonGroup variant="outlined" aria-label="budget period toggle">
+                            {['Daily', 'Weekly', 'BiWeekly', 'Monthly', 'Custom'].map((period) => (
+                                <StyledButton
+                                    key={period}
+                                    onClick={() => setBudgetPeriod(period as BudgetPeriod)}
+                                    variant={budgetPeriod === period ? 'contained' : 'outlined'}
+                                >
+                                    {period === 'BiWeekly' ? 'Bi-Weekly' : period}
+                                </StyledButton>
+                            ))}
+                        </StyledButtonGroup>
+
+                        <DatePicker
+                            label="Select Date"
+                            value={selectedDate}
+                            onChange={(newValue: Date | null) => setSelectedDate(newValue)}
+                            disabled={budgetPeriod !== 'Daily'}
+                        />
+                    </Box>
+
+                    {/* NEW: Custom Filter Type Chips - Only show when Custom is selected */}
+                    {budgetPeriod === 'Custom' && (
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mr: 1 }}>
+                                Filter by:
+                            </Typography>
+                            <Chip
+                                label="Custom Dates"
+                                onClick={() => setCustomFilterType('dates')}
+                                variant={customFilterType === 'dates' ? 'filled' : 'outlined'}
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.75rem',
+                                    ...(customFilterType === 'dates' && {
+                                        bgcolor: alpha(maroonColor, 0.1),
+                                        color: maroonColor,
+                                        borderColor: alpha(maroonColor, 0.4),
+                                        '&:hover': {
+                                            bgcolor: alpha(maroonColor, 0.15)
+                                        }
+                                    })
+                                }}
+                            />
+                            <Chip
+                                label="By Income"
+                                onClick={() => setCustomFilterType('income')}
+                                variant={customFilterType === 'income' ? 'filled' : 'outlined'}
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.75rem',
+                                    ...(customFilterType === 'income' && {
+                                        bgcolor: alpha(maroonColor, 0.1),
+                                        color: maroonColor,
+                                        borderColor: alpha(maroonColor, 0.4),
+                                        '&:hover': {
+                                            bgcolor: alpha(maroonColor, 0.15)
+                                        }
+                                    })
+                                }}
+                            />
+                        </Box>
+                    )}
+
+                    {/* NEW: Custom Date Range Pickers - Only show when Custom + dates filter is selected */}
+                    {budgetPeriod === 'Custom' && customFilterType === 'dates' && (
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <DatePicker
+                                label="Start Date"
+                                value={customStartDate}
+                                onChange={(newValue) => setCustomStartDate(newValue)}
+                            />
+                            <DatePicker
+                                label="End Date"
+                                value={customEndDate}
+                                onChange={(newValue) => setCustomEndDate(newValue)}
+                                minDate={customStartDate || undefined}
+                            />
+                        </Box>
+                    )}
                 </Box>
 
                 <Paper sx={{
@@ -547,47 +675,49 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                         boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
                     }
                 }}>
-                    {/* Fixed Header Table */}
-                    <Table sx={{ tableLayout: 'fixed' }}>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: 'background.paper' }}>
-                                <TableCell sx={{
-                                    fontWeight: 'bold',
-                                    color: maroonColor,
-                                    fontSize: '0.95rem',
-                                    width: '40%'
-                                }}>
-                                    Category
-                                </TableCell>
-                                <TableCell align="right" sx={{
-                                    fontWeight: 'bold',
-                                    color: maroonColor,
-                                    fontSize: '0.95rem',
-                                    width: '20%'
-                                }}>
-                                    Budgeted
-                                </TableCell>
-                                <TableCell align="right" sx={{
-                                    fontWeight: 'bold',
-                                    color: maroonColor,
-                                    fontSize: '0.95rem',
-                                    width: '20%'
-                                }}>
-                                    Actual
-                                </TableCell>
-                                <TableCell align="right" sx={{
-                                    fontWeight: 'bold',
-                                    color: maroonColor,
-                                    fontSize: '0.95rem',
-                                    width: '20%'
-                                }}>
-                                    Remaining
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                    </Table>
+                    {/* Fixed Header Table - Only show in numeric view */}
+                    {viewType === 'numeric' && (
+                        <Table sx={{ tableLayout: 'fixed' }}>
+                            <TableHead>
+                                <TableRow sx={{ backgroundColor: 'background.paper' }}>
+                                    <TableCell sx={{
+                                        fontWeight: 'bold',
+                                        color: maroonColor,
+                                        fontSize: '0.95rem',
+                                        width: '40%'
+                                    }}>
+                                        Category
+                                    </TableCell>
+                                    <TableCell align="right" sx={{
+                                        fontWeight: 'bold',
+                                        color: maroonColor,
+                                        fontSize: '0.95rem',
+                                        width: '20%'
+                                    }}>
+                                        Budgeted
+                                    </TableCell>
+                                    <TableCell align="right" sx={{
+                                        fontWeight: 'bold',
+                                        color: maroonColor,
+                                        fontSize: '0.95rem',
+                                        width: '20%'
+                                    }}>
+                                        Actual
+                                    </TableCell>
+                                    <TableCell align="right" sx={{
+                                        fontWeight: 'bold',
+                                        color: maroonColor,
+                                        fontSize: '0.95rem',
+                                        width: '20%'
+                                    }}>
+                                        Remaining
+                                    </TableCell>
+                                </TableRow>
+                            </TableHead>
+                        </Table>
+                    )}
 
-                    {/* Content Area - NOT scrollable */}
+                    {/* Content Area */}
                     <Box>
                         {isLoadingData ? (
                             <Box sx={{ p: 2 }}>
@@ -617,7 +747,6 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                     const isExpanded = expandedRanges.has(rangeKey);
                                     const isLastRange = rangeIndex === dateRanges.length - 1;
 
-                                    // Filter categories for this range
                                     const categoriesForRange = periodData.filter(category => {
                                         if (budgetPeriod === 'BiWeekly' && category.biWeekRanges?.length) {
                                             return category.biWeekRanges.some(range => {
@@ -657,7 +786,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
 
                                     return (
                                         <Box key={`range-${rangeIndex}`} sx={{ mb: 0.5 }}>
-                                            {/* Date Range Header - Outside scrollable area */}
+                                            {/* Date Range Header */}
                                             <Box
                                                 onClick={() => toggleRangeExpansion(rangeKey)}
                                                 sx={{
@@ -714,77 +843,81 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                                                 </Box>
                                             </Box>
 
-                                            {/* Scrollable Categories Section - Each date range has its own scroll */}
+                                            {/* Categories Section - Visual or Numeric based on toggle */}
                                             {isExpanded && (
-                                                <Box sx={{
-                                                    maxHeight: '330px',
-                                                    overflowY: 'auto',
-                                                    ...(isLastRange && {
-                                                        borderBottomLeftRadius: '16px',
-                                                        borderBottomRightRadius: '16px',
-                                                   }),
-                                                    '&::-webkit-scrollbar': {
-                                                        width: '8px',
-                                                    },
-                                                    '&::-webkit-scrollbar-track': {
-                                                        backgroundColor: 'rgba(0,0,0,0.05)',
-                                                    },
-                                                    '&::-webkit-scrollbar-thumb': {
-                                                        backgroundColor: maroonColor,
-                                                        borderRadius: '4px',
-                                                        '&:hover': {
-                                                            backgroundColor: '#600000',
+                                                viewType === 'numeric' ? (
+                                                    <Box sx={{
+                                                        maxHeight: '330px',
+                                                        overflowY: 'auto',
+                                                        ...(isLastRange && {
+                                                            borderBottomLeftRadius: '16px',
+                                                            borderBottomRightRadius: '16px',
+                                                        }),
+                                                        '&::-webkit-scrollbar': {
+                                                            width: '8px',
                                                         },
-                                                    },
-                                                }}>
-                                                    <Table sx={{ tableLayout: 'fixed' }}>
-                                                        <TableBody>
-                                                            {categoriesForRange.length > 0 ? (
-                                                                categoriesForRange.map((category, categoryIndex) => (
-                                                                    <TableRow
-                                                                        key={`${rangeKey}-${category.category}-${categoryIndex}`}
-                                                                        sx={{
-                                                                            '&:hover': {
-                                                                                backgroundColor: 'rgba(128, 0, 0, 0.04)',
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <TableCell component="th" scope="row" sx={{ width: '40%' }}>
-                                                                            {category.category}
-                                                                        </TableCell>
-                                                                        <TableCell align="right" sx={{ width: '20%' }}>
-                                                                            ${(category.budgeted || 0).toFixed(2)}
-                                                                        </TableCell>
-                                                                        <TableCell align="right" sx={{ width: '20%' }}>
-                                                                            ${(Math.abs(category.actual) || 0).toFixed(2)}
-                                                                        </TableCell>
-                                                                        <TableCell
-                                                                            align="right"
+                                                        '&::-webkit-scrollbar-track': {
+                                                            backgroundColor: 'rgba(0,0,0,0.05)',
+                                                        },
+                                                        '&::-webkit-scrollbar-thumb': {
+                                                            backgroundColor: maroonColor,
+                                                            borderRadius: '4px',
+                                                            '&:hover': {
+                                                                backgroundColor: '#600000',
+                                                            },
+                                                        },
+                                                    }}>
+                                                        <Table sx={{ tableLayout: 'fixed' }}>
+                                                            <TableBody>
+                                                                {categoriesForRange.length > 0 ? (
+                                                                    categoriesForRange.map((category, categoryIndex) => (
+                                                                        <TableRow
+                                                                            key={`${rangeKey}-${category.category}-${categoryIndex}`}
                                                                             sx={{
-                                                                                width: '20%',
-                                                                                color: (category.remaining || 0) >= 0 ? 'green' : 'red',
-                                                                                fontWeight: 'bold'
+                                                                                '&:hover': {
+                                                                                    backgroundColor: 'rgba(128, 0, 0, 0.04)',
+                                                                                }
                                                                             }}
                                                                         >
-                                                                            ${Math.abs(category.remaining || 0).toFixed(2)}
-                                                                            {(category.remaining || 0) >= 0 ? ' under' : ' over'}
+                                                                            <TableCell component="th" scope="row" sx={{ width: '40%' }}>
+                                                                                {category.category}
+                                                                            </TableCell>
+                                                                            <TableCell align="right" sx={{ width: '20%' }}>
+                                                                                ${(category.budgeted || 0).toFixed(2)}
+                                                                            </TableCell>
+                                                                            <TableCell align="right" sx={{ width: '20%' }}>
+                                                                                ${(Math.abs(category.actual) || 0).toFixed(2)}
+                                                                            </TableCell>
+                                                                            <TableCell
+                                                                                align="right"
+                                                                                sx={{
+                                                                                    width: '20%',
+                                                                                    color: (category.remaining || 0) >= 0 ? 'green' : 'red',
+                                                                                    fontWeight: 'bold'
+                                                                                }}
+                                                                            >
+                                                                                ${Math.abs(category.remaining || 0).toFixed(2)}
+                                                                                {(category.remaining || 0) >= 0 ? ' under' : ' over'}
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                    ))
+                                                                ) : (
+                                                                    <TableRow>
+                                                                        <TableCell
+                                                                            colSpan={4}
+                                                                            align="center"
+                                                                            sx={{ color: 'gray', fontStyle: 'italic', py: 2 }}
+                                                                        >
+                                                                            No categories available for this range.
                                                                         </TableCell>
                                                                     </TableRow>
-                                                                ))
-                                                            ) : (
-                                                                <TableRow>
-                                                                    <TableCell
-                                                                        colSpan={4}
-                                                                        align="center"
-                                                                        sx={{ color: 'gray', fontStyle: 'italic', py: 2 }}
-                                                                    >
-                                                                        No categories available for this range.
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            )}
-                                                        </TableBody>
-                                                    </Table>
-                                                </Box>
+                                                                )}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </Box>
+                                                ) : (
+                                                    renderVisualView(categoriesForRange, start, end)
+                                                )
                                             )}
                                         </Box>
                                     );
