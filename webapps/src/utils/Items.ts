@@ -236,6 +236,8 @@ export interface BudgetPeriodCategory
     isOverBudget: boolean;
     spendingPercentage: number;
     budgetStatus: BudgetStatus;
+    isRecurring?: boolean;
+    isCustom?: boolean;
 }
 
 // export interface DateRange {

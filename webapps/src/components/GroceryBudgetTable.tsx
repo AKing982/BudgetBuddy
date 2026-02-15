@@ -12,7 +12,8 @@ import {
     Stack,
     Tooltip,
     alpha,
-    Collapse
+    Collapse,
+    Divider
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -22,6 +23,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import SavingsIcon from '@mui/icons-material/Savings';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import { startOfWeek, endOfWeek, format, parseISO, isWithinInterval, addWeeks, differenceInWeeks } from 'date-fns';
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ReceiptIcon from "@mui/icons-material/Receipt";
@@ -61,6 +64,17 @@ export interface WeekData {
     remaining: number;
     percentUsed: number;
     receipts: ReceiptSummary[];
+}
+
+interface GroceryListAnalytics {
+    plannedItemsCount: number;
+    plannedTotal: number;
+    purchasedFromList: number;
+    purchasedFromListCount: number;
+    unplannedPurchases: number;
+    unplannedPurchasesCount: number;
+    adherenceRate: number;
+    savingsFromList: number;
 }
 
 const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
@@ -144,10 +158,76 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
         return weeks;
     }, [budget]);
 
+    // Calculate grocery list analytics for each week
+    const weeklyGroceryListAnalytics = useMemo((): Map<number, GroceryListAnalytics> => {
+        const analyticsMap = new Map<number, GroceryListAnalytics>();
+
+        if (!budget || !budget.plannedItems) return analyticsMap;
+
+        weeklyData.forEach(week => {
+            const weekItems = week.receipts.flatMap(r => r.items);
+
+            // Match purchased items to planned items (case-insensitive)
+            const plannedItemNames = new Set(
+                budget.plannedItems.map(pi => pi.itemName.toLowerCase())
+            );
+
+            const purchasedFromList = weekItems.filter(item =>
+                plannedItemNames.has(item.itemName.toLowerCase())
+            );
+
+            const unplannedPurchases = weekItems.filter(item =>
+                !plannedItemNames.has(item.itemName.toLowerCase())
+            );
+
+            const plannedTotal = budget.plannedItems.reduce(
+                (sum, item) => sum + item.estimatedCost,
+                0
+            );
+
+            const purchasedFromListTotal = purchasedFromList.reduce(
+                (sum, item) => sum + item.itemCost,
+                0
+            );
+
+            const unplannedTotal = unplannedPurchases.reduce(
+                (sum, item) => sum + item.itemCost,
+                0
+            );
+
+            const adherenceRate = weekItems.length > 0
+                ? (purchasedFromList.length / weekItems.length) * 100
+                : 0;
+
+            // Calculate savings: difference between planned cost and actual cost for planned items
+            let savingsFromList = 0;
+            purchasedFromList.forEach(purchased => {
+                const planned = budget.plannedItems.find(
+                    pi => pi.itemName.toLowerCase() === purchased.itemName.toLowerCase()
+                );
+                if (planned) {
+                    savingsFromList += (planned.estimatedCost - purchased.itemCost);
+                }
+            });
+
+            analyticsMap.set(week.weekNumber, {
+                plannedItemsCount: budget.plannedItems.length,
+                plannedTotal,
+                purchasedFromList: purchasedFromListTotal,
+                purchasedFromListCount: purchasedFromList.length,
+                unplannedPurchases: unplannedTotal,
+                unplannedPurchasesCount: unplannedPurchases.length,
+                adherenceRate,
+                savingsFromList
+            });
+        });
+
+        return analyticsMap;
+    }, [budget, weeklyData]);
+
     // Calculate total savings across all weeks
     const totalWeeklySavings = useMemo(() => {
         return weeklyData.reduce((total, week) => {
-            // Only count weeks where they saved (positive remaining)
             return total + (week.remaining > 0 ? week.remaining : 0);
         }, 0);
     }, [weeklyData]);
@@ -469,6 +549,23 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                     }}
                 />
                 <Chip
+                    icon={<PlaylistAddCheckIcon />}
+                    label="By Grocery List"
+                    onClick={() => onViewModeChange('groceryList')}
+                    color={viewMode === 'groceryList' ? 'primary' : 'default'}
+                    sx={{
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        ...(viewMode === 'groceryList' && {
+                            background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+                            color: 'white',
+                            '&:hover': {
+                                background: 'linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%)',
+                            }
+                        })
+                    }}
+                />
+                <Chip
                     icon={<TrendingUpIcon />}
                     label="Analytics"
                     onClick={() => onViewModeChange('analytics')}
@@ -493,6 +590,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                     const isExpanded = expandedWeeks.has(week.weekNumber);
                     const progressColor = getProgressColor(week.percentUsed);
                     const isWeekSelected = selectedWeekNumber === week.weekNumber;
+                    const weekAnalytics = weeklyGroceryListAnalytics.get(week.weekNumber);
 
                     const handleRowClick = () => {
                         if (viewMode === 'receiptDetail') {
@@ -627,6 +725,18 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                                             fontWeight: 600
                                                         }}
                                                     />
+                                                    {budget.plannedItems && budget.plannedItems.length > 0 && (
+                                                        <Chip
+                                                            icon={<PlaylistAddCheckIcon />}
+                                                            label="Has List"
+                                                            size="small"
+                                                            sx={{
+                                                                bgcolor: alpha('#7c3aed', 0.1),
+                                                                color: '#7c3aed',
+                                                                fontWeight: 600
+                                                            }}
+                                                        />
+                                                    )}
                                                 </Box>
                                             </Box>
                                         </Box>
@@ -634,7 +744,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
 
                                     {/* Budget Stats */}
                                     <Grid item xs={12} md={8}>
-                                        {/* BY WEEK VIEW - Shows budget breakdown */}
+                                        {/* BY WEEK VIEW */}
                                         {viewMode === 'week' && (
                                             <>
                                                 <Grid container spacing={2}>
@@ -741,7 +851,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                             </>
                                         )}
 
-                                        {/* BY RECEIPT DETAIL VIEW - Shows receipt-focused metrics */}
+                                        {/* BY RECEIPT DETAIL VIEW */}
                                         {viewMode === 'receiptDetail' && (
                                             <>
                                                 <Grid container spacing={2}>
@@ -796,8 +906,107 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                             </>
                                         )}
 
-                                        {/* ANALYTICS VIEW - Shows analytical metrics */}
-                                        {viewMode === 'analytics' && (
+                                        {/* BY GROCERY LIST VIEW */}
+                                        {viewMode === 'groceryList' && weekAnalytics && (
+                                            <>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={3}>
+                                                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: alpha('#7c3aed', 0.05) }}>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600, fontSize: '0.65rem' }}>
+                                                                List Budget
+                                                            </Typography>
+                                                            <Typography variant="h6" fontWeight={700} color="#7c3aed">
+                                                                ${weekAnalytics.plannedTotal.toFixed(2)}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                planned
+                                                            </Typography>
+                                                        </Paper>
+                                                    </Grid>
+                                                    <Grid item xs={3}>
+                                                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: alpha(maroonColor, 0.05) }}>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600, fontSize: '0.65rem' }}>
+                                                                Spent
+                                                            </Typography>
+                                                            <Typography variant="h6" fontWeight={700} color={maroonColor}>
+                                                                ${weekAnalytics.purchasedFromList.toFixed(2)}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                from list
+                                                            </Typography>
+                                                        </Paper>
+                                                    </Grid>
+                                                    <Grid item xs={3}>
+                                                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: alpha('#f59e0b', 0.05) }}>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600, fontSize: '0.65rem' }}>
+                                                                Unplanned
+                                                            </Typography>
+                                                            <Typography variant="h6" fontWeight={700} color="#f59e0b">
+                                                                ${weekAnalytics.unplannedPurchases.toFixed(2)}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                impulse
+                                                            </Typography>
+                                                        </Paper>
+                                                    </Grid>
+                                                    <Grid item xs={3}>
+                                                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: alpha(tealColor, 0.05) }}>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600, fontSize: '0.65rem' }}>
+                                                                Adherence
+                                                            </Typography>
+                                                            <Typography variant="h6" fontWeight={700} color={tealColor}>
+                                                                {weekAnalytics.adherenceRate.toFixed(0)}%
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                on list
+                                                            </Typography>
+                                                        </Paper>
+                                                    </Grid>
+                                                </Grid>
+
+                                                {/* Most Expensive List Item */}
+                                                {(() => {
+                                                    const weekItems = week.receipts.flatMap(r => r.items);
+                                                    const plannedItemNames = new Set(
+                                                        budget.plannedItems?.map(pi => pi.itemName.toLowerCase()) || []
+                                                    );
+                                                    const listItems = weekItems.filter(item =>
+                                                        plannedItemNames.has(item.itemName.toLowerCase())
+                                                    );
+                                                    const mostExpensive = listItems.sort((a, b) => b.itemCost - a.itemCost)[0];
+
+                                                    if (!mostExpensive) return null;
+
+                                                    return (
+                                                        <Box sx={{ mt: 2 }}>
+                                                            <Paper sx={{
+                                                                p: 1.5,
+                                                                bgcolor: alpha('#7c3aed', 0.05),
+                                                                border: `1px solid ${alpha('#7c3aed', 0.2)}`,
+                                                                borderRadius: 2
+                                                            }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Box>
+                                                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                                                            Most Expensive List Item
+                                                                        </Typography>
+                                                                        <Typography variant="body2" fontWeight={600}>
+                                                                            {mostExpensive.itemName}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                    <Typography variant="h6" fontWeight={700} color="#7c3aed">
+                                                                        ${mostExpensive.itemCost.toFixed(2)}
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Paper>
+                                                        </Box>
+                                                    );
+                                                })()}
+                                            </>
+                                        )}
+
+                                        {/* ANALYTICS VIEW */}
+                                        {viewMode === 'analytics' && weekAnalytics && (
                                             <>
                                                 <Grid container spacing={2}>
                                                     <Grid item xs={3}>
@@ -856,7 +1065,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                                     </Grid>
                                                 </Grid>
 
-                                                {/* Optimization Alert - Shows when there are spending issues */}
+                                                {/* Optimization Alert */}
                                                 {(() => {
                                                     const isOverBudget = week.remaining < 0;
                                                     const isHighUsage = week.percentUsed > 90;
@@ -907,7 +1116,6 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                                                     label="Optimize"
                                                                     icon={<LightbulbIcon />}
                                                                     onClick={() => {
-                                                                        // TODO: Open optimization dialog/panel for this specific week
                                                                         console.log('Optimize week:', week.weekNumber);
                                                                     }}
                                                                     sx={{

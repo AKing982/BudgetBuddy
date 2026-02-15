@@ -345,7 +345,6 @@ const TransactionsPage: React.FC = () => {
                     setCsvTransactions(filteredCSVTransactions);
                 } else {
                     setTransactions(safeTransactionResponse);
-                    setCsvTransactions(safeCsvTransactionResponse);
                 }
             } catch(error: any) {
                 console.error('Error fetching transactions:', error);

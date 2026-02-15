@@ -13,7 +13,7 @@ import {
 import {GroceryBudgetCreate} from "./GroceryBudgetCreate";
 import {
     Plus,
-    Calendar, ChevronRight, ChevronLeft, ListIcon
+    Calendar, ChevronRight, ChevronLeft, ListIcon, Camera
 } from 'lucide-react';
 import Sidebar from "./Sidebar";
 import GroceryBudgetTable, {ReceiptSummary, WeekData} from "./GroceryBudgetTable";
@@ -21,12 +21,14 @@ import { addMonths, format, subMonths, parseISO, endOfWeek, isWithinInterval, ad
 import ReceiptDetailPanel from "./ReceiptDetailPanel";
 import GroceryBudgetStatsPanel from "./GroceryBudgetStatsPanel";
 import GroceryAnalyticsPanel from "./GroceryAnalyticsPanel";
+import GroceryListStatsPanel from "./GroceryListStatsPanel";
 import GroceryListDialog, { GroceryListItem} from './GroceryListDialog';
 import GroceryOptimization from "./GroceryOptimization";
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import ReceiptScanDialog from './ReceiptScanDialog';
 
 type GroceryTrackerView = 'table' | 'create' | 'compare';
-export type ViewMode = 'week' | 'receiptDetail' | 'analytics';
+export type ViewMode = 'week' | 'receiptDetail' | 'analytics' | 'groceryList';
 
 const gradients = {
     blue: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
@@ -51,6 +53,7 @@ const GroceryTracker: React.FC = () => {
     const [viewMode, setViewMode] = useState<ViewMode>('week');
     const [createDialogOpen, setCreateDialogOpen] = useState<boolean>(false);
     const [groceryListDialogOpen, setGroceryListDialogOpen] = useState(false);
+    const [receiptScanDialogOpen, setReceiptScanDialogOpen] = useState(false);
     const [savedGroceryList, setSavedGroceryList] = useState<GroceryListItem[]>([]);
 
     const dummyBudgets = [
@@ -143,6 +146,25 @@ const GroceryTracker: React.FC = () => {
         console.log('Items:', items);
         setGroceryListDialogOpen(false);
         // TODO: Save to backend or state
+    };
+
+    const handleReceiptUpload = async (file: File, budgetId: number) => {
+        console.log('Uploading receipt:', file.name, 'to budget:', budgetId);
+
+        // TODO: Implement actual upload logic
+        // This would typically:
+        // 1. Upload the image to your backend
+        // 2. Process the receipt with OCR/AI
+        // 3. Extract items and prices
+        // 4. Associate with the selected budget
+
+        // Simulate API call
+        return new Promise<void>((resolve) => {
+            setTimeout(() => {
+                console.log('Receipt uploaded successfully!');
+                resolve();
+            }, 2000);
+        });
     };
 
     useEffect(() => {
@@ -285,7 +307,7 @@ const GroceryTracker: React.FC = () => {
         }
     };
 
-    const showRightPanel = ['week', 'receiptDetail', 'analytics'].includes(viewMode);
+    const showRightPanel = ['week', 'receiptDetail', 'analytics', 'groceryList'].includes(viewMode);
 
     const handleReceiptSelect = (receipt: ReceiptSummary) => {
         setSelectedReceipt(receipt);
@@ -415,6 +437,32 @@ const GroceryTracker: React.FC = () => {
                             >
                                 Create Budget
                             </Button>
+
+                            <Button
+                                variant="outlined"
+                                startIcon={<Camera size={18} />}
+                                onClick={() => setReceiptScanDialogOpen(true)}
+                                disabled={!selectedBudget}
+                                sx={{
+                                    ml: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderColor: alpha(theme.palette.divider, 0.8),
+                                    color: theme.palette.text.primary,
+                                    '&:hover': {
+                                        borderColor: '#7c3aed',
+                                        backgroundColor: alpha('#7c3aed', 0.05)
+                                    },
+                                    '&.Mui-disabled': {
+                                        borderColor: alpha(theme.palette.divider, 0.3),
+                                        color: theme.palette.text.disabled
+                                    }
+                                }}
+                            >
+                                Scan Receipt
+                            </Button>
+
                             <Button
                                 variant="outlined"
                                 startIcon={<ListIcon size={18} />}
@@ -505,6 +553,9 @@ const GroceryTracker: React.FC = () => {
                                             {viewMode === 'analytics' && (
                                                 <GroceryAnalyticsPanel budget={transformBudgetData(selectedBudget)} />
                                             )}
+                                            {viewMode === 'groceryList' && (
+                                                <GroceryListStatsPanel budget={transformBudgetData(selectedBudget)} />
+                                            )}
                                         </Box>
                                     </Grid>
                                 )}
@@ -520,6 +571,12 @@ const GroceryTracker: React.FC = () => {
                             onClose={() => setGroceryListDialogOpen(false)}
                             budgets={dummyBudgets}
                             onSave={handleSaveGroceryList}
+                        />
+                        <ReceiptScanDialog
+                            open={receiptScanDialogOpen}
+                            onClose={() => setReceiptScanDialogOpen(false)}
+                            budgets={dummyBudgets}
+                            onUpload={handleReceiptUpload}
                         />
                     </Box>
                 </Grow>
