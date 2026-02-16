@@ -1,5 +1,10 @@
-import {Box, Button, Dialog, FormControl, MenuItem, Select, Stack, Typography} from "@mui/material";
+import {Box, Button, Dialog, FormControl, MenuItem, Select, Stack, Typography, IconButton, alpha} from "@mui/material";
 import {useState} from "react";
+import CloseIcon from '@mui/icons-material/Close';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+
+const maroonColor = '#800000';
+const tealColor = '#0d9488';
 
 const MonthPickerDialog: React.FC<{
     open: boolean;
@@ -10,8 +15,6 @@ const MonthPickerDialog: React.FC<{
     const [selectedYear, setSelectedYear] = useState(currentMonth?.getFullYear() || new Date().getFullYear());
     const [selectedMonthIndex, setSelectedMonthIndex] = useState(currentMonth?.getMonth() || new Date().getMonth());
 
-    // Define gradient locally
-    const blueGradient = 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)';
     const months = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
@@ -29,28 +32,62 @@ const MonthPickerDialog: React.FC<{
         <Dialog
             open={open}
             onClose={onClose}
+            maxWidth="sm"
+            fullWidth
             PaperProps={{
                 sx: {
-                    borderRadius: 4,
-                    minWidth: 400,
-                    p: 2
+                    borderRadius: 3,
+                    maxHeight: '90vh'
                 }
             }}
         >
-            <Box sx={{ p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                    Select Month
-                </Typography>
+            {/* Header */}
+            <Box sx={{
+                background: `linear-gradient(135deg, ${maroonColor} 0%, #a00000 100%)`,
+                color: 'white',
+                p: 3,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <CalendarMonthIcon />
+                    <Box>
+                        <Typography variant="h6" fontWeight={600}>
+                            Select Month
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                            Choose a month and year
+                        </Typography>
+                    </Box>
+                </Box>
+                <IconButton onClick={onClose} sx={{ color: 'white' }}>
+                    <CloseIcon />
+                </IconButton>
+            </Box>
 
+            {/* Content */}
+            <Box sx={{ p: 3 }}>
                 {/* Year Selector */}
                 <FormControl fullWidth sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.primary' }}>
                         Year
                     </Typography>
                     <Select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(Number(e.target.value))}
-                        sx={{ borderRadius: 2 }}
+                        sx={{
+                            borderRadius: 2,
+                            '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: alpha('#e0e0e0', 0.8)
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: maroonColor
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: maroonColor
+                            }
+                        }}
                     >
                         {years.map(year => (
                             <MenuItem key={year} value={year}>{year}</MenuItem>
@@ -59,7 +96,7 @@ const MonthPickerDialog: React.FC<{
                 </FormControl>
 
                 {/* Month Grid */}
-                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 500 }}>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
                     Month
                 </Typography>
                 <Box sx={{
@@ -76,12 +113,21 @@ const MonthPickerDialog: React.FC<{
                             sx={{
                                 borderRadius: 2,
                                 textTransform: 'none',
-                                fontWeight: selectedMonthIndex === index ? 600 : 500,
+                                fontWeight: 600,
                                 py: 1.5,
-                                ...(selectedMonthIndex === index && {
-                                    background: blueGradient, // Use local gradient
+                                ...(selectedMonthIndex === index ? {
+                                    bgcolor: tealColor,
+                                    color: 'white',
                                     '&:hover': {
-                                        background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                                        bgcolor: '#0f766e'
+                                    }
+                                } : {
+                                    borderColor: alpha('#e0e0e0', 0.8),
+                                    color: 'text.primary',
+                                    '&:hover': {
+                                        borderColor: tealColor,
+                                        bgcolor: alpha(tealColor, 0.05),
+                                        color: tealColor
                                     }
                                 })
                             }}
@@ -90,37 +136,44 @@ const MonthPickerDialog: React.FC<{
                         </Button>
                     ))}
                 </Box>
+            </Box>
 
-                {/* Action Buttons */}
-                <Stack direction="row" spacing={2} justifyContent="flex-end">
-                    <Button
-                        onClick={onClose}
-                        sx={{
-                            textTransform: 'none',
-                            borderRadius: 2,
-                            fontWeight: 600,
-                            px: 3
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleConfirm}
-                        sx={{
-                            textTransform: 'none',
-                            borderRadius: 2,
-                            fontWeight: 600,
-                            px: 3,
-                            background: blueGradient, // Use local gradient
-                            '&:hover': {
-                                background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-                            }
-                        }}
-                    >
-                        Apply
-                    </Button>
-                </Stack>
+            {/* Footer */}
+            <Box sx={{ p: 3, pt: 0, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                <Button
+                    variant="outlined"
+                    onClick={onClose}
+                    sx={{
+                        textTransform: 'none',
+                        borderRadius: 2,
+                        fontWeight: 600,
+                        px: 3,
+                        borderColor: alpha('#e0e0e0', 0.8),
+                        color: 'text.primary',
+                        '&:hover': {
+                            borderColor: '#757575',
+                            bgcolor: alpha('#757575', 0.05)
+                        }
+                    }}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    variant="contained"
+                    onClick={handleConfirm}
+                    sx={{
+                        textTransform: 'none',
+                        borderRadius: 2,
+                        fontWeight: 600,
+                        px: 3,
+                        bgcolor: maroonColor,
+                        '&:hover': {
+                            bgcolor: '#a00000'
+                        }
+                    }}
+                >
+                    Apply
+                </Button>
             </Box>
         </Dialog>
     );

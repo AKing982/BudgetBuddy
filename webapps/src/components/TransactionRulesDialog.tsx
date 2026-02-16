@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     Button,
@@ -16,35 +15,38 @@ import {
     Switch,
     FormControlLabel,
     Divider,
-    Avatar,
     Stack,
     Paper,
     Collapse,
-    useTheme,
     alpha,
     Tooltip,
     Menu,
     MenuItem,
     Badge,
-    CircularProgress
+    CircularProgress,
+    Card
 } from '@mui/material';
-import {
-    Search,
-    Trash2,
-    Edit,
-    ChevronDown,
-    ChevronUp,
-    SlidersHorizontal,
-    TrendingUp,
-    DollarSign,
-    Tag,
-    CheckCircle2,
-    XCircle,
-    MoreVertical,
-    Eye,
-    EyeOff
-} from 'lucide-react';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import TuneIcon from '@mui/icons-material/Tune';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import LabelIcon from '@mui/icons-material/Label';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import SearchIcon from '@mui/icons-material/Search';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { TransactionRule } from '../services/TransactionRuleService';
+
+const maroonColor = '#800000';
+const tealColor = '#0d9488';
 
 interface TransactionRulesDialogProps {
     open: boolean;
@@ -65,7 +67,6 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                                                                            onToggleRule,
                                                                            onEditRule
                                                                        }) => {
-    const theme = useTheme();
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedRuleId, setExpandedRuleId] = useState<number | null>(null);
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
@@ -212,298 +213,429 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
             fullWidth
             PaperProps={{
                 sx: {
-                    borderRadius: 4,
+                    borderRadius: 3,
                     maxHeight: '90vh'
                 }
             }}
         >
-            <DialogTitle>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar
-                            sx={{
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                color: theme.palette.primary.main,
-                                width: 48,
-                                height: 48
+            {/* Header */}
+            <Box sx={{
+                background: `linear-gradient(135deg, ${maroonColor} 0%, #a00000 100%)`,
+                color: 'white',
+                p: 3,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <TuneIcon />
+                    <Box>
+                        <Typography variant="h6" fontWeight={600}>
+                            Transaction Rules
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                            Manage auto-categorization rules
+                        </Typography>
+                    </Box>
+                </Box>
+                <IconButton onClick={onClose} sx={{ color: 'white' }}>
+                    <CloseIcon />
+                </IconButton>
+            </Box>
+
+            <DialogContent sx={{ p: 0 }}>
+                <Box sx={{ p: 3 }}>
+                    {/* Stats Cards */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
+                        <Card sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: alpha(maroonColor, 0.05),
+                            border: `1px solid ${alpha(maroonColor, 0.1)}`
+                        }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                Total Rules
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 700, color: maroonColor }}>
+                                {loading ? '...' : stats.total}
+                            </Typography>
+                        </Card>
+                        <Card sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: alpha(tealColor, 0.05),
+                            border: `1px solid ${alpha(tealColor, 0.1)}`
+                        }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                Active
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 700, color: tealColor }}>
+                                {loading ? '...' : stats.active}
+                            </Typography>
+                        </Card>
+                        <Card sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: alpha('#ef4444', 0.05),
+                            border: `1px solid ${alpha('#ef4444', 0.1)}`
+                        }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                Inactive
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 700, color: '#ef4444' }}>
+                                {loading ? '...' : stats.inactive}
+                            </Typography>
+                        </Card>
+                        <Card sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: alpha('#8b5cf6', 0.05),
+                            border: `1px solid ${alpha('#8b5cf6', 0.1)}`
+                        }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                Total Matches
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b5cf6' }}>
+                                {loading ? '...' : stats.totalMatches}
+                            </Typography>
+                        </Card>
+                    </Box>
+
+                    {/* Search and Filters */}
+                    <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            placeholder="Search rules..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            disabled={loading}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: 'text.secondary' }} />
+                                    </InputAdornment>
+                                )
                             }}
-                        >
-                            <SlidersHorizontal size={24} />
-                        </Avatar>
-                        <Box>
-                            <Typography variant="h5" component="div" sx={{ fontWeight: 700 }}>
-                                Transaction Rules
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Manage auto-categorization rules
-                            </Typography>
-                        </Box>
-                    </Box>
-                </Box>
-            </DialogTitle>
-
-            <DialogContent dividers>
-                {/* Stats Cards */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
-                    <Paper sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                            Total Rules
-                        </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
-                            {loading ? '...' : stats.total}
-                        </Typography>
-                    </Paper>
-                    <Paper sx={{ p: 2, borderRadius: 3, bgcolor: alpha('#10b981', 0.05) }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                            Active
-                        </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#10b981' }}>
-                            {loading ? '...' : stats.active}
-                        </Typography>
-                    </Paper>
-                    <Paper sx={{ p: 2, borderRadius: 3, bgcolor: alpha('#ef4444', 0.05) }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                            Inactive
-                        </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#ef4444' }}>
-                            {loading ? '...' : stats.inactive}
-                        </Typography>
-                    </Paper>
-                    <Paper sx={{ p: 2, borderRadius: 3, bgcolor: alpha('#8b5cf6', 0.05) }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                            Total Matches
-                        </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b5cf6' }}>
-                            {loading ? '...' : stats.totalMatches}
-                        </Typography>
-                    </Paper>
-                </Box>
-
-                {/* Search and Filters */}
-                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                    <TextField
-                        fullWidth
-                        size="small"
-                        placeholder="Search rules..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        disabled={loading}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search size={18} />
-                                </InputAdornment>
-                            )
-                        }}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 3
-                            }
-                        }}
-                    />
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                            variant={filterActive === 'all' ? 'contained' : 'outlined'}
-                            onClick={() => setFilterActive('all')}
-                            size="small"
-                            disabled={loading}
-                            sx={{ borderRadius: 3, textTransform: 'none', minWidth: 80 }}
-                        >
-                            All
-                        </Button>
-                        <Button
-                            variant={filterActive === 'active' ? 'contained' : 'outlined'}
-                            onClick={() => setFilterActive('active')}
-                            size="small"
-                            disabled={loading}
-                            sx={{ borderRadius: 3, textTransform: 'none', minWidth: 80 }}
-                        >
-                            Active
-                        </Button>
-                        <Button
-                            variant={filterActive === 'inactive' ? 'contained' : 'outlined'}
-                            onClick={() => setFilterActive('inactive')}
-                            size="small"
-                            disabled={loading}
-                            sx={{ borderRadius: 3, textTransform: 'none', minWidth: 80 }}
-                        >
-                            Inactive
-                        </Button>
-                    </Box>
-                </Box>
-
-                {/* Sort Options */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                        Sort by:
-                    </Typography>
-                    <Chip
-                        label="Priority"
-                        onClick={() => setSortBy('priority')}
-                        variant={sortBy === 'priority' ? 'filled' : 'outlined'}
-                        size="small"
-                        disabled={loading}
-                        sx={{ borderRadius: 2 }}
-                    />
-                    <Chip
-                        label="Matches"
-                        onClick={() => setSortBy('matches')}
-                        variant={sortBy === 'matches' ? 'filled' : 'outlined'}
-                        size="small"
-                        disabled={loading}
-                        sx={{ borderRadius: 2 }}
-                    />
-                    <Chip
-                        label="Category"
-                        onClick={() => setSortBy('category')}
-                        variant={sortBy === 'category' ? 'filled' : 'outlined'}
-                        size="small"
-                        disabled={loading}
-                        sx={{ borderRadius: 2 }}
-                    />
-                </Box>
-
-                {/* Rules List */}
-                {loading ? (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            py: 8
-                        }}
-                    >
-                        <CircularProgress
-                            size={56}
-                            thickness={4}
                             sx={{
-                                mb: 3,
-                                color: theme.palette.primary.main
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2
+                                }
                             }}
                         />
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                            Loading Transaction Rules
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Please wait while we fetch your rules...
-                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                                variant={filterActive === 'all' ? 'contained' : 'outlined'}
+                                onClick={() => setFilterActive('all')}
+                                size="small"
+                                disabled={loading}
+                                sx={{
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    minWidth: 80,
+                                    fontWeight: 600,
+                                    ...(filterActive === 'all' && {
+                                        bgcolor: maroonColor,
+                                        '&:hover': { bgcolor: '#a00000' }
+                                    }),
+                                    ...(filterActive !== 'all' && {
+                                        borderColor: maroonColor,
+                                        color: maroonColor,
+                                        '&:hover': {
+                                            bgcolor: alpha(maroonColor, 0.05),
+                                            borderColor: maroonColor
+                                        }
+                                    })
+                                }}
+                            >
+                                All
+                            </Button>
+                            <Button
+                                variant={filterActive === 'active' ? 'contained' : 'outlined'}
+                                onClick={() => setFilterActive('active')}
+                                size="small"
+                                disabled={loading}
+                                sx={{
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    minWidth: 80,
+                                    fontWeight: 600,
+                                    ...(filterActive === 'active' && {
+                                        bgcolor: tealColor,
+                                        '&:hover': { bgcolor: '#0f766e' }
+                                    }),
+                                    ...(filterActive !== 'active' && {
+                                        borderColor: tealColor,
+                                        color: tealColor,
+                                        '&:hover': {
+                                            bgcolor: alpha(tealColor, 0.05),
+                                            borderColor: tealColor
+                                        }
+                                    })
+                                }}
+                            >
+                                Active
+                            </Button>
+                            <Button
+                                variant={filterActive === 'inactive' ? 'contained' : 'outlined'}
+                                onClick={() => setFilterActive('inactive')}
+                                size="small"
+                                disabled={loading}
+                                sx={{
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    minWidth: 90,
+                                    fontWeight: 600,
+                                    ...(filterActive === 'inactive' && {
+                                        bgcolor: '#ef4444',
+                                        '&:hover': { bgcolor: '#dc2626' }
+                                    }),
+                                    ...(filterActive !== 'inactive' && {
+                                        borderColor: '#ef4444',
+                                        color: '#ef4444',
+                                        '&:hover': {
+                                            bgcolor: alpha('#ef4444', 0.05),
+                                            borderColor: '#ef4444'
+                                        }
+                                    })
+                                }}
+                            >
+                                Inactive
+                            </Button>
+                        </Box>
                     </Box>
-                ) : filteredRules.length === 0 ? (
-                    <Paper
-                        sx={{
-                            p: 6,
-                            textAlign: 'center',
-                            borderRadius: 3,
-                            bgcolor: alpha(theme.palette.primary.main, 0.02)
-                        }}
-                    >
-                        <Avatar
+
+                    {/* Sort Options */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                        <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                            Sort by:
+                        </Typography>
+                        <Chip
+                            label="Priority"
+                            onClick={() => setSortBy('priority')}
+                            variant={sortBy === 'priority' ? 'filled' : 'outlined'}
+                            size="small"
+                            disabled={loading}
                             sx={{
-                                width: 64,
-                                height: 64,
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                color: theme.palette.primary.main,
-                                mx: 'auto',
-                                mb: 2
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                ...(sortBy === 'priority' && {
+                                    bgcolor: maroonColor,
+                                    color: 'white',
+                                    '&:hover': { bgcolor: '#a00000' }
+                                })
+                            }}
+                        />
+                        <Chip
+                            label="Matches"
+                            onClick={() => setSortBy('matches')}
+                            variant={sortBy === 'matches' ? 'filled' : 'outlined'}
+                            size="small"
+                            disabled={loading}
+                            sx={{
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                ...(sortBy === 'matches' && {
+                                    bgcolor: maroonColor,
+                                    color: 'white',
+                                    '&:hover': { bgcolor: '#a00000' }
+                                })
+                            }}
+                        />
+                        <Chip
+                            label="Category"
+                            onClick={() => setSortBy('category')}
+                            variant={sortBy === 'category' ? 'filled' : 'outlined'}
+                            size="small"
+                            disabled={loading}
+                            sx={{
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                ...(sortBy === 'category' && {
+                                    bgcolor: maroonColor,
+                                    color: 'white',
+                                    '&:hover': { bgcolor: '#a00000' }
+                                })
+                            }}
+                        />
+                    </Box>
+
+                    {/* Rules List */}
+                    {loading ? (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                py: 8
                             }}
                         >
-                            <SlidersHorizontal size={32} />
-                        </Avatar>
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                            {searchTerm ? 'No rules found' : 'No transaction rules yet'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {searchTerm
-                                ? `No rules match "${searchTerm}"`
-                                : 'Create rules from the transactions page to auto-categorize future transactions'}
-                        </Typography>
-                    </Paper>
-                ) : (
-                    <List sx={{ p: 0 }}>
-                        {filteredRules.map((rule, index) => {
-                            const isExpanded = expandedRuleId === rule.id;
-                            const priorityInfo = getPriorityLabel(rule.priority);
+                            <CircularProgress
+                                size={56}
+                                thickness={4}
+                                sx={{ mb: 3, color: maroonColor }}
+                            />
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                                Loading Transaction Rules
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Please wait while we fetch your rules...
+                            </Typography>
+                        </Box>
+                    ) : filteredRules.length === 0 ? (
+                        <Card
+                            sx={{
+                                p: 6,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                bgcolor: alpha(maroonColor, 0.02),
+                                border: `1px solid ${alpha(maroonColor, 0.1)}`
+                            }}
+                        >
+                            <Box sx={{
+                                width: 64,
+                                height: 64,
+                                borderRadius: '50%',
+                                bgcolor: alpha(maroonColor, 0.1),
+                                color: maroonColor,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mx: 'auto',
+                                mb: 2
+                            }}>
+                                <TuneIcon sx={{ fontSize: 32 }} />
+                            </Box>
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                                {searchTerm ? 'No rules found' : 'No transaction rules yet'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {searchTerm
+                                    ? `No rules match "${searchTerm}"`
+                                    : 'Create rules from the transactions page to auto-categorize future transactions'}
+                            </Typography>
+                        </Card>
+                    ) : (
+                        <List sx={{ p: 0 }}>
+                            {filteredRules.map((rule, index) => {
+                                const isExpanded = expandedRuleId === rule.id;
+                                const priorityInfo = getPriorityLabel(rule.priority);
 
-                            return (
-                                <Paper
-                                    key={rule.id || index}
-                                    elevation={0}
-                                    sx={{
-                                        mb: 2,
-                                        borderRadius: 3,
-                                        border: '1px solid',
-                                        borderColor: alpha(theme.palette.divider, 0.5),
-                                        overflow: 'hidden',
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                            borderColor: theme.palette.primary.main,
-                                            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`
-                                        }
-                                    }}
-                                >
-                                    <ListItem
+                                return (
+                                    <Card
+                                        key={rule.id || index}
                                         sx={{
-                                            p: 2.5,
-                                            cursor: 'pointer',
-                                            bgcolor: rule.isActive ? 'background.paper' : alpha(theme.palette.action.disabled, 0.05)
+                                            mb: 2,
+                                            borderRadius: 2,
+                                            border: `1px solid ${alpha(rule.isActive ? tealColor : '#ccc', 0.3)}`,
+                                            bgcolor: alpha(rule.isActive ? tealColor : '#ccc', 0.02),
+                                            overflow: 'hidden',
+                                            transition: 'all 0.2s',
+                                            '&:hover': {
+                                                borderColor: rule.isActive ? tealColor : maroonColor,
+                                                boxShadow: `0 4px 12px ${alpha(rule.isActive ? tealColor : maroonColor, 0.15)}`
+                                            }
                                         }}
                                     >
-                                        <Box sx={{ flex: 1 }}>
+                                        <ListItem
+                                            sx={{
+                                                p: 2.5,
+                                                display: 'block'
+                                            }}
+                                        >
                                             {/* Header Row */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                                                 <Chip
                                                     label={rule.categoryName || 'Unknown'}
-                                                    icon={<Tag size={14} />}
+                                                    icon={<LabelIcon sx={{ fontSize: 14 }} />}
                                                     sx={{
                                                         fontWeight: 600,
-                                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                                        color: theme.palette.primary.main,
-                                                        borderRadius: 2
+                                                        bgcolor: alpha(maroonColor, 0.1),
+                                                        color: maroonColor,
+                                                        borderRadius: 2,
+                                                        '& .MuiChip-icon': { color: maroonColor }
                                                     }}
                                                 />
                                                 <Chip
                                                     label={priorityInfo.label}
                                                     size="small"
                                                     sx={{
-                                                        bgcolor: alpha(priorityInfo.color, 0.1),
+                                                        bgcolor: alpha(priorityInfo.color, 0.15),
                                                         color: priorityInfo.color,
                                                         fontSize: '0.7rem',
                                                         height: 22,
                                                         fontWeight: 600
                                                     }}
                                                 />
-                                                <Badge
-                                                    badgeContent={rule.matchCount ?? 0}
-                                                    color="primary"
-                                                    sx={{ ml: 'auto' }}
-                                                >
+                                                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Badge
+                                                        badgeContent={rule.matchCount ?? 0}
+                                                        sx={{
+                                                            '& .MuiBadge-badge': {
+                                                                bgcolor: maroonColor,
+                                                                color: 'white',
+                                                                fontWeight: 600
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Chip
+                                                            icon={<TrendingUpIcon sx={{ fontSize: 14 }} />}
+                                                            label="Matches"
+                                                            size="small"
+                                                            variant="outlined"
+                                                            sx={{
+                                                                borderRadius: 2,
+                                                                borderColor: alpha(maroonColor, 0.3),
+                                                                color: maroonColor,
+                                                                '& .MuiChip-icon': { color: maroonColor }
+                                                            }}
+                                                        />
+                                                    </Badge>
                                                     <Chip
-                                                        icon={<TrendingUp size={14} />}
-                                                        label="Matches"
+                                                        icon={rule.isActive ? <CheckCircleIcon sx={{ fontSize: 14 }} /> : <CancelIcon sx={{ fontSize: 14 }} />}
+                                                        label={rule.isActive ? 'Active' : 'Inactive'}
                                                         size="small"
-                                                        variant="outlined"
-                                                        sx={{ borderRadius: 2 }}
+                                                        sx={{
+                                                            bgcolor: alpha(rule.isActive ? tealColor : '#ef4444', 0.15),
+                                                            color: rule.isActive ? tealColor : '#ef4444',
+                                                            fontWeight: 600,
+                                                            '& .MuiChip-icon': {
+                                                                color: rule.isActive ? tealColor : '#ef4444'
+                                                            }
+                                                        }}
                                                     />
-                                                </Badge>
+                                                </Box>
                                             </Box>
 
                                             {/* Conditions Preview */}
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                                                 {rule.merchantRule && (
                                                     <Chip
+                                                        icon={<StorefrontIcon sx={{ fontSize: 12 }} />}
                                                         label={`Merchant: ${rule.merchantRule}`}
                                                         size="small"
                                                         variant="outlined"
-                                                        sx={{ fontSize: '0.75rem', borderRadius: 2 }}
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            borderRadius: 2,
+                                                            borderColor: alpha(tealColor, 0.3),
+                                                            '& .MuiChip-icon': { color: tealColor }
+                                                        }}
                                                     />
                                                 )}
                                                 {rule.descriptionRule && (
                                                     <Chip
+                                                        icon={<DescriptionIcon sx={{ fontSize: 12 }} />}
                                                         label={`Description: ${rule.descriptionRule}`}
                                                         size="small"
                                                         variant="outlined"
-                                                        sx={{ fontSize: '0.75rem', borderRadius: 2 }}
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            borderRadius: 2,
+                                                            borderColor: alpha(tealColor, 0.3),
+                                                            '& .MuiChip-icon': { color: tealColor }
+                                                        }}
                                                     />
                                                 )}
                                                 {((rule.amountMin ?? 0) > 0 || (rule.amountMax ?? 0) > 0) && (
@@ -511,20 +643,33 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                                                         label={`$${(rule.amountMin ?? 0).toFixed(2)} - $${(rule.amountMax ?? 0).toFixed(2)}`}
                                                         size="small"
                                                         variant="outlined"
-                                                        icon={<DollarSign size={12} />}
-                                                        sx={{ fontSize: '0.75rem', borderRadius: 2 }}
+                                                        icon={<AttachMoneyIcon sx={{ fontSize: 12 }} />}
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            borderRadius: 2,
+                                                            borderColor: alpha(tealColor, 0.3),
+                                                            '& .MuiChip-icon': { color: tealColor }
+                                                        }}
                                                     />
                                                 )}
                                             </Box>
 
                                             {/* Actions */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <FormControlLabel
                                                     control={
                                                         <Switch
                                                             checked={rule.isActive ?? false}
                                                             onChange={() => handleToggleRuleActive(rule.id!, rule.isActive)}
                                                             size="small"
+                                                            sx={{
+                                                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                                                    color: tealColor,
+                                                                },
+                                                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                                    backgroundColor: tealColor,
+                                                                }
+                                                            }}
                                                         />
                                                     }
                                                     label={
@@ -535,181 +680,174 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                                                 />
 
                                                 <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
-                                                    <Tooltip title={isExpanded ? 'Hide details' : 'Show details'}>
+                                                    <Tooltip title={isExpanded ? 'Hide details' : 'Show details'} arrow>
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => handleToggleExpand(rule.id!)}
+                                                            sx={{
+                                                                color: maroonColor,
+                                                                '&:hover': { bgcolor: alpha(maroonColor, 0.1) }
+                                                            }}
                                                         >
-                                                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                                            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                                                         </IconButton>
                                                     </Tooltip>
 
                                                     {onEditRule && (
-                                                        <Tooltip title="Edit rule">
+                                                        <Tooltip title="Edit rule" arrow>
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={() => onEditRule(rule)}
                                                                 sx={{
-                                                                    color: theme.palette.primary.main,
-                                                                    '&:hover': {
-                                                                        bgcolor: alpha(theme.palette.primary.main, 0.1)
-                                                                    }
+                                                                    color: tealColor,
+                                                                    '&:hover': { bgcolor: alpha(tealColor, 0.1) }
                                                                 }}
                                                             >
-                                                                <Edit size={18} />
+                                                                <EditIcon fontSize="small" />
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
 
-                                                    <Tooltip title="More options">
+                                                    <Tooltip title="More options" arrow>
                                                         <IconButton
                                                             size="small"
                                                             onClick={(e) => handleOpenMenu(e, rule)}
+                                                            sx={{
+                                                                color: 'text.secondary',
+                                                                '&:hover': { bgcolor: 'action.hover' }
+                                                            }}
                                                         >
-                                                            <MoreVertical size={18} />
+                                                            <MoreVertIcon fontSize="small" />
                                                         </IconButton>
                                                     </Tooltip>
                                                 </Box>
                                             </Box>
-                                        </Box>
-                                    </ListItem>
+                                        </ListItem>
 
-                                    {/* Expanded Details */}
-                                    <Collapse in={isExpanded}>
-                                        <Divider />
-                                        <Box sx={{ p: 2.5, bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
-                                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                                                Rule Details
-                                            </Typography>
-                                            <Stack spacing={1.5}>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                        Priority Level
-                                                    </Typography>
-                                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                        {rule.priority ?? 'Not Set'} - {priorityInfo.label}
-                                                    </Typography>
-                                                </Box>
-
-                                                {rule.merchantRule && (
+                                        {/* Expanded Details */}
+                                        <Collapse in={isExpanded}>
+                                            <Divider />
+                                            <Box sx={{ p: 2.5, bgcolor: alpha(maroonColor, 0.02) }}>
+                                                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                                                    Rule Details
+                                                </Typography>
+                                                <Stack spacing={1.5}>
                                                     <Box>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                            Merchant Rule
+                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                            Priority Level
                                                         </Typography>
                                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                            {rule.merchantRule}
+                                                            {rule.priority ?? 'Not Set'} - {priorityInfo.label}
                                                         </Typography>
                                                     </Box>
-                                                )}
 
-                                                {rule.descriptionRule && (
+                                                    {rule.merchantRule && (
+                                                        <Box>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                                Merchant Rule
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                                {rule.merchantRule}
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+
+                                                    {rule.descriptionRule && (
+                                                        <Box>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                                Description Rule
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                                {rule.descriptionRule}
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+
+                                                    {rule.extendedDescriptionRule && (
+                                                        <Box>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                                Extended Description Rule
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                                {rule.extendedDescriptionRule}
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+
+                                                    {((rule.amountMin ?? 0) > 0 || (rule.amountMax ?? 0) > 0) && (
+                                                        <Box>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                                Amount Range
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                                ${(rule.amountMin ?? 0).toFixed(2)} - ${(rule.amountMax ?? 0).toFixed(2)}
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+
                                                     <Box>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                            Description Rule
+                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                            Times Matched
                                                         </Typography>
                                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                            {rule.descriptionRule}
+                                                            {rule.matchCount ?? 0} transactions
                                                         </Typography>
                                                     </Box>
-                                                )}
 
-                                                {rule.extendedDescriptionRule && (
-                                                    <Box>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                            Extended Description Rule
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                            {rule.extendedDescriptionRule}
-                                                        </Typography>
-                                                    </Box>
-                                                )}
+                                                    {rule.dateCreated && (
+                                                        <Box>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                                Created
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                                {new Date(rule.dateCreated).toLocaleDateString('en-US', {
+                                                                    year: 'numeric',
+                                                                    month: 'long',
+                                                                    day: 'numeric'
+                                                                })}
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
 
-                                                {((rule.amountMin ?? 0) > 0 || (rule.amountMax ?? 0) > 0) && (
-                                                    <Box>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                            Amount Range
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                            ${(rule.amountMin ?? 0).toFixed(2)} - ${(rule.amountMax ?? 0).toFixed(2)}
-                                                        </Typography>
-                                                    </Box>
-                                                )}
-
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                        Times Matched
-                                                    </Typography>
-                                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                        {rule.matchCount ?? 0} transactions
-                                                    </Typography>
-                                                </Box>
-
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                        Status
-                                                    </Typography>
-                                                    <Chip
-                                                        icon={rule.isActive ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                                                        label={rule.isActive ? 'Active' : 'Inactive'}
-                                                        size="small"
-                                                        sx={{
-                                                            bgcolor: rule.isActive
-                                                                ? alpha('#10b981', 0.1)
-                                                                : alpha('#ef4444', 0.1),
-                                                            color: rule.isActive ? '#10b981' : '#ef4444',
-                                                            fontWeight: 600
-                                                        }}
-                                                    />
-                                                </Box>
-
-                                                {rule.dateCreated && (
-                                                    <Box>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                            Created
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                            {new Date(rule.dateCreated).toLocaleDateString('en-US', {
-                                                                year: 'numeric',
-                                                                month: 'long',
-                                                                day: 'numeric'
-                                                            })}
-                                                        </Typography>
-                                                    </Box>
-                                                )}
-
-                                                {rule.dateModified && (
-                                                    <Box>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                            Last Modified
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                            {new Date(rule.dateModified).toLocaleDateString('en-US', {
-                                                                year: 'numeric',
-                                                                month: 'long',
-                                                                day: 'numeric'
-                                                            })}
-                                                        </Typography>
-                                                    </Box>
-                                                )}
-                                            </Stack>
-                                        </Box>
-                                    </Collapse>
-                                </Paper>
-                            );
-                        })}
-                    </List>
-                )}
+                                                    {rule.dateModified && (
+                                                        <Box>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+                                                                Last Modified
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                                {new Date(rule.dateModified).toLocaleDateString('en-US', {
+                                                                    year: 'numeric',
+                                                                    month: 'long',
+                                                                    day: 'numeric'
+                                                                })}
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+                                                </Stack>
+                                            </Box>
+                                        </Collapse>
+                                    </Card>
+                                );
+                            })}
+                        </List>
+                    )}
+                </Box>
             </DialogContent>
 
-            <DialogActions sx={{ px: 3, py: 2 }}>
+            {/* Footer */}
+            <DialogActions sx={{ p: 3, pt: 2 }}>
                 <Button
                     onClick={onClose}
                     variant="contained"
                     sx={{
                         textTransform: 'none',
                         fontWeight: 600,
-                        borderRadius: 3,
-                        px: 4
+                        borderRadius: 2,
+                        px: 4,
+                        bgcolor: maroonColor,
+                        '&:hover': {
+                            bgcolor: '#a00000'
+                        }
                     }}
                 >
                     Close
@@ -723,7 +861,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                 onClose={handleCloseMenu}
                 PaperProps={{
                     sx: {
-                        borderRadius: 3,
+                        borderRadius: 2,
                         minWidth: 180
                     }
                 }}
@@ -737,7 +875,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                             }}
                         >
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                {selectedRule.isActive ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {selectedRule.isActive ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                                 <Typography variant="body2">
                                     {selectedRule.isActive ? 'Deactivate' : 'Activate'}
                                 </Typography>
@@ -752,7 +890,7 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                                 }}
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                    <Edit size={18} />
+                                    <EditIcon fontSize="small" />
                                     <Typography variant="body2">Edit</Typography>
                                 </Box>
                             </MenuItem>
@@ -763,10 +901,10 @@ const TransactionRulesDialog: React.FC<TransactionRulesDialogProps> = ({
                         <MenuItem
                             onClick={() => handleDeleteRule(selectedRule.id!)}
                             disabled={deletingRuleId === selectedRule.id}
-                            sx={{ color: 'error.main' }}
+                            sx={{ color: '#dc2626' }}
                         >
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Trash2 size={18} />
+                                <DeleteIcon fontSize="small" />
                                 <Typography variant="body2">
                                     {deletingRuleId === selectedRule.id ? 'Deleting...' : 'Delete'}
                                 </Typography>
