@@ -1,3 +1,6 @@
+
+
+
 import {
     Box,
     LinearProgress,
@@ -19,6 +22,7 @@ import {
 import React, {useMemo, useState} from "react";
 import {BudgetRunnerResult} from "../services/BudgetRunnerService";
 import { Table as TableIcon, BarChart3 } from 'lucide-react';
+import BudgetCategoryCard from "./BudgetCategoryCard";
 
 interface BudgetOverviewProps {
     isLoading: boolean;
@@ -186,125 +190,162 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) =>
             <Grid container spacing={2}>
                 {/* Income Card */}
                 <Grid item xs={12} md={4}>
-                    <Card sx={{
-                        p: 2.5,
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${alpha('#2563eb', 0.1)} 0%, ${alpha('#2563eb', 0.05)} 100%)`,
-                        border: `1px solid ${alpha('#2563eb', 0.2)}`
-                    }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
-                            Income
-                        </Typography>
-                        <Box sx={{ mb: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">Budgeted</Typography>
-                                <Typography variant="body2" fontWeight={600}>{formatCurrency(totals.income.budgeted)}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">Actual</Typography>
-                                <Typography variant="body2" fontWeight={700} color="#2563eb">{formatCurrency(totals.income.actual)}</Typography>
-                            </Box>
-                        </Box>
-                        <LinearProgress
-                            variant="determinate"
-                            value={Math.min((totals.income.actual / totals.income.budgeted) * 100, 100)}
-                            sx={{
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: alpha('#2563eb', 0.2),
-                                '& .MuiLinearProgress-bar': {
-                                    bgcolor: '#2563eb',
-                                    borderRadius: 4
-                                }
-                            }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            {formatCurrency(totals.income.remaining)} remaining
-                        </Typography>
-                    </Card>
+                    <BudgetCategoryCard
+                        categoryName="Income"
+                        budgeted={totals.income.budgeted}
+                        actual={totals.income.actual}
+                        remaining={totals.income.remaining}
+                        compact={false}
+                    />
                 </Grid>
 
                 {/* Expenses Card */}
                 <Grid item xs={12} md={4}>
-                    <Card sx={{
-                        p: 2.5,
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${alpha('#dc2626', 0.1)} 0%, ${alpha('#dc2626', 0.05)} 100%)`,
-                        border: `1px solid ${alpha('#dc2626', 0.2)}`
-                    }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
-                            Expenses
-                        </Typography>
-                        <Box sx={{ mb: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">Budgeted</Typography>
-                                <Typography variant="body2" fontWeight={600}>{formatCurrency(totals.expenses.budgeted)}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">Actual</Typography>
-                                <Typography variant="body2" fontWeight={700} color="#dc2626">{formatCurrency(totals.expenses.actual)}</Typography>
-                            </Box>
-                        </Box>
-                        <LinearProgress
-                            variant="determinate"
-                            value={Math.min((totals.expenses.actual / totals.expenses.budgeted) * 100, 100)}
-                            sx={{
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: alpha(getProgressColor(totals.expenses.actual, totals.expenses.budgeted), 0.2),
-                                '& .MuiLinearProgress-bar': {
-                                    bgcolor: getProgressColor(totals.expenses.actual, totals.expenses.budgeted),
-                                    borderRadius: 4
-                                }
-                            }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            {formatCurrency(Math.abs(totals.expenses.remaining))} {totals.expenses.remaining >= 0 ? 'remaining' : 'over'}
-                        </Typography>
-                    </Card>
+                    <BudgetCategoryCard
+                        categoryName="Expenses"
+                        budgeted={totals.expenses.budgeted}
+                        actual={totals.expenses.actual}
+                        remaining={totals.expenses.remaining}
+                        compact={false}
+                    />
                 </Grid>
 
                 {/* Savings Card */}
                 <Grid item xs={12} md={4}>
-                    <Card sx={{
-                        p: 2.5,
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${alpha(tealColor, 0.1)} 0%, ${alpha(tealColor, 0.05)} 100%)`,
-                        border: `1px solid ${alpha(tealColor, 0.2)}`
-                    }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
-                            Savings
-                        </Typography>
-                        <Box sx={{ mb: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">Target</Typography>
-                                <Typography variant="body2" fontWeight={600}>{formatCurrency(totals.savings.budgeted)}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">Saved</Typography>
-                                <Typography variant="body2" fontWeight={700} color={tealColor}>{formatCurrency(totals.savings.actual)}</Typography>
-                            </Box>
-                        </Box>
-                        <LinearProgress
-                            variant="determinate"
-                            value={Math.min((totals.savings.actual / totals.savings.budgeted) * 100, 100)}
-                            sx={{
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: alpha(tealColor, 0.2),
-                                '& .MuiLinearProgress-bar': {
-                                    bgcolor: tealColor,
-                                    borderRadius: 4
-                                }
-                            }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            {formatCurrency(totals.savings.remaining)} to goal
-                        </Typography>
-                    </Card>
+                    <BudgetCategoryCard
+                        categoryName="Savings"
+                        budgeted={totals.savings.budgeted}
+                        actual={totals.savings.actual}
+                        remaining={totals.savings.remaining}
+                        compact={false}
+                    />
                 </Grid>
             </Grid>
         </Box>
+        // <Box>
+        //     {/* Category Cards */}
+        //     <Grid container spacing={2}>
+        //         {/* Income Card */}
+        //         <Grid item xs={12} md={4}>
+        //             <Card sx={{
+        //                 p: 2.5,
+        //                 borderRadius: 2,
+        //                 background: `linear-gradient(135deg, ${alpha('#2563eb', 0.1)} 0%, ${alpha('#2563eb', 0.05)} 100%)`,
+        //                 border: `1px solid ${alpha('#2563eb', 0.2)}`
+        //             }}>
+        //                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
+        //                     Income
+        //                 </Typography>
+        //                 <Box sx={{ mb: 2 }}>
+        //                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        //                         <Typography variant="caption" color="text.secondary">Budgeted</Typography>
+        //                         <Typography variant="body2" fontWeight={600}>{formatCurrency(totals.income.budgeted)}</Typography>
+        //                     </Box>
+        //                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        //                         <Typography variant="caption" color="text.secondary">Actual</Typography>
+        //                         <Typography variant="body2" fontWeight={700} color="#2563eb">{formatCurrency(totals.income.actual)}</Typography>
+        //                     </Box>
+        //                 </Box>
+        //                 <LinearProgress
+        //                     variant="determinate"
+        //                     value={Math.min((totals.income.actual / totals.income.budgeted) * 100, 100)}
+        //                     sx={{
+        //                         height: 8,
+        //                         borderRadius: 4,
+        //                         bgcolor: alpha('#2563eb', 0.2),
+        //                         '& .MuiLinearProgress-bar': {
+        //                             bgcolor: '#2563eb',
+        //                             borderRadius: 4
+        //                         }
+        //                     }}
+        //                 />
+        //                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+        //                     {formatCurrency(totals.income.remaining)} remaining
+        //                 </Typography>
+        //             </Card>
+        //         </Grid>
+        //
+        //         {/* Expenses Card */}
+        //         <Grid item xs={12} md={4}>
+        //             <Card sx={{
+        //                 p: 2.5,
+        //                 borderRadius: 2,
+        //                 background: `linear-gradient(135deg, ${alpha('#dc2626', 0.1)} 0%, ${alpha('#dc2626', 0.05)} 100%)`,
+        //                 border: `1px solid ${alpha('#dc2626', 0.2)}`
+        //             }}>
+        //                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
+        //                     Expenses
+        //                 </Typography>
+        //                 <Box sx={{ mb: 2 }}>
+        //                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        //                         <Typography variant="caption" color="text.secondary">Budgeted</Typography>
+        //                         <Typography variant="body2" fontWeight={600}>{formatCurrency(totals.expenses.budgeted)}</Typography>
+        //                     </Box>
+        //                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        //                         <Typography variant="caption" color="text.secondary">Actual</Typography>
+        //                         <Typography variant="body2" fontWeight={700} color="#dc2626">{formatCurrency(totals.expenses.actual)}</Typography>
+        //                     </Box>
+        //                 </Box>
+        //                 <LinearProgress
+        //                     variant="determinate"
+        //                     value={Math.min((totals.expenses.actual / totals.expenses.budgeted) * 100, 100)}
+        //                     sx={{
+        //                         height: 8,
+        //                         borderRadius: 4,
+        //                         bgcolor: alpha(getProgressColor(totals.expenses.actual, totals.expenses.budgeted), 0.2),
+        //                         '& .MuiLinearProgress-bar': {
+        //                             bgcolor: getProgressColor(totals.expenses.actual, totals.expenses.budgeted),
+        //                             borderRadius: 4
+        //                         }
+        //                     }}
+        //                 />
+        //                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+        //                     {formatCurrency(Math.abs(totals.expenses.remaining))} {totals.expenses.remaining >= 0 ? 'remaining' : 'over'}
+        //                 </Typography>
+        //             </Card>
+        //         </Grid>
+        //
+        //         {/* Savings Card */}
+        //         <Grid item xs={12} md={4}>
+        //             <Card sx={{
+        //                 p: 2.5,
+        //                 borderRadius: 2,
+        //                 background: `linear-gradient(135deg, ${alpha(tealColor, 0.1)} 0%, ${alpha(tealColor, 0.05)} 100%)`,
+        //                 border: `1px solid ${alpha(tealColor, 0.2)}`
+        //             }}>
+        //                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
+        //                     Savings
+        //                 </Typography>
+        //                 <Box sx={{ mb: 2 }}>
+        //                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        //                         <Typography variant="caption" color="text.secondary">Target</Typography>
+        //                         <Typography variant="body2" fontWeight={600}>{formatCurrency(totals.savings.budgeted)}</Typography>
+        //                     </Box>
+        //                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        //                         <Typography variant="caption" color="text.secondary">Saved</Typography>
+        //                         <Typography variant="body2" fontWeight={700} color={tealColor}>{formatCurrency(totals.savings.actual)}</Typography>
+        //                     </Box>
+        //                 </Box>
+        //                 <LinearProgress
+        //                     variant="determinate"
+        //                     value={Math.min((totals.savings.actual / totals.savings.budgeted) * 100, 100)}
+        //                     sx={{
+        //                         height: 8,
+        //                         borderRadius: 4,
+        //                         bgcolor: alpha(tealColor, 0.2),
+        //                         '& .MuiLinearProgress-bar': {
+        //                             bgcolor: tealColor,
+        //                             borderRadius: 4
+        //                         }
+        //                     }}
+        //                 />
+        //                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+        //                     {formatCurrency(totals.savings.remaining)} to goal
+        //                 </Typography>
+        //             </Card>
+        //         </Grid>
+        //     </Grid>
+        // </Box>
     );
 
     return (

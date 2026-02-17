@@ -47,6 +47,7 @@ import UserService from "../services/UserService";
 import TransactionCategoryService from "../services/TransactionCategoryService";
 import BudgetOverview from "./BudgetOverview";
 import TopExpenseCategory from "./TopExpenseCategory";
+import BudgetSummaryCard from "./BudgetSummaryCard";
 
 interface DateArrays {
     startDate: [number, number, number];
@@ -811,200 +812,250 @@ const BudgetPage: React.FC = () => {
                     <Grid container spacing={3} sx={{ mb: 4 }}>
                         {/* Total Budget */}
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                p: 3,
-                                borderRadius: 4,
-                                height: '100%',
-                                background: gradients.blue,
-                                color: 'white',
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 0,
-                                    width: '50%',
-                                    height: '100%',
-                                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',
-                                    transform: 'skewX(-20deg) translateX(10%)',
-                                }
-                            }}>
-                                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>
-                                    Total Budget
-                                </Typography>
-                                {isLoading ? (
-                                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
-                                ) : (
-                                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                        ${budgetStats.totalBudget.toLocaleString()}
-                                    </Typography>
-                                )}
-                                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                                    for {format(currentMonth, 'MMMM yyyy')}
-                                </Typography>
-                            </Card>
+                            <BudgetSummaryCard
+                                title="Total Budget"
+                                amount={budgetStats.totalBudget}
+                                budgeted={budgetStats.totalBudget}
+                                currentMonth={currentMonth}
+                                isLoading={isLoading}
+                            />
                         </Grid>
 
                         {/* Remaining Budget */}
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                p: 3,
-                                borderRadius: 4,
-                                height: '100%',
-                                background: gradients.green,
-                                color: 'white',
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 0,
-                                    width: '50%',
-                                    height: '100%',
-                                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',
-                                    transform: 'skewX(-20deg) translateX(10%)',
-                                }
-                            }}>
-                                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>
-                                    Remaining
-                                </Typography>
-                                {isLoading ? (
-                                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
-                                ) : (
-                                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                        {formatCurrency(budgetStats.remaining)}
-                                    </Typography>
-                                )}
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                                        {metrics.daysRemaining} days left
-                                    </Typography>
-                                    <Chip
-                                        label={`$${Math.round(metrics.dailyBudget)}/day`}
-                                        size="small"
-                                        sx={{
-                                            ml: 1,
-                                            bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                            color: 'white',
-                                            fontWeight: 600,
-                                            height: 20,
-                                            fontSize: '0.7rem'
-                                        }}
-                                    />
-                                </Box>
-                            </Card>
+                            <BudgetSummaryCard
+                                title="Remaining"
+                                amount={budgetStats.remaining}
+                                budgeted={budgetStats.totalBudget}
+                                currentMonth={currentMonth}
+                                isLoading={isLoading}
+                            />
                         </Grid>
 
                         {/* Total Spent */}
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                p: 3,
-                                borderRadius: 4,
-                                height: '100%',
-                                background: gradients.purple,
-                                color: 'white',
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 0,
-                                    width: '50%',
-                                    height: '100%',
-                                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',
-                                    transform: 'skewX(-20deg) translateX(10%)',
-                                }
-                            }}>
-                                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>
-                                    Total Spent
-                                </Typography>
-                                {isLoading ? (
-                                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
-                                ) : (
-                                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                        ${budgetStats.totalSpent.toLocaleString()}
-                                    </Typography>
-                                )}
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                                        Avg. ${Math.round(metrics.actualSpendRate)}/day
-                                    </Typography>
-                                    {metrics.isUnderBudget ? (
-                                        <Chip
-                                            label="Under budget"
-                                            size="small"
-                                            sx={{
-                                                ml: 1,
-                                                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                                color: 'white',
-                                                fontWeight: 600,
-                                                height: 20,
-                                                fontSize: '0.7rem'
-                                            }}
-                                        />
-                                    ) : (
-                                        <Chip
-                                            label="Over budget"
-                                            size="small"
-                                            sx={{
-                                                ml: 1,
-                                                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                                color: 'white',
-                                                fontWeight: 600,
-                                                height: 20,
-                                                fontSize: '0.7rem'
-                                            }}
-                                        />
-                                    )}
-                                </Box>
-                            </Card>
+                            <BudgetSummaryCard
+                                title="Total Spent"
+                                amount={budgetStats.totalSpent}
+                                budgeted={budgetStats.totalBudget}
+                                currentMonth={currentMonth}
+                                isLoading={isLoading}
+                                show_alert={!metrics.isUnderBudget}
+                                onAlertClick={() => {/* handle over-budget alert */ }}
+                            />
                         </Grid>
 
                         {/* Total Saved */}
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                p: 3,
-                                borderRadius: 4,
-                                height: '100%',
-                                background: gradients.teal,
-                                color: 'white',
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 0,
-                                    width: '50%',
-                                    height: '100%',
-                                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',
-                                    transform: 'skewX(-20deg) translateX(10%)',
-                                }
-                            }}>
-                                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>
-                                    Total Saved
-                                </Typography>
-                                {isLoading ? (
-                                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
-                                ) : (
-                                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                        ${budgetStats.totalSaved.toLocaleString()}
-                                    </Typography>
-                                )}
-                                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                                    across all categories
-                                </Typography>
-                            </Card>
+                            <BudgetSummaryCard
+                                title="Total Saved"
+                                amount={budgetStats.totalSaved}
+                                budgeted={budgetStats.totalBudget}
+                                currentMonth={currentMonth}
+                                isLoading={isLoading}
+                            />
                         </Grid>
                     </Grid>
                 </Grow>
+                {/*<Grow in={animateIn} timeout={800}>*/}
+                {/*    <Grid container spacing={3} sx={{ mb: 4 }}>*/}
+                {/*        /!* Total Budget *!/*/}
+                {/*        <Grid item xs={12} sm={6} md={3}>*/}
+                {/*            <Card sx={{*/}
+                {/*                p: 3,*/}
+                {/*                borderRadius: 4,*/}
+                {/*                height: '100%',*/}
+                {/*                background: gradients.blue,*/}
+                {/*                color: 'white',*/}
+                {/*                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',*/}
+                {/*                position: 'relative',*/}
+                {/*                overflow: 'hidden',*/}
+                {/*                '&::after': {*/}
+                {/*                    content: '""',*/}
+                {/*                    position: 'absolute',*/}
+                {/*                    top: 0,*/}
+                {/*                    right: 0,*/}
+                {/*                    width: '50%',*/}
+                {/*                    height: '100%',*/}
+                {/*                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',*/}
+                {/*                    transform: 'skewX(-20deg) translateX(10%)',*/}
+                {/*                }*/}
+                {/*            }}>*/}
+                {/*                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>*/}
+                {/*                    Total Budget*/}
+                {/*                </Typography>*/}
+                {/*                {isLoading ? (*/}
+                {/*                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />*/}
+                {/*                ) : (*/}
+                {/*                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>*/}
+                {/*                        ${budgetStats.totalBudget.toLocaleString()}*/}
+                {/*                    </Typography>*/}
+                {/*                )}*/}
+                {/*                <Typography variant="body2" sx={{ opacity: 0.8 }}>*/}
+                {/*                    for {format(currentMonth, 'MMMM yyyy')}*/}
+                {/*                </Typography>*/}
+                {/*            </Card>*/}
+                {/*        </Grid>*/}
+
+                {/*        /!* Remaining Budget *!/*/}
+                {/*        <Grid item xs={12} sm={6} md={3}>*/}
+                {/*            <Card sx={{*/}
+                {/*                p: 3,*/}
+                {/*                borderRadius: 4,*/}
+                {/*                height: '100%',*/}
+                {/*                background: gradients.green,*/}
+                {/*                color: 'white',*/}
+                {/*                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',*/}
+                {/*                position: 'relative',*/}
+                {/*                overflow: 'hidden',*/}
+                {/*                '&::after': {*/}
+                {/*                    content: '""',*/}
+                {/*                    position: 'absolute',*/}
+                {/*                    top: 0,*/}
+                {/*                    right: 0,*/}
+                {/*                    width: '50%',*/}
+                {/*                    height: '100%',*/}
+                {/*                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',*/}
+                {/*                    transform: 'skewX(-20deg) translateX(10%)',*/}
+                {/*                }*/}
+                {/*            }}>*/}
+                {/*                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>*/}
+                {/*                    Remaining*/}
+                {/*                </Typography>*/}
+                {/*                {isLoading ? (*/}
+                {/*                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />*/}
+                {/*                ) : (*/}
+                {/*                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>*/}
+                {/*                        {formatCurrency(budgetStats.remaining)}*/}
+                {/*                    </Typography>*/}
+                {/*                )}*/}
+                {/*                <Box sx={{ display: 'flex', alignItems: 'center' }}>*/}
+                {/*                    <Typography variant="body2" sx={{ opacity: 0.8 }}>*/}
+                {/*                        {metrics.daysRemaining} days left*/}
+                {/*                    </Typography>*/}
+                {/*                    <Chip*/}
+                {/*                        label={`$${Math.round(metrics.dailyBudget)}/day`}*/}
+                {/*                        size="small"*/}
+                {/*                        sx={{*/}
+                {/*                            ml: 1,*/}
+                {/*                            bgcolor: 'rgba(255, 255, 255, 0.2)',*/}
+                {/*                            color: 'white',*/}
+                {/*                            fontWeight: 600,*/}
+                {/*                            height: 20,*/}
+                {/*                            fontSize: '0.7rem'*/}
+                {/*                        }}*/}
+                {/*                    />*/}
+                {/*                </Box>*/}
+                {/*            </Card>*/}
+                {/*        </Grid>*/}
+
+                {/*        /!* Total Spent *!/*/}
+                {/*        <Grid item xs={12} sm={6} md={3}>*/}
+                {/*            <Card sx={{*/}
+                {/*                p: 3,*/}
+                {/*                borderRadius: 4,*/}
+                {/*                height: '100%',*/}
+                {/*                background: gradients.purple,*/}
+                {/*                color: 'white',*/}
+                {/*                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',*/}
+                {/*                position: 'relative',*/}
+                {/*                overflow: 'hidden',*/}
+                {/*                '&::after': {*/}
+                {/*                    content: '""',*/}
+                {/*                    position: 'absolute',*/}
+                {/*                    top: 0,*/}
+                {/*                    right: 0,*/}
+                {/*                    width: '50%',*/}
+                {/*                    height: '100%',*/}
+                {/*                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',*/}
+                {/*                    transform: 'skewX(-20deg) translateX(10%)',*/}
+                {/*                }*/}
+                {/*            }}>*/}
+                {/*                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>*/}
+                {/*                    Total Spent*/}
+                {/*                </Typography>*/}
+                {/*                {isLoading ? (*/}
+                {/*                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />*/}
+                {/*                ) : (*/}
+                {/*                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>*/}
+                {/*                        ${budgetStats.totalSpent.toLocaleString()}*/}
+                {/*                    </Typography>*/}
+                {/*                )}*/}
+                {/*                <Box sx={{ display: 'flex', alignItems: 'center' }}>*/}
+                {/*                    <Typography variant="body2" sx={{ opacity: 0.8 }}>*/}
+                {/*                        Avg. ${Math.round(metrics.actualSpendRate)}/day*/}
+                {/*                    </Typography>*/}
+                {/*                    {metrics.isUnderBudget ? (*/}
+                {/*                        <Chip*/}
+                {/*                            label="Under budget"*/}
+                {/*                            size="small"*/}
+                {/*                            sx={{*/}
+                {/*                                ml: 1,*/}
+                {/*                                bgcolor: 'rgba(255, 255, 255, 0.2)',*/}
+                {/*                                color: 'white',*/}
+                {/*                                fontWeight: 600,*/}
+                {/*                                height: 20,*/}
+                {/*                                fontSize: '0.7rem'*/}
+                {/*                            }}*/}
+                {/*                        />*/}
+                {/*                    ) : (*/}
+                {/*                        <Chip*/}
+                {/*                            label="Over budget"*/}
+                {/*                            size="small"*/}
+                {/*                            sx={{*/}
+                {/*                                ml: 1,*/}
+                {/*                                bgcolor: 'rgba(255, 255, 255, 0.2)',*/}
+                {/*                                color: 'white',*/}
+                {/*                                fontWeight: 600,*/}
+                {/*                                height: 20,*/}
+                {/*                                fontSize: '0.7rem'*/}
+                {/*                            }}*/}
+                {/*                        />*/}
+                {/*                    )}*/}
+                {/*                </Box>*/}
+                {/*            </Card>*/}
+                {/*        </Grid>*/}
+
+                {/*        /!* Total Saved *!/*/}
+                {/*        <Grid item xs={12} sm={6} md={3}>*/}
+                {/*            <Card sx={{*/}
+                {/*                p: 3,*/}
+                {/*                borderRadius: 4,*/}
+                {/*                height: '100%',*/}
+                {/*                background: gradients.teal,*/}
+                {/*                color: 'white',*/}
+                {/*                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',*/}
+                {/*                position: 'relative',*/}
+                {/*                overflow: 'hidden',*/}
+                {/*                '&::after': {*/}
+                {/*                    content: '""',*/}
+                {/*                    position: 'absolute',*/}
+                {/*                    top: 0,*/}
+                {/*                    right: 0,*/}
+                {/*                    width: '50%',*/}
+                {/*                    height: '100%',*/}
+                {/*                    backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1))',*/}
+                {/*                    transform: 'skewX(-20deg) translateX(10%)',*/}
+                {/*                }*/}
+                {/*            }}>*/}
+                {/*                <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>*/}
+                {/*                    Total Saved*/}
+                {/*                </Typography>*/}
+                {/*                {isLoading ? (*/}
+                {/*                    <Skeleton variant="text" width="80%" height={48} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />*/}
+                {/*                ) : (*/}
+                {/*                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>*/}
+                {/*                        ${budgetStats.totalSaved.toLocaleString()}*/}
+                {/*                    </Typography>*/}
+                {/*                )}*/}
+                {/*                <Typography variant="body2" sx={{ opacity: 0.8 }}>*/}
+                {/*                    across all categories*/}
+                {/*                </Typography>*/}
+                {/*            </Card>*/}
+                {/*        </Grid>*/}
+                {/*    </Grid>*/}
+                {/*</Grow>*/}
+
 
                 {/* Main Content */}
                 <Grid container spacing={4}>
