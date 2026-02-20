@@ -110,6 +110,42 @@ const BudgetPage: React.FC = () => {
         setImportDialogOpen(false);
     }
 
+    // useEffect(() => {
+    //     const userId = Number(sessionStorage.getItem('userId'));
+    //     const budgetStartDate = startOfMonth(currentMonth);
+    //     const budgetEndDate = endOfMonth(currentMonth);
+    //
+    //     const checkAndSync = async () => {
+    //         try {
+    //             const [hasNew, hasUpdated] = await Promise.all([
+    //                 transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, budgetStartDate, budgetEndDate),
+    //                 transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, budgetStartDate, budgetEndDate)
+    //             ]);
+    //
+    //             if (hasNew || hasUpdated) {
+    //                 setIsBudgetCategoryLoading(true);
+    //                 if (hasNew) {
+    //                     await budgetCategoryService.createBudgetCategoriesForDateRange(userId, budgetStartDate, budgetEndDate);
+    //                 }
+    //                 if (hasUpdated) {
+    //                     await budgetCategoryService.updateBudgetCategoriesByMonth(userId, budgetStartDate, budgetEndDate);
+    //                 }
+    //             }
+    //
+    //             await fetchBudgetData(currentMonth);
+    //         } catch (error) {
+    //             console.error('Error syncing budget categories:', error);
+    //             setSnackbarMessage('Failed to sync budget categories');
+    //             setSnackbarSeverity('error');
+    //             setSnackbarOpen(true);
+    //         } finally {
+    //             setIsBudgetCategoryLoading(false);
+    //         }
+    //     };
+    //
+    //     checkAndSync();
+    // }, [currentMonth]);
+
 
     useEffect(() => {
         let userId = Number(sessionStorage.getItem('userId'));
@@ -187,7 +223,7 @@ const BudgetPage: React.FC = () => {
 
                     console.log('Successfully updated budget categories');
                 } else {
-                    console.log('No updated transaction categories found');
+                    await fetchBudgetData(currentMonth);
                 }
             } catch(error) {
                 console.error(`There was an error fetching updated budget categories for userId ${userId}:`, error);
@@ -824,17 +860,6 @@ const BudgetPage: React.FC = () => {
                         {/* Remaining Budget */}
                         <Grid item xs={12} sm={6} md={3}>
                             <BudgetSummaryCard
-                                title="Remaining"
-                                amount={budgetStats.remaining}
-                                budgeted={budgetStats.totalBudget}
-                                currentMonth={currentMonth}
-                                isLoading={isLoading}
-                            />
-                        </Grid>
-
-                        {/* Total Spent */}
-                        <Grid item xs={12} sm={6} md={3}>
-                            <BudgetSummaryCard
                                 title="Total Spent"
                                 amount={budgetStats.totalSpent}
                                 budgeted={budgetStats.totalBudget}
@@ -842,6 +867,17 @@ const BudgetPage: React.FC = () => {
                                 isLoading={isLoading}
                                 show_alert={!metrics.isUnderBudget}
                                 onAlertClick={() => {/* handle over-budget alert */ }}
+                            />
+                        </Grid>
+
+                        {/* Total Spent */}
+                        <Grid item xs={12} sm={6} md={3}>
+                            <BudgetSummaryCard
+                                title="Remaining"
+                                amount={budgetStats.remaining}
+                                budgeted={budgetStats.totalBudget}
+                                currentMonth={currentMonth}
+                                isLoading={isLoading}
                             />
                         </Grid>
 

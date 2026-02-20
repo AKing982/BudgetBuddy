@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +26,7 @@ public class SubBudgetEntity
 
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="budgetId")
+    @JsonIgnore
     @NotNull
     private BudgetEntity budget;
 

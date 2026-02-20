@@ -42,6 +42,9 @@ public class CSVTransactionEntity
     @Column(name="merchantName")
     private String merchantName;
 
+    @Column(name="institution_id")
+    private String institutionId;
+
     @Column(name="balance")
     private BigDecimal balance;
 

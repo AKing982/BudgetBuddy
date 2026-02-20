@@ -45,7 +45,7 @@ public class TransactionCategoryEntity
     @Column(name="is_updated")
     private boolean isUpdated;
 
-    @Column(name="status", columnDefinition = "New")
+    @Column(name="status", columnDefinition = "NEW")
     @Enumerated(EnumType.STRING)
     private TransactionCategoryStatus status;
 

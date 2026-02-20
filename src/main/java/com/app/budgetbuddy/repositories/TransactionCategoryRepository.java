@@ -45,7 +45,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
     @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.csvTransaction ct JOIN ct.csvAccount cae WHERE tce.isUpdated = TRUE AND ct.transactionDate BETWEEN :start AND :end AND cae.user.id =:userId")
     int findUpdatedTransactionCategories(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
 
-    @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.csvTransaction ct JOIN ct.csvAccount cae WHERE (tce.isUpdated = FALSE AND tce.status = 'NEW') OR (tce.isUpdated = TRUE AND tce.status ='PROCESSED') AND ct.transactionDate BETWEEN :start AND :end AND cae.user.id =:userId")
+    @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.csvTransaction ct JOIN ct.csvAccount cae WHERE (tce.isUpdated = FALSE AND tce.status = 'NEW') AND ct.transactionDate BETWEEN :start AND :end AND cae.user.id =:userId")
     int findNewTransactionCategories(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
 
     @Modifying

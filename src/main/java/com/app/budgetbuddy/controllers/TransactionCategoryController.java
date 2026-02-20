@@ -60,6 +60,7 @@ public class TransactionCategoryController
         try
         {
             boolean anyNew =  transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, startDate, endDate);
+            log.info("Found {} new transaction categories", anyNew ? 1 : 0);
             if(anyNew)
             {
                 BoolStatus newStatus = new BoolStatus(true, "Found New Transaction Categories");

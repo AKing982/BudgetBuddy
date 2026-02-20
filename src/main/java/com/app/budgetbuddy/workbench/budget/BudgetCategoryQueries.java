@@ -61,7 +61,7 @@ public class BudgetCategoryQueries
         WHERE a.user.id = :userId
           AND t.merchantName IN (:merchantNames)
           AND t.amount < :amountLimit
-          AND t.category.id IN :categoryIds
+          AND t.categoryId IN :categoryIds
           AND t.posted BETWEEN :startDate AND :endDate
     """;
         try
@@ -87,7 +87,7 @@ public class BudgetCategoryQueries
                 SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END
                 FROM TransactionsEntity t
                 JOIN t.account a
-                WHERE (t.merchantName IN ('Affirm') OR t.category.id =:categoryId
+                WHERE (t.merchantName IN ('Affirm') OR t.categoryId =:categoryId
                 OR t.description LIKE :description) AND (t.posted BETWEEN :startDate AND :endDate)
                 AND a.user.id = :userId
                 """;
@@ -127,8 +127,7 @@ public class BudgetCategoryQueries
                 SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END
                 FROM TransactionsEntity t
                 JOIN t.account a
-                JOIN t.category c
-                WHERE (c.id =:categoryId OR t.merchantName IN ('Flex Finance'))
+                WHERE (t.categoryId =:categoryId OR t.merchantName IN ('Flex Finance'))
                 AND t.amount > 100 AND t.posted BETWEEN :startDate AND :endDate AND a.user.id = :userId
                 """;
         try {
@@ -187,8 +186,7 @@ public class BudgetCategoryQueries
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
                 JOIN t.account a
-                JOIN t.category c
-                WHERE (c.id =:categoryId OR t.merchantName IN ('Flex Finance'))
+                WHERE (t.categoryId =:categoryId OR t.merchantName IN ('Flex Finance'))
                 AND t.amount > 100 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
@@ -213,8 +211,7 @@ public class BudgetCategoryQueries
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
                 JOIN t.account a
-                JOIN t.category c
-                WHERE (c.id =:categoryId OR c.category =:name)
+                WHERE (t.categoryId =:categoryId OR (t.primaryCategory =:name OR t.secondaryCategory =:name))
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
@@ -240,8 +237,7 @@ public class BudgetCategoryQueries
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
                 JOIN t.account a
-                JOIN t.category c
-                WHERE (c.category =:name OR t.merchantName IN (:utilMerchants))
+                WHERE (t.primaryCategory =:name OR t.secondaryCategory =:name OR t.merchantName IN (:utilMerchants))
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
@@ -269,8 +265,7 @@ public class BudgetCategoryQueries
                 SELECT SUM(t.amount)
                 FROM TransactionsEntity t
                 JOIN t.account a
-                JOIN t.category c
-                WHERE (c.category =:name OR t.merchantName IN (:gasMerchants))
+                WHERE (t.primaryCategory =:name OR t.secondaryCategory =:name OR t.merchantName IN (:gasMerchants))
                 AND a.user.id = :userId
                 AND t.posted BETWEEN :startDate AND :endDate
                 """;
@@ -289,84 +284,83 @@ public class BudgetCategoryQueries
         }
     }
 
-    public BigDecimal getOrderOutTotal(Long userId, LocalDate startDate, LocalDate endDate)
-    {
-        final String orderOutSpendingQuery = """
-                SELECT SUM(t.amount)
-                FROM TransactionsEntity t
-                JOIN t.account a
-                JOIN t.category c
-                WHERE (c.id IN (:orderOutCatIds) OR c.category =:name) AND (t.posted BETWEEN :startDate AND :endDate)
-                AND a.user.id = :userId
-                """;
-        try
-        {
-            return entityManager.createQuery(orderOutSpendingQuery, BigDecimal.class)
-                    .setParameter("userId", userId)
-                    .setParameter("startDate", startDate)
-                    .setParameter("endDate", endDate)
-                    .setParameter("name", "Restaurants")
-                    .setParameter("orderOutCatIds", orderOutCategoryIds)
-                    .getSingleResult();
-        } catch (DataAccessException e)
-        {
-            log.error("There was an error with running the query: ", e);
-            return BigDecimal.ZERO;
-        }
-    }
+//    public BigDecimal getOrderOutTotal(Long userId, LocalDate startDate, LocalDate endDate)
+//    {
+//        final String orderOutSpendingQuery = """
+//                SELECT SUM(t.amount)
+//                FROM TransactionsEntity t
+//                JOIN t.account a
+//                WHERE (t.categoryId IN (:orderOutCatIds) OR  =:name) AND (t.posted BETWEEN :startDate AND :endDate)
+//                AND a.user.id = :userId
+//                """;
+//        try
+//        {
+//            return entityManager.createQuery(orderOutSpendingQuery, BigDecimal.class)
+//                    .setParameter("userId", userId)
+//                    .setParameter("startDate", startDate)
+//                    .setParameter("endDate", endDate)
+//                    .setParameter("name", "Restaurants")
+//                    .setParameter("orderOutCatIds", orderOutCategoryIds)
+//                    .getSingleResult();
+//        } catch (DataAccessException e)
+//        {
+//            log.error("There was an error with running the query: ", e);
+//            return BigDecimal.ZERO;
+//        }
+//    }
 
-    public BigDecimal getGroceriesSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate)
-    {
-        final String groceriesSpendingQuery = """
-                SELECT SUM(t.amount)
-                FROM TransactionsEntity t
-                JOIN t.account a
-                JOIN t.category c
-                WHERE (t.merchantName IN (:groceriesMerchants) OR c.category =:name)
-                AND (t.posted BETWEEN :startDate AND :endDate)
-                AND a.user.id = :userId
-                """;
-        try
-        {
-            return entityManager.createQuery(groceriesSpendingQuery, BigDecimal.class)
-                    .setParameter("userId", userId)
-                    .setParameter("startDate", startDate)
-                    .setParameter("endDate", endDate)
-                    .setParameter("name", "Supermarkets and Groceries")
-                    .setParameter("groceriesMerchants", groceriesMerchants)
-                    .getSingleResult();
-        } catch (DataAccessException e) {
-            log.error("There was an error with running the query: ", e);
-            return BigDecimal.ZERO;
-        }
-    }
+//    public BigDecimal getGroceriesSpendingTotal(Long userId, LocalDate startDate, LocalDate endDate)
+//    {
+//        final String groceriesSpendingQuery = """
+//                SELECT SUM(t.amount)
+//                FROM TransactionsEntity t
+//                JOIN t.account a
+//                JOIN t.category c
+//                WHERE (t.merchantName IN (:groceriesMerchants) OR c.category =:name)
+//                AND (t.posted BETWEEN :startDate AND :endDate)
+//                AND a.user.id = :userId
+//                """;
+//        try
+//        {
+//            return entityManager.createQuery(groceriesSpendingQuery, BigDecimal.class)
+//                    .setParameter("userId", userId)
+//                    .setParameter("startDate", startDate)
+//                    .setParameter("endDate", endDate)
+//                    .setParameter("name", "Supermarkets and Groceries")
+//                    .setParameter("groceriesMerchants", groceriesMerchants)
+//                    .getSingleResult();
+//        } catch (DataAccessException e) {
+//            log.error("There was an error with running the query: ", e);
+//            return BigDecimal.ZERO;
+//        }
+//    }
 
-    public BigDecimal getRentAmount(Long userId, LocalDate startDate, LocalDate endDate)
-    {
-        final String rentQuery = """
-              
-              SELECT t.amount
-              FROM TransactionsEntity t
-              JOIN t.account a
-              JOIN t.category c
-              WHERE (c.id =:rentCategoryId OR t.merchantName IN ('Flex Finance'))
-              AND t.amount > 100
-              AND t.posted BETWEEN :startDate AND :endDate
-              AND a.user.id = :userId
-              """;
-        try
-        {
-            return entityManager.createQuery(rentQuery, BigDecimal.class)
-                    .setParameter("userId", userId)
-                    .setParameter("rentCategoryId", "18020004")
-                    .setParameter("startDate", startDate)
-                    .setParameter("endDate", endDate)
-                    .getSingleResult();
-        }catch(DataAccessException e)
-        {
-            log.error("There was an error with running the query: ", e);
-            return BigDecimal.ZERO;
-        }
-    }
+//    public BigDecimal getRentAmount(Long userId, LocalDate startDate, LocalDate endDate)
+//    {
+//        final String rentQuery = """
+//
+//              SELECT t.amount
+//              FROM TransactionsEntity t
+//              JOIN t.account a
+//              JOIN t.category c
+//              WHERE (c.id =:rentCategoryId OR t.merchantName IN ('Flex Finance'))
+//              AND t.amount > 100
+//              AND t.posted BETWEEN :startDate AND :endDate
+//              AND a.user.id = :userId
+//              """;
+//        try
+//        {
+//            return entityManager.createQuery(rentQuery, BigDecimal.class)
+//                    .setParameter("userId", userId)
+//                    .setParameter("rentCategoryId", "18020004")
+//                    .setParameter("startDate", startDate)
+//                    .setParameter("endDate", endDate)
+//                    .getSingleResult();
+//        }catch(DataAccessException e)
+//        {
+//            log.error("There was an error with running the query: ", e);
+//            return BigDecimal.ZERO;
+//        }
+//    }
 
 }

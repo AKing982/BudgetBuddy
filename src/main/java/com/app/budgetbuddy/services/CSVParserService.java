@@ -54,7 +54,7 @@ public class CSVParserService
             }
             CsvParserSettings settings = createParserSettings();
             CsvFormat format = new CsvFormat();
-            format.setDelimiter('\t'); // Use tab delimiter
+            format.setDelimiter(','); // Use tab delimiter
             settings.setFormat(format);
             CsvParser parser = new CsvParser(settings);
             try(InputStreamReader reader = new InputStreamReader(file.getInputStream()))
@@ -107,17 +107,26 @@ public class CSVParserService
 
     private TransactionCSV buildGraniteCreditUnionTransaction(String[] row, SimpleDateFormat sdf)
     {
+        log.info("Row: {}", row);
+        log.info("Row Length: {}", row.length);
         TransactionCSV transactionCSV = new TransactionCSV();
-        transactionCSV.setAccount(row[0]);
-        transactionCSV.setSuffix(Integer.parseInt(row[1]));
-        transactionCSV.setSequenceNo(removeLeadingZeros(row[2]));
-        transactionCSV.setTransactionDate(convertDateToLocalDate(row[3], sdf));
-        transactionCSV.setTransactionAmount(parseCurrency(row[4]));
-        transactionCSV.setDescription(row[5]);
-        transactionCSV.setExtendedDescription(row[6]);
-        transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(row[7], sdf));
-        transactionCSV.setBalance(parseCurrency(row[9]));
-        transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(row[6], row[5]));
+        try
+        {
+            transactionCSV.setAccount(row[0]);
+            transactionCSV.setSuffix(Integer.parseInt(row[1]));
+            transactionCSV.setSequenceNo(removeLeadingZeros(row[2]));
+            transactionCSV.setTransactionDate(convertDateToLocalDate(row[3], sdf));
+            transactionCSV.setTransactionAmount(parseCurrency(row[4]));
+            transactionCSV.setDescription(row[5]);
+            transactionCSV.setExtendedDescription(row[6]);
+            transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(row[7], sdf));
+            transactionCSV.setBalance(parseCurrency(row[9]));
+            transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(row[6], row[5]));
+            transactionCSV.setInstitution_id("Granite Credit Union");
+        }catch(Exception ex){
+            log.error("There was an error parsing the CSV row: {}", row, ex);
+            throw ex;
+        }
         return transactionCSV;
     }
 
@@ -134,6 +143,7 @@ public class CSVParserService
         transactionCSV.setBalance(parseCurrency(row[10]));
         transactionCSV.setExtendedDescription(row[12]);
         transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(row[12], row[7]));
+        transactionCSV.setInstitution_id("Mountain America Credit Union");
         return transactionCSV;
     }
 

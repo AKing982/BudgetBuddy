@@ -110,6 +110,7 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
                 csvTransactionEntity.setMerchantName(transactionCSV.getMerchantName());
                 csvTransactionEntity.setBalance(transactionCSV.getBalance());
                 csvTransactionEntity.setExtendedDescription(extendedDescription);
+                csvTransactionEntity.setInstitutionId(transactionCSV.getInstitution_id());
                 csvTransactionEntity.setElectronicTransactionDate(electronicTransactionDate);
                 csvTransactionEntityList.add(csvTransactionEntity);
             }

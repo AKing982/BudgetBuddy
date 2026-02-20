@@ -60,6 +60,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     {
         try
         {
+
             transactionCategoryRepository.save(transactionCategorizationEntity);
         }catch(DataAccessException e){
             log.error("There was an error while saving the TransactionCategory entity", e);
@@ -87,6 +88,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     @Transactional
     public void saveAll(List<TransactionCategory> transactionCategoryList)
     {
+        log.info("Saving {} transaction categories", transactionCategoryList.size());
         transactionCategoryList.stream()
                 .map(this::convertToEntity)
                 .forEach(this::save);

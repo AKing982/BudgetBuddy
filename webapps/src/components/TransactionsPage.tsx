@@ -202,10 +202,7 @@ const TransactionsPage: React.FC = () => {
         if (range === 'Custom Month' && customMonth) {
             const year = customMonth.getFullYear();
             const month = customMonth.getMonth();
-            const today = new Date();
-            const startDate = new Date(today);
-            startDate.setDate(startDate.getDate() - 31);
-            startDate.setHours(0 ,0, 0, 0);
+            const startDate = new Date(year, month, 1, 0, 0, 0, 0);
             const lastDay = new Date(year, month + 1, 0).getDate();
             const endDate = new Date(year, month, lastDay, 23, 59, 59, 999);
 
@@ -265,24 +262,18 @@ const TransactionsPage: React.FC = () => {
             try {
                 const transactionService = TransactionService.getInstance();
                 let userId = Number(sessionStorage.getItem('userId'));
-                if(!userId) {
-                    userId = 1;
-                }
 
-                const toLocalISO = (date: Date) => {
-                    const offset = date.getTimezoneOffset();
-                    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-                    return localDate.toISOString().split('T')[0];
-                };
-                const startDateStr = toLocalISO(dateRange.startDate);
-                const endDateStr = toLocalISO(dateRange.endDate);
+                const startDateStr = dateRange.startDate.toISOString().split('T')[0];
+                console.log('Start Date:', startDateStr);
+                const endDateStr = dateRange.endDate.toISOString().split('T')[0];
+                console.log('End Date:', endDateStr);
 
                 const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
                 const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDateStr, endDateStr);
                 const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDateStr, endDateStr);
+                console.log('CSV Response:', csvTransactionResponse);
                 const safeTransactionResponse = Array.isArray(transactionResponse) ? transactionResponse : [];
                 const safeCsvTransactionResponse = Array.isArray(csvTransactionResponse) ? csvTransactionResponse : [];
-
                 if(hasPlaidCSVSync) {
                     const plaidTransactionDates = new Set(
                         safeTransactionResponse.map(transaction =>
@@ -294,9 +285,12 @@ const TransactionsPage: React.FC = () => {
                         const csvDate = csvTransaction.transactionDate;
                         return csvDate && !plaidTransactionDates.has(csvDate);
                     });
+                    console.log('Filtered CSV Transactions:', filteredCSVTransactions);
+                    console.log('Filtered CSV Transactions Count:', filteredCSVTransactions.length);
 
                     setTransactions(safeTransactionResponse);
                     setCsvTransactions(filteredCSVTransactions);
+                    console.log('CSV Transactions:', csvTransactions);
                 } else {
                     setTransactions(safeTransactionResponse);
                 }
@@ -561,13 +555,34 @@ const TransactionsPage: React.FC = () => {
 
     const filteredTransactions = useMemo(() => {
         let filtered = sortedTransactions;
+        console.log('raw sample:', JSON.stringify(sortedTransactions[0]?.posted), JSON.stringify(sortedTransactions[0]?.date));
+
+        console.log('Filtered Transactions:', filtered);
+        console.log('Filtered Transactions Count:', filtered.length);
 
         const {startDate, endDate} = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
-        filtered = filtered.filter(transaction => {
-            const transactionDate = new Date(transaction.posted || transaction.date);
-            return transactionDate >= startDate && transactionDate <= endDate;
-        });
+        console.log('Filter startDate:', startDate.toISOString(), 'endDate:', endDate.toISOString());
 
+        console.log('after date filter:', filtered.length);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const toDateStr = (val: any): string | null => {
+            if (!val) return null;
+            if (typeof val === 'string') return val.split('T')[0];
+            if (Array.isArray(val)) {
+                const [y, m, d] = val;
+                return `${y}-${pad(m)}-${pad(d)}`;
+            }
+            return null;
+        };
+
+        const startStr = `${startDate.getFullYear()}-${pad(startDate.getMonth()+1)}-${pad(startDate.getDate())}`;
+        const endStr = `${endDate.getFullYear()}-${pad(endDate.getMonth()+1)}-${pad(endDate.getDate())}`;
+
+        filtered = filtered.filter(transaction => {
+            const dateStr = toDateStr(transaction.posted) || toDateStr(transaction.date);
+            if (!dateStr) return false;
+            return dateStr >= startStr && dateStr <= endStr;
+        });
         if (searchTerm.trim()) {
             const searchTermLowerCase = searchTerm.toLowerCase().trim();
             filtered = filtered.filter((transaction) => {

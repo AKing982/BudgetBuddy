@@ -27,6 +27,7 @@ public class TransactionCSV implements Comparable<TransactionCSV>
     private LocalDate electronicTransactionDate;
     private LocalDate effectiveDate;
     private BigDecimal balance;
+    private String institution_id;
     private String category;
     private String type;
 

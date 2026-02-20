@@ -92,7 +92,7 @@ public class CategoryRunner
                 log.info("There are no sub-budgets for user {} at {}", userId, startDate);
                 return;
             }
-            int pageNum = 30;
+            int pageNum = 500;
             List<TransactionCSV> transactionCSVS = csvTransactionService.findTransactionCSVByUserIdAndDateRange(userId, startDate, endDate, pageNum);
             if(transactionCSVS.isEmpty())
             {
@@ -122,6 +122,7 @@ public class CategoryRunner
                                 .build();
                     })
                     .collect(Collectors.toList());
+            log.info("Categorized {} transactions", categorizedCSVTransactions.size());
             transactionCategoryService.saveAll(categorizedCSVTransactions);
         }catch(Exception e){
             log.error("There was an error fetching the transaction categories: {}", e.getMessage());

@@ -57,6 +57,7 @@ class BudgetCategoriesService
                         endDate: this.formatDate(endDate)
                     }
                 });
+            console.log('Creating Budget Categories: ');
             return response.data;
         }catch(error){
             console.error("Error creating budget categories for date range: ", error);
