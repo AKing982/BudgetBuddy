@@ -124,17 +124,7 @@ public class CSVTransactionsByCategoryQueries
         try
         {
             log.info("Fetching new CSV Transactions by Category Query for start date: {} and end date: {}", startDate, endDate);
-//            final String csvTransactionCategoryQuery = """
-//                    SELECT ct.id, tc.matchedCategory
-//                    FROM TransactionCategoryEntity tc
-//                    INNER JOIN CSVTransactionEntity ct
-//                        ON tc.csvTransaction.id = ct.id
-//                    INNER JOIN CSVAccountEntity cae
-//                        ON ct.csvAccount.id = cae.id
-//                    WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-//                        AND cae.user.id =:userId AND (tc.isUpdated = FALSE AND tc.status = 'NEW') OR (tc.isUpdated = TRUE AND tc.status = 'PROCESSED')
-//                    """;
-                        final String csvTransactionCategoryQuery = """
+            final String csvTransactionCategoryQuery = """
                     SELECT ct.id, tc.matchedCategory
                     FROM TransactionCategoryEntity tc
                     INNER JOIN CSVTransactionEntity ct
@@ -142,7 +132,7 @@ public class CSVTransactionsByCategoryQueries
                     INNER JOIN CSVAccountEntity cae
                         ON ct.csvAccount.id = cae.id
                     WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-                        AND cae.user.id =:userId AND (tc.isUpdated = FALSE AND tc.status = 'NEW')
+                        AND cae.user.id =:userId AND ((tc.isUpdated = FALSE AND tc.status = 'NEW') OR (tc.isUpdated = TRUE AND tc.status = 'PROCESSED'))
                     """;
             List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
                     .setParameter("startDate", startDate)

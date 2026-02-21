@@ -54,6 +54,6 @@ const getActiveEnvironment = (): string => {
 export const apiUrl: string = API_ENVIRONMENTS[getActiveEnvironment()];
 export const getCurrentEnvironment = (): string => getActiveEnvironment();
 export const getAvailableEnvironments = (): string[] => Object.keys(API_ENVIRONMENTS);
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://budgetbuddy-app2-30f69a583595.herokuapp.com/api';
+// export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://budgetbuddy-app2-30f69a583595.herokuapp.com/api';
 
-// export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
