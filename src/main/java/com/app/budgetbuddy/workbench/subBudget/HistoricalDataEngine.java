@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.subBudget;
 
+import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.domain.HistoricalMonthStats;
 import com.app.budgetbuddy.domain.MonthHistory;
@@ -12,43 +13,45 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 @Slf4j
-public class HistoricalBudgetCategoryEngine
+public class HistoricalDataEngine
 {
     private final CSVTransactionService csvTransactionService;
     private final TransactionService transactionService;
     private final BudgetCategoryService budgetCategoryService;
 
     @Autowired
-    public HistoricalBudgetCategoryEngine(CSVTransactionService csvTransactionService,
-                                          TransactionService transactionService,
-                                          BudgetCategoryService budgetCategoryService)
+    public HistoricalDataEngine(CSVTransactionService csvTransactionService,
+                                TransactionService transactionService,
+                                BudgetCategoryService budgetCategoryService)
     {
         this.csvTransactionService = csvTransactionService;
         this.transactionService = transactionService;
         this.budgetCategoryService = budgetCategoryService;
     }
 
-    public Map<String, BigDecimal> estimateBudgetedAmountByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate, final LocalDate endDate)
+    public Map<String, HistoricalMonthStats> getHistoricalMonthStatsByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate)
+    {
+        Map<String, HistoricalMonthStats> historicalMonthStatsByCategory = new HashMap<>();
+        if(numberOfMonths == 0)
+        {
+            return historicalMonthStatsByCategory;
+        }
+        return null;
+    }
+
+    public Map<String, List<MonthHistory>> getHistoricalMonthHistoryByCategory(final int numberOfMonths, Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         return null;
     }
 
-    public Map<String, HistoricalMonthStats> getHistoricalMonthStatsByCategory(final int numberOfMonths, final Long userId)
-    {
-        return null;
-    }
-
-    public Map<String, List<MonthHistory>> getHistoricalMonthDataByCategory(final int numberOfMonths, Long userId, final LocalDate startDate, final LocalDate endDate)
-    {
-        return null;
-    }
-
-    public Map<DateRange, BigDecimal> getWeeklyBudgetedAmounts(final int numberOfMonths, final Long userId, final LocalDate currentMonthStart, final LocalDate currentMonthEnd, final BigDecimal subBudgetAmount)
+    //TODO: Replace this method with getHistoricalMonthDataByCategory
+    public Map<DateRange, BigDecimal> getHistoricalWeeklyBudgetedAmounts(final int numberOfMonths, final Long userId, final LocalDate currentMonthStart, final LocalDate currentMonthEnd, final BigDecimal subBudgetAmount)
     {
 //        Map<DateRange, BigDecimal> weeklyBudgetedAmounts = new HashMap<>();
 //        if(numberOfMonths < 0 || userId == null || currentMonthStart == null || currentMonthEnd == null)
@@ -160,99 +163,6 @@ public class HistoricalBudgetCategoryEngine
 //            return totalWeeklySpending;
 //        }catch(DataAccessException e){
 //            log.error("There was an error fetching the historical spending for {} months: {}", numberOfMonths, e.getMessage());
-//            return Collections.emptyMap();
-//        }
-        return null;
-    }
-
-    public BigDecimal getMonthlySpendingByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate, final LocalDate endDate, final String category)
-    {
-//        final String totalSpendingForMonthCategoryQuery = """
-//            SELECT CASE
-//                       WHEN abs(SUM(t.amount)) IS NULL
-//                       THEN 0
-//                       ELSE abs(SUM(t.amount))
-//                   END as totalCategorySpending
-//            FROM TransactionsEntity t
-//            INNER JOIN TransactionCategoryEntity tc ON t.id = tc.transaction.id
-//            INNER JOIN AccountEntity a ON t.account.id = a.id
-//            WHERE a.user.id = :userId
-//              AND t.posted BETWEEN :startDate AND :endDate
-//              AND tc.matchedCategory = :category
-//            UNION ALL
-//            SELECT CASE
-//                WHEN abs(SUM(ct.transactionAmount)) IS NULL
-//                THEN 0
-//                ELSE abs(SUM(ct.transactionAmount))
-//            END as totalCSVCategorySpending
-//           FROM CSVTransactionEntity ct
-//           WHERE ct.csvAccount.user.id = :userId
-//           AND ct.transactionDate BETWEEN :startDate AND :endDate
-//           AND ct.category = :category
-//            """;
-//        try
-//        {
-//            BigDecimal totalSpendingForMonths = BigDecimal.ZERO;
-//            for(int i = 0; i < numberOfMonths; i++)
-//            {
-//                LocalDate previousMonthStart = startDate.minusMonths(i);
-//                LocalDate previousMonthEnd = endDate.minusMonths(i);
-//                List<BigDecimal> results = entityManager.createQuery(totalSpendingForMonthCategoryQuery, BigDecimal.class)
-//                        .setParameter("userId", userId)
-//                        .setParameter("startDate", previousMonthStart)
-//                        .setParameter("endDate", previousMonthEnd)
-//                        .setParameter("category", category)
-//                        .getResultList();
-//                BigDecimal totalMonthSpendingByCategory = results.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-//                totalSpendingForMonths = totalSpendingForMonths.add(totalMonthSpendingByCategory);
-//            }
-//            return totalSpendingForMonths;
-//        }catch(DataAccessException e){
-//            log.error("There was an error calculating the total spending for {} months by category {}: {}", numberOfMonths, category, e.getMessage());
-//            return BigDecimal.ZERO;
-//        }
-        return null;
-    }
-
-    public Map<String, Map<DateRange, BigDecimal>> getMonthlySpendingByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate, final LocalDate endDate)
-    {
-//        final String spendingByCategoryQuery = """
-//            SELECT tc.matchedCategory, CASE
-//                       WHEN abs(SUM(t.amount)) IS NULL
-//                       THEN 0
-//                       ELSE abs(SUM(t.amount))
-//                   END as totalCategorySpending
-//            FROM TransactionsEntity t
-//            INNER JOIN TransactionCategoryEntity tc ON t.id = tc.transaction.id
-//            INNER JOIN AccountEntity a ON t.account.id = a.id
-//            WHERE a.user.id = :userId
-//              AND t.posted BETWEEN :startDate AND :endDate
-//            GROUP BY tc.matchedCategory
-//            ORDER BY tc.matchedCategory
-//            """;
-//        try
-//        {
-//            Map<String, Map<DateRange, BigDecimal>> categorySpendingByWeek = new HashMap<>();
-//            for(int i = 0; i < numberOfMonths; i++)
-//            {
-//                LocalDate previousMonthStart = startDate.minusMonths(i);
-//                LocalDate previousMonthEnd = endDate.minusMonths(i);
-//                List<Object[]> results = entityManager.createQuery(spendingByCategoryQuery, Object[].class)
-//                        .setParameter("userId", userId)
-//                        .setParameter("startDate", previousMonthStart)
-//                        .setParameter("endDate", previousMonthEnd)
-//                        .getResultList();
-//                DateRange dateRange = DateRange.createDateRange(previousMonthStart, previousMonthEnd);
-//                for(Object[] result : results)
-//                {
-//                    String category = (String) result[0];
-//                    BigDecimal amount = (BigDecimal) result[1];
-//                    categorySpendingByWeek.computeIfAbsent(category, k -> new HashMap<>()).put(dateRange, amount);
-//                }
-//            }
-//            return categorySpendingByWeek;
-//        }catch(DataAccessException e){
-//            log.error("There was an error retrieving the monthly spending by category: {}", e.getMessage());
 //            return Collections.emptyMap();
 //        }
         return null;

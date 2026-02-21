@@ -3,7 +3,7 @@ package com.app.budgetbuddy.workbench.budget;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.repositories.BudgetScheduleRepository;
 import com.app.budgetbuddy.services.BudgetScheduleRangeService;
-import com.app.budgetbuddy.workbench.subBudget.HistoricalSubBudgetService;
+import com.app.budgetbuddy.workbench.subBudget.HistoricalDataEngine;
 import jakarta.persistence.Embeddable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ class BudgetScheduleRangeBuilderServiceTest
     private BudgetScheduleRepository budgetScheduleRepository;
 
     @Mock
-    private HistoricalSubBudgetService historicalSubBudgetService;
+    private HistoricalDataEngine historicalSubBudgetService;
 
     @InjectMocks
     private BudgetScheduleRangeBuilderService budgetScheduleRangeBuilderService;
