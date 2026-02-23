@@ -232,6 +232,32 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     }
 
     @Override
+    @Transactional
+    public List<Object[]> getHistoricalMonthStatsByCategory(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            return budgetCategoryRepository.findHistoricalMonthStatsByCategory(userId, startDate, endDate);
+        }catch(DataAccessException e){
+            log.error("There was an error getting the historical month stats by category: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<Object[]> getHistoricalMonthHistoryByCategory(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            return budgetCategoryRepository.findHistoricalMonthHistoryByCategory(userId, startDate, endDate);
+        }catch(DataAccessException e){
+            log.error("There was an error getting the historical month history by category: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     public Integer getTotalBudgetAmountSumByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
         return budgetCategoryRepository.sumBudgetedAmountByUserAndDateRange(userId, startDate, endDate);
     }

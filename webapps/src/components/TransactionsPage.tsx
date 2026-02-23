@@ -472,7 +472,8 @@ const TransactionsPage: React.FC = () => {
                 pending: false,
                 logoUrl: null,
                 isoCurrencyCode: '',
-                accountId: ''
+                accountId: '',
+                balance: csv.balance
             }));
 
         const allTransactions = [...transactions, ...convertedCsvTransactions];
@@ -1799,7 +1800,7 @@ const TransactionsPage: React.FC = () => {
                                                             color: runningBalance >= 0 ? tealColor : maroonColor
                                                         }}
                                                     >
-                                                        {formatCurrency(Math.abs(runningBalance))}
+                                                        {formatCurrency(Math.abs(transaction.balance ?? 0))}
                                                     </Typography>
                                                 </TableCell>
                                             </TableRow>

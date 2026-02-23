@@ -130,7 +130,7 @@ public class DailyBudgetCategoryBuilderService
         {
             return Collections.emptyList();
         }
-        CategoryBudgetAmount[] categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
+        List<CategoryBudgetAmount> categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
         for(DailyCategorySpending dailyCategorySpending : dailyCategorySpendings)
         {
             String categorySpendingName = dailyCategorySpending.getCategory();
@@ -151,7 +151,7 @@ public class DailyBudgetCategoryBuilderService
                 dateRange.setStartDate(currentDate);
                 dateRange.setEndDate(currentDate);
             }
-            log.info("Category Budget Amounts: {}", categoryBudgetAmounts.length);
+            log.info("Category Budget Amounts: {}", categoryBudgetAmounts.size());
             log.info("Category spending name: {}", categorySpendingName);
             BigDecimal categoryAmount = budgetEstimatorService.getBudgetCategoryAmountByCategory(categorySpendingName, categoryBudgetAmounts);
             log.info("Category amount {} for category {}", categoryAmount, categorySpendingName);

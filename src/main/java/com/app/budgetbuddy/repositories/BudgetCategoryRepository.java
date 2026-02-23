@@ -46,5 +46,38 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id AND :date BETWEEN :start AND :end")
     List<BudgetCategoryEntity> findBudgetCategoriesByDate(@Param("id") Long subBudgetId, @Param("date") LocalDate currentDate, @Param("start") LocalDate startDate, @Param("end") LocalDate endDate);
 
+    @Query(value = """
+    SELECT bc.category_name,
+           TO_CHAR(bc.startdate, 'YYYY-MM') AS month,
+           bc.budgetedamount - SUM(bc.actual) AS totalSaved
+    FROM budgetcategories bc
+    JOIN subbudgets sb ON bc.sub_budgetid = sb.id
+    JOIN budgets b ON sb.budgetid = b.budgetid
+    WHERE bc.category_name <> 'Uncategorized'
+      AND b.userid = :userId
+      AND bc.startdate >= :startDate AND bc.enddate <= :endDate
+    GROUP BY bc.category_name, bc.budgetedamount, TO_CHAR(bc.startdate, 'YYYY-MM')
+    """, nativeQuery = true)
+    List<Object[]> findHistoricalMonthStatsByCategory(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query(value = """
+    SELECT bc.category_name,
+           TO_CHAR(DATE_TRUNC('month', bc.startdate), 'YYYY-MM') AS month,
+           SUM(bc.budgetedamount) - SUM(bc.actual) AS totalSaved,
+           SUM(bc.actual) AS totalSpent,
+           SUM(bc.budgetedamount) AS totalBudgeted,
+           CASE WHEN SUM(bc.budgetedamount) = 0 THEN 0 ELSE ROUND(SUM(bc.actual)/SUM(bc.budgetedamount) * 100, 2) END AS percentSaved,
+           AVG(bc.budgetedamount - bc.actual) AS averageSaved,
+           AVG(bc.actual) AS averageSpent
+    FROM budgetcategories bc
+    INNER JOIN subbudgets sb ON bc.sub_budgetid = sb.id
+    INNER JOIN budgets b ON sb.budgetid = b.budgetid
+    WHERE bc.category_name NOT IN ('Uncategorized', 'Income')
+      AND bc.startdate >= :startDate
+      AND bc.enddate <= :endDate
+      AND b.userid = :userId
+    GROUP BY bc.category_name, TO_CHAR(DATE_TRUNC('month', bc.startdate), 'YYYY-MM')
+    """, nativeQuery = true)
+    List<Object[]> findHistoricalMonthHistoryByCategory(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
 }

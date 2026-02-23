@@ -45,6 +45,7 @@ export interface Transaction {
     authorizedDate: string | null;  // LocalDate, optional
     logoUrl: string | null;         // Optional
     posted: string | null;          // LocalDate, optional
+    balance?: number;
 }
 
 export interface CSVTransaction {

@@ -335,17 +335,18 @@ class MonthlyBudgetCategoryBuilderServiceTest
         SubBudget aprilSubBudget = testSubBudget;
         List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteria = createMonthlyBudgetCriteriaForApril(aprilSubBudget);
 
-        CategoryBudgetAmount[] mockCategoryBudgetAmounts = new CategoryBudgetAmount[2];
-        mockCategoryBudgetAmounts[0] = new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1907.00));
-        mockCategoryBudgetAmounts[1] = new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(125.00));
+        List<CategoryBudgetAmount> mockCategoryBudgetAmounts = List.of(
+                new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1907.00)),
+                new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(125.00))
+        );
 
         Mockito.when(budgetEstimatorService.calculateBudgetCategoryAmount(eq(aprilSubBudget)))
                 .thenReturn(mockCategoryBudgetAmounts);
 
-        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Rent"), any(CategoryBudgetAmount[].class)))
+        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Rent"), eq(mockCategoryBudgetAmounts)))
                 .thenReturn(BigDecimal.valueOf(1907.00));
 
-        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Groceries"), any(CategoryBudgetAmount[].class)))
+        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Groceries"), eq(mockCategoryBudgetAmounts)))
                 .thenReturn(BigDecimal.valueOf(125.00));
 
         List<BudgetCategory> expected = new ArrayList<>();
@@ -354,11 +355,8 @@ class MonthlyBudgetCategoryBuilderServiceTest
 
         List<BudgetCategory> actual = monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(monthlyBudgetCategoryCriteria);
 
-        // Sort both lists by category name and start date for consistent comparison
-        Comparator<BudgetCategory> comparator =
-                Comparator.comparing(BudgetCategory::getCategoryName)
-                        .thenComparing(BudgetCategory::getStartDate);
-
+        Comparator<BudgetCategory> comparator = Comparator.comparing(BudgetCategory::getCategoryName)
+                .thenComparing(BudgetCategory::getStartDate);
         expected.sort(comparator);
         actual.sort(comparator);
 
@@ -368,15 +366,15 @@ class MonthlyBudgetCategoryBuilderServiceTest
             BudgetCategory actualCategory = actual.get(i);
             BudgetCategory expectedCategory = expected.get(i);
             assertNotNull(actualCategory, "Could not find spending for category: " + expectedCategory);
-            assertEquals(expected.get(i).getSubBudgetId(), actualCategory.getSubBudgetId());
-            assertEquals(expected.get(i).getBudgetActual(), actualCategory.getBudgetActual(), "Budget actual should match for category " + expectedCategory);
-            assertEquals(expected.get(i).getBudgetedAmount(), actualCategory.getBudgetedAmount(), "Budget amount should match for category " + expectedCategory);
-            assertEquals(expected.get(i).getIsActive(), actualCategory.getIsActive(), "Active should match for category " + expectedCategory);
-            assertEquals(expected.get(i).getStartDate(), actualCategory.getStartDate(), "Start date should match for category " + expectedCategory);
-            assertEquals(expected.get(i).getId(), actualCategory.getId(), "Id should match for category " + expectedCategory);
-            assertEquals(expected.get(i).getTransactions().size(), actualCategory.getTransactions().size(), "Transaction count should match for category " + expectedCategory);
-            assertEquals(expected.get(i).getCategoryName(), actualCategory.getCategoryName(), "Category name should match for category " + expectedCategory);
-            assertEquals(expected.get(i).getOverSpendingAmount(), actualCategory.getOverSpendingAmount());
+            assertEquals(expectedCategory.getSubBudgetId(), actualCategory.getSubBudgetId());
+            assertEquals(expectedCategory.getBudgetActual(), actualCategory.getBudgetActual(), "Budget actual should match for category " + expectedCategory);
+            assertEquals(expectedCategory.getBudgetedAmount(), actualCategory.getBudgetedAmount(), "Budget amount should match for category " + expectedCategory);
+            assertEquals(expectedCategory.getIsActive(), actualCategory.getIsActive(), "Active should match for category " + expectedCategory);
+            assertEquals(expectedCategory.getStartDate(), actualCategory.getStartDate(), "Start date should match for category " + expectedCategory);
+            assertEquals(expectedCategory.getId(), actualCategory.getId(), "Id should match for category " + expectedCategory);
+            assertEquals(expectedCategory.getTransactions().size(), actualCategory.getTransactions().size(), "Transaction count should match for category " + expectedCategory);
+            assertEquals(expectedCategory.getCategoryName(), actualCategory.getCategoryName(), "Category name should match for category " + expectedCategory);
+            assertEquals(expectedCategory.getOverSpendingAmount(), actualCategory.getOverSpendingAmount());
         }
     }
 
@@ -532,18 +530,19 @@ class MonthlyBudgetCategoryBuilderServiceTest
         updateCriteria.add(otherCriteria);
 
         // Mock the budget estimator service
-        CategoryBudgetAmount[] mockCategoryBudgetAmounts = new CategoryBudgetAmount[3];
-        mockCategoryBudgetAmounts[0] = new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(125.00));
-        mockCategoryBudgetAmounts[1] = new CategoryBudgetAmount("Other", BigDecimal.valueOf(50.00));
-        mockCategoryBudgetAmounts[2] = new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1200.00));
+        List<CategoryBudgetAmount> mockCategoryBudgetAmounts = List.of(
+                new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(125.00)),
+                new CategoryBudgetAmount("Other", BigDecimal.valueOf(50.00)),
+                new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1200.00))
+        );
 
         Mockito.when(budgetEstimatorService.calculateBudgetCategoryAmount(eq(testSubBudget)))
                 .thenReturn(mockCategoryBudgetAmounts);
 
-        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Groceries"), any(CategoryBudgetAmount[].class)))
+        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Groceries"), eq(mockCategoryBudgetAmounts)))
                 .thenReturn(BigDecimal.valueOf(125.00));
 
-        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Other"), any(CategoryBudgetAmount[].class)))
+        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Other"), eq(mockCategoryBudgetAmounts)))
                 .thenReturn(BigDecimal.valueOf(50.00));
 
         // Expected updated categories

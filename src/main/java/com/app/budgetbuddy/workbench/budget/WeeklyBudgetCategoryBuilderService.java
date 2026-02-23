@@ -59,7 +59,7 @@ public class WeeklyBudgetCategoryBuilderService
                     WeeklyCategorySpending weeklyCategorySpending = weeklyBudgetCategoryCriteria.getWeeklyCategorySpending();
                     SubBudget subBudget = weeklyBudgetCategoryCriteria.getSubBudget();
                     String category = weeklyCategorySpending.getCategory();
-                    CategoryBudgetAmount[] categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
+                    List<CategoryBudgetAmount> categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
                     BigDecimal budgetedAmount = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
                     List<Transaction> transactions = weeklyCategorySpending.getTransactions();
                     BigDecimal categorySpending = weeklyCategorySpending.getTotalCategorySpending();

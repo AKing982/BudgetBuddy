@@ -2,9 +2,11 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.entities.BudgetCategoryEntity;
+import org.springframework.cglib.core.Local;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity>
 {
@@ -21,6 +23,10 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
     List<BudgetCategory> getBudgetCategoriesByDate(Long subBudgetId, LocalDate currentDate, LocalDate startDate, LocalDate endDate);
 
     List<BudgetCategory> saveAll(List<BudgetCategory> budgetCategories);
+
+    List<Object[]> getHistoricalMonthStatsByCategory(Long userId, LocalDate startDate, LocalDate endDate);
+
+    List<Object[]> getHistoricalMonthHistoryByCategory(Long userId, LocalDate startDate, LocalDate endDate);
 
     Integer getTotalBudgetAmountSumByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
 }

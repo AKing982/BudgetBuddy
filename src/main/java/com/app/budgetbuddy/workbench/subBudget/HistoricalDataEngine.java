@@ -1,18 +1,16 @@
 package com.app.budgetbuddy.workbench.subBudget;
 
-import com.app.budgetbuddy.domain.BudgetCategory;
-import com.app.budgetbuddy.domain.DateRange;
-import com.app.budgetbuddy.domain.HistoricalMonthStats;
-import com.app.budgetbuddy.domain.MonthHistory;
-import com.app.budgetbuddy.services.BudgetCategoryService;
-import com.app.budgetbuddy.services.CSVTransactionService;
-import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.HistoricalDataException;
+import com.app.budgetbuddy.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,17 +19,14 @@ import java.util.Map;
 @Slf4j
 public class HistoricalDataEngine
 {
-    private final CSVTransactionService csvTransactionService;
-    private final TransactionService transactionService;
+    private final TransactionCategoryQueries transactionCategoryQueries;
     private final BudgetCategoryService budgetCategoryService;
 
     @Autowired
-    public HistoricalDataEngine(CSVTransactionService csvTransactionService,
-                                TransactionService transactionService,
+    public HistoricalDataEngine(TransactionCategoryQueries transactionCategoryQueries,
                                 BudgetCategoryService budgetCategoryService)
     {
-        this.csvTransactionService = csvTransactionService;
-        this.transactionService = transactionService;
+        this.transactionCategoryQueries = transactionCategoryQueries;
         this.budgetCategoryService = budgetCategoryService;
     }
 
@@ -42,12 +37,106 @@ public class HistoricalDataEngine
         {
             return historicalMonthStatsByCategory;
         }
-        return null;
+        if(numberOfMonths < 0)
+        {
+            throw new HistoricalDataException("Number of months cannot be negative");
+        }
+        Map<String, Map<YearMonth, Double>> monthlySavingsByCategory = new HashMap<>();
+        for(int i = 0; i < numberOfMonths; i++)
+        {
+            LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            List<Object[]> monthResult = budgetCategoryService.getHistoricalMonthStatsByCategory(userId, monthStart, monthEnd);
+            for(Object[] row : monthResult)
+            {
+                String category = (String) row[0];
+                validateCategoryKey(category);
+                String monthStr = (String) row[1];
+                if(monthStr == null || monthStr.isEmpty())
+                {
+                    throw new HistoricalDataException("Month cannot be null");
+                }
+                YearMonth month = YearMonth.parse((String) row[1]);
+                double totalSaved = ((Number) row[2]).doubleValue();
+                monthlySavingsByCategory.computeIfAbsent(category, k -> new HashMap<>()).put(month, totalSaved);
+            }
+        }
+
+        for(Map.Entry<String, Map<YearMonth, Double>> entry : monthlySavingsByCategory.entrySet())
+        {
+            String category = entry.getKey();
+            Map<YearMonth, Double> monthData = entry.getValue();
+            YearMonth bestMonth = null;
+            YearMonth worstMonth = null;
+            double bestSaved = Double.NEGATIVE_INFINITY, worstSaved = Double.POSITIVE_INFINITY;
+            for(Map.Entry<YearMonth, Double> monthEntry : monthData.entrySet())
+            {
+                if(monthEntry.getValue() > bestSaved)
+                {
+                    bestSaved = monthEntry.getValue();
+                    bestMonth = monthEntry.getKey();
+                }
+                if(monthEntry.getValue() < worstSaved)
+                {
+                    worstSaved = monthEntry.getValue();
+                    worstMonth = monthEntry.getKey();
+                }
+            }
+            historicalMonthStatsByCategory.put(category, new HistoricalMonthStats(worstMonth, bestMonth, bestSaved, worstSaved));
+        }
+        return historicalMonthStatsByCategory;
     }
 
-    public Map<String, List<MonthHistory>> getHistoricalMonthHistoryByCategory(final int numberOfMonths, Long userId, final LocalDate startDate, final LocalDate endDate)
+    public Map<String, List<MonthHistory>> getHistoricalMonthHistoryByCategory(final int numberOfMonths, Long userId, final LocalDate startDate)
     {
-        return null;
+        Map<String, List<MonthHistory>> historicalMonthHistoryByCategory = new HashMap<>();
+        if(numberOfMonths == 0)
+        {
+            return historicalMonthHistoryByCategory;
+        }
+        if(numberOfMonths < 0)
+        {
+            throw new HistoricalDataException("Number of months cannot be negative");
+        }
+        for(int i = 0; i < numberOfMonths; i++)
+        {
+            LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            List<Object[]> monthResult = budgetCategoryService.getHistoricalMonthHistoryByCategory(userId, monthStart, monthEnd);
+            for(Object[] row : monthResult)
+            {
+                String category = (String) row[0];
+                validateCategoryKey(category);
+                String monthStr = (String) row[1];
+                validateMonth(monthStr);
+                YearMonth month = YearMonth.parse(monthStr);
+                double totalSaved = (Double) row[2];
+                double totalSpent = (Double) row[3];
+                double totalBudgeted = (Double) row[4];
+                double percentSaved = (Double) row[5];
+                double averageSaved = (Double) row[6];
+                double averageSpent = (Double) row[7];
+                MonthHistory monthHistory = new MonthHistory(month, totalSaved, totalSpent, percentSaved, totalBudgeted, averageSaved, averageSpent);
+                historicalMonthHistoryByCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(monthHistory);
+            }
+        }
+        return historicalMonthHistoryByCategory;
+    }
+
+    private void validateMonth(String month)
+    {
+        if(month == null)
+        {
+            throw new HistoricalDataException("Month cannot be null");
+        }
+    }
+
+    private void validateCategoryKey(String category)
+    {
+        if(category == null || category.isEmpty())
+        {
+            throw new HistoricalDataException("Category Key cannot be null");
+        }
     }
 
     //TODO: Replace this method with getHistoricalMonthDataByCategory

@@ -1,11 +1,17 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.CategoryEntity;
+import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.PercentageCalculator;
+import com.app.budgetbuddy.workbench.subBudget.HistoricalDataEngine;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -13,22 +19,29 @@ import org.springframework.cglib.core.Local;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
+import java.time.YearMonth;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class BudgetEstimatorServiceTest
 {
-    @MockBean
+    @Mock
     private BudgetCategoryQueries budgetCategoryQueries;
 
-    @MockBean
+    @Mock
+    private HistoricalDataEngine historicalDataEngine;
+
+    @Mock
+    private CategoryService categoryService;
+
+    @Mock
     private PercentageCalculator percentageCalculator;
 
-    @Autowired
     private BudgetEstimatorService budgetEstimatorService;
 
     private SubBudget testSubBudget;
@@ -69,238 +82,192 @@ class BudgetEstimatorServiceTest
         budget.setUserId(1L);
 
         testSubBudget.setBudget(budget);
+
+        budgetEstimatorService = new BudgetEstimatorService(budgetCategoryQueries, percentageCalculator, historicalDataEngine, categoryService);
     }
 
     @Test
-    void testCalculateBudgetCategoryAmount_whenSubBudgetNull_thenReturnEmptyArray()
-    {
-        CategoryBudgetAmount[] categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(null);
-        assertEquals(0, categoryBudgetAmounts.length);
+    void testCalculateBudgetCategoryAmount_whenSubBudgetIsNull_thenReturnEmptyArray(){
+        List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(null);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
     }
 
     @Test
-    void testCalculateBudgetCategoryAmount_whenAprilSubBudget_thenReturnCategoryBudgetAmounts()
-    {
-
-        // Mock setup
-        LocalDate startDate = LocalDate.of(2025, 4, 1);
-        LocalDate endDate = LocalDate.of(2025, 4, 30);
-        SubBudget subBudget = testSubBudget;
-
-        // Mock CategoryDateInfo
-
-        // Mock category queries
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Rent")))
-                .thenReturn(1907.0);
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Utilities")))
-                .thenReturn(210.0);
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Insurance")))
-                .thenReturn(79.3);
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Gas")))
-                .thenReturn(65.2);
-        when(budgetCategoryQueries.userHasPayments()).thenReturn(true);
-        when(budgetCategoryQueries.userHasSubscriptions()).thenReturn(true);
-
-        // Mock percentage calculator for categories that use percentage
-
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Gas")))
-                .thenReturn(BigDecimal.valueOf(0.02));
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Groceries")))
-                .thenReturn(BigDecimal.valueOf(0.10)); // 8.8%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Payments")))
-                .thenReturn(BigDecimal.valueOf(0.12)); // 11.4%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Subscription")))
-                .thenReturn(BigDecimal.valueOf(0.05)); // 4.4%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Savings")))
-                .thenReturn(BigDecimal.valueOf(0.06)); // 5.6%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Order Out")))
-                .thenReturn(BigDecimal.valueOf(0.015)); // 5.27%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Other")))
-                .thenReturn(BigDecimal.valueOf(0.02)); // 1.56%
-
-        CategoryBudgetAmount[] expectedCategoryBudgetAmounts = new CategoryBudgetAmount[10];
-        CategoryBudgetAmount rentCategoryBudgetAmount = new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1907.0));
-        CategoryBudgetAmount utilitiesCategoryBudgetAmount = new CategoryBudgetAmount("Utilities", BigDecimal.valueOf(210.0));
-        CategoryBudgetAmount insuranceCategoryBudgetAmount = new CategoryBudgetAmount("Insurance", BigDecimal.valueOf(79.3));
-        CategoryBudgetAmount gasCategoryBudgetAmount = new CategoryBudgetAmount("Gas", BigDecimal.valueOf(65.3));
-        CategoryBudgetAmount groceriesCategoryBudgetAmount = new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(326.0));
-        CategoryBudgetAmount paymentsCategoryBudgetAmount = new CategoryBudgetAmount("Payments", BigDecimal.valueOf(391.2));
-        CategoryBudgetAmount subscriptionsCategoryBudgetAmount = new CategoryBudgetAmount("Subscription", BigDecimal.valueOf(163.0));
-        CategoryBudgetAmount ordersCategoryBudgetAmount = new CategoryBudgetAmount("Order Out", BigDecimal.valueOf(48.9));
-        CategoryBudgetAmount otherPurchasesCategoryBudgetAmount = new CategoryBudgetAmount("Other", BigDecimal.valueOf(65.3));
-        expectedCategoryBudgetAmounts[0] = rentCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[1] = utilitiesCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[2] = insuranceCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[3] = gasCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[4] = groceriesCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[5] = paymentsCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[6] = subscriptionsCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[7] = new CategoryBudgetAmount("Savings", BigDecimal.ZERO);
-        expectedCategoryBudgetAmounts[8] = ordersCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[9] = otherPurchasesCategoryBudgetAmount;
-
-        CategoryBudgetAmount[] categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
-        assertEquals(expectedCategoryBudgetAmounts.length, categoryBudgetAmounts.length);
-        for (int i = 0; i < expectedCategoryBudgetAmounts.length; i++) {
-            if (expectedCategoryBudgetAmounts[i] != null && categoryBudgetAmounts[i] != null) {
-                assertEquals(expectedCategoryBudgetAmounts[i].getCategory(), categoryBudgetAmounts[i].getCategory(),
-                        "Category at index " + i + " doesn't match");
-                assertEquals(expectedCategoryBudgetAmounts[i].getBudgetAmount(), categoryBudgetAmounts[i].getBudgetAmount(),
-                        "Budget amount for " + expectedCategoryBudgetAmounts[i].getCategory() + " doesn't match");
-            } else {
-                // Handle case where one of them is null
-                if (expectedCategoryBudgetAmounts[i] == null) {
-                    assertNull(categoryBudgetAmounts[i], "Expected null at index " + i);
-                } else {
-                    assertNotNull(categoryBudgetAmounts[i], "Unexpected null at index " + i +
-                            " for category " + expectedCategoryBudgetAmounts[i].getCategory());
-                }
-            }
-        }
+    void testCalculateBudgetCategoryAmount_whenHistoricalDataNull_thenReturnEmptyArray(){
+        Mockito.when(historicalDataEngine.getHistoricalMonthHistoryByCategory(6, 1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(null);
+        List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
     }
 
     @Test
-    void testCalculateBudgetCategoryAmount_whenMonthlyIncomeIsZero_thenReturnEmptyArray(){
-        SubBudget subBudget = new SubBudget();
-        subBudget.setActive(true);
-        subBudget.setId(4L);
-        subBudget.setBudget(budget);
-        subBudget.setAllocatedAmount(BigDecimal.ZERO);
-        subBudget.setStartDate(LocalDate.of(2025, 4, 1));
-        subBudget.setEndDate(LocalDate.of(2025, 4, 30));
+    void testCalculateBudgetCategoryAmount_whenValidSubBudget_thenReturnCategoryBudgetAmountArray(){
+        Mockito.when(historicalDataEngine.getHistoricalMonthHistoryByCategory(6, 1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(Map.of(
+                        "Groceries", List.of(
+                                new MonthHistory(YearMonth.of(2025, 3), 150.00, 200.00, 57.14, 350.00, 75.00, 100.00),
+                                new MonthHistory(YearMonth.of(2025, 2), 300.00, 100.00, 25.00, 400.00, 150.00, 50.00)
+                        ),
+                        "Payment", List.of(
+                                new MonthHistory(YearMonth.of(2025, 3), -50.00, 250.00, 125.00, 200.00, -25.00, 125.00),
+                                new MonthHistory(YearMonth.of(2025, 2), 80.00, 120.00, 60.00, 200.00, 40.00, 60.00)
+                        )
+                ));
 
-        CategoryBudgetAmount[] categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
-        assertEquals(0, categoryBudgetAmounts.length);
+        List<CategoryBudgetAmount> expected = List.of(
+                new CategoryBudgetAmount("Groceries", new BigDecimal("412.50")),
+                new CategoryBudgetAmount("Payment", new BigDecimal("220.00"))
+        );
+
+        List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+
+        Map<String, BigDecimal> actualMap = actual.stream()
+                .collect(Collectors.toMap(CategoryBudgetAmount::category, CategoryBudgetAmount::budgetAmount));
+
+        assertEquals(new BigDecimal("412.50"), actualMap.get("Groceries"));
+        assertEquals(new BigDecimal("220.00"), actualMap.get("Payment"));
     }
 
     @Test
-    void testCalculateBudgetCategoryAmount_whenNoPaymentsButSubscriptions_thenReturnCategoryBudgetAmounts()
-    {
-        // Mock setup
-        LocalDate startDate = LocalDate.of(2025, 4, 1);
-        LocalDate endDate = LocalDate.of(2025, 4, 30);
-        SubBudget subBudget = testSubBudget;
+    void testCalculateBudgetCategoryAmount_whenNoHistoricalData_thenReturnEmptyArray(){
+        Mockito.when(historicalDataEngine.getHistoricalMonthHistoryByCategory(6, 1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(Map.of());
+        List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
+        assertNotNull(actual);
+        assertEquals(0, actual.size());
+    }
 
-        // Mock CategoryDateInfo
-        CategoryDateInfo mockCategoryDateInfo = mock(CategoryDateInfo.class);
-        mockStatic(CategoryDateInfo.class);
-        when(CategoryDateInfo.createCategoryDateInfo(eq(1L), eq(startDate), eq(endDate)))
-                .thenReturn(mockCategoryDateInfo);
+    @Test
+    void testCalculateBudgetCategoryAmount_whenTotalBudgetedIsNegative_thenSkipCategory(){
+        Mockito.when(historicalDataEngine.getHistoricalMonthHistoryByCategory(6, 1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(Map.of(
+                        "Groceries", List.of(
+                                new MonthHistory(YearMonth.of(2025, 3), 150.00, 200.00, 57.14, -350.00, 75.00, 100.00),
+                                new MonthHistory(YearMonth.of(2025, 2), 300.00, 100.00, 25.00, 400.00, 150.00, 50.00)
+                        ),
+                        "Payment", List.of(
+                                new MonthHistory(YearMonth.of(2025, 3), -50.00, 250.00, 125.00, 200.00, -25.00, 125.00),
+                                new MonthHistory(YearMonth.of(2025, 2), 80.00, 120.00, 60.00, 200.00, 40.00, 60.00)
+                        )
+                ));
 
-        // Mock category queries
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Rent")))
-                .thenReturn(1907.0);
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Utilities")))
-                .thenReturn(210.0);
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Insurance")))
-                .thenReturn(79.3);
-        when(budgetCategoryQueries.getCategoryAmount(eq(1L), eq(startDate), eq(endDate), eq("Gas")))
-                .thenReturn(65.2);
-        when(budgetCategoryQueries.userHasPayments()).thenReturn(false);
-        when(budgetCategoryQueries.userHasSubscriptions()).thenReturn(true);
+        List<CategoryBudgetAmount> expected = List.of(
+                new CategoryBudgetAmount("Groceries", new BigDecimal("440.00")),
+                new CategoryBudgetAmount("Payment", new BigDecimal("220.00")));
+        List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
 
-        // Mock percentage calculator for categories that use percentage
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Gas")))
-                .thenReturn(BigDecimal.valueOf(0.02));
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Groceries")))
-                .thenReturn(BigDecimal.valueOf(0.10)); // 8.8%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Payments")))
-                .thenReturn(BigDecimal.valueOf(0.12)); // 11.4%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Subscription")))
-                .thenReturn(BigDecimal.valueOf(0.05)); // 4.4%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Savings")))
-                .thenReturn(BigDecimal.valueOf(0.06)); // 5.6%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Order Out")))
-                .thenReturn(BigDecimal.valueOf(0.015)); // 5.27%
-        when(percentageCalculator.estimateCategoryPercentage(eq(3260.0), eq("Other")))
-                .thenReturn(BigDecimal.valueOf(0.02)); // 1.56%
+        Map<String, BigDecimal> actualMap = actual.stream()
+                .collect(Collectors.toMap(CategoryBudgetAmount::category, CategoryBudgetAmount::budgetAmount));
 
-        CategoryBudgetAmount[] expectedCategoryBudgetAmounts = new CategoryBudgetAmount[10];
-        CategoryBudgetAmount rentCategoryBudgetAmount = new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1907.0));
-        CategoryBudgetAmount utilitiesCategoryBudgetAmount = new CategoryBudgetAmount("Utilities", BigDecimal.valueOf(210.0));
-        CategoryBudgetAmount insuranceCategoryBudgetAmount = new CategoryBudgetAmount("Insurance", BigDecimal.valueOf(79.3));
-        CategoryBudgetAmount gasCategoryBudgetAmount = new CategoryBudgetAmount("Gas", BigDecimal.valueOf(65.3));
-        CategoryBudgetAmount groceriesCategoryBudgetAmount = new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(326.0));
-        CategoryBudgetAmount subscriptionsCategoryBudgetAmount = new CategoryBudgetAmount("Subscription", BigDecimal.valueOf(163.0));
-        CategoryBudgetAmount savingsCategoryBudgetAmount = new CategoryBudgetAmount("Savings", BigDecimal.valueOf(195.6));
-        CategoryBudgetAmount ordersCategoryBudgetAmount = new CategoryBudgetAmount("Order Out", BigDecimal.valueOf(48.9));
-        CategoryBudgetAmount otherPurchasesCategoryBudgetAmount = new CategoryBudgetAmount("Other", BigDecimal.valueOf(65.3));
-        expectedCategoryBudgetAmounts[0] = rentCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[1] = utilitiesCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[2] = insuranceCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[3] = gasCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[4] = groceriesCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[5] = new CategoryBudgetAmount("Payments", BigDecimal.ZERO);
-        expectedCategoryBudgetAmounts[6] = subscriptionsCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[7] = savingsCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[8] = ordersCategoryBudgetAmount;
-        expectedCategoryBudgetAmounts[9] = otherPurchasesCategoryBudgetAmount;
+        assertEquals(new BigDecimal("220.00"), actualMap.get("Payment"));
+        assertEquals(new BigDecimal("400.0"), actualMap.get("Groceries"));
+    }
 
-        CategoryBudgetAmount[] categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
-        assertEquals(expectedCategoryBudgetAmounts.length, categoryBudgetAmounts.length);
-        for (int i = 0; i < expectedCategoryBudgetAmounts.length; i++) {
-            if (expectedCategoryBudgetAmounts[i] != null && categoryBudgetAmounts[i] != null) {
-                assertEquals(expectedCategoryBudgetAmounts[i].getCategory(), categoryBudgetAmounts[i].getCategory(),
-                        "Category at index " + i + " doesn't match");
-                assertEquals(expectedCategoryBudgetAmounts[i].getBudgetAmount(), categoryBudgetAmounts[i].getBudgetAmount(),
-                        "Budget amount for " + expectedCategoryBudgetAmounts[i].getCategory() + " doesn't match");
-            } else {
-                // Handle case where one of them is null
-                if (expectedCategoryBudgetAmounts[i] == null) {
-                    assertNull(categoryBudgetAmounts[i], "Expected null at index " + i);
-                } else {
-                    assertNotNull(categoryBudgetAmounts[i], "Unexpected null at index " + i +
-                            " for category " + expectedCategoryBudgetAmounts[i].getCategory());
-                }
-            }
-        }
+    @Test
+    void testCalculateBudgetCategoryAmount_whenHistoricalKeyEmpty_thenReturnSkipCategory(){
+        Mockito.when(historicalDataEngine.getHistoricalMonthHistoryByCategory(6, 1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(Map.of(
+                        "", List.of(
+                                new MonthHistory(YearMonth.of(2025, 3), 150.00, 200.00, 57.14, 350.00, 75.00, 100.00),
+                                new MonthHistory(YearMonth.of(2025, 2), 300.00, 100.00, 25.00, 400.00, 150.00, 50.00)
+                        ),
+                        "Payment", List.of(
+                                new MonthHistory(YearMonth.of(2025, 3), -50.00, 250.00, 125.00, 200.00, -25.00, 125.00),
+                                new MonthHistory(YearMonth.of(2025, 2), 80.00, 120.00, 60.00, 200.00, 40.00, 60.00)
+                        )
+                ));
+        List<CategoryBudgetAmount> expected = List.of(
+                new CategoryBudgetAmount("Payment", new BigDecimal("220.00")));
+        List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+
+        Map<String, BigDecimal> actualMap = actual.stream()
+                .collect(Collectors.toMap(CategoryBudgetAmount::category, CategoryBudgetAmount::budgetAmount));
+
+        assertEquals(new BigDecimal("220.00"), actualMap.get("Payment"));
+    }
+
+    @Test
+    void testCalculateBudgetCategoryAmount_whenNoHistoricalData_returnFallback(){
+        List<CategoryEntity> mockCategories = List.of(
+                buildCategory("Groceries"),
+                buildCategory("Rent")
+        );
+
+        Mockito.when(historicalDataEngine.getHistoricalMonthHistoryByCategory(6, 1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(Map.of());
+
+        Mockito.when(categoryService.findAllSystemCategories()).thenReturn(mockCategories);
+
+        // Groceries at 3260 income: slope(-0.000007) * 3260 + 0.12 = 0.09718 * 3260 = 316.81
+        // Rent at 3260 income: slope(-0.004) * 3260 + 0.70 = -12.34 + 0.70 = 0 (capped at 0)
+        Mockito.when(percentageCalculator.estimateCategoryPercentage(3260.0, "Groceries"))
+                .thenReturn(new BigDecimal("0.0972"));
+        Mockito.when(percentageCalculator.estimateCategoryPercentage(3260.0, "Rent"))
+                .thenReturn(new BigDecimal("0.0000"));
+
+        List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
+        assertNotNull(actual);
+        assertEquals(2, actual.size());
+
+        Map<String, BigDecimal> actualMap = actual.stream()
+                .collect(Collectors.toMap(CategoryBudgetAmount::category, CategoryBudgetAmount::budgetAmount));
+
+        assertEquals(new BigDecimal("316.87"), actualMap.get("Groceries")); // 0.0972 * 3260
+        assertEquals(new BigDecimal("0.00"), actualMap.get("Rent"));
     }
 
     @Test
     void testGetBudgetCategoryAmountByCategory_whenCategoryIsEmpty_thenReturnZero(){
         String category = "";
-        CategoryBudgetAmount[] categoryBudgetAmounts = new CategoryBudgetAmount[1];
-        categoryBudgetAmounts[0] = new CategoryBudgetAmount("Rent", BigDecimal.ZERO);
+        List<CategoryBudgetAmount> categoryBudgetAmounts = List.of(new CategoryBudgetAmount(category, BigDecimal.ZERO));
         BigDecimal actual = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
-        assertEquals(0, actual.compareTo(BigDecimal.ZERO));
+        assertEquals(BigDecimal.ZERO, actual);
     }
 
     @Test
-    void testGetBudgetCategoryAmountByCategory_whenCategoryBudgetAmountsArrayIsEmpty_thenReturnZero(){
+    void testGetBudgetCategoryAmountByCategory_whenCategoryBudgetAmountsIsEmpty_thenReturnZero(){
         String category = "Rent";
-        CategoryBudgetAmount[] categoryBudgetAmounts = new CategoryBudgetAmount[0];
+        List<CategoryBudgetAmount> categoryBudgetAmounts = new ArrayList<>();
         BigDecimal actual = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
-        assertEquals(0, actual.compareTo(BigDecimal.ZERO));
+        assertEquals(BigDecimal.ZERO, actual);
     }
 
     @Test
-    void testGetBudgetCategoryAmountByCategory_whenCategoryRent_thenReturnRentAmount(){
+    void testGetBudgetCategoryAmountByCategory_whenValidData_thenReturnBudgetAmount(){
         String category = "Rent";
-        CategoryBudgetAmount[] categoryBudgetAmounts = new CategoryBudgetAmount[10];
-        CategoryBudgetAmount rentCategoryBudgetAmount = new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1907.0));
-        CategoryBudgetAmount utilitiesCategoryBudgetAmount = new CategoryBudgetAmount("Utilities", BigDecimal.valueOf(210.0));
-        CategoryBudgetAmount insuranceCategoryBudgetAmount = new CategoryBudgetAmount("Insurance", BigDecimal.valueOf(79.3));
-        CategoryBudgetAmount gasCategoryBudgetAmount = new CategoryBudgetAmount("Gas", BigDecimal.valueOf(65.3));
-        CategoryBudgetAmount groceriesCategoryBudgetAmount = new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(326.0));
-        CategoryBudgetAmount subscriptionsCategoryBudgetAmount = new CategoryBudgetAmount("Subscription", BigDecimal.valueOf(163.0));
-        CategoryBudgetAmount savingsCategoryBudgetAmount = new CategoryBudgetAmount("Savings", BigDecimal.valueOf(195.6));
-        CategoryBudgetAmount ordersCategoryBudgetAmount = new CategoryBudgetAmount("Order Out", BigDecimal.valueOf(48.9));
-        CategoryBudgetAmount otherPurchasesCategoryBudgetAmount = new CategoryBudgetAmount("Other", BigDecimal.valueOf(65.3));
-        categoryBudgetAmounts[0] = rentCategoryBudgetAmount;
-        categoryBudgetAmounts[1] = utilitiesCategoryBudgetAmount;
-        categoryBudgetAmounts[2] = insuranceCategoryBudgetAmount;
-        categoryBudgetAmounts[3] = gasCategoryBudgetAmount;
-        categoryBudgetAmounts[4] = groceriesCategoryBudgetAmount;
-        categoryBudgetAmounts[5] = subscriptionsCategoryBudgetAmount;
-        categoryBudgetAmounts[6] = savingsCategoryBudgetAmount;
-        categoryBudgetAmounts[7] = ordersCategoryBudgetAmount;
-        categoryBudgetAmounts[8] = otherPurchasesCategoryBudgetAmount;
-
+        List<CategoryBudgetAmount> categoryBudgetAmounts = List.of(new CategoryBudgetAmount(category, BigDecimal.valueOf(1920)));
         BigDecimal actual = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
-        assertNotNull(actual);
-        assertEquals(BigDecimal.valueOf(1907.0), actual);
+        assertEquals(BigDecimal.valueOf(1920), actual);
     }
 
+
+    private CategoryEntity buildCategory(String name) {
+        CategoryEntity entity = new CategoryEntity();
+        entity.setCategory(name);
+        entity.setActive(true);
+        return entity;
+    }
+
+    private List<CategoryEntity> buildCategories() {
+        return List.of(
+                buildCategory("Rent"), buildCategory("Order Out"), buildCategory("Groceries"),
+                buildCategory("Subscription"), buildCategory("Other"), buildCategory("Electric"),
+                buildCategory("Payment"), buildCategory("Haircut"), buildCategory("Trip"),
+                buildCategory("Gas Bill"), buildCategory("Gas"), buildCategory("Insurance"),
+                buildCategory("Phone Insurance"), buildCategory("Utilities"), buildCategory("Mortgage"),
+                buildCategory("Deposit"), buildCategory("Coffee"), buildCategory("Income"),
+                buildCategory("Pet"), buildCategory("Refund"), buildCategory("Transfer"),
+                buildCategory("Withdrawal")
+        );
+    }
 
 
     @AfterEach

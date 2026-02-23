@@ -102,7 +102,7 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
             // Category Spending is the overall spending for the category during the month
             BigDecimal categorySpending = monthlyCategorySpending.getTotalCategorySpending();
             log.info("Monthly category spending {}", categorySpending);
-            CategoryBudgetAmount[] categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
+            List<CategoryBudgetAmount> categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
             BigDecimal budgetedAmountForCategory = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
             //TODO: Need to know when the category spending took place
             List<DateRangeSpending> categoryWeeks = monthlyCategorySpending.getWeeklySpending();
