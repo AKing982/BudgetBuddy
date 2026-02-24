@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.workbench.subBudget;
 
+import com.app.budgetbuddy.domain.CSVTransactionsByCategory;
 import com.app.budgetbuddy.domain.HistoricalMonthStats;
 import com.app.budgetbuddy.domain.MonthHistory;
 import com.app.budgetbuddy.exceptions.HistoricalDataException;
@@ -17,8 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,13 +35,16 @@ class HistoricalDataEngineTest
     private TransactionCategoryQueries transactionCategoryQueries;
 
     @Mock
+    private CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries;
+
+    @Mock
     private BudgetCategoryService budgetCategoryService;
 
     private HistoricalDataEngine historicalDataEngine;
 
     @BeforeEach
     void setUp() {
-        historicalDataEngine = new HistoricalDataEngine(transactionCategoryQueries, budgetCategoryService);
+        historicalDataEngine = new HistoricalDataEngine(transactionCategoryQueries, csvTransactionsByCategoryQueries, budgetCategoryService);
     }
 
     @Test
@@ -337,6 +343,44 @@ class HistoricalDataEngineTest
         assertEquals(YearMonth.of(2026, 9), actual.get("Groceries").get(0).month());
     }
 
+   @Test
+   void testGetHistoricalCategorySpending_whenValidData_thenReturnCategorySpending(){
+       Long userId = 1L;
+       LocalDate startDate = LocalDate.of(2025, 11, 2); // ← November, so i=0 goes back to October
+
+       Map<String, BigDecimal> expected = new HashMap<>();
+       expected.put("Groceries", BigDecimal.valueOf(1250));
+       expected.put("Payment", BigDecimal.valueOf(1450));
+
+       CSVTransactionsByCategory mockCSVTransactionsByCategory = Mockito.mock(CSVTransactionsByCategory.class);
+       CSVTransactionsByCategory mockCSVTransactionsByCategory2 = Mockito.mock(CSVTransactionsByCategory.class);
+
+       Mockito.when(mockCSVTransactionsByCategory.getCategory()).thenReturn("Groceries");
+       Mockito.when(mockCSVTransactionsByCategory.getTotalCategorySpending()).thenReturn(BigDecimal.valueOf(1250));
+
+       Mockito.when(mockCSVTransactionsByCategory2.getCategory()).thenReturn("Payment");
+       Mockito.when(mockCSVTransactionsByCategory2.getTotalCategorySpending()).thenReturn(BigDecimal.valueOf(1450));
+
+       // Generic stub FIRST — returns empty for all other 5 months
+       Mockito.when(csvTransactionsByCategoryQueries.getCSVTransactionsByCategories(
+                       Mockito.eq(userId),
+                       Mockito.any(LocalDate.class),
+                       Mockito.any(LocalDate.class)))
+               .thenReturn(Collections.emptyList());
+
+       // Specific stub LAST — overrides for October (i=0: Nov minus 1 month = Oct)
+       Mockito.when(csvTransactionsByCategoryQueries.getCSVTransactionsByCategories(
+                       userId, LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31)))
+               .thenReturn(List.of(mockCSVTransactionsByCategory, mockCSVTransactionsByCategory2));
+
+       Map<String, BigDecimal> actual = historicalDataEngine.getCSVHistoricalCategorySpending(userId, startDate);
+
+       assertNotNull(actual);
+       assertEquals(expected.size(), actual.size());
+       assertEquals(expected.get("Groceries"), actual.get("Groceries"));
+       assertEquals(expected.get("Payment"), actual.get("Payment"));
+       assertEquals(expected.keySet(), actual.keySet());
+   }
 
 
     @AfterEach

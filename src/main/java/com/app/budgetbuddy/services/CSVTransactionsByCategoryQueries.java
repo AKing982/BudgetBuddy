@@ -119,6 +119,34 @@ public class CSVTransactionsByCategoryQueries
         }
     }
 
+    public List<CSVTransactionsByCategory> getCSVTransactionsByCategories(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            final String csvTransactionCategoryQuery = """
+                    SELECT tc.matchedCategory,
+                    ABS(SUM(ct.transactionAmount)) as totalSpending
+                    FROM TransactionCategoryEntity tc
+                    INNER JOIN CSVTransactionEntity ct
+                        ON tc.csvTransaction.id = ct.id
+                    INNER JOIN CSVAccountEntity cae
+                        ON ct.csvAccount.id = cae.id
+                    WHERE ct.transactionDate BETWEEN :startDate AND :endDate
+                        AND cae.user.id =:userId AND tc.matchedCategory <> 'Uncategorized'
+                    GROUP BY tc.matchedCategory
+                    """;
+            List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("userId", userId)
+                    .getResultList();
+            return createCSVTransactionsByCategoryList(results);
+        }catch(DataException e){
+            log.error("There was an error fetching the csv transactions by categories: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     public List<CSVTransactionsByCategory> getCSVTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         try

@@ -10,24 +10,43 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Slf4j
 public class HistoricalDataEngine
 {
     private final TransactionCategoryQueries transactionCategoryQueries;
+    private final CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries;
     private final BudgetCategoryService budgetCategoryService;
 
     @Autowired
     public HistoricalDataEngine(TransactionCategoryQueries transactionCategoryQueries,
+                                CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries,
                                 BudgetCategoryService budgetCategoryService)
     {
         this.transactionCategoryQueries = transactionCategoryQueries;
         this.budgetCategoryService = budgetCategoryService;
+        this.csvTransactionsByCategoryQueries = csvTransactionsByCategoryQueries;
+    }
+
+    public Map<String, BigDecimal> getCSVHistoricalCategorySpending(final Long userId, final LocalDate startDate)
+    {
+        final int numberOfMonths = 6;
+        Map<String, BigDecimal> historicalCategorySpending = new HashMap<>();
+        for(int i = 0; i < numberOfMonths; i++)
+        {
+            LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            List<CSVTransactionsByCategory> csvTransactionsByCategories = csvTransactionsByCategoryQueries.getCSVTransactionsByCategories(userId, monthStart, monthEnd);
+            for(CSVTransactionsByCategory csvTransactionsByCategory : csvTransactionsByCategories)
+            {
+                String category = csvTransactionsByCategory.getCategory();
+                BigDecimal categorySpending = csvTransactionsByCategory.getTotalCategorySpending();
+                historicalCategorySpending.put(category, categorySpending);
+            }
+        }
+        return historicalCategorySpending;
     }
 
     public Map<String, HistoricalMonthStats> getHistoricalMonthStatsByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate)

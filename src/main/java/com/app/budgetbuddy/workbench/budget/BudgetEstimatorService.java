@@ -52,6 +52,15 @@ public class BudgetEstimatorService
                 .toArray(String[]::new);
     }
 
+    public Map<String, Double> calculateCategoryBudgetPercentage(String category)
+    {
+        if(category == null || category.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        return null;
+    }
+
     public List<CategoryBudgetAmount> calculateBudgetCategoryAmount(final SubBudget subBudget)
     {
         if(subBudget == null)

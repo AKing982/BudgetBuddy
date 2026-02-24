@@ -248,6 +248,13 @@ class BudgetEstimatorServiceTest
         assertEquals(BigDecimal.valueOf(1920), actual);
     }
 
+    @Test
+    void testCalculateCategoryBudgetPercentage_whenCategoryIsEmpty_thenReturnEmptyMap(){
+        Map<String, Double> actual = budgetEstimatorService.calculateCategoryBudgetPercentage("");
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
 
     private CategoryEntity buildCategory(String name) {
         CategoryEntity entity = new CategoryEntity();
