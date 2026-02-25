@@ -140,11 +140,27 @@ public class CSVTransactionsByCategoryQueries
                     .setParameter("endDate", endDate)
                     .setParameter("userId", userId)
                     .getResultList();
-            return createCSVTransactionsByCategoryList(results);
+            return convertAggregatedResultsToCSVTransactionsByCategory(results);
         }catch(DataException e){
             log.error("There was an error fetching the csv transactions by categories: {}", e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    private List<CSVTransactionsByCategory> convertAggregatedResultsToCSVTransactionsByCategory(final List<Object[]> results)
+    {
+        if(results == null || results.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return results.stream()
+                .map(result -> {
+                    String category = (String) result[0];
+                    BigDecimal totalSpending = (BigDecimal) result[1];
+                    return new CSVTransactionsByCategory(category, totalSpending, Collections.emptyList());
+                })
+                .sorted(Comparator.comparing(CSVTransactionsByCategory::getTotalCategorySpending))
+                .toList();
     }
 
     public List<CSVTransactionsByCategory> getCSVTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)

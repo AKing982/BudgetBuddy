@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.subBudget;
 import com.app.budgetbuddy.domain.CSVTransactionsByCategory;
 import com.app.budgetbuddy.domain.HistoricalMonthStats;
 import com.app.budgetbuddy.domain.MonthHistory;
+import com.app.budgetbuddy.domain.TransactionsByCategory;
 import com.app.budgetbuddy.exceptions.HistoricalDataException;
 import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.budget.BudgetCategoryQueries;
@@ -21,10 +22,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -373,13 +372,16 @@ class HistoricalDataEngineTest
                        userId, LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31)))
                .thenReturn(List.of(mockCSVTransactionsByCategory, mockCSVTransactionsByCategory2));
 
-       Map<String, BigDecimal> actual = historicalDataEngine.getCSVHistoricalCategorySpending(userId, startDate);
+       List<TransactionsByCategory> actual = historicalDataEngine.getHistoricalTransactionCategories(userId, startDate);
+       // Convert to map for readable assertions — order in list is not guaranteed
+       Map<String, BigDecimal> actualMap = actual.stream()
+               .collect(Collectors.toMap(
+                       TransactionsByCategory::getCategoryName,
+                       TransactionsByCategory::getTotalCategorySpending));
 
-       assertNotNull(actual);
-       assertEquals(expected.size(), actual.size());
-       assertEquals(expected.get("Groceries"), actual.get("Groceries"));
-       assertEquals(expected.get("Payment"), actual.get("Payment"));
-       assertEquals(expected.keySet(), actual.keySet());
+       assertEquals(BigDecimal.valueOf(1250), actualMap.get("Groceries"));
+       assertEquals(BigDecimal.valueOf(1450), actualMap.get("Payment"));
+       assertEquals(Set.of("Groceries", "Payment"), actualMap.keySet());
    }
 
 

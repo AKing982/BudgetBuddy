@@ -29,7 +29,7 @@ public class ThreadConfig
     private final LocalDate budgetBeginDate = LocalDate.of(currentYear, 1, 1);
     private int numOfMonthsSinceCurrentDate = LocalDate.now().getMonthValue() - budgetBeginDate.getMonthValue();
 
-    @Bean(name="taskExecutor2")
+    @Bean(name="taskExecutor")
     public ThreadPoolTaskExecutor threadPoolTaskExecutor(){
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         threadPoolTaskExecutor.setCorePoolSize(corePoolSize);

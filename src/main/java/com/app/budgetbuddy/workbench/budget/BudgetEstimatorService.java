@@ -1,25 +1,21 @@
 package com.app.budgetbuddy.workbench.budget;
 
-import com.app.budgetbuddy.domain.CategoryBudgetAmount;
-import com.app.budgetbuddy.domain.CategoryDateInfo;
-import com.app.budgetbuddy.domain.MonthHistory;
-import com.app.budgetbuddy.domain.SubBudget;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.CategoryEntity;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.workbench.PercentageCalculator;
 import com.app.budgetbuddy.workbench.subBudget.HistoricalDataEngine;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,18 +24,15 @@ import java.util.stream.Collectors;
 public class BudgetEstimatorService
 {
     private final BudgetCategoryQueries budgetCategoryQueries;
-    private final PercentageCalculator percentageCalculator;
     private final HistoricalDataEngine historicalDataEngine;
     private final CategoryService categoryService;
 
     @Autowired
     public BudgetEstimatorService(BudgetCategoryQueries budgetCategoryQueries,
-                                  PercentageCalculator percentageCalculator,
                                   HistoricalDataEngine historicalDataEngine,
                                   CategoryService categoryService)
     {
         this.budgetCategoryQueries = budgetCategoryQueries;
-        this.percentageCalculator = percentageCalculator;
         this.historicalDataEngine = historicalDataEngine;
         this.categoryService = categoryService;
     }
@@ -52,13 +45,92 @@ public class BudgetEstimatorService
                 .toArray(String[]::new);
     }
 
-    public Map<String, Double> calculateCategoryBudgetPercentage(String category)
+
+    public Map<String, Double> calculateCategoryBudget(final List<TransactionsByCategory> transactionsByCategories, final BigDecimal budgetAmount, final int numOfMonths)
     {
-        if(category == null || category.isEmpty())
+        if(transactionsByCategories == null || transactionsByCategories.isEmpty())
         {
             return Collections.emptyMap();
         }
-        return null;
+        if(budgetAmount == null)
+        {
+            throw new DataException("Budget Amount cannot be null");
+        }
+        Map<String, Double> categoryBudgetMap = new HashMap<>();
+        double monthlyBudget = budgetAmount.doubleValue();
+        List<String> NEED_CATEGORIES = List.of("Rent", "Utilities", "Insurance", "Groceries");
+        List<String> SAVINGS_CATEGORY = List.of("Savings");
+        List<String> EXCLUDED_CATEGORIES = List.of("Income", "Deposit", "Withdrawal");
+        double totalNeedsSpending = 0.0;
+        double totalWantsSpending = 0.0;
+        double totalSavingsSpending = 0.0;
+        Map<String, Double> monthlyAverages = new HashMap<>();
+        for(TransactionsByCategory transactionsByCategory : transactionsByCategories)
+        {
+            String category = transactionsByCategory.getCategoryName();
+            if(EXCLUDED_CATEGORIES.contains(category))
+            {
+                continue;
+            }
+            double monthlyAverage = Math.abs(transactionsByCategory.getTotalCategorySpending().doubleValue() / numOfMonths);
+            monthlyAverages.put(category, monthlyAverage);
+            if(NEED_CATEGORIES.contains(category))
+            {
+                totalNeedsSpending += monthlyAverage;
+            }
+            else if(SAVINGS_CATEGORY.contains(category))
+            {
+                totalSavingsSpending += monthlyAverage;
+            }
+            else
+            {
+                totalWantsSpending += monthlyAverage;
+            }
+        }
+
+        double needsRatio = totalNeedsSpending / monthlyBudget;
+        double needsPercent, wantsPercent, savingsPercent;
+        if(needsRatio <= 0.5){
+            needsPercent = 0.5; wantsPercent = 0.30; savingsPercent = 0.20;
+        }else if(needsRatio <= 0.60){
+            needsPercent = 0.6; wantsPercent = 0.40; savingsPercent = 0.20;
+        }else{
+            needsPercent = 0.7; wantsPercent = 0.20; savingsPercent = 0.10;
+        }
+        double needsBudget = needsPercent * monthlyBudget;
+        double wantsBudget = wantsPercent * monthlyBudget;
+        double savingsBudget = savingsPercent * monthlyBudget;
+
+        for(Map.Entry<String, Double> entry : monthlyAverages.entrySet())
+        {
+            String category = entry.getKey();
+            double averageSpending = entry.getValue();
+            double allocated = 0.0;
+            if(NEED_CATEGORIES.contains(category))
+            {
+                double share = (totalNeedsSpending > 0) ? averageSpending / totalNeedsSpending : 0.0;
+                double proportionalShare = share * needsBudget;
+                allocated = Math.max(proportionalShare, averageSpending);
+            }
+            else if(SAVINGS_CATEGORY.contains(category))
+            {
+                double share = (totalSavingsSpending > 0) ? averageSpending / totalSavingsSpending : 0.0;
+                allocated = share * savingsBudget;
+            }
+            else
+            {
+                double share = (totalWantsSpending > 0) ? averageSpending / totalWantsSpending : 0.0;
+                allocated    = Math.min(averageSpending, share * wantsBudget);
+            }
+            categoryBudgetMap.put(category, Math.round(allocated * 100.0) / 100.0);
+        }
+        return categoryBudgetMap;
+    }
+
+    private boolean isNeedCategory(TransactionsByCategory transactionsByCategory)
+    {
+        String name = transactionsByCategory.getCategoryName();
+        return name.contains("Rent") || name.contains("Groceries") || name.contains("Utilities") || name.contains("Electric");
     }
 
     public List<CategoryBudgetAmount> calculateBudgetCategoryAmount(final SubBudget subBudget)
@@ -70,52 +142,45 @@ public class BudgetEstimatorService
         List<CategoryBudgetAmount> categoryBudgetAmounts = new ArrayList<>();
         Long userId = subBudget.getBudget().getUserId();
         LocalDate budgetStart = subBudget.getStartDate();
-        double monthlyIncome = subBudget.getAllocatedAmount().doubleValue();
+        BigDecimal monthlyIncome = subBudget.getAllocatedAmount();
         final int numOfMonths = 6;
         Map<String, List<MonthHistory>> categoryMonthHistory = historicalDataEngine.getHistoricalMonthHistoryByCategory(numOfMonths,userId, budgetStart);
         if(categoryMonthHistory == null || categoryMonthHistory.isEmpty())
         {
-            List<CategoryEntity> systemCategories = categoryService.findAllSystemCategories();
-            return systemCategories.stream()
-                    .map(c -> {
-                        try
-                        {
-                            String category = c.getCategory();
-                            BigDecimal percentage = percentageCalculator.estimateCategoryPercentage(monthlyIncome, category);
-                            BigDecimal amount = percentage.multiply(BigDecimal.valueOf(monthlyIncome)).setScale(2, RoundingMode.HALF_UP);
-                            return new CategoryBudgetAmount(category, amount);
-                        }catch(RuntimeException e){
-                            log.error("There was an error calculating the budget category amount: ", e);
-                            return null;
-                        }
-                    })
+            List<TransactionsByCategory> transactionsByCategories = historicalDataEngine.getHistoricalTransactionCategories(userId, budgetStart);
+            Map<String, Double> categoryBudgetMap = calculateCategoryBudget(transactionsByCategories, monthlyIncome, numOfMonths);
+            categoryBudgetAmounts = categoryBudgetMap.keySet().stream()
+                    .map(category -> new CategoryBudgetAmount(category, BigDecimal.valueOf(categoryBudgetMap.get(category))))
                     .toList();
         }
-        for(Map.Entry<String, List<MonthHistory>> entry : categoryMonthHistory.entrySet())
+        else
         {
-            String category = entry.getKey();
-            if(category.isEmpty())
+            for(Map.Entry<String, List<MonthHistory>> entry : categoryMonthHistory.entrySet())
             {
-                continue;
-            }
-            List<MonthHistory> monthHistories = entry.getValue();
-            List<MonthHistory> filteredMonthHistories = monthHistories.stream()
-                    .filter(m -> m.totalBudgeted() >= 0)
-                    .toList();
-            if(filteredMonthHistories.size() == 1)
-            {
-               MonthHistory monthHistory = filteredMonthHistories.get(0);
-               categoryBudgetAmounts.add(new CategoryBudgetAmount(category, BigDecimal.valueOf(monthHistory.totalBudgeted())));
-            }
-            else
-            {
-                BigDecimal averageBudgetedAmount;
-                BigDecimal totalBudgeted = filteredMonthHistories.stream()
-                        .map(m -> BigDecimal.valueOf(m.totalBudgeted()))
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                averageBudgetedAmount = totalBudgeted.divide(BigDecimal.valueOf(monthHistories.size()), 2, RoundingMode.HALF_UP);
-                BigDecimal suggestedAmount = averageBudgetedAmount.multiply(BigDecimal.valueOf(1.10)).setScale(2, RoundingMode.HALF_UP);
-                categoryBudgetAmounts.add(new CategoryBudgetAmount(category, suggestedAmount));
+                String category = entry.getKey();
+                if(category.isEmpty())
+                {
+                    continue;
+                }
+                List<MonthHistory> monthHistories = entry.getValue();
+                List<MonthHistory> filteredMonthHistories = monthHistories.stream()
+                        .filter(m -> m.totalBudgeted() >= 0)
+                        .toList();
+                if(filteredMonthHistories.size() == 1)
+                {
+                    MonthHistory monthHistory = filteredMonthHistories.get(0);
+                    categoryBudgetAmounts.add(new CategoryBudgetAmount(category, BigDecimal.valueOf(monthHistory.totalBudgeted())));
+                }
+                else
+                {
+                    BigDecimal averageBudgetedAmount;
+                    BigDecimal totalBudgeted = filteredMonthHistories.stream()
+                            .map(m -> BigDecimal.valueOf(m.totalBudgeted()))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    averageBudgetedAmount = totalBudgeted.divide(BigDecimal.valueOf(monthHistories.size()), 2, RoundingMode.HALF_UP);
+                    BigDecimal suggestedAmount = averageBudgetedAmount.multiply(BigDecimal.valueOf(1.10)).setScale(2, RoundingMode.HALF_UP);
+                    categoryBudgetAmounts.add(new CategoryBudgetAmount(category, suggestedAmount));
+                }
             }
         }
         return categoryBudgetAmounts;

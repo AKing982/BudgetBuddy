@@ -30,10 +30,10 @@ public class HistoricalDataEngine
         this.csvTransactionsByCategoryQueries = csvTransactionsByCategoryQueries;
     }
 
-    public Map<String, BigDecimal> getCSVHistoricalCategorySpending(final Long userId, final LocalDate startDate)
+    public List<TransactionsByCategory> getHistoricalTransactionCategories(final Long userId, final LocalDate startDate)
     {
         final int numberOfMonths = 6;
-        Map<String, BigDecimal> historicalCategorySpending = new HashMap<>();
+        List<TransactionsByCategory> transactionsByCategories = new ArrayList<>();
         for(int i = 0; i < numberOfMonths; i++)
         {
             LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
@@ -43,10 +43,13 @@ public class HistoricalDataEngine
             {
                 String category = csvTransactionsByCategory.getCategory();
                 BigDecimal categorySpending = csvTransactionsByCategory.getTotalCategorySpending();
-                historicalCategorySpending.put(category, categorySpending);
+                TransactionsByCategory transactionsByCategory = new TransactionsByCategory();
+                transactionsByCategory.setCategoryName(category);
+                transactionsByCategory.setTotalCategorySpending(categorySpending);
+                transactionsByCategories.add(transactionsByCategory);
             }
         }
-        return historicalCategorySpending;
+        return transactionsByCategories;
     }
 
     public Map<String, HistoricalMonthStats> getHistoricalMonthStatsByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate)
