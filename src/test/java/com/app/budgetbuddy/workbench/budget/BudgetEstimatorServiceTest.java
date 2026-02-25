@@ -266,7 +266,7 @@ class BudgetEstimatorServiceTest
 
     @Test
     void testCalculateCategoryBudgetPercentage_whenValidTransactionsByCategories_thenReturnMap(){
-        BigDecimal budgetAmount = BigDecimal.valueOf(3260);
+        BigDecimal budgetAmount = BigDecimal.valueOf(3095.08);
         int numOfMonths = 6;
         List<TransactionsByCategory> transactionsByCategories = new ArrayList<>();
 

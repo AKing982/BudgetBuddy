@@ -58,9 +58,11 @@ public class BudgetEstimatorService
         }
         Map<String, Double> categoryBudgetMap = new HashMap<>();
         double monthlyBudget = budgetAmount.doubleValue();
+        log.info("Monthly Budget: " + monthlyBudget);
+        log.info("Number of Months: " + numOfMonths);
         List<String> NEED_CATEGORIES = List.of("Rent", "Utilities", "Insurance", "Groceries");
         List<String> SAVINGS_CATEGORY = List.of("Savings");
-        List<String> EXCLUDED_CATEGORIES = List.of("Income", "Deposit", "Withdrawal");
+        List<String> EXCLUDED_CATEGORIES = List.of("Deposit", "Withdrawal");
         double totalNeedsSpending = 0.0;
         double totalWantsSpending = 0.0;
         double totalSavingsSpending = 0.0;
@@ -72,7 +74,10 @@ public class BudgetEstimatorService
             {
                 continue;
             }
+            double totalCategorySpending = transactionsByCategory.getTotalCategorySpending().doubleValue();
+            log.info("Category: " + category + " - Total Spending: " + totalCategorySpending);
             double monthlyAverage = Math.abs(transactionsByCategory.getTotalCategorySpending().doubleValue() / numOfMonths);
+            log.info("Category: " + category + " - Monthly Average: " + monthlyAverage);
             monthlyAverages.put(category, monthlyAverage);
             if(NEED_CATEGORIES.contains(category))
             {
@@ -105,7 +110,7 @@ public class BudgetEstimatorService
         {
             String category = entry.getKey();
             double averageSpending = entry.getValue();
-            double allocated = 0.0;
+            double allocated;
             if(NEED_CATEGORIES.contains(category))
             {
                 double share = (totalNeedsSpending > 0) ? averageSpending / totalNeedsSpending : 0.0;
@@ -122,6 +127,7 @@ public class BudgetEstimatorService
                 double share = (totalWantsSpending > 0) ? averageSpending / totalWantsSpending : 0.0;
                 allocated    = Math.min(averageSpending, share * wantsBudget);
             }
+            log.info("Category: " + category + " - Allocated: " + (allocated * 100.0 / 100.0));
             categoryBudgetMap.put(category, Math.round(allocated * 100.0) / 100.0);
         }
         return categoryBudgetMap;

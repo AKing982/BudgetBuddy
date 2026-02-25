@@ -33,23 +33,28 @@ public class HistoricalDataEngine
     public List<TransactionsByCategory> getHistoricalTransactionCategories(final Long userId, final LocalDate startDate)
     {
         final int numberOfMonths = 6;
-        List<TransactionsByCategory> transactionsByCategories = new ArrayList<>();
+        Map<String, BigDecimal> aggregated = new HashMap<>();
         for(int i = 0; i < numberOfMonths; i++)
         {
             LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
             LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
-            List<CSVTransactionsByCategory> csvTransactionsByCategories = csvTransactionsByCategoryQueries.getCSVTransactionsByCategories(userId, monthStart, monthEnd);
+            List<CSVTransactionsByCategory> csvTransactionsByCategories =
+                    csvTransactionsByCategoryQueries.getCSVTransactionsByCategories(userId, monthStart, monthEnd);
             for(CSVTransactionsByCategory csvTransactionsByCategory : csvTransactionsByCategories)
             {
                 String category = csvTransactionsByCategory.getCategory();
                 BigDecimal categorySpending = csvTransactionsByCategory.getTotalCategorySpending();
-                TransactionsByCategory transactionsByCategory = new TransactionsByCategory();
-                transactionsByCategory.setCategoryName(category);
-                transactionsByCategory.setTotalCategorySpending(categorySpending);
-                transactionsByCategories.add(transactionsByCategory);
+                aggregated.merge(category, categorySpending, BigDecimal::add);
             }
         }
-        return transactionsByCategories;
+        return aggregated.entrySet().stream()
+                .map(e -> {
+                    TransactionsByCategory t = new TransactionsByCategory();
+                    t.setCategoryName(e.getKey());
+                    t.setTotalCategorySpending(e.getValue());
+                    return t;
+                })
+                .toList();
     }
 
     public Map<String, HistoricalMonthStats> getHistoricalMonthStatsByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate)
