@@ -56,16 +56,14 @@ public class BudgetEstimatorService
         {
             throw new DataException("Budget Amount cannot be null");
         }
-        Map<String, Double> categoryBudgetMap = new HashMap<>();
+
         double monthlyBudget = budgetAmount.doubleValue();
-        log.info("Monthly Budget: " + monthlyBudget);
-        log.info("Number of Months: " + numOfMonths);
+//        log.info("Monthly Budget: " + monthlyBudget);
+//        log.info("Number of Months: " + numOfMonths);
         List<String> NEED_CATEGORIES = List.of("Rent", "Utilities", "Insurance", "Groceries");
-        List<String> SAVINGS_CATEGORY = List.of("Savings");
         List<String> EXCLUDED_CATEGORIES = List.of("Deposit", "Withdrawal");
+        double totalWantsAvg = 0.0;
         double totalNeedsSpending = 0.0;
-        double totalWantsSpending = 0.0;
-        double totalSavingsSpending = 0.0;
         Map<String, Double> monthlyAverages = new HashMap<>();
         for(TransactionsByCategory transactionsByCategory : transactionsByCategories)
         {
@@ -75,62 +73,59 @@ public class BudgetEstimatorService
                 continue;
             }
             double totalCategorySpending = transactionsByCategory.getTotalCategorySpending().doubleValue();
-            log.info("Category: " + category + " - Total Spending: " + totalCategorySpending);
-            double monthlyAverage = Math.abs(transactionsByCategory.getTotalCategorySpending().doubleValue() / numOfMonths);
-            log.info("Category: " + category + " - Monthly Average: " + monthlyAverage);
+            double monthlyAverage = Math.abs(totalCategorySpending / numOfMonths);
             monthlyAverages.put(category, monthlyAverage);
             if(NEED_CATEGORIES.contains(category))
             {
                 totalNeedsSpending += monthlyAverage;
             }
-            else if(SAVINGS_CATEGORY.contains(category))
-            {
-                totalSavingsSpending += monthlyAverage;
-            }
             else
             {
-                totalWantsSpending += monthlyAverage;
+               totalWantsAvg += monthlyAverage;
             }
         }
 
-        double needsRatio = totalNeedsSpending / monthlyBudget;
+        double remainingBudget = Math.max(0, monthlyBudget - totalNeedsSpending);
+        Map<String, Double> envelopes = calculateWantsNeedsSavingsBudget(totalNeedsSpending / monthlyBudget, remainingBudget);
+        double wantsBudget = envelopes.get("Wants");
+        Map<String, Double> categoryBudgetMap = new HashMap<>();
+        for(Map.Entry<String, Double> entry : monthlyAverages.entrySet())
+        {
+            String category = entry.getKey();
+            double average = entry.getValue();
+            double allocated;
+            if(NEED_CATEGORIES.contains(category))
+            {
+                allocated = average;
+            }
+            else
+            {
+                double weight = (totalWantsAvg > 0) ? average / totalWantsAvg : 0.0;
+                allocated = Math.min(average, weight * wantsBudget);
+            }
+            categoryBudgetMap.put(category, Math.round(allocated * 100.0) / 100.0);
+        }
+        return categoryBudgetMap;
+    }
+
+    private Map<String, Double> calculateWantsNeedsSavingsBudget(final double needsRatio, double monthlyBudget)
+    {
+        Map<String, Double> wantsNeedsSavingsBudgetMap = new HashMap<>();
         double needsPercent, wantsPercent, savingsPercent;
         if(needsRatio <= 0.5){
             needsPercent = 0.5; wantsPercent = 0.30; savingsPercent = 0.20;
         }else if(needsRatio <= 0.60){
             needsPercent = 0.6; wantsPercent = 0.40; savingsPercent = 0.20;
-        }else{
+        }else {
             needsPercent = 0.7; wantsPercent = 0.20; savingsPercent = 0.10;
         }
         double needsBudget = needsPercent * monthlyBudget;
         double wantsBudget = wantsPercent * monthlyBudget;
         double savingsBudget = savingsPercent * monthlyBudget;
-
-        for(Map.Entry<String, Double> entry : monthlyAverages.entrySet())
-        {
-            String category = entry.getKey();
-            double averageSpending = entry.getValue();
-            double allocated;
-            if(NEED_CATEGORIES.contains(category))
-            {
-                double share = (totalNeedsSpending > 0) ? averageSpending / totalNeedsSpending : 0.0;
-                double proportionalShare = share * needsBudget;
-                allocated = Math.max(proportionalShare, averageSpending);
-            }
-            else if(SAVINGS_CATEGORY.contains(category))
-            {
-                double share = (totalSavingsSpending > 0) ? averageSpending / totalSavingsSpending : 0.0;
-                allocated = share * savingsBudget;
-            }
-            else
-            {
-                double share = (totalWantsSpending > 0) ? averageSpending / totalWantsSpending : 0.0;
-                allocated    = Math.min(averageSpending, share * wantsBudget);
-            }
-            log.info("Category: " + category + " - Allocated: " + (allocated * 100.0 / 100.0));
-            categoryBudgetMap.put(category, Math.round(allocated * 100.0) / 100.0);
-        }
-        return categoryBudgetMap;
+        wantsNeedsSavingsBudgetMap.put("Needs", needsBudget);
+        wantsNeedsSavingsBudgetMap.put("Wants", wantsBudget);
+        wantsNeedsSavingsBudgetMap.put("Savings", savingsBudget);
+        return wantsNeedsSavingsBudgetMap;
     }
 
     private boolean isNeedCategory(TransactionsByCategory transactionsByCategory)
