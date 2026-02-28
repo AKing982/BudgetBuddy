@@ -42,6 +42,7 @@ public class CSVTransactionsThreadService
 
             List<CSVTransactionsByCategory> result =
                     csvTransactionsByCategoryQueries.getCSVTransactionsByCategoryList(userId, startDate, endDate);
+            log.info("Query Results from csv transactions thread service: {}", result);
 
             log.debug("Successfully fetched {} categories for userId={}", result.size(), userId);
             return CompletableFuture.completedFuture(result);

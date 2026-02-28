@@ -30,7 +30,9 @@ public class TransactionsByCategoryLoaderService
     public List<TransactionsByCategory> fetchAndMergeForMonth(final SubBudget subBudget)
     {
         List<TransactionsByCategory> transactions = fetchByMonth(subBudget);
+        log.info("Transactions: {}", transactions);
         List<CSVTransactionsByCategory> csvTransactions = fetchCSVByMonth(subBudget);
+        log.info("CSV Transactions: {}", csvTransactions);
         return merge(transactions, csvTransactions);
     }
 
@@ -110,10 +112,14 @@ public class TransactionsByCategoryLoaderService
     private List<CSVTransactionsByCategory> fetchCSVByMonth(final SubBudget subBudget)
     {
         Long userId = subBudget.getBudget().getUserId();
+        log.info("Fetching CSV Transactions by category for user: {}", userId);
+        log.info("Fetching CSV Transactions by category for start date: {}, end date: {}", subBudget.getStartDate(), subBudget.getEndDate());
         try
         {
-            return csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(
+            List<CSVTransactionsByCategory> csvTransactions = csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(
                     userId, subBudget.getStartDate(), subBudget.getEndDate()).join();
+            log.info("CSV Transactions Inside Fetch CSV by Month: {}", csvTransactions);
+            return csvTransactions;
         }
         catch(CompletionException e)
         {

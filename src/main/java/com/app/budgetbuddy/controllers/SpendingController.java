@@ -18,37 +18,9 @@ public class SpendingController {
     private final SpendingCalculatorService spendingCalculatorService;
 
     @Autowired
-    public SpendingController(SpendingCalculatorService spendingCalculatorService) {
+    public SpendingController(SpendingCalculatorService spendingCalculatorService)
+    {
         this.spendingCalculatorService = spendingCalculatorService;
     }
 
-    @GetMapping("/total/{userId}")
-    public ResponseEntity<?> getSpendingTotal(@PathVariable Long userId,
-                                              @RequestParam LocalDate startDate,
-                                              @RequestParam(required = false) LocalDate endDate){
-        return null;
-    }
-
-    @PostMapping("/calculate")
-    public ResponseEntity<?> calculateSpending(@RequestBody SpendingRequest spendingRequest){
-        return null;
-    }
-
-    @GetMapping("/average/{userId}")
-    public ResponseEntity<?> getSpendingAverage(@PathVariable Long userId,
-                                                @RequestParam LocalDate startDate,
-                                                @RequestParam(required = false) LocalDate endDate){
-        return null;
-    }
-
-    @GetMapping("/breakdown")
-    public ResponseEntity<?> getSpendingBreakdown(@RequestParam Long userId,
-                                                  @RequestParam PeriodRequest periodRequest){
-        return null;
-    }
-
-    @GetMapping("/top-categories")
-    public ResponseEntity<?> getSpendingTopCategories(@RequestParam Integer limit){
-        return null;
-    }
 }

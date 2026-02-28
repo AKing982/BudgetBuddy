@@ -3,12 +3,15 @@ package com.app.budgetbuddy.domain;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 @Getter
 @Setter
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
+@AllArgsConstructor(access= AccessLevel.PUBLIC)
 @ToString
 @Builder
 public class CSVTransactionsByCategory
@@ -16,6 +19,7 @@ public class CSVTransactionsByCategory
     private String category;
     private BigDecimal totalCategorySpending;
     private List<TransactionCSV> csvTransactions;
+    private LocalDate transactionDate;
 
     public CSVTransactionsByCategory(String categoryName, List<TransactionCSV> transactions) {
         this.category = categoryName;
@@ -26,6 +30,13 @@ public class CSVTransactionsByCategory
         this.category = categoryName;
         this.totalCategorySpending = totalCategorySpending;
         this.csvTransactions = transactions;
+    }
+
+    public CSVTransactionsByCategory(String categoryName, BigDecimal totalCategorySpending, LocalDate transactionDate) {
+        this.category = categoryName;
+        this.totalCategorySpending = totalCategorySpending;
+        this.transactionDate = transactionDate;
+        this.csvTransactions = Collections.emptyList();
     }
 
     public static CSVTransactionsByCategory build(String categoryName, List<TransactionCSV> transactions) {

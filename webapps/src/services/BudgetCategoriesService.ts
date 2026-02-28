@@ -43,6 +43,34 @@ class BudgetCategoriesService
         };
     }
 
+    public async updateBudgetCategoryAmount(
+        userId: number,
+        category: string,
+        newAmount: number,
+        startDate: Date,
+        endDate: Date
+    ): Promise<void>
+    {
+        try
+        {
+            await axios.put(
+                `${API_BASE_URL}/budget-category/${userId}/update-amount`,
+                { category, budgetAmount: newAmount },
+                {
+                    params: {
+                        startDate: this.formatDate(startDate),
+                        endDate: this.formatDate(endDate)
+                    }
+                }
+            );
+        }
+        catch(error)
+        {
+            console.error(`There was an error updating the budget amount for category ${category} and userId ${userId}: `, error);
+            throw error;
+        }
+    }
+
     public async createBudgetCategoriesForDateRange(userId: number,
                                                     startDate: Date,
                                                     endDate: Date) : Promise<BudgetCategory[]>

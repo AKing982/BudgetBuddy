@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.entities.BudgetCategoryEntity;
 import org.springframework.cglib.core.Local;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,8 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
     List<Object[]> getHistoricalMonthStatsByCategory(Long userId, LocalDate startDate, LocalDate endDate);
 
     List<Object[]> getHistoricalMonthHistoryByCategory(Long userId, LocalDate startDate, LocalDate endDate);
+
+    void updateBudgetCategoryAmount(String category, Long userId, LocalDate startDate, LocalDate endDate, BigDecimal amount);
 
     Integer getTotalBudgetAmountSumByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
 }

@@ -6,6 +6,7 @@ import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.BudgetCategoryException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.repositories.BudgetCategoryRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
@@ -254,6 +255,23 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         }catch(DataAccessException e){
             log.error("There was an error getting the historical month history by category: ", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateBudgetCategoryAmount(String category, Long userId, LocalDate startDate, LocalDate endDate, BigDecimal amount)
+    {
+        try
+        {
+            double updatedBudgetAmount = amount.doubleValue();
+            budgetCategoryRepository.updateBudgetedAmount(category, updatedBudgetAmount, userId, startDate, endDate);
+        }
+        catch(DataException e)
+        {
+            log.error("Error updating budget category amount for category={}, userId={}: {}",
+                    category, userId, e.getMessage());
+            throw e;
         }
     }
 

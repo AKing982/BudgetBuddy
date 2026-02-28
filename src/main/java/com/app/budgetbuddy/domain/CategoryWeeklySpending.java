@@ -9,13 +9,13 @@ import lombok.NoArgsConstructor;
 public class CategoryWeeklySpending
 {
     private String category;
-    private BudgetScheduleRange budgetWeek;
+    private BudgetScheduleRange weekRange;
     private double spentOnCategory;
 
-    public CategoryWeeklySpending(String category, BudgetScheduleRange budgetWeek, double spentOnCategory)
+    public CategoryWeeklySpending(String category, BudgetScheduleRange weekRange, double spentOnCategory)
     {
         this.category = category;
-        this.budgetWeek = budgetWeek;
+        this.weekRange = weekRange;
         this.spentOnCategory = spentOnCategory;
     }
 }

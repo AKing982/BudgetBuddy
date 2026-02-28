@@ -427,7 +427,7 @@ class WeeklyBudgetCategoryBuilderServiceTest
     }
 
     @Test
-    void testBuildBudgetCategoryList_whenWeeklyCategorySpendingIsNull_thenThrowException(){
+    void testBuildBudgetCategoryList_whenWeeklyCategorySpendingIsNull_thenReturnEmptyList(){
         WeeklyBudgetCategoryCriteria weeklyBudgetCategoryCriteria1 = new WeeklyBudgetCategoryCriteria();
         weeklyBudgetCategoryCriteria1.setCategory("Rent");
         weeklyBudgetCategoryCriteria1.setSubBudget(testSubBudget);
@@ -443,13 +443,48 @@ class WeeklyBudgetCategoryBuilderServiceTest
     }
 
     @Test
-    void testBuildBudgetCategoryList_whenWeeklyCategorySpendingAmountIsNegative_thenThrowException(){
+    void testBuildBudgetCategoryList_whenDuplicateBudgetCategories_thenReturnUniqueBudgetCategories(){
 
     }
 
     @Test
-    void testBuildBudgetCategoryList_whenDuplicateBudgetCategories_thenReturnUniqueBudgetCategories(){
+    void testBuildBudgetCategoryList_whenWeeklySpendingExceedsBudgetedAmount_thenReturnOverspendingAmount(){
 
+    }
+
+    @Test
+    void testUpdateWeeklyBudgetCategories_whenExistingBudgetCategoriesIsNull_thenReturnEmptyList(){
+        List<BudgetCategory> existingBudgetCategories = null;
+        List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = List.of(new WeeklyBudgetCategoryCriteria());
+        List<BudgetCategory> actual = weeklyBudgetCategoryBuilderService.updateWeeklyBudgetCategories(existingBudgetCategories, weeklyBudgetCategoryCriteriaList);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testUpdateWeeklyBudgetCategories_whenExistingBudgetCategoriesIsEmpty_thenReturnEmptyList(){
+        List<BudgetCategory> existingBudgetCategories = new ArrayList<>();
+        List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = List.of(new WeeklyBudgetCategoryCriteria());
+        List<BudgetCategory> actual = weeklyBudgetCategoryBuilderService.updateWeeklyBudgetCategories(existingBudgetCategories, weeklyBudgetCategoryCriteriaList);
+        assertNotNull(actual);
+    }
+
+    @Test
+    void testUpdateWeeklyBudgetCategories_whenWeeklyBudgetCategoryCriteriaListIsNull_thenReturnEmptyList(){
+        List<BudgetCategory> existingBudgetCategories = new ArrayList<>();
+        List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = null;
+        List<BudgetCategory> actual = weeklyBudgetCategoryBuilderService.updateWeeklyBudgetCategories(existingBudgetCategories, weeklyBudgetCategoryCriteriaList);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testUpdateWeeklyBudgetCategories_whenWeeklyBudgetCategoryCriteriaListIsEmpty_thenReturnEmptyList(){
+        List<BudgetCategory> existingBudgetCategories = List.of(new BudgetCategory());
+        List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList = new ArrayList<>();
+        List<BudgetCategory> actual = weeklyBudgetCategoryBuilderService.updateWeeklyBudgetCategories(existingBudgetCategories, weeklyBudgetCategoryCriteriaList);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
     }
 
     @AfterEach

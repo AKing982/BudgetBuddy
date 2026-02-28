@@ -28,7 +28,7 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from './Sidebar';
 import BudgetPeriodTable from './BudgetPeriodTable';
-import DynamicBudgetPanel from "./DynamicBudgetPanel";
+import DynamicBudgetPanel, {CSVTransactionsByDateCategory} from "./DynamicBudgetPanel";
 import BudgetRunnerService, { BudgetRunnerResult } from "../services/BudgetRunnerService";
 import CsvUploadService  from "../services/CsvUploadService";
 import {
@@ -87,7 +87,16 @@ const BudgetPage: React.FC = () => {
     const [manageCategoriesDialogOpen, setManageCategoriesDialogOpen] = useState<boolean>(false);
     const [isBudgetCategoryLoading, setIsBudgetCategoryLoading] = useState<boolean>(false);
     const [budgetCategoryLoadingMessage, setBudgetCategoryLoadingMessage] = useState<string>('');
+    const [categoryTransactionsByDate, setCategoryTransactionsByDate] = useState<CSVTransactionsByDateCategory[]>([]);
     const userService = UserService.getInstance();
+    const startDate = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
+    const endDate = useMemo(() => endOfMonth(currentMonth), [currentMonth]);
+    const [budgetUpdateConfirmOpen, setBudgetUpdateConfirmOpen] = useState(false);
+    const [pendingBudgetUpdate, setPendingBudgetUpdate] = useState<{ categoryName: string; newAmount: number } | null>(null);
+
+    const formatDate = (date: Date): string => {
+        return format(date, 'yyyy-MM-dd');
+    };
 
     const uploadService = new CsvUploadService();
     const budgetService = BudgetService.getInstance();
@@ -249,6 +258,25 @@ const BudgetPage: React.FC = () => {
         };
         fetchUserHasUploadAccess();
     });
+
+    useEffect(() => {
+        if (!userId) return;
+
+        const fetchCategoryTransactionsByDate = async () => {
+            try {
+                const data = await transactionCategoryService.fetchCSVTransactionsByCategoryWithDate(
+                    userId,
+                    formatDate(startDate),
+                    formatDate(endDate)
+                );
+                setCategoryTransactionsByDate(data);
+            } catch (error) {
+                console.error('Error fetching category transactions by date:', error);
+            }
+        };
+
+        fetchCategoryTransactionsByDate();
+    }, [userId, startDate, endDate]);
 
     const doesBudgetExistForBeginningYear = async (retryCount = 0) =>
     {
@@ -470,7 +498,7 @@ const BudgetPage: React.FC = () => {
         const totalSaved = savingsCategories?.actualSavedAmount ?? 0;
         const totalBudget = item.budget?.budgetAmount ?? 0;
         const totalIncome = incomeCategories?.actualBudgetedIncome ?? 0;
-        const remaining = stats.totalBudget - totalSpent - totalSaved;
+        const remaining = stats.totalBudget - totalSpent;
 
         const startDate = (stats.dateRange.startDate as unknown) as number[];
         const endDate = (stats.dateRange.endDate as unknown) as number[];
@@ -1153,56 +1181,10 @@ const BudgetPage: React.FC = () => {
                                     recurringCategories={recurringCategories}
                                     budgetStats={budgetStats}
                                     allCategories={budgetCategories}
+                                    categoryTransactionsByDate={categoryTransactionsByDate}
                                     onUpdateBudgetAmount={async (categoryName: string, newAmount: number) => {
-                                        try {
-                                            console.log(`Updating ${categoryName} budget to $${newAmount}`);
-
-                                            // TODO: Call your backend API to update budget amount
-                                            // await budgetCategoryService.updateBudgetAmount(
-                                            //     userId,
-                                            //     categoryName,
-                                            //     newAmount,
-                                            //     budgetStats.dateRange.startDate,
-                                            //     budgetStats.dateRange.endDate
-                                            // );
-
-                                            // Optimistic update: Update local state immediately
-                                            const updatedBudgetData = budgetData.map(budget => {
-                                                if (budget.budgetCategoryStats?.budgetPeriodCategories) {
-                                                    const updatedCategories = budget.budgetCategoryStats.budgetPeriodCategories.map(cat => {
-                                                        if (cat.category === categoryName) {
-                                                            return {
-                                                                ...cat,
-                                                                budgeted: newAmount,
-                                                                remaining: newAmount - cat.actual
-                                                            };
-                                                        }
-                                                        return cat;
-                                                    });
-                                                    return {
-                                                        ...budget,
-                                                        budgetCategoryStats: {
-                                                            ...budget.budgetCategoryStats,
-                                                            budgetPeriodCategories: updatedCategories
-                                                        }
-                                                    };
-                                                }
-                                                return budget;
-                                            });
-                                            setBudgetData(updatedBudgetData);
-
-                                            // Then refresh from backend to ensure consistency
-                                            await fetchBudgetData(currentMonth);
-
-                                            setSnackbarMessage(`Budget for ${categoryName} updated to $${newAmount.toFixed(2)}`);
-                                            setSnackbarSeverity('success');
-                                            setSnackbarOpen(true);
-                                        } catch (error) {
-                                            console.error('Error updating budget amount:', error);
-                                            // Revert optimistic update on error
-                                            await fetchBudgetData(currentMonth);
-                                            throw error;
-                                        }
+                                        setPendingBudgetUpdate({ categoryName, newAmount });
+                                        setBudgetUpdateConfirmOpen(true);
                                     }}
                                     onOptimizeBudget={async (categoryName: string) => {
                                         try {
@@ -1317,6 +1299,81 @@ const BudgetPage: React.FC = () => {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+            <Dialog
+                open={budgetUpdateConfirmOpen}
+                onClose={() => setBudgetUpdateConfirmOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+            >
+                <Box sx={{ p: 3 }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+                        Update Budget Amount
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Are you sure you want to change the budget for{' '}
+                        <strong>{pendingBudgetUpdate?.categoryName}</strong> to{' '}
+                        <strong>${pendingBudgetUpdate?.newAmount.toFixed(2)}</strong>?
+                        This will update the budgeted amount for this category for{' '}
+                        {format(currentMonth, 'MMMM yyyy')}.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                setBudgetUpdateConfirmOpen(false);
+                                setPendingBudgetUpdate(null);
+                            }}
+                            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={async () => {
+                                if (!pendingBudgetUpdate) return;
+                                try
+                                {
+                                    await budgetCategoryService.updateBudgetCategoryAmount(
+                                        userId,
+                                        pendingBudgetUpdate.categoryName,
+                                        pendingBudgetUpdate.newAmount,
+                                        startDate,
+                                        endDate
+                                    );
+
+                                    await fetchBudgetData(currentMonth);
+
+                                    setSnackbarMessage(`Budget for ${pendingBudgetUpdate.categoryName} updated to $${pendingBudgetUpdate.newAmount.toFixed(2)}`);
+                                    setSnackbarSeverity('success');
+                                    setSnackbarOpen(true);
+                                }
+                                catch(error)
+                                {
+                                    console.error('Error updating budget amount:', error);
+                                    setSnackbarMessage('Failed to update budget amount. Please try again.');
+                                    setSnackbarSeverity('error');
+                                    setSnackbarOpen(true);
+                                }
+                                finally
+                                {
+                                    setBudgetUpdateConfirmOpen(false);
+                                    setPendingBudgetUpdate(null);
+                                }
+                            }}
+                            sx={{
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                bgcolor: '#800000',
+                                '&:hover': { bgcolor: '#a00000' }
+                            }}
+                        >
+                            Confirm Update
+                        </Button>
+                    </Box>
+                </Box>
+            </Dialog>
 
             <ManageBudgetCategoriesDialog
                 open={manageCategoriesDialogOpen}

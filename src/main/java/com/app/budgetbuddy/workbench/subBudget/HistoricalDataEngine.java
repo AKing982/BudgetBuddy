@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
@@ -60,11 +61,15 @@ public class HistoricalDataEngine
         }
         log.info("Found {} months of transaction data scanning back from {}", monthsWithData, startDate);
         final int actualMonths = Math.max(1, monthsWithData);
+        final BigDecimal monthsDivisor = BigDecimal.valueOf(actualMonths);
         List<TransactionsByCategory> transactions = aggregated.entrySet().stream()
                 .map(e -> {
                     TransactionsByCategory t = new TransactionsByCategory();
                     t.setCategoryName(e.getKey());
-                    t.setTotalCategorySpending(e.getValue());
+                    BigDecimal monthlyAverage = e.getValue()
+                            .divide(monthsDivisor, 2, RoundingMode.HALF_UP);
+                    t.setTotalCategorySpending(monthlyAverage);
+//                    t.setTotalCategorySpending(e.getValue());
                     return t;
                 })
                 .toList();

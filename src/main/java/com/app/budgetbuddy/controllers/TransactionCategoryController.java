@@ -1,9 +1,11 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.BoolStatus;
+import com.app.budgetbuddy.domain.CSVTransactionsByCategory;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.services.CSVTransactionsByCategoryQueries;
 import com.app.budgetbuddy.services.TransactionCategoryQueries;
 import com.app.budgetbuddy.services.TransactionCategoryService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +25,16 @@ public class TransactionCategoryController
 {
     private final TransactionCategoryService transactionCategoryService;
     private final TransactionCategoryQueries transactionCategoryQueries;
+    private final CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries;
 
     @Autowired
     public TransactionCategoryController(TransactionCategoryService transactionCategoryService,
-                                         TransactionCategoryQueries transactionCategoryQueries)
+                                         TransactionCategoryQueries transactionCategoryQueries,
+                                         CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries)
     {
         this.transactionCategoryService = transactionCategoryService;
         this.transactionCategoryQueries = transactionCategoryQueries;
+        this.csvTransactionsByCategoryQueries = csvTransactionsByCategoryQueries;
     }
 
     @GetMapping("/is-updated-by-month")
@@ -48,6 +53,28 @@ public class TransactionCategoryController
             return ResponseEntity.ok(new BoolStatus(false, "No Updated Transaction Categories"));
         }catch(DataException e){
             log.error("There was an error checking for any updated transaction categories: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{userId}/csv-by-date")
+    public ResponseEntity<List<CSVTransactionsByCategory>> getCSVTransactionsByCategoriesByMonth(@PathVariable Long userId,
+                                                                                                 @RequestParam LocalDate startDate,
+                                                                                                 @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            List<CSVTransactionsByCategory> results = csvTransactionsByCategoryQueries.getCSVTransactionsByCategoryWithDate(userId, startDate, endDate);
+            if(results.isEmpty())
+            {
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok(results);
+        }
+        catch(Exception e)
+        {
+            log.error("There was an error fetching the csv transactions by category with date for userId={}, startDate={}, endDate={}: {}",
+                    userId, startDate, endDate, e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }

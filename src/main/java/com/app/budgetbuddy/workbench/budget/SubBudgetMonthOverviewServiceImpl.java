@@ -219,25 +219,55 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         {
             return Optional.empty();
         }
+//        final String savingsCategoryQuery = """
+//        SELECT bg.targetAmount / b.totalMonthsToSave as targetAmount,
+//        CASE
+//          WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0
+//          ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual))
+//          END as totalSaved,
+//          (bg.targetAmount / b.totalMonthsToSave) -
+//          CASE WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0 ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual)) END
+//          as remainingToSave
+//        FROM BudgetCategoryEntity tc
+//        INNER JOIN tc.subBudget sb
+//        INNER JOIN sb.budget b
+//        INNER JOIN b.budgetGoals bg
+//        WHERE tc.subBudget.id = :subBudgetId
+//        AND tc.startDate >= :startDate
+//        AND tc.endDate <= :endDate
+//        AND tc.active = true
+//        GROUP BY bg.targetAmount / b.totalMonthsToSave
+//        """;
         final String savingsCategoryQuery = """
-        SELECT bg.targetAmount / b.totalMonthsToSave as targetAmount,
-        CASE
-          WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0
-          ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual))
-          END as totalSaved,
-          (bg.targetAmount / b.totalMonthsToSave) -
-          CASE WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0 ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual)) END
-          as remainingToSave
-        FROM BudgetCategoryEntity tc
-        INNER JOIN tc.subBudget sb
-        INNER JOIN sb.budget b
-        INNER JOIN b.budgetGoals bg
-        WHERE tc.subBudget.id = :subBudgetId
-        AND tc.startDate >= :startDate
-        AND tc.endDate <= :endDate
-        AND tc.active = true
-        GROUP BY bg.targetAmount / b.totalMonthsToSave
-        """;
+
+                SELECT\s
+    bg.targetAmount / b.totalMonthsToSave AS targetAmount,
+    CASE\s
+        WHEN (SUM(cat.budgetedAmount) - SUM(cat.actual)) < 0 THEN 0
+        ELSE (SUM(cat.budgetedAmount) - SUM(cat.actual))
+    END AS totalSaved,
+    (bg.targetAmount / b.totalMonthsToSave) -
+    CASE\s
+        WHEN (SUM(cat.budgetedAmount) - SUM(cat.actual)) < 0 THEN 0
+        ELSE (SUM(cat.budgetedAmount) - SUM(cat.actual))
+    END AS remainingToSave
+FROM (
+    SELECT\s
+        tc.subBudget.id AS subBudgetId,
+        MAX(tc.budgetedAmount) AS budgetedAmount,
+        SUM(tc.actual)        AS actual
+    FROM BudgetCategoryEntity tc
+    WHERE tc.subBudget.id = :subBudgetId
+      AND tc.startDate >= :startDate
+      AND tc.endDate <= :endDate
+      AND tc.active = true
+    GROUP BY tc.categoryName, tc.subBudget.id
+) cat
+INNER JOIN SubBudgetEntity sb ON sb.id = cat.subBudgetId
+INNER JOIN BudgetEntity b ON b.id = sb.budget.id
+INNER JOIN b.budgetGoals bg
+GROUP BY bg.targetAmount, b.totalMonthsToSave
+""";
 
         try {
             List<Object[]> result = entityManager.createQuery(savingsCategoryQuery, Object[].class)

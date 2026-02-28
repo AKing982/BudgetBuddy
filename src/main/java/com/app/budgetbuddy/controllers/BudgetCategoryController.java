@@ -1,9 +1,11 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
+import com.app.budgetbuddy.domain.BudgetCategoryBody;
 import com.app.budgetbuddy.domain.SubBudget;
 import com.app.budgetbuddy.exceptions.BudgetCategoryException;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.services.BudgetCategoryService;
 import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.workbench.runner.BudgetCategoryRunner;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +25,16 @@ import java.util.Optional;
 public class BudgetCategoryController
 {
     private final BudgetCategoryRunner budgetCategoryRunner;
+    private final BudgetCategoryService budgetCategoryService;
     private final SubBudgetService subBudgetService;
 
     @Autowired
     public BudgetCategoryController(BudgetCategoryRunner budgetCategoryRunner,
+                                    BudgetCategoryService budgetCategoryService,
                                     SubBudgetService subBudgetService)
     {
         this.budgetCategoryRunner = budgetCategoryRunner;
+        this.budgetCategoryService = budgetCategoryService;
         this.subBudgetService = subBudgetService;
     }
 
@@ -72,6 +77,24 @@ public class BudgetCategoryController
             return ResponseEntity.ok(budgetCategoriesForDate);
         }catch(BudgetCategoryException e){
             log.error("There was an error with creating the budget categories for date {}", date, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/{userId}/update-amount")
+    public ResponseEntity<BudgetCategory> updateBudgetAmount(@RequestBody BudgetCategoryBody budgetCategoryBody,
+                                                             @PathVariable Long userId,
+                                                             @RequestParam LocalDate startDate,
+                                                             @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            String category = budgetCategoryBody.category();
+            double newBudgetedAmount = budgetCategoryBody.budgetAmount();
+            budgetCategoryService.updateBudgetCategoryAmount(category, userId, startDate, endDate, BigDecimal.valueOf(newBudgetedAmount));
+            return ResponseEntity.ok().build();
+        }catch(DataException e){
+            log.error("There was an error updating the budget amount for budget category: ", e);
             return ResponseEntity.internalServerError().build();
         }
     }

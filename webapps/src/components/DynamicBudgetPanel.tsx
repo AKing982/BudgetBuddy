@@ -35,7 +35,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import InsightsIcon from '@mui/icons-material/Insights';
 import SavingsIcon from '@mui/icons-material/Savings';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import { BudgetStats } from '../utils/Items';
+import {BudgetStats, CSVTransaction} from '../utils/Items';
 
 const maroonColor = '#800000';
 const tealColor = '#0d9488';
@@ -66,6 +66,14 @@ export interface CategoryMonthHistory {
     saved: number;        // budgeted - actual (positive = saved, negative = overspent)
 }
 
+export interface CSVTransactionsByDateCategory {
+    category: string;
+    totalCategorySpending: number;
+    csvTransactions: CSVTransaction[];
+    transactionDate: string; // "2026-02-01"
+}
+
+
 // NEW: Map of categoryName -> array of monthly history
 export type CategoryHistoricalData = Record<string, CategoryMonthHistory[]>;
 
@@ -80,6 +88,7 @@ interface DynamicBudgetPanelProps {
     onOptimizeBudget?: (categoryName: string) => Promise<number>;
     // NEW prop
     categoryHistoricalData?: CategoryHistoricalData;
+    categoryTransactionsByDate?: CSVTransactionsByDateCategory[];
 }
 
 type ViewType = 'stats' | 'recurring' | 'category' | 'goals';
@@ -133,6 +142,7 @@ const DynamicBudgetPanel: React.FC<DynamicBudgetPanelProps> = ({
                                                                    onUpdateBudgetAmount,
                                                                    onOptimizeBudget,
                                                                    categoryHistoricalData = {},
+                                                                   categoryTransactionsByDate = [],
                                                                }) => {
     const theme = useTheme();
     const [selectedView, setSelectedView] = useState<ViewType>('stats');
@@ -700,23 +710,142 @@ const DynamicBudgetPanel: React.FC<DynamicBudgetPanelProps> = ({
             { name: 'Remaining', value: Math.max(category.remainingAmount, 0), color: '#10b981' },
         ];
 
+        const normalizeDateToString = (transactionDate: any): string => {
+            // Java LocalDate serialized as array: [2026, 2, 1]
+            if (Array.isArray(transactionDate)) {
+                const [year, month, day] = transactionDate;
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            }
+            // Already a string like "2026-02-01" or "2026-02-01T00:00:00"
+            if (typeof transactionDate === 'string') {
+                return transactionDate.split('T')[0];
+            }
+            // Date object
+            if (transactionDate instanceof Date) {
+                const year = transactionDate.getFullYear();
+                const month = String(transactionDate.getMonth() + 1).padStart(2, '0');
+                const day = String(transactionDate.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            return '';
+        };
+
         const generateDailySpendingData = () => {
-            const avgDailySpend = category.actualAmount / daysElapsed;
-            return Array.from({ length: Math.min(daysElapsed, daysInMonth) + 1 }, (_, i) => {
+            const categoryTransactions = categoryTransactionsByDate.filter(
+                t => t.category === category.categoryName
+            );
+
+            const spendByDate = new Map<string, number>();
+            categoryTransactions.forEach(t => {
+                const dateStr = normalizeDateToString(t.transactionDate);
+                if (!dateStr) return;
+                const existing = spendByDate.get(dateStr) ?? 0;
+                spendByDate.set(dateStr, existing + t.totalCategorySpending);
+            });
+
+            console.log('Spend by date map for', category.categoryName, ':', Object.fromEntries(spendByDate));
+
+            if (spendByDate.size === 0) {
+                const avgDailySpend = category.actualAmount / (daysElapsed || 1);
+                return Array.from({ length: daysElapsed + 1 }, (_, i) => {
+                    const date = new Date(monthStart);
+                    date.setDate(date.getDate() + i);
+                    return {
+                        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        spending: avgDailySpend * i,
+                        day: i,
+                    };
+                });
+            }
+
+            let cumulative = 0;
+            return Array.from({ length: daysElapsed + 1 }, (_, i) => {
                 const date = new Date(monthStart);
                 date.setDate(date.getDate() + i);
-                const variance = (Math.random() - 0.5) * avgDailySpend * 0.4;
-                return { date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), spending: Math.max(0, avgDailySpend * i + variance), day: i };
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+                cumulative += spendByDate.get(dateStr) ?? 0;
+                return {
+                    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    spending: cumulative,
+                    day: i,
+                };
             });
         };
 
         const generateWeekComparisonData = () => {
             const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            const avg = category.actualAmount / daysElapsed;
-            return daysOfWeek.map(day => ({
+
+            const categoryTransactions = categoryTransactionsByDate.filter(
+                t => t.category === category.categoryName
+            );
+
+            console.log('Week comparison - all transactions for', category.categoryName, ':', categoryTransactions);
+
+            // Use last 7 days vs previous 7 days instead of calendar week boundaries
+            // This ensures we always have data regardless of where we are in the month
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+
+            const last7Start = new Date(today);
+            last7Start.setDate(today.getDate() - 6);
+            last7Start.setHours(0, 0, 0, 0);
+
+            const prev7End = new Date(last7Start);
+            prev7End.setDate(last7Start.getDate() - 1);
+            prev7End.setHours(23, 59, 59, 999);
+
+            const prev7Start = new Date(prev7End);
+            prev7Start.setDate(prev7End.getDate() - 6);
+            prev7Start.setHours(0, 0, 0, 0);
+
+            console.log('Last 7 days:', last7Start.toDateString(), '-', today.toDateString());
+            console.log('Prev 7 days:', prev7Start.toDateString(), '-', prev7End.toDateString());
+
+            // Spend keyed by day-of-week index (0=Sun ... 6=Sat)
+            const currentWeekSpend = new Map<number, number>();
+            const lastWeekSpend    = new Map<number, number>();
+
+            categoryTransactions.forEach(t => {
+                const dateStr = normalizeDateToString(t.transactionDate);
+                if (!dateStr) return;
+
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const txDate = new Date(year, month - 1, day);
+                txDate.setHours(12, 0, 0, 0); // noon to avoid any edge-case boundary issues
+                const dayIdx = txDate.getDay();
+
+                console.log('Transaction:', dateStr, 'dayIdx:', dayIdx, 'amount:', t.totalCategorySpending);
+
+                if (txDate >= last7Start && txDate <= today) {
+                    currentWeekSpend.set(dayIdx, (currentWeekSpend.get(dayIdx) ?? 0) + t.totalCategorySpending);
+                } else if (txDate >= prev7Start && txDate <= prev7End) {
+                    lastWeekSpend.set(dayIdx, (lastWeekSpend.get(dayIdx) ?? 0) + t.totalCategorySpending);
+                }
+            });
+
+            console.log('Current 7 days spend by day:', Object.fromEntries(currentWeekSpend));
+            console.log('Previous 7 days spend by day:', Object.fromEntries(lastWeekSpend));
+
+            // If still no data in either window, fall back to spreading actual amount
+            // across days of the week proportionally so the chart isn't empty
+            const hasAnyData = currentWeekSpend.size > 0 || lastWeekSpend.size > 0;
+            if (!hasAnyData) {
+                console.warn('No data found in either 7-day window - falling back to monthly distribution');
+                const avgPerDay = category.actualAmount / 7;
+                return daysOfWeek.map((day, i) => ({
+                    day,
+                    currentWeek: Math.max(0, avgPerDay + (Math.random() - 0.5) * avgPerDay * 0.3),
+                    lastWeek: 0,
+                }));
+            }
+
+            return daysOfWeek.map((day, i) => ({
                 day,
-                currentWeek: Math.max(0, avg + (Math.random() - 0.3) * avg * 0.5),
-                lastWeek:    Math.max(0, avg * 0.9 + (Math.random() - 0.5) * avg * 0.5),
+                currentWeek: currentWeekSpend.get(i) ?? 0,
+                lastWeek:    lastWeekSpend.get(i)    ?? 0,
             }));
         };
 
@@ -1030,7 +1159,7 @@ const DynamicBudgetPanel: React.FC<DynamicBudgetPanelProps> = ({
                 </Typography>
             </Box>
 
-            <Box sx={{ flex: 1, overflowY: 'auto', p: 3, maxHeight: 'calc(100vh - 300px)', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-track': { backgroundColor: 'rgba(0,0,0,0.05)' }, '&::-webkit-scrollbar-thumb': { backgroundColor: tealColor, borderRadius: '4px', '&:hover': { backgroundColor: '#0f766e' } } }}>
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 3, maxHeight: 'calc(100vh - 250px)', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-track': { backgroundColor: 'rgba(0,0,0,0.05)' }, '&::-webkit-scrollbar-thumb': { backgroundColor: tealColor, borderRadius: '4px', '&:hover': { backgroundColor: '#0f766e' } } }}>
                 {isLoading ? (
                     <Box sx={{ textAlign: 'center', py: 4 }}><Typography variant="body2" color="text.secondary">Loading...</Typography></Box>
                 ) : (

@@ -35,6 +35,59 @@ public class CSVTransactionsByCategoryQueries
         this.entityManager = entityManager;
     }
 
+    public List<CSVTransactionsByCategory> getCSVTransactionsByCategoryWithDate(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            final String query = """
+                SELECT tc.matchedCategory,
+                       ct.transactionDate,
+                       ABS(SUM(ct.transactionAmount)) as transactionAmount
+                FROM TransactionCategoryEntity tc
+                INNER JOIN CSVTransactionEntity ct
+                    ON tc.csvTransaction.id = ct.id
+                INNER JOIN CSVAccountEntity cae
+                    ON ct.csvAccount.id = cae.id
+                WHERE ct.transactionDate BETWEEN :startDate AND :endDate
+                AND cae.user.id = :userId
+                AND tc.matchedCategory <> 'Uncategorized'
+                GROUP BY tc.matchedCategory, ct.transactionDate
+                ORDER BY tc.matchedCategory, ct.transactionDate
+                """;
+
+            List<Object[]> results = entityManager.createQuery(query, Object[].class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("userId", userId)
+                    .getResultList();
+
+            if(results == null || results.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            return convertResultsToCategoryWithDate(results);
+        }catch(DataException e){
+            log.error("There was an error fetching the csv transactions by category: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private List<CSVTransactionsByCategory> convertResultsToCategoryWithDate(final List<Object[]> results)
+    {
+        if(results == null || results.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return results.stream()
+                .map(result -> {
+                    String category = (String) result[0];
+                    LocalDate transactionDate = (LocalDate) result[1];
+                    BigDecimal amount = (BigDecimal) result[2];
+                    return new CSVTransactionsByCategory(category, amount, transactionDate);
+                })
+                .collect(Collectors.toList());
+    }
+
     public List<CategorySpendAmount> getTotalMatchedCategorySpending(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         try
@@ -192,6 +245,7 @@ public class CSVTransactionsByCategoryQueries
                     .map(result -> (Long) result[0])
                     .toList();
             List<CSVTransactionsByCategory> csvTransactionsByCategoryList = createCSVTransactionsByCategoryList(results);
+            log.info("CSVTransactionsByCategory: {}", csvTransactionsByCategoryList);
             if(!csvTransactionsByCategoryList.isEmpty())
             {
                 updateTransactionCategoriesToProcessed(csvIds);

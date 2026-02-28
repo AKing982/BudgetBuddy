@@ -9,6 +9,13 @@ export interface BoolStatus {
     message: string;
 }
 
+export interface CSVTransactionsByCategory {
+    category: string;
+    totalCategorySpending: number;
+    csvTransactions: CSVTransaction[];
+    transactionDate: string; // ISO date string e.g. "2026-02-01"
+}
+
 class TransactionCategoryService {
     private static instance: TransactionCategoryService;
 
@@ -91,6 +98,35 @@ class TransactionCategoryService {
         } catch(error) {
             console.error(`There was an error checking for new transaction categories for userId ${userId}:`, error);
             return false;
+        }
+    }
+
+    public async fetchCSVTransactionsByCategoryWithDate(
+        userId: number,
+        startDate: string,
+        endDate: string): Promise<CSVTransactionsByCategory[]>
+    {
+        if(userId < 1 || startDate === '' || endDate === '')
+        {
+            throw new Error("Invalid input... Please check the userId and start and end dates");
+        }
+        try
+        {
+            const response = await axios.get<CSVTransactionsByCategory[]>(
+                `${API_BASE_URL}/transaction-category/${userId}/csv-by-date`,
+                {
+                    params: {
+                        startDate: startDate,
+                        endDate: endDate
+                    }
+                }
+            );
+            return response.data;
+        }
+        catch(error)
+        {
+            console.error(`There was an error fetching the CSV transactions by category with date for userId ${userId}:`, error);
+            return [];
         }
     }
 

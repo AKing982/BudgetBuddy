@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping(value="/api/budget-categories")
 @CrossOrigin(value="http://localhost:3000")
+@Deprecated
 public class BudgetCategoriesController
 {
     private final ControlledSpendingCategoriesService budgetCategoriesService;

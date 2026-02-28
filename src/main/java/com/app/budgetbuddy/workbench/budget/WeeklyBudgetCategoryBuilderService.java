@@ -135,42 +135,47 @@ public class WeeklyBudgetCategoryBuilderService extends AbstractBudgetCategoryBu
         {
             return Collections.emptyList();
         }
-        Map<String, WeeklyBudgetCategoryCriteria> criteriaMap = weeklyBudgetCategoryCriteria.stream()
-                .collect(Collectors.toMap(
-                        WeeklyBudgetCategoryCriteria::getCategory,
-                        Function.identity(),
-                        (existing, replacement) -> replacement));
-        List<BudgetCategory> updatedBudgetCategories = new ArrayList<>();
-        for(BudgetCategory budgetCategory : existingBudgetCategories)
+        if(weeklyBudgetCategoryCriteria == null || weeklyBudgetCategoryCriteria.isEmpty())
         {
-            WeeklyBudgetCategoryCriteria criteria = criteriaMap.get(budgetCategory.getCategoryName());
-            if(criteria != null)
-            {
-                WeeklyCategorySpending weeklyCategorySpending = criteria.getWeeklyCategorySpending();
-                if(weeklyCategorySpending != null)
-                {
-                    BigDecimal weeklySpending = weeklyCategorySpending.getTotalCategorySpending();
-                    budgetCategory.setBudgetActual(weeklySpending.doubleValue());
-                }
-                if(budgetCategory.getBudgetActual() != null && budgetCategory.getBudgetedAmount() != null)
-                {
-                    double overSpending = budgetCategory.getBudgetActual() - budgetCategory.getBudgetedAmount();
-                    if(overSpending > 0)
-                    {
-                        budgetCategory.setOverSpendingAmount(overSpending);
-                        budgetCategory.setOverSpent(true);
-                    }
-                    else
-                    {
-                        budgetCategory.setOverSpendingAmount(0.0);
-                        budgetCategory.setOverSpent(false);
-                    }
-                }
-
-            }
-            updatedBudgetCategories.add(budgetCategory);
+            return Collections.emptyList();
         }
-        return updatedBudgetCategories;
+//        Map<String, WeeklyBudgetCategoryCriteria> criteriaMap = weeklyBudgetCategoryCriteria.stream()
+//                .collect(Collectors.toMap(
+//                        WeeklyBudgetCategoryCriteria::getCategory,
+//                        Function.identity(),
+//                        (existing, replacement) -> replacement));
+//        List<BudgetCategory> updatedBudgetCategories = new ArrayList<>();
+//        for(BudgetCategory budgetCategory : existingBudgetCategories)
+//        {
+//            WeeklyBudgetCategoryCriteria criteria = criteriaMap.get(budgetCategory.getCategoryName());
+//            if(criteria != null)
+//            {
+//                WeeklyCategorySpending weeklyCategorySpending = criteria.getWeeklyCategorySpending();
+//                if(weeklyCategorySpending != null)
+//                {
+//                    BigDecimal weeklySpending = weeklyCategorySpending.getTotalCategorySpending();
+//                    budgetCategory.setBudgetActual(weeklySpending.doubleValue());
+//                }
+//                if(budgetCategory.getBudgetActual() != null && budgetCategory.getBudgetedAmount() != null)
+//                {
+//                    double overSpending = budgetCategory.getBudgetActual() - budgetCategory.getBudgetedAmount();
+//                    if(overSpending > 0)
+//                    {
+//                        budgetCategory.setOverSpendingAmount(overSpending);
+//                        budgetCategory.setOverSpent(true);
+//                    }
+//                    else
+//                    {
+//                        budgetCategory.setOverSpendingAmount(0.0);
+//                        budgetCategory.setOverSpent(false);
+//                    }
+//                }
+//
+//            }
+//            updatedBudgetCategories.add(budgetCategory);
+//        }
+//        return updatedBudgetCategories;
+        return null;
     }
 
     public List<WeeklyBudgetCategoryCriteria> createWeeklyBudgetCategoryCriteria(final SubBudget subBudget, final List<WeeklyCategorySpending> weeklyCategorySpendings)

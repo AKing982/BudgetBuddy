@@ -8,6 +8,7 @@ import com.app.budgetbuddy.workbench.PercentageCalculator;
 import com.app.budgetbuddy.workbench.subBudget.HistoricalDataEngine;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -19,11 +20,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cglib.core.Local;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.within;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -707,6 +711,47 @@ class BudgetEstimatorServiceTest
         assertEquals(expected.get("Haircut"), actual.get("Haircut"));
         assertEquals(expected.get("Gas Bill"), actual.get("Gas Bill"));
         assertEquals(expected.get("Electric"), actual.get("Electric"));
+    }
+
+    @Test
+    @DisplayName("Income budgeted amount should reflect single month average, not accumulated total")
+    void calculateBudgetCategoryAmount_incomeShouldNotAccumulate()
+    {
+        // History months must be BEFORE the subBudget startDate of 2025-04-01
+        List<MonthHistory> incomeHistory = List.of(
+                new MonthHistory(YearMonth.of(2025, 3), 0.0, 0.0, 0.0, 4200.0, 0.0, 0.0),
+                new MonthHistory(YearMonth.of(2025, 2), 0.0, 0.0, 0.0, 4150.0, 0.0, 0.0),
+                new MonthHistory(YearMonth.of(2025, 1), 0.0, 0.0, 0.0, 4250.0, 0.0, 0.0)
+        );
+
+        Map<String, List<MonthHistory>> historyMap = new HashMap<>();
+        historyMap.put("Income", incomeHistory);
+
+        // Match exactly what calculateBudgetCategoryAmount passes: (6, userId=1L, startDate=2025-04-01)
+        when(historicalDataEngine.getHistoricalMonthHistoryByCategory(
+                6, 1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(historyMap);
+
+        // Act
+        List<CategoryBudgetAmount> result = budgetEstimatorService
+                .calculateBudgetCategoryAmount(testSubBudget);
+
+        // Assert
+        CategoryBudgetAmount incomeBudget = result.stream()
+                .filter(c -> c.category().equalsIgnoreCase("Income"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Income category not found in result"));
+
+        // (4200 + 4150 + 4250) / 3 = 4200, * 1.10 = 4620.00
+        BigDecimal expectedAverage = new BigDecimal("4200.00");
+        BigDecimal expectedWithMarkup = expectedAverage
+                .multiply(new BigDecimal("1.10"))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        assertThat(incomeBudget.budgetAmount())
+                .isCloseTo(expectedWithMarkup, within(new BigDecimal("1.00")))
+                .isLessThan(new BigDecimal("5000.00"))
+                .isNotEqualTo(new BigDecimal("14193.41"));
     }
 
 

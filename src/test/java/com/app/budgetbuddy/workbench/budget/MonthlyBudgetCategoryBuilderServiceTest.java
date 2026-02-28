@@ -8,7 +8,11 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -21,27 +25,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 
-@SpringBootTest
-@Slf4j
+@ExtendWith(MockitoExtension.class)
 class MonthlyBudgetCategoryBuilderServiceTest
 {
-    @MockBean
+    @Mock
     private BudgetCategoryService budgetCategoryService;
 
-    @MockBean
+    @Mock
     private BudgetCalculations budgetCalculations;
 
-    @MockBean
+    @Mock
     private BudgetEstimatorService budgetEstimatorService;
 
-    @MockBean
+    @Mock
     private SubBudgetGoalsService subBudgetGoalsService;
 
-    @Autowired
+    @InjectMocks
     private MonthlyBudgetCategoryBuilderService monthlyBudgetCategoryBuilderService;
 
     private SubBudget testSubBudget;
@@ -142,6 +146,75 @@ class MonthlyBudgetCategoryBuilderServiceTest
         assertEquals(0, actual.size());
         assertTrue(actual.isEmpty());
     }
+
+    @Test
+    void testGetMonthlyCategorySpending_whenValidAprilData_thenReturnCategorySpending(){
+        List<TransactionsByCategory> aprilTransactionsByCategory = createAprilTransactionsByCategoryWithoutRentAndOther();
+        List<BudgetScheduleRange> aprilBudgetScheduleRanges = createAprilBudgetScheduleRanges();
+        // Expected results
+        List<MonthlyCategorySpending> expectedMonthlyCategorySpending = new ArrayList<>();
+        // Create expected Groceries monthly spending
+        MonthlyCategorySpending groceriesSpending = new MonthlyCategorySpending();
+        groceriesSpending.setCategory("Groceries");
+        groceriesSpending.setTotalCategorySpending(BigDecimal.valueOf(457.70)); // Total of all grocery transactions
+        List<Transaction> groceryTransactions = aprilTransactionsByCategory.stream()
+                .filter(ct -> "Groceries".equals(ct.getCategoryName()))
+                .findFirst()
+                .map(TransactionsByCategory::getTransactions)
+                .orElse(Collections.emptyList());
+        groceriesSpending.setTransactions(groceryTransactions);
+
+        // Set up weekly ranges for groceries
+        List<DateRangeSpending> groceryWeekRanges = new ArrayList<>();
+        groceryWeekRanges.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)), 124.16));
+        groceryWeekRanges.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 8), LocalDate.of(2025, 4, 14)), 119.64));
+        groceryWeekRanges.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21)), 94.27));
+        groceryWeekRanges.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 22), LocalDate.of(2025, 4, 28)), 51.49));
+        groceryWeekRanges.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 29), LocalDate.of(2025, 4, 30)), 68.15));
+        groceriesSpending.setWeeklySpending(groceryWeekRanges);
+
+        expectedMonthlyCategorySpending.add(groceriesSpending);
+
+        // Call the method under test
+        List<MonthlyCategorySpending> actualMonthlyCategorySpending =
+                monthlyBudgetCategoryBuilderService.getCategorySpending(aprilTransactionsByCategory, aprilBudgetScheduleRanges);
+
+        // Assertions
+        assertNotNull(actualMonthlyCategorySpending);
+        assertEquals(expectedMonthlyCategorySpending.size(), actualMonthlyCategorySpending.size());
+
+        // Verify each category's monthly spending
+        for (MonthlyCategorySpending expectedSpending : expectedMonthlyCategorySpending) {
+            String categoryName = expectedSpending.getCategory();
+            MonthlyCategorySpending actualSpending = actualMonthlyCategorySpending.stream()
+                    .filter(spending -> expectedSpending.getCategory().equals(spending.getCategory()))
+                    .findFirst()
+                    .orElse(null);
+
+            assertNotNull(actualSpending, "Could not find spending for category: " + expectedSpending.getCategory());
+
+            // Check category and total spending amount
+            assertEquals(expectedSpending.getCategory(), actualSpending.getCategory(), "Category name should match for " + categoryName);
+            assertEquals(expectedSpending.getTotalCategorySpending().setScale(1, RoundingMode.HALF_UP),
+                    actualSpending.getTotalCategorySpending().setScale(1, RoundingMode.HALF_UP), "Total spending amount should match for category " + categoryName);
+
+            // Check transactions
+            assertEquals(expectedSpending.getTransactions().size(), actualSpending.getTransactions().size());
+
+            assertEquals(expectedSpending.getWeeklySpending().size(), actualSpending.getWeeklySpending().size(),
+                    "Number of week ranges should match for category " + categoryName +
+                            " (Expected: " + expectedSpending.getWeeklySpending().size() +
+                            ", Actual: " + actualSpending.getWeeklySpending().size() + ")");
+        }
+    }
+
+    private List<TransactionsByCategory> createAprilTransactionsByCategoryWithoutRentAndOther() {
+        List<TransactionsByCategory> list = createAprilTransactionsByCategory();
+        return list.stream()
+                .filter(tbc -> !"Rent".equals(tbc.getCategoryName()) && !"Other".equals(tbc.getCategoryName()))
+                .collect(Collectors.toList());
+    }
+
 
     @Test
     void testGetMonthlyCategorySpending_whenAprilCategorySpending_thenReturnCategorySpending()
@@ -308,11 +381,6 @@ class MonthlyBudgetCategoryBuilderServiceTest
     }
 
     @Test
-    void testGetMonthlyCategorySpending_whenNegativeSpendingForCategory_thenThrowException(){
-
-    }
-
-    @Test
     void testBuildBudgetCategoryList_whenMonthlyBudgetCategoryCriteriaIsNull_thenReturnEmptyList(){
         List<BudgetCategory> actual = monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(null);
         assertNotNull(actual);
@@ -376,6 +444,72 @@ class MonthlyBudgetCategoryBuilderServiceTest
     }
 
     @Test
+    void testBuildBudgetCategoryList_whenDuplicateDateRanges_thenReturnUniqueBudgetCategories()
+    {
+        SubBudget aprilSubBudget = testSubBudget;
+        List<BudgetScheduleRange> aprilBudgetScheduleRanges = createAprilBudgetScheduleRanges();
+
+        // Grocery spending with overlapping/duplicate week ranges
+        MonthlyCategorySpending grocerySpending = new MonthlyCategorySpending();
+        grocerySpending.setCategory("Groceries");
+        grocerySpending.setTotalCategorySpending(BigDecimal.valueOf(248.32));
+
+        Transaction groceryTx1 = new Transaction();
+        groceryTx1.setTransactionId("grocery1");
+        groceryTx1.setAmount(BigDecimal.valueOf(124.16));
+        groceryTx1.setPosted(LocalDate.of(2025, 4, 3));
+
+        Transaction groceryTx2 = new Transaction();
+        groceryTx2.setTransactionId("grocery2");
+        groceryTx2.setAmount(BigDecimal.valueOf(124.16));
+        groceryTx2.setPosted(LocalDate.of(2025, 4, 5));
+
+        grocerySpending.setTransactions(List.of(groceryTx1, groceryTx2));
+
+        // Duplicate date range spending entries for the same week
+        List<DateRangeSpending> groceryWeekRanges = new ArrayList<>();
+        groceryWeekRanges.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)), 124.16));
+        groceryWeekRanges.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)), 124.16)); // duplicate
+        grocerySpending.setWeeklySpending(groceryWeekRanges);
+
+        MonthlyBudgetCategoryCriteria groceriesCriteria = MonthlyBudgetCategoryCriteria.buildCategoryBudget(aprilSubBudget, "Groceries", grocerySpending);
+
+        List<MonthlyBudgetCategoryCriteria> budgetCriteria = List.of(groceriesCriteria);
+
+        List<CategoryBudgetAmount> mockCategoryBudgetAmounts = List.of(
+                new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(125.00))
+        );
+
+        Mockito.when(budgetEstimatorService.calculateBudgetCategoryAmount(eq(aprilSubBudget)))
+                .thenReturn(mockCategoryBudgetAmounts);
+
+        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Groceries"), eq(mockCategoryBudgetAmounts)))
+                .thenReturn(BigDecimal.valueOf(125.00));
+
+        // Expected: only 1 unique BudgetCategory for the week 4/1 - 4/7
+        List<BudgetCategory> expected = new ArrayList<>();
+        BudgetCategory expectedGrocery = new BudgetCategory();
+        expectedGrocery.setSubBudgetId(aprilSubBudget.getId());
+        expectedGrocery.setCategoryName("Groceries");
+        expectedGrocery.setStartDate(LocalDate.of(2025, 4, 1));
+        expectedGrocery.setEndDate(LocalDate.of(2025, 4, 7));
+        expectedGrocery.setBudgetedAmount(125.00);
+        expectedGrocery.setBudgetActual(124.16);
+        expectedGrocery.setIsActive(true);
+        expected.add(expectedGrocery);
+
+        List<BudgetCategory> actual = monthlyBudgetCategoryBuilderService.buildBudgetCategoryList(budgetCriteria);
+
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size(), "Should return only 1 unique budget category, duplicates removed");
+        assertEquals(expected.get(0).getCategoryName(), actual.get(0).getCategoryName());
+        assertEquals(expected.get(0).getStartDate(), actual.get(0).getStartDate());
+        assertEquals(expected.get(0).getEndDate(), actual.get(0).getEndDate());
+        assertEquals(expected.get(0).getSubBudgetId(), actual.get(0).getSubBudgetId());
+        assertEquals(expected.get(0).getBudgetedAmount(), actual.get(0).getBudgetedAmount());
+    }
+
+    @Test
     void testUpdateBudgetCategories_whenMonthlyBudgetCategoryCriteriaIsNull_thenReturnEmptyList(){
         List<BudgetCategory> budgetCategories = new ArrayList<>();
         BudgetCategory budgetCategory = new BudgetCategory();
@@ -387,7 +521,7 @@ class MonthlyBudgetCategoryBuilderServiceTest
     }
 
     @Test
-    void testUpdateBudgetCategories_whenExistingBudgetCategoriesIsNull_thenThrowException(){
+    void testUpdateBudgetCategories_whenExistingBudgetCategoriesIsNull_thenReturnEmptyList(){
         List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteriaList = new ArrayList<>();
         MonthlyBudgetCategoryCriteria monthlyBudgetCategoryCriteria = new MonthlyBudgetCategoryCriteria();
         monthlyBudgetCategoryCriteriaList.add(monthlyBudgetCategoryCriteria);
@@ -525,22 +659,6 @@ class MonthlyBudgetCategoryBuilderServiceTest
 
         otherCriteria.setMonthlyCategorySpending(otherSpending);
         updateCriteria.add(otherCriteria);
-
-        // Mock the budget estimator service
-        List<CategoryBudgetAmount> mockCategoryBudgetAmounts = List.of(
-                new CategoryBudgetAmount("Groceries", BigDecimal.valueOf(125.00)),
-                new CategoryBudgetAmount("Other", BigDecimal.valueOf(50.00)),
-                new CategoryBudgetAmount("Rent", BigDecimal.valueOf(1200.00))
-        );
-
-        Mockito.when(budgetEstimatorService.calculateBudgetCategoryAmount(eq(testSubBudget)))
-                .thenReturn(mockCategoryBudgetAmounts);
-
-        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Groceries"), eq(mockCategoryBudgetAmounts)))
-                .thenReturn(BigDecimal.valueOf(125.00));
-
-        Mockito.when(budgetEstimatorService.getBudgetCategoryAmountByCategory(eq("Other"), eq(mockCategoryBudgetAmounts)))
-                .thenReturn(BigDecimal.valueOf(50.00));
 
         // Expected updated categories
         List<BudgetCategory> expectedUpdated = new ArrayList<>();
@@ -695,8 +813,6 @@ class MonthlyBudgetCategoryBuilderServiceTest
         List<MonthlyBudgetCategoryCriteria> actual = monthlyBudgetCategoryBuilderService.createCategoryBudgetCriteriaList(subBudget, monthlyCategorySpending, subBudgetGoals);
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
-        expected.sort(Comparator.comparing(MonthlyBudgetCategoryCriteria::getCategory));
-        actual.sort(Comparator.comparing(MonthlyBudgetCategoryCriteria::getCategory));
         // Compare each MonthlyBudgetCategoryCriteria
         for (int i = 0; i < expected.size(); i++) {
             MonthlyBudgetCategoryCriteria expectedCriteria = expected.get(i);
@@ -721,33 +837,53 @@ class MonthlyBudgetCategoryBuilderServiceTest
     }
 
     @Test
-    void testInitializeBudgetCategories_whenAprilSubBudget_thenReturnBudgetCategories(){
-        SubBudget subBudget = testSubBudget;
-        List<TransactionsByCategory> categoryTransactions = createAprilTransactionsByCategoryGroceriesAndRent();
+    void testCreateCategoryWeeklySpending_whenBudgetScheduleRangesListEmpty_thenReturnEmptyList(){
+        List<BudgetScheduleRange> budgetScheduleRanges = new ArrayList<>();
+        String category = "Groceries";
+        List<DateRangeSpending> dateRangeSpendings = List.of(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)), 120.00));
+        List<CategoryWeeklySpending> actual = monthlyBudgetCategoryBuilderService.createCategoryWeeklySpending(budgetScheduleRanges, dateRangeSpendings, category);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
 
-        List<BudgetCategory> expected = new ArrayList<>();
-        expected.addAll(createGroceryBudgetCategoriesForApril(subBudget));
-        expected.addAll(createRentBudgetCategoriesForApril(subBudget));
+    @Test
+    void testCreateCategoryWeeklySpending_whenCategoryDateRangesIsEmpty_thenReturnEmptyList(){
+        String category = "Groceries";
+        List<BudgetScheduleRange> budgetScheduleRanges = List.of(new BudgetScheduleRange());
+        List<DateRangeSpending> dateRangeSpendings = new ArrayList<>();
+        List<CategoryWeeklySpending> actual = monthlyBudgetCategoryBuilderService.createCategoryWeeklySpending(budgetScheduleRanges, dateRangeSpendings, category);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
 
-        List<BudgetCategory> actual = monthlyBudgetCategoryBuilderService.initializeBudgetCategories(subBudget, categoryTransactions);
+    @Test
+    void testCreateCategoryWeeklySpending_whenValidAprilData_thenReturnCategoryWeeklySpending(){
+        String category = "Groceries";
+        List<BudgetScheduleRange> aprilBudgetScheduleRanges = createAprilBudgetScheduleRanges();
+        List<DateRangeSpending> groceryWeekly = new ArrayList<>();
+        groceryWeekly.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 1), LocalDate.of(2025, 4, 7)), 120.00));
+        groceryWeekly.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 8), LocalDate.of(2025, 4, 14)), 150.00));
+        groceryWeekly.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 15), LocalDate.of(2025, 4, 21)), 130.00));
+        groceryWeekly.add(new DateRangeSpending(new DateRange(LocalDate.of(2025, 4, 22), LocalDate.of(2025, 4, 28)), 100.00));
+
+        List<CategoryWeeklySpending> expected = new ArrayList<>();
+        expected.add(new CategoryWeeklySpending("Groceries", aprilBudgetScheduleRanges.get(0), 120.00));
+        expected.add(new CategoryWeeklySpending("Groceries", aprilBudgetScheduleRanges.get(1), 150.00));
+        expected.add(new CategoryWeeklySpending("Groceries", aprilBudgetScheduleRanges.get(2), 130.00));
+        expected.add(new CategoryWeeklySpending("Groceries", aprilBudgetScheduleRanges.get(3), 100.00));
+
+        List<CategoryWeeklySpending> actual = monthlyBudgetCategoryBuilderService.createCategoryWeeklySpending(aprilBudgetScheduleRanges, groceryWeekly, category);
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
-        for(int i = 0; i < expected.size(); i++) {
-            BudgetCategory expectedCategory = expected.get(i);
-            BudgetCategory actualCategory = actual.get(i);
-            assertEquals(expectedCategory.getCategoryName(), actualCategory.getCategoryName(), "Category name should match");
-            assertEquals(expectedCategory.getBudgetedAmount(), actualCategory.getBudgetedAmount(), "Budgeted amount should match");
-            assertEquals(expectedCategory.getBudgetActual(), actualCategory.getBudgetActual(), "Budget actual should match");
-            assertEquals(expectedCategory.getSubBudgetId(), actualCategory.getSubBudgetId(), "SubBudget id should match");
-            assertEquals(expectedCategory.getId(), actualCategory.getId(), "Id should match");
-            assertEquals(expectedCategory.getStartDate(), actualCategory.getStartDate(), "Start date should match");
-            assertEquals(expectedCategory.getEndDate(), actualCategory.getEndDate(), "End date should match");
-            assertEquals(expectedCategory.getIsActive(), actualCategory.getIsActive(), "Active status should match");
-            assertEquals(expectedCategory.getTransactions(), actualCategory.getTransactions(), "Transaction count should match");
-            assertEquals(expectedCategory.getOverSpendingAmount(), actualCategory.getOverSpendingAmount(), "Over spending amount should match");
+        for(int i = 0; i < expected.size(); i++){
+            CategoryWeeklySpending expectedCategoryWeeklySpending = expected.get(i);
+            CategoryWeeklySpending actualCategoryWeeklySpending = actual.get(i);
+            assertEquals(expectedCategoryWeeklySpending.getCategory(), actualCategoryWeeklySpending.getCategory());
+            assertEquals(expectedCategoryWeeklySpending.getSpentOnCategory(), actualCategoryWeeklySpending.getSpentOnCategory());
+            assertEquals(expectedCategoryWeeklySpending.getWeekRange(), actualCategoryWeeklySpending.getWeekRange());
         }
-
     }
+
 
     private List<TransactionsByCategory> createAprilTransactionsByCategoryGroceriesAndRent(){
         List<TransactionsByCategory> transactionsByCategory = new ArrayList<>();

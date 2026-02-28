@@ -2,12 +2,14 @@ package com.app.budgetbuddy.workbench;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.workbench.budget.MonthlyBudgetCategoryBuilderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@Slf4j
 public class MonthlyBudgetCategoryStrategy implements BudgetCategoryBuilderStrategy
 {
     private final MonthlyBudgetCategoryBuilderService monthlyBuilder;
@@ -32,12 +34,20 @@ public class MonthlyBudgetCategoryStrategy implements BudgetCategoryBuilderStrat
     @Override
     public List<BudgetCategory> build(SubBudget subBudget, List<TransactionsByCategory> transactionsByCategory, BudgetScheduleRange budgetScheduleRange)
     {
+        log.info("Building budget categories for monthly budget");
+        log.info("SubBudget: {}", subBudget);
+        log.info("Transactions: {}", transactionsByCategory);
+        log.info("BudgetScheduleRange: {}", budgetScheduleRange);
         BudgetSchedule budgetSchedule = getBudgetSchedule(subBudget);
         SubBudgetGoals goals = subBudget.getSubBudgetGoals();
         List<BudgetScheduleRange> ranges = budgetSchedule.getBudgetScheduleRanges();
         List<MonthlyCategorySpending> spending = monthlyBuilder.getCategorySpending(transactionsByCategory, ranges);
+        log.info("Spending: {}", spending);
         List<MonthlyBudgetCategoryCriteria> criteria = monthlyBuilder.createCategoryBudgetCriteriaList(subBudget, spending, goals);
-        return monthlyBuilder.buildBudgetCategoryList(criteria);
+        log.info("Criteria: {}", criteria);
+        List<BudgetCategory> budgetCategories = monthlyBuilder.buildBudgetCategoryList(criteria);
+        log.info("Built budget categories: {}", budgetCategories);
+        return budgetCategories;
     }
 
     @Override

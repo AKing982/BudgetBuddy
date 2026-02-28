@@ -2,6 +2,7 @@ package com.app.budgetbuddy.repositories;
 
 import com.app.budgetbuddy.entities.BudgetCategoryEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -46,6 +47,23 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id AND :date BETWEEN :start AND :end")
     List<BudgetCategoryEntity> findBudgetCategoriesByDate(@Param("id") Long subBudgetId, @Param("date") LocalDate currentDate, @Param("start") LocalDate startDate, @Param("end") LocalDate endDate);
 
+    @Modifying
+    @Query("""
+        UPDATE BudgetCategoryEntity bc
+        SET bc.budgetedAmount = :budgeted
+        WHERE bc.categoryName = :category
+        AND bc.subBudget.budget.user.id = :userId
+        AND bc.subBudget.startDate >= :startDate
+        AND bc.subBudget.endDate <= :endDate
+        """)
+    void updateBudgetedAmount(
+            @Param("category") String category,
+            @Param("budgeted") double budgeted,
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
     @Query(value = """
     SELECT bc.category_name,
            TO_CHAR(bc.startdate, 'YYYY-MM') AS month,
@@ -72,7 +90,7 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
     FROM budgetcategories bc
     INNER JOIN subbudgets sb ON bc.sub_budgetid = sb.id
     INNER JOIN budgets b ON sb.budgetid = b.budgetid
-    WHERE bc.category_name NOT IN ('Uncategorized', 'Income')
+    WHERE bc.category_name NOT IN ('Uncategorized')
       AND bc.startdate >= :startDate
       AND bc.enddate <= :endDate
       AND b.userid = :userId

@@ -37,6 +37,7 @@ public class BudgetCategoryRunner
             BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
             BudgetScheduleRange range = budgetSchedule.getBudgetScheduleRanges().get(0);
             List<TransactionsByCategory> merged = transactionsByCategoryService.fetchAndMergeForMonth(subBudget);
+            log.info("Merged transactions by category: {}", merged);
             log.info("Starting async budget category creation for month");
             return budgetCategoryAsyncService.createAsync(subBudget, merged, range, Period.MONTHLY).join();
         }
@@ -47,7 +48,7 @@ public class BudgetCategoryRunner
         }
     }
 
-    public List<BudgetCategory> runBudgetCategoryUpdateProcessForBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final SubBudget subBudget,  Long userId)
+    public List<BudgetCategory> runBudgetCategoryUpdateProcessForBudgetScheduleRange(final BudgetScheduleRange budgetScheduleRange, final SubBudget subBudget, Long userId)
     {
         try
         {

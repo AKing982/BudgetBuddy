@@ -177,7 +177,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({isLoading, data}) =>
                         <TableCell align="right" sx={{
                             color: totals.savings.remaining >= 0 ? '#059669' : '#dc2626',
                             fontWeight: 600
-                        }}>{formatCurrency(totals.savings.remaining)}</TableCell>
+                        }}>{formatCurrency(totals.savings.actual)}</TableCell>
                     </TableRow>
                 </TableBody>
             </Table>

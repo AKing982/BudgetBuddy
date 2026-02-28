@@ -50,7 +50,11 @@ public class BudgetCategoryAsyncService
             {
                 return CompletableFuture.completedFuture(Collections.emptyList());
             }
-            List<BudgetCategory> categories = getStrategy(periodType).build(subBudget, transactions, range);
+            log.info("Creating budget categories for period {} subBudget {}", periodType, subBudget.getId());
+            BudgetCategoryBuilderStrategy strategy = getStrategy(periodType);
+            log.info("Strategy: {}", strategy);
+            List<BudgetCategory> categories = strategy.build(subBudget, transactions, range);
+            log.info("Budget Categories: {}", categories);
             if(categories.isEmpty())
             {
                 log.warn("No budget categories built for period {} subBudget {}", periodType, subBudget.getId());

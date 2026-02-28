@@ -153,10 +153,14 @@ public class BudgetEstimatorService
         return wantsNeedsSavingsBudgetMap;
     }
 
-    private boolean isNeedCategory(TransactionsByCategory transactionsByCategory)
+    public List<CategoryBudgetAmount> optimizeBudgetCategoryAmounts(final List<BudgetCategory> existingBudgetCategories, final SubBudget subBudget)
     {
-        String name = transactionsByCategory.getCategoryName();
-        return name.contains("Rent") || name.contains("Groceries") || name.contains("Utilities") || name.contains("Electric");
+        return null;
+    }
+
+    public Optional<CategoryBudgetAmount> optimizeBudgetCategoryAmount(final BudgetCategory budgetCategory, final SubBudget subBudget)
+    {
+        return Optional.empty();
     }
 
     public List<CategoryBudgetAmount> calculateBudgetCategoryAmount(final SubBudget subBudget)
@@ -178,9 +182,8 @@ public class BudgetEstimatorService
             log.info("No historical data found for category budget calculation");
             LocalDate historicStart = LocalDate.now();
             HistoricalTransactionsByCategories historicalTransactionCategories = historicalDataEngine.getHistoricalTransactionCategories(userId, budgetStart);
-            int numberOfMonths = historicalTransactionCategories.numberOfMonths();
             List<TransactionsByCategory> transactionsByCategories = historicalTransactionCategories.historicalTransactions();
-            Map<String, Double> categoryBudgetMap = calculateCategoryBudget(transactionsByCategories, monthlyIncome, numberOfMonths);
+            Map<String, Double> categoryBudgetMap = calculateCategoryBudget(transactionsByCategories, monthlyIncome, 1);
             categoryBudgetAmounts = categoryBudgetMap.keySet().stream()
                     .map(category -> new CategoryBudgetAmount(category, BigDecimal.valueOf(categoryBudgetMap.get(category))))
                     .toList();
@@ -206,11 +209,10 @@ public class BudgetEstimatorService
                 }
                 else
                 {
-                    BigDecimal averageBudgetedAmount;
                     BigDecimal totalBudgeted = filteredMonthHistories.stream()
                             .map(m -> BigDecimal.valueOf(m.totalBudgeted()))
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    averageBudgetedAmount = totalBudgeted.divide(BigDecimal.valueOf(monthHistories.size()), 2, RoundingMode.HALF_UP);
+                    BigDecimal averageBudgetedAmount = totalBudgeted.divide(BigDecimal.valueOf(filteredMonthHistories.size()), 2, RoundingMode.HALF_UP);
                     BigDecimal suggestedAmount = averageBudgetedAmount.multiply(BigDecimal.valueOf(1.10)).setScale(2, RoundingMode.HALF_UP);
                     log.info("Category: " + category + "Budgeted Amount: " + suggestedAmount);
                     categoryBudgetAmounts.add(new CategoryBudgetAmount(category, suggestedAmount));
