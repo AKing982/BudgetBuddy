@@ -53,8 +53,6 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
         Long previousSubBudgetId = null;
         List<Long> subBudgetIds = new ArrayList<>();
         subBudgetIds.add(subBudgetId);
-        log.info("Start Date: {}", startDate);
-        log.info("EndDate: {}", endDate);
         if(startDate.getDayOfMonth() == 1)
         {
             adjustedDate = startDate.minusDays(3);
@@ -65,9 +63,6 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             log.info("SubBudgetIds: {}", subBudgetIds);
             log.info("Previous sub budget id is {}", previousSubBudgetId);
         }
-        log.info("Adjusted start date: {}", adjustedDate);
-
-        log.info("Querying for income between {} and {}", adjustedDate, endDate);
         final String incomeQuery = """
         SELECT b.monthlyIncome / b.totalMonthsToSave as budgetedIncome,
         SUM(tc.actual) as actualIncome,
@@ -169,7 +164,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             log.warn("Invalid parameters provided to loadExpenseCategories");
             return Optional.empty();
         }
-
+//
         final String expenseCategoryQuery = """
                             SELECT b.budgetAmount / 12 as budgetedAmount,
                             SUM(tc.actual) as totalSpent,
@@ -179,7 +174,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
                                 ON tc.subBudget.id = sb.id
                             INNER JOIN BudgetEntity b
                                 ON sb.budget.id = b.id
-                            WHERE (tc.categoryName NOT IN ('Income', 'Uncategorized', 'Deposit'))
+                            WHERE (tc.categoryName NOT IN ('Income', 'Uncategorized', 'Deposit', 'Withdrawal'))
                                 AND tc.subBudget.id = :subBudgetId
                                 AND tc.startDate >= :startDate
                                 AND tc.endDate <= :endDate
@@ -230,7 +225,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
           WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0
           ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual))
           END as totalSaved,
-          (bg.targetAmount / b.totalMonthsToSave) - 
+          (bg.targetAmount / b.totalMonthsToSave) -
           CASE WHEN (SUM(tc.budgetedAmount) - SUM(tc.actual)) < 0 THEN 0 ELSE (SUM(tc.budgetedAmount) - SUM(tc.actual)) END
           as remainingToSave
         FROM BudgetCategoryEntity tc
@@ -296,7 +291,7 @@ public class SubBudgetMonthOverviewServiceImpl implements SubBudgetOverviewServi
             AND tc.startDate >= :startDate
             AND tc.endDate <= :endDate
             AND tc.active = true
-            AND (tc.categoryName NOT IN ('Income', 'Uncategorized'))
+            AND (tc.categoryName NOT IN ('Income', 'Uncategorized', 'Deposit', 'Withdrawal'))
         GROUP BY categoryName, budgetedAmount
         ORDER BY SUM(tc.actual) DESC
         LIMIT 5

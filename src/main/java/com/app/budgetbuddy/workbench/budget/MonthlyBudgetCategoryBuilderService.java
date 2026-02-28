@@ -28,155 +28,150 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
     //TODO: Move this method to the orchestrator class to use
     public List<BudgetCategory> initializeBudgetCategories(final SubBudget budget, final List<TransactionsByCategory> categoryDesignators)
     {
-        if(budget == null || categoryDesignators == null)
-        {
-            return Collections.emptyList();
-        }
-        SubBudgetGoals subBudgetGoals = getSubBudgetGoalsService().getSubBudgetGoalsEntitiesBySubBudgetId(budget.getId());
-        BudgetSchedule budgetSchedule = budget.getBudgetSchedule().get(0);
-        List<BudgetScheduleRange> budgetScheduleRanges = budgetSchedule.getBudgetScheduleRanges();
-        List<MonthlyCategorySpending> monthlyCategorySpending = getCategorySpending(categoryDesignators, budgetScheduleRanges);
-        List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteria = createCategoryBudgetCriteriaList(budget,monthlyCategorySpending, subBudgetGoals);
-        return buildBudgetCategoryList(monthlyBudgetCategoryCriteria);
+        // Method is not implemented
+        return Collections.emptyList();
     }
 
-    private List<CategoryWeeklySpending> createCategoryWeeklySpending(final List<BudgetScheduleRange> budgetScheduleRanges, final List<DateRangeSpending> categoryDateRanges, final String category)
+    public List<CategoryWeeklySpending> createCategoryWeeklySpending(final List<BudgetScheduleRange> budgetScheduleRanges, final List<DateRangeSpending> categoryDateRanges, final String category)
     {
-        List<CategoryWeeklySpending> categoryWeeklySpending = new ArrayList<>();
-        for(DateRangeSpending dateRange : categoryDateRanges)
-        {
-            log.info("Category {}", category);
-            LocalDate dateRangeStart = dateRange.getDateRange().getStartDate();
-            log.info("Date Range Start: {}", dateRangeStart);
-            LocalDate dateRangeEnd = dateRange.getDateRange().getEndDate();
-            log.info("Date Range End: {}", dateRangeEnd);
-            double spentOnRange = dateRange.getSpentOnRange();
-            log.info("Spent On Range: {}", spentOnRange);
-            boolean matchFound = false;
-            for(BudgetScheduleRange budgetWeek : budgetScheduleRanges)
-            {
-                LocalDate budgetWeekStart = budgetWeek.getStartRange();
-                LocalDate budgetWeekEnd = budgetWeek.getEndRange();
-                boolean exactMatch = dateRangeStart.equals(budgetWeekStart) && dateRangeEnd.equals(budgetWeekEnd);
-                if(exactMatch)
-                {
-                    // Set the total category spending for this week
-                    CategoryWeeklySpending categoryWeeklySpending1 = new CategoryWeeklySpending(category, budgetWeek, spentOnRange);
-                    log.info("Category Weekly Spending {}", categoryWeeklySpending1);
-                    categoryWeeklySpending.add(categoryWeeklySpending1);
-                    matchFound = true;
-                }
-            }
-            if(!matchFound)
-            {
-                log.warn("No matching budget schedule range found for category date range: {} to {}",
-                        dateRangeStart, dateRangeEnd);
-            }
-        }
- //       Note: This preserves the relationship while providing a sorted view
-        return categoryWeeklySpending.stream()
-                .sorted(Comparator.comparing(CategoryWeeklySpending::getCategory)
-                        .thenComparing(cws -> cws.getBudgetWeek().getStartRange()))
-                .collect(Collectors.toList());
+//        List<CategoryWeeklySpending> categoryWeeklySpending = new ArrayList<>();
+//        for(DateRangeSpending dateRange : categoryDateRanges)
+//        {
+//            log.info("Category {}", category);
+//            LocalDate dateRangeStart = dateRange.getDateRange().getStartDate();
+//            log.info("Date Range Start: {}", dateRangeStart);
+//            LocalDate dateRangeEnd = dateRange.getDateRange().getEndDate();
+//            log.info("Date Range End: {}", dateRangeEnd);
+//            double spentOnRange = dateRange.getSpentOnRange();
+//            log.info("Spent On Range: {}", spentOnRange);
+//            boolean matchFound = false;
+//            for(BudgetScheduleRange budgetWeek : budgetScheduleRanges)
+//            {
+//                LocalDate budgetWeekStart = budgetWeek.getStartRange();
+//                LocalDate budgetWeekEnd = budgetWeek.getEndRange();
+//                boolean exactMatch = dateRangeStart.equals(budgetWeekStart) && dateRangeEnd.equals(budgetWeekEnd);
+//                if(exactMatch)
+//                {
+//                    // Set the total category spending for this week
+//                    CategoryWeeklySpending categoryWeeklySpending1 = new CategoryWeeklySpending(category, budgetWeek, spentOnRange);
+//                    log.info("Category Weekly Spending {}", categoryWeeklySpending1);
+//                    categoryWeeklySpending.add(categoryWeeklySpending1);
+//                    matchFound = true;
+//                }
+//            }
+//            if(!matchFound)
+//            {
+//                log.warn("No matching budget schedule range found for category date range: {} to {}",
+//                        dateRangeStart, dateRangeEnd);
+//            }
+//        }
+//        return categoryWeeklySpending.stream()
+//                .sorted(Comparator.comparing(CategoryWeeklySpending::getCategory)
+//                        .thenComparing(cws -> cws.getBudgetWeek().getStartRange()))
+//                .collect(Collectors.toList());
+        return null;
     }
 
     @Override
     public List<BudgetCategory> buildBudgetCategoryList(final List<MonthlyBudgetCategoryCriteria> budgetCriteria)
     {
-        if(budgetCriteria == null || budgetCriteria.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        Set<BudgetCategory> budgetCategories = new HashSet<>();
-        // Use a Map to prevent duplicates
-        Map<String, BudgetCategory> uniqueBudgetCategories = new HashMap<>();
-        for(MonthlyBudgetCategoryCriteria monthlyCriteria : budgetCriteria)
-        {
-            SubBudget subBudget = monthlyCriteria.getSubBudget();
-            Long subBudgetId = subBudget.getId();
-            BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
-            List<BudgetScheduleRange> budgetScheduleRanges = budgetSchedule.getBudgetScheduleRanges();
-            MonthlyCategorySpending monthlyCategorySpending = monthlyCriteria.getMonthlyCategorySpending();
-            String category = monthlyCategorySpending.getCategory();
-            List<Transaction> transactions = monthlyCategorySpending.getTransactions();
-            // Category Spending is the overall spending for the category during the month
-            BigDecimal monthlyCategorySpendingAmount = monthlyCategorySpending.getTotalCategorySpending();
-            log.info("Monthly category spending {}", monthlyCategorySpendingAmount);
-            List<CategoryBudgetAmount> categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
-            BigDecimal budgetedAmountForCategory = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
-            //TODO: Need to know when the category spending took place
-            List<DateRangeSpending> categoryWeeks = monthlyCategorySpending.getWeeklySpending();
-            log.info("Date Range Spending for Category {}", category);
-            categoryWeeks.forEach((dateRangeSpending -> {
-                log.info("Date Range Spending: {}", dateRangeSpending);
-            }));
-            //TODO: Need to track how much of the category spending was spent during each category week
-            List<CategoryWeeklySpending> categoryWeeklySpendingList = createCategoryWeeklySpending(budgetScheduleRanges, categoryWeeks, category);
-            log.info("Filtered Budget Schedule Ranges size: {}", categoryWeeklySpendingList.size());
-            for(CategoryWeeklySpending categoryWeeklySpending : categoryWeeklySpendingList)
-            {
-                String categoryName = categoryWeeklySpending.getCategory();
-                log.info("Category Name {}", categoryName);
-                if(categoryName.equals("UNCATEGORIZED"))
-                {
-                    continue;
-                }
-                BudgetScheduleRange budgetWeek = categoryWeeklySpending.getBudgetWeek();
-                BigDecimal categorySpendingForWeek = BigDecimal.valueOf(categoryWeeklySpending.getSpentOnCategory());
-                log.info("Category Spending For week {}", categorySpendingForWeek);
-                log.info("Budget Week: {}", budgetWeek.toString());
-                LocalDate budgetWeekStart = categoryWeeklySpending.getBudgetWeek().getStartRange();
-                LocalDate budgetWeekEnd = categoryWeeklySpending.getBudgetWeek().getEndRange();
-                //TODO: We need the total spent for the category during the week, not total spent during week from all categories
-                List<Transaction> transactionsForWeek = filterTransactionsByBudgetWeek(transactions, budgetWeekStart, budgetWeekEnd);
-                log.info("Transactions for week {} to {}", budgetWeekStart, budgetWeekEnd);
-                transactionsForWeek.forEach((transaction) -> {
-                    log.info("Transaction {}", transaction.toString());
-                });
-                DateRange currentWeekRange = new DateRange(budgetWeekStart, budgetWeekEnd);
-                log.info("Budget Amount for Category {}", budgetedAmountForCategory.doubleValue());
-                log.info("Category Spending: {}", categorySpendingForWeek.doubleValue());
-                log.info("=============================================================");
-                String uniqueKey = categoryName + "_" +
-                        budgetWeekStart.toString() + "_" +
-                        budgetWeekEnd.toString();
-                if(!uniqueBudgetCategories.containsKey(uniqueKey))
-                {
-                    BudgetCategory budgetCategory = createBudgetCategory(
-                            subBudgetId,
-                            categoryName,
-                            currentWeekRange,
-                            transactionsForWeek,
-                            //TODO: For the budget category actual spent, use the total spent during the budget week that was stored alongside the category week
-                            Math.abs(Double.valueOf(String.valueOf(categorySpendingForWeek))),
-                            //TODO: For the budget category budgeted amount for the category, use budgeted amount for the category not the budgeted amount for the budget schedule range
-                            budgetedAmountForCategory.doubleValue(),
-                            0.0,
-                            false
-                    );
-                    log.info("Budget Category: {}", budgetCategory.toString());
-                    uniqueBudgetCategories.put(uniqueKey, budgetCategory);
-                }
-            }
-        }
-        return new ArrayList<>(uniqueBudgetCategories.values());
+//        if(budgetCriteria == null || budgetCriteria.isEmpty())
+//        {
+//            return Collections.emptyList();
+//        }
+//        Set<BudgetCategory> budgetCategories = new HashSet<>();
+//        // Use a Map to prevent duplicates
+//        Map<String, BudgetCategory> uniqueBudgetCategories = new HashMap<>();
+//        for(MonthlyBudgetCategoryCriteria monthlyCriteria : budgetCriteria)
+//        {
+//            SubBudget subBudget = monthlyCriteria.getSubBudget();
+//            Long subBudgetId = subBudget.getId();
+//            BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
+//            List<BudgetScheduleRange> budgetScheduleRanges = budgetSchedule.getBudgetScheduleRanges();
+//            MonthlyCategorySpending monthlyCategorySpending = monthlyCriteria.getMonthlyCategorySpending();
+//            String category = monthlyCategorySpending.getCategory();
+//            List<Transaction> transactions = monthlyCategorySpending.getTransactions();
+//            // Category Spending is the overall spending for the category during the month
+//            BigDecimal monthlyCategorySpendingAmount = monthlyCategorySpending.getTotalCategorySpending();
+//            log.info("Monthly category spending {}", monthlyCategorySpendingAmount);
+//            List<CategoryBudgetAmount> categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
+//            BigDecimal budgetedAmountForCategory = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
+//            log.info("Budgeted Amount for Category {}", budgetedAmountForCategory.doubleValue());
+//            //TODO: Need to know when the category spending took place
+//            List<DateRangeSpending> categoryWeeks = monthlyCategorySpending.getWeeklySpending();
+//            log.info("Date Range Spending for Category {}", category);
+//            categoryWeeks.forEach((dateRangeSpending -> {
+//                log.info("Date Range Spending: {}", dateRangeSpending);
+//            }));
+//            //TODO: Need to track how much of the category spending was spent during each category week
+//            List<CategoryWeeklySpending> categoryWeeklySpendingList = createCategoryWeeklySpending(budgetScheduleRanges, categoryWeeks, category);
+//            log.info("Filtered Budget Schedule Ranges size: {}", categoryWeeklySpendingList.size());
+//            for(CategoryWeeklySpending categoryWeeklySpending : categoryWeeklySpendingList)
+//            {
+//                String categoryName = categoryWeeklySpending.getCategory();
+//                log.info("Category Name {}", categoryName);
+//                if(categoryName.equals("UNCATEGORIZED"))
+//                {
+//                    continue;
+//                }
+//                BudgetScheduleRange budgetWeek = categoryWeeklySpending.getBudgetWeek();
+//                BigDecimal categorySpendingForWeek = BigDecimal.valueOf(categoryWeeklySpending.getSpentOnCategory());
+//                log.info("Category Spending For week {}", categorySpendingForWeek);
+//                log.info("Budget Week: {}", budgetWeek.toString());
+//                LocalDate budgetWeekStart = categoryWeeklySpending.getBudgetWeek().getStartRange();
+//                LocalDate budgetWeekEnd = categoryWeeklySpending.getBudgetWeek().getEndRange();
+//                //TODO: We need the total spent for the category during the week, not total spent during week from all categories
+//                List<Transaction> transactionsForWeek = filterTransactionsByBudgetWeek(transactions, budgetWeekStart, budgetWeekEnd);
+//                log.info("Transactions for week {} to {}", budgetWeekStart, budgetWeekEnd);
+//                transactionsForWeek.forEach((transaction) -> {
+//                    log.info("Transaction {}", transaction.toString());
+//                });
+//                DateRange currentWeekRange = new DateRange(budgetWeekStart, budgetWeekEnd);
+//                log.info("Budget Amount for Category {}", budgetedAmountForCategory.doubleValue());
+//                log.info("Category Spending: {}", categorySpendingForWeek.doubleValue());
+//                log.info("=============================================================");
+//                String uniqueKey = categoryName + "_" +
+//                        budgetWeekStart.toString() + "_" +
+//                        budgetWeekEnd.toString();
+//                if(!uniqueBudgetCategories.containsKey(uniqueKey))
+//                {
+//                    BudgetCategory budgetCategory = createBudgetCategory(
+//                            subBudgetId,
+//                            categoryName,
+//                            currentWeekRange,
+//                            transactionsForWeek,
+//                            //TODO: For the budget category actual spent, use the total spent during the budget week that was stored alongside the category week
+//                            Math.abs(Double.valueOf(String.valueOf(categorySpendingForWeek))),
+//                            //TODO: For the budget category budgeted amount for the category, use budgeted amount for the category not the budgeted amount for the budget schedule range
+//                            budgetedAmountForCategory.doubleValue(),
+//                            0.0,
+//                            false
+//                    );
+//                    log.info("Budget Category: {}", budgetCategory.toString());
+//                    uniqueBudgetCategories.put(uniqueKey, budgetCategory);
+//                }
+//            }
+//        }
+//        return new ArrayList<>(uniqueBudgetCategories.values());
+        return null;
     }
 
     @Override
     public List<MonthlyBudgetCategoryCriteria> createCategoryBudgetCriteriaList(SubBudget budget, List<MonthlyCategorySpending> categorySpendingList, SubBudgetGoals subBudgetGoals)
     {
-        if(budget == null || categorySpendingList == null || subBudgetGoals == null)
-        {
-            return Collections.emptyList();
-        }
-        List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteriaList = new ArrayList<>();
-        for(MonthlyCategorySpending monthlyCategorySpending : categorySpendingList)
-        {
-            String category = monthlyCategorySpending.getCategory();
-            MonthlyBudgetCategoryCriteria monthlyBudgetCategoryCriteria = new MonthlyBudgetCategoryCriteria(category, budget, true, monthlyCategorySpending);
-            monthlyBudgetCategoryCriteriaList.add(monthlyBudgetCategoryCriteria);
-        }
-        return monthlyBudgetCategoryCriteriaList;
+//        if(budget == null || categorySpendingList == null || subBudgetGoals == null)
+//        {
+//            return Collections.emptyList();
+//        }
+//        List<MonthlyBudgetCategoryCriteria> monthlyBudgetCategoryCriteriaList = new ArrayList<>();
+//        for(MonthlyCategorySpending monthlyCategorySpending : categorySpendingList)
+//        {
+//            String category = monthlyCategorySpending.getCategory();
+//            MonthlyBudgetCategoryCriteria monthlyBudgetCategoryCriteria = new MonthlyBudgetCategoryCriteria(category, budget, true, monthlyCategorySpending);
+//            monthlyBudgetCategoryCriteriaList.add(monthlyBudgetCategoryCriteria);
+//        }
+//        return monthlyBudgetCategoryCriteriaList;
+        return null;
     }
 
     //TODO: Fix issue to reduce using a triple for loop
@@ -202,32 +197,33 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
     @Override
     public List<BudgetCategory> updateBudgetCategories(final List<MonthlyBudgetCategoryCriteria> budgetCriteria, final List<BudgetCategory> existingBudgetCategories)
     {
-        if(budgetCriteria == null || existingBudgetCategories == null || existingBudgetCategories.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        Map<String, BudgetCategory> budgetCategoryMap = existingBudgetCategories.stream()
-                .collect(Collectors.toMap(BudgetCategory::getCategoryName, bc -> bc, (bc1, bc2) -> bc1));
-        List<BudgetCategory> budgetCategories = new ArrayList<>();
-        for(MonthlyBudgetCategoryCriteria monthlyCriteria : budgetCriteria)
-        {
-            MonthlyCategorySpending monthlyCategorySpending = monthlyCriteria.getMonthlyCategorySpending();
-            String categoryName = monthlyCategorySpending.getCategory();
-            BudgetCategory existingBudgetCategory = budgetCategoryMap.get(categoryName);
-            List<Transaction> transactions = monthlyCategorySpending.getTransactions();
-            DateRange budgetCategoryDateRange = new DateRange(existingBudgetCategory.getStartDate(), existingBudgetCategory.getEndDate());
-            List<DateRangeSpending> dateRangeSpending = monthlyCategorySpending.getWeeklySpending();
-            Map<DateRange, Double> weeklySpendingMap = getWeeklySpendingMap(dateRangeSpending);
-            double weeklySpendingAmount = weeklySpendingMap.get(budgetCategoryDateRange);
-            double newBudgetCategoryActualAmount = weeklySpendingAmount + existingBudgetCategory.getBudgetActual();
-            double overSpendingAmount = getBudgetOverSpending(BigDecimal.valueOf(newBudgetCategoryActualAmount), BigDecimal.valueOf(existingBudgetCategory.getBudgetedAmount()));
-            Long budgetCategoryId = existingBudgetCategory.getId();
-            Long subBudgetId = existingBudgetCategory.getSubBudgetId();
-            double categoryBudgetAmount = existingBudgetCategory.getBudgetedAmount();
-            BudgetCategory updatedBudgetCategory = createBudgetCategory(budgetCategoryId, subBudgetId, categoryName, transactions, budgetCategoryDateRange, categoryBudgetAmount,newBudgetCategoryActualAmount, overSpendingAmount);
-            budgetCategories.add(updatedBudgetCategory);
-        }
-        return budgetCategories;
+//        if(budgetCriteria == null || existingBudgetCategories == null || existingBudgetCategories.isEmpty())
+//        {
+//            return Collections.emptyList();
+//        }
+//        Map<String, BudgetCategory> budgetCategoryMap = existingBudgetCategories.stream()
+//                .collect(Collectors.toMap(BudgetCategory::getCategoryName, bc -> bc, (bc1, bc2) -> bc1));
+//        List<BudgetCategory> budgetCategories = new ArrayList<>();
+//        for(MonthlyBudgetCategoryCriteria monthlyCriteria : budgetCriteria)
+//        {
+//            MonthlyCategorySpending monthlyCategorySpending = monthlyCriteria.getMonthlyCategorySpending();
+//            String categoryName = monthlyCategorySpending.getCategory();
+//            BudgetCategory existingBudgetCategory = budgetCategoryMap.get(categoryName);
+//            List<Transaction> transactions = monthlyCategorySpending.getTransactions();
+//            DateRange budgetCategoryDateRange = new DateRange(existingBudgetCategory.getStartDate(), existingBudgetCategory.getEndDate());
+//            List<DateRangeSpending> dateRangeSpending = monthlyCategorySpending.getWeeklySpending();
+//            Map<DateRange, Double> weeklySpendingMap = getWeeklySpendingMap(dateRangeSpending);
+//            double weeklySpendingAmount = weeklySpendingMap.get(budgetCategoryDateRange);
+//            double newBudgetCategoryActualAmount = weeklySpendingAmount + existingBudgetCategory.getBudgetActual();
+//            double overSpendingAmount = getBudgetOverSpending(BigDecimal.valueOf(newBudgetCategoryActualAmount), BigDecimal.valueOf(existingBudgetCategory.getBudgetedAmount()));
+//            Long budgetCategoryId = existingBudgetCategory.getId();
+//            Long subBudgetId = existingBudgetCategory.getSubBudgetId();
+//            double categoryBudgetAmount = existingBudgetCategory.getBudgetedAmount();
+//            BudgetCategory updatedBudgetCategory = createBudgetCategory(budgetCategoryId, subBudgetId, categoryName, transactions, budgetCategoryDateRange, categoryBudgetAmount,newBudgetCategoryActualAmount, overSpendingAmount);
+//            budgetCategories.add(updatedBudgetCategory);
+//        }
+//        return budgetCategories;
+        return null;
     }
 
     private BudgetCategory createBudgetCategory(Long budgetCategoryId, Long subBudgetId, String categoryName, List<Transaction> transactions, DateRange budgetCategoryDateRange, double budgetAmount, double budgetActual, double overSpendingAmount)
@@ -261,64 +257,65 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
     @Override
     public List<MonthlyCategorySpending> getCategorySpending(List<TransactionsByCategory> transactionsByCategoryList, List<BudgetScheduleRange> budgetScheduleRanges)
     {
-        if(transactionsByCategoryList == null || budgetScheduleRanges == null)
-        {
-            return Collections.emptyList();
-        }
-        if(transactionsByCategoryList.isEmpty() || budgetScheduleRanges.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-        log.info("Budget Schedule size: {}", budgetScheduleRanges.size());
-        List<MonthlyCategorySpending> categoryPeriodSpendingList = new ArrayList<>();
-        long startTime = System.currentTimeMillis();
-        List<TransactionsByCategory> sortedTransactionsByCategoryByCategory = transactionsByCategoryList.stream()
-                .sorted(Comparator.comparing(TransactionsByCategory::getCategoryName))
-                .toList();
-        for(TransactionsByCategory TransactionsByCategory : sortedTransactionsByCategoryByCategory)
-        {
-            String category = TransactionsByCategory.getCategoryName();
-            log.info("Category {}", category);
-            // Filter the sortedTransactionsByCategoryByCategory list by the current category
-            List<TransactionsByCategory> filteredTransactionsByCategory = sortedTransactionsByCategoryByCategory.stream()
-                    .filter(tbc -> tbc.getCategoryName().equals(category))
-                    .toList();
-            List<Transaction> allTransactions = filteredTransactionsByCategory.stream()
-                            .flatMap(tbc -> tbc.getTransactions().stream())
-                                    .toList();
-            log.info("All Transactions for category {}", category);
-            allTransactions.forEach(transaction -> {
-                log.info("Transaction {}", transaction);
-            });
-            if(category.isEmpty() || allTransactions.isEmpty())
-            {
-                log.warn("Category {} has no transactions, skipping to next category", category);
-                continue;
-            }
-            List<DateRangeSpending> weeklySpending = new ArrayList<>();
-            double totalSpendingForCategory = 0.0;
-            for(BudgetScheduleRange budgetWeek : budgetScheduleRanges)
-            {
-                LocalDate budgetWeekStart = budgetWeek.getStartRange();
-                LocalDate budgetWeekEnd = budgetWeek.getEndRange();
-                // Get the transaction spending for this week and given category
-                List<Transaction> transactionsForBudgetWeek = filterTransactionsByBudgetWeek(allTransactions, budgetWeekStart, budgetWeekEnd);
-                double transactionSpendingForWeek = getTotalTransactionSpending(transactionsForBudgetWeek).doubleValue();
-                log.info("Transaction Spending for week: {}", transactionSpendingForWeek);
-                if(transactionSpendingForWeek == 0)
-                {
-                    continue;
-                }
-                totalSpendingForCategory += transactionSpendingForWeek;
-                DateRange budgetDateRange = new DateRange(budgetWeekStart, budgetWeekEnd);
-                weeklySpending.add(new DateRangeSpending(budgetDateRange, transactionSpendingForWeek));
-            }
-            BigDecimal totalCategorySpending = new BigDecimal(totalSpendingForCategory).setScale(1, RoundingMode.HALF_UP);
-            log.info("Total Category Spending: {}", totalCategorySpending);
-            MonthlyCategorySpending monthlyCategorySpending = new MonthlyCategorySpending(category, totalCategorySpending, allTransactions,weeklySpending);
-            categoryPeriodSpendingList.add(monthlyCategorySpending);
-        }
-        return categoryPeriodSpendingList;
+//        if(transactionsByCategoryList == null || budgetScheduleRanges == null)
+//        {
+//            return Collections.emptyList();
+//        }
+//        if(transactionsByCategoryList.isEmpty() || budgetScheduleRanges.isEmpty())
+//        {
+//            return Collections.emptyList();
+//        }
+//        log.info("Budget Schedule size: {}", budgetScheduleRanges.size());
+//        List<MonthlyCategorySpending> categoryPeriodSpendingList = new ArrayList<>();
+//        long startTime = System.currentTimeMillis();
+//        List<TransactionsByCategory> sortedTransactionsByCategoryByCategory = transactionsByCategoryList.stream()
+//                .sorted(Comparator.comparing(TransactionsByCategory::getCategoryName))
+//                .toList();
+//        for(TransactionsByCategory TransactionsByCategory : sortedTransactionsByCategoryByCategory)
+//        {
+//            String category = TransactionsByCategory.getCategoryName();
+//            log.info("Category {}", category);
+//            // Filter the sortedTransactionsByCategoryByCategory list by the current category
+//            List<TransactionsByCategory> filteredTransactionsByCategory = sortedTransactionsByCategoryByCategory.stream()
+//                    .filter(tbc -> tbc.getCategoryName().equals(category))
+//                    .toList();
+//            List<Transaction> allTransactions = filteredTransactionsByCategory.stream()
+//                            .flatMap(tbc -> tbc.getTransactions().stream())
+//                                    .toList();
+//            log.info("All Transactions for category {}", category);
+//            allTransactions.forEach(transaction -> {
+//                log.info("Transaction {}", transaction);
+//            });
+//            if(category.isEmpty() || allTransactions.isEmpty())
+//            {
+//                log.warn("Category {} has no transactions, skipping to next category", category);
+//                continue;
+//            }
+//            List<DateRangeSpending> weeklySpending = new ArrayList<>();
+//            double totalSpendingForCategory = 0.0;
+//            for(BudgetScheduleRange budgetWeek : budgetScheduleRanges)
+//            {
+//                LocalDate budgetWeekStart = budgetWeek.getStartRange();
+//                LocalDate budgetWeekEnd = budgetWeek.getEndRange();
+//                // Get the transaction spending for this week and given category
+//                List<Transaction> transactionsForBudgetWeek = filterTransactionsByBudgetWeek(allTransactions, budgetWeekStart, budgetWeekEnd);
+//                double transactionSpendingForWeek = getTotalTransactionSpending(transactionsForBudgetWeek).doubleValue();
+//                log.info("Transaction Spending for week: {}", transactionSpendingForWeek);
+//                if(transactionSpendingForWeek == 0)
+//                {
+//                    continue;
+//                }
+//                totalSpendingForCategory += transactionSpendingForWeek;
+//                DateRange budgetDateRange = new DateRange(budgetWeekStart, budgetWeekEnd);
+//                weeklySpending.add(new DateRangeSpending(budgetDateRange, transactionSpendingForWeek));
+//            }
+//            BigDecimal totalCategorySpending = new BigDecimal(totalSpendingForCategory).setScale(1, RoundingMode.HALF_UP);
+//            log.info("Total Category Spending: {}", totalCategorySpending);
+//            MonthlyCategorySpending monthlyCategorySpending = new MonthlyCategorySpending(category, totalCategorySpending, allTransactions,weeklySpending);
+//            categoryPeriodSpendingList.add(monthlyCategorySpending);
+//        }
+//        return categoryPeriodSpendingList;
+        return null;
     }
 
     private List<Transaction> filterTransactionsByBudgetWeek(List<Transaction> transactions, LocalDate weekStart, LocalDate weekEnd)

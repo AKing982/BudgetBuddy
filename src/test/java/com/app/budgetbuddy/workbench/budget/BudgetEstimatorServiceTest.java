@@ -132,8 +132,9 @@ class BudgetEstimatorServiceTest
 
     @Test
     void testCalculateBudgetCategoryAmount_whenNoHistoricalData_thenReturnEmptyArray(){
-        Mockito.when(historicalDataEngine.getHistoricalMonthHistoryByCategory(6, 1L, LocalDate.of(2025, 4, 1)))
-                .thenReturn(Map.of());
+        Mockito.when(historicalDataEngine.getHistoricalTransactionCategories(1L, LocalDate.of(2025, 4, 1)))
+                .thenReturn(new HistoricalTransactionsByCategories(Collections.emptyList(), 0));
+
         List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
         assertNotNull(actual);
         assertEquals(0, actual.size());
@@ -206,7 +207,7 @@ class BudgetEstimatorServiceTest
                 .thenReturn(Map.of());
 
         Mockito.when(historicalDataEngine.getHistoricalTransactionCategories(1L, LocalDate.of(2025, 4, 1)))
-                .thenReturn(List.of(groceries, rent));
+                .thenReturn(new HistoricalTransactionsByCategories(List.of(groceries, rent), 6));
 
         List<CategoryBudgetAmount> actual = budgetEstimatorService.calculateBudgetCategoryAmount(testSubBudget);
         assertNotNull(actual);
@@ -215,8 +216,8 @@ class BudgetEstimatorServiceTest
         Map<String, BigDecimal> actualMap = actual.stream()
                 .collect(Collectors.toMap(CategoryBudgetAmount::category, CategoryBudgetAmount::budgetAmount));
 
-        assertEquals(new BigDecimal("316.87"), actualMap.get("Groceries")); // 0.0972 * 3260
-        assertEquals(new BigDecimal("0.00"), actualMap.get("Rent"));
+        assertEquals(new BigDecimal("450.0"), actualMap.get("Groceries")); // 0.0972 * 3260
+        assertEquals(new BigDecimal("1917.0"), actualMap.get("Rent"));
     }
 
     @Test
@@ -461,6 +462,253 @@ class BudgetEstimatorServiceTest
         assertEquals(expected.get("Payment"), actual.get("Payment"));
         assertEquals(expected.get("Utilities"), actual.get("Utilities"));
     }
+
+    @Test
+    void testCalculateCategoryBudget_whenLowBudgetAndManyMixCategories_thenReturnMap(){
+        List<TransactionsByCategory> transactionsByCategories = new ArrayList<>();
+        TransactionsByCategory rentCategory = new TransactionsByCategory();
+        rentCategory.setCategoryName("Rent");
+        rentCategory.setTotalCategorySpending(BigDecimal.valueOf(7668));
+
+        TransactionsByCategory groceryCategory = new TransactionsByCategory();
+        groceryCategory.setCategoryName("Groceries");
+        groceryCategory.setTotalCategorySpending(BigDecimal.valueOf(1800));
+
+        TransactionsByCategory paymentCategory = new TransactionsByCategory();
+        paymentCategory.setCategoryName("Payment");
+        paymentCategory.setTotalCategorySpending(BigDecimal.valueOf(1000));
+
+        TransactionsByCategory gasCategory = new TransactionsByCategory();
+        gasCategory.setCategoryName("Gas");
+        gasCategory.setTotalCategorySpending(BigDecimal.valueOf(320));
+
+        TransactionsByCategory utilitiesCategory = new TransactionsByCategory();
+        utilitiesCategory.setCategoryName("Utilities");
+        utilitiesCategory.setTotalCategorySpending(BigDecimal.valueOf(508));
+
+        TransactionsByCategory incomeCategory = new TransactionsByCategory();
+        incomeCategory.setCategoryName("Income");
+        incomeCategory.setTotalCategorySpending(BigDecimal.valueOf(15368));
+
+        TransactionsByCategory subscriptionCategory = new TransactionsByCategory();
+        subscriptionCategory.setCategoryName("Subscription");
+        subscriptionCategory.setTotalCategorySpending(BigDecimal.valueOf(300));
+
+        TransactionsByCategory orderOutCategory = new TransactionsByCategory();
+        orderOutCategory.setCategoryName("Order Out");
+        orderOutCategory.setTotalCategorySpending(BigDecimal.valueOf(260));
+
+        TransactionsByCategory hairCutCategory = new TransactionsByCategory();
+        hairCutCategory.setCategoryName("Haircut");
+        hairCutCategory.setTotalCategorySpending(BigDecimal.valueOf(104));
+
+        TransactionsByCategory gasBillCategory = new TransactionsByCategory();
+        gasBillCategory.setCategoryName("Gas Bill");
+        gasBillCategory.setTotalCategorySpending(BigDecimal.valueOf(166));
+
+        TransactionsByCategory electricityCategory = new TransactionsByCategory();
+        electricityCategory.setCategoryName("Electric");
+        electricityCategory.setTotalCategorySpending(BigDecimal.valueOf(231));
+
+        transactionsByCategories.add(rentCategory);
+        transactionsByCategories.add(groceryCategory);
+        transactionsByCategories.add(paymentCategory);
+        transactionsByCategories.add(gasCategory);
+        transactionsByCategories.add(utilitiesCategory);
+        transactionsByCategories.add(incomeCategory);
+        transactionsByCategories.add(subscriptionCategory);
+        transactionsByCategories.add(orderOutCategory);
+        transactionsByCategories.add(hairCutCategory);
+        transactionsByCategories.add(gasBillCategory);
+        transactionsByCategories.add(electricityCategory);
+
+        int numOfMonths = 4;
+        BigDecimal budgetAmount = BigDecimal.valueOf(2345.60);
+        Map<String, Double> expected = new HashMap<>();
+        expected.put("Rent", 1917.0);
+        expected.put("Groceries", 96.35);
+        expected.put("Payment", 0.0);
+        expected.put("Gas", 35.0);
+        expected.put("Utilities", 127.0);
+        expected.put("Income", 3842.0);
+        expected.put("Subscription", 0.0);
+        expected.put("Order Out", 0.0);
+        expected.put("Haircut", 26.0);
+        expected.put("Gas Bill", 41.5);
+        expected.put("Electric", 57.75);
+        Map<String, Double> actual = budgetEstimatorService.calculateCategoryBudget(transactionsByCategories, budgetAmount, numOfMonths);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        assertEquals(expected.get("Rent"), actual.get("Rent"));
+        assertEquals(expected.get("Groceries"), actual.get("Groceries"));
+        assertEquals(expected.get("Payment"), actual.get("Payment"));
+        assertEquals(expected.get("Utilities"), actual.get("Utilities"));
+        assertEquals(expected.get("Income"), actual.get("Income"));
+        assertEquals(expected.get("Subscription"), actual.get("Subscription"));
+        assertEquals(expected.get("Order Out"), actual.get("Order Out"));
+        assertEquals(expected.get("Haircut"), actual.get("Haircut"));
+        assertEquals(expected.get("Gas Bill"), actual.get("Gas Bill"));
+        assertEquals(expected.get("Electric"), actual.get("Electric"));
+    }
+
+    @Test
+    void testCalculateCategoryBudget_whenNumberOfMonthsFourAndMixCategories_thenReturnMap(){
+        List<TransactionsByCategory> transactionsByCategories = new ArrayList<>();
+        TransactionsByCategory rentCategory = new TransactionsByCategory();
+        rentCategory.setCategoryName("Rent");
+        rentCategory.setTotalCategorySpending(BigDecimal.valueOf(7668));
+
+        TransactionsByCategory groceryCategory = new TransactionsByCategory();
+        groceryCategory.setCategoryName("Groceries");
+        groceryCategory.setTotalCategorySpending(BigDecimal.valueOf(1800));
+
+        TransactionsByCategory paymentCategory = new TransactionsByCategory();
+        paymentCategory.setCategoryName("Payment");
+        paymentCategory.setTotalCategorySpending(BigDecimal.valueOf(580));
+
+        TransactionsByCategory gasCategory = new TransactionsByCategory();
+        gasCategory.setCategoryName("Gas");
+        gasCategory.setTotalCategorySpending(BigDecimal.valueOf(320));
+
+        TransactionsByCategory utilitiesCategory = new TransactionsByCategory();
+        utilitiesCategory.setCategoryName("Utilities");
+        utilitiesCategory.setTotalCategorySpending(BigDecimal.valueOf(508));
+
+        transactionsByCategories.add(rentCategory);
+        transactionsByCategories.add(groceryCategory);
+        transactionsByCategories.add(paymentCategory);
+        transactionsByCategories.add(gasCategory);
+        transactionsByCategories.add(utilitiesCategory);
+
+        int numOfMonths = 4;
+        BigDecimal budgeted = BigDecimal.valueOf(3095.08);
+        Map<String, Double> expected = new HashMap<>();
+        expected.put("Rent", 1917.00);
+        expected.put("Groceries", 450.00);
+        expected.put("Payment", 104.22);
+        expected.put("Utilities", 127.00);
+        expected.put("Gas", 80.00);
+
+        Map<String, Double> actual = budgetEstimatorService.calculateCategoryBudget(transactionsByCategories, budgeted, numOfMonths);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        assertEquals(expected.get("Rent"), actual.get("Rent"));
+        assertEquals(expected.get("Groceries"), actual.get("Groceries"));
+        assertEquals(expected.get("Payment"), actual.get("Payment"));
+        assertEquals(expected.get("Utilities"), actual.get("Utilities"));
+        assertEquals(expected.get("Gas"), actual.get("Gas"));
+    }
+
+    @Test
+    void testCalculateCategoryBudget_whenNumberOfMonthsFourAndIncomeCategory_thenReturnMap(){
+        List<TransactionsByCategory> transactionsByCategories = new ArrayList<>();
+        TransactionsByCategory rentCategory = new TransactionsByCategory();
+        rentCategory.setCategoryName("Income");
+        rentCategory.setTotalCategorySpending(BigDecimal.valueOf(15368));
+
+        transactionsByCategories.add(rentCategory);
+
+        int numOfMonths = 4;
+        BigDecimal budgeted = BigDecimal.valueOf(3095.08);
+        Map<String, Double> expected = new HashMap<>();
+        expected.put("Income", 3842.0);
+
+        Map<String, Double> actual = budgetEstimatorService.calculateCategoryBudget(transactionsByCategories, budgeted, numOfMonths);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        assertEquals(expected.get("Income").doubleValue(), actual.get("Income").doubleValue());
+    }
+
+    @Test
+    void testCalculateCategoryBudget_whenNumMonthsFourAndManyCategories_thenReturnMap(){
+        List<TransactionsByCategory> transactionsByCategories = new ArrayList<>();
+        TransactionsByCategory rentCategory = new TransactionsByCategory();
+        rentCategory.setCategoryName("Rent");
+        rentCategory.setTotalCategorySpending(BigDecimal.valueOf(7668));
+
+        TransactionsByCategory groceryCategory = new TransactionsByCategory();
+        groceryCategory.setCategoryName("Groceries");
+        groceryCategory.setTotalCategorySpending(BigDecimal.valueOf(1800));
+
+        TransactionsByCategory paymentCategory = new TransactionsByCategory();
+        paymentCategory.setCategoryName("Payment");
+        paymentCategory.setTotalCategorySpending(BigDecimal.valueOf(1000));
+
+        TransactionsByCategory gasCategory = new TransactionsByCategory();
+        gasCategory.setCategoryName("Gas");
+        gasCategory.setTotalCategorySpending(BigDecimal.valueOf(320));
+
+        TransactionsByCategory utilitiesCategory = new TransactionsByCategory();
+        utilitiesCategory.setCategoryName("Utilities");
+        utilitiesCategory.setTotalCategorySpending(BigDecimal.valueOf(508));
+
+        TransactionsByCategory incomeCategory = new TransactionsByCategory();
+        incomeCategory.setCategoryName("Income");
+        incomeCategory.setTotalCategorySpending(BigDecimal.valueOf(15368));
+
+        TransactionsByCategory subscriptionCategory = new TransactionsByCategory();
+        subscriptionCategory.setCategoryName("Subscription");
+        subscriptionCategory.setTotalCategorySpending(BigDecimal.valueOf(300));
+
+        TransactionsByCategory orderOutCategory = new TransactionsByCategory();
+        orderOutCategory.setCategoryName("Order Out");
+        orderOutCategory.setTotalCategorySpending(BigDecimal.valueOf(260));
+
+        TransactionsByCategory hairCutCategory = new TransactionsByCategory();
+        hairCutCategory.setCategoryName("Haircut");
+        hairCutCategory.setTotalCategorySpending(BigDecimal.valueOf(104));
+
+        TransactionsByCategory gasBillCategory = new TransactionsByCategory();
+        gasBillCategory.setCategoryName("Gas Bill");
+        gasBillCategory.setTotalCategorySpending(BigDecimal.valueOf(166));
+
+        TransactionsByCategory electricityCategory = new TransactionsByCategory();
+        electricityCategory.setCategoryName("Electric");
+        electricityCategory.setTotalCategorySpending(BigDecimal.valueOf(231));
+
+        transactionsByCategories.add(rentCategory);
+        transactionsByCategories.add(groceryCategory);
+        transactionsByCategories.add(paymentCategory);
+        transactionsByCategories.add(gasCategory);
+        transactionsByCategories.add(utilitiesCategory);
+        transactionsByCategories.add(incomeCategory);
+        transactionsByCategories.add(subscriptionCategory);
+        transactionsByCategories.add(orderOutCategory);
+        transactionsByCategories.add(hairCutCategory);
+        transactionsByCategories.add(gasBillCategory);
+        transactionsByCategories.add(electricityCategory);
+
+        int numOfMonths = 4;
+        BigDecimal budgeted = BigDecimal.valueOf(3095.08);
+        Map<String, Double> expected = new HashMap<>();
+        expected.put("Rent", 1917.00);
+        expected.put("Groceries", 450.00);
+        expected.put("Payment", 50.7);
+        expected.put("Utilities", 127.00);
+        expected.put("Gas", 80.0);
+        expected.put("Income", 3842.0);
+        expected.put("Subscription", 15.21);
+        expected.put("Order Out", 13.18);
+        expected.put("Haircut", 5.27);
+        expected.put("Gas Bill", 41.50);
+        expected.put("Electric", 57.75);
+
+        Map<String, Double> actual = budgetEstimatorService.calculateCategoryBudget(transactionsByCategories, budgeted, numOfMonths);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        assertEquals(expected.get("Rent"), actual.get("Rent"));
+        assertEquals(expected.get("Groceries"), actual.get("Groceries"));
+        assertEquals(expected.get("Payment"), actual.get("Payment"));
+        assertEquals(expected.get("Utilities"), actual.get("Utilities"));
+        assertEquals(expected.get("Gas"), actual.get("Gas"));
+        assertEquals(expected.get("Income"), actual.get("Income"));
+        assertEquals(expected.get("Subscription"), actual.get("Subscription"));
+        assertEquals(expected.get("Order Out"), actual.get("Order Out"));
+        assertEquals(expected.get("Haircut"), actual.get("Haircut"));
+        assertEquals(expected.get("Gas Bill"), actual.get("Gas Bill"));
+        assertEquals(expected.get("Electric"), actual.get("Electric"));
+    }
+
 
     private CategoryEntity buildCategory(String name) {
         CategoryEntity entity = new CategoryEntity();

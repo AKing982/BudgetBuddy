@@ -4,7 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
 import com.app.budgetbuddy.exceptions.IllegalDateException;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
+import com.app.budgetbuddy.workbench.BudgetCategoryAsyncService;
 import com.app.budgetbuddy.workbench.TransactionImportEngine;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +59,7 @@ class BudgetSetupEngineTest
     private TransactionImportEngine transactionImportEngine;
 
     @MockBean
-    private BudgetCategoryThreadService budgetCategoryThreadService;
+    private BudgetCategoryAsyncService budgetCategoryAsyncService;
 
     @Autowired
     private BudgetSetupEngine budgetSetupEngine;
@@ -135,7 +135,7 @@ class BudgetSetupEngineTest
                 .budgetGoals(budgetGoals)
                 .build();
 
-        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, transactionImportEngine, abstractBudgetStatisticsService, budgetCategoryThreadService);
+        budgetSetupEngine = new BudgetSetupEngine(budgetBuilderService, subBudgetBuilderService, monthlyBudgetGoalsBuilder, transactionImportEngine, abstractBudgetStatisticsService, budgetCategoryAsyncService);
     }
 
     @Test

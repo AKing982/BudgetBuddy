@@ -1,6 +1,9 @@
 package com.app.budgetbuddy.workbench.budget;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.BudgetCategoryException;
+import com.app.budgetbuddy.services.BudgetCategoryService;
+import com.app.budgetbuddy.services.SubBudgetGoalsService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -9,10 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -20,19 +20,47 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 @Setter
-public class WeeklyBudgetCategoryBuilderService
+public class WeeklyBudgetCategoryBuilderService extends AbstractBudgetCategoryBuilder<WeeklyBudgetCategoryCriteria, WeeklyCategorySpending>
 {
-    private final BudgetEstimatorService budgetEstimatorService;
-
     @Autowired
-    public WeeklyBudgetCategoryBuilderService(BudgetEstimatorService budgetEstimatorService)
+    public WeeklyBudgetCategoryBuilderService(BudgetCategoryService budgetCategoryService,
+                                              BudgetCalculations budgetCalculations,
+                                              BudgetEstimatorService budgetEstimatorService,
+                                              SubBudgetGoalsService subBudgetGoalsService)
     {
-        this.budgetEstimatorService = budgetEstimatorService;
+        super(budgetCategoryService, budgetCalculations, budgetEstimatorService, subBudgetGoalsService);
+    }
+
+    @Override
+    public List<WeeklyBudgetCategoryCriteria> createCategoryBudgetCriteriaList(SubBudget budget,
+                                                                               List<WeeklyCategorySpending> categorySpendingList,
+                                                                               SubBudgetGoals subBudgetGoals)
+    {
+        // subBudgetGoals unused for weekly
+        return createWeeklyBudgetCategoryCriteria(budget, categorySpendingList);
+    }
+
+    @Override
+    public List<BudgetCategory> updateBudgetCategories(List<WeeklyBudgetCategoryCriteria> budgetCriteria, List<BudgetCategory> existingBudgetCategories)
+    {
+        return updateWeeklyBudgetCategories(existingBudgetCategories, budgetCriteria);
+    }
+
+    @Override
+    public List<WeeklyCategorySpending> getCategorySpending(List<TransactionsByCategory> transactionsByCategory, List<BudgetScheduleRange> budgetScheduleRanges)
+    {
+        if(budgetScheduleRanges == null || budgetScheduleRanges.isEmpty()) return Collections.emptyList();
+        BudgetScheduleRange range = budgetScheduleRanges.get(0);
+        return getWeeklyCategorySpending(range.getStartRange(), range.getEndRange(), transactionsByCategory);
     }
 
     public List<WeeklyCategorySpending> getWeeklyCategorySpending(final LocalDate weekStart, final LocalDate weekEnd, final List<TransactionsByCategory> transactionsByCategory)
     {
-        if(weekStart == null ||  transactionsByCategory == null)
+        if(weekStart == null || weekEnd == null)
+        {
+            return Collections.emptyList();
+        }
+        if(transactionsByCategory == null || transactionsByCategory.isEmpty())
         {
             return Collections.emptyList();
         }
@@ -41,9 +69,14 @@ public class WeeklyBudgetCategoryBuilderService
         {
             String categoryName = transactionsByCategory1.getCategoryName();
             List<Transaction> transactions = transactionsByCategory1.getTransactions();
+            if(transactions == null || transactions.isEmpty())
+            {
+                continue;
+            }
             BigDecimal categorySpending = transactions.stream()
-                    .filter(e -> (!e.getPosted().isAfter(weekEnd) && !e.getPosted().isBefore(weekStart)))
+                    .filter(Objects::nonNull)
                     .map(Transaction::getAmount)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             DateRange weekRange = DateRange.createDateRange(weekStart, weekEnd);
             WeeklyCategorySpending weeklyCategorySpending = new WeeklyCategorySpending(categoryName, categorySpending, transactions, weekRange);
@@ -52,42 +85,51 @@ public class WeeklyBudgetCategoryBuilderService
         return weeklyCategorySpendings;
     }
 
-    public List<BudgetCategory> buildBudgetCategoryList(final List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList)
+    public BigDecimal getEstimatedWeeklyBudgetedAmount(final SubBudget subBudget, DateRange dateRange, final String category)
     {
-        return weeklyBudgetCategoryCriteriaList.stream()
-                .map(weeklyBudgetCategoryCriteria -> {
-                    WeeklyCategorySpending weeklyCategorySpending = weeklyBudgetCategoryCriteria.getWeeklyCategorySpending();
-                    SubBudget subBudget = weeklyBudgetCategoryCriteria.getSubBudget();
-                    String category = weeklyCategorySpending.getCategory();
-                    List<CategoryBudgetAmount> categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
-                    BigDecimal budgetedAmount = budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
-                    List<Transaction> transactions = weeklyCategorySpending.getTransactions();
-                    BigDecimal categorySpending = weeklyCategorySpending.getTotalCategorySpending();
-                    DateRange weekRange = weeklyCategorySpending.getWeekRange();
-                    double overSpending = 0.0;
-                    boolean isOverSpending = false;
-                    if(budgetedAmount != null && categorySpending.doubleValue() > budgetedAmount.doubleValue())
-                    {
-                        isOverSpending = true;
-                        overSpending = categorySpending.doubleValue() - budgetedAmount.doubleValue();
-                    }
-                    return BudgetCategory.builder()
-                            .budgetActual(categorySpending.doubleValue())
-                            .subBudgetId(subBudget.getId())
-                            .budgetedAmount(budgetedAmount.doubleValue())
-                            .isActive(true)
-                            .startDate(weekRange.getStartDate())
-                            .endDate(weekRange.getEndDate())
-                            .overSpendingAmount(overSpending)
-                            .isOverSpent(isOverSpending)
-                            .transactions(transactions)
-                            .categoryName(category)
-                            .build();
-                })
-                .collect(Collectors.toList());
+        List<CategoryBudgetAmount> categoryBudgetAmounts = budgetEstimatorService.calculateBudgetCategoryAmount(subBudget);
+        return budgetEstimatorService.getBudgetCategoryAmountByCategory(category, categoryBudgetAmounts);
     }
 
-    public List<BudgetCategory> updateBudgetCategories(List<BudgetCategory> existingBudgetCategories, List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteria)
+    public List<BudgetCategory> buildBudgetCategoryList(final List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteriaList)
+    {
+        if(weeklyBudgetCategoryCriteriaList == null || weeklyBudgetCategoryCriteriaList.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        List<BudgetCategory> budgetCategoryList = new ArrayList<>();
+        for(WeeklyBudgetCategoryCriteria weeklyBudgetCategoryCriteria : weeklyBudgetCategoryCriteriaList)
+        {
+            WeeklyCategorySpending weeklyCategorySpending = weeklyBudgetCategoryCriteria.getWeeklyCategorySpending();
+            if(weeklyCategorySpending == null)
+            {
+                log.warn("Skipping category: {} - weekly category spending is null", weeklyBudgetCategoryCriteria.getCategory());
+                continue;
+            }
+            String categoryName = weeklyCategorySpending.getCategory();
+            BigDecimal weeklySpending = weeklyCategorySpending.getTotalCategorySpending();
+            SubBudget subBudget = weeklyBudgetCategoryCriteria.getSubBudget();
+            DateRange weekRange = weeklyCategorySpending.getWeekRange();
+            List<Transaction> transactions = weeklyCategorySpending.getTransactions();
+            BigDecimal budgetedAmount = getEstimatedWeeklyBudgetedAmount(subBudget, weekRange, categoryName);
+            BudgetCategory budgetCategory = BudgetCategory.builder()
+                    .budgetActual(weeklySpending.doubleValue())
+                    .subBudgetId(subBudget.getId())
+                    .budgetedAmount(budgetedAmount.doubleValue())
+                    .isActive(true)
+                    .startDate(weekRange.getStartDate())
+                    .endDate(weekRange.getEndDate())
+                    .overSpendingAmount(0.0)
+                    .isOverSpent(false)
+                    .transactions(transactions)
+                    .categoryName(categoryName)
+                    .build();
+            budgetCategoryList.add(budgetCategory);
+        }
+        return budgetCategoryList;
+    }
+
+    public List<BudgetCategory> updateWeeklyBudgetCategories(List<BudgetCategory> existingBudgetCategories, List<WeeklyBudgetCategoryCriteria> weeklyBudgetCategoryCriteria)
     {
         if(existingBudgetCategories == null || existingBudgetCategories.isEmpty())
         {
@@ -137,11 +179,12 @@ public class WeeklyBudgetCategoryBuilderService
         {
             return Collections.emptyList();
         }
-        return weeklyCategorySpendings.stream()
-                .map(weeklyCategorySpending -> {
-                    String category = weeklyCategorySpending.getCategory();
-                    return WeeklyBudgetCategoryCriteria.createWeeklyBudgetCategoryCriteria(category, weeklyCategorySpending, subBudget, true);
-                })
-                .toList();
+//        return weeklyCategorySpendings.stream()
+//                .map(weeklyCategorySpending -> {
+//                    String category = weeklyCategorySpending.getCategory();
+//                    return WeeklyBudgetCategoryCriteria.createWeeklyBudgetCategoryCriteria(category, weeklyCategorySpending, subBudget, true);
+//                })
+//                .toList();
+        return null;
     }
 }

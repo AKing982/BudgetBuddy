@@ -30,24 +30,37 @@ public class HistoricalDataEngine
         this.csvTransactionsByCategoryQueries = csvTransactionsByCategoryQueries;
     }
 
-    public List<TransactionsByCategory> getHistoricalTransactionCategories(final Long userId, final LocalDate startDate)
+    public HistoricalTransactionsByCategories getHistoricalTransactionCategories(final Long userId, final LocalDate startDate)
     {
-        final int numberOfMonths = 6;
+        final int MIN_MONTHS = 4;
+        final int MAX_MONTHS = 12;
+        int monthsWithData = 0;
         Map<String, BigDecimal> aggregated = new HashMap<>();
-        for(int i = 0; i < numberOfMonths; i++)
+        for(int i = 0; i < MAX_MONTHS; i++)
         {
             LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
             LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
             List<CSVTransactionsByCategory> csvTransactionsByCategories =
                     csvTransactionsByCategoryQueries.getCSVTransactionsByCategories(userId, monthStart, monthEnd);
-            for(CSVTransactionsByCategory csvTransactionsByCategory : csvTransactionsByCategories)
+            if(!csvTransactionsByCategories.isEmpty())
             {
-                String category = csvTransactionsByCategory.getCategory();
-                BigDecimal categorySpending = csvTransactionsByCategory.getTotalCategorySpending();
-                aggregated.merge(category, categorySpending, BigDecimal::add);
+                monthsWithData++;
+                for(CSVTransactionsByCategory csvTransactionsByCategory : csvTransactionsByCategories)
+                {
+                    String category = csvTransactionsByCategory.getCategory();
+                    BigDecimal categorySpending = csvTransactionsByCategory.getTotalCategorySpending();
+                    aggregated.merge(category, categorySpending, BigDecimal::add);
+                }
             }
+            if(i >= MIN_MONTHS && monthsWithData == 0)
+            {
+                break;
+            }
+
         }
-        return aggregated.entrySet().stream()
+        log.info("Found {} months of transaction data scanning back from {}", monthsWithData, startDate);
+        final int actualMonths = Math.max(1, monthsWithData);
+        List<TransactionsByCategory> transactions = aggregated.entrySet().stream()
                 .map(e -> {
                     TransactionsByCategory t = new TransactionsByCategory();
                     t.setCategoryName(e.getKey());
@@ -55,6 +68,7 @@ public class HistoricalDataEngine
                     return t;
                 })
                 .toList();
+        return new HistoricalTransactionsByCategories(transactions, actualMonths);
     }
 
     public Map<String, HistoricalMonthStats> getHistoricalMonthStatsByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate)

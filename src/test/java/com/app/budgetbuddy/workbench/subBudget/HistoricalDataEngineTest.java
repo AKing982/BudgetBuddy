@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.workbench.subBudget;
 
-import com.app.budgetbuddy.domain.CSVTransactionsByCategory;
-import com.app.budgetbuddy.domain.HistoricalMonthStats;
-import com.app.budgetbuddy.domain.MonthHistory;
-import com.app.budgetbuddy.domain.TransactionsByCategory;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.HistoricalDataException;
 import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.budget.BudgetCategoryQueries;
@@ -372,9 +369,9 @@ class HistoricalDataEngineTest
                        userId, LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31)))
                .thenReturn(List.of(mockCSVTransactionsByCategory, mockCSVTransactionsByCategory2));
 
-       List<TransactionsByCategory> actual = historicalDataEngine.getHistoricalTransactionCategories(userId, startDate);
+       HistoricalTransactionsByCategories actual = historicalDataEngine.getHistoricalTransactionCategories(userId, startDate);
        // Convert to map for readable assertions — order in list is not guaranteed
-       Map<String, BigDecimal> actualMap = actual.stream()
+       Map<String, BigDecimal> actualMap = actual.historicalTransactions().stream()
                .collect(Collectors.toMap(
                        TransactionsByCategory::getCategoryName,
                        TransactionsByCategory::getTotalCategorySpending));

@@ -60,10 +60,12 @@ public class BudgetEstimatorService
         double monthlyBudget = budgetAmount.doubleValue();
 //        log.info("Monthly Budget: " + monthlyBudget);
 //        log.info("Number of Months: " + numOfMonths);
-        List<String> NEED_CATEGORIES = List.of("Rent", "Utilities", "Insurance", "Groceries");
-        List<String> EXCLUDED_CATEGORIES = List.of("Deposit", "Withdrawal");
+        List<String> NEED_CATEGORIES = List.of("Rent", "Utilities", "Insurance", "Groceries", "Electric", "Gas Bill", "Gas");
+        List<String> INCOME_CATEGORIES = List.of("Income");
+        List<String> EXCLUDED_CATEGORIES = List.of("Deposit", "Withdrawal", "Uncategorized", "Refund");
         double totalWantsAvg = 0.0;
         double totalNeedsSpending = 0.0;
+        double totalIncome = 0.0;
         Map<String, Double> monthlyAverages = new HashMap<>();
         for(TransactionsByCategory transactionsByCategory : transactionsByCategories)
         {
@@ -74,10 +76,18 @@ public class BudgetEstimatorService
             }
             double totalCategorySpending = transactionsByCategory.getTotalCategorySpending().doubleValue();
             double monthlyAverage = Math.abs(totalCategorySpending / numOfMonths);
+            if(category.equalsIgnoreCase("Groceries"))
+            {
+                monthlyAverage = Math.min(450.00, monthlyAverage);
+            }
             monthlyAverages.put(category, monthlyAverage);
             if(NEED_CATEGORIES.contains(category))
             {
                 totalNeedsSpending += monthlyAverage;
+            }
+            else if(INCOME_CATEGORIES.contains(category))
+            {
+                totalIncome += monthlyAverage;
             }
             else
             {
@@ -96,7 +106,22 @@ public class BudgetEstimatorService
             double allocated;
             if(NEED_CATEGORIES.contains(category))
             {
-                allocated = average;
+                if(remainingBudget == 0 && category.equalsIgnoreCase("Groceries"))
+                {
+                    double fixedNeedsTotal = monthlyAverages.entrySet().stream()
+                            .filter(e -> NEED_CATEGORIES.contains(e.getKey()) && !e.getKey().equalsIgnoreCase("Groceries"))
+                            .mapToDouble(Map.Entry::getValue)
+                            .sum();
+                    allocated = Math.max(0, monthlyBudget - fixedNeedsTotal);
+                }
+                else
+                {
+                    allocated = average; // already capped at 300-450 for Groceries from first pass
+                }
+            }
+            else if(INCOME_CATEGORIES.contains(category))
+            {
+                allocated = Math.min(average, totalIncome);
             }
             else
             {
@@ -115,7 +140,7 @@ public class BudgetEstimatorService
         if(needsRatio <= 0.5){
             needsPercent = 0.5; wantsPercent = 0.30; savingsPercent = 0.20;
         }else if(needsRatio <= 0.60){
-            needsPercent = 0.6; wantsPercent = 0.40; savingsPercent = 0.20;
+            needsPercent = 0.6; wantsPercent = 0.20; savingsPercent = 0.20;
         }else {
             needsPercent = 0.7; wantsPercent = 0.20; savingsPercent = 0.10;
         }
@@ -143,16 +168,23 @@ public class BudgetEstimatorService
         List<CategoryBudgetAmount> categoryBudgetAmounts = new ArrayList<>();
         Long userId = subBudget.getBudget().getUserId();
         LocalDate budgetStart = subBudget.getStartDate();
+        log.info("Budget Start: " + budgetStart);
         BigDecimal monthlyIncome = subBudget.getAllocatedAmount();
+        log.info("Monthly Income: " + monthlyIncome);
         final int numOfMonths = 6;
         Map<String, List<MonthHistory>> categoryMonthHistory = historicalDataEngine.getHistoricalMonthHistoryByCategory(numOfMonths,userId, budgetStart);
         if(categoryMonthHistory == null || categoryMonthHistory.isEmpty())
         {
-            List<TransactionsByCategory> transactionsByCategories = historicalDataEngine.getHistoricalTransactionCategories(userId, budgetStart);
-            Map<String, Double> categoryBudgetMap = calculateCategoryBudget(transactionsByCategories, monthlyIncome, numOfMonths);
+            log.info("No historical data found for category budget calculation");
+            LocalDate historicStart = LocalDate.now();
+            HistoricalTransactionsByCategories historicalTransactionCategories = historicalDataEngine.getHistoricalTransactionCategories(userId, budgetStart);
+            int numberOfMonths = historicalTransactionCategories.numberOfMonths();
+            List<TransactionsByCategory> transactionsByCategories = historicalTransactionCategories.historicalTransactions();
+            Map<String, Double> categoryBudgetMap = calculateCategoryBudget(transactionsByCategories, monthlyIncome, numberOfMonths);
             categoryBudgetAmounts = categoryBudgetMap.keySet().stream()
                     .map(category -> new CategoryBudgetAmount(category, BigDecimal.valueOf(categoryBudgetMap.get(category))))
                     .toList();
+            log.info("Category Budget Amounts: " + categoryBudgetAmounts);
         }
         else
         {
@@ -180,6 +212,7 @@ public class BudgetEstimatorService
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                     averageBudgetedAmount = totalBudgeted.divide(BigDecimal.valueOf(monthHistories.size()), 2, RoundingMode.HALF_UP);
                     BigDecimal suggestedAmount = averageBudgetedAmount.multiply(BigDecimal.valueOf(1.10)).setScale(2, RoundingMode.HALF_UP);
+                    log.info("Category: " + category + "Budgeted Amount: " + suggestedAmount);
                     categoryBudgetAmounts.add(new CategoryBudgetAmount(category, suggestedAmount));
                 }
             }

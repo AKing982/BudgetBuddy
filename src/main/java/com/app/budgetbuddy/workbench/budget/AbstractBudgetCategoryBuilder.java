@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -29,8 +30,6 @@ public abstract class AbstractBudgetCategoryBuilder<T extends BudgetCategoryCrit
         this.budgetEstimatorService = budgetEstimatorService;
         this.subBudgetGoalsService = subBudgetGoalsService;
     }
-
-    public abstract List<BudgetCategory> initializeBudgetCategories(final SubBudget subBudget, final List<TransactionsByCategory> TransactionsByCategory);
 
     public abstract List<BudgetCategory> buildBudgetCategoryList(final List<T> budgetCriteria);
 
@@ -74,6 +73,14 @@ public abstract class AbstractBudgetCategoryBuilder<T extends BudgetCategoryCrit
             return budgetActual;
         }
         return 0.0;
+    }
+
+    // Daily override — default throws so only daily subclass needs to implement it
+    public List<S> getCategorySpendingByDate(List<TransactionsByCategory> transactionsByCategory,
+                                             LocalDate date)
+    {
+        throw new UnsupportedOperationException(
+                getClass().getSimpleName() + " does not support getCategorySpendingByDate");
     }
 
     protected boolean isBudgetOverSpending(final Double budgetOverSpendingAmount)

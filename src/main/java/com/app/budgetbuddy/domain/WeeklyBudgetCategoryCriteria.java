@@ -1,27 +1,22 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
+@AllArgsConstructor(access= AccessLevel.PUBLIC)
 @EqualsAndHashCode(callSuper=true)
 @Getter
+@Setter
+@Builder
 public class WeeklyBudgetCategoryCriteria extends BudgetCategoryCriteriaBase
 {
     private WeeklyCategorySpending weeklyCategorySpending;
 
-    public WeeklyBudgetCategoryCriteria(String category, WeeklyCategorySpending weeklyCategorySpending, SubBudget subBudget, boolean isActive)
+    public WeeklyBudgetCategoryCriteria(WeeklyCategorySpending weeklyCategorySpending, SubBudget subBudget, boolean isActive)
     {
-        super(category, subBudget, isActive);
+        super(weeklyCategorySpending.getCategory(),subBudget, isActive);
         this.weeklyCategorySpending = weeklyCategorySpending;
-    }
-
-    public static WeeklyBudgetCategoryCriteria createWeeklyBudgetCategoryCriteria(String category, WeeklyCategorySpending weeklyCategorySpending, SubBudget subBudget, boolean isActive)
-    {
-        return new WeeklyBudgetCategoryCriteria(category, weeklyCategorySpending, subBudget, isActive);
     }
 }

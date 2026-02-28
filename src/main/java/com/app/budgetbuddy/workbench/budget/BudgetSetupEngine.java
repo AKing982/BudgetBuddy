@@ -7,7 +7,7 @@ import com.app.budgetbuddy.entities.BudgetStatisticsEntity;
 import com.app.budgetbuddy.entities.SubBudgetGoalsEntity;
 import com.app.budgetbuddy.exceptions.BudgetBuildException;
 import com.app.budgetbuddy.exceptions.BudgetSetupException;
-import com.app.budgetbuddy.workbench.BudgetCategoryThreadService;
+import com.app.budgetbuddy.workbench.BudgetCategoryAsyncService;
 import com.app.budgetbuddy.workbench.TransactionImportEngine;
 import com.app.budgetbuddy.workbench.subBudget.SubBudgetBuilderService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class BudgetSetupEngine
     private final MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder;
     private final TransactionImportEngine transactionImportEngine;
     private final AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService;
-    private final BudgetCategoryThreadService budgetCategoryThreadService;
+    private final BudgetCategoryAsyncService budgetCategoryAsyncService;
 
     @Autowired
     public BudgetSetupEngine(BudgetBuilderService budgetBuilderService,
@@ -40,14 +40,14 @@ public class BudgetSetupEngine
                              MonthlyBudgetGoalsBuilder monthlyBudgetGoalsBuilder,
                              TransactionImportEngine transactionImportEngine,
                              AbstractBudgetStatisticsService<SubBudget> subBudgetStatisticsService,
-                             BudgetCategoryThreadService budgetCategoryThreadService)
+                             BudgetCategoryAsyncService budgetCategoryAsyncService)
     {
         this.budgetBuilderService = budgetBuilderService;
         this.subBudgetBuilderService = subBudgetBuilderService;
         this.monthlyBudgetGoalsBuilder = monthlyBudgetGoalsBuilder;
         this.transactionImportEngine = transactionImportEngine;
         this.subBudgetStatisticsService = subBudgetStatisticsService;
-        this.budgetCategoryThreadService = budgetCategoryThreadService;
+        this.budgetCategoryAsyncService = budgetCategoryAsyncService;
     }
 
     public List<Transaction> importPlaidTransactions(Long userId)
