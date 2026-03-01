@@ -19,6 +19,10 @@ public class CSVTransactionEntity
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="userId")
+    private UserEntity user;
+
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="csvAcctId")
     @JsonIgnore

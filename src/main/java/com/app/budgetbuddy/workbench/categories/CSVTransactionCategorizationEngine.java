@@ -29,6 +29,8 @@ public class CSVTransactionCategorizationEngine implements CategorizationEngine<
     private final CSVAccountRepository csvAccountRepository;
     private Map<String, CategoryType> csvMerchantMap = new HashMap<>();
     private Map<MerchantPrice, CategoryType> csvMerchantPriceMap = new HashMap<>();
+    private Map<MerchantCategory, CategoryType> csvMerchantCategoryMap = new HashMap<>();
+    private Map<String, CategoryType> transactionCategoryMap = new HashMap<>();
     private final CategoryService categoryService;
     private final UserCategoryService userCategoryService;
     private final String SYSTEM_CATEGORIZED = "SYSTEM";
@@ -46,6 +48,51 @@ public class CSVTransactionCategorizationEngine implements CategorizationEngine<
         this.userCategoryService = userCategoryService;
         initializeCSVMerchantMap();
         initializeCSVMerchantPriceMap();
+        initializeMerchantCategoryMap();
+        initializeTransactionCategoryMap();
+    }
+
+    void initializeMerchantCategoryMap(){
+
+        // Formerly in csvMerchantPriceMap - merchant + category + amount
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEX FINANCE", null, 14.99), CategoryType.SUBSCRIPTION);
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEX FINANCE", null, 707.0), CategoryType.RENT);
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEX FINANCE", null, 1220.0), CategoryType.RENT);
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEXIBLE FINANCE", null, 14.99), CategoryType.SUBSCRIPTION);
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEXIBLE FINANCE", null, 1220.03), CategoryType.RENT);
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEXIBLE FINANCE", null, 707.0), CategoryType.RENT);
+
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEX FINANCE", "Online Services", 707.0), CategoryType.RENT);
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEX FINANCE", "Online Services", 1220.0), CategoryType.RENT);
+        csvMerchantCategoryMap.put(new MerchantCategory("FLEX FINANCE", "Online Services", 14.99), CategoryType.SUBSCRIPTION);
+        csvMerchantCategoryMap.put(new MerchantCategory("WinCo Foods", "Groceries"), CategoryType.GROCERIES);
+        csvMerchantCategoryMap.put(new MerchantCategory("Smiths", "Groceries"), CategoryType.GROCERIES);
+        csvMerchantCategoryMap.put(new MerchantCategory("Withdrawal", "ATM/Cash Withdrawals"), CategoryType.WITHDRAWAL);
+        csvMerchantCategoryMap.put(new MerchantCategory("Payment to Conservice", "Utilities"), CategoryType.UTILITIES);
+        csvMerchantCategoryMap.put(new MerchantCategory("Panda Express", "Restaurants & Dining"), CategoryType.ORDER_OUT);
+        csvMerchantCategoryMap.put(new MerchantCategory("The Break Sports Grill", "Restaurants & Dining"), CategoryType.ORDER_OUT);
+        csvMerchantCategoryMap.put(new MerchantCategory("Payment to Affirm.com", "Loan Payments"), CategoryType.PAYMENT);
+        csvMerchantCategoryMap.put(new MerchantCategory("Maverik", "Gasoline/Fuel"), CategoryType.GAS);
+        csvMerchantCategoryMap.put(new MerchantCategory("Walmart", "Shopping"), CategoryType.GROCERIES);
+        csvMerchantCategoryMap.put(new MerchantCategory("Spotify", "Entertainment"), CategoryType.SUBSCRIPTION);
+        csvMerchantCategoryMap.put(new MerchantCategory("Hbo Max", "Entertainment"), CategoryType.SUBSCRIPTION);
+    }
+
+    void initializeTransactionCategoryMap(){
+        transactionCategoryMap.put("Gasoline/Fuel", CategoryType.GAS);
+        transactionCategoryMap.put("Loan Payments", CategoryType.PAYMENT);
+        transactionCategoryMap.put("Online Services", CategoryType.PAYMENT);
+        transactionCategoryMap.put("Groceries", CategoryType.GROCERIES);
+        transactionCategoryMap.put("Utilities", CategoryType.UTILITIES);
+        transactionCategoryMap.put("Restaurants & Dining", CategoryType.ORDER_OUT);
+        transactionCategoryMap.put("Shopping", CategoryType.GROCERIES);
+        transactionCategoryMap.put("Insurance", CategoryType.INSURANCE);
+        transactionCategoryMap.put("Payment", CategoryType.PAYMENT);
+        transactionCategoryMap.put("ATM/Cash Withdrawals", CategoryType.WITHDRAWAL);
+        transactionCategoryMap.put("Entertainment", CategoryType.SUBSCRIPTION);
+        transactionCategoryMap.put("Paychecks/Salary", CategoryType.INCOME);
+        transactionCategoryMap.put("Personal Care & Fitness", CategoryType.OTHER);
+        transactionCategoryMap.put("Deposits", CategoryType.DEPOSIT);
     }
 
     // Level 0 Merchant Static Matching
@@ -136,81 +183,198 @@ public class CSVTransactionCategorizationEngine implements CategorizationEngine<
             return Category.createUncategorized();
         }
         BigDecimal transactionAmount = transaction.getTransactionAmount()
-                        .abs()
                         .stripTrailingZeros();
+        BigDecimal absTransactionAmount = transactionAmount.abs();
         log.info("tAmountDouble: {}",transactionAmount);
         String merchantName = transaction.getMerchantName();
-        int suffix = transaction.getSuffix();
-        String acct = transaction.getAccount();
-        Long userId = getUserIdByAcctNumberSuffix(suffix, acct);
+        String merchantNameUpper = merchantName.toUpperCase();
+        String institutionId = transaction.getInstitution_id();
+        Long userId = transaction.getUserId();
+        String transactionCategory = transaction.getCategory();
         List<TransactionRule> transactionRules = transactionRuleService.findByUserId(userId);
         Long categoryId = 0L;
         String matchedCategoryName = "";
         Category category = null;
         try
         {
-            if(transactionRules.isEmpty())
+            if(!transactionRules.isEmpty())
             {
-                MerchantPrice key = new MerchantPrice(merchantName, transactionAmount);
-                log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
-                boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
-                String merchantNameUpper = merchantName.toUpperCase();
-                log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
-                if(csvMerchantPriceMap.containsKey(key))
-                {
-                    log.info("Found Merchant Price Map key: {}", key);
-                    CategoryType categoryType = csvMerchantPriceMap.get(key);
-                    String categoryName = categoryType.getType();
-                    categoryId = categoryService.getCategoryIdByName(categoryName);
-                    matchedCategoryName = categoryName;
-                    category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
-                    return category;
-                }
-                else if(csvMerchantMap.containsKey(merchantNameUpper))
-                {
-                    log.info("Found MerchantMap key: {}", merchantName);
-                    CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
-                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
-                    matchedCategoryName = categoryType.getType();
-                    category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
-                    log.info("Found CategoryType: {}", categoryType);
-                    return category;
-                }
-            }
-            else
-            {
-                Map<Integer, List<TransactionRule>> transactionRulesByPriority = transactionRules.stream()
+                Map<Integer, List<TransactionRule>> rulesByPriority = transactionRules.stream()
                         .filter(rule -> rule != null && rule.isActive())
                         .collect(Collectors.groupingBy(TransactionRule::getPriority));
-                List<Integer> sortedPriorities = transactionRulesByPriority.keySet().stream()
-                        .sorted().toList();
+                List<Integer> sortedPriorities = rulesByPriority.keySet().stream().sorted().toList();
                 long startTime = System.currentTimeMillis();
-                for(Integer sortedPriority : sortedPriorities)
+                for(Integer priority : sortedPriorities)
                 {
-                    log.info("Found Priority: {}", sortedPriority);
-                    List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
-                    for(TransactionRule rule : rules)
+                    for(TransactionRule rule : rulesByPriority.get(priority))
                     {
-                        int match_counter = 0;
-                        Long ruleId = rule.getId();
                         log.info("Found Rule: {}", rule);
                         if(matches(transaction, rule))
                         {
-                            match_counter++;
-                            rule.setMatchCount(match_counter);
-                            // Update the rule match counter
-                            transactionRuleService.updateMatchCount(ruleId, rule.getMatchCount());
+                            rule.setMatchCount(rule.getMatchCount() + 1);
+                            transactionRuleService.updateMatchCount(rule.getId(), rule.getMatchCount());
                             matchedCategoryName = rule.getCategoryName();
-                            log.info("Rule matches: {}", rule);
-                            long endTime = System.currentTimeMillis();
-                            log.info("Rules found in {} ms", endTime - startTime);
+                            log.info("Rule matches: {} in {} ms", rule, System.currentTimeMillis() - startTime);
                             Long userCategoryId = userCategoryService.getCategoryIdByNameAndUser(matchedCategoryName, userId);
                             return Category.createCategory(userCategoryId, matchedCategoryName, USER_CATEGORIZED, LocalDate.now());
                         }
                     }
                 }
-
+                return Category.createUncategorized();
             }
+            if("Mountain America Credit Union".equals(institutionId))
+            {
+                double absAmount = absTransactionAmount.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+                MerchantCategory merchantCategoryAmountKey = new MerchantCategory(merchantNameUpper, transactionCategory, absAmount);
+                if(csvMerchantCategoryMap.containsKey(merchantCategoryAmountKey))
+                {
+                    log.info("Found MerchantCategoryAmount key: {}", merchantCategoryAmountKey);
+                    CategoryType categoryType = csvMerchantCategoryMap.get(merchantCategoryAmountKey);
+                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                    return Category.createCategory(categoryId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
+                }
+                // Level 1: merchant + category
+                if(transactionCategory != null && !transactionCategory.isEmpty())
+                {
+                    MerchantCategory merchantCategoryKey = new MerchantCategory(merchantNameUpper, transactionCategory);
+                    if(csvMerchantCategoryMap.containsKey(merchantCategoryKey))
+                    {
+                        log.info("Found MerchantCategory key: {}", merchantCategoryKey);
+                        CategoryType categoryType = csvMerchantCategoryMap.get(merchantCategoryKey);
+                        categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                        return Category.createCategory(categoryId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
+                    }
+                    // Level 2: category string alone
+                    if(transactionCategoryMap.containsKey(transactionCategory))
+                    {
+                        log.info("Found TransactionCategory key: {}", transactionCategory);
+                        CategoryType categoryType = transactionCategoryMap.get(transactionCategory);
+                        categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                        return Category.createCategory(categoryId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
+                    }
+                }
+            }
+            else
+            {
+                // Level 0: merchant + amount (no category)
+                MerchantCategory merchantAmountKey = new MerchantCategory(merchantNameUpper, null, absTransactionAmount.doubleValue());
+                if(csvMerchantCategoryMap.containsKey(merchantAmountKey))
+                {
+                    log.info("Found MerchantAmount key: {}", merchantAmountKey);
+                    CategoryType categoryType = csvMerchantCategoryMap.get(merchantAmountKey);
+                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                    return Category.createCategory(categoryId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
+                }
+                // Level 1: merchant alone in merchant category map
+                MerchantCategory merchantOnlyKey = new MerchantCategory(merchantNameUpper, null);
+                if(csvMerchantCategoryMap.containsKey(merchantOnlyKey))
+                {
+                    log.info("Found MerchantOnly key: {}", merchantOnlyKey);
+                    CategoryType categoryType = csvMerchantCategoryMap.get(merchantOnlyKey);
+                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                    return Category.createCategory(categoryId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
+                }
+                // Level 2: merchant map
+                if(csvMerchantMap.containsKey(merchantNameUpper))
+                {
+                    log.info("Found MerchantMap key: {}", merchantNameUpper);
+                    CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
+                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+                    return Category.createCategory(categoryId, categoryType.getType(), SYSTEM_CATEGORIZED, LocalDate.now());
+                }
+            }
+//            if(transactionRules.isEmpty())
+//            {
+//                MerchantPrice key = new MerchantPrice(merchantName, absTransactionAmount);
+//                log.info("Merchant Name: {}, Transaction Amount: {}", merchantName, transactionAmount);
+//                boolean csvMerchantPriceMatch = csvMerchantPriceMap.containsKey(key);
+//                String merchantNameUpper = merchantName.toUpperCase();
+//                log.info("CSV Merchant Price Match: {}", csvMerchantPriceMatch);
+//                MerchantCategory merchantCategoryAmountKey = new MerchantCategory(merchantName, transactionCategory, absTransactionAmount.doubleValue());
+//                if(csvMerchantCategoryMap.containsKey(merchantCategoryAmountKey))
+//                {
+//                    log.info("Found MerchantCategoryAmount key: {}", merchantCategoryAmountKey);
+//                    CategoryType categoryType = csvMerchantCategoryMap.get(merchantCategoryAmountKey);
+//                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+//                    matchedCategoryName = categoryType.getType();
+//                    return Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+//                }
+//                else if(csvMerchantPriceMap.containsKey(key))
+//                {
+//                    log.info("Found Merchant Price Map key: {}", key);
+//                    CategoryType categoryType = csvMerchantPriceMap.get(key);
+//                    String categoryName = categoryType.getType();
+//                    categoryId = categoryService.getCategoryIdByName(categoryName);
+//                    matchedCategoryName = categoryName;
+//                    category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+//                    return category;
+//                }
+//                else if(csvMerchantMap.containsKey(merchantNameUpper))
+//                {
+//                    log.info("Found MerchantMap key: {}", merchantName);
+//                    CategoryType categoryType = csvMerchantMap.get(merchantNameUpper);
+//                    categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+//                    matchedCategoryName = categoryType.getType();
+//                    category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+//                    log.info("Found CategoryType: {}", categoryType);
+//                    return category;
+//                }
+//                else if(transactionCategory != null && !transactionCategory.isEmpty())
+//                {
+//                    MerchantCategory merchantCategoryKey = new MerchantCategory(merchantName, transactionCategory);
+//                    if(csvMerchantCategoryMap.containsKey(merchantCategoryKey))
+//                    {
+//                        log.info("Found Merchant Category Map key: {}", merchantCategoryKey);
+//                        CategoryType categoryType = csvMerchantCategoryMap.get(merchantCategoryKey);
+//                        matchedCategoryName = categoryType.getType();
+//                        categoryId = categoryService.getCategoryIdByName(matchedCategoryName);
+//                        category = Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+//                        return category;
+//                    }
+//                    else if(transactionCategoryMap.containsKey(transactionCategory))
+//                    {
+//                        log.info("Found Transaction Category Map key: {}", transactionCategory);
+//                        CategoryType categoryType = transactionCategoryMap.get(transactionCategory);
+//                        categoryId = categoryService.getCategoryIdByName(categoryType.getType());
+//                        matchedCategoryName = categoryType.getType();
+//                        return Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+//                    }
+//                }
+//            }
+//            else
+//            {
+//                Map<Integer, List<TransactionRule>> transactionRulesByPriority = transactionRules.stream()
+//                        .filter(rule -> rule != null && rule.isActive())
+//                        .collect(Collectors.groupingBy(TransactionRule::getPriority));
+//                List<Integer> sortedPriorities = transactionRulesByPriority.keySet().stream()
+//                        .sorted().toList();
+//                long startTime = System.currentTimeMillis();
+//                for(Integer sortedPriority : sortedPriorities)
+//                {
+//                    log.info("Found Priority: {}", sortedPriority);
+//                    List<TransactionRule> rules = transactionRulesByPriority.get(sortedPriority);
+//                    for(TransactionRule rule : rules)
+//                    {
+//                        int match_counter = 0;
+//                        Long ruleId = rule.getId();
+//                        log.info("Found Rule: {}", rule);
+//                        if(matches(transaction, rule))
+//                        {
+//                            match_counter++;
+//                            rule.setMatchCount(match_counter);
+//                            // Update the rule match counter
+//                            transactionRuleService.updateMatchCount(ruleId, rule.getMatchCount());
+//                            matchedCategoryName = rule.getCategoryName();
+//                            log.info("Rule matches: {}", rule);
+//                            long endTime = System.currentTimeMillis();
+//                            log.info("Rules found in {} ms", endTime - startTime);
+//                            Long userCategoryId = userCategoryService.getCategoryIdByNameAndUser(matchedCategoryName, userId);
+//                            return Category.createCategory(userCategoryId, matchedCategoryName, USER_CATEGORIZED, LocalDate.now());
+//                        }
+//                    }
+//                }
+//
+//            }
             return Category.createUncategorized();
         }catch(CategoryException e){
             log.error("There was an error categorizing the csv transaction {}: {}", transaction, e.getMessage());
@@ -226,7 +390,6 @@ public class CSVTransactionCategorizationEngine implements CategorizationEngine<
             return false;
         }
         BigDecimal transactionAmount = transaction.getTransactionAmount()
-                .abs()
                 .stripTrailingZeros();
         String merchantName = transaction.getMerchantName();
         String description = transaction.getDescription();
@@ -241,10 +404,11 @@ public class CSVTransactionCategorizationEngine implements CategorizationEngine<
         // Check individual field matches
         boolean merchantRuleMatch = merchantRule != null && !merchantRule.isEmpty()
                 && merchantRule.equalsIgnoreCase(merchantName) || merchantName.contains(merchantRule);
-        boolean descriptionRuleMatch = descriptionRule != null && !descriptionRule.isEmpty()
-                && descriptionRule.equalsIgnoreCase(description);
-        boolean extendedDescriptionRuleMatch = extendedDescriptionRule != null && !extendedDescriptionRule.isEmpty()
-                && extendedDescriptionRule.equalsIgnoreCase(extendedDescription);
+        boolean descriptionRuleMatch = descriptionRule == null || descriptionRule.isEmpty()
+                || descriptionRule.equalsIgnoreCase(description);
+
+        boolean extendedDescriptionRuleMatch = extendedDescriptionRule == null || extendedDescriptionRule.isEmpty()
+                || extendedDescriptionRule.equalsIgnoreCase(extendedDescription);
         boolean amountMatch = transactionAmount.compareTo(BigDecimal.valueOf(minAmount)) >= 0
                 && transactionAmount.compareTo(BigDecimal.valueOf(maxAmount)) <= 0;
         boolean minAmountMatch = transactionAmount.compareTo(BigDecimal.valueOf(minAmount)) >= 0;

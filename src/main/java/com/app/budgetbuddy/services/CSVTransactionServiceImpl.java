@@ -7,6 +7,7 @@ import com.app.budgetbuddy.entities.CSVTransactionEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.CSVAccountRepository;
 import com.app.budgetbuddy.repositories.CSVTransactionRepository;
+import com.app.budgetbuddy.repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,14 +25,14 @@ import java.util.*;
 public class CSVTransactionServiceImpl implements CSVTransactionService
 {
     private final CSVTransactionRepository csvTransactionRepository;
-    private final CSVAccountRepository csvAccountRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public CSVTransactionServiceImpl(CSVTransactionRepository csvTransactionRepository,
-                                     CSVAccountRepository csvAccountRepository)
+                                     UserRepository csvAccountRepository)
     {
         this.csvTransactionRepository = csvTransactionRepository;
-        this.csvAccountRepository = csvAccountRepository;
+        this.userRepository = csvAccountRepository;
     }
 
     @Override
@@ -90,20 +91,11 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
             {
                 CSVTransactionEntity csvTransactionEntity = new CSVTransactionEntity();
                 int suffix = transactionCSV.getSuffix();
-                // Find a CSV Account with the suffix
-                Optional<CSVAccountEntity> csvAccountEntityOptional = csvAccountRepository.findBySuffixAndUserId(suffix, userId);
-                if(csvAccountEntityOptional.isEmpty())
-                {
-                    log.error("There was an error finding a CSV account with the suffix: {}", suffix);
-                    continue;
-                }
-                CSVAccountEntity csvAccountEntity = csvAccountEntityOptional.get();
                 LocalDate transactionDate = transactionCSV.getTransactionDate();
                 BigDecimal transactionAmount = transactionCSV.getTransactionAmount();
                 String description = transactionCSV.getDescription();
                 String extendedDescription = transactionCSV.getExtendedDescription();
                 LocalDate electronicTransactionDate = transactionCSV.getElectronicTransactionDate();
-                csvTransactionEntity.setCsvAccount(csvAccountEntity);
                 csvTransactionEntity.setTransactionDate(transactionDate);
                 csvTransactionEntity.setTransactionAmount(transactionAmount);
                 csvTransactionEntity.setDescription(description);
@@ -112,6 +104,8 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
                 csvTransactionEntity.setExtendedDescription(extendedDescription);
                 csvTransactionEntity.setInstitutionId(transactionCSV.getInstitution_id());
                 csvTransactionEntity.setElectronicTransactionDate(electronicTransactionDate);
+                csvTransactionEntity.setUser(userRepository.findById(userId).get());
+                // Find a CSV Account with the suffix
                 csvTransactionEntityList.add(csvTransactionEntity);
             }
             return csvTransactionEntityList;
@@ -130,7 +124,7 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         {
             for(CSVTransactionEntity csvTransactionEntity : csvTransactionEntities)
             {
-                Long userId = csvTransactionEntity.getCsvAccount().getUser().getId();
+                Long userId = csvTransactionEntity.getUser().getId();
                 LocalDate transactionDate = csvTransactionEntity.getTransactionDate();
                 String description = csvTransactionEntity.getDescription();
                 String extendedDescription = csvTransactionEntity.getExtendedDescription();
@@ -151,25 +145,6 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         }
     }
 
-//    @Override
-//    @Transactional
-//    public Optional<TransactionCSV> updateTransactionCSVByCategory(Long transactionId, String category)
-//
-//    {
-//        if(transactionId == null || category == null)
-//        {
-//            return Optional.empty();
-//        }
-//        try
-//        {
-//            csvTransactionRepository.updateCSVTransactionEntityCategory(category, transactionId);
-//            return findTransactionCSVById(transactionId);
-//        }catch(DataAccessException e){
-//            log.error("There was an error updating the transaction CSV by category: ", e);
-//            return Optional.empty();
-//        }
-//    }
-
     @Override
     @Transactional
     public Optional<TransactionCSV> findTransactionCSVById(Long transactionId)
@@ -184,54 +159,21 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
             CSVTransactionEntity csvTransactionEntity = csvTransactionEntityOptional.get();
             TransactionCSV transactionCSV = new TransactionCSV();
             transactionCSV.setId(csvTransactionEntity.getId());
-            transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
-            transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
             transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
             transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
             transactionCSV.setDescription(csvTransactionEntity.getDescription());
             transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
+            transactionCSV.setBalance(csvTransactionEntity.getBalance());
+            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
+            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
+            transactionCSV.setInstitution_id(csvTransactionEntity.getInstitutionId());
+            transactionCSV.setUserId(csvTransactionEntity.getUser().getId());
             return Optional.of(transactionCSV);
         }catch(DataAccessException e){
             log.error("There was an error finding the transaction CSV by id: ", e);
             return Optional.empty();
         }
     }
-
-//    @Override
-//    @Transactional
-//    public Optional<TransactionCSV> updateTransactionCSVCategoryAndMerchantName(Long transactionId, String merchantName, String category)
-//    {
-//        try
-//        {
-//            // Update the Transaction with the category
-//            csvTransactionRepository.updateCSVTransactionEntityCategoryAndMerchantName(category, merchantName, transactionId);
-//
-//            // Fetch the same CSV Transaction
-//            Optional<CSVTransactionEntity> updateCSVTransactionWithCategory = csvTransactionRepository.findById(transactionId);
-//            if(updateCSVTransactionWithCategory.isEmpty())
-//            {
-//                log.error("There was an error updating the transaction CSV category: No CSV Transaction Entity was found with the transaction id: {}", transactionId);
-//                return Optional.empty();
-//            }
-//            CSVTransactionEntity csvTransactionEntity = updateCSVTransactionWithCategory.get();
-//            TransactionCSV transactionCSV = new TransactionCSV();
-//            transactionCSV.setId(csvTransactionEntity.getId());
-//            transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
-//            transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
-//            transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
-//            transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
-//            transactionCSV.setDescription(csvTransactionEntity.getDescription());
-//            transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
-//            transactionCSV.setBalance(csvTransactionEntity.getBalance());
-//
-//            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
-//            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
-//            return Optional.of(transactionCSV);
-//        }catch(DataAccessException e){
-//            log.error("There was an error updating the transaction CSV category: ", e);
-//            return Optional.empty();
-//        }
-//    }
 
     @Override
     @Transactional
@@ -242,9 +184,7 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         for(CSVTransactionEntity csvTransactionEntity : csvTransactionEntities)
         {
             TransactionCSV transactionCSV = new TransactionCSV();
-            transactionCSV.setSuffix(csvTransactionEntity.getCsvAccount().getSuffix());
             transactionCSV.setId(csvTransactionEntity.getId());
-            transactionCSV.setAccount(csvTransactionEntity.getCsvAccount().getAccountNumber());
             transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
             transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
             transactionCSV.setDescription(csvTransactionEntity.getDescription());
@@ -252,6 +192,8 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
             transactionCSV.setBalance(csvTransactionEntity.getBalance());
             transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
             transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
+            transactionCSV.setInstitution_id(csvTransactionEntity.getInstitutionId());
+            transactionCSV.setUserId(csvTransactionEntity.getUser().getId());
             transactionCSVList.add(transactionCSV);
         }
         return transactionCSVList;
@@ -267,16 +209,9 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         }
         try
         {
-            Optional<CSVAccountEntity> csvAccountEntityOptional = csvAccountRepository.findByUserId(userId);
-            if(csvAccountEntityOptional.isEmpty())
-            {
-                log.error("There was an error finding a CSV account for the user id: {}", userId);
-                return Page.empty();
-            }
-            CSVAccountEntity csvAccountEntity = csvAccountEntityOptional.get();
-            Long csvAccountId = csvAccountEntity.getId();
+
             Pageable pageable = PageRequest.of(0, pageNum);
-            return csvTransactionRepository.findCSVTransactionEntitiesByAcctIdAndStartDateAndEndDate(csvAccountId, startDate, endDate, pageable);
+            return csvTransactionRepository.findCSVTransactionEntitiesByUserIdAndStartDateAndEndDate(userId, startDate, endDate, pageable);
         }catch(DataAccessException e){
             log.error("There was an error retrieving the CSV transaction entities: ", e);
             return Page.empty();

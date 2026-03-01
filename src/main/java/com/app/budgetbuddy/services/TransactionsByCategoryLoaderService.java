@@ -36,10 +36,52 @@ public class TransactionsByCategoryLoaderService
         return merge(transactions, csvTransactions);
     }
 
+//    public List<TransactionsByCategory> fetchAndMergeUpdatedForMonth(final SubBudget subBudget)
+//    {
+//        List<TransactionsByCategory> transactions = fetchUpdatedByMonth(subBudget);
+//        List<CSVTransactionsByCategory> csvTransactions = fetchUpdatedCSVByMonth(subBudget);
+//        return merge(transactions, csvTransactions);
+//    }
+
+    private List<CSVTransactionsByCategory> fetchCSVByMonth(final SubBudget subBudget)
+    {
+        Long userId = subBudget.getBudget().getUserId();
+        log.info("Fetching CSV Transactions by category for user: {}", userId);
+        log.info("Fetching CSV Transactions by category for start date: {}, end date: {}", subBudget.getStartDate(), subBudget.getEndDate());
+        try
+        {
+            List<CSVTransactionsByCategory> csvTransactions = csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(
+                    userId, subBudget.getStartDate(), subBudget.getEndDate()).join();
+            log.info("CSV Transactions Inside Fetch CSV by Month: {}", csvTransactions);
+
+            if(csvTransactions.isEmpty())
+            {
+                log.info("No new CSV transactions found, falling back to processed transactions");
+                csvTransactions = csvTransactionsThreadService.fetchProcessedCSVTransactionsByCategoryListByDateRange(
+                        userId, subBudget.getStartDate(), subBudget.getEndDate()).join();
+                log.info("Processed CSV Transactions: {}", csvTransactions);
+            }
+
+            return csvTransactions;
+        }
+        catch(CompletionException e)
+        {
+            log.error("Error fetching CSV transactions for month", e);
+            return Collections.emptyList();
+        }
+    }
+
     public List<TransactionsByCategory> fetchAndMergeUpdatedForMonth(final SubBudget subBudget)
     {
         List<TransactionsByCategory> transactions = fetchUpdatedByMonth(subBudget);
         List<CSVTransactionsByCategory> csvTransactions = fetchUpdatedCSVByMonth(subBudget);
+        log.info("CSV Transactions: {}", csvTransactions);
+        // If no updated CSV transactions, fall back to processed ones
+        if(csvTransactions.isEmpty())
+        {
+            csvTransactions = fetchProcessedCSVByMonth(subBudget);
+            log.info("CSV Transactions: {}", csvTransactions);
+        }
         return merge(transactions, csvTransactions);
     }
 
@@ -109,24 +151,24 @@ public class TransactionsByCategoryLoaderService
         }
     }
 
-    private List<CSVTransactionsByCategory> fetchCSVByMonth(final SubBudget subBudget)
-    {
-        Long userId = subBudget.getBudget().getUserId();
-        log.info("Fetching CSV Transactions by category for user: {}", userId);
-        log.info("Fetching CSV Transactions by category for start date: {}, end date: {}", subBudget.getStartDate(), subBudget.getEndDate());
-        try
-        {
-            List<CSVTransactionsByCategory> csvTransactions = csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(
-                    userId, subBudget.getStartDate(), subBudget.getEndDate()).join();
-            log.info("CSV Transactions Inside Fetch CSV by Month: {}", csvTransactions);
-            return csvTransactions;
-        }
-        catch(CompletionException e)
-        {
-            log.error("Error fetching CSV transactions for month", e);
-            return Collections.emptyList();
-        }
-    }
+//    private List<CSVTransactionsByCategory> fetchCSVByMonth(final SubBudget subBudget)
+//    {
+//        Long userId = subBudget.getBudget().getUserId();
+//        log.info("Fetching CSV Transactions by category for user: {}", userId);
+//        log.info("Fetching CSV Transactions by category for start date: {}, end date: {}", subBudget.getStartDate(), subBudget.getEndDate());
+//        try
+//        {
+//            List<CSVTransactionsByCategory> csvTransactions = csvTransactionsThreadService.fetchCSVTransactionsByCategoryListByDateRange(
+//                    userId, subBudget.getStartDate(), subBudget.getEndDate()).join();
+//            log.info("CSV Transactions Inside Fetch CSV by Month: {}", csvTransactions);
+//            return csvTransactions;
+//        }
+//        catch(CompletionException e)
+//        {
+//            log.error("Error fetching CSV transactions for month", e);
+//            return Collections.emptyList();
+//        }
+//    }
 
     private List<CSVTransactionsByCategory> fetchUpdatedCSVByMonth(final SubBudget subBudget)
     {
@@ -139,6 +181,21 @@ public class TransactionsByCategoryLoaderService
         catch(CompletionException e)
         {
             log.error("Error fetching updated CSV transactions for month", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<CSVTransactionsByCategory> fetchProcessedCSVByMonth(final SubBudget subBudget)
+    {
+        Long userId = subBudget.getBudget().getUserId();
+        try
+        {
+            return csvTransactionsThreadService.fetchProcessedCSVTransactionsByCategoryListByDateRange(
+                    userId, subBudget.getStartDate(), subBudget.getEndDate()).join();
+        }
+        catch(CompletionException e)
+        {
+            log.error("Error fetching processed CSV transactions for month", e);
             return Collections.emptyList();
         }
     }

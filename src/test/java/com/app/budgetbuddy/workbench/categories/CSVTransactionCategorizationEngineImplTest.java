@@ -8,10 +8,14 @@ import com.app.budgetbuddy.services.CategoryService;
 import com.app.budgetbuddy.services.TransactionRuleService;
 import com.app.budgetbuddy.services.UserCategoryService;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +24,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -29,25 +34,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 
-@SpringBootTest
-class CSVTransactionCategorizerServiceImplTest
+@ExtendWith(MockitoExtension.class)
+class CSVTransactionCategorizationEngineImplTest
 {
 
-    @Autowired
-    @Qualifier("csvCategorizer")
-    private CategorizationEngine<TransactionCSV> transactionCSVCategorizerService;
-
-    @MockBean
+    @Mock
     private CSVAccountRepository csvAccountRepository;
 
-    @MockBean
+    @Mock
     private CategoryService categoryService;
 
-    @MockBean
+    @Mock
     private UserCategoryService userCategoryService;
 
-    @MockBean
+    @Mock
     private TransactionRuleService transactionRuleService;
+
+    @InjectMocks
+    private CSVTransactionCategorizationEngine csvTransactionCategorizationEngine;
 
     @BeforeEach
     void setUp() {
@@ -55,7 +59,7 @@ class CSVTransactionCategorizerServiceImplTest
 
     @Test
     void testCategorize_whenTransactionCSVIsNull(){
-        Category categoryType = transactionCSVCategorizerService.categorize(null);
+        Category categoryType = csvTransactionCategorizationEngine.categorize(null);
         assertEquals(Category.createUncategorized().getCategoryName(), categoryType.getCategoryName());
     }
 
@@ -68,7 +72,7 @@ class CSVTransactionCategorizerServiceImplTest
         Mockito.when(categoryService.getCategoryIdByName("Groceries"))
                 .thenReturn(1L);
 
-        Category categoryType = transactionCSVCategorizerService.categorize(wincoTransactionCSV);
+        Category categoryType = csvTransactionCategorizationEngine.categorize(wincoTransactionCSV);
         Assertions.assertEquals("Groceries", categoryType.getCategoryName());
         Assertions.assertEquals("SYSTEM",  categoryType.getCategorizedBy());
         Assertions.assertEquals(1L, categoryType.getCategoryId());
@@ -84,7 +88,7 @@ class CSVTransactionCategorizerServiceImplTest
         Mockito.when(categoryService.getCategoryIdByName("Rent"))
                 .thenReturn(2L);
 
-        Category categoryType = transactionCSVCategorizerService.categorize(rentTransactionCSV);
+        Category categoryType = csvTransactionCategorizationEngine.categorize(rentTransactionCSV);
 
         Assertions.assertEquals("Rent", categoryType.getCategoryName());
         Assertions.assertEquals("SYSTEM",  categoryType.getCategorizedBy());
@@ -101,7 +105,7 @@ class CSVTransactionCategorizerServiceImplTest
         Mockito.when(categoryService.getCategoryIdByName("Subscription"))
                 .thenReturn(3L);
 
-        Category categoryType = transactionCSVCategorizerService.categorize(rentTransactionCSV);
+        Category categoryType = csvTransactionCategorizationEngine.categorize(rentTransactionCSV);
 
         Assertions.assertEquals("Subscription", categoryType.getCategoryName());
         Assertions.assertEquals("SYSTEM",  categoryType.getCategorizedBy());
@@ -113,7 +117,7 @@ class CSVTransactionCategorizerServiceImplTest
     @MethodSource("provideTransactionsForCategorization")
     @DisplayName("Categorize various CSV transactions correctly")
     void testCategorize_withMultipleTransactions(TransactionCSV transactionCSV, CategoryType expectedCategoryType){
-        Category categoryType = transactionCSVCategorizerService.categorize(transactionCSV);
+        Category categoryType = csvTransactionCategorizationEngine.categorize(transactionCSV);
         assertEquals(expectedCategoryType.getType(), categoryType);
     }
 
@@ -188,18 +192,12 @@ class CSVTransactionCategorizerServiceImplTest
         wincoShoppingRules.add(wincoShoppingRule);
         wincoShoppingRules.add(wincoShoppingRule2);
 
-        CSVAccountEntity csvAccountEntity = new CSVAccountEntity();
-        csvAccountEntity.setUser(UserEntity.builder().id(1L).build());
-        csvAccountEntity.setSuffix(9);
-        Mockito.when(csvAccountRepository.findBySuffixAndUserId(9, userId))
-                        .thenReturn(Optional.of(csvAccountEntity));
-
         Mockito.when(transactionRuleService.findByUserId(anyLong())).thenReturn(wincoShoppingRules);
 
         Mockito.when(userCategoryService.getCategoryIdByNameAndUser(anyString(), anyLong()))
                 .thenReturn(1L);
 
-        Category categoryType = transactionCSVCategorizerService.categorize(winco_transaction);
+        Category categoryType = csvTransactionCategorizationEngine.categorize(winco_transaction);
 
         Assertions.assertEquals("Shopping", categoryType.getCategoryName());
         Assertions.assertEquals("USER",  categoryType.getCategorizedBy());
@@ -235,18 +233,12 @@ class CSVTransactionCategorizerServiceImplTest
         List<TransactionRule> wincoShoppingRules = new ArrayList<>();
         wincoShoppingRules.add(wincoShoppingRule2);
 
-        CSVAccountEntity csvAccountEntity = new CSVAccountEntity();
-        csvAccountEntity.setUser(UserEntity.builder().id(1L).build());
-        csvAccountEntity.setSuffix(9);
-        Mockito.when(csvAccountRepository.findBySuffixAndUserId(9, userId))
-                .thenReturn(Optional.of(csvAccountEntity));
-
         Mockito.when(transactionRuleService.findByUserId(anyLong())).thenReturn(wincoShoppingRules);
 
         Mockito.when(userCategoryService.getCategoryIdByNameAndUser(anyString(), anyLong()))
                 .thenReturn(1L);
 
-        Category categoryType = transactionCSVCategorizerService.categorize(winco_transaction);
+        Category categoryType = csvTransactionCategorizationEngine.categorize(winco_transaction);
         Assertions.assertEquals("Shopping", categoryType.getCategoryName());
         Assertions.assertEquals("USER",  categoryType.getCategorizedBy());
         Assertions.assertEquals(1L, categoryType.getCategoryId());
@@ -264,20 +256,11 @@ class CSVTransactionCategorizerServiceImplTest
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userId);
 
-        CSVAccountEntity accountEntity = new CSVAccountEntity();
-        accountEntity.setUser(userEntity);
-        accountEntity.setSuffix(transactionCSV.getSuffix());
-
-        // Mock the repositories
-        Mockito.when(csvAccountRepository.findByAcctNumAndSuffix(
-                        transactionCSV.getAccount(), transactionCSV.getSuffix()))
-                .thenReturn(Optional.of(accountEntity));
-
         Mockito.when(transactionRuleService.findByUserId(userId))
                 .thenReturn(transactionRules);
 
         // Execute
-        Category result = transactionCSVCategorizerService.categorize(transactionCSV);
+        Category result = csvTransactionCategorizationEngine.categorize(transactionCSV);
 
         // Assert
         assertEquals(expectedCategory, result);
@@ -298,7 +281,7 @@ class CSVTransactionCategorizerServiceImplTest
                 .isActive(true)
                 .build();
 
-        boolean result = transactionCSVCategorizerService.matches(null,rule);
+        boolean result = csvTransactionCategorizationEngine.matches(null,rule);
         assertFalse(result);
     }
 
@@ -313,7 +296,7 @@ class CSVTransactionCategorizerServiceImplTest
         winco_transaction.setSuffix(9);
         winco_transaction.setAccount("002285914");
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,null);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,null);
         assertFalse(result);
     }
 
@@ -339,7 +322,7 @@ class CSVTransactionCategorizerServiceImplTest
         wincoRule.setAmountMin(10.0);
         wincoRule.setAmountMax(100.0);
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,wincoRule);
         assertTrue(result);
     }
 
@@ -363,7 +346,7 @@ class CSVTransactionCategorizerServiceImplTest
         wincoRule.setPriority(2);
         wincoRule.setUserId(1L);
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,wincoRule);
         assertTrue(result);
     }
 
@@ -386,7 +369,7 @@ class CSVTransactionCategorizerServiceImplTest
         wincoRule.setPriority(3);
         wincoRule.setUserId(1L);
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,wincoRule);
         assertTrue(result);
     }
 
@@ -409,7 +392,7 @@ class CSVTransactionCategorizerServiceImplTest
         wincoRule.setPriority(4);
         wincoRule.setUserId(1L);
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,wincoRule);
         assertTrue(result);
     }
 
@@ -432,7 +415,7 @@ class CSVTransactionCategorizerServiceImplTest
         wincoRule.setPriority(5);
         wincoRule.setUserId(1L);
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,wincoRule);
         assertTrue(result);
     }
 
@@ -454,7 +437,7 @@ class CSVTransactionCategorizerServiceImplTest
         wincoRule.setPriority(6);
         wincoRule.setUserId(1L);
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,wincoRule);
         assertTrue(result);
     }
 
@@ -479,7 +462,7 @@ class CSVTransactionCategorizerServiceImplTest
         wincoRule.setPriority(0);
         wincoRule.setUserId(1L);
 
-        boolean result = transactionCSVCategorizerService.matches(winco_transaction,wincoRule);
+        boolean result = csvTransactionCategorizationEngine.matches(winco_transaction,wincoRule);
         assertFalse(result);
     }
 
@@ -725,6 +708,552 @@ class CSVTransactionCategorizerServiceImplTest
                         "Empty rules: Should use static merchant map when no user rules exist"
                 )
         );
+    }
+
+    // Testing min and max amounts
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountAtMinBoundary_thenReturnTrue(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(10.00)); // exactly at min
+        transaction.setDescription("PIN Purchase");
+        transaction.setExtendedDescription("WINCO FOODS #15");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setAmountMax(100.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(2);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountAtMaxBoundary_thenReturnTrue(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(100.00)); // exactly at max
+        transaction.setDescription("PIN Purchase");
+        transaction.setExtendedDescription("WINCO FOODS #15");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setAmountMax(100.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(2);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountBelowMin_thenReturnFalse(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(5.00)); // below min
+        transaction.setDescription("PIN Purchase");
+        transaction.setExtendedDescription("WINCO FOODS #15");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setAmountMax(100.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(2);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountAboveMax_thenReturnFalse(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(200.00)); // above max
+        transaction.setDescription("PIN Purchase");
+        transaction.setExtendedDescription("WINCO FOODS #15");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setAmountMax(100.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(2);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleDoesNotMatch_andAmountWithinRange_thenReturnFalse(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("PANDA EXPRESS"); // merchant won't match "WINCO"
+        transaction.setTransactionAmount(BigDecimal.valueOf(50.00));
+        transaction.setDescription("PIN Purchase");
+        transaction.setExtendedDescription("PANDA EXPRESS #123");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setAmountMax(100.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(2);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertFalse(result);
+    }
+
+    // Priority 3: Merchant + min amount only
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountExceedsMin_thenReturnTrue(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(999.99)); // way above min, no max constraint
+        transaction.setDescription("PIN Purchase");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(3);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountBelowMinOnly_thenReturnFalse(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(5.00)); // below min
+        transaction.setDescription("PIN Purchase");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(3);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleDoesNotMatch_andAmountExceedsMin_thenReturnFalse(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("PANDA EXPRESS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(50.00));
+        transaction.setDescription("PIN Purchase");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMin(10.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(3);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertFalse(result);
+    }
+
+    // Priority 4: Merchant + max amount only
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountBelowMax_thenReturnTrue(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(0.01)); // well below max, no min constraint
+        transaction.setDescription("PIN Purchase");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMax(80.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(4);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertTrue(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleMatches_andAmountExceedsMax_thenReturnFalse(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WINCO FOODS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(100.00)); // above max
+        transaction.setDescription("PIN Purchase");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMax(80.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(4);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertFalse(result);
+    }
+
+    @Test
+    void testMatches_whenMerchantRuleDoesNotMatch_andAmountBelowMax_thenReturnFalse(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("PANDA EXPRESS");
+        transaction.setTransactionAmount(BigDecimal.valueOf(50.00));
+        transaction.setDescription("PIN Purchase");
+
+        TransactionRule rule = new TransactionRule();
+        rule.setMerchantRule("WINCO");
+        rule.setAmountMax(80.0);
+        rule.setCategoryName("Shopping");
+        rule.setActive(true);
+        rule.setPriority(4);
+
+        boolean result = csvTransactionCategorizationEngine.matches(transaction, rule);
+        assertFalse(result);
+    }
+
+    @Test
+    void testCategorize_whenFlexFinanceTransaction_withPurchaseDescription_andRentAmount_thenReturnRent(){
+        Long userId = 1L;
+
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Flexible Finance");
+        transaction.setTransactionAmount(new BigDecimal("-1220.030"));
+        transaction.setDescription("Purchase");
+        transaction.setExtendedDescription("Flexible Finance  Inc. New York     NYUS");
+        transaction.setTransactionDate(LocalDate.of(2026, 2, 2));
+        transaction.setUserId(userId);
+
+        TransactionRule rentRule = new TransactionRule();
+        rentRule.setMerchantRule("Flexible Finance");
+        rentRule.setDescriptionRule("Purchase");
+        rentRule.setAmountMin(-1221.000); // must be <= -1220.030
+        rentRule.setAmountMax(-1200.000); // must be >= -1220.030
+        rentRule.setCategoryName("Rent");
+        rentRule.setActive(true);
+        rentRule.setPriority(1);
+
+        Mockito.when(transactionRuleService.findByUserId(userId))
+                .thenReturn(List.of(rentRule));
+        Mockito.when(userCategoryService.getCategoryIdByNameAndUser("Rent", userId))
+                .thenReturn(1L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        Assertions.assertEquals("Rent", result.getCategoryName());
+        Assertions.assertEquals("USER", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenFlexFinanceTransaction_withNoDescription_andRentAmountRange_thenReturnRent(){
+        Long userId = 1L;
+
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Flexible Finance");
+        transaction.setTransactionAmount(new BigDecimal("-1220.030"));
+        transaction.setDescription("");
+        transaction.setExtendedDescription("Flexible Finance  Inc. New York     NYUS");
+        transaction.setTransactionDate(LocalDate.of(2026, 2, 2));
+        transaction.setUserId(userId);
+
+        TransactionRule rentRule = new TransactionRule();
+        rentRule.setMerchantRule("Flexible Finance");
+        rentRule.setDescriptionRule("");
+        rentRule.setAmountMin(-1342.033);
+        rentRule.setAmountMax(-1098.027);
+        rentRule.setCategoryName("Rent");
+        rentRule.setActive(true);
+        rentRule.setPriority(1);
+
+        Mockito.when(transactionRuleService.findByUserId(userId))
+                .thenReturn(List.of(rentRule));
+        Mockito.when(userCategoryService.getCategoryIdByNameAndUser("Rent", userId))
+                .thenReturn(1L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        Assertions.assertEquals("Rent", result.getCategoryName());
+        Assertions.assertEquals("USER", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenFlexFinanceTransaction_withSubscriptionAmount_thenReturnSubscription(){
+        Long userId = 1L;
+
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Flexible Finance");
+        transaction.setTransactionAmount(new BigDecimal("-14.990"));
+        transaction.setDescription("Purchase");
+        transaction.setExtendedDescription("Flexible Finance  Inc. New York     NYUS");
+        transaction.setTransactionDate(LocalDate.of(2026, 1, 15));
+        transaction.setUserId(userId);
+
+        TransactionRule subscriptionRule = new TransactionRule();
+        subscriptionRule.setMerchantRule("Flexible Finance");
+        subscriptionRule.setDescriptionRule("");
+        subscriptionRule.setAmountMin(-16.489);
+        subscriptionRule.setAmountMax(-13.491);
+        subscriptionRule.setCategoryName("Subscription");
+        subscriptionRule.setActive(true);
+        subscriptionRule.setPriority(1);
+
+        Mockito.when(transactionRuleService.findByUserId(userId))
+                .thenReturn(List.of(subscriptionRule));
+        Mockito.when(userCategoryService.getCategoryIdByNameAndUser("Subscription", userId))
+                .thenReturn(23L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        Assertions.assertEquals("Subscription", result.getCategoryName());
+        Assertions.assertEquals("USER", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenFlexFinanceTransaction_withRentAmount_noUserRules_thenFallbackToMerchantPriceMap(){
+        Long userId = 1L;
+
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("FLEX FINANCE");
+        transaction.setTransactionAmount(new BigDecimal("-707.000"));
+        transaction.setDescription("Purchase");
+        transaction.setExtendedDescription("FLEX FINANCE           GETFLEX.COM  NYUS");
+        transaction.setInstitution_id("Granite Credit Union");
+        transaction.setTransactionDate(LocalDate.of(2026, 1, 27));
+        transaction.setUserId(userId);
+
+        Mockito.when(transactionRuleService.findByUserId(userId))
+                .thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Rent"))
+                .thenReturn(2L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        Assertions.assertEquals("Rent", result.getCategoryName());
+        Assertions.assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    // ===== csvMerchantCategoryMap tests (no user rules, falls through to static maps) =====
+
+    @Test
+    void testCategorize_whenWinCoFoodsTransaction_withGroceriesCategory_thenReturnGroceries(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("WinCo Foods");
+        transaction.setTransactionAmount(new BigDecimal("-85.50"));
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setCategory("Groceries");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Groceries")).thenReturn(1L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Groceries", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenSmithsTransaction_withGroceriesCategory_thenReturnGroceries(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Smiths");
+        transaction.setTransactionAmount(new BigDecimal("-62.30"));
+        transaction.setCategory("Groceries");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Groceries")).thenReturn(1L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Groceries", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenWithdrawalTransaction_withATMCategory_thenReturnWithdrawal(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Withdrawal");
+        transaction.setTransactionAmount(new BigDecimal("-200.00"));
+        transaction.setCategory("ATM/Cash Withdrawals");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Withdrawal")).thenReturn(5L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Withdrawal", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenConserviceTransaction_withUtilitiesCategory_thenReturnUtilities(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Payment to Conservice");
+        transaction.setTransactionAmount(new BigDecimal("-150.00"));
+        transaction.setCategory("Utilities");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Utilities")).thenReturn(6L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Utilities", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenPandaExpressTransaction_withDiningCategory_thenReturnOrderOut(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Panda Express");
+        transaction.setTransactionAmount(new BigDecimal("-18.75"));
+        transaction.setCategory("Restaurants & Dining");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Order Out")).thenReturn(7L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Order Out", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenAffirmTransaction_withLoanPaymentsCategory_thenReturnPayment(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Payment to Affirm.com");
+        transaction.setTransactionAmount(new BigDecimal("-75.00"));
+        transaction.setCategory("Loan Payments");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Payment")).thenReturn(8L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Payment", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenMaverikTransaction_withGasolineCategory_thenReturnGas(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Maverik");
+        transaction.setTransactionAmount(new BigDecimal("-55.00"));
+        transaction.setCategory("Gasoline/Fuel");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Gas")).thenReturn(9L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Gas", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenWalmartTransaction_withShoppingCategory_thenReturnGroceries(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Walmart");
+        transaction.setTransactionAmount(new BigDecimal("-112.45"));
+        transaction.setCategory("Shopping");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Groceries")).thenReturn(1L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Groceries", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenSpotifyTransaction_withEntertainmentCategory_thenReturnSubscription(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Spotify");
+        transaction.setTransactionAmount(new BigDecimal("-9.99"));
+        transaction.setCategory("Entertainment");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Subscription")).thenReturn(3L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Subscription", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenFlexFinanceTransaction_withRent707Amount_thenReturnRent(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("FLEX FINANCE"); // matches key in csvMerchantPriceMap
+        transaction.setTransactionAmount(new BigDecimal("-707.00"));
+        transaction.setCategory("Online Services");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Rent")).thenReturn(2L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Rent", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
+    }
+
+    @Test
+    void testCategorize_whenFlexFinanceTransaction_withSubscription1499Amount_thenReturnSubscription(){
+        TransactionCSV transaction = new TransactionCSV();
+        transaction.setMerchantName("Flex Finance");
+        transaction.setTransactionAmount(new BigDecimal("-14.99"));
+        transaction.setCategory("Online Services");
+        transaction.setInstitution_id("Mountain America Credit Union");
+        transaction.setUserId(1L);
+
+        Mockito.when(transactionRuleService.findByUserId(1L)).thenReturn(Collections.emptyList());
+        Mockito.when(categoryService.getCategoryIdByName("Subscription")).thenReturn(3L);
+
+        Category result = csvTransactionCategorizationEngine.categorize(transaction);
+
+        assertEquals("Subscription", result.getCategoryName());
+        assertEquals("SYSTEM", result.getCategorizedBy());
+        assertNotNull(result.getCategorizedDate());
     }
 
     private static TransactionCSV createTransactionWithDetails(String merchantName, String description,

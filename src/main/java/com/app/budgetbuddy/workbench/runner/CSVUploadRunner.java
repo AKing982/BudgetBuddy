@@ -48,7 +48,7 @@ public class CSVUploadRunner
             boolean userHasUploadAccess = userService.doesUserHaveOverride(userId);
             if(userHasUploadAccess)
             {
-                List<TransactionCSV> parsedCSVs = csvParserService.parseCSV(file, institution);
+                List<TransactionCSV> parsedCSVs = csvParserService.parseCSV(file, institution, userId);
                 List<TransactionCSV> filteredByDates = filterTransactionCSVByDateRange(parsedCSVs, startDate, endDate);
                 if(institution.equals("Granite Credit Union"))
                 {

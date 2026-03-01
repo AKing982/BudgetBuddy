@@ -2,10 +2,13 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.workbench.MerchantNameBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,21 +22,25 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-class CSVParserServiceTest {
+class CSVParserServiceTest
+{
+    @Mock
+    private MerchantNameBuilder merchantNameBuilder;
 
+    @InjectMocks
     private CSVParserService csvParserService;
 
     @BeforeEach
     void setUp() {
-        csvParserService = new CSVParserService();
     }
 
     @Test
     void testParseCsv_whenFileIsNull_thenThrowException() {
         MultipartFile file = null;
         String institution = "Granite Credit Union";
+        Long userId = 1L;
         assertThrows(DataException.class, () -> {
-            csvParserService.parseCSV(file, institution);
+            csvParserService.parseCSV(file, institution, userId);
         });
     }
 
@@ -41,7 +48,8 @@ class CSVParserServiceTest {
     void testParseCsv_whenInstitutionNameIsEmpty_thenReturnEmptyList(){
         MultipartFile file = mock(MultipartFile.class);
         String institution = "";
-        List<TransactionCSV> results =  csvParserService.parseCSV(file, institution);
+        Long userID = 1L;
+        List<TransactionCSV> results =  csvParserService.parseCSV(file, institution, userID);
         assertNotNull(results);
         assertTrue(results.isEmpty());
     }
@@ -54,7 +62,7 @@ class CSVParserServiceTest {
                 "12345\t001\t3\t01/17/2024\t1500.00\tPayroll Deposit\tDirect Deposit\t01/17/2024\t09:00:00\t2474.50";
         MultipartFile file = new MockMultipartFile("file", "transactions.csv", "text/csv", csvContent.getBytes());
         String institution = "Granite Credit Union";
-
+        Long userId = 1L;
         List<TransactionCSV> expected = new ArrayList<>();
         TransactionCSV transaction1 = TransactionCSV.builder()
                 .account("12345")
@@ -95,7 +103,7 @@ class CSVParserServiceTest {
                 .build();
         expected.add(transaction3);
 
-        List<TransactionCSV> results = csvParserService.parseCSV(file, institution);
+        List<TransactionCSV> results = csvParserService.parseCSV(file, institution, userId);
         assertNotNull(results);
         assertEquals(3, results.size());
         for(int i = 0; i < results.size(); i++){
@@ -119,6 +127,7 @@ class CSVParserServiceTest {
                 "TXN003\t01/17/2024\t01/17/2024\tCredit\t1500.00\t\t12347\tPayroll Deposit\tIncome\tDirect Deposit\t2474.50\t\tDirect Deposit";
         MultipartFile file = new MockMultipartFile("file", "transactions.csv", "text/csv", csvContent.getBytes());
         String institution = "Mountain America Credit Union";
+        Long userId = 1L;
         List<TransactionCSV> expected = new ArrayList<>();
 
         TransactionCSV transaction1 = TransactionCSV.builder()
@@ -159,7 +168,7 @@ class CSVParserServiceTest {
                 .extendedDescription("Direct Deposit")
                 .build();
         expected.add(transaction3);
-        List<TransactionCSV> results = csvParserService.parseCSV(file, institution);
+        List<TransactionCSV> results = csvParserService.parseCSV(file, institution, userId);
 
         assertNotNull(results);
         assertEquals(3, results.size());

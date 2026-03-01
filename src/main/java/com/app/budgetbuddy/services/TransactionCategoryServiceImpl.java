@@ -177,7 +177,9 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     {
         try
         {
+            log.info("Checking if there are any updated transaction categories between {} and {}", startDate, endDate);
             int checkUpdated = transactionCategoryRepository.findUpdatedTransactionCategories(startDate, endDate, userId);
+            log.info("Found {} updated transaction categories between {} and {}", checkUpdated, startDate, endDate);
             return checkUpdated > 0;
         }catch(DataAccessException e){
             log.error("There was an error fetching the updated transaction categories by date range", e);

@@ -15,6 +15,7 @@ import java.time.LocalDate;
 public class TransactionCSV implements Comparable<TransactionCSV>
 {
     private Long id;
+    private Long userId;
     private String transactionId;
     private String account;
     private int suffix;

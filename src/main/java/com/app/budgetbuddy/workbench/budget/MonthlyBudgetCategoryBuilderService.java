@@ -96,16 +96,18 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
                         budgetWeekEnd.toString();
                 if(!uniqueBudgetCategories.containsKey(uniqueKey))
                 {
-                    BudgetCategory budgetCategory = createBudgetCategory(
-                            subBudgetId,
-                            categoryName,
-                            currentWeekRange,
-                            transactionsForWeek,
-                            Math.abs(Double.parseDouble(String.valueOf(categorySpendingForWeek))),
-                            budgetedAmountForCategory.doubleValue(),
-                            0.0,
-                            false
-                    );
+                    BudgetCategory budgetCategory = BudgetCategory.builder()
+                            .categoryName(categoryName)
+                            .budgetedAmount(budgetedAmountForCategory.doubleValue())
+                            .budgetActual(categorySpendingForWeek.doubleValue())
+                            .startDate(budgetWeekStart)
+                            .endDate(budgetWeekEnd)
+                            .subBudgetId(subBudgetId)
+                            .transactions(transactionsForWeek)
+                            .overSpendingAmount(0.0)
+                            .isOverSpent(false)
+                            .isActive(true)
+                            .build();
                     uniqueBudgetCategories.put(uniqueKey, budgetCategory);
                 }
             }
@@ -146,6 +148,11 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
             MonthlyCategorySpending monthlyCategorySpending = monthlyCriteria.getMonthlyCategorySpending();
             String categoryName = monthlyCategorySpending.getCategory();
             BudgetCategory existingBudgetCategory = budgetCategoryMap.get(categoryName);
+            if(existingBudgetCategory == null)
+            {
+                log.warn("No existing budget category found for category: {}. Skipping update.", categoryName);
+                continue;
+            }
             List<Transaction> transactions = monthlyCategorySpending.getTransactions();
             DateRange budgetCategoryDateRange = new DateRange(existingBudgetCategory.getStartDate(), existingBudgetCategory.getEndDate());
             List<DateRangeSpending> dateRangeSpending = monthlyCategorySpending.getWeeklySpending();

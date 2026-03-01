@@ -38,32 +38,30 @@ public class TransactionCategoryQueries
         String merchantName = (String) result[1];
         BigDecimal transactionAmount = (BigDecimal) result[2];
         LocalDate transactionDate = (LocalDate) result[3];
-        int suffix = (Integer) result[4];
-        String accountName = (String) result[5];
-        BigDecimal balance = (BigDecimal) result[6];
+        BigDecimal balance = (BigDecimal) result[4];
+        String description = (String) result[5];
+        String institutionId = (String) result[6];
 
         return TransactionCSV.builder()
                 .id(id)
                 .merchantName(merchantName)
                 .transactionAmount(transactionAmount)
                 .transactionDate(transactionDate)
-                .suffix(suffix)
-                .account(accountName)
                 .balance(balance)
+                .description(description)
+                .institution_id(institutionId)
                 .build();
     }
 
     public Optional<TransactionCSV> getSingleTransactionCSVWithCategory(final Long csvId, final Long userId)
     {
         final String csvTransactionCategoryQuery = """
-                SELECT cte.id, cte.merchantName, cte.transactionAmount, cte.transactionDate, cae.suffix, cae.accountName,
-                cte.balance
+                SELECT cte.id, cte.merchantName, cte.transactionAmount, cte.transactionDate,
+                cte.balance, cte.description, cte.institutionId
                 FROM TransactionCategoryEntity tc
                 INNER JOIN CSVTransactionEntity cte
                     ON tc.csvTransaction.id = cte.id
-                INNER JOIN CSVAccountEntity cae
-                    ON cte.csvAccount.id = cae.id
-                WHERE cte.id = :csvId AND cae.user.id = :userId
+                WHERE cte.id = :csvId AND cte.user.id = :userId
                 """;
         try
         {
@@ -122,14 +120,12 @@ public class TransactionCategoryQueries
     {
         final String query = """
                 SELECT cte.id, tc.matchedCategory, cte.merchantName, cte.description, cte.extendedDescription,
-                cte.transactionAmount, cte.balance, cte.transactionDate, cae.suffix, cae.accountName
+                cte.transactionAmount, cte.balance, cte.transactionDate
                 FROM TransactionCategoryEntity tc
                 INNER JOIN CSVTransactionEntity cte
                    ON tc.csvTransaction.id = cte.id
-                INNER JOIN CSVAccountEntity cae
-                   ON cte.csvAccount.id = cae.id
                 WHERE cte.transactionDate BETWEEN :startDate AND :endDate
-                AND cae.user.id =:userID
+                AND cte.user.id =:userID
                 """;
         try
         {
@@ -150,16 +146,15 @@ public class TransactionCategoryQueries
     {
         return queryResults.stream()
                 .map(result -> TransactionCSV.builder()
-                        .category((String) result[1])
-                        .transactionAmount((BigDecimal) result[5])
-                        .transactionDate((LocalDate) result[7])
-                        .balance((BigDecimal) result[6])
-                        .account((String) result[9])
-                        .merchantName((String) result[2])
-                        .suffix((Integer) result[8])
-                        .extendedDescription((String) result[4])
                         .id((Long) result[0])
+                        .category((String) result[1])
+                        .merchantName((String) result[2])
                         .description((String) result[3])
+                        .extendedDescription((String) result[4])
+                        .transactionAmount((BigDecimal) result[5])
+                        .balance((BigDecimal) result[6])
+                        .transactionDate((LocalDate) result[7])
+                        // suffix and account removed - not in query
                         .build())
                 .collect(Collectors.toList());
     }

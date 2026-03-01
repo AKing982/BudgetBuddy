@@ -19,6 +19,11 @@ public class MerchantPrice
         this.price = price;
     }
 
+    public MerchantPrice(String merchantName)
+    {
+        this.merchantName = merchantName;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

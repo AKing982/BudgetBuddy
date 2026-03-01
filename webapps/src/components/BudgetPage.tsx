@@ -206,9 +206,8 @@ const BudgetPage: React.FC = () => {
 
     useEffect(() => {
         let userId = Number(sessionStorage.getItem('userId'));
-        const now = new Date();
-        const budgetStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        const budgetEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const budgetStartDate = startOfMonth(currentMonth);
+        const budgetEndDate = endOfMonth(currentMonth);
         const fetchUpdatedBudgetCategories = async () => {
             try {
                 const anyUpdatedTransactionCategories = await transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(
@@ -232,7 +231,22 @@ const BudgetPage: React.FC = () => {
 
                     console.log('Successfully updated budget categories');
                 } else {
-                    await fetchBudgetData(currentMonth);
+                    // No updated transactions — check if budget categories exist at all
+                    // If not, backend will fall back to processed transactions to build them
+                    const budgetData = await fetchBudgetData(currentMonth);
+                    const hasNoBudgetCategories = !budgetData || budgetData.length === 0;
+                    if (hasNoBudgetCategories) {
+                        console.log('No budget categories found, attempting to build from processed transactions...');
+                        setIsBudgetCategoryLoading(true);
+                        await budgetCategoryService.updateBudgetCategoriesByMonth(
+                            userId,
+                            budgetStartDate,
+                            budgetEndDate
+                        );
+                        await fetchBudgetData(currentMonth);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        setIsBudgetCategoryLoading(false);
+                    }
                 }
             } catch(error) {
                 console.error(`There was an error fetching updated budget categories for userId ${userId}:`, error);
@@ -381,7 +395,7 @@ const BudgetPage: React.FC = () => {
     }, []);
 
 
-    const fetchBudgetData = async (date: Date, useBudgetCategoryLoading: boolean = false) => {
+    const fetchBudgetData = async (date: Date, useBudgetCategoryLoading: boolean = false): Promise<BudgetRunnerResult[]> => {
         try {
             if(useBudgetCategoryLoading){
                 setIsBudgetCategoryLoading(true);
@@ -411,6 +425,7 @@ const BudgetPage: React.FC = () => {
                     const newBudgetResults = await budgetRunnerService.getBudgetsByDateRange(userId, startDate, endDate);
                     console.log('New budget results: ', newBudgetResults);
                     setBudgetData(newBudgetResults);
+                    return newBudgetResults;
                 }catch(error){
                     console.error('Error creating budget categories: ', error);
                     if (error instanceof Error) {
@@ -423,14 +438,17 @@ const BudgetPage: React.FC = () => {
                         setError('An unexpected error occurred.');
                     }
                     setBudgetData([]);
+                    return [];
                 }
             }
             else{
                 setBudgetData(results);
+                return results;
             }
         } catch (err) {
             setError('Failed to fetch budget data. Please try again later.');
             console.error('Error fetching budget data:', err);
+            return [];
         } finally {
             if (useBudgetCategoryLoading) {
                 setIsBudgetCategoryLoading(false);

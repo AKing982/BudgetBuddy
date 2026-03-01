@@ -46,10 +46,8 @@ public class CSVTransactionsByCategoryQueries
                 FROM TransactionCategoryEntity tc
                 INNER JOIN CSVTransactionEntity ct
                     ON tc.csvTransaction.id = ct.id
-                INNER JOIN CSVAccountEntity cae
-                    ON ct.csvAccount.id = cae.id
                 WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-                AND cae.user.id = :userId
+                AND ct.user.id = :userId
                 AND tc.matchedCategory <> 'Uncategorized'
                 GROUP BY tc.matchedCategory, ct.transactionDate
                 ORDER BY tc.matchedCategory, ct.transactionDate
@@ -98,10 +96,8 @@ public class CSVTransactionsByCategoryQueries
                     FROM TransactionCategoryEntity tc
                     INNER JOIN CSVTransactionEntity ct 
                         ON tc.csvTransaction.id = ct.id
-                    INNER JOIN CSVAccountEntity ca
-                        ON ct.csvAccount.id = ca.id
                     WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-                        AND ca.user.id = :userId
+                        AND ct.user.id = :userId
                     GROUP BY tc.matchedCategory
                     """;
             List<Object[]> result = entityManager.createQuery(query, Object[].class)
@@ -142,10 +138,8 @@ public class CSVTransactionsByCategoryQueries
                     FROM TransactionCategoryEntity tc
                     INNER JOIN CSVTransactionEntity ct
                         ON tc.csvTransaction.id = ct.id
-                    INNER JOIN CSVAccountEntity cae
-                        ON ct.csvAccount.id = cae.id
                     WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-                        AND cae.user.id =:userId AND tc.isUpdated = TRUE
+                        AND ct.user.id =:userId AND tc.isUpdated = TRUE
                         """;
             List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
                     .setParameter("startDate", startDate)
@@ -182,10 +176,8 @@ public class CSVTransactionsByCategoryQueries
                     FROM TransactionCategoryEntity tc
                     INNER JOIN CSVTransactionEntity ct
                         ON tc.csvTransaction.id = ct.id
-                    INNER JOIN CSVAccountEntity cae
-                        ON ct.csvAccount.id = cae.id
                     WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-                        AND cae.user.id =:userId AND tc.matchedCategory <> 'Uncategorized'
+                        AND ct.user.id =:userId AND tc.matchedCategory <> 'Uncategorized'
                     GROUP BY tc.matchedCategory
                     """;
             List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
@@ -216,6 +208,35 @@ public class CSVTransactionsByCategoryQueries
                 .toList();
     }
 
+    public List<CSVTransactionsByCategory> getProcessedCSVTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            final String csvTransactionCategoryQuery = """
+                    SELECT ct.id, tc.matchedCategory
+                    FROM TransactionCategoryEntity tc
+                    INNER JOIN CSVTransactionEntity ct
+                        ON tc.csvTransaction.id = ct.id
+                    WHERE ct.transactionDate BETWEEN :startDate AND :endDate AND tc.matchedCategory <> 'Uncategorized'
+                    AND ct.user.id =:userId AND tc.isUpdated = FALSE AND tc.status = 'PROCESSED'
+            """;
+            List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("userId", userId)
+                    .getResultList();
+            log.info("Processed Results size: {}", results.size());
+            if(results.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            return createCSVTransactionsByCategoryList(results);
+        }catch(DataException ex){
+            log.error("There was an error fetching the processed csv transactions by category list for start={} and end={}: {}", startDate, endDate, ex.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     public List<CSVTransactionsByCategory> getCSVTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         try
@@ -226,10 +247,8 @@ public class CSVTransactionsByCategoryQueries
                     FROM TransactionCategoryEntity tc
                     INNER JOIN CSVTransactionEntity ct
                         ON tc.csvTransaction.id = ct.id
-                    INNER JOIN CSVAccountEntity cae
-                        ON ct.csvAccount.id = cae.id
                     WHERE ct.transactionDate BETWEEN :startDate AND :endDate
-                        AND cae.user.id =:userId AND ((tc.isUpdated = FALSE AND tc.status = 'NEW') OR (tc.isUpdated = TRUE AND tc.status = 'PROCESSED'))
+                        AND ct.user.id =:userId AND ((tc.isUpdated = FALSE AND tc.status = 'NEW') OR (tc.isUpdated = TRUE AND tc.status = 'PROCESSED'))
                     """;
             List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
                     .setParameter("startDate", startDate)

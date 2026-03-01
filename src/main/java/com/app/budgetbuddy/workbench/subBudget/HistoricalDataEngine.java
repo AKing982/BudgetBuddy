@@ -156,12 +156,12 @@ public class HistoricalDataEngine
                 String monthStr = (String) row[1];
                 validateMonth(monthStr);
                 YearMonth month = YearMonth.parse(monthStr);
-                double totalSaved = (Double) row[2];
-                double totalSpent = (Double) row[3];
-                double totalBudgeted = (Double) row[4];
-                double percentSaved = (Double) row[5];
-                double averageSaved = (Double) row[6];
-                double averageSpent = (Double) row[7];
+                double totalSaved = ((BigDecimal) row[2]).doubleValue();
+                double totalSpent = ((BigDecimal) row[3]).doubleValue();
+                double totalBudgeted = ((BigDecimal) row[4]).doubleValue();
+                double percentSaved = ((BigDecimal) row[5]).doubleValue();
+                double averageSaved = ((BigDecimal) row[6]).doubleValue();
+                double averageSpent = ((BigDecimal) row[7]).doubleValue();
                 MonthHistory monthHistory = new MonthHistory(month, totalSaved, totalSpent, percentSaved, totalBudgeted, averageSaved, averageSpent);
                 historicalMonthHistoryByCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(monthHistory);
             }

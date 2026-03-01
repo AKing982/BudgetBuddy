@@ -129,7 +129,7 @@ class CSVUploadRunnerTest {
 
         // Set up mocks
         when(userService.doesUserHaveOverride(userId)).thenReturn(true);
-        when(csvParserService.parseCSV(file, institution)).thenReturn(parsedTransactions);
+        when(csvParserService.parseCSV(file, institution, userId)).thenReturn(parsedTransactions);
         when(csvUploaderService.createCSVList(anyList(), eq(userId))).thenReturn(accountCSVList);
         when(csvUploaderService.createEntityList(accountCSVList)).thenReturn(csvAccountEntities);
         Mockito.doNothing().when(csvUploaderService).saveEntities(csvAccountEntities);
@@ -226,7 +226,7 @@ class CSVUploadRunnerTest {
 
         // Set up mocks
         when(userService.doesUserHaveOverride(userId)).thenReturn(true);
-        when(csvParserService.parseCSV(file, institution)).thenReturn(parsedTransactions);
+        when(csvParserService.parseCSV(file, institution, userId)).thenReturn(parsedTransactions);
         // Note: No account CSV creation for Mountain America (only for Granite)
         when(csvTransactionService.createCSVTransactionEntities(anyList(), eq(userId))).thenReturn(csvTransactionEntities);
         Mockito.doNothing().when(csvTransactionService).saveAllCSVTransactionEntities(csvTransactionEntities);
@@ -238,7 +238,7 @@ class CSVUploadRunnerTest {
         // Verify
         assertTrue(result);
         Mockito.verify(userService).doesUserHaveOverride(userId);
-        Mockito.verify(csvParserService).parseCSV(file, institution);
+        Mockito.verify(csvParserService).parseCSV(file, institution, userId);
         // Verify account CSV services are NOT called for Mountain America
         Mockito.verify(csvUploaderService, Mockito.never()).createCSVList(anyList(), anyLong());
         Mockito.verify(csvUploaderService, Mockito.never()).createEntityList(anySet());
@@ -274,7 +274,7 @@ class CSVUploadRunnerTest {
 
         // Set up mocks - throw exception when saving transaction entities
         when(userService.doesUserHaveOverride(userId)).thenReturn(true);
-        when(csvParserService.parseCSV(file, institution)).thenReturn(parsedTransactions);
+        when(csvParserService.parseCSV(file, institution, userId)).thenReturn(parsedTransactions);
         when(csvUploaderService.createCSVList(anyList(), eq(userId))).thenThrow(new CSVParserException("Failed to parse csv file."));
 
         // Execute
@@ -283,7 +283,7 @@ class CSVUploadRunnerTest {
         // Verify
         assertFalse(result);
         Mockito.verify(userService).doesUserHaveOverride(userId);
-        Mockito.verify(csvParserService).parseCSV(file, institution);
+        Mockito.verify(csvParserService).parseCSV(file, institution, userId);
         Mockito.verify(csvUploaderService).createCSVList(anyList(), eq(userId));
         // Verify subsequent methods are NOT called after exception
         Mockito.verify(csvUploaderService, Mockito.never()).createEntityList(anySet());

@@ -71,9 +71,25 @@ public class BudgetCategoryRunner
         {
             BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
             BudgetScheduleRange range = budgetSchedule.getBudgetScheduleRanges().get(0);
-            List<TransactionsByCategory> merged = transactionsByCategoryService.fetchAndMergeForMonth(subBudget);
             List<BudgetCategory> existing = budgetCategoryAsyncService.fetchExistingBudgetCategoriesByDateRange(
                     subBudget.getStartDate(), subBudget.getEndDate(), subBudget.getId()).join();
+
+            if(existing.isEmpty())
+            {
+                log.info("No existing budget categories found for subBudget {}, checking for processed transactions", subBudget.getId());
+                // Use processed transactions instead of new ones since status is already PROCESSED
+                List<TransactionsByCategory> mergedFromProcessed = transactionsByCategoryService.fetchAndMergeUpdatedForMonth(subBudget);
+                if(!mergedFromProcessed.isEmpty())
+                {
+                    log.info("Found processed transactions, creating budget categories from processed data");
+                    return budgetCategoryAsyncService.createAsync(subBudget, mergedFromProcessed, range, Period.MONTHLY).join();
+                }
+                // Fall back to regular merge if no processed transactions found
+                List<TransactionsByCategory> merged = transactionsByCategoryService.fetchAndMergeForMonth(subBudget);
+                return budgetCategoryAsyncService.createAsync(subBudget, merged, range, Period.MONTHLY).join();
+            }
+
+            List<TransactionsByCategory> merged = transactionsByCategoryService.fetchAndMergeForMonth(subBudget);
             return budgetCategoryAsyncService.updateAsync(subBudget, merged, existing, range, Period.MONTHLY).join();
         }
         catch(CompletionException e)
@@ -82,6 +98,28 @@ public class BudgetCategoryRunner
             return Collections.emptyList();
         }
     }
+
+//    public List<BudgetCategory> runBudgetCategoryUpdateProcessForMonth(final SubBudget subBudget)
+//    {
+//        try
+//        {
+//            BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
+//            BudgetScheduleRange range = budgetSchedule.getBudgetScheduleRanges().get(0);
+//            List<TransactionsByCategory> merged = transactionsByCategoryService.fetchAndMergeForMonth(subBudget);
+//            List<BudgetCategory> existing = budgetCategoryAsyncService.fetchExistingBudgetCategoriesByDateRange(
+//                    subBudget.getStartDate(), subBudget.getEndDate(), subBudget.getId()).join();
+//            if(existing.isEmpty())
+//            {
+//                budgetCategoryAsyncService.createAsync(subBudget, merged, range, Period.MONTHLY).join();
+//            }
+//            return budgetCategoryAsyncService.updateAsync(subBudget, merged, existing, range, Period.MONTHLY).join();
+//        }
+//        catch(CompletionException e)
+//        {
+//            log.error("Error updating budget category list for month: {}", subBudget, e);
+//            return Collections.emptyList();
+//        }
+//    }
 
     public List<BudgetCategory> runBudgetCategoryCreateProcessForWeek(final SubBudget subBudget, final BudgetScheduleRange budgetScheduleRange)
     {

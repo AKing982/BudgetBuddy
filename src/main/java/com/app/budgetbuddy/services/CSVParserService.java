@@ -3,11 +3,13 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.Locations;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.workbench.MerchantNameBuilder;
 import com.univocity.parsers.common.record.Record;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,10 +22,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -38,8 +37,34 @@ public class CSVParserService
 
     };
 
+    private static final List<String> DESCRIPTION_PREFIXES = List.of(
+            "Withdrawal Debit ",
+            "Withdrawal Ach S Type: Payments CO: ",
+            "Withdrawal # ",
+            "Withdrawal Ach ",
+            "Withdrawal ",
+            "Salary/Regular Income from ",
+            "Purchase ",
+            "Pin Purchase "
+    );
+
+    private static final Map<String, String> MERCHANT_ALIASES = Map.of(
+            "Tst*", "The Break Sports Grill",
+            "Sp+Aff *", "Affirm",
+            "Affirm *", "Affirm"
+    );
+
+    private final MerchantNameBuilder merchantNameBuilder;
+
+    @Autowired
+    public CSVParserService(MerchantNameBuilder merchantNameBuilder)
+    {
+        this.merchantNameBuilder = merchantNameBuilder;
+    }
+
     public List<TransactionCSV> parseCSV(MultipartFile file,
-                                         String institutionName)
+                                         String institutionName,
+                                         Long userId)
     {
         List<TransactionCSV> results = new ArrayList<>();
         try
@@ -54,14 +79,14 @@ public class CSVParserService
             }
             CsvParserSettings settings = createParserSettings();
             CsvFormat format = new CsvFormat();
-            format.setDelimiter(','); // Use tab delimiter
+            format.setDelimiter(getDelimiterByInstitution(institutionName)); // Use tab delimiter
             settings.setFormat(format);
             CsvParser parser = new CsvParser(settings);
             try(InputStreamReader reader = new InputStreamReader(file.getInputStream()))
             {
                 List<String[]> allRows = parser.parseAll(reader);
                 SimpleDateFormat sdf = getDateFormatterByInstitution(institutionName);
-                return buildTransactionCSVByInstitution(institutionName, allRows, results, sdf);
+                return buildTransactionCSVByInstitution(institutionName, allRows, results, sdf, userId);
             }
         }catch(DataException e){
             log.error("There was an error while parsing the CSV file: {}", e.getMessage());
@@ -84,17 +109,17 @@ public class CSVParserService
         }
     }
 
-    private List<TransactionCSV> buildTransactionCSVByInstitution(String institutionName, List<String[]> allRows, List<TransactionCSV> results, SimpleDateFormat sdf)
+    private List<TransactionCSV> buildTransactionCSVByInstitution(String institutionName, List<String[]> allRows, List<TransactionCSV> results, SimpleDateFormat sdf, Long userId)
     {
         for(String[] row : allRows)
         {
             TransactionCSV transactionCSV;
             switch(institutionName) {
                 case "Granite Credit Union":
-                    transactionCSV = buildGraniteCreditUnionTransaction(row, sdf);
+                    transactionCSV = buildGraniteCreditUnionTransaction(row, sdf, userId);
                     break;
                 case "Mountain America Credit Union":
-                    transactionCSV = buildMountainAmericaTransaction(row, sdf);
+                    transactionCSV = buildMountainAmericaTransaction(row, sdf, userId);
                     break;
                 default:
                     log.warn("Unknown institution: {}", institutionName);
@@ -105,13 +130,14 @@ public class CSVParserService
         return results;
     }
 
-    private TransactionCSV buildGraniteCreditUnionTransaction(String[] row, SimpleDateFormat sdf)
+    private TransactionCSV buildGraniteCreditUnionTransaction(String[] row, SimpleDateFormat sdf, Long userId)
     {
         log.info("Row: {}", row);
         log.info("Row Length: {}", row.length);
         TransactionCSV transactionCSV = new TransactionCSV();
         try
         {
+            String graniteMerchantName = merchantNameBuilder.getMerchantNameByExtendedDescription(row[6], row[5]);
             transactionCSV.setAccount(row[0]);
             transactionCSV.setSuffix(Integer.parseInt(row[1]));
             transactionCSV.setSequenceNo(removeLeadingZeros(row[2]));
@@ -121,8 +147,9 @@ public class CSVParserService
             transactionCSV.setExtendedDescription(row[6]);
             transactionCSV.setElectronicTransactionDate(convertDateToLocalDate(row[7], sdf));
             transactionCSV.setBalance(parseCurrency(row[9]));
-            transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(row[6], row[5]));
+            transactionCSV.setMerchantName(graniteMerchantName);
             transactionCSV.setInstitution_id("Granite Credit Union");
+            transactionCSV.setUserId(userId);
         }catch(Exception ex){
             log.error("There was an error parsing the CSV row: {}", row, ex);
             throw ex;
@@ -130,8 +157,19 @@ public class CSVParserService
         return transactionCSV;
     }
 
-    private TransactionCSV buildMountainAmericaTransaction(String[] row, SimpleDateFormat sdf)
+    private char getDelimiterByInstitution(String institutionName) {
+        switch (institutionName) {
+            case "Granite Credit Union":
+            case "Mountain America Credit Union":
+                return ',';
+            default:
+                return ',';
+        }
+    }
+
+    private TransactionCSV buildMountainAmericaTransaction(String[] row, SimpleDateFormat sdf, Long userId)
     {
+        String mountainAmericaMerchantName = merchantNameBuilder.getMountainAmericaMerchantName(row[7], row[12]);
         TransactionCSV transactionCSV = new TransactionCSV();
         transactionCSV.setTransactionId(row[0]);
         transactionCSV.setTransactionDate(convertDateToLocalDate(row[1], sdf));
@@ -142,8 +180,9 @@ public class CSVParserService
         transactionCSV.setCategory(row[8]);
         transactionCSV.setBalance(parseCurrency(row[10]));
         transactionCSV.setExtendedDescription(row[12]);
-        transactionCSV.setMerchantName(getMerchantNameByExtendedDescription(row[12], row[7]));
+        transactionCSV.setMerchantName(mountainAmericaMerchantName);
         transactionCSV.setInstitution_id("Mountain America Credit Union");
+        transactionCSV.setUserId(userId);
         return transactionCSV;
     }
 
@@ -203,6 +242,7 @@ public class CSVParserService
         }
     }
 
+
     private String getMerchantNameByExtendedDescription(String extendedDescription, String description)
     {
         if(extendedDescription == null || extendedDescription.trim().isEmpty())
@@ -237,6 +277,8 @@ public class CSVParserService
             throw ex;
         }
     }
+
+
 
     private CsvParserSettings createParserSettings(){
         CsvParserSettings settings = new CsvParserSettings();
