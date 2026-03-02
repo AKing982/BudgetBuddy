@@ -1,1191 +1,673 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Box,
-    Grid,
-    Typography,
-    Paper,
-    Button,
-    LinearProgress,
-    Chip,
-    Card,
-    CardContent,
-    Avatar,
-    Divider,
-    useMediaQuery,
-    useTheme,
-    Dialog,
-    DialogTitle,
-    AlertTitle,
-    Alert,
-    DialogContent,
-    DialogActions,
-    Backdrop,
-    CircularProgress,
-    Snackbar,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    IconButton,
+    Box, Grid, Typography, Paper, Button, LinearProgress, Chip, Card,
+    CardContent, Avatar, Divider, useMediaQuery, useTheme, Dialog,
+    DialogTitle, Alert, AlertTitle, DialogContent, DialogActions,
+    Backdrop, CircularProgress, Snackbar, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, alpha, Stack,
 } from '@mui/material';
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
 import {
-    TrendingUp,
-    TrendingDown,
-    AccountBalance,
-    Savings,
-    CreditCard,
-    ShoppingCart,
-    Restaurant,
-    LocalGasStation,
-    Home,
-    MoreVert,
-    CheckCircle,
-    Warning,
-    ArrowUpward,
-    ArrowDownward,
-    CalendarToday,
-    Replay,
-    Schedule,
+    TrendingUp, TrendingDown, AccountBalance, Savings, CreditCard,
+    ShoppingCart, Restaurant, LocalGasStation, Home, CheckCircle,
+    Warning, ArrowUpward, ArrowDownward, CalendarToday, Replay, Schedule,
 } from '@mui/icons-material';
-import {AlertCircle, Upload} from "lucide-react";
-import Sidebar from "./Sidebar";
-import PlaidService from "../services/PlaidService";
+import {
+    AlertCircle, Upload, Wallet, PiggyBank, Receipt, RefreshCw,
+    TrendingUp as TrendUp, ArrowUpRight, ArrowDownRight, Sparkles,
+} from 'lucide-react';
+import Sidebar from './Sidebar';
+import PlaidService from '../services/PlaidService';
 import UserService from '../services/UserService';
-import CsvUploadService from "../services/CsvUploadService";
-import CSVImportDialog from "./CSVImportDialog";
+import CsvUploadService from '../services/CsvUploadService';
+import CSVImportDialog from './CSVImportDialog';
 
+// ── Tokens ────────────────────────────────────────────────────────────────────
+const MAROON  = '#6b1a1a';
+const MAROON2 = '#4a1010';
+const TEAL    = '#0d9488';
+const GREEN   = '#059669';
+const RED     = '#dc2626';
+const AMBER   = '#d97706';
+const BLUE    = '#2563eb';
+const SLATE   = '#64748b';
+const NAVY    = '#1e293b';
+
+// ── Snackbar alert ────────────────────────────────────────────────────────────
 const SnackbarAlert = React.forwardRef<HTMLDivElement, AlertProps>(
     function SnackbarAlert(props, ref) {
         return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
     }
 );
 
-interface Receipt {
-    id: number;
-    store: string;
-    date: string;
-    time: string;
-    amount: number;
-    items: number;
-    tags: string[];
-    color: string;
-}
+// ── Types (unchanged) ─────────────────────────────────────────────────────────
+interface Receipt       { id: number; store: string; date: string; time: string; amount: number; items: number; tags: string[]; color: string; }
+interface RecurringTx   { id: number; name: string; category: string; amount: number; frequency: string; nextDue: string; daysUntilDue: number; status: 'upcoming'|'due-soon'|'overdue'; icon: React.ReactNode; color: string; }
+interface Transaction   { id: number; date: string; description: string; category: string; amount: number; balance: number; type: 'income'|'expense'; }
+interface BudgetGoal    { id: number; name: string; current: number; target: number; percentage: number; status: 'on-track'|'warning'|'exceeded'; }
+interface CategorySpend { category: string; amount: number; percentage: number; icon: React.ReactNode; color: string; }
 
-interface RecurringTransaction {
-    id: number;
-    name: string;
-    category: string;
-    amount: number;
-    frequency: 'monthly' | 'weekly' | 'yearly';
-    nextDue: string;
-    daysUntilDue: number;
-    status: 'upcoming' | 'due-soon' | 'overdue';
-    icon: React.ReactNode;
-    color: string;
-}
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-interface Transaction {
-    id: number;
-    date: string;
-    description: string;
-    category: string;
-    amount: number;
-    balance: number;
-    type: 'income' | 'expense';
-}
+/** Maroon panel header strip */
+const PanelHeader: React.FC<{ title: string; badge?: React.ReactNode; action?: React.ReactNode }> = ({ title, badge, action }) => (
+    <Box sx={{
+        px: 2.5, py: 1.5,
+        background: `linear-gradient(135deg, #4a1010 0%, #6b1a1a 50%, #5a1515 100%)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'relative', overflow: 'hidden',
+    }}>
+        <Box sx={{ position:'absolute', top:-20, right:-20, width:70, height:70, borderRadius:'50%', bgcolor:'rgba(255,255,255,0.05)', pointerEvents:'none' }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', letterSpacing: '-0.01em' }}>
+                {title}
+            </Typography>
+            {badge}
+        </Box>
+        {action}
+    </Box>
+);
 
-interface BudgetGoal {
-    id: number;
-    name: string;
-    current: number;
-    target: number;
-    percentage: number;
-    status: 'on-track' | 'warning' | 'exceeded';
-}
+/** KPI stat tile */
+const StatTile: React.FC<{ label: string; value: string; sub?: string; icon: React.ReactNode; color: string; trend?: 'up'|'down'|null }> = ({
+                                                                                                                                                label, value, sub, icon, color, trend,
+                                                                                                                                            }) => (
+    <Box sx={{
+        flex: 1, p: 2, borderRadius: '12px', bgcolor: '#fff',
+        border: `1px solid ${alpha('#000', 0.07)}`,
+        borderLeft: `4px solid ${color}`,
+        boxShadow: `0 2px 8px rgba(0,0,0,0.05)`,
+        transition: 'box-shadow 0.15s',
+        '&:hover': { boxShadow: `0 4px 16px ${alpha(color, 0.15)}` },
+    }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+            <Box sx={{ width: 34, height: 34, borderRadius: '8px', bgcolor: alpha(color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ color }}>{icon}</Box>
+            </Box>
+            {trend && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, px: 0.75, py: 0.3, borderRadius: '6px',
+                    bgcolor: trend === 'up' ? alpha(GREEN, 0.1) : alpha(RED, 0.1) }}>
+                    {trend === 'up' ? <ArrowUpRight size={11} color={GREEN}/> : <ArrowDownRight size={11} color={RED}/>}
+                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: trend === 'up' ? GREEN : RED }}>
+                        {sub}
+                    </Typography>
+                </Box>
+            )}
+        </Box>
+        <Typography sx={{ fontSize: '1.35rem', fontWeight: 900, color: NAVY, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, mb: 0.3 }}>
+            {value}
+        </Typography>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {label}
+        </Typography>
+    </Box>
+);
 
-interface CategorySpending {
-    category: string;
-    amount: number;
-    percentage: number;
-    icon: React.ReactNode;
-    color: string;
-}
+/** Compact progress bar row */
+const ProgressRow: React.FC<{ label: string; current: number; target: number; pct: number; status: string }> = ({ label, current, target, pct, status }) => {
+    const color = status === 'exceeded' ? RED : status === 'warning' ? AMBER : TEAL;
+    return (
+        <Box sx={{ mb: 1.75 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: color }} />
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{label}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <Typography sx={{ fontSize: '0.68rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>
+                        ${current.toFixed(0)} / ${target.toFixed(0)}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color, minWidth: 34, textAlign: 'right' }}>
+                        {pct.toFixed(0)}%
+                    </Typography>
+                </Box>
+            </Box>
+            <LinearProgress variant="determinate" value={Math.min(pct, 100)} sx={{
+                height: 5, borderRadius: 3,
+                bgcolor: alpha(color, 0.12),
+                '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: color },
+            }} />
+        </Box>
+    );
+};
 
+/** Recurring bill row */
+const BillRow: React.FC<{ bill: RecurringTx }> = ({ bill }) => {
+    const statusColor = bill.status === 'overdue' ? RED : bill.status === 'due-soon' ? AMBER : GREEN;
+    const statusLabel = bill.status === 'overdue' ? 'Overdue' : bill.status === 'due-soon' ? `${bill.daysUntilDue}d` : `${bill.daysUntilDue}d`;
+    return (
+        <Box sx={{
+            display: 'flex', alignItems: 'center', gap: 1.5, py: 1.1,
+            borderLeft: `3px solid ${statusColor}`, pl: 1.25,
+            borderBottom: `1px solid ${alpha('#000', 0.05)}`,
+            '&:last-child': { borderBottom: 'none' },
+            '&:hover': { bgcolor: alpha(MAROON, 0.02) },
+            transition: 'background 0.12s',
+        }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: alpha(bill.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: bill.color }}>
+                {bill.icon}
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {bill.name}
+                </Typography>
+                <Typography sx={{ fontSize: '0.62rem', color: SLATE }}>
+                    {bill.frequency.charAt(0).toUpperCase() + bill.frequency.slice(1)}
+                </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
+                    ${bill.amount.toFixed(2)}
+                </Typography>
+                <Chip size="small" label={statusLabel} sx={{
+                    height: 16, fontSize: '0.58rem', fontWeight: 800,
+                    bgcolor: alpha(statusColor, 0.1), color: statusColor,
+                    border: `1px solid ${alpha(statusColor, 0.25)}`,
+                }} />
+            </Box>
+        </Box>
+    );
+};
+
+// ── Main DashboardPage ────────────────────────────────────────────────────────
 const DashboardPage: React.FC = () => {
-    const [uploadReminderOpen, setUploadReminderOpen] = useState<boolean>(false);
-    const [checkingTransactions, setCheckingTransactions] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
-    const [snackbarMessage, setSnackbarMessage] = useState<string>('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success');
-    const [error, setError] = useState<string | null>(null);
-    const [importDialogOpen, setImportDialogOpen] = useState<boolean>(false);
+    const [uploadReminderOpen,    setUploadReminderOpen]    = useState(false);
+    const [checkingTransactions,  setCheckingTransactions]  = useState(false);
+    const [isLoading,             setIsLoading]             = useState(false);
+    const [snackbarOpen,          setSnackbarOpen]          = useState(false);
+    const [snackbarMessage,       setSnackbarMessage]       = useState('');
+    const [snackbarSeverity,      setSnackbarSeverity]      = useState<'success'|'error'|'info'|'warning'>('success');
+    const [importDialogOpen,      setImportDialogOpen]      = useState(false);
 
-    // Data states
-    const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
-    const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-    const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([]);
-    const [groceryBudget, setGroceryBudget] = useState<BudgetGoal | null>(null);
-    const [topCategories, setTopCategories] = useState<CategorySpending[]>([]);
-    const [totalBudget, setTotalBudget] = useState({ current: 0, target: 0, percentage: 0 });
-    const [recentReceipts, setRecentReceipts] = useState<Receipt[]>([]);
-
+    const [recurringTransactions, setRecurringTransactions] = useState<RecurringTx[]>([]);
+    const [recentTransactions,    setRecentTransactions]    = useState<Transaction[]>([]);
+    const [budgetGoals,           setBudgetGoals]           = useState<BudgetGoal[]>([]);
+    const [groceryBudget,         setGroceryBudget]         = useState<BudgetGoal | null>(null);
+    const [topCategories,         setTopCategories]         = useState<CategorySpend[]>([]);
+    const [totalBudget,           setTotalBudget]           = useState({ current: 0, target: 0, percentage: 0 });
+    const [recentReceipts,        setRecentReceipts]        = useState<Receipt[]>([]);
 
     const userFullName = sessionStorage.getItem('fullName');
-    const userId = Number(sessionStorage.getItem('userId'));
-    const theme = useTheme();
-    const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-    const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
-    const plaidService = PlaidService.getInstance();
-    const userService = UserService.getInstance();
+    const userId       = Number(sessionStorage.getItem('userId'));
+    const theme        = useTheme();
+
+    const plaidService    = PlaidService.getInstance();
+    const userService     = UserService.getInstance();
     const csvUploadService = new CsvUploadService();
 
-    useEffect(() => {
-        document.title = "Dashboard";
-        return () => {
-            document.title = "Dashboard";
-        };
-    }, []);
+    useEffect(() => { document.title = 'Dashboard'; }, []);
 
-    // Load dashboard data
     useEffect(() => {
-        const loadDashboardData = async () => {
+        const load = async () => {
             try {
-                // TODO: Replace with actual API calls
-                // Mock data for demonstration
                 setRecurringTransactions([
-                    {
-                        id: 1,
-                        name: 'Netflix Subscription',
-                        category: 'Entertainment',
-                        amount: 15.99,
-                        frequency: 'monthly',
-                        nextDue: '2026-02-20',
-                        daysUntilDue: 5,
-                        status: 'due-soon',
-                        icon: <Replay />,
-                        color: '#e50914'
-                    },
-                    {
-                        id: 2,
-                        name: 'Electric Bill',
-                        category: 'Utilities',
-                        amount: 120.00,
-                        frequency: 'monthly',
-                        nextDue: '2026-02-25',
-                        daysUntilDue: 10,
-                        status: 'upcoming',
-                        icon: <Home />,
-                        color: '#f59e0b'
-                    },
-                    {
-                        id: 3,
-                        name: 'Rent Payment',
-                        category: 'Housing',
-                        amount: 1500.00,
-                        frequency: 'monthly',
-                        nextDue: '2026-03-01',
-                        daysUntilDue: 14,
-                        status: 'upcoming',
-                        icon: <Home />,
-                        color: '#3b82f6'
-                    },
-                    {
-                        id: 4,
-                        name: 'Gym Membership',
-                        category: 'Health',
-                        amount: 45.00,
-                        frequency: 'monthly',
-                        nextDue: '2026-02-18',
-                        daysUntilDue: 3,
-                        status: 'due-soon',
-                        icon: <Replay />,
-                        color: '#10b981'
-                    }
+                    { id:1, name:'Netflix',       category:'Entertainment', amount:15.99,   frequency:'monthly', nextDue:'2026-02-20', daysUntilDue:5,  status:'due-soon', icon:<Replay sx={{fontSize:16}}/>,  color:'#e50914' },
+                    { id:2, name:'Electric Bill', category:'Utilities',     amount:120.00,  frequency:'monthly', nextDue:'2026-02-25', daysUntilDue:10, status:'upcoming', icon:<Home sx={{fontSize:16}}/>,    color:AMBER },
+                    { id:3, name:'Rent',          category:'Housing',       amount:1500.00, frequency:'monthly', nextDue:'2026-03-01', daysUntilDue:14, status:'upcoming', icon:<Home sx={{fontSize:16}}/>,    color:BLUE },
+                    { id:4, name:'Gym',           category:'Health',        amount:45.00,   frequency:'monthly', nextDue:'2026-02-18', daysUntilDue:3,  status:'due-soon', icon:<Replay sx={{fontSize:16}}/>,  color:GREEN },
                 ]);
-
                 setRecentTransactions([
-                    { id: 1, date: '2026-01-30', description: 'Grocery Store', category: 'Groceries', amount: -125.50, balance: 5240.50, type: 'expense' },
-                    { id: 2, date: '2026-01-29', description: 'Salary Deposit', category: 'Income', amount: 3500.00, balance: 5366.00, type: 'income' },
-                    { id: 3, date: '2026-01-28', description: 'Gas Station', category: 'Transportation', amount: -45.00, balance: 1866.00, type: 'expense' },
-                    { id: 4, date: '2026-01-27', description: 'Restaurant', category: 'Dining', amount: -67.25, balance: 1911.00, type: 'expense' },
-                    { id: 5, date: '2026-01-26', description: 'Electric Bill', category: 'Utilities', amount: -120.00, balance: 1978.25, type: 'expense' },
+                    { id:1, date:'2026-01-30', description:'Grocery Store',   category:'Groceries',      amount:-125.50, balance:5240.50, type:'expense' },
+                    { id:2, date:'2026-01-29', description:'Salary Deposit',  category:'Income',         amount:3500.00, balance:5366.00, type:'income'  },
+                    { id:3, date:'2026-01-28', description:'Gas Station',     category:'Transportation', amount:-45.00,  balance:1866.00, type:'expense' },
+                    { id:4, date:'2026-01-27', description:'Restaurant',      category:'Dining',         amount:-67.25,  balance:1911.00, type:'expense' },
+                    { id:5, date:'2026-01-26', description:'Electric Bill',   category:'Utilities',      amount:-120.00, balance:1978.25, type:'expense' },
                 ]);
-
                 setBudgetGoals([
-                    { id: 1, name: 'Dining Out', current: 245.50, target: 300.00, percentage: 81.8, status: 'on-track' },
-                    { id: 2, name: 'Transportation', current: 180.00, target: 200.00, percentage: 90.0, status: 'warning' },
-                    { id: 3, name: 'Entertainment', current: 95.00, target: 150.00, percentage: 63.3, status: 'on-track' },
-                    { id: 4, name: 'Shopping', current: 420.00, target: 400.00, percentage: 105.0, status: 'exceeded' },
+                    { id:1, name:'Dining Out',      current:245.50, target:300.00, percentage:81.8,  status:'on-track' },
+                    { id:2, name:'Transportation',  current:180.00, target:200.00, percentage:90.0,  status:'warning'  },
+                    { id:3, name:'Entertainment',   current:95.00,  target:150.00, percentage:63.3,  status:'on-track' },
+                    { id:4, name:'Shopping',        current:420.00, target:400.00, percentage:105.0, status:'exceeded' },
                 ]);
-
-                setGroceryBudget({ id: 5, name: 'Groceries', current: 385.75, target: 500.00, percentage: 77.2, status: 'on-track' });
-
+                setGroceryBudget({ id:5, name:'Groceries', current:385.75, target:500.00, percentage:77.2, status:'on-track' });
                 setTopCategories([
-                    { category: 'Groceries', amount: 385.75, percentage: 28.5, icon: <ShoppingCart />, color: '#10b981' },
-                    { category: 'Dining', amount: 245.50, percentage: 18.2, icon: <Restaurant />, color: '#f59e0b' },
-                    { category: 'Transportation', amount: 180.00, percentage: 13.3, icon: <LocalGasStation />, color: '#3b82f6' },
-                    { category: 'Utilities', amount: 165.00, percentage: 12.2, icon: <Home />, color: '#8b5cf6' },
+                    { category:'Groceries',     amount:385.75, percentage:28.5, icon:<ShoppingCart sx={{fontSize:16}}/>, color:GREEN },
+                    { category:'Dining',        amount:245.50, percentage:18.2, icon:<Restaurant sx={{fontSize:16}}/>,   color:AMBER },
+                    { category:'Transportation',amount:180.00, percentage:13.3, icon:<LocalGasStation sx={{fontSize:16}}/>, color:BLUE },
+                    { category:'Utilities',     amount:165.00, percentage:12.2, icon:<Home sx={{fontSize:16}}/>,         color:'#8b5cf6' },
                 ]);
-
-                setTotalBudget({ current: 1876.25, target: 2500.00, percentage: 75.1 });
-
+                setTotalBudget({ current:1876.25, target:2500.00, percentage:75.1 });
                 setRecentReceipts([
-                    {
-                        id: 1,
-                        store: 'Whole Foods',
-                        date: 'Jan 29, 2026',
-                        time: '3:45 PM',
-                        amount: 87.43,
-                        items: 15,
-                        tags: ['Organic'],
-                        color: '#2563eb'
-                    },
-                    {
-                        id: 2,
-                        store: "Trader Joe's",
-                        date: 'Jan 26, 2026',
-                        time: '6:15 PM',
-                        amount: 54.21,
-                        items: 9,
-                        tags: ['Saved $8.50'],
-                        color: '#92400e'
-                    },
-                    {
-                        id: 3,
-                        store: 'Target',
-                        date: 'Jan 23, 2026',
-                        time: '11:30 AM',
-                        amount: 123.85,
-                        items: 23,
-                        tags: ['RedCard 5%'],
-                        color: '#991b1b'
-                    },
-                    {
-                        id: 4,
-                        store: 'Costco',
-                        date: 'Jan 20, 2026',
-                        time: '2:00 PM',
-                        amount: 120.26,
-                        items: 12,
-                        tags: ['Bulk'],
-                        color: '#15803d'
-                    }
+                    { id:1, store:"Whole Foods",   date:'Jan 29', time:'3:45 PM',  amount:87.43,  items:15, tags:['Organic'],     color:BLUE         },
+                    { id:2, store:"Trader Joe's",  date:'Jan 26', time:'6:15 PM',  amount:54.21,  items:9,  tags:['Saved $8.50'], color:'#92400e'    },
+                    { id:3, store:'Target',        date:'Jan 23', time:'11:30 AM', amount:123.85, items:23, tags:['RedCard 5%'],  color:RED          },
+                    { id:4, store:'Costco',        date:'Jan 20', time:'2:00 PM',  amount:120.26, items:12, tags:['Bulk'],        color:GREEN        },
                 ]);
-
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            }
+            } catch (e) { console.error(e); }
         };
-
-        if (userId) {
-            loadDashboardData();
-        }
+        if (userId) load();
     }, [userId]);
 
-    const handleUploadNow = () => {
-        setUploadReminderOpen(false);
-        setImportDialogOpen(true);
-    };
-
-    const handleRemindLater = () => {
-        setUploadReminderOpen(false);
-        localStorage.setItem('uploadReminderDismissed', new Date().toISOString());
-    };
-
-    const handleImportClose = () => {
-        setImportDialogOpen(false);
-    };
-
     useEffect(() => {
-        const checkRecentTransactions = async () => {
+        const check = async () => {
             try {
                 setCheckingTransactions(true);
-
-                // Check if user dismissed the reminder recently
-                const lastDismissed = localStorage.getItem('uploadReminderDismissed');
-                if (lastDismissed) {
-                    const dismissedDate = new Date(lastDismissed);
-                    const now = new Date();
-                    const hoursSinceDismissed = (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60);
-
-                    // Don't show if dismissed within the last 24 hours
-                    if (hoursSinceDismissed < 24) {
-                        setCheckingTransactions(false);
-                        return;
-                    }
-                }
-
-                // First, check if user has override_upload_enabled
-                const userHasOverrideUploadAccess = await userService.fetchUserOverrideEnabled(userId);
-
-                if (!userHasOverrideUploadAccess) {
-                    // Don't show dialog if override is not enabled
-                    setCheckingTransactions(false);
-                    return;
-                }
-
-                // Calculate date range (current date to 2 weeks prior)
-                const currentDate = new Date();
-                const twoWeeksAgo = new Date();
-                twoWeeksAgo.setDate(currentDate.getDate() - 14);
-
-                const endDate = currentDate.toISOString().split('T')[0];
-                const startDate = twoWeeksAgo.toISOString().split('T')[0];
-
-                // Fetch CSV transactions for the last 2 weeks
-                const hasRecentTransactions = await csvUploadService.checkIfTransactionsExistForDateRange(
-                    userId,
-                    startDate,
-                    endDate
-                );
-                console.log('hasRecentTransactions:', hasRecentTransactions);
-
-                // Show dialog if no transactions found
-                if (!hasRecentTransactions) {
-                    setUploadReminderOpen(true);
-                }
-
-            } catch (error) {
-                console.error('Error checking recent transactions:', error);
-            } finally {
-                setCheckingTransactions(false);
-            }
+                const last = localStorage.getItem('uploadReminderDismissed');
+                if (last && (Date.now() - new Date(last).getTime()) / 3600000 < 24) { setCheckingTransactions(false); return; }
+                const hasAccess = await userService.fetchUserOverrideEnabled(userId);
+                if (!hasAccess) { setCheckingTransactions(false); return; }
+                const now = new Date(); const prior = new Date(); prior.setDate(prior.getDate() - 14);
+                const has = await csvUploadService.checkIfTransactionsExistForDateRange(userId, prior.toISOString().split('T')[0], now.toISOString().split('T')[0]);
+                if (!has) setUploadReminderOpen(true);
+            } catch (e) { console.error(e); }
+            finally { setCheckingTransactions(false); }
         };
+        if (userId) check();
+    }, [userId]);
 
-        if (userId) {
-            checkRecentTransactions();
-        }
-    }, [userId]); // Only depend on userId to avoid re-running unnecessarily
-
-    const handleImportComplete = async (data: {file: File, startDate: string, endDate: string, institution: string}) => {
+    const handleImportComplete = async (data: { file: File; startDate: string; endDate: string; institution: string }) => {
         setImportDialogOpen(false);
+        setIsLoading(true);
         try {
-            setIsLoading(true);
-            const result = await csvUploadService.uploadCsv({
-                userId: userId,
-                file: data.file,
-                startDate: data.startDate,
-                endDate: data.endDate,
-                institution: data.institution
-            });
-
-            if(result.success) {
-                setSnackbarMessage('CSV file imported successfully!');
-                setSnackbarSeverity('success');
-                setSnackbarOpen(true);
-                // Reload dashboard data
-            } else {
-                setSnackbarMessage(result.message || 'Import failed');
-                setSnackbarSeverity('error');
-                setSnackbarOpen(true);
-            }
-        } catch (error) {
-            console.error('Error importing CSV:', error);
-            setSnackbarMessage('Failed to import CSV file');
-            setSnackbarSeverity('error');
+            const r = await csvUploadService.uploadCsv({ userId, ...data });
+            setSnackbarMessage(r.success ? 'CSV imported successfully!' : r.message || 'Import failed');
+            setSnackbarSeverity(r.success ? 'success' : 'error');
             setSnackbarOpen(true);
-        } finally {
-            setIsLoading(false);
-        }
+        } catch { setSnackbarMessage('Failed to import CSV'); setSnackbarSeverity('error'); setSnackbarOpen(true); }
+        finally { setIsLoading(false); }
     };
 
-    const handleSnackbarClose = () => {
-        setSnackbarOpen(false);
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'on-track':
-                return '#10b981';
-            case 'warning':
-                return '#f59e0b';
-            case 'exceeded':
-                return '#ef4444';
-            default:
-                return '#6b7280';
-        }
-    };
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'on-track':
-                return <CheckCircle sx={{ fontSize: 20, color: '#10b981' }} />;
-            case 'warning':
-                return <Warning sx={{ fontSize: 20, color: '#f59e0b' }} />;
-            case 'exceeded':
-                return <Warning sx={{ fontSize: 20, color: '#ef4444' }} />;
-            default:
-                return null;
-        }
-    };
-
-    const getRecurringStatusColor = (status: string) => {
-        switch (status) {
-            case 'upcoming':
-                return '#10b981';
-            case 'due-soon':
-                return '#f59e0b';
-            case 'overdue':
-                return '#ef4444';
-            default:
-                return '#6b7280';
-        }
-    };
-
-    const getRecurringStatusLabel = (status: string, daysUntilDue: number) => {
-        if (status === 'overdue') return 'Overdue';
-        if (status === 'due-soon') return `Due in ${daysUntilDue} days`;
-        return `${daysUntilDue} days`;
-    };
-
-    const formatFrequency = (frequency: string) => {
-        return frequency.charAt(0).toUpperCase() + frequency.slice(1);
-    };
+    const totalRecurringMonthly = recurringTransactions.filter(b => b.frequency === 'monthly').reduce((s, b) => s + b.amount, 0);
+    const greetingHour = new Date().getHours();
+    const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
 
     return (
-        <Box sx={{ display: 'flex', bgcolor: '#f8fafc', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex', bgcolor: '#f5f5f7', minHeight: '100vh' }}>
             <Grid container>
-                {/* Sidebar */}
                 <Grid item xs={12} md={3} lg={2}>
                     <Sidebar />
                 </Grid>
 
-                {/* Main Content */}
                 <Grid item xs={12} md={9} lg={10}>
-                    <Box component="main" sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                        {/* Header */}
-                        <Box sx={{ mb: 4 }}>
-                            <Typography
-                                variant="h4"
-                                component="h1"
-                                sx={{
-                                    fontWeight: 700,
-                                    color: '#1e293b',
-                                    mb: 1
-                                }}
-                            >
-                                Good morning, {userFullName}
+                    <Box component="main" sx={{ p: { xs: 2, sm: 3 } }}>
+
+                        {/* ── Page header ── */}
+                        <Box sx={{ mb: 3 }}>
+                            <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: alpha(MAROON, 0.55), mb: 0.4 }}>
+                                Overview
                             </Typography>
-                            <Typography variant="body1" sx={{ color: '#64748b' }}>
+                            <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: NAVY, letterSpacing: '-0.025em', lineHeight: 1.1, mb: 0.4 }}>
+                                {greeting}, {userFullName?.split(' ')[0]} 👋
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.78rem', color: SLATE }}>
                                 Here's your financial overview for today
                             </Typography>
                         </Box>
 
-                        <Grid container spacing={3}>
-                            {/* Row 1: Budget Overview (Left) + Recurring Transactions (Right) */}
-                            <Grid item xs={12} lg={8}>
-                                <Paper sx={{
-                                    boxShadow: 3,
-                                    borderRadius: 4,
-                                    overflow: 'hidden',
-                                    transition: 'box-shadow 0.3s ease-in-out',
-                                    '&:hover': {
-                                        boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-                                    },
-                                    height: '100%'
-                                }}>
-                                    <Box sx={{ p: 3, pb: 0 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#800000' }}>
-                                                Budget Overview
-                                            </Typography>
-                                            <Chip
-                                                label={`${totalBudget.percentage.toFixed(1)}% Used`}
-                                                size="small"
-                                                sx={{
-                                                    bgcolor: '#fef2f2',
-                                                    color: '#800000',
-                                                    fontWeight: 600
-                                                }}
-                                            />
-                                        </Box>
+                        <Grid container spacing={2}>
 
-                                        {/* Total Budget Progress */}
-                                        <Box sx={{ mb: 4 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
+                            {/* ── Row 1: Budget Overview + Recurring Bills ── */}
+                            <Grid item xs={12} lg={8}>
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
+                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)`, height: '100%' }}>
+                                    <PanelHeader
+                                        title="Budget Overview"
+                                        badge={
+                                            <Chip size="small" label={`${totalBudget.percentage.toFixed(0)}% used`}
+                                                  sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800,
+                                                      bgcolor: 'rgba(255,255,255,0.15)', color: '#fff',
+                                                      border: '1px solid rgba(255,255,255,0.2)' }} />
+                                        }
+                                    />
+
+                                    <Box sx={{ p: 2.5 }}>
+                                        {/* Total budget bar */}
+                                        <Box sx={{ mb: 3 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                                                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>
                                                     Total Monthly Budget
                                                 </Typography>
-                                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                                                <Typography sx={{ fontWeight: 800, fontSize: '0.78rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>
                                                     ${totalBudget.current.toLocaleString()} / ${totalBudget.target.toLocaleString()}
                                                 </Typography>
                                             </Box>
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={Math.min(totalBudget.percentage, 100)}
-                                                sx={{
-                                                    height: 10,
-                                                    borderRadius: 5,
-                                                    bgcolor: '#e2e8f0',
-                                                    '& .MuiLinearProgress-bar': {
-                                                        borderRadius: 5,
-                                                        bgcolor: totalBudget.percentage > 90 ? '#ef4444' : '#0d9488'
-                                                    }
-                                                }}
-                                            />
+                                            <LinearProgress variant="determinate" value={Math.min(totalBudget.percentage, 100)} sx={{
+                                                height: 8, borderRadius: 4,
+                                                bgcolor: alpha('#000', 0.06),
+                                                '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: totalBudget.percentage > 90 ? RED : TEAL },
+                                            }} />
                                         </Box>
 
-                                        <Divider sx={{ mb: 3 }} />
+                                        <Divider sx={{ mb: 2.5 }} />
 
-                                        {/* Top Spending Categories - Table Style */}
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#800000', mb: 2 }}>
-                                            Top Spending Categories (Last Week)
+                                        {/* Category budgets */}
+                                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: alpha(MAROON, 0.55), mb: 1.75 }}>
+                                            Category Budgets
                                         </Typography>
-                                    </Box>
-                                    <TableContainer>
-                                        <Table>
+                                        {budgetGoals.map(g => (
+                                            <ProgressRow key={g.id} label={g.name} current={g.current} target={g.target} pct={g.percentage} status={g.status} />
+                                        ))}
+
+                                        <Divider sx={{ my: 2.5 }} />
+
+                                        {/* Top spending categories table */}
+                                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: alpha(MAROON, 0.55), mb: 1.25 }}>
+                                            Top Spending (Last Week)
+                                        </Typography>
+                                        <Table size="small">
                                             <TableHead>
-                                                <TableRow sx={{ backgroundColor: 'background.paper' }}>
-                                                    <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '50%' }}>
-                                                        Category
-                                                    </TableCell>
-                                                    <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '25%' }}>
-                                                        % of Total
-                                                    </TableCell>
-                                                    <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '25%' }}>
-                                                        Amount
-                                                    </TableCell>
+                                                <TableRow>
+                                                    {['Category', '% Total', 'Amount'].map((h, i) => (
+                                                        <TableCell key={h} align={i > 0 ? 'right' : 'left'}
+                                                                   sx={{ fontWeight: 800, fontSize: '0.62rem', color: alpha(MAROON, 0.65), textTransform: 'uppercase', letterSpacing: '0.07em', pb: 0.75, borderBottom: `1px solid ${alpha(MAROON, 0.12)}` }}>
+                                                            {h}
+                                                        </TableCell>
+                                                    ))}
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {topCategories.map((category, index) => (
-                                                    <TableRow
-                                                        key={index}
-                                                        sx={{
-                                                            '&:last-child td': { border: 0 },
-                                                            '&:hover': {
-                                                                bgcolor: 'rgba(128, 0, 0, 0.04)',
-                                                                cursor: 'pointer'
-                                                            },
-                                                            borderLeft: `4px solid ${category.color}`,
-                                                        }}
-                                                    >
-                                                        <TableCell>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                                <Avatar
-                                                                    sx={{
-                                                                        bgcolor: `${category.color}15`,
-                                                                        color: category.color,
-                                                                        width: 36,
-                                                                        height: 36
-                                                                    }}
-                                                                >
-                                                                    {category.icon}
-                                                                </Avatar>
-                                                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                                                                    {category.category}
-                                                                </Typography>
+                                                {topCategories.map((cat, i) => (
+                                                    <TableRow key={i} sx={{
+                                                        borderLeft: `3px solid ${cat.color}`,
+                                                        '&:hover': { bgcolor: alpha(MAROON, 0.02) },
+                                                        '&:last-child td': { border: 0 },
+                                                    }}>
+                                                        <TableCell sx={{ py: 1.1 }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                <Box sx={{ width: 28, height: 28, borderRadius: '7px', bgcolor: alpha(cat.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', color: cat.color }}>
+                                                                    {cat.icon}
+                                                                </Box>
+                                                                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{cat.category}</Typography>
                                                             </Box>
                                                         </TableCell>
-                                                        <TableCell align="right">
-                                                            <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                                                                {category.percentage.toFixed(1)}%
+                                                        <TableCell align="right" sx={{ py: 1.1 }}>
+                                                            <Typography sx={{ fontSize: '0.72rem', color: SLATE, fontWeight: 600 }}>
+                                                                {cat.percentage.toFixed(1)}%
                                                             </Typography>
                                                         </TableCell>
-                                                        <TableCell align="right">
-                                                            <Typography variant="body1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                                                                ${category.amount.toFixed(2)}
+                                                        <TableCell align="right" sx={{ py: 1.1 }}>
+                                                            <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
+                                                                ${cat.amount.toFixed(2)}
                                                             </Typography>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
-                                    </TableContainer>
+                                    </Box>
                                 </Paper>
                             </Grid>
 
-                            {/* Recurring Transactions/Bills - Top Right */}
-                            {recurringTransactions.length > 0 && (
-                                <Grid item xs={12} lg={4}>
-                                    <Paper sx={{
-                                        boxShadow: 3,
-                                        borderRadius: 4,
-                                        overflow: 'hidden',
-                                        transition: 'box-shadow 0.3s ease-in-out',
-                                        '&:hover': {
-                                            boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-                                        },
-                                        height: '100%'
-                                    }}>
-                                        <Box sx={{ p: 3, pb: 0 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#800000' }}>
-                                                    Recurring Bills
-                                                </Typography>
-                                                <Chip
-                                                    label={`${recurringTransactions.length} Active`}
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor: '#fef2f2',
-                                                        color: '#800000',
-                                                        fontWeight: 600
-                                                    }}
-                                                />
-                                            </Box>
+                            {/* ── Recurring Bills ── */}
+                            <Grid item xs={12} lg={4}>
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
+                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)`, height: '100%' }}>
+                                    <PanelHeader
+                                        title="Recurring Bills"
+                                        badge={
+                                            <Chip size="small" label={`${recurringTransactions.length} active`}
+                                                  sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800,
+                                                      bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} />
+                                        }
+                                    />
+                                    <Box sx={{ p: 2.5 }}>
+                                        <Stack spacing={0}>
+                                            {[...recurringTransactions].sort((a, b) => a.daysUntilDue - b.daysUntilDue).map(bill => (
+                                                <BillRow key={bill.id} bill={bill} />
+                                            ))}
+                                        </Stack>
+
+                                        {/* Monthly total */}
+                                        <Box sx={{
+                                            mt: 2, p: 1.5, borderRadius: '10px',
+                                            bgcolor: alpha(MAROON, 0.04),
+                                            border: `1px solid ${alpha(MAROON, 0.12)}`,
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        }}>
+                                            <Typography sx={{ fontWeight: 700, fontSize: '0.75rem', color: NAVY }}>
+                                                Monthly Total
+                                            </Typography>
+                                            <Typography sx={{ fontWeight: 900, fontSize: '1rem', color: MAROON, fontVariantNumeric: 'tabular-nums' }}>
+                                                ${totalRecurringMonthly.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            </Typography>
                                         </Box>
+                                    </Box>
+                                </Paper>
+                            </Grid>
 
-                                        <TableContainer>
-                                            <Table>
-                                                <TableHead>
-                                                    <TableRow sx={{ backgroundColor: 'background.paper' }}>
-                                                        <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '55%' }}>
-                                                            Bill
-                                                        </TableCell>
-                                                        <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '45%' }}>
-                                                            Amount
-                                                        </TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {recurringTransactions
-                                                        .sort((a, b) => a.daysUntilDue - b.daysUntilDue)
-                                                        .map((bill) => (
-                                                            <TableRow
-                                                                key={bill.id}
-                                                                sx={{
-                                                                    '&:hover': {
-                                                                        bgcolor: 'rgba(128, 0, 0, 0.04)',
-                                                                        cursor: 'pointer'
-                                                                    },
-                                                                    borderLeft: `4px solid ${getRecurringStatusColor(bill.status)}`,
-                                                                }}
-                                                            >
-                                                                <TableCell>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                                        <Avatar
-                                                                            sx={{
-                                                                                bgcolor: `${bill.color}15`,
-                                                                                color: bill.color,
-                                                                                width: 36,
-                                                                                height: 36
-                                                                            }}
-                                                                        >
-                                                                            {bill.icon}
-                                                                        </Avatar>
-                                                                        <Box>
-                                                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b', mb: 0.5 }}>
-                                                                                {bill.name}
-                                                                            </Typography>
-                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                                                <Schedule sx={{ fontSize: 12, color: '#94a3b8' }} />
-                                                                                <Typography variant="caption" sx={{ color: '#64748b' }}>
-                                                                                    {formatFrequency(bill.frequency)}
-                                                                                </Typography>
-                                                                            </Box>
-                                                                        </Box>
-                                                                    </Box>
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
-                                                                        ${bill.amount.toFixed(2)}
-                                                                    </Typography>
-                                                                    <Chip
-                                                                        size="small"
-                                                                        icon={<CalendarToday sx={{ fontSize: 12 }} />}
-                                                                        label={getRecurringStatusLabel(bill.status, bill.daysUntilDue)}
-                                                                        sx={{
-                                                                            bgcolor: bill.status === 'overdue' ? '#fee2e2' : bill.status === 'due-soon' ? '#fef3c7' : '#d1fae5',
-                                                                            color: bill.status === 'overdue' ? '#991b1b' : bill.status === 'due-soon' ? '#92400e' : '#065f46',
-                                                                            fontWeight: 600,
-                                                                            fontSize: '0.7rem',
-                                                                            height: 20
-                                                                        }}
-                                                                    />
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    {/* Total Monthly Recurring Row */}
-                                                    <TableRow sx={{ bgcolor: '#f0f9ff' }}>
-                                                        <TableCell>
-                                                            <Typography variant="body1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                                                                Total Monthly
-                                                            </Typography>
-                                                        </TableCell>
-                                                        <TableCell align="right">
-                                                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0369a1' }}>
-                                                                ${recurringTransactions
-                                                                .filter(bill => bill.frequency === 'monthly')
-                                                                .reduce((sum, bill) => sum + bill.amount, 0)
-                                                                .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                            </Typography>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                    </Paper>
-                                </Grid>
-                            )}
-
-                            {/* No Recurring Bills State - Top Right */}
-                            {recurringTransactions.length === 0 && (
-                                <Grid item xs={12} lg={4}>
-                                    <Card
-                                        elevation={0}
-                                        sx={{
-                                            borderRadius: 3,
-                                            border: '2px dashed #e2e8f0',
-                                            bgcolor: '#f8fafc',
-                                            height: '100%'
-                                        }}
-                                    >
-                                        <CardContent sx={{ py: 6, textAlign: 'center' }}>
-                                            <Avatar
-                                                sx={{
-                                                    width: 72,
-                                                    height: 72,
-                                                    bgcolor: '#dbeafe',
-                                                    color: '#2563eb',
-                                                    margin: '0 auto',
-                                                    mb: 2
-                                                }}
-                                            >
-                                                <Replay sx={{ fontSize: 40 }} />
-                                            </Avatar>
-                                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b', mb: 1 }}>
-                                                No Recurring Bills
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
-                                                Set up recurring bills to track your monthly expenses
-                                            </Typography>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<CalendarToday />}
-                                                sx={{
-                                                    textTransform: 'none',
-                                                    borderRadius: 3,
-                                                    px: 3,
-                                                    fontWeight: 600,
-                                                    background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-                                                    '&:hover': {
-                                                        background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-                                                    }
-                                                }}
-                                                onClick={() => {
-                                                    console.log('Add recurring bill clicked');
-                                                }}
-                                            >
-                                                Add Recurring Bill
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            )}
-
-                            {/* Row 2: Grocery Budget with Receipts (Left) + Savings Goal (Right) */}
-                            {/* Grocery Budget with Recent Receipts - Left */}
+                            {/* ── Row 2: Grocery Budget + Recent Receipts ── */}
                             {groceryBudget && (
                                 <Grid item xs={12} lg={8}>
-                                    <Paper sx={{
-                                        boxShadow: 3,
-                                        borderRadius: 4,
-                                        overflow: 'hidden',
-                                        transition: 'box-shadow 0.3s ease-in-out',
-                                        '&:hover': {
-                                            boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-                                        },
-                                        height: '100%'
-                                    }}>
-                                        <Box sx={{ p: 3 }}>
-                                            {/* Grocery Budget Header */}
-                                            <Box
-                                                sx={{
-                                                    p: 3,
-                                                    borderRadius: 3,
-                                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                                    color: 'white',
-                                                    mb: 3
-                                                }}
-                                            >
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48 }}>
-                                                        <ShoppingCart sx={{ fontSize: 28 }} />
-                                                    </Avatar>
-                                                    <Box>
-                                                        <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
-                                                            Grocery Budget
+                                    <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
+                                        boxShadow: `0 2px 12px rgba(0,0,0,0.06)` }}>
+                                        <PanelHeader title="Grocery Tracker" />
+
+                                        <Box sx={{ p: 2.5 }}>
+                                            {/* Grocery budget mini-card */}
+                                            <Box sx={{
+                                                p: 2, mb: 2.5, borderRadius: '12px',
+                                                border: `1px solid ${alpha(TEAL, 0.2)}`,
+                                                bgcolor: alpha(TEAL, 0.04),
+                                                display: 'flex', alignItems: 'center', gap: 2,
+                                            }}>
+                                                <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: alpha(TEAL, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <ShoppingCart sx={{ color: TEAL, fontSize: 22 }} />
+                                                </Box>
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                                        <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>Grocery Budget</Typography>
+                                                        <Typography sx={{ fontWeight: 800, fontSize: '0.78rem', color: TEAL }}>
+                                                            {groceryBudget.percentage.toFixed(0)}%
                                                         </Typography>
-                                                        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                                            ${groceryBudget.current.toFixed(2)}
+                                                    </Box>
+                                                    <LinearProgress variant="determinate" value={Math.min(groceryBudget.percentage, 100)} sx={{
+                                                        height: 5, borderRadius: 3, mb: 0.5,
+                                                        bgcolor: alpha(TEAL, 0.12),
+                                                        '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: TEAL },
+                                                    }} />
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                        <Typography sx={{ fontSize: '0.65rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>
+                                                            ${groceryBudget.current.toFixed(2)} spent
+                                                        </Typography>
+                                                        <Typography sx={{ fontSize: '0.65rem', color: GREEN, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                                                            ${(groceryBudget.target - groceryBudget.current).toFixed(2)} left
                                                         </Typography>
                                                     </Box>
                                                 </Box>
-                                                <Box sx={{ mb: 1 }}>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                                                            ${groceryBudget.target.toFixed(2)} monthly budget
-                                                        </Typography>
-                                                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                                                            {groceryBudget.percentage.toFixed(1)}%
-                                                        </Typography>
-                                                    </Box>
-                                                    <LinearProgress
-                                                        variant="determinate"
-                                                        value={Math.min(groceryBudget.percentage, 100)}
-                                                        sx={{
-                                                            height: 8,
-                                                            borderRadius: 4,
-                                                            bgcolor: 'rgba(255,255,255,0.3)',
-                                                            '& .MuiLinearProgress-bar': {
-                                                                borderRadius: 4,
-                                                                bgcolor: 'white'
-                                                            }
-                                                        }}
-                                                    />
-                                                </Box>
-                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                                                    ${(groceryBudget.target - groceryBudget.current).toFixed(2)} remaining
-                                                </Typography>
                                             </Box>
 
-                                            {/* Recent Receipts Section */}
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#800000' }}>
+                                            {/* Receipts section */}
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
+                                                <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: alpha(MAROON, 0.55) }}>
                                                     Recent Receipts
                                                 </Typography>
-                                                <Button
-                                                    size="small"
-                                                    sx={{
-                                                        textTransform: 'none',
-                                                        color: '#800000',
-                                                        fontWeight: 600
-                                                    }}
-                                                >
+                                                <Button size="small" sx={{ textTransform: 'none', color: MAROON, fontWeight: 700, fontSize: '0.7rem', p: 0.25, '&:hover': { bgcolor: alpha(MAROON, 0.05) } }}>
                                                     View All
                                                 </Button>
                                             </Box>
-                                        </Box>
 
-                                        <TableContainer>
-                                            <Table>
+                                            <Table size="small">
                                                 <TableHead>
-                                                    <TableRow sx={{ backgroundColor: 'background.paper' }}>
-                                                        <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '50%' }}>
-                                                            Store
-                                                        </TableCell>
-                                                        <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '25%' }}>
-                                                            Date
-                                                        </TableCell>
-                                                        <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '25%' }}>
-                                                            Amount
-                                                        </TableCell>
+                                                    <TableRow>
+                                                        {['Store', 'Date', 'Amount'].map((h, i) => (
+                                                            <TableCell key={h} align={i === 2 ? 'right' : 'left'}
+                                                                       sx={{ fontWeight: 800, fontSize: '0.62rem', color: alpha(MAROON, 0.65), textTransform: 'uppercase', letterSpacing: '0.07em', pb: 0.75, borderBottom: `1px solid ${alpha(MAROON, 0.12)}` }}>
+                                                                {h}
+                                                            </TableCell>
+                                                        ))}
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
-                                                    {recentReceipts.map((receipt, index) => (
-                                                        <TableRow
-                                                            key={receipt.id}
-                                                            sx={{
-                                                                '&:hover': {
-                                                                    bgcolor: 'rgba(128, 0, 0, 0.04)',
-                                                                    cursor: 'pointer'
-                                                                },
-                                                                borderLeft: `4px solid ${receipt.color}`,
-                                                            }}
-                                                        >
-                                                            <TableCell>
-                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                                    <Avatar
-                                                                        sx={{
-                                                                            bgcolor: `${receipt.color}15`,
-                                                                            color: receipt.color,
-                                                                            width: 36,
-                                                                            height: 36
-                                                                        }}
-                                                                    >
-                                                                        <ShoppingCart sx={{ fontSize: 20 }} />
-                                                                    </Avatar>
+                                                    {recentReceipts.map(r => (
+                                                        <TableRow key={r.id} sx={{
+                                                            borderLeft: `3px solid ${r.color}`,
+                                                            '&:hover': { bgcolor: alpha(MAROON, 0.02), cursor: 'pointer' },
+                                                            '&:last-child td': { border: 0 },
+                                                        }}>
+                                                            <TableCell sx={{ py: 1.1 }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                    <Box sx={{ width: 28, height: 28, borderRadius: '7px', bgcolor: alpha(r.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', color: r.color, flexShrink: 0 }}>
+                                                                        <ShoppingCart sx={{ fontSize: 14 }} />
+                                                                    </Box>
                                                                     <Box>
-                                                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                                                                            {receipt.store}
-                                                                        </Typography>
-                                                                        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
-                                                                            <Chip
-                                                                                label={`${receipt.items} items`}
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    bgcolor: '#e0e7ff',
-                                                                                    color: '#3730a3',
-                                                                                    fontSize: '0.65rem',
-                                                                                    height: 18,
-                                                                                    fontWeight: 500
-                                                                                }}
-                                                                            />
-                                                                            {receipt.tags.map((tag, tagIndex) => (
-                                                                                <Chip
-                                                                                    key={tagIndex}
-                                                                                    label={tag}
-                                                                                    size="small"
-                                                                                    sx={{
-                                                                                        bgcolor: tag.includes('Saved') ? '#d1fae5' : tag.includes('Organic') ? '#d1fae5' : tag.includes('RedCard') ? '#fee2e2' : '#e0e7ff',
-                                                                                        color: tag.includes('Saved') ? '#065f46' : tag.includes('Organic') ? '#065f46' : tag.includes('RedCard') ? '#991b1b' : '#3730a3',
-                                                                                        fontSize: '0.65rem',
-                                                                                        height: 18,
-                                                                                        fontWeight: 500
-                                                                                    }}
-                                                                                />
+                                                                        <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{r.store}</Typography>
+                                                                        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.3 }}>
+                                                                            <Chip size="small" label={`${r.items} items`}
+                                                                                  sx={{ height: 14, fontSize: '0.55rem', fontWeight: 700,
+                                                                                      bgcolor: alpha(BLUE, 0.1), color: BLUE }} />
+                                                                            {r.tags.map((tag, ti) => (
+                                                                                <Chip key={ti} size="small" label={tag}
+                                                                                      sx={{ height: 14, fontSize: '0.55rem', fontWeight: 700,
+                                                                                          bgcolor: tag.includes('Saved') ? alpha(GREEN, 0.1) : alpha(MAROON, 0.08),
+                                                                                          color: tag.includes('Saved') ? GREEN : MAROON }} />
                                                                             ))}
                                                                         </Box>
                                                                     </Box>
                                                                 </Box>
                                                             </TableCell>
-                                                            <TableCell>
-                                                                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                                                                    {receipt.date}
-                                                                </Typography>
-                                                                <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                                                                    {receipt.time}
-                                                                </Typography>
+                                                            <TableCell sx={{ py: 1.1 }}>
+                                                                <Typography sx={{ fontSize: '0.72rem', color: SLATE, fontWeight: 600 }}>{r.date}</Typography>
+                                                                <Typography sx={{ fontSize: '0.6rem', color: alpha(SLATE, 0.7) }}>{r.time}</Typography>
                                                             </TableCell>
-                                                            <TableCell align="right">
-                                                                <Typography variant="body1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                                                                    ${receipt.amount.toFixed(2)}
+                                                            <TableCell align="right" sx={{ py: 1.1 }}>
+                                                                <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
+                                                                    ${r.amount.toFixed(2)}
                                                                 </Typography>
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}
-                                                    {/* Summary Stats Row */}
-                                                    <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                                                        <TableCell colSpan={3} sx={{ py: 2 }}>
-                                                            <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-                                                                <Box sx={{ textAlign: 'center' }}>
-                                                                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-                                                                        Avg per trip
-                                                                    </Typography>
-                                                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                                                                        $96.44
-                                                                    </Typography>
-                                                                </Box>
-                                                                <Divider orientation="vertical" flexItem />
-                                                                <Box sx={{ textAlign: 'center' }}>
-                                                                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-                                                                        Total trips
-                                                                    </Typography>
-                                                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                                                                        4
-                                                                    </Typography>
-                                                                </Box>
-                                                                <Divider orientation="vertical" flexItem />
-                                                                <Box sx={{ textAlign: 'center' }}>
-                                                                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-                                                                        Total saved
-                                                                    </Typography>
-                                                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#10b981' }}>
-                                                                        $8.50
-                                                                    </Typography>
-                                                                </Box>
-                                                            </Box>
-                                                        </TableCell>
-                                                    </TableRow>
                                                 </TableBody>
                                             </Table>
-                                        </TableContainer>
+
+                                            {/* Summary strip */}
+                                            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                                {[
+                                                    { label: 'Avg per trip', value: '$96.44', color: MAROON },
+                                                    { label: 'Total trips',  value: '4',       color: BLUE  },
+                                                    { label: 'Total saved',  value: '$8.50',   color: GREEN },
+                                                ].map(({ label, value, color }) => (
+                                                    <Box key={label} sx={{ flex: 1, p: 1.25, borderRadius: '8px', bgcolor: alpha(color, 0.06), border: `1px solid ${alpha(color, 0.15)}`, textAlign: 'center' }}>
+                                                        <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</Typography>
+                                                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 900, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
+                                                    </Box>
+                                                ))}
+                                            </Box>
+                                        </Box>
                                     </Paper>
                                 </Grid>
                             )}
 
-                            {/* Savings Goal - Right */}
+                            {/* ── Savings Goal ── */}
                             <Grid item xs={12} lg={4}>
-                                <Card
-                                    elevation={0}
-                                    sx={{
-                                        borderRadius: 3,
-                                        border: '1px solid #e2e8f0',
-                                        height: '100%'
-                                    }}
-                                >
-                                    <CardContent>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#800000' }}>
-                                                Savings Goal
-                                            </Typography>
-                                            <Button
-                                                size="small"
-                                                sx={{
-                                                    textTransform: 'none',
-                                                    color: '#800000',
-                                                    fontWeight: 600
-                                                }}
-                                            >
-                                                Manage Goal
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
+                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)`, height: '100%' }}>
+                                    <PanelHeader
+                                        title="Savings Goal"
+                                        action={
+                                            <Button size="small" sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.7rem',
+                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                                                Manage
                                             </Button>
-                                        </Box>
-
-                                        {/* Emergency Fund Goal */}
-                                        <Box
-                                            sx={{
-                                                p: 3,
-                                                bgcolor: '#f0fdf4',
-                                                borderRadius: 3,
-                                                border: '1px solid #bbf7d0'
-                                            }}
-                                        >
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                        }
+                                    />
+                                    <Box sx={{ p: 2.5 }}>
+                                        {/* Goal card */}
+                                        <Box sx={{ p: 2, borderRadius: '12px', border: `1px solid ${alpha(GREEN, 0.25)}`, bgcolor: alpha(GREEN, 0.04), mb: 2 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
                                                 <Box>
-                                                    <Typography variant="body2" sx={{ color: '#166534', fontWeight: 600, mb: 0.5 }}>
+                                                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: alpha(GREEN, 0.8), mb: 0.4 }}>
                                                         Emergency Fund
                                                     </Typography>
-                                                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#15803d' }}>
+                                                    <Typography sx={{ fontSize: '1.6rem', fontWeight: 900, color: '#15803d', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                                                         $8,500
                                                     </Typography>
                                                 </Box>
-                                                <Chip
-                                                    icon={<CheckCircle sx={{ fontSize: 16 }} />}
-                                                    label="On Track"
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor: '#22c55e',
-                                                        color: 'white',
-                                                        fontWeight: 600
-                                                    }}
-                                                />
+                                                <Chip size="small" icon={<CheckCircle sx={{ fontSize: 13 }} />} label="On Track"
+                                                      sx={{ bgcolor: alpha(GREEN, 0.15), color: '#15803d', fontWeight: 800, fontSize: '0.62rem',
+                                                          border: `1px solid ${alpha(GREEN, 0.3)}` }} />
                                             </Box>
-                                            <Box sx={{ mb: 2 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                    <Typography variant="caption" sx={{ color: '#166534', fontWeight: 600 }}>
-                                                        Goal: $10,000
-                                                    </Typography>
-                                                    <Typography variant="caption" sx={{ color: '#166534', fontWeight: 600 }}>
-                                                        85%
-                                                    </Typography>
+
+                                            <Box sx={{ mb: 1 }}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6 }}>
+                                                    <Typography sx={{ fontSize: '0.65rem', color: '#166534', fontWeight: 600 }}>Goal: $10,000</Typography>
+                                                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: GREEN }}>85%</Typography>
                                                 </Box>
-                                                <LinearProgress
-                                                    variant="determinate"
-                                                    value={85}
-                                                    sx={{
-                                                        height: 8,
-                                                        borderRadius: 4,
-                                                        bgcolor: '#dcfce7',
-                                                        '& .MuiLinearProgress-bar': {
-                                                            borderRadius: 4,
-                                                            bgcolor: '#22c55e'
-                                                        }
-                                                    }}
-                                                />
+                                                <LinearProgress variant="determinate" value={85} sx={{
+                                                    height: 6, borderRadius: 3,
+                                                    bgcolor: alpha(GREEN, 0.15),
+                                                    '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: GREEN },
+                                                }} />
                                             </Box>
-                                            <Divider sx={{ my: 2, borderColor: '#bbf7d0' }} />
-                                            <Box>
-                                                <Typography variant="caption" sx={{ color: '#166534', display: 'block', mb: 0.5 }}>
-                                                    Monthly Target: $500
-                                                </Typography>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="body2" sx={{ color: '#15803d', fontWeight: 600 }}>
-                                                        Saved this month: $500
-                                                    </Typography>
-                                                    <CheckCircle sx={{ fontSize: 20, color: '#22c55e' }} />
+                                        </Box>
+
+                                        {/* Monthly contribution */}
+                                        <Box sx={{ p: 1.75, borderRadius: '10px', border: `1px solid ${alpha('#000', 0.07)}`, bgcolor: '#fafafa' }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                                <Typography sx={{ fontWeight: 700, fontSize: '0.75rem', color: NAVY }}>Monthly Target</Typography>
+                                                <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>$500</Typography>
+                                            </Box>
+                                            <Divider sx={{ my: 1 }} />
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography sx={{ fontWeight: 700, fontSize: '0.75rem', color: NAVY }}>Saved This Month</Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: GREEN, fontVariantNumeric: 'tabular-nums' }}>$500</Typography>
+                                                    <CheckCircle sx={{ fontSize: 15, color: GREEN }} />
                                                 </Box>
                                             </Box>
                                         </Box>
-                                    </CardContent>
-                                </Card>
+
+                                        <Typography sx={{ fontSize: '0.65rem', color: SLATE, textAlign: 'center', mt: 1.75 }}>
+                                            $1,500 remaining to reach your goal
+                                        </Typography>
+                                    </Box>
+                                </Paper>
                             </Grid>
 
-                            {/* Row 3: Recent Transactions - Full Width */}
+                            {/* ── Recent Transactions ── */}
                             <Grid item xs={12}>
-                                <Paper sx={{
-                                    boxShadow: 3,
-                                    borderRadius: 4,
-                                    overflow: 'hidden',
-                                    transition: 'box-shadow 0.3s ease-in-out',
-                                    '&:hover': {
-                                        boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-                                    }
-                                }}>
-                                    <Box sx={{ p: 3, pb: 0 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#800000' }}>
-                                                Recent Transactions
-                                            </Typography>
-                                            <Button
-                                                size="small"
-                                                sx={{
-                                                    textTransform: 'none',
-                                                    color: '#800000',
-                                                    fontWeight: 600
-                                                }}
-                                            >
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
+                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)` }}>
+                                    <PanelHeader
+                                        title="Recent Transactions"
+                                        action={
+                                            <Button size="small" sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.7rem',
+                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
                                                 View All
                                             </Button>
-                                        </Box>
-                                    </Box>
-                                    <TableContainer>
-                                        <Table sx={{ tableLayout: 'fixed' }}>
+                                        }
+                                    />
+                                    <Box sx={{ p: 2 }}>
+                                        <Table size="small">
                                             <TableHead>
-                                                <TableRow sx={{ backgroundColor: 'background.paper' }}>
-                                                    <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '12%' }}>
-                                                        Date
-                                                    </TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '30%' }}>
-                                                        Description
-                                                    </TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '18%' }}>
-                                                        Category
-                                                    </TableCell>
-                                                    <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '20%' }}>
-                                                        Amount
-                                                    </TableCell>
-                                                    <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '20%' }}>
-                                                        Balance
-                                                    </TableCell>
+                                                <TableRow>
+                                                    {['Date', 'Description', 'Category', 'Amount', 'Balance'].map((h, i) => (
+                                                        <TableCell key={h} align={i >= 3 ? 'right' : 'left'}
+                                                                   sx={{ fontWeight: 800, fontSize: '0.62rem', color: alpha(MAROON, 0.65), textTransform: 'uppercase', letterSpacing: '0.07em', pb: 0.75, borderBottom: `1px solid ${alpha(MAROON, 0.12)}` }}>
+                                                            {h}
+                                                        </TableCell>
+                                                    ))}
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {recentTransactions.map((transaction, index) => (
-                                                    <TableRow
-                                                        key={transaction.id}
-                                                        sx={{
-                                                            '&:last-child td, &:last-child th': { border: 0 },
-                                                            '&:hover': {
-                                                                bgcolor: 'rgba(128, 0, 0, 0.04)',
-                                                                cursor: 'pointer'
-                                                            },
-                                                            borderLeft: `4px solid ${transaction.type === 'income' ? '#10b981' : '#ef4444'}`,
-                                                        }}
-                                                    >
-                                                        <TableCell sx={{ color: '#64748b', fontWeight: 500 }}>
-                                                            {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                {recentTransactions.map(tx => (
+                                                    <TableRow key={tx.id} sx={{
+                                                        borderLeft: `3px solid ${tx.type === 'income' ? GREEN : RED}`,
+                                                        '&:hover': { bgcolor: alpha(MAROON, 0.02), cursor: 'pointer' },
+                                                        '&:last-child td': { border: 0 },
+                                                    }}>
+                                                        <TableCell sx={{ py: 1.2, color: SLATE, fontWeight: 600, fontSize: '0.75rem' }}>
+                                                            {new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                         </TableCell>
-                                                        <TableCell>
-                                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                                                                {transaction.description}
-                                                            </Typography>
+                                                        <TableCell sx={{ py: 1.2 }}>
+                                                            <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{tx.description}</Typography>
                                                         </TableCell>
-                                                        <TableCell>
-                                                            <Chip
-                                                                label={transaction.category}
-                                                                size="small"
-                                                                sx={{
-                                                                    bgcolor: '#f1f5f9',
-                                                                    color: '#475569',
-                                                                    fontSize: '0.75rem',
-                                                                    fontWeight: 600
-                                                                }}
-                                                            />
+                                                        <TableCell sx={{ py: 1.2 }}>
+                                                            <Chip size="small" label={tx.category}
+                                                                  sx={{ height: 18, fontSize: '0.62rem', fontWeight: 700,
+                                                                      bgcolor: alpha('#000', 0.05), color: SLATE }} />
                                                         </TableCell>
-                                                        <TableCell
-                                                            align="right"
-                                                            sx={{
-                                                                fontWeight: 700,
-                                                                fontSize: '0.95rem',
-                                                                color: transaction.type === 'income' ? '#10b981' : '#ef4444'
-                                                            }}
-                                                        >
-                                                            {transaction.type === 'income' ? '+' : '-'}$
-                                                            {Math.abs(transaction.amount).toFixed(2)}
+                                                        <TableCell align="right" sx={{ py: 1.2, fontWeight: 800, fontSize: '0.82rem',
+                                                            color: tx.type === 'income' ? GREEN : RED, fontVariantNumeric: 'tabular-nums' }}>
+                                                            {tx.type === 'income' ? '+' : '−'}${Math.abs(tx.amount).toFixed(2)}
                                                         </TableCell>
-                                                        <TableCell align="right" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                                                            ${transaction.balance.toFixed(2)}
+                                                        <TableCell align="right" sx={{ py: 1.2, fontWeight: 700, fontSize: '0.78rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
+                                                            ${tx.balance.toFixed(2)}
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
-                                    </TableContainer>
+                                    </Box>
                                 </Paper>
                             </Grid>
                         </Grid>
@@ -1193,141 +675,56 @@ const DashboardPage: React.FC = () => {
                 </Grid>
             </Grid>
 
-            {/* Loading Backdrop */}
-            <Backdrop
-                sx={{
-                    color: '#fff',
-                    zIndex: (theme) => theme.zIndex.drawer + 1,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)'
-                }}
-                open={isLoading}
-            >
+            {/* ── Loading backdrop ── */}
+            <Backdrop open={isLoading} sx={{ color: '#fff', zIndex: t => t.zIndex.drawer + 1, bgcolor: 'rgba(0,0,0,0.7)' }}>
                 <Box sx={{ textAlign: 'center' }}>
-                    <CircularProgress color="inherit" size={60} />
-                    <Typography variant="h6" sx={{ mt: 2 }}>
-                        Importing CSV data...
-                    </Typography>
+                    <CircularProgress color="inherit" size={50} />
+                    <Typography sx={{ mt: 2, fontWeight: 600 }}>Importing CSV data…</Typography>
                 </Box>
             </Backdrop>
 
-            {/* Upload Reminder Dialog */}
-            <Dialog
-                open={uploadReminderOpen}
-                onClose={handleRemindLater}
-                maxWidth="sm"
-                fullWidth
-                PaperProps={{
-                    sx: {
-                        borderRadius: 4,
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
-                    }
-                }}
-            >
-                <DialogTitle sx={{ pb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box
-                            sx={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 3,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
-                                color: 'white'
-                            }}
-                        >
-                            <AlertCircle size={24} />
+            {/* ── Upload reminder dialog ── */}
+            <Dialog open={uploadReminderOpen} onClose={() => setUploadReminderOpen(false)} maxWidth="sm" fullWidth
+                    PaperProps={{ sx: { borderRadius: '14px', border: `1px solid ${alpha(AMBER, 0.2)}` } }}>
+                <Box sx={{ px: 3, pt: 3, pb: 0 }}>
+                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', mb: 2 }}>
+                        <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: alpha(AMBER, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <AlertCircle size={20} color={AMBER} />
                         </Box>
-                        <Typography variant="h5" component="div" sx={{ fontWeight: 700 }}>
-                            Upload Reminder
-                        </Typography>
+                        <Box>
+                            <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: NAVY }}>Upload Reminder</Typography>
+                            <Typography sx={{ fontSize: '0.72rem', color: SLATE }}>No recent transactions detected</Typography>
+                        </Box>
                     </Box>
-                </DialogTitle>
-                <DialogContent sx={{ pt: 2 }}>
-                    <Alert
-                        severity="warning"
-                        icon={<Upload size={20} />}
-                        sx={{
-                            mb: 2,
-                            borderRadius: 3,
-                            '& .MuiAlert-icon': {
-                                alignItems: 'center'
-                            }
-                        }}
-                    >
-                        <AlertTitle sx={{ fontWeight: 600 }}>
-                            No Recent Transactions Found
-                        </AlertTitle>
-                        We haven't detected any transactions in the last 2 weeks.
+                    <Alert severity="warning" sx={{ borderRadius: '8px', fontSize: '0.75rem', mb: 2 }}>
+                        <AlertTitle sx={{ fontWeight: 700 }}>No Transactions Found</AlertTitle>
+                        We haven't detected any transactions in the last 2 weeks. Upload your recent data to keep your budget accurate.
                     </Alert>
-
-                    <Typography variant="body1" sx={{ mb: 2, color: theme.palette.text.secondary }}>
-                        To keep your financial tracking accurate and up-to-date, please upload your recent transaction data.
-                    </Typography>
-
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                        Regular uploads help you:
-                    </Typography>
-                    <Box component="ul" sx={{ mt: 1, pl: 2, color: theme.palette.text.secondary }}>
-                        <li>Track your spending habits accurately</li>
+                    <Typography sx={{ fontSize: '0.75rem', color: SLATE, mb: 1 }}>Regular uploads help you:</Typography>
+                    <Box component="ul" sx={{ mt: 0.5, pl: 2.5, mb: 2.5, '& li': { fontSize: '0.75rem', color: SLATE, mb: 0.5 } }}>
+                        <li>Track spending habits accurately</li>
                         <li>Stay on top of your budget</li>
                         <li>Identify trends and patterns</li>
-                        <li>Make informed financial decisions</li>
                     </Box>
-                </DialogContent>
+                </Box>
                 <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-                    <Button
-                        onClick={handleRemindLater}
-                        variant="outlined"
-                        sx={{
-                            textTransform: 'none',
-                            borderRadius: 3,
-                            px: 3,
-                            fontWeight: 600
-                        }}
-                    >
+                    <Button variant="outlined" onClick={() => { setUploadReminderOpen(false); localStorage.setItem('uploadReminderDismissed', new Date().toISOString()); }}
+                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, borderColor: alpha('#000', 0.2), color: SLATE }}>
                         Remind Me Later
                     </Button>
-                    <Button
-                        onClick={handleUploadNow}
-                        variant="contained"
-                        startIcon={<Upload size={18} />}
-                        sx={{
-                            textTransform: 'none',
-                            borderRadius: 3,
-                            px: 3,
-                            fontWeight: 600,
-                            background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-                            '&:hover': {
-                                background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-                            }
-                        }}
-                    >
+                    <Button variant="contained" startIcon={<Upload size={14} />}
+                            onClick={() => { setUploadReminderOpen(false); setImportDialogOpen(true); }}
+                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700, bgcolor: MAROON,
+                                '&:hover': { bgcolor: MAROON2 } }}>
                         Upload Now
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* CSV Import Dialog */}
-            <CSVImportDialog open={importDialogOpen} onClose={handleImportClose} onImport={handleImportComplete}/>
+            <CSVImportDialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} onImport={handleImportComplete} />
 
-            {/* Snackbar for notifications */}
-            <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={6000}
-                onClose={handleSnackbarClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <SnackbarAlert
-                    onClose={handleSnackbarClose}
-                    severity={snackbarSeverity}
-                    sx={{
-                        width: '100%',
-                        borderRadius: 3,
-                        fontWeight: 500
-                    }}
-                >
+            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <SnackbarAlert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ borderRadius: '10px', fontWeight: 500 }}>
                     {snackbarMessage}
                 </SnackbarAlert>
             </Snackbar>
@@ -1336,7 +733,6 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
-
 
 // import React, {useEffect, useState} from 'react';
 // import {
@@ -1386,6 +782,9 @@ export default DashboardPage;
 //     Warning,
 //     ArrowUpward,
 //     ArrowDownward,
+//     CalendarToday,
+//     Replay,
+//     Schedule,
 // } from '@mui/icons-material';
 // import {AlertCircle, Upload} from "lucide-react";
 // import Sidebar from "./Sidebar";
@@ -1411,13 +810,17 @@ export default DashboardPage;
 //     color: string;
 // }
 //
-// interface Account {
+// interface RecurringTransaction {
 //     id: number;
 //     name: string;
-//     type: string;
-//     balance: number;
-//     change: number;
+//     category: string;
+//     amount: number;
+//     frequency: 'monthly' | 'weekly' | 'yearly';
+//     nextDue: string;
+//     daysUntilDue: number;
+//     status: 'upcoming' | 'due-soon' | 'overdue';
 //     icon: React.ReactNode;
+//     color: string;
 // }
 //
 // interface Transaction {
@@ -1458,7 +861,7 @@ export default DashboardPage;
 //     const [importDialogOpen, setImportDialogOpen] = useState<boolean>(false);
 //
 //     // Data states
-//     const [accounts, setAccounts] = useState<Account[]>([]);
+//     const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
 //     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
 //     const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([]);
 //     const [groceryBudget, setGroceryBudget] = useState<BudgetGoal | null>(null);
@@ -1489,14 +892,54 @@ export default DashboardPage;
 //             try {
 //                 // TODO: Replace with actual API calls
 //                 // Mock data for demonstration
-//                 setAccounts([
+//                 setRecurringTransactions([
 //                     {
 //                         id: 1,
-//                         name: 'Checking Account',
-//                         type: 'checking',
-//                         balance: 5240.50,
-//                         change: 2.5,
-//                         icon: <AccountBalance />
+//                         name: 'Netflix Subscription',
+//                         category: 'Entertainment',
+//                         amount: 15.99,
+//                         frequency: 'monthly',
+//                         nextDue: '2026-02-20',
+//                         daysUntilDue: 5,
+//                         status: 'due-soon',
+//                         icon: <Replay />,
+//                         color: '#e50914'
+//                     },
+//                     {
+//                         id: 2,
+//                         name: 'Electric Bill',
+//                         category: 'Utilities',
+//                         amount: 120.00,
+//                         frequency: 'monthly',
+//                         nextDue: '2026-02-25',
+//                         daysUntilDue: 10,
+//                         status: 'upcoming',
+//                         icon: <Home />,
+//                         color: '#f59e0b'
+//                     },
+//                     {
+//                         id: 3,
+//                         name: 'Rent Payment',
+//                         category: 'Housing',
+//                         amount: 1500.00,
+//                         frequency: 'monthly',
+//                         nextDue: '2026-03-01',
+//                         daysUntilDue: 14,
+//                         status: 'upcoming',
+//                         icon: <Home />,
+//                         color: '#3b82f6'
+//                     },
+//                     {
+//                         id: 4,
+//                         name: 'Gym Membership',
+//                         category: 'Health',
+//                         amount: 45.00,
+//                         frequency: 'monthly',
+//                         nextDue: '2026-02-18',
+//                         daysUntilDue: 3,
+//                         status: 'due-soon',
+//                         icon: <Replay />,
+//                         color: '#10b981'
 //                     }
 //                 ]);
 //
@@ -1716,6 +1159,29 @@ export default DashboardPage;
 //         }
 //     };
 //
+//     const getRecurringStatusColor = (status: string) => {
+//         switch (status) {
+//             case 'upcoming':
+//                 return '#10b981';
+//             case 'due-soon':
+//                 return '#f59e0b';
+//             case 'overdue':
+//                 return '#ef4444';
+//             default:
+//                 return '#6b7280';
+//         }
+//     };
+//
+//     const getRecurringStatusLabel = (status: string, daysUntilDue: number) => {
+//         if (status === 'overdue') return 'Overdue';
+//         if (status === 'due-soon') return `Due in ${daysUntilDue} days`;
+//         return `${daysUntilDue} days`;
+//     };
+//
+//     const formatFrequency = (frequency: string) => {
+//         return frequency.charAt(0).toUpperCase() + frequency.slice(1);
+//     };
+//
 //     return (
 //         <Box sx={{ display: 'flex', bgcolor: '#f8fafc', minHeight: '100vh' }}>
 //             <Grid container>
@@ -1746,7 +1212,7 @@ export default DashboardPage;
 //                         </Box>
 //
 //                         <Grid container spacing={3}>
-//                             {/* Row 1: Budget Overview (Left) + Accounts (Right) */}
+//                             {/* Row 1: Budget Overview (Left) + Recurring Transactions (Right) */}
 //                             <Grid item xs={12} lg={8}>
 //                                 <Paper sx={{
 //                                     boxShadow: 3,
@@ -1869,8 +1335,8 @@ export default DashboardPage;
 //                                 </Paper>
 //                             </Grid>
 //
-//                             {/* Accounts Overview - Top Right */}
-//                             {accounts.length > 0 && (
+//                             {/* Recurring Transactions/Bills - Top Right */}
+//                             {recurringTransactions.length > 0 && (
 //                                 <Grid item xs={12} lg={4}>
 //                                     <Paper sx={{
 //                                         boxShadow: 3,
@@ -1885,10 +1351,10 @@ export default DashboardPage;
 //                                         <Box sx={{ p: 3, pb: 0 }}>
 //                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
 //                                                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#800000' }}>
-//                                                     Accounts
+//                                                     Recurring Bills
 //                                                 </Typography>
 //                                                 <Chip
-//                                                     label={`${accounts.length} ${accounts.length === 1 ? 'Account' : 'Accounts'}`}
+//                                                     label={`${recurringTransactions.length} Active`}
 //                                                     size="small"
 //                                                     sx={{
 //                                                         bgcolor: '#fef2f2',
@@ -1903,82 +1369,88 @@ export default DashboardPage;
 //                                             <Table>
 //                                                 <TableHead>
 //                                                     <TableRow sx={{ backgroundColor: 'background.paper' }}>
-//                                                         <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '60%' }}>
-//                                                             Account
+//                                                         <TableCell sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '55%' }}>
+//                                                             Bill
 //                                                         </TableCell>
-//                                                         <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '40%' }}>
-//                                                             Balance
+//                                                         <TableCell align="right" sx={{ fontWeight: 'bold', color: '#800000', fontSize: '0.95rem', width: '45%' }}>
+//                                                             Amount
 //                                                         </TableCell>
 //                                                     </TableRow>
 //                                                 </TableHead>
 //                                                 <TableBody>
-//                                                     {accounts.map((account, index) => (
-//                                                         <TableRow
-//                                                             key={account.id}
-//                                                             sx={{
-//                                                                 '&:hover': {
-//                                                                     bgcolor: 'rgba(128, 0, 0, 0.04)',
-//                                                                     cursor: 'pointer'
-//                                                                 },
-//                                                                 borderLeft: `4px solid ${account.type === 'credit' ? '#dc2626' : account.type === 'savings' ? '#16a34a' : '#2563eb'}`,
-//                                                             }}
-//                                                         >
-//                                                             <TableCell>
-//                                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-//                                                                     <Avatar
-//                                                                         sx={{
-//                                                                             bgcolor: account.type === 'credit' ? '#fee2e2' : account.type === 'savings' ? '#dcfce7' : '#dbeafe',
-//                                                                             color: account.type === 'credit' ? '#dc2626' : account.type === 'savings' ? '#16a34a' : '#2563eb',
-//                                                                             width: 36,
-//                                                                             height: 36
-//                                                                         }}
-//                                                                     >
-//                                                                         {account.icon}
-//                                                                     </Avatar>
-//                                                                     <Box>
-//                                                                         <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
-//                                                                             {account.type.charAt(0).toUpperCase() + account.type.slice(1)}
-//                                                                         </Typography>
-//                                                                         <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
-//                                                                             {account.name}
-//                                                                         </Typography>
+//                                                     {recurringTransactions
+//                                                         .sort((a, b) => a.daysUntilDue - b.daysUntilDue)
+//                                                         .map((bill) => (
+//                                                             <TableRow
+//                                                                 key={bill.id}
+//                                                                 sx={{
+//                                                                     '&:hover': {
+//                                                                         bgcolor: 'rgba(128, 0, 0, 0.04)',
+//                                                                         cursor: 'pointer'
+//                                                                     },
+//                                                                     borderLeft: `4px solid ${getRecurringStatusColor(bill.status)}`,
+//                                                                 }}
+//                                                             >
+//                                                                 <TableCell>
+//                                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+//                                                                         <Avatar
+//                                                                             sx={{
+//                                                                                 bgcolor: `${bill.color}15`,
+//                                                                                 color: bill.color,
+//                                                                                 width: 36,
+//                                                                                 height: 36
+//                                                                             }}
+//                                                                         >
+//                                                                             {bill.icon}
+//                                                                         </Avatar>
+//                                                                         <Box>
+//                                                                             <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b', mb: 0.5 }}>
+//                                                                                 {bill.name}
+//                                                                             </Typography>
+//                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+//                                                                                 <Schedule sx={{ fontSize: 12, color: '#94a3b8' }} />
+//                                                                                 <Typography variant="caption" sx={{ color: '#64748b' }}>
+//                                                                                     {formatFrequency(bill.frequency)}
+//                                                                                 </Typography>
+//                                                                             </Box>
+//                                                                         </Box>
 //                                                                     </Box>
-//                                                                 </Box>
-//                                                             </TableCell>
-//                                                             <TableCell align="right">
-//                                                                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
-//                                                                     ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-//                                                                 </Typography>
-//                                                                 <Chip
-//                                                                     size="small"
-//                                                                     icon={account.change > 0 ? <ArrowUpward sx={{ fontSize: 14 }} /> : <ArrowDownward sx={{ fontSize: 14 }} />}
-//                                                                     label={`${account.change > 0 ? '+' : ''}${account.change}%`}
-//                                                                     sx={{
-//                                                                         bgcolor: account.change > 0 ? '#d1fae5' : '#fee2e2',
-//                                                                         color: account.change > 0 ? '#065f46' : '#991b1b',
-//                                                                         fontWeight: 600,
-//                                                                         fontSize: '0.7rem',
-//                                                                         height: 20
-//                                                                     }}
-//                                                                 />
-//                                                             </TableCell>
-//                                                         </TableRow>
-//                                                     ))}
-//                                                     {/* Total Balance Row - Only show if multiple accounts */}
-//                                                     {accounts.length > 1 && (
-//                                                         <TableRow sx={{ bgcolor: '#f0f9ff' }}>
-//                                                             <TableCell>
-//                                                                 <Typography variant="body1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-//                                                                     Total Net Worth
-//                                                                 </Typography>
-//                                                             </TableCell>
-//                                                             <TableCell align="right">
-//                                                                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#0369a1' }}>
-//                                                                     ${accounts.reduce((sum, acc) => sum + acc.balance, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-//                                                                 </Typography>
-//                                                             </TableCell>
-//                                                         </TableRow>
-//                                                     )}
+//                                                                 </TableCell>
+//                                                                 <TableCell align="right">
+//                                                                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+//                                                                         ${bill.amount.toFixed(2)}
+//                                                                     </Typography>
+//                                                                     <Chip
+//                                                                         size="small"
+//                                                                         icon={<CalendarToday sx={{ fontSize: 12 }} />}
+//                                                                         label={getRecurringStatusLabel(bill.status, bill.daysUntilDue)}
+//                                                                         sx={{
+//                                                                             bgcolor: bill.status === 'overdue' ? '#fee2e2' : bill.status === 'due-soon' ? '#fef3c7' : '#d1fae5',
+//                                                                             color: bill.status === 'overdue' ? '#991b1b' : bill.status === 'due-soon' ? '#92400e' : '#065f46',
+//                                                                             fontWeight: 600,
+//                                                                             fontSize: '0.7rem',
+//                                                                             height: 20
+//                                                                         }}
+//                                                                     />
+//                                                                 </TableCell>
+//                                                             </TableRow>
+//                                                         ))}
+//                                                     {/* Total Monthly Recurring Row */}
+//                                                     <TableRow sx={{ bgcolor: '#f0f9ff' }}>
+//                                                         <TableCell>
+//                                                             <Typography variant="body1" sx={{ fontWeight: 700, color: '#1e293b' }}>
+//                                                                 Total Monthly
+//                                                             </Typography>
+//                                                         </TableCell>
+//                                                         <TableCell align="right">
+//                                                             <Typography variant="h6" sx={{ fontWeight: 700, color: '#0369a1' }}>
+//                                                                 ${recurringTransactions
+//                                                                 .filter(bill => bill.frequency === 'monthly')
+//                                                                 .reduce((sum, bill) => sum + bill.amount, 0)
+//                                                                 .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+//                                                             </Typography>
+//                                                         </TableCell>
+//                                                     </TableRow>
 //                                                 </TableBody>
 //                                             </Table>
 //                                         </TableContainer>
@@ -1986,8 +1458,8 @@ export default DashboardPage;
 //                                 </Grid>
 //                             )}
 //
-//                             {/* No Accounts Connected State - Top Right */}
-//                             {accounts.length === 0 && (
+//                             {/* No Recurring Bills State - Top Right */}
+//                             {recurringTransactions.length === 0 && (
 //                                 <Grid item xs={12} lg={4}>
 //                                     <Card
 //                                         elevation={0}
@@ -2009,17 +1481,17 @@ export default DashboardPage;
 //                                                     mb: 2
 //                                                 }}
 //                                             >
-//                                                 <AccountBalance sx={{ fontSize: 40 }} />
+//                                                 <Replay sx={{ fontSize: 40 }} />
 //                                             </Avatar>
 //                                             <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b', mb: 1 }}>
-//                                                 No Accounts Connected
+//                                                 No Recurring Bills
 //                                             </Typography>
 //                                             <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
-//                                                 Connect your bank accounts to start tracking your finances
+//                                                 Set up recurring bills to track your monthly expenses
 //                                             </Typography>
 //                                             <Button
 //                                                 variant="contained"
-//                                                 startIcon={<AccountBalance />}
+//                                                 startIcon={<CalendarToday />}
 //                                                 sx={{
 //                                                     textTransform: 'none',
 //                                                     borderRadius: 3,
@@ -2031,10 +1503,10 @@ export default DashboardPage;
 //                                                     }
 //                                                 }}
 //                                                 onClick={() => {
-//                                                     console.log('Connect account clicked');
+//                                                     console.log('Add recurring bill clicked');
 //                                                 }}
 //                                             >
-//                                                 Connect Account
+//                                                 Add Recurring Bill
 //                                             </Button>
 //                                         </CardContent>
 //                                     </Card>
