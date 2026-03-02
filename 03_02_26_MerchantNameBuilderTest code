@@ -1,0 +1,78 @@
+package com.app.budgetbuddy.workbench;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
+
+@ExtendWith(MockitoExtension.class)
+class MerchantNameBuilderTest {
+
+    private MerchantNameBuilder merchantNameBuilder;
+    private MountainAmericaExtractor macuExtractor;
+    private GraniteExtractor graniteExtractor;
+
+    @BeforeEach
+    void setUp() {
+        // Instantiate the strategies
+        macuExtractor = new MountainAmericaExtractor();
+        graniteExtractor = new GraniteExtractor();
+        
+        // Inject strategies into the builder
+        merchantNameBuilder = new MerchantNameBuilder(List.of(macuExtractor, graniteExtractor));
+    }
+
+    @Test
+    void build_DelegatesToMacuWhenInstitutionMatches() {
+        String result = merchantNameBuilder.build(
+            "Mountain America Credit Union", 
+            "Maverik", 
+            "Withdrawal Debit MAVERIK #413"
+        );
+        assertEquals("Maverik", result);
+    }
+
+    @Test
+    void extract_WhenPollutedDescriptionWithAffirmAlias_thenReturnAffirm() {
+        // Testing the strategy logic directly
+        String description = "Withdrawal Debit Affirm * Pay Fsq3U3R9 XX-3729 CA Date 02/28/26 XX 6012 Card 7534";
+        String extended = "Withdrawal Debit AFFIRM * PAY FSQ3U3R9 855-423-3729 CA 02/28/26";
+        
+        assertEquals("Affirm", macuExtractor.extract(description, extended));
+    }
+
+    @Test
+    void extract_WhenAchStateFarm_thenReturnStateFarm() {
+        String description = "Withdrawal Ach S Type: Payments CO: State Farm Billg Name: King Alexander Entry Class Code: Web";
+        String extended = "Withdrawal ACH S TYPE: PAYMENTS CO: STATE FARM BILLG";
+        
+        assertEquals("State Farm Billg", macuExtractor.extract(description, extended));
+    }
+
+    @Test
+    void extract_whenHarmons_thenReturnHarmons() {
+        // Logic: Splits at the " - "
+        assertEquals("Harmons", macuExtractor.extract(
+                "Withdrawal # Harmons - District 86 South Jordan UT",
+                "Withdrawal POS # HARMONS - DISTRICT 86 SOUTH JORDAN UT"));
+    }
+
+    @Test
+    void extract_whenNullDescription_thenReturnExtendedDescription() {
+        assertEquals("Withdrawal Debit MAVERIK #413 SOUTH JORDAN UT", 
+            macuExtractor.extract(null, "Withdrawal Debit MAVERIK #413 SOUTH JORDAN UT"));
+    }
+
+    @Test
+    void build_whenNoMatchingInstitution_returnsDescriptionDirectly() {
+        // Testing the fallback logic in the builder
+        String result = merchantNameBuilder.build("Chase Bank", "Generic Store", "Generic Store 123");
+        assertEquals("Generic Store", result);
+    }
+}
