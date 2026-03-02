@@ -1,0 +1,64 @@
+package com.app.budgetbuddy.workbench;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class MountainAmericaExtractor implements MerchantNameExtractor 
+{
+    private static final List<String> PREFIXES = List.of(
+        "Withdrawal Debit ", "Withdrawal Ach S Type: Payments CO: ", 
+        "Withdrawal # ", "Withdrawal Ach ", "Withdrawal ", 
+        "Salary/Regular Income from ", "Purchase ", "Pin Purchase "
+    );
+
+    private static final Map<String, String> ALIASES = Map.of(
+        "Tst*", "The Break Sports Grill",
+        "Sp+Aff *", "Affirm",
+        "Affirm *", "Affirm"
+    );
+
+    @Override
+    public boolean supports(String institution) {
+        return "Mountain America Credit Union".equalsIgnoreCase(institution);
+    }
+
+    @Override
+    public String extract(String description, String extendedDescription) {
+        if (description == null || description.isBlank()) {
+            return extendedDescription != null ? extendedDescription.trim() : "";
+        }
+
+        String cleaned = description.trim();
+        
+        // 1. Check Aliases first
+        for (var entry : ALIASES.entrySet()) {
+            if (cleaned.toLowerCase().contains(entry.getKey().toLowerCase())) {
+                return entry.getValue();
+            }
+        }
+
+        // 2. Strip Prefixes
+        for (String prefix : PREFIXES) {
+            if (cleaned.toLowerCase().startsWith(prefix.toLowerCase())) {
+                cleaned = cleaned.substring(prefix.length()).trim();
+                break;
+            }
+        }
+
+        // 3. Clean suffixes (Dates, Card Numbers, Locations)
+        return finalizeCleaning(cleaned);
+    }
+
+    private String finalizeCleaning(String input) {
+        return input.split(" - ")[0]
+                .replaceAll("\\s+XX-\\d+.*", "")
+                .split("(?i) Name:")[0]
+                .split("(?i) date ")[0]
+                .trim();
+    }
+}
