@@ -1,183 +1,161 @@
 import React, { useEffect, useState } from 'react';
 import {
-    Box, Grid, Typography, Paper, Button, LinearProgress, Chip, Card,
-    CardContent, Avatar, Divider, useMediaQuery, useTheme, Dialog,
-    DialogTitle, Alert, AlertTitle, DialogContent, DialogActions,
+    Box, Grid, Typography, Paper, Button, LinearProgress, Chip,
+    Divider, Dialog, Alert, AlertTitle, DialogActions,
     Backdrop, CircularProgress, Snackbar, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, alpha, Stack,
+    TableHead, TableRow, alpha, Stack,
 } from '@mui/material';
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
+import { ShoppingCart, Restaurant, LocalGasStation, Home, CheckCircle, Replay } from '@mui/icons-material';
+import { AlertCircle, Upload, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
-    TrendingUp, TrendingDown, AccountBalance, Savings, CreditCard,
-    ShoppingCart, Restaurant, LocalGasStation, Home, CheckCircle,
-    Warning, ArrowUpward, ArrowDownward, CalendarToday, Replay, Schedule,
-} from '@mui/icons-material';
-import {
-    AlertCircle, Upload, Wallet, PiggyBank, Receipt, RefreshCw,
-    TrendingUp as TrendUp, ArrowUpRight, ArrowDownRight, Sparkles,
-} from 'lucide-react';
+    PieChart, Pie, Cell, Sector, ResponsiveContainer,
+} from 'recharts';
 import Sidebar from './Sidebar';
 import PlaidService from '../services/PlaidService';
 import UserService from '../services/UserService';
 import CsvUploadService from '../services/CsvUploadService';
 import CSVImportDialog from './CSVImportDialog';
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const MAROON  = '#6b1a1a';
-const MAROON2 = '#4a1010';
-const TEAL    = '#0d9488';
-const GREEN   = '#059669';
-const RED     = '#dc2626';
-const AMBER   = '#d97706';
-const BLUE    = '#2563eb';
-const SLATE   = '#64748b';
-const NAVY    = '#1e293b';
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const MAROON      = '#6b1a1a';
+const MAROON2     = '#4a1010';
+const TEAL        = '#0d9488';
+const GREEN       = '#059669';
+const RED         = '#dc2626';
+const AMBER       = '#d97706';
+const BLUE        = '#2563eb';
+const PURPLE      = '#7c3aed';
+const SLATE       = '#64748b';
+const NAVY        = '#1e293b';
+const MAROON_GRAD = `linear-gradient(135deg, ${MAROON2} 0%, ${MAROON} 50%, #5a1515 100%)`;
 
-// ── Snackbar alert ────────────────────────────────────────────────────────────
-const SnackbarAlert = React.forwardRef<HTMLDivElement, AlertProps>(
-    function SnackbarAlert(props, ref) {
-        return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-    }
-);
-
-// ── Types (unchanged) ─────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface Receipt       { id: number; store: string; date: string; time: string; amount: number; items: number; tags: string[]; color: string; }
 interface RecurringTx   { id: number; name: string; category: string; amount: number; frequency: string; nextDue: string; daysUntilDue: number; status: 'upcoming'|'due-soon'|'overdue'; icon: React.ReactNode; color: string; }
 interface Transaction   { id: number; date: string; description: string; category: string; amount: number; balance: number; type: 'income'|'expense'; }
 interface BudgetGoal    { id: number; name: string; current: number; target: number; percentage: number; status: 'on-track'|'warning'|'exceeded'; }
 interface CategorySpend { category: string; amount: number; percentage: number; icon: React.ReactNode; color: string; }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Snackbar ──────────────────────────────────────────────────────────────────
+const SnackbarAlert = React.forwardRef<HTMLDivElement, AlertProps>(
+    function SnackbarAlert(props, ref) {
+        return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+    }
+);
 
-/** Maroon panel header strip */
+// ── Active donut shape ────────────────────────────────────────────────────────
+// Shows: name, $value, % of total — with outer ring pop and accent arc
+// Only shows spending amount (not vs budget)
+const makeActiveShape = (opts: {
+    totalLabel?: string;
+}) => (props: any) => {
+    const {
+        cx, cy, innerRadius, outerRadius,
+        startAngle, endAngle,
+        fill, payload, percent, value,
+    } = props;
+    const { totalLabel } = opts;
+
+    const line2 = `$${value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    const line3 = `${(percent * 100).toFixed(1)}% ${totalLabel || 'of total'}`;
+
+    return (
+        <g>
+            {/* Category name */}
+            <text x={cx} y={cy - 18} textAnchor="middle" fill={NAVY}
+                  style={{ fontSize: 12, fontWeight: 800 }}>
+                {payload.name.length > 18 ? payload.name.slice(0,17) + '…' : payload.name}
+            </text>
+            {/* Dollar value — spending only */}
+            <text x={cx} y={cy + 6} textAnchor="middle" fill={fill}
+                  style={{ fontSize: 16, fontWeight: 900 }}>
+                {line2}
+            </text>
+            {/* Pct line */}
+            <text x={cx} y={cy + 24} textAnchor="middle" fill={SLATE}
+                  style={{ fontSize: 10, fontWeight: 600 }}>
+                {line3}
+            </text>
+            {/* Expanded outer arc */}
+            <Sector cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 8}
+                    startAngle={startAngle} endAngle={endAngle} fill={fill} />
+            {/* Thin accent ring */}
+            <Sector cx={cx} cy={cy} innerRadius={outerRadius + 12} outerRadius={outerRadius + 15}
+                    startAngle={startAngle} endAngle={endAngle} fill={fill} />
+        </g>
+    );
+};
+
+// ── Idle donut center label ───────────────────────────────────────────────────
+const IdleCenter = ({ cx, cy, primary, secondary }: { cx: number; cy: number; primary: string; secondary: string }) => (
+    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
+        <tspan x={cx} dy="-8"  fontSize="15" fontWeight="800" fill={NAVY}>{primary}</tspan>
+        <tspan x={cx} dy="20"  fontSize="10" fontWeight="600" fill={SLATE}>{secondary}</tspan>
+    </text>
+);
+
+// ── Panel header ──────────────────────────────────────────────────────────────
 const PanelHeader: React.FC<{ title: string; badge?: React.ReactNode; action?: React.ReactNode }> = ({ title, badge, action }) => (
     <Box sx={{
-        px: 2.5, py: 1.5,
-        background: `linear-gradient(135deg, #4a1010 0%, #6b1a1a 50%, #5a1515 100%)`,
+        px: 2.5, py: 1.75,
+        background: MAROON_GRAD,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'relative', overflow: 'hidden',
+        position: 'relative', overflow: 'hidden', flexShrink: 0,
     }}>
-        <Box sx={{ position:'absolute', top:-20, right:-20, width:70, height:70, borderRadius:'50%', bgcolor:'rgba(255,255,255,0.05)', pointerEvents:'none' }} />
+        <Box sx={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', letterSpacing: '-0.01em' }}>
-                {title}
-            </Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff', letterSpacing: '-0.01em' }}>{title}</Typography>
             {badge}
         </Box>
         {action}
     </Box>
 );
 
-/** KPI stat tile */
-const StatTile: React.FC<{ label: string; value: string; sub?: string; icon: React.ReactNode; color: string; trend?: 'up'|'down'|null }> = ({
-                                                                                                                                                label, value, sub, icon, color, trend,
-                                                                                                                                            }) => (
-    <Box sx={{
-        flex: 1, p: 2, borderRadius: '12px', bgcolor: '#fff',
-        border: `1px solid ${alpha('#000', 0.07)}`,
-        borderLeft: `4px solid ${color}`,
-        boxShadow: `0 2px 8px rgba(0,0,0,0.05)`,
-        transition: 'box-shadow 0.15s',
-        '&:hover': { boxShadow: `0 4px 16px ${alpha(color, 0.15)}` },
-    }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-            <Box sx={{ width: 34, height: 34, borderRadius: '8px', bgcolor: alpha(color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Box sx={{ color }}>{icon}</Box>
-            </Box>
-            {trend && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, px: 0.75, py: 0.3, borderRadius: '6px',
-                    bgcolor: trend === 'up' ? alpha(GREEN, 0.1) : alpha(RED, 0.1) }}>
-                    {trend === 'up' ? <ArrowUpRight size={11} color={GREEN}/> : <ArrowDownRight size={11} color={RED}/>}
-                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: trend === 'up' ? GREEN : RED }}>
-                        {sub}
-                    </Typography>
-                </Box>
-            )}
-        </Box>
-        <Typography sx={{ fontSize: '1.35rem', fontWeight: 900, color: NAVY, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, mb: 0.3 }}>
-            {value}
-        </Typography>
-        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {label}
-        </Typography>
-    </Box>
+const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: alpha(MAROON, 0.55), mb: 1.75 }}>
+        {children}
+    </Typography>
 );
 
-/** Compact progress bar row */
-const ProgressRow: React.FC<{ label: string; current: number; target: number; pct: number; status: string }> = ({ label, current, target, pct, status }) => {
-    const color = status === 'exceeded' ? RED : status === 'warning' ? AMBER : TEAL;
-    return (
-        <Box sx={{ mb: 1.75 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: color }} />
-                    <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{label}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <Typography sx={{ fontSize: '0.68rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>
-                        ${current.toFixed(0)} / ${target.toFixed(0)}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color, minWidth: 34, textAlign: 'right' }}>
-                        {pct.toFixed(0)}%
-                    </Typography>
-                </Box>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(pct, 100)} sx={{
-                height: 5, borderRadius: 3,
-                bgcolor: alpha(color, 0.12),
-                '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: color },
-            }} />
-        </Box>
-    );
-};
-
-/** Recurring bill row */
+// ── Recurring bill row ────────────────────────────────────────────────────────
 const BillRow: React.FC<{ bill: RecurringTx }> = ({ bill }) => {
-    const statusColor = bill.status === 'overdue' ? RED : bill.status === 'due-soon' ? AMBER : GREEN;
-    const statusLabel = bill.status === 'overdue' ? 'Overdue' : bill.status === 'due-soon' ? `${bill.daysUntilDue}d` : `${bill.daysUntilDue}d`;
+    const sc = bill.status === 'overdue' ? RED : bill.status === 'due-soon' ? AMBER : GREEN;
     return (
         <Box sx={{
-            display: 'flex', alignItems: 'center', gap: 1.5, py: 1.1,
-            borderLeft: `3px solid ${statusColor}`, pl: 1.25,
+            display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25,
+            borderLeft: `3px solid ${sc}`, pl: 1.5,
             borderBottom: `1px solid ${alpha('#000', 0.05)}`,
             '&:last-child': { borderBottom: 'none' },
-            '&:hover': { bgcolor: alpha(MAROON, 0.02) },
-            transition: 'background 0.12s',
+            '&:hover': { bgcolor: alpha(MAROON, 0.02) }, transition: 'background 0.12s',
         }}>
-            <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: alpha(bill.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: bill.color }}>
+            <Box sx={{ width: 34, height: 34, borderRadius: '8px', bgcolor: alpha(bill.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: bill.color }}>
                 {bill.icon}
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {bill.name}
-                </Typography>
-                <Typography sx={{ fontSize: '0.62rem', color: SLATE }}>
-                    {bill.frequency.charAt(0).toUpperCase() + bill.frequency.slice(1)}
-                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bill.name}</Typography>
+                <Typography sx={{ fontSize: '0.65rem', color: SLATE }}>{bill.frequency.charAt(0).toUpperCase() + bill.frequency.slice(1)}</Typography>
             </Box>
             <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
-                    ${bill.amount.toFixed(2)}
-                </Typography>
-                <Chip size="small" label={statusLabel} sx={{
-                    height: 16, fontSize: '0.58rem', fontWeight: 800,
-                    bgcolor: alpha(statusColor, 0.1), color: statusColor,
-                    border: `1px solid ${alpha(statusColor, 0.25)}`,
-                }} />
+                <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>${bill.amount.toFixed(2)}</Typography>
+                <Chip size="small" label={bill.status === 'overdue' ? 'Overdue' : `${bill.daysUntilDue}d`}
+                      sx={{ height: 16, fontSize: '0.6rem', fontWeight: 800, bgcolor: alpha(sc, 0.1), color: sc, border: `1px solid ${alpha(sc, 0.25)}` }} />
             </Box>
         </Box>
     );
 };
 
+// ══════════════════════════════════════════════════════════════════════════════
 // ── Main DashboardPage ────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
 const DashboardPage: React.FC = () => {
-    const [uploadReminderOpen,    setUploadReminderOpen]    = useState(false);
-    const [checkingTransactions,  setCheckingTransactions]  = useState(false);
-    const [isLoading,             setIsLoading]             = useState(false);
-    const [snackbarOpen,          setSnackbarOpen]          = useState(false);
-    const [snackbarMessage,       setSnackbarMessage]       = useState('');
-    const [snackbarSeverity,      setSnackbarSeverity]      = useState<'success'|'error'|'info'|'warning'>('success');
-    const [importDialogOpen,      setImportDialogOpen]      = useState(false);
+    const [uploadReminderOpen,   setUploadReminderOpen]   = useState(false);
+    const [checkingTransactions, setCheckingTransactions] = useState(false);
+    const [isLoading,            setIsLoading]            = useState(false);
+    const [snackbarOpen,         setSnackbarOpen]         = useState(false);
+    const [snackbarMessage,      setSnackbarMessage]      = useState('');
+    const [snackbarSeverity,     setSnackbarSeverity]     = useState<'success'|'error'|'info'|'warning'>('success');
+    const [importDialogOpen,     setImportDialogOpen]     = useState(false);
 
     const [recurringTransactions, setRecurringTransactions] = useState<RecurringTx[]>([]);
     const [recentTransactions,    setRecentTransactions]    = useState<Transaction[]>([]);
@@ -187,12 +165,16 @@ const DashboardPage: React.FC = () => {
     const [totalBudget,           setTotalBudget]           = useState({ current: 0, target: 0, percentage: 0 });
     const [recentReceipts,        setRecentReceipts]        = useState<Receipt[]>([]);
 
-    const userFullName = sessionStorage.getItem('fullName');
-    const userId       = Number(sessionStorage.getItem('userId'));
-    const theme        = useTheme();
+    // ── Per-donut active index state ──────────────────────────────────────────
+    const [budgetActiveIdx,   setBudgetActiveIdx]   = useState<number | undefined>(undefined);
+    const [spendingActiveIdx, setSpendingActiveIdx] = useState<number | undefined>(undefined);
+    const [receiptsActiveIdx, setReceiptsActiveIdx] = useState<number | undefined>(undefined);
+    const [savingsActiveIdx,  setSavingsActiveIdx]  = useState<number | undefined>(undefined);
 
-    const plaidService    = PlaidService.getInstance();
-    const userService     = UserService.getInstance();
+    const userFullName     = sessionStorage.getItem('fullName');
+    const userId           = Number(sessionStorage.getItem('userId'));
+    const plaidService     = PlaidService.getInstance();
+    const userService      = UserService.getInstance();
     const csvUploadService = new CsvUploadService();
 
     useEffect(() => { document.title = 'Dashboard'; }, []);
@@ -214,24 +196,24 @@ const DashboardPage: React.FC = () => {
                     { id:5, date:'2026-01-26', description:'Electric Bill',   category:'Utilities',      amount:-120.00, balance:1978.25, type:'expense' },
                 ]);
                 setBudgetGoals([
-                    { id:1, name:'Dining Out',      current:245.50, target:300.00, percentage:81.8,  status:'on-track' },
-                    { id:2, name:'Transportation',  current:180.00, target:200.00, percentage:90.0,  status:'warning'  },
-                    { id:3, name:'Entertainment',   current:95.00,  target:150.00, percentage:63.3,  status:'on-track' },
-                    { id:4, name:'Shopping',        current:420.00, target:400.00, percentage:105.0, status:'exceeded' },
+                    { id:1, name:'Dining Out',     current:245.50, target:300.00, percentage:81.8,  status:'on-track' },
+                    { id:2, name:'Transportation', current:180.00, target:200.00, percentage:90.0,  status:'warning'  },
+                    { id:3, name:'Entertainment',  current:95.00,  target:150.00, percentage:63.3,  status:'on-track' },
+                    { id:4, name:'Shopping',       current:420.00, target:400.00, percentage:105.0, status:'exceeded' },
                 ]);
                 setGroceryBudget({ id:5, name:'Groceries', current:385.75, target:500.00, percentage:77.2, status:'on-track' });
                 setTopCategories([
-                    { category:'Groceries',     amount:385.75, percentage:28.5, icon:<ShoppingCart sx={{fontSize:16}}/>, color:GREEN },
-                    { category:'Dining',        amount:245.50, percentage:18.2, icon:<Restaurant sx={{fontSize:16}}/>,   color:AMBER },
-                    { category:'Transportation',amount:180.00, percentage:13.3, icon:<LocalGasStation sx={{fontSize:16}}/>, color:BLUE },
-                    { category:'Utilities',     amount:165.00, percentage:12.2, icon:<Home sx={{fontSize:16}}/>,         color:'#8b5cf6' },
+                    { category:'Groceries',      amount:385.75, percentage:28.5, icon:<ShoppingCart sx={{fontSize:15}}/>, color:GREEN  },
+                    { category:'Dining',         amount:245.50, percentage:18.2, icon:<Restaurant sx={{fontSize:15}}/>,   color:AMBER  },
+                    { category:'Transportation', amount:180.00, percentage:13.3, icon:<LocalGasStation sx={{fontSize:15}}/>, color:BLUE },
+                    { category:'Utilities',      amount:165.00, percentage:12.2, icon:<Home sx={{fontSize:15}}/>,         color:PURPLE },
                 ]);
                 setTotalBudget({ current:1876.25, target:2500.00, percentage:75.1 });
                 setRecentReceipts([
-                    { id:1, store:"Whole Foods",   date:'Jan 29', time:'3:45 PM',  amount:87.43,  items:15, tags:['Organic'],     color:BLUE         },
-                    { id:2, store:"Trader Joe's",  date:'Jan 26', time:'6:15 PM',  amount:54.21,  items:9,  tags:['Saved $8.50'], color:'#92400e'    },
-                    { id:3, store:'Target',        date:'Jan 23', time:'11:30 AM', amount:123.85, items:23, tags:['RedCard 5%'],  color:RED          },
-                    { id:4, store:'Costco',        date:'Jan 20', time:'2:00 PM',  amount:120.26, items:12, tags:['Bulk'],        color:GREEN        },
+                    { id:1, store:'Whole Foods',  date:'Jan 29', time:'3:45 PM',  amount:87.43,  items:15, tags:['Organic'],     color:BLUE    },
+                    { id:2, store:"Trader Joe's", date:'Jan 26', time:'6:15 PM',  amount:54.21,  items:9,  tags:['Saved $8.50'], color:'#92400e' },
+                    { id:3, store:'Target',       date:'Jan 23', time:'11:30 AM', amount:123.85, items:23, tags:['RedCard 5%'],  color:RED     },
+                    { id:4, store:'Costco',       date:'Jan 20', time:'2:00 PM',  amount:120.26, items:12, tags:['Bulk'],        color:GREEN   },
                 ]);
             } catch (e) { console.error(e); }
         };
@@ -271,134 +253,274 @@ const DashboardPage: React.FC = () => {
     const greetingHour = new Date().getHours();
     const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
 
+    // ── Chart data ────────────────────────────────────────────────────────────
+    const budgetStatusColor = (s: string) => s === 'exceeded' ? RED : s === 'warning' ? AMBER : TEAL;
+
+    // Budget overview donut
+    const budgetOverviewData = [
+        { name: 'Spent',     value: totalBudget.current,                                color: totalBudget.percentage > 90 ? RED : MAROON },
+        { name: 'Remaining', value: Math.max(totalBudget.target - totalBudget.current, 0), color: alpha('#000', 0.07) },
+    ];
+
+    // Per-category budget donut
+    const categoryBudgetDonutData = budgetGoals.map(g => ({
+        name:      g.name,
+        value:     g.current,
+        color:     budgetStatusColor(g.status),
+        pct:       g.percentage,
+        target:    g.target,
+        status:    g.status,
+    }));
+
+    // Top spending donut
+    const spendingDonutData = topCategories.map(c => ({ name: c.category, value: c.amount, color: c.color }));
+    const totalSpending = topCategories.reduce((s, c) => s + c.amount, 0);
+
+    // Receipts donut
+    const receiptsDonutData = recentReceipts.map(r => ({ name: r.store, value: r.amount, color: r.color }));
+    const totalReceiptsSpend = recentReceipts.reduce((s, r) => s + r.amount, 0);
+
+    // Savings donut
+    const savingsDonutData = [
+        { name: 'Saved',     value: 8500, color: GREEN },
+        { name: 'Remaining', value: 1500, color: alpha(GREEN, 0.1) },
+    ];
+
+    // ── Active shape factories — spending only, no budget comparison ──────────
+    const ActiveBudget   = makeActiveShape({ totalLabel: 'of spending' });
+    const ActiveSpending = makeActiveShape({ totalLabel: 'of spending' });
+    const ActiveReceipts = makeActiveShape({ totalLabel: 'of grocery spend' });
+    const ActiveSavings  = makeActiveShape({ totalLabel: 'of goal' });
+
+    // ── Default (idle) center values per donut ────────────────────────────────
+    // Show the top/first category's spending as the default highlighted slice
+    const defaultBudgetIdx   = 0; // show first category by default
+    const defaultSpendingIdx = 0; // show first category by default
+
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f5f5f7', minHeight: '100vh' }}>
             <Grid container>
-                <Grid item xs={12} md={3} lg={2}>
-                    <Sidebar />
-                </Grid>
+                <Grid item xs={12} md={3} lg={2}><Sidebar /></Grid>
 
                 <Grid item xs={12} md={9} lg={10}>
                     <Box component="main" sx={{ p: { xs: 2, sm: 3 } }}>
 
                         {/* ── Page header ── */}
                         <Box sx={{ mb: 3 }}>
-                            <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: alpha(MAROON, 0.55), mb: 0.4 }}>
-                                Overview
-                            </Typography>
+                            <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: alpha(MAROON, 0.55), mb: 0.4 }}>Overview</Typography>
                             <Typography sx={{ fontSize: '1.5rem', fontWeight: 900, color: NAVY, letterSpacing: '-0.025em', lineHeight: 1.1, mb: 0.4 }}>
                                 {greeting}, {userFullName?.split(' ')[0]} 👋
                             </Typography>
-                            <Typography sx={{ fontSize: '0.78rem', color: SLATE }}>
-                                Here's your financial overview for today
-                            </Typography>
+                            <Typography sx={{ fontSize: '0.78rem', color: SLATE }}>Here's your financial overview for today</Typography>
                         </Box>
 
                         <Grid container spacing={2}>
 
-                            {/* ── Row 1: Budget Overview + Recurring Bills ── */}
+                            {/* ══════════════════════════════════════════════
+                                ROW 1 LEFT: Budget Overview
+                            ══════════════════════════════════════════════ */}
                             <Grid item xs={12} lg={8}>
-                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
-                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)`, height: '100%' }}>
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', height: '100%' }}>
                                     <PanelHeader
                                         title="Budget Overview"
-                                        badge={
-                                            <Chip size="small" label={`${totalBudget.percentage.toFixed(0)}% used`}
-                                                  sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800,
-                                                      bgcolor: 'rgba(255,255,255,0.15)', color: '#fff',
-                                                      border: '1px solid rgba(255,255,255,0.2)' }} />
-                                        }
+                                        badge={<Chip size="small" label={`${totalBudget.percentage.toFixed(0)}% used`} sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} />}
                                     />
-
                                     <Box sx={{ p: 2.5 }}>
-                                        {/* Total budget bar */}
-                                        <Box sx={{ mb: 3 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                                                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>
-                                                    Total Monthly Budget
-                                                </Typography>
-                                                <Typography sx={{ fontWeight: 800, fontSize: '0.78rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>
-                                                    ${totalBudget.current.toLocaleString()} / ${totalBudget.target.toLocaleString()}
-                                                </Typography>
+
+                                        {/* ── Total budget donut + summary ── */}
+                                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 2.5 }}>
+                                            <Box sx={{ flexShrink: 0 }}>
+                                                <ResponsiveContainer width={130} height={130}>
+                                                    <PieChart>
+                                                        <Pie data={budgetOverviewData} cx={62} cy={62}
+                                                             innerRadius={42} outerRadius={60}
+                                                             paddingAngle={2} dataKey="value" strokeWidth={0}
+                                                             startAngle={90} endAngle={-270}>
+                                                            {budgetOverviewData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                                                        </Pie>
+                                                        <IdleCenter cx={62} cy={62}
+                                                                    primary={`${totalBudget.percentage.toFixed(0)}%`}
+                                                                    secondary="used" />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
                                             </Box>
-                                            <LinearProgress variant="determinate" value={Math.min(totalBudget.percentage, 100)} sx={{
-                                                height: 8, borderRadius: 4,
-                                                bgcolor: alpha('#000', 0.06),
-                                                '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: totalBudget.percentage > 90 ? RED : TEAL },
-                                            }} />
+                                            <Box sx={{ flex: 1 }}>
+                                                <Typography sx={{ fontWeight: 900, fontSize: '1.4rem', color: NAVY, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                                                    ${totalBudget.current.toLocaleString()}
+                                                </Typography>
+                                                <Typography sx={{ fontSize: '0.72rem', color: SLATE, mb: 1.25 }}>
+                                                    of ${totalBudget.target.toLocaleString()} monthly budget
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                                    <Box>
+                                                        <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: SLATE }}>Remaining</Typography>
+                                                        <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: GREEN, fontVariantNumeric: 'tabular-nums' }}>
+                                                            ${(totalBudget.target - totalBudget.current).toLocaleString()}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box>
+                                                        <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: SLATE }}>Categories</Typography>
+                                                        <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: NAVY }}>{budgetGoals.length}</Typography>
+                                                    </Box>
+                                                </Box>
+                                            </Box>
                                         </Box>
 
                                         <Divider sx={{ mb: 2.5 }} />
 
-                                        {/* Category budgets */}
-                                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: alpha(MAROON, 0.55), mb: 1.75 }}>
-                                            Category Budgets
-                                        </Typography>
-                                        {budgetGoals.map(g => (
-                                            <ProgressRow key={g.id} label={g.name} current={g.current} target={g.target} pct={g.percentage} status={g.status} />
-                                        ))}
+                                        {/* ══ SECTION: Category Budgets — interactive donut ══ */}
+                                        <SectionLabel>Category Budgets</SectionLabel>
+
+                                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                                            {/* Interactive donut — default shows first category */}
+                                            <Box sx={{ flexShrink: 0 }}>
+                                                <ResponsiveContainer width={200} height={200}>
+                                                    <PieChart>
+                                                        {/* Outer ring: spent per category */}
+                                                        <Pie
+                                                            activeIndex={budgetActiveIdx !== undefined ? budgetActiveIdx : defaultBudgetIdx}
+                                                            activeShape={ActiveBudget}
+                                                            data={categoryBudgetDonutData}
+                                                            cx={97} cy={97}
+                                                            innerRadius={58} outerRadius={82}
+                                                            paddingAngle={3} dataKey="value" strokeWidth={0}
+                                                            onMouseEnter={(_, i) => setBudgetActiveIdx(i)}
+                                                            onMouseLeave={() => setBudgetActiveIdx(undefined)}
+                                                        >
+                                                            {categoryBudgetDonutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                                                        </Pie>
+                                                        {/* Inner ghost ring: target scale */}
+                                                        <Pie
+                                                            data={categoryBudgetDonutData}
+                                                            cx={97} cy={97}
+                                                            innerRadius={50} outerRadius={56}
+                                                            paddingAngle={3} dataKey="target" strokeWidth={0}
+                                                        >
+                                                            {categoryBudgetDonutData.map((d, i) => <Cell key={i} fill={alpha(d.color, 0.18)} />)}
+                                                        </Pie>
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                                <Typography sx={{ fontSize: '0.6rem', color: alpha(SLATE, 0.6), textAlign: 'center', mt: -1 }}>
+                                                    Hover a slice or row
+                                                </Typography>
+                                            </Box>
+
+                                            {/* Category rows — hover syncs with donut */}
+                                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                {budgetGoals.map((g, i) => {
+                                                    const sc        = budgetStatusColor(g.status);
+                                                    const isActive  = (budgetActiveIdx !== undefined ? budgetActiveIdx : defaultBudgetIdx) === i;
+                                                    return (
+                                                        <Box key={g.id}
+                                                             onMouseEnter={() => setBudgetActiveIdx(i)}
+                                                             onMouseLeave={() => setBudgetActiveIdx(undefined)}
+                                                             sx={{
+                                                                 mb: i < budgetGoals.length - 1 ? 1.5 : 0,
+                                                                 p: 1, borderRadius: '8px', cursor: 'default',
+                                                                 border: `1px solid ${isActive ? alpha(sc, 0.35) : 'transparent'}`,
+                                                                 bgcolor: isActive ? alpha(sc, 0.06) : 'transparent',
+                                                                 transition: 'all 0.15s ease',
+                                                             }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                                    <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: sc, flexShrink: 0 }} />
+                                                                    <Typography sx={{ fontWeight: isActive ? 800 : 700, fontSize: '0.78rem', color: NAVY }}>{g.name}</Typography>
+                                                                </Box>
+                                                                <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
+                                                                    <Typography sx={{ fontSize: '0.68rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>
+                                                                        ${g.current.toFixed(0)} / ${g.target.toFixed(0)}
+                                                                    </Typography>
+                                                                    <Box sx={{ px: 0.7, py: 0.1, borderRadius: '4px', bgcolor: alpha(sc, 0.12), minWidth: 36, textAlign: 'center' }}>
+                                                                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: sc }}>{g.percentage.toFixed(0)}%</Typography>
+                                                                    </Box>
+                                                                </Box>
+                                                            </Box>
+                                                            <LinearProgress variant="determinate" value={Math.min(g.percentage, 100)}
+                                                                            sx={{ height: 5, borderRadius: 3, bgcolor: alpha(sc, 0.12), '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: sc } }} />
+                                                        </Box>
+                                                    );
+                                                })}
+                                            </Box>
+                                        </Box>
 
                                         <Divider sx={{ my: 2.5 }} />
 
-                                        {/* Top spending categories table */}
-                                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: alpha(MAROON, 0.55), mb: 1.25 }}>
-                                            Top Spending (Last Week)
-                                        </Typography>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    {['Category', '% Total', 'Amount'].map((h, i) => (
-                                                        <TableCell key={h} align={i > 0 ? 'right' : 'left'}
-                                                                   sx={{ fontWeight: 800, fontSize: '0.62rem', color: alpha(MAROON, 0.65), textTransform: 'uppercase', letterSpacing: '0.07em', pb: 0.75, borderBottom: `1px solid ${alpha(MAROON, 0.12)}` }}>
-                                                            {h}
-                                                        </TableCell>
-                                                    ))}
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {topCategories.map((cat, i) => (
-                                                    <TableRow key={i} sx={{
-                                                        borderLeft: `3px solid ${cat.color}`,
-                                                        '&:hover': { bgcolor: alpha(MAROON, 0.02) },
-                                                        '&:last-child td': { border: 0 },
-                                                    }}>
-                                                        <TableCell sx={{ py: 1.1 }}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                <Box sx={{ width: 28, height: 28, borderRadius: '7px', bgcolor: alpha(cat.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', color: cat.color }}>
-                                                                    {cat.icon}
+                                        {/* ══ SECTION: Top Spending — interactive donut ══ */}
+                                        <SectionLabel>Top Spending — Last Week</SectionLabel>
+
+                                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                                            {/* Interactive donut — default shows first category */}
+                                            <Box sx={{ flexShrink: 0 }}>
+                                                <ResponsiveContainer width={200} height={200}>
+                                                    <PieChart>
+                                                        <Pie
+                                                            activeIndex={spendingActiveIdx !== undefined ? spendingActiveIdx : defaultSpendingIdx}
+                                                            activeShape={ActiveSpending}
+                                                            data={spendingDonutData}
+                                                            cx={97} cy={97}
+                                                            innerRadius={58} outerRadius={82}
+                                                            paddingAngle={3} dataKey="value" strokeWidth={0}
+                                                            onMouseEnter={(_, i) => setSpendingActiveIdx(i)}
+                                                            onMouseLeave={() => setSpendingActiveIdx(undefined)}
+                                                        >
+                                                            {spendingDonutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                                                        </Pie>
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                                <Typography sx={{ fontSize: '0.6rem', color: alpha(SLATE, 0.6), textAlign: 'center', mt: -1 }}>
+                                                    Hover a slice or row
+                                                </Typography>
+                                            </Box>
+
+                                            {/* Category breakdown — hover syncs */}
+                                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                {topCategories.map((cat, i) => {
+                                                    const isActive = (spendingActiveIdx !== undefined ? spendingActiveIdx : defaultSpendingIdx) === i;
+                                                    return (
+                                                        <Box key={i}
+                                                             onMouseEnter={() => setSpendingActiveIdx(i)}
+                                                             onMouseLeave={() => setSpendingActiveIdx(undefined)}
+                                                             sx={{
+                                                                 mb: i < topCategories.length - 1 ? 1.5 : 0,
+                                                                 p: 1, borderRadius: '8px', cursor: 'default',
+                                                                 border: `1px solid ${isActive ? alpha(cat.color, 0.35) : 'transparent'}`,
+                                                                 bgcolor: isActive ? alpha(cat.color, 0.06) : 'transparent',
+                                                                 transition: 'all 0.15s ease',
+                                                             }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                                    <Box sx={{ width: 24, height: 24, borderRadius: '6px', bgcolor: alpha(cat.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', color: cat.color, flexShrink: 0 }}>
+                                                                        {cat.icon}
+                                                                    </Box>
+                                                                    <Typography sx={{ fontWeight: isActive ? 800 : 700, fontSize: '0.8rem', color: NAVY }}>{cat.category}</Typography>
                                                                 </Box>
-                                                                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{cat.category}</Typography>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                    <Typography sx={{ fontSize: '0.68rem', color: SLATE }}>{cat.percentage.toFixed(1)}%</Typography>
+                                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: isActive ? cat.color : NAVY, fontVariantNumeric: 'tabular-nums', minWidth: 56, textAlign: 'right', transition: 'color 0.15s' }}>
+                                                                        ${cat.amount.toFixed(2)}
+                                                                    </Typography>
+                                                                </Box>
                                                             </Box>
-                                                        </TableCell>
-                                                        <TableCell align="right" sx={{ py: 1.1 }}>
-                                                            <Typography sx={{ fontSize: '0.72rem', color: SLATE, fontWeight: 600 }}>
-                                                                {cat.percentage.toFixed(1)}%
-                                                            </Typography>
-                                                        </TableCell>
-                                                        <TableCell align="right" sx={{ py: 1.1 }}>
-                                                            <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
-                                                                ${cat.amount.toFixed(2)}
-                                                            </Typography>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                                            <LinearProgress variant="determinate" value={cat.percentage}
+                                                                            sx={{ height: 4, borderRadius: 2, bgcolor: alpha(cat.color, 0.12), '& .MuiLinearProgress-bar': { borderRadius: 2, bgcolor: cat.color } }} />
+                                                        </Box>
+                                                    );
+                                                })}
+                                            </Box>
+                                        </Box>
+
                                     </Box>
                                 </Paper>
                             </Grid>
 
-                            {/* ── Recurring Bills ── */}
+                            {/* ══════════════════════════════════════════════
+                                ROW 1 RIGHT: Recurring Bills
+                            ══════════════════════════════════════════════ */}
                             <Grid item xs={12} lg={4}>
-                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
-                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)`, height: '100%' }}>
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', height: '100%' }}>
                                     <PanelHeader
                                         title="Recurring Bills"
-                                        badge={
-                                            <Chip size="small" label={`${recurringTransactions.length} active`}
-                                                  sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800,
-                                                      bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} />
-                                        }
+                                        badge={<Chip size="small" label={`${recurringTransactions.length} active`} sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} />}
                                     />
                                     <Box sx={{ p: 2.5 }}>
                                         <Stack spacing={0}>
@@ -406,18 +528,9 @@ const DashboardPage: React.FC = () => {
                                                 <BillRow key={bill.id} bill={bill} />
                                             ))}
                                         </Stack>
-
-                                        {/* Monthly total */}
-                                        <Box sx={{
-                                            mt: 2, p: 1.5, borderRadius: '10px',
-                                            bgcolor: alpha(MAROON, 0.04),
-                                            border: `1px solid ${alpha(MAROON, 0.12)}`,
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        }}>
-                                            <Typography sx={{ fontWeight: 700, fontSize: '0.75rem', color: NAVY }}>
-                                                Monthly Total
-                                            </Typography>
-                                            <Typography sx={{ fontWeight: 900, fontSize: '1rem', color: MAROON, fontVariantNumeric: 'tabular-nums' }}>
+                                        <Box sx={{ mt: 2.5, p: 1.75, borderRadius: '10px', bgcolor: alpha(MAROON, 0.04), border: `1px solid ${alpha(MAROON, 0.12)}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>Monthly Total</Typography>
+                                            <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', color: MAROON, fontVariantNumeric: 'tabular-nums' }}>
                                                 ${totalRecurringMonthly.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                             </Typography>
                                         </Box>
@@ -425,206 +538,203 @@ const DashboardPage: React.FC = () => {
                                 </Paper>
                             </Grid>
 
-                            {/* ── Row 2: Grocery Budget + Recent Receipts ── */}
+                            {/* ══════════════════════════════════════════════
+                                ROW 2 LEFT: Grocery Tracker — Receipts Donut
+                            ══════════════════════════════════════════════ */}
                             {groceryBudget && (
                                 <Grid item xs={12} lg={8}>
-                                    <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
-                                        boxShadow: `0 2px 12px rgba(0,0,0,0.06)` }}>
+                                    <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
                                         <PanelHeader title="Grocery Tracker" />
-
                                         <Box sx={{ p: 2.5 }}>
-                                            {/* Grocery budget mini-card */}
-                                            <Box sx={{
-                                                p: 2, mb: 2.5, borderRadius: '12px',
-                                                border: `1px solid ${alpha(TEAL, 0.2)}`,
-                                                bgcolor: alpha(TEAL, 0.04),
-                                                display: 'flex', alignItems: 'center', gap: 2,
-                                            }}>
+
+                                            {/* Grocery budget bar */}
+                                            <Box sx={{ p: 2, mb: 2.5, borderRadius: '12px', border: `1px solid ${alpha(TEAL, 0.2)}`, bgcolor: alpha(TEAL, 0.04), display: 'flex', alignItems: 'center', gap: 2 }}>
                                                 <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: alpha(TEAL, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                                     <ShoppingCart sx={{ color: TEAL, fontSize: 22 }} />
                                                 </Box>
                                                 <Box sx={{ flex: 1, minWidth: 0 }}>
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                                        <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>Grocery Budget</Typography>
-                                                        <Typography sx={{ fontWeight: 800, fontSize: '0.78rem', color: TEAL }}>
-                                                            {groceryBudget.percentage.toFixed(0)}%
-                                                        </Typography>
+                                                        <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: NAVY }}>Grocery Budget</Typography>
+                                                        <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: TEAL }}>{groceryBudget.percentage.toFixed(0)}%</Typography>
                                                     </Box>
-                                                    <LinearProgress variant="determinate" value={Math.min(groceryBudget.percentage, 100)} sx={{
-                                                        height: 5, borderRadius: 3, mb: 0.5,
-                                                        bgcolor: alpha(TEAL, 0.12),
-                                                        '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: TEAL },
-                                                    }} />
+                                                    <LinearProgress variant="determinate" value={Math.min(groceryBudget.percentage, 100)} sx={{ height: 5, borderRadius: 3, mb: 0.5, bgcolor: alpha(TEAL, 0.12), '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: TEAL } }} />
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                        <Typography sx={{ fontSize: '0.65rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>
-                                                            ${groceryBudget.current.toFixed(2)} spent
-                                                        </Typography>
-                                                        <Typography sx={{ fontSize: '0.65rem', color: GREEN, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                                                            ${(groceryBudget.target - groceryBudget.current).toFixed(2)} left
-                                                        </Typography>
+                                                        <Typography sx={{ fontSize: '0.65rem', color: SLATE, fontVariantNumeric: 'tabular-nums' }}>${groceryBudget.current.toFixed(2)} spent</Typography>
+                                                        <Typography sx={{ fontSize: '0.65rem', color: GREEN, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>${(groceryBudget.target - groceryBudget.current).toFixed(2)} left</Typography>
                                                     </Box>
                                                 </Box>
                                             </Box>
 
-                                            {/* Receipts section */}
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
-                                                <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: alpha(MAROON, 0.55) }}>
-                                                    Recent Receipts
-                                                </Typography>
-                                                <Button size="small" sx={{ textTransform: 'none', color: MAROON, fontWeight: 700, fontSize: '0.7rem', p: 0.25, '&:hover': { bgcolor: alpha(MAROON, 0.05) } }}>
-                                                    View All
-                                                </Button>
+                                            {/* ══ Receipts: interactive donut + list ══ */}
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75 }}>
+                                                <SectionLabel>Recent Receipts</SectionLabel>
+                                                <Button size="small" sx={{ textTransform: 'none', color: MAROON, fontWeight: 700, fontSize: '0.72rem', p: 0.5, mb: 1.25, '&:hover': { bgcolor: alpha(MAROON, 0.05) } }}>View All</Button>
                                             </Box>
 
-                                            <Table size="small">
-                                                <TableHead>
-                                                    <TableRow>
-                                                        {['Store', 'Date', 'Amount'].map((h, i) => (
-                                                            <TableCell key={h} align={i === 2 ? 'right' : 'left'}
-                                                                       sx={{ fontWeight: 800, fontSize: '0.62rem', color: alpha(MAROON, 0.65), textTransform: 'uppercase', letterSpacing: '0.07em', pb: 0.75, borderBottom: `1px solid ${alpha(MAROON, 0.12)}` }}>
-                                                                {h}
-                                                            </TableCell>
+                                            <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start' }}>
+                                                {/* Receipts donut — default shows first receipt */}
+                                                <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                    <ResponsiveContainer width={180} height={180}>
+                                                        <PieChart>
+                                                            <Pie
+                                                                activeIndex={receiptsActiveIdx !== undefined ? receiptsActiveIdx : 0}
+                                                                activeShape={ActiveReceipts}
+                                                                data={receiptsDonutData}
+                                                                cx={87} cy={87}
+                                                                innerRadius={52} outerRadius={76}
+                                                                paddingAngle={3} dataKey="value" strokeWidth={0}
+                                                                onMouseEnter={(_, i) => setReceiptsActiveIdx(i)}
+                                                                onMouseLeave={() => setReceiptsActiveIdx(undefined)}
+                                                            >
+                                                                {receiptsDonutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                                                            </Pie>
+                                                        </PieChart>
+                                                    </ResponsiveContainer>
+                                                    {/* Legend */}
+                                                    <Box sx={{ mt: 0.5, width: '100%' }}>
+                                                        {recentReceipts.map((r, i) => (
+                                                            <Box key={r.id}
+                                                                 onMouseEnter={() => setReceiptsActiveIdx(i)}
+                                                                 onMouseLeave={() => setReceiptsActiveIdx(undefined)}
+                                                                 sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.4, cursor: 'default', px: 0.5, py: 0.25, borderRadius: '5px',
+                                                                     bgcolor: (receiptsActiveIdx !== undefined ? receiptsActiveIdx : 0) === i ? alpha(r.color, 0.08) : 'transparent',
+                                                                     transition: 'background 0.15s' }}>
+                                                                <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: r.color, flexShrink: 0 }} />
+                                                                <Typography sx={{ fontSize: '0.68rem', color: (receiptsActiveIdx !== undefined ? receiptsActiveIdx : 0) === i ? NAVY : SLATE, fontWeight: (receiptsActiveIdx !== undefined ? receiptsActiveIdx : 0) === i ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+                                                                    {r.store}
+                                                                </Typography>
+                                                            </Box>
                                                         ))}
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {recentReceipts.map(r => (
-                                                        <TableRow key={r.id} sx={{
-                                                            borderLeft: `3px solid ${r.color}`,
-                                                            '&:hover': { bgcolor: alpha(MAROON, 0.02), cursor: 'pointer' },
-                                                            '&:last-child td': { border: 0 },
-                                                        }}>
-                                                            <TableCell sx={{ py: 1.1 }}>
-                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                    <Box sx={{ width: 28, height: 28, borderRadius: '7px', bgcolor: alpha(r.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', color: r.color, flexShrink: 0 }}>
-                                                                        <ShoppingCart sx={{ fontSize: 14 }} />
-                                                                    </Box>
-                                                                    <Box>
-                                                                        <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{r.store}</Typography>
-                                                                        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.3 }}>
-                                                                            <Chip size="small" label={`${r.items} items`}
-                                                                                  sx={{ height: 14, fontSize: '0.55rem', fontWeight: 700,
-                                                                                      bgcolor: alpha(BLUE, 0.1), color: BLUE }} />
-                                                                            {r.tags.map((tag, ti) => (
-                                                                                <Chip key={ti} size="small" label={tag}
-                                                                                      sx={{ height: 14, fontSize: '0.55rem', fontWeight: 700,
-                                                                                          bgcolor: tag.includes('Saved') ? alpha(GREEN, 0.1) : alpha(MAROON, 0.08),
-                                                                                          color: tag.includes('Saved') ? GREEN : MAROON }} />
-                                                                            ))}
-                                                                        </Box>
+                                                    </Box>
+                                                    <Typography sx={{ fontSize: '0.6rem', color: alpha(SLATE, 0.6), textAlign: 'center', mt: 0.75 }}>
+                                                        Hover a slice or row
+                                                    </Typography>
+                                                </Box>
+
+                                                {/* Receipts detail list — hover syncs */}
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    {recentReceipts.map((r, i) => {
+                                                        const isActive = (receiptsActiveIdx !== undefined ? receiptsActiveIdx : 0) === i;
+                                                        return (
+                                                            <Box key={r.id}
+                                                                 onMouseEnter={() => setReceiptsActiveIdx(i)}
+                                                                 onMouseLeave={() => setReceiptsActiveIdx(undefined)}
+                                                                 sx={{
+                                                                     display: 'flex', alignItems: 'center', gap: 1.25, py: 1.1,
+                                                                     borderLeft: `3px solid ${r.color}`, pl: 1.25,
+                                                                     borderBottom: i < recentReceipts.length - 1 ? `1px solid ${alpha('#000', 0.05)}` : 'none',
+                                                                     borderRadius: isActive ? '0 8px 8px 0' : '0',
+                                                                     bgcolor: isActive ? alpha(r.color, 0.05) : 'transparent',
+                                                                     cursor: 'default', transition: 'background 0.15s',
+                                                                 }}>
+                                                                <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: alpha(r.color, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', color: r.color, flexShrink: 0 }}>
+                                                                    <ShoppingCart sx={{ fontSize: 14 }} />
+                                                                </Box>
+                                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                                    <Typography sx={{ fontWeight: isActive ? 800 : 700, fontSize: '0.8rem', color: NAVY, transition: 'font-weight 0.15s' }}>{r.store}</Typography>
+                                                                    <Box sx={{ display: 'flex', gap: 0.4, mt: 0.2, flexWrap: 'wrap' }}>
+                                                                        <Chip size="small" label={`${r.items} items`} sx={{ height: 14, fontSize: '0.56rem', fontWeight: 700, bgcolor: alpha(BLUE, 0.08), color: BLUE }} />
+                                                                        {r.tags.map((tag, ti) => (
+                                                                            <Chip key={ti} size="small" label={tag} sx={{ height: 14, fontSize: '0.56rem', fontWeight: 700, bgcolor: tag.includes('Saved') ? alpha(GREEN, 0.08) : alpha(r.color, 0.08), color: tag.includes('Saved') ? GREEN : r.color }} />
+                                                                        ))}
                                                                     </Box>
                                                                 </Box>
-                                                            </TableCell>
-                                                            <TableCell sx={{ py: 1.1 }}>
-                                                                <Typography sx={{ fontSize: '0.72rem', color: SLATE, fontWeight: 600 }}>{r.date}</Typography>
-                                                                <Typography sx={{ fontSize: '0.6rem', color: alpha(SLATE, 0.7) }}>{r.time}</Typography>
-                                                            </TableCell>
-                                                            <TableCell align="right" sx={{ py: 1.1 }}>
-                                                                <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
-                                                                    ${r.amount.toFixed(2)}
-                                                                </Typography>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
+                                                                <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: isActive ? r.color : NAVY, fontVariantNumeric: 'tabular-nums', transition: 'color 0.15s' }}>${r.amount.toFixed(2)}</Typography>
+                                                                    <Typography sx={{ fontSize: '0.62rem', color: SLATE }}>{r.date}</Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        );
+                                                    })}
 
-                                            {/* Summary strip */}
-                                            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                                                {[
-                                                    { label: 'Avg per trip', value: '$96.44', color: MAROON },
-                                                    { label: 'Total trips',  value: '4',       color: BLUE  },
-                                                    { label: 'Total saved',  value: '$8.50',   color: GREEN },
-                                                ].map(({ label, value, color }) => (
-                                                    <Box key={label} sx={{ flex: 1, p: 1.25, borderRadius: '8px', bgcolor: alpha(color, 0.06), border: `1px solid ${alpha(color, 0.15)}`, textAlign: 'center' }}>
-                                                        <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</Typography>
-                                                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 900, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
+                                                    {/* Summary strip */}
+                                                    <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                                        {[
+                                                            { label: 'Avg per trip', value: `$${(totalReceiptsSpend / recentReceipts.length).toFixed(2)}`, color: MAROON },
+                                                            { label: 'Total trips',  value: String(recentReceipts.length), color: BLUE },
+                                                            { label: 'Total saved',  value: '$8.50', color: GREEN },
+                                                        ].map(({ label, value, color }) => (
+                                                            <Box key={label} sx={{ flex: 1, p: 1.25, borderRadius: '8px', bgcolor: alpha(color, 0.06), border: `1px solid ${alpha(color, 0.15)}`, textAlign: 'center' }}>
+                                                                <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</Typography>
+                                                                <Typography sx={{ fontSize: '0.92rem', fontWeight: 900, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography>
+                                                            </Box>
+                                                        ))}
                                                     </Box>
-                                                ))}
+                                                </Box>
                                             </Box>
                                         </Box>
                                     </Paper>
                                 </Grid>
                             )}
 
-                            {/* ── Savings Goal ── */}
+                            {/* ══════════════════════════════════════════════
+                                ROW 2 RIGHT: Savings Goal — interactive donut
+                            ══════════════════════════════════════════════ */}
                             <Grid item xs={12} lg={4}>
-                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
-                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)`, height: '100%' }}>
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', height: '100%' }}>
                                     <PanelHeader
                                         title="Savings Goal"
-                                        action={
-                                            <Button size="small" sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.7rem',
-                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-                                                Manage
-                                            </Button>
-                                        }
+                                        action={<Button size="small" sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.72rem', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>Manage</Button>}
                                     />
                                     <Box sx={{ p: 2.5 }}>
-                                        {/* Goal card */}
-                                        <Box sx={{ p: 2, borderRadius: '12px', border: `1px solid ${alpha(GREEN, 0.25)}`, bgcolor: alpha(GREEN, 0.04), mb: 2 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                                                <Box>
-                                                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: alpha(GREEN, 0.8), mb: 0.4 }}>
-                                                        Emergency Fund
-                                                    </Typography>
-                                                    <Typography sx={{ fontSize: '1.6rem', fontWeight: 900, color: '#15803d', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-                                                        $8,500
-                                                    </Typography>
-                                                </Box>
-                                                <Chip size="small" icon={<CheckCircle sx={{ fontSize: 13 }} />} label="On Track"
-                                                      sx={{ bgcolor: alpha(GREEN, 0.15), color: '#15803d', fontWeight: 800, fontSize: '0.62rem',
-                                                          border: `1px solid ${alpha(GREEN, 0.3)}` }} />
-                                            </Box>
+                                        {/* Interactive savings donut — default shows "Saved" slice */}
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                                            <ResponsiveContainer width={200} height={200}>
+                                                <PieChart>
+                                                    <Pie
+                                                        activeIndex={savingsActiveIdx !== undefined ? savingsActiveIdx : 0}
+                                                        activeShape={ActiveSavings}
+                                                        data={savingsDonutData}
+                                                        cx={97} cy={97}
+                                                        innerRadius={60} outerRadius={86}
+                                                        paddingAngle={3} dataKey="value" strokeWidth={0}
+                                                        startAngle={90} endAngle={-270}
+                                                        onMouseEnter={(_, i) => setSavingsActiveIdx(i)}
+                                                        onMouseLeave={() => setSavingsActiveIdx(undefined)}
+                                                    >
+                                                        {savingsDonutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                                                    </Pie>
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                            <Typography sx={{ fontSize: '0.6rem', color: alpha(SLATE, 0.6), mt: -1 }}>Hover to explore</Typography>
 
-                                            <Box sx={{ mb: 1 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6 }}>
-                                                    <Typography sx={{ fontSize: '0.65rem', color: '#166534', fontWeight: 600 }}>Goal: $10,000</Typography>
-                                                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: GREEN }}>85%</Typography>
-                                                </Box>
-                                                <LinearProgress variant="determinate" value={85} sx={{
-                                                    height: 6, borderRadius: 3,
-                                                    bgcolor: alpha(GREEN, 0.15),
-                                                    '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: GREEN },
-                                                }} />
+                                            <Box sx={{ textAlign: 'center', mt: 1 }}>
+                                                <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: alpha(GREEN, 0.8), mb: 0.3 }}>Emergency Fund</Typography>
+                                                <Typography sx={{ fontSize: '1.75rem', fontWeight: 900, color: '#15803d', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>$8,500</Typography>
+                                                <Typography sx={{ fontSize: '0.7rem', color: SLATE, mt: 0.25 }}>Goal: $10,000</Typography>
+                                                <Chip size="small" icon={<CheckCircle sx={{ fontSize: 12 }} />} label="On Track"
+                                                      sx={{ mt: 1, bgcolor: alpha(GREEN, 0.12), color: '#15803d', fontWeight: 800, fontSize: '0.65rem', border: `1px solid ${alpha(GREEN, 0.25)}` }} />
                                             </Box>
                                         </Box>
 
-                                        {/* Monthly contribution */}
                                         <Box sx={{ p: 1.75, borderRadius: '10px', border: `1px solid ${alpha('#000', 0.07)}`, bgcolor: '#fafafa' }}>
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                                                <Typography sx={{ fontWeight: 700, fontSize: '0.75rem', color: NAVY }}>Monthly Target</Typography>
-                                                <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>$500</Typography>
+                                                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>Monthly Target</Typography>
+                                                <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>$500</Typography>
                                             </Box>
                                             <Divider sx={{ my: 1 }} />
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Typography sx={{ fontWeight: 700, fontSize: '0.75rem', color: NAVY }}>Saved This Month</Typography>
+                                                <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>Saved This Month</Typography>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: GREEN, fontVariantNumeric: 'tabular-nums' }}>$500</Typography>
-                                                    <CheckCircle sx={{ fontSize: 15, color: GREEN }} />
+                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: GREEN, fontVariantNumeric: 'tabular-nums' }}>$500</Typography>
+                                                    <CheckCircle sx={{ fontSize: 16, color: GREEN }} />
                                                 </Box>
                                             </Box>
                                         </Box>
 
-                                        <Typography sx={{ fontSize: '0.65rem', color: SLATE, textAlign: 'center', mt: 1.75 }}>
-                                            $1,500 remaining to reach your goal
-                                        </Typography>
+                                        <Typography sx={{ fontSize: '0.65rem', color: SLATE, textAlign: 'center', mt: 1.75 }}>$1,500 remaining to reach your goal</Typography>
                                     </Box>
                                 </Paper>
                             </Grid>
 
-                            {/* ── Recent Transactions ── */}
+                            {/* ══════════════════════════════════════════════
+                                ROW 3: Recent Transactions
+                            ══════════════════════════════════════════════ */}
                             <Grid item xs={12}>
-                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`,
-                                    boxShadow: `0 2px 12px rgba(0,0,0,0.06)` }}>
+                                <Paper sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${alpha('#000', 0.07)}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
                                     <PanelHeader
                                         title="Recent Transactions"
-                                        action={
-                                            <Button size="small" sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.7rem',
-                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-                                                View All
-                                            </Button>
-                                        }
+                                        action={<Button size="small" sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.72rem', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>View All</Button>}
                                     />
                                     <Box sx={{ p: 2 }}>
                                         <Table size="small">
@@ -649,15 +759,12 @@ const DashboardPage: React.FC = () => {
                                                             {new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                         </TableCell>
                                                         <TableCell sx={{ py: 1.2 }}>
-                                                            <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: NAVY }}>{tx.description}</Typography>
+                                                            <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: NAVY }}>{tx.description}</Typography>
                                                         </TableCell>
                                                         <TableCell sx={{ py: 1.2 }}>
-                                                            <Chip size="small" label={tx.category}
-                                                                  sx={{ height: 18, fontSize: '0.62rem', fontWeight: 700,
-                                                                      bgcolor: alpha('#000', 0.05), color: SLATE }} />
+                                                            <Chip size="small" label={tx.category} sx={{ height: 18, fontSize: '0.62rem', fontWeight: 700, bgcolor: alpha('#000', 0.05), color: SLATE }} />
                                                         </TableCell>
-                                                        <TableCell align="right" sx={{ py: 1.2, fontWeight: 800, fontSize: '0.82rem',
-                                                            color: tx.type === 'income' ? GREEN : RED, fontVariantNumeric: 'tabular-nums' }}>
+                                                        <TableCell align="right" sx={{ py: 1.2, fontWeight: 800, fontSize: '0.82rem', color: tx.type === 'income' ? GREEN : RED, fontVariantNumeric: 'tabular-nums' }}>
                                                             {tx.type === 'income' ? '+' : '−'}${Math.abs(tx.amount).toFixed(2)}
                                                         </TableCell>
                                                         <TableCell align="right" sx={{ py: 1.2, fontWeight: 700, fontSize: '0.78rem', color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
@@ -670,6 +777,7 @@ const DashboardPage: React.FC = () => {
                                     </Box>
                                 </Paper>
                             </Grid>
+
                         </Grid>
                     </Box>
                 </Grid>
@@ -700,11 +808,8 @@ const DashboardPage: React.FC = () => {
                         <AlertTitle sx={{ fontWeight: 700 }}>No Transactions Found</AlertTitle>
                         We haven't detected any transactions in the last 2 weeks. Upload your recent data to keep your budget accurate.
                     </Alert>
-                    <Typography sx={{ fontSize: '0.75rem', color: SLATE, mb: 1 }}>Regular uploads help you:</Typography>
                     <Box component="ul" sx={{ mt: 0.5, pl: 2.5, mb: 2.5, '& li': { fontSize: '0.75rem', color: SLATE, mb: 0.5 } }}>
-                        <li>Track spending habits accurately</li>
-                        <li>Stay on top of your budget</li>
-                        <li>Identify trends and patterns</li>
+                        <li>Track spending habits accurately</li><li>Stay on top of your budget</li><li>Identify trends and patterns</li>
                     </Box>
                 </Box>
                 <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
@@ -714,8 +819,7 @@ const DashboardPage: React.FC = () => {
                     </Button>
                     <Button variant="contained" startIcon={<Upload size={14} />}
                             onClick={() => { setUploadReminderOpen(false); setImportDialogOpen(true); }}
-                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700, bgcolor: MAROON,
-                                '&:hover': { bgcolor: MAROON2 } }}>
+                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700, background: MAROON_GRAD, '&:hover': { background: `linear-gradient(135deg, ${MAROON} 0%, ${MAROON2} 100%)` } }}>
                         Upload Now
                     </Button>
                 </DialogActions>
@@ -733,7 +837,6 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
-
 // import React, {useEffect, useState} from 'react';
 // import {
 //     Box,
