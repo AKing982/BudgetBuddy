@@ -37,6 +37,19 @@ const BLUE        = '#2563eb';
 const PURPLE      = '#7c3aed';
 const PALETTE     = [TEAL, BLUE, PURPLE, AMBER, GREEN, '#e11d48', '#0891b2', '#65a30d'];
 
+// ── Donut color helpers (non-green) ───────────────────────────────────────────
+// Weekly view: replaces green/amber/red progress color with teal/amber/maroon
+const getWeeklyDonutColor = (pct: number) =>
+    pct > 100 ? MAROON : pct > 80 ? AMBER : TEAL;
+
+// MiniDonut (left column): replaces green/amber/red with teal/amber/maroon
+const getMiniDonutColor = (pct: number) =>
+    pct > 100 ? MAROON : pct > 80 ? AMBER : TEAL;
+
+// Grocery list donut slices: replaces GREEN/AMBER with TEAL/PURPLE
+const LIST_ON_COLOR  = TEAL;
+const LIST_OFF_COLOR = PURPLE;
+
 // ── Active donut slice ─────────────────────────────────────────────────────────
 const renderActiveShape = (props: any) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
@@ -74,10 +87,11 @@ const MiniDonut: React.FC<{ spent: number; budget: number; size?: number }> = ({
                                                                                    spent, budget, size = 72,
                                                                                }) => {
     const pct   = Math.min((spent / budget) * 100, 100);
-    const color = pct > 100 ? RED : pct > 80 ? AMBER : GREEN;
+    // Changed: uses teal/amber/maroon instead of green/amber/red
+    const color = getMiniDonutColor(pct);
     const c     = size / 2 - 1;
     const data  = [
-        { value: spent,                    color },
+        { value: spent,                       color },
         { value: Math.max(budget - spent, 0), color: alpha('#000', 0.07) },
     ];
     return (
@@ -299,6 +313,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
     if (!budget) return null;
 
     const fmt              = (n: number) => `$${Math.abs(n).toFixed(2)}`;
+    // Changed: progress bar color still uses semantic green/amber/red, but donut uses separate helper
     const getProgressColor = (pct: number) => pct > 100 ? RED : pct > 80 ? AMBER : GREEN;
 
     const toggleWeek = (n: number) => setExpandedWeeks(prev => {
@@ -319,7 +334,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
         <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
 
             {/* ─────────────────────────────────────────────────────────────
-                SAVINGS OVERVIEW  — three clean stat cards, nothing else
+                SAVINGS OVERVIEW
             ───────────────────────────────────────────────────────────── */}
             <Box sx={{
                 borderRadius: '16px', overflow: 'hidden', mb: 3,
@@ -338,34 +353,34 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                         <Grid item xs={12} md={4}>
                             <Box sx={{
                                 p: 2.5, borderRadius: '12px', height: '100%',
-                                border: `1px solid ${alpha(totalWeeklySavings > 0 ? GREEN : SLATE, 0.18)}`,
-                                bgcolor: alpha(totalWeeklySavings > 0 ? GREEN : SLATE, 0.04),
+                                border: `1px solid ${alpha(totalWeeklySavings > 0 ? TEAL : SLATE, 0.18)}`,
+                                bgcolor: alpha(totalWeeklySavings > 0 ? TEAL : SLATE, 0.04),
                             }}>
                                 <Typography sx={{
                                     fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase',
                                     letterSpacing: '0.1em', mb: 1,
-                                    color: alpha(totalWeeklySavings > 0 ? GREEN : SLATE, 0.65),
+                                    color: alpha(totalWeeklySavings > 0 ? TEAL : SLATE, 0.65),
                                 }}>
                                     Total Weekly Savings
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.6 }}>
                                     <Box sx={{
                                         p: 1, borderRadius: '8px', flexShrink: 0,
-                                        bgcolor: alpha(totalWeeklySavings > 0 ? GREEN : SLATE, 0.1),
+                                        bgcolor: alpha(totalWeeklySavings > 0 ? TEAL : SLATE, 0.1),
                                     }}>
-                                        <PiggyBank size={20} color={totalWeeklySavings > 0 ? GREEN : SLATE} />
+                                        <PiggyBank size={20} color={totalWeeklySavings > 0 ? TEAL : SLATE} />
                                     </Box>
                                     <Typography sx={{
                                         fontSize: '2rem', fontWeight: 900, lineHeight: 1,
                                         fontVariantNumeric: 'tabular-nums',
-                                        color: totalWeeklySavings > 0 ? GREEN : SLATE,
+                                        color: totalWeeklySavings > 0 ? TEAL : SLATE,
                                     }}>
                                         {fmt(totalWeeklySavings)}
                                     </Typography>
                                 </Box>
                                 <Typography sx={{
                                     fontSize: '0.7rem', fontWeight: 600,
-                                    color: alpha(totalWeeklySavings > 0 ? GREEN : SLATE, 0.65),
+                                    color: alpha(totalWeeklySavings > 0 ? TEAL : SLATE, 0.65),
                                 }}>
                                     {totalWeeklySavings > 0
                                         ? `Saved across ${totalWeeksUnder} week${totalWeeksUnder !== 1 ? 's' : ''}`
@@ -378,24 +393,24 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                         <Grid item xs={6} md={4}>
                             <Box sx={{
                                 p: 2.5, borderRadius: '12px', height: '100%',
-                                border: `1px solid ${alpha(GREEN, 0.18)}`,
-                                bgcolor: alpha(GREEN, 0.04),
+                                border: `1px solid ${alpha(BLUE, 0.18)}`,
+                                bgcolor: alpha(BLUE, 0.04),
                             }}>
                                 <Typography sx={{
                                     fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase',
-                                    letterSpacing: '0.1em', color: alpha(GREEN, 0.65), mb: 1,
+                                    letterSpacing: '0.1em', color: alpha(BLUE, 0.65), mb: 1,
                                 }}>
                                     Weeks Under Budget
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.6 }}>
-                                    <Box sx={{ p: 1, borderRadius: '8px', bgcolor: alpha(GREEN, 0.1), flexShrink: 0 }}>
-                                        <TrendingDown size={20} color={GREEN} />
+                                    <Box sx={{ p: 1, borderRadius: '8px', bgcolor: alpha(BLUE, 0.1), flexShrink: 0 }}>
+                                        <TrendingDown size={20} color={BLUE} />
                                     </Box>
-                                    <Typography sx={{ fontSize: '2.4rem', fontWeight: 900, color: GREEN, lineHeight: 1 }}>
+                                    <Typography sx={{ fontSize: '2.4rem', fontWeight: 900, color: BLUE, lineHeight: 1 }}>
                                         {totalWeeksUnder}
                                     </Typography>
                                 </Box>
-                                <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: alpha(GREEN, 0.65) }}>
+                                <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: alpha(BLUE, 0.65) }}>
                                     of {weeklyData.length} total week{weeklyData.length !== 1 ? 's' : ''}
                                 </Typography>
                             </Box>
@@ -405,33 +420,33 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                         <Grid item xs={6} md={4}>
                             <Box sx={{
                                 p: 2.5, borderRadius: '12px', height: '100%',
-                                border: `1px solid ${alpha(totalWeeksOver > 0 ? RED : SLATE, 0.18)}`,
-                                bgcolor: alpha(totalWeeksOver > 0 ? RED : SLATE, 0.04),
+                                border: `1px solid ${alpha(totalWeeksOver > 0 ? MAROON : SLATE, 0.18)}`,
+                                bgcolor: alpha(totalWeeksOver > 0 ? MAROON : SLATE, 0.04),
                             }}>
                                 <Typography sx={{
                                     fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase',
                                     letterSpacing: '0.1em', mb: 1,
-                                    color: alpha(totalWeeksOver > 0 ? RED : SLATE, 0.65),
+                                    color: alpha(totalWeeksOver > 0 ? MAROON : SLATE, 0.65),
                                 }}>
                                     Weeks Over Budget
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.6 }}>
                                     <Box sx={{
                                         p: 1, borderRadius: '8px', flexShrink: 0,
-                                        bgcolor: alpha(totalWeeksOver > 0 ? RED : SLATE, 0.1),
+                                        bgcolor: alpha(totalWeeksOver > 0 ? MAROON : SLATE, 0.1),
                                     }}>
-                                        <TrendingUp size={20} color={totalWeeksOver > 0 ? RED : SLATE} />
+                                        <TrendingUp size={20} color={totalWeeksOver > 0 ? MAROON : SLATE} />
                                     </Box>
                                     <Typography sx={{
                                         fontSize: '2.4rem', fontWeight: 900, lineHeight: 1,
-                                        color: totalWeeksOver > 0 ? RED : SLATE,
+                                        color: totalWeeksOver > 0 ? MAROON : SLATE,
                                     }}>
                                         {totalWeeksOver}
                                     </Typography>
                                 </Box>
                                 <Typography sx={{
                                     fontSize: '0.7rem', fontWeight: 600,
-                                    color: alpha(totalWeeksOver > 0 ? RED : SLATE, 0.65),
+                                    color: alpha(totalWeeksOver > 0 ? MAROON : SLATE, 0.65),
                                 }}>
                                     {totalWeeksOver === 0 ? 'Perfect streak! 🎉' : `of ${weeklyData.length} total weeks`}
                                 </Typography>
@@ -515,26 +530,38 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                             const activeIdx      = activeDonutIdx[week.weekNumber];
                             const showChart      = showChartMap[week.weekNumber] ?? true;
 
+                            // ── Donut color per view mode ───────────────────────────────
+                            // Weekly: teal (under) / amber (warning) / maroon (over)
+                            const weeklyDonutColor = getWeeklyDonutColor(week.percentUsed);
+
                             // ── Donut datasets ──────────────────────────────────────────
                             const budgetDonut = [
-                                { name: 'Spent',     value: week.actualSpent,            color: progressColor },
+                                { name: 'Spent',     value: week.actualSpent,            color: weeklyDonutColor },
                                 { name: 'Remaining', value: Math.max(week.remaining, 0), color: alpha('#000', 0.07) },
                             ];
 
+                            // By Receipt: uses full PALETTE (already non-green dominant)
                             const storeDonut = week.receipts.map((r, i) => ({
                                 name: r.storeName, value: r.totalCost, color: PALETTE[i % PALETTE.length],
                             }));
 
+                            // Grocery List: teal = on list, purple = unplanned (was green/amber)
                             const listDonut = wa ? [
-                                { name: 'On List',   value: wa.purchasedFromList,  color: GREEN },
-                                { name: 'Unplanned', value: wa.unplannedPurchases, color: AMBER },
+                                { name: 'On List',   value: wa.purchasedFromList,  color: LIST_ON_COLOR  },
+                                { name: 'Unplanned', value: wa.unplannedPurchases, color: LIST_OFF_COLOR },
                             ] : [];
+
+                            // Analytics: store palette (same as receipt view)
+                            const analyticsDonut = week.receipts.map((r, i) => ({
+                                name: r.storeName, value: r.totalCost, color: PALETTE[i % PALETTE.length],
+                            }));
 
                             // pick the right donut per mode
                             const donutData =
-                                viewMode === 'week'        ? budgetDonut :
-                                    viewMode === 'groceryList' ? listDonut   :
-                                        storeDonut;
+                                viewMode === 'week'        ? budgetDonut    :
+                                    viewMode === 'groceryList' ? listDonut      :
+                                        viewMode === 'analytics'   ? analyticsDonut :
+                                            storeDonut;
 
                             const donutIdle = {
                                 primary:
@@ -563,9 +590,9 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                 if (viewMode === 'week') return (
                                     <Grid container spacing={1}>
                                         <Grid item xs={6}><StatTile label="Budgeted" value={`$${week.budgetAmount.toFixed(2)}`} color={TEAL}  icon={<Target size={12} />} /></Grid>
-                                        <Grid item xs={6}><StatTile label="Spent"    value={`$${week.actualSpent.toFixed(2)}`}  color={week.percentUsed > 100 ? RED : week.percentUsed > 80 ? AMBER : NAVY} icon={<ShoppingCart size={12} />} /></Grid>
-                                        <Grid item xs={6}><StatTile label="Remaining" value={fmt(week.remaining)} sub={week.remaining >= 0 ? 'under' : 'over'} color={week.remaining >= 0 ? GREEN : RED} icon={week.remaining >= 0 ? <PiggyBank size={12} /> : <Zap size={12} />} /></Grid>
-                                        <Grid item xs={6}><StatTile label="Usage"    value={`${week.percentUsed.toFixed(0)}%`}  color={progressColor} icon={<BarChart2 size={12} />} /></Grid>
+                                        <Grid item xs={6}><StatTile label="Spent"    value={`$${week.actualSpent.toFixed(2)}`}  color={week.percentUsed > 100 ? MAROON : week.percentUsed > 80 ? AMBER : NAVY} icon={<ShoppingCart size={12} />} /></Grid>
+                                        <Grid item xs={6}><StatTile label="Remaining" value={fmt(week.remaining)} sub={week.remaining >= 0 ? 'under' : 'over'} color={week.remaining >= 0 ? TEAL : MAROON} icon={week.remaining >= 0 ? <PiggyBank size={12} /> : <Zap size={12} />} /></Grid>
+                                        <Grid item xs={6}><StatTile label="Usage"    value={`${week.percentUsed.toFixed(0)}%`}  color={weeklyDonutColor} icon={<BarChart2 size={12} />} /></Grid>
                                     </Grid>
                                 );
                                 if (viewMode === 'receiptDetail') return (
@@ -573,14 +600,14 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                         <Grid item xs={6}><StatTile label="Receipts"  value={String(week.receipts.length)} sub="trips" color={TEAL}   icon={<Receipt size={12} />} /></Grid>
                                         <Grid item xs={6}><StatTile label="Avg / Trip" value={`$${week.receipts.length > 0 ? (week.actualSpent / week.receipts.length).toFixed(2) : '0.00'}`} color={BLUE} /></Grid>
                                         <Grid item xs={6}><StatTile label="Stores"    value={String(storeCount)}           color={PURPLE} icon={<Store size={12} />} /></Grid>
-                                        <Grid item xs={6}><StatTile label={week.remaining >= 0 ? 'Saved' : 'Over'} value={fmt(week.remaining)} color={week.remaining >= 0 ? GREEN : RED} icon={week.remaining >= 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />} /></Grid>
+                                        <Grid item xs={6}><StatTile label={week.remaining >= 0 ? 'Saved' : 'Over'} value={fmt(week.remaining)} color={week.remaining >= 0 ? TEAL : MAROON} icon={week.remaining >= 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />} /></Grid>
                                     </Grid>
                                 );
                                 if (viewMode === 'groceryList' && wa) return (
                                     <Grid container spacing={1}>
                                         <Grid item xs={6}><StatTile label="List Budget" value={`$${wa.plannedTotal.toFixed(2)}`}        color={PURPLE} icon={<Target size={12} />} /></Grid>
-                                        <Grid item xs={6}><StatTile label="From List"   value={`$${wa.purchasedFromList.toFixed(2)}`}   color={GREEN}  icon={<CheckSquare size={12} />} /></Grid>
-                                        <Grid item xs={6}><StatTile label="Unplanned"   value={`$${wa.unplannedPurchases.toFixed(2)}`}  sub={`${wa.unplannedPurchasesCount} items`} color={AMBER} icon={<Zap size={12} />} /></Grid>
+                                        <Grid item xs={6}><StatTile label="From List"   value={`$${wa.purchasedFromList.toFixed(2)}`}   color={LIST_ON_COLOR}  icon={<CheckSquare size={12} />} /></Grid>
+                                        <Grid item xs={6}><StatTile label="Unplanned"   value={`$${wa.unplannedPurchases.toFixed(2)}`}  sub={`${wa.unplannedPurchasesCount} items`} color={LIST_OFF_COLOR} icon={<Zap size={12} />} /></Grid>
                                         <Grid item xs={6}><StatTile label="Adherence"   value={`${wa.adherenceRate.toFixed(0)}%`}       color={TEAL}   icon={<BarChart2 size={12} />} /></Grid>
                                     </Grid>
                                 );
@@ -590,7 +617,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                         <Grid item xs={6}><StatTile label="Items"    value={String(totalItems)}          sub="purchased" color={TEAL}   icon={<ShoppingCart size={12} />} /></Grid>
                                         <Grid item xs={6}><StatTile label="Avg/Item" value={`$${avgPerItem.toFixed(2)}`}                 color={PURPLE} icon={<BarChart2 size={12} />} /></Grid>
                                         <Grid item xs={6}><StatTile label="Stores"   value={String(storeCount)}          sub="visited"   color={AMBER}  icon={<Store size={12} />} /></Grid>
-                                        <Grid item xs={6}><StatTile label="vs Avg"   value={`${vsAvgPct >= 0 ? '+' : ''}${vsAvgPct.toFixed(0)}%`} color={vsAvgPct > 20 ? RED : vsAvgPct < -20 ? GREEN : BLUE} /></Grid>
+                                        <Grid item xs={6}><StatTile label="vs Avg"   value={`${vsAvgPct >= 0 ? '+' : ''}${vsAvgPct.toFixed(0)}%`} color={vsAvgPct > 20 ? MAROON : vsAvgPct < -20 ? TEAL : BLUE} /></Grid>
                                     </Grid>
                                 );
                             };
@@ -636,6 +663,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                                             {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                                                         </Box>
                                                     )}
+                                                    {/* MiniDonut now uses teal/amber/maroon via getMiniDonutColor */}
                                                     <MiniDonut spent={week.actualSpent} budget={week.budgetAmount} />
                                                     <Box>
                                                         <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: NAVY, letterSpacing: '-0.01em' }}>
@@ -664,7 +692,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
 
                                             {/* Center column: chart OR stats with toggle */}
                                             <Grid item xs={12} md={7.5}>
-                                                {/* Toggle — stopPropagation so it doesn't fire week expand */}
+                                                {/* Toggle */}
                                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                                                     <ViewToggle showChart={showChart} onToggle={e => toggleChart(week.weekNumber, e)} />
                                                 </Box>
@@ -736,7 +764,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                                                         <Typography sx={{ fontSize: '0.58rem', color: SLATE, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                                                                             Adherence
                                                                         </Typography>
-                                                                        <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: wa.adherenceRate > 70 ? GREEN : AMBER }}>
+                                                                        <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: wa.adherenceRate > 70 ? LIST_ON_COLOR : LIST_OFF_COLOR }}>
                                                                             {wa.adherenceRate.toFixed(0)}%
                                                                         </Typography>
                                                                     </Box>
@@ -745,9 +773,10 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                                                         value={Math.min(wa.adherenceRate, 100)}
                                                                         sx={{
                                                                             height: 5, borderRadius: 3,
-                                                                            bgcolor: alpha(TEAL, 0.1),
+                                                                            bgcolor: alpha(LIST_ON_COLOR, 0.1),
                                                                             '& .MuiLinearProgress-bar': {
-                                                                                bgcolor: wa.adherenceRate > 70 ? GREEN : AMBER,
+                                                                                // teal when good adherence, purple when low
+                                                                                bgcolor: wa.adherenceRate > 70 ? LIST_ON_COLOR : LIST_OFF_COLOR,
                                                                                 borderRadius: 3,
                                                                             },
                                                                         }}
@@ -769,24 +798,24 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                                         display: 'flex', flexDirection: 'column',
                                                         alignItems: 'center', justifyContent: 'center',
                                                         p: 1.5, borderRadius: '10px', textAlign: 'center',
-                                                        border: `1px solid ${alpha(week.remaining >= 0 ? GREEN : RED, 0.22)}`,
-                                                        bgcolor: alpha(week.remaining >= 0 ? GREEN : RED, 0.04),
+                                                        border: `1px solid ${alpha(week.remaining >= 0 ? TEAL : MAROON, 0.22)}`,
+                                                        bgcolor: alpha(week.remaining >= 0 ? TEAL : MAROON, 0.04),
                                                     }}>
                                                         {week.remaining >= 0
-                                                            ? <PiggyBank size={18} color={GREEN} />
-                                                            : <TrendingUp size={18} color={RED} />
+                                                            ? <PiggyBank size={18} color={TEAL} />
+                                                            : <TrendingUp size={18} color={MAROON} />
                                                         }
                                                         <Typography sx={{
                                                             fontSize: '0.5rem', textTransform: 'uppercase',
                                                             letterSpacing: '0.06em', fontWeight: 800, mt: 0.5,
-                                                            color: week.remaining >= 0 ? GREEN : RED,
+                                                            color: week.remaining >= 0 ? TEAL : MAROON,
                                                         }}>
                                                             {week.remaining >= 0 ? 'SAVED' : 'OVER'}
                                                         </Typography>
                                                         <Typography sx={{
                                                             fontSize: '0.88rem', fontWeight: 900,
                                                             fontVariantNumeric: 'tabular-nums', lineHeight: 1.1,
-                                                            color: week.remaining >= 0 ? GREEN : RED,
+                                                            color: week.remaining >= 0 ? TEAL : MAROON,
                                                         }}>
                                                             {fmt(week.remaining)}
                                                         </Typography>
@@ -795,7 +824,7 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
                                             </Grid>
                                         </Grid>
 
-                                        {/* Budget usage progress bar */}
+                                        {/* Budget usage progress bar (keeps semantic green/amber/red) */}
                                         <Box sx={{ mt: 2 }}>
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.35 }}>
                                                 <Typography sx={{ fontSize: '0.58rem', color: SLATE, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
@@ -914,7 +943,6 @@ const GroceryBudgetTable: React.FC<GroceryBudgetTableProps> = ({
 };
 
 export default GroceryBudgetTable;
-
 // import React, { useState, useMemo } from 'react';
 // import {
 //     Box,

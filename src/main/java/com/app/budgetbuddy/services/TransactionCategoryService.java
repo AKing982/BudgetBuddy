@@ -20,6 +20,9 @@ public interface TransactionCategoryService extends ServiceModel<TransactionCate
 
     void updateTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId);
 
+    List<TransactionCategory> getUncategorizedTransactionsByUserIdAndDateRange(
+            Long userId, LocalDate startDate, LocalDate endDate);
+
     boolean checkNewTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     boolean checkUpdatedTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
 

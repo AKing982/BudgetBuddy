@@ -64,63 +64,160 @@ public class SystemCategoryRulesServiceImpl implements SystemCategoryRulesServic
     }
 
     @Override
-    public Optional<SystemCategoryRulesEntity> findById(Long id) {
-        return Optional.empty();
-    }
-
-    @Override
-    public List<SystemCategoryRulesEntity> findByType(String type)
+    public Optional<SystemCategoryRulesEntity> findById(Long id)
     {
-        return List.of();
+        return Optional.empty();
+    }
+
+
+    @Override
+    @Transactional
+    public Optional<SystemCategoryRulesEntity> findByMerchantOnly(String merchant)
+    {
+        if(merchant == null || merchant.isEmpty())
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return systemCategoryRulesRepository.findByMerchant(merchant);
+        }
+        catch(DataAccessException e)
+        {
+            log.error("Error finding system category rule by merchant {}: {}", merchant, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     @Override
-    public List<SystemCategoryRulesEntity> findByMerchantIgnoreCase(String merchant) {
-        return List.of();
+    @Transactional
+    public Optional<SystemCategoryRulesEntity> findByMerchantAndCategory(String merchant, String category)
+    {
+        if(merchant == null || merchant.isEmpty() || category == null || category.isEmpty())
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return systemCategoryRulesRepository.findByMerchantAndCategory(merchant, category);
+        }
+        catch(DataAccessException e)
+        {
+            log.error("Error finding system category rule by merchant {} and category {}: {}", merchant, category, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     @Override
-    public Optional<SystemCategoryRulesEntity> findByMerchantIgnoreCaseAndCategory(String merchant, String category) {
+    @Transactional
+    public Optional<SystemCategoryRulesEntity> findByMerchantCategoryAndAmount(String merchant, String category, Double amount)
+    {
+        if(merchant == null || merchant.isEmpty() || amount == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return systemCategoryRulesRepository.findByMerchantCategoryAndAmount(merchant, category, amount);
+        }
+        catch(DataAccessException e)
+        {
+            log.error("Error finding system category rule by merchant {}, category {} and amount {}: {}", merchant, category, amount, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<SystemCategoryRulesEntity> findByMerchantAndAmount(String merchant, Double amount)
+    {
+        if(merchant == null || merchant.isEmpty() || amount == null)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return systemCategoryRulesRepository.findByMerchantAndAmount(merchant, amount);
+        }
+        catch(DataAccessException e)
+        {
+            log.error("Error finding system category rule by merchant {} and amount {}: {}", merchant, amount, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<SystemCategoryRulesEntity> findByCategoryOnly(String category)
+    {
+        if(category == null || category.isEmpty())
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return systemCategoryRulesRepository.findByCategoryOnly(category);
+        }
+        catch(DataAccessException e)
+        {
+            log.error("Error finding system category rule by category {}: {}", category, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public List<SystemCategoryRulesEntity> findAllOrderedByPriority()
+    {
+        try
+        {
+            return systemCategoryRulesRepository.findAllOrderedByPriority();
+        }
+        catch(DataAccessException e)
+        {
+            log.error("Error finding all system category rules ordered by priority: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    @Override
+    public Optional<SystemCategoryRulesEntity> findByPlaidFull(String categoryId, String primary, String secondary)
+    {
         return Optional.empty();
     }
 
     @Override
-    public Optional<SystemCategoryRulesEntity> findByMerchantIgnoreCaseAndCategoryAndAmount(String merchant, String category, Double amount) {
+    public Optional<SystemCategoryRulesEntity> findByPlaidPrimaryAndSecondary(String primary, String secondary)
+    {
         return Optional.empty();
     }
 
     @Override
-    public Optional<SystemCategoryRulesEntity> findByMerchantIgnoreCaseAndCategoryIsNullAndAmount(String merchant, Double amount) {
+    public Optional<SystemCategoryRulesEntity> findByPlaidCategoryIdAndSecondary(String categoryId, String secondary)
+    {
         return Optional.empty();
     }
 
     @Override
-    public Optional<SystemCategoryRulesEntity> findByCategoryAndType(String category, String type) {
+    public Optional<SystemCategoryRulesEntity> findByPlaidCategoryIdAndPrimary(String categoryId, String primary)
+    {
         return Optional.empty();
     }
 
     @Override
-    public Optional<SystemCategoryRulesEntity> findByPlaidCategoryIdAndType(PlaidCategoriesEntity plaidCategoryId, String type) {
+    public Optional<SystemCategoryRulesEntity> findByPlaidPrimaryOnly(String primary)
+    {
         return Optional.empty();
     }
 
     @Override
-    public List<SystemCategoryRulesEntity> findByPlaidCategoryId(PlaidCategoriesEntity plaidCategoryId) {
-        return List.of();
+    public Optional<SystemCategoryRulesEntity> findByPlaidSecondaryOnly(String secondary)
+    {
+        return Optional.empty();
     }
 
     @Override
-    public boolean existsByMerchantIgnoreCaseAndType(String merchant, String type) {
-        return false;
-    }
-
-    @Override
-    public boolean existsByCategoryAndType(String category, String type) {
-        return false;
-    }
-
-    @Override
-    public boolean existsByMerchantIgnoreCaseAndCategoryAndAmount(String merchant, String category, Double amount) {
-        return false;
+    public Optional<SystemCategoryRulesEntity> findByPlaidCategoryIdOnly(String categoryId)
+    {
+        return Optional.empty();
     }
 }

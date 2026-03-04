@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -145,30 +146,15 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
         }
     }
 
+
     @Override
     @Transactional
     public Optional<TransactionCSV> findTransactionCSVById(Long transactionId)
     {
         try
         {
-            Optional<CSVTransactionEntity> csvTransactionEntityOptional = csvTransactionRepository.findById(transactionId);
-            if(csvTransactionEntityOptional.isEmpty())
-            {
-                return Optional.empty();
-            }
-            CSVTransactionEntity csvTransactionEntity = csvTransactionEntityOptional.get();
-            TransactionCSV transactionCSV = new TransactionCSV();
-            transactionCSV.setId(csvTransactionEntity.getId());
-            transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
-            transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
-            transactionCSV.setDescription(csvTransactionEntity.getDescription());
-            transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
-            transactionCSV.setBalance(csvTransactionEntity.getBalance());
-            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
-            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
-            transactionCSV.setInstitution_id(csvTransactionEntity.getInstitutionId());
-            transactionCSV.setUserId(csvTransactionEntity.getUser().getId());
-            return Optional.of(transactionCSV);
+            return csvTransactionRepository.findById(transactionId)
+                    .map(this::convertToTransactionCSV);
         }catch(DataAccessException e){
             log.error("There was an error finding the transaction CSV by id: ", e);
             return Optional.empty();
@@ -176,27 +162,39 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
     }
 
     @Override
+    public List<TransactionCSV> findTransactionCSVByIds(List<Long> ids)
+    {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return csvTransactionRepository.findAllByIds(ids)
+                .stream()
+                .map(this::convertToTransactionCSV)
+                .collect(Collectors.toList());
+    }
+
+    private TransactionCSV convertToTransactionCSV(CSVTransactionEntity entity)
+    {
+        TransactionCSV transactionCSV = new TransactionCSV();
+        transactionCSV.setId(entity.getId());
+        transactionCSV.setTransactionDate(entity.getTransactionDate());
+        transactionCSV.setTransactionAmount(entity.getTransactionAmount());
+        transactionCSV.setDescription(entity.getDescription());
+        transactionCSV.setMerchantName(entity.getMerchantName());
+        transactionCSV.setBalance(entity.getBalance());
+        transactionCSV.setExtendedDescription(entity.getExtendedDescription());
+        transactionCSV.setElectronicTransactionDate(entity.getElectronicTransactionDate());
+        transactionCSV.setInstitution_id(entity.getInstitutionId());
+        transactionCSV.setUserId(entity.getUser().getId());
+        return transactionCSV;
+    }
+
+    @Override
     @Transactional
     public List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate, int pageNum)
     {
-        Page<CSVTransactionEntity> csvTransactionEntities = findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate, pageNum);
-        List<TransactionCSV> transactionCSVList = new ArrayList<>();
-        for(CSVTransactionEntity csvTransactionEntity : csvTransactionEntities)
-        {
-            TransactionCSV transactionCSV = new TransactionCSV();
-            transactionCSV.setId(csvTransactionEntity.getId());
-            transactionCSV.setTransactionDate(csvTransactionEntity.getTransactionDate());
-            transactionCSV.setTransactionAmount(csvTransactionEntity.getTransactionAmount());
-            transactionCSV.setDescription(csvTransactionEntity.getDescription());
-            transactionCSV.setMerchantName(csvTransactionEntity.getMerchantName());
-            transactionCSV.setBalance(csvTransactionEntity.getBalance());
-            transactionCSV.setExtendedDescription(csvTransactionEntity.getExtendedDescription());
-            transactionCSV.setElectronicTransactionDate(csvTransactionEntity.getElectronicTransactionDate());
-            transactionCSV.setInstitution_id(csvTransactionEntity.getInstitutionId());
-            transactionCSV.setUserId(csvTransactionEntity.getUser().getId());
-            transactionCSVList.add(transactionCSV);
-        }
-        return transactionCSVList;
+        return findCSVTransactionEntitiesByUserAndDateRange(userId, startDate, endDate, pageNum)
+                .stream()
+                .map(this::convertToTransactionCSV)
+                .collect(Collectors.toList());
     }
 
     @Override

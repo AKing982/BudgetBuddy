@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -130,6 +131,63 @@ public class CategoryRunner
         }
     }
 
+    @Transactional
+    public List<TransactionCSV> reCategorizeCsvTransactionsByRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<TransactionCategory> uncategorized = transactionCategoryService
+                    .getUncategorizedTransactionsByUserIdAndDateRange(userId, startDate, endDate);
+
+            if(uncategorized.isEmpty())
+            {
+                log.info("No uncategorized transactions found for user {} between {} and {}", userId, startDate, endDate);
+                return List.of();
+            }
+
+            // We need the underlying CSVTransactions to pass to the categorizer
+            List<Long> csvIds = uncategorized.stream()
+                    .map(TransactionCategory::getCsvTransactionId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            List<TransactionCSV> csvTransactions = csvTransactionService
+                    .findTransactionCSVByIds(csvIds);
+
+            List<TransactionCSV> updated = new ArrayList<>();
+            for(TransactionCSV transactionCSV : csvTransactions)
+            {
+                try
+                {
+                    Category category = csvCategorizerService.categorize(transactionCSV);
+                    String categoryName = category.getCategoryName();
+
+                    if(!"Uncategorized".equals(categoryName))
+                    {
+                        transactionCategoryService.updateTransactionCategoriesByIdAndCategory(
+                                categoryName, transactionCSV.getId());
+                        transactionCSV.setCategory(categoryName);
+                        updated.add(transactionCSV);
+                    }
+                }
+                catch(Exception e)
+                {
+                    log.warn("Could not categorize csv transaction id {}: {}",
+                            transactionCSV.getId(), e.getMessage());
+                }
+            }
+
+            log.info("Re-categorized {}/{} transactions for user {}",
+                    updated.size(), csvTransactions.size(), userId);
+            return updated;
+        }
+        catch (Exception e)
+        {
+            log.error("Error re-categorizing CSV transactions for user {}: {}", userId, e.getMessage());
+            throw new CategoryRunnerException("Failed to re-categorize transactions: " + e.getMessage());
+        }
+    }
+
 
     public void categorizeTransactionsByRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
@@ -159,17 +217,6 @@ public class CategoryRunner
         }catch(CategoryException e){
             log.error("There was an error categorizing transactions: {}", e.getMessage());
             throw e;
-        }
-    }
-
-    public void categorizeRecurringTransactions(Long userId)
-    {
-        try
-        {
-
-        }catch(CategoryException e){
-            log.error("There was an error categorizing the latest recurring transactions: ", e.getMessage());
-
         }
     }
 }

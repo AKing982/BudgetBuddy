@@ -34,6 +34,9 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
            "AND c.transactionDate <= :endDate")
     boolean existsByUserAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT cte FROM CSVTransactionEntity cte WHERE cte.id IN :ids")
+    List<CSVTransactionEntity> findAllByIds(@Param("ids") List<Long> ids);
+
     @Query("SELECT cte " +
             "FROM CSVTransactionEntity cte " +
             "WHERE cte.user.id =:userId " +

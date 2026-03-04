@@ -35,6 +35,16 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
     @Query("UPDATE TransactionCategoryEntity tce SET tce.status =:status WHERE tce.csvTransaction.id =:csvId")
     void updateTransactionCategoryStatus(@Param("csvId") Long csvId, @Param("status") TransactionCategoryStatus status);
 
+    @Query("SELECT tce FROM TransactionCategoryEntity tce " +
+            "JOIN tce.csvTransaction ct " +
+            "WHERE ct.user.id = :userId " +
+            "AND ct.transactionDate BETWEEN :startDate AND :endDate " +
+            "AND (tce.matchedCategory IS NULL OR tce.matchedCategory = 'Uncategorized')")
+    List<TransactionCategoryEntity> findUncategorizedByUserIdAndDateRange(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
     @Query("SELECT tce FROM TransactionCategoryEntity tce WHERE tce.matchedCategory =:category AND tce.csvTransaction.id =:id")
     Optional<TransactionCategoryEntity> findTransactionCategoryByCategoryAndId(@Param("category") String category, @Param("id") Long id);
 

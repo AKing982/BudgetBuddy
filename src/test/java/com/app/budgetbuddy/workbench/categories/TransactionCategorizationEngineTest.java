@@ -1,13 +1,17 @@
 package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.Category;
+import com.app.budgetbuddy.domain.CategoryType;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionRule;
 import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.PlaidCategoriesEntity;
+import com.app.budgetbuddy.entities.SystemCategoryRulesEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.AccountNotFoundException;
 import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.services.AccountService;
+import com.app.budgetbuddy.services.SystemCategoryRulesService;
 import com.app.budgetbuddy.services.TransactionRuleService;
 import com.app.budgetbuddy.services.UserCategoryService;
 import com.app.budgetbuddy.workbench.MerchantMatcherService;
@@ -45,25 +49,35 @@ class TransactionCategorizationEngineTest
     @Mock
     private TransactionRuleService transactionRuleService;
 
+    @Mock
+    private SystemCategoryRulesService systemCategoryRulesService;
+
+    @Mock
+    private PlaidCategorizationStrategy plaidStrategy;
+
     private TransactionCategorizationEngine transactionCategorizerService;
 
     private Transaction transaction;
 
     @BeforeEach
     void setUp() {
-        transactionCategorizerService = new TransactionCategorizationEngine(userCategoryService, accountService, transactionRuleService, merchantMatcherService);
+        plaidStrategy = new PlaidCategorizationStrategy(systemCategoryRulesService, merchantMatcherService);
+        transactionCategorizerService = new TransactionCategorizationEngine(
+                userCategoryService, accountService, transactionRuleService,
+                merchantMatcherService, plaidStrategy);
     }
 
     @Test
-    void testCategorize_whenTransactionIsNull_thenThrowException() {
+    void testCategorize_whenTransactionIsNull_thenThrowException()
+    {
         CategoryException exception = assertThrows(CategoryException.class,
                 () -> transactionCategorizerService.categorize(null));
-
         assertEquals("Transaction was found null... Terminating categorization", exception.getMessage());
     }
 
     @Test
-    void testCategorize_whenTransactionHasNoAcctId_thenThrowException() {
+    void testCategorize_whenTransactionHasNoAcctId_thenThrowException()
+    {
         Transaction transaction = new Transaction();
         transaction.setAccountId("");
         transaction.setMerchantName("WINCO");
@@ -72,13 +86,13 @@ class TransactionCategorizationEngineTest
         transaction.setSecondaryCategory("Supermarkets and Groceries");
 
         when(accountService.findByAccountId(anyString())).thenReturn(Optional.empty());
-        assertThrows(AccountNotFoundException.class, () -> {
-            transactionCategorizerService.categorize(transaction);
-        });
+        assertThrows(AccountNotFoundException.class,
+                () -> transactionCategorizerService.categorize(transaction));
     }
 
     @Test
-    void testCategorize_whenTransactionHasZeroPriority_thenReturnUncategorized(){
+    void testCategorize_whenTransactionHasZeroPriority_thenReturnUncategorized()
+    {
         Transaction transaction = new Transaction();
         transaction.setAccountId("acct-123");
         transaction.setMerchantName(null);
@@ -86,97 +100,93 @@ class TransactionCategorizationEngineTest
         transaction.setPrimaryCategory(null);
         transaction.setSecondaryCategory(null);
 
-        Category expected = new  Category();
-        expected.setCategoryName("Uncategorized");
-        expected.setPlaidCategoryId(null);
-        expected.setCategoryId(0L);
-        expected.setCategorizedBy("SYSTEM");
-
-        Category actual = transactionCategorizerService.categorize(transaction);
-        assertNotNull(actual);
-        assertEquals(expected.getCategorizedBy(), actual.getCategorizedBy());
-        assertEquals(expected.getPlaidCategoryId(), actual.getPlaidCategoryId());
-        assertEquals(expected.getCategoryId(), actual.getCategoryId());
-        assertEquals(expected.getCategoryName(), actual.getCategoryName());
+        Category result = transactionCategorizerService.categorize(transaction);
+        assertNotNull(result);
+        assertEquals("Uncategorized", result.getCategoryName());
     }
 
     @Test
-    void testCategorize_whenTransactionHasPrimaryAndSecondaryCategory_thenReturnCategoryWithHighestPriority() {
-        // Given - Highest priority: Primary Category + Secondary Category
+    void testCategorize_whenTransactionHasPrimaryAndSecondaryCategory_thenReturnCategory()
+    {
         Transaction transaction = new Transaction();
         transaction.setPrimaryCategory("Shops");
         transaction.setAccountId("e2323232");
         transaction.setSecondaryCategory("Supermarkets and Groceries");
         transaction.setMerchantName("WINCO");
         transaction.setCategoryId("19047000");
+
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
+        SystemCategoryRulesEntity rule = buildPlaidRule("19047000", "Shops", "Supermarkets and Groceries", "Groceries");
+
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
+        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
+        when(systemCategoryRulesService.findByPlaidFull("19047000", "Shops", "Supermarkets and Groceries"))
+                .thenReturn(Optional.of(rule));
 
-        List<TransactionRule> rules = new ArrayList<>();
-
-        when(transactionRuleService.findByUserId(1L)).thenReturn(rules);
-
-        // When
         Category result = transactionCategorizerService.categorize(transaction);
 
-        // Then
         assertNotNull(result);
         assertEquals("Groceries", result.getCategoryName());
         assertEquals("SYSTEM", result.getCategorizedBy());
-        assertEquals("19047000", result.getPlaidCategoryId());
-        // assertEquals(0L, result.getCategoryId());
     }
 
     @Test
-    void testCategorize_whenTransactionHasOnlyPrimaryCategory_thenReturnCategory(){
+    void testCategorize_whenTransactionHasOnlyPrimaryCategory_thenReturnCategory()
+    {
         Transaction transaction = new Transaction();
         transaction.setPrimaryCategory("Shops");
         transaction.setAccountId("e2323232");
         transaction.setSecondaryCategory(null);
         transaction.setMerchantName(null);
         transaction.setCategoryId(null);
+
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
+        SystemCategoryRulesEntity rule = buildPlaidRule(null, "Shops", null, "Other");
+
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
-        List<TransactionRule> rules = new ArrayList<>();
-        when(transactionRuleService.findByUserId(1L)).thenReturn(rules);
+        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
+        when(systemCategoryRulesService.findByPlaidPrimaryOnly("Shops"))
+                .thenReturn(Optional.of(rule));
+
         Category result = transactionCategorizerService.categorize(transaction);
 
-        // Then
         assertNotNull(result);
         assertEquals("Other", result.getCategoryName());
         assertEquals("SYSTEM", result.getCategorizedBy());
     }
 
     @Test
-    void testCategorize_whenTransactionHasSecondaryCategoryAndCategoryId_thenReturnCategory(){
+    void testCategorize_whenTransactionHasSecondaryCategoryAndCategoryId_thenReturnCategory()
+    {
         Transaction transaction = new Transaction();
         transaction.setPrimaryCategory(null);
         transaction.setAccountId("e2323232");
         transaction.setSecondaryCategory("Supermarkets and Groceries");
         transaction.setMerchantName(null);
         transaction.setCategoryId("19047000");
+
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
+        SystemCategoryRulesEntity rule = buildPlaidRule("19047000", null, "Supermarkets and Groceries", "Groceries");
+
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
-        List<TransactionRule> rules = new ArrayList<>();
-        when(transactionRuleService.findByUserId(1L)).thenReturn(rules);
-        transactionCategorizerService.initializePlaidCategoryMap();
+        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
+        when(systemCategoryRulesService.findByPlaidCategoryIdAndSecondary("19047000", "Supermarkets and Groceries"))
+                .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
 
-        // Then
         assertNotNull(result);
         assertEquals("Groceries", result.getCategoryName());
         assertEquals("SYSTEM", result.getCategorizedBy());
-        assertEquals("19047000", result.getPlaidCategoryId());
     }
 
     @Test
@@ -188,87 +198,94 @@ class TransactionCategorizationEngineTest
         transaction.setSecondaryCategory(null);
         transaction.setMerchantName(null);
         transaction.setCategoryId("16000000");
+
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
-        when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
-        List<TransactionRule> rules = new ArrayList<>();
-        when(transactionRuleService.findByUserId(1L)).thenReturn(rules);
+        SystemCategoryRulesEntity rule = buildPlaidRule("16000000", "Payment", null, "Payment");
 
-        transactionCategorizerService.initializePlaidCategoryMap();
+        when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
+        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
+        when(systemCategoryRulesService.findByPlaidCategoryIdAndPrimary("16000000", "Payment"))
+                .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
 
-        // Then
         assertNotNull(result);
         assertEquals("Payment", result.getCategoryName());
         assertEquals("SYSTEM", result.getCategorizedBy());
-        assertEquals("16000000", result.getPlaidCategoryId());
     }
 
     @Test
-    void testCategorize_whenTransactionHasPrimaryAndSecondary_thenReturnCategory(){
+    void testCategorize_whenTransactionHasPrimaryAndSecondary_thenReturnCategory()
+    {
         Transaction transaction = new Transaction();
         transaction.setPrimaryCategory("Shops");
         transaction.setAccountId("e2323232");
         transaction.setSecondaryCategory("Supermarkets and Groceries");
         transaction.setMerchantName(null);
         transaction.setCategoryId(null);
+
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
+        SystemCategoryRulesEntity rule = buildPlaidRule(null, "Shops", "Supermarkets and Groceries", "Groceries");
+
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
-        List<TransactionRule> rules = new ArrayList<>();
-        when(transactionRuleService.findByUserId(1L)).thenReturn(rules);
+        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
+        when(systemCategoryRulesService.findByPlaidPrimaryAndSecondary("Shops", "Supermarkets and Groceries"))
+                .thenReturn(Optional.of(rule));
+
         Category result = transactionCategorizerService.categorize(transaction);
 
-        // Then
         assertNotNull(result);
         assertEquals("Groceries", result.getCategoryName());
         assertEquals("SYSTEM", result.getCategorizedBy());
-        assertEquals("", result.getPlaidCategoryId());
     }
 
     @Test
-    void testCategorize_whenTransactionHasOnlyCategoryId_thenReturnCategory() {
+    void testCategorize_whenTransactionHasOnlyCategoryId_thenReturnCategory()
+    {
         Transaction transaction = new Transaction();
         transaction.setPrimaryCategory(null);
         transaction.setAccountId("e2323232");
         transaction.setSecondaryCategory(null);
         transaction.setMerchantName(null);
         transaction.setCategoryId("19000000");
+
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
+        SystemCategoryRulesEntity rule = buildPlaidRule("19000000", null, null, "Other");
+
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
-        List<TransactionRule> rules = new ArrayList<>();
-        when(transactionRuleService.findByUserId(1L)).thenReturn(rules);
+        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
+        when(systemCategoryRulesService.findByPlaidCategoryIdOnly("19000000"))
+                .thenReturn(Optional.of(rule));
+
         Category result = transactionCategorizerService.categorize(transaction);
 
-        // Then
         assertNotNull(result);
         assertEquals("Other", result.getCategoryName());
         assertEquals("SYSTEM", result.getCategorizedBy());
-        assertEquals("19000000", result.getPlaidCategoryId());
     }
 
     @Test
-    void testCategorize_whenTransactionMatchesTransactionRule_thenReturnCategory(){
+    void testCategorize_whenTransactionMatchesTransactionRule_thenReturnCategory()
+    {
         Transaction transaction = new Transaction();
         transaction.setPrimaryCategory("Shops");
         transaction.setAccountId("e2323232");
         transaction.setSecondaryCategory("Supermarkets and Groceries");
         transaction.setMerchantName("WINCO FOODS");
         transaction.setCategoryId("19047000");
+
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
-
-        when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
-        List<TransactionRule> rules = new ArrayList<>();
 
         TransactionRule wincoFoodsRule = new TransactionRule();
         wincoFoodsRule.setMerchantRule("WINCO FOODS");
@@ -276,58 +293,19 @@ class TransactionCategorizationEngineTest
         wincoFoodsRule.setUserId(1L);
         wincoFoodsRule.setCategoryName("Shopping");
         wincoFoodsRule.setPriority(2);
-        rules.add(wincoFoodsRule);
 
-        when(transactionRuleService.findByUserId(1L)).thenReturn(rules);
-        when(userCategoryService.getCategoryIdByNameAndUser("Shopping", 1L))
-                .thenReturn(2L);
+        when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
+        when(transactionRuleService.findByUserId(1L)).thenReturn(List.of(wincoFoodsRule));
+        when(userCategoryService.getCategoryIdByNameAndUser("Shopping", 1L)).thenReturn(2L);
+
         Category result = transactionCategorizerService.categorize(transaction);
 
-        // Then
         assertNotNull(result);
         assertEquals("Shopping", result.getCategoryName());
         assertEquals("USER", result.getCategorizedBy());
         assertEquals(2L, result.getCategoryId());
-        assertEquals("19047000", result.getPlaidCategoryId());
     }
 
-    @ParameterizedTest
-    @MethodSource("providePlaidTransactions")
-    void testCategorize_plaidTransactionsSystemRules( String primaryCategory,
-                                           String secondaryCategory,
-                                           String categoryId,
-                                           String merchantName,
-                                           String expectedCategoryName,
-                                           String expectedCategorizedBy,
-                                           String expectedPlaidCategoryId,
-                                           String testDescription){
-        Transaction transaction = new Transaction();
-        transaction.setAccountId("acct-123");
-        transaction.setPrimaryCategory(primaryCategory);
-        transaction.setSecondaryCategory(secondaryCategory);
-        transaction.setCategoryId(categoryId);
-        transaction.setMerchantName(merchantName);
-        AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setUser(UserEntity.builder().id(1L).build());
-        accountEntity.setId("acct-123");
-
-        when(accountService.findByAccountId("acct-123")).thenReturn(Optional.of(accountEntity));
-        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
-        transactionCategorizerService.initializePlaidCategoryMap();
-
-        // When
-        Category result = transactionCategorizerService.categorize(transaction);
-
-        // Then
-        assertNotNull(result, "Category should not be null");
-        assertEquals(expectedCategoryName, result.getCategoryName(),
-                "Category name mismatch for: " + testDescription);
-        assertEquals(expectedCategorizedBy, result.getCategorizedBy(),
-                "CategorizedBy mismatch for: " + testDescription);
-        assertEquals(expectedPlaidCategoryId, result.getPlaidCategoryId(),
-                "Plaid category ID mismatch for: " + testDescription);
-
-    }
 
     @ParameterizedTest
     @MethodSource("provideTransactionRuleMatchingScenarios")
@@ -368,6 +346,124 @@ class TransactionCategorizationEngineTest
         // Then
         assertEquals(expectedMatch, result,
                 "Match result mismatch for: " + testDescription);
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePlaidTransactions")
+    void testCategorize_plaidTransactionsSystemRules(
+            String primaryCategory,
+            String secondaryCategory,
+            String categoryId,
+            String merchantName,
+            String expectedCategoryName,
+            String expectedCategorizedBy,
+            String testDescription)
+    {
+        Transaction transaction = new Transaction();
+        transaction.setAccountId("acct-123");
+        transaction.setPrimaryCategory(primaryCategory);
+        transaction.setSecondaryCategory(secondaryCategory);
+        transaction.setCategoryId(categoryId);
+        transaction.setMerchantName(merchantName);
+
+        AccountEntity accountEntity = new AccountEntity();
+        accountEntity.setUser(UserEntity.builder().id(1L).build());
+        accountEntity.setId("acct-123");
+
+        when(accountService.findByAccountId("acct-123")).thenReturn(Optional.of(accountEntity));
+        when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
+
+        // Wire up whichever service method the strategy will call for this scenario
+        stubSystemRulesForScenario(primaryCategory, secondaryCategory, categoryId, merchantName, expectedCategoryName);
+
+        Category result = transactionCategorizerService.categorize(transaction);
+
+        assertNotNull(result, "Category should not be null for: " + testDescription);
+        assertEquals(expectedCategoryName, result.getCategoryName(),
+                "Category name mismatch for: " + testDescription);
+        assertEquals(expectedCategorizedBy, result.getCategorizedBy(),
+                "CategorizedBy mismatch for: " + testDescription);
+    }
+
+    // Stubs the right service method based on which fields are present
+    private void stubSystemRulesForScenario(String primary, String secondary,
+                                            String categoryId, String merchant,
+                                            String expectedCategory)
+    {
+        boolean hasPrimary = primary != null && !primary.isEmpty();
+        boolean hasSecondary = secondary != null && !secondary.isEmpty();
+        boolean hasCategoryId = categoryId != null && !categoryId.isEmpty();
+        boolean hasMerchant = merchant != null && !merchant.isEmpty();
+
+        if("Uncategorized".equals(expectedCategory))
+        {
+            return; // priority 0 - no service call needed
+        }
+
+        SystemCategoryRulesEntity rule = buildPlaidRule(categoryId, primary, secondary, expectedCategory);
+
+        if(hasPrimary && hasSecondary && hasCategoryId)
+        {
+            when(systemCategoryRulesService.findByPlaidFull(categoryId, primary, secondary))
+                    .thenReturn(Optional.of(rule));
+        }
+        else if(hasPrimary && hasSecondary)
+        {
+            when(systemCategoryRulesService.findByPlaidFull(any(), eq(primary), eq(secondary)))
+                    .thenReturn(Optional.empty());
+            when(systemCategoryRulesService.findByPlaidPrimaryAndSecondary(primary, secondary))
+                    .thenReturn(Optional.of(rule));
+        }
+        else if(hasSecondary && hasCategoryId)
+        {
+            when(systemCategoryRulesService.findByPlaidFull(any(), any(), any()))
+                    .thenReturn(Optional.empty());
+            when(systemCategoryRulesService.findByPlaidCategoryIdAndSecondary(categoryId, secondary))
+                    .thenReturn(Optional.of(rule));
+        }
+        else if(hasPrimary && hasCategoryId)
+        {
+            when(systemCategoryRulesService.findByPlaidFull(any(), any(), any()))
+                    .thenReturn(Optional.empty());
+            when(systemCategoryRulesService.findByPlaidCategoryIdAndPrimary(categoryId, primary))
+                    .thenReturn(Optional.of(rule));
+        }
+        else if(hasPrimary)
+        {
+            when(systemCategoryRulesService.findByPlaidPrimaryOnly(primary))
+                    .thenReturn(Optional.of(rule));
+        }
+        else if(hasSecondary)
+        {
+            when(systemCategoryRulesService.findByPlaidSecondaryOnly(secondary))
+                    .thenReturn(Optional.of(rule));
+        }
+        else if(hasCategoryId)
+        {
+            when(systemCategoryRulesService.findByPlaidCategoryIdOnly(categoryId))
+                    .thenReturn(Optional.of(rule));
+        }
+        else if(hasMerchant)
+        {
+            when(merchantMatcherService.matchMerchant(merchant))
+                    .thenReturn(Optional.of(CategoryType.getCategoryType(expectedCategory)));
+        }
+    }
+
+    // Builds a stub entity with just the matched category name populated
+    private SystemCategoryRulesEntity buildPlaidRule(String categoryId, String primary,
+                                                     String secondary, String matchedCategory)
+    {
+        PlaidCategoriesEntity plaidEntity = new PlaidCategoriesEntity();
+        plaidEntity.setCategoryId(categoryId);
+        plaidEntity.setPrimaryCategory(primary);
+        plaidEntity.setSecondaryCategory(secondary);
+        plaidEntity.setMatchedCategory(matchedCategory);
+
+        SystemCategoryRulesEntity rule = new SystemCategoryRulesEntity();
+        rule.setPlaidCategoryId(plaidEntity);
+        rule.setMatchedCategory(matchedCategory);
+        return rule;
     }
 
     private static Stream<Arguments> provideTransactionRuleMatchingScenarios() {

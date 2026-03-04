@@ -43,7 +43,6 @@ public class PlaidImportController
             plaidTransactionRunner.saveTransactions(importedTransactions);
             PlaidImportResult plaidImportResult = new PlaidImportResult(userId, importedTransactions, new ArrayList<>());
             categoryRunner.categorizeTransactionsByRange(userId, startDate, endDate);
-            categoryRunner.categorizeRecurringTransactions(userId);
             return ResponseEntity.ok(plaidImportResult);
         }catch(Exception e){
             log.error("There was an error importing plaid transactions: {}", e.getMessage());

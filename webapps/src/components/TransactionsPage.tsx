@@ -170,7 +170,34 @@ const TransactionsPage: React.FC = () => {
         }
     }, []);
 
-    const handleSyncTransactions = () => {};
+    const handleSyncTransactions = async () =>
+    {
+        if (isSyncing) return;
+        setIsSyncing(true);
+        try {
+            const userId = Number(sessionStorage.getItem('userId'));
+            const startDateStr = dateRange.startDate.toISOString().split('T')[0];
+            const endDateStr   = dateRange.endDate.toISOString().split('T')[0];
+
+            const updated = await transactionCategoryService.reCategorizeCsvTransactions(
+                userId, startDateStr, endDateStr
+            );
+
+            if (updated.length > 0) {
+                // Merge updated categories back into existing csvTransactions state
+                setCsvTransactions(prev =>
+                    prev.map(csv => {
+                        const match = updated.find(u => u.id === csv.id);
+                        return match ? { ...csv, category: match.category } : csv;
+                    })
+                );
+            }
+        } catch (error) {
+            console.error('Sync failed:', error);
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const handleOpenRulesDialog = async () => {
         setRulesDialogOpen(true);

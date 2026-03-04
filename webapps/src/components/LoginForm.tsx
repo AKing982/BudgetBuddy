@@ -207,29 +207,30 @@ const LoginForm: React.FC = () => {
             sessionStorage.setItem('email', userEmail);
 
             const isUserOverrideEnabled = await userService.fetchUserOverrideEnabled(userId);
-            if (isUserOverrideEnabled || overrideAccessClick) {
-                await userService.updateUserUploadEnabledAccess(userId, overrideAccessClick);
-                await userLogService.saveUserLog(userId, 0, 0, new Date(), new Date());
-                sessionStorage.setItem('sessionDuration', '0');
-                navigate('/dashboard');
-                return;
-            }
-
-            const plaidStatus = await handlePlaidLinkVerification(userId);
-            if (!plaidStatus) return;
-
-            if (!plaidStatus.isLinked) {
-                if (plaidStatus.requiresLinkUpdate) {
-                    await openUpdateMode(userId);
-                } else {
-                    const linkResponse = await plaidService.createLinkToken();
-                    if (!linkResponse?.linkToken) return;
-                    setLinkToken(linkResponse.linkToken);
-                    sessionStorage.setItem('plaidLinkToken', linkResponse.linkToken);
-                }
-            } else {
-                navigate('/dashboard');
-            }
+            // if (isUserOverrideEnabled || overrideAccessClick) {
+            //     await userService.updateUserUploadEnabledAccess(userId, overrideAccessClick);
+            //     await userLogService.saveUserLog(userId, 0, 0, new Date(), new Date());
+            //     sessionStorage.setItem('sessionDuration', '0');
+            //     navigate('/dashboard');
+            //     return;
+            // }
+            //
+            // const plaidStatus = await handlePlaidLinkVerification(userId);
+            // if (!plaidStatus) return;
+            //
+            // if (!plaidStatus.isLinked) {
+            //     if (plaidStatus.requiresLinkUpdate) {
+            //         await openUpdateMode(userId);
+            //     } else {
+            //         const linkResponse = await plaidService.createLinkToken();
+            //         if (!linkResponse?.linkToken) return;
+            //         setLinkToken(linkResponse.linkToken);
+            //         sessionStorage.setItem('plaidLinkToken', linkResponse.linkToken);
+            //     }
+            // } else {
+            //     navigate('/dashboard');
+            // }
+            navigate('/dashboard');
         } catch (error) {
             setIsAuthenticated(false);
             loginAttempts++;

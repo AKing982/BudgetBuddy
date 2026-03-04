@@ -77,6 +77,25 @@ class TransactionCategoryService {
         return `${year}-${month}-${day}`;
     }
 
+    public async reCategorizeCsvTransactions(
+        userId: number,
+        startDate: string,
+        endDate: string
+    ): Promise<CSVTransaction[]>
+    {
+        try {
+            const response = await axios.post<CSVTransaction[]>(
+                `${API_BASE_URL}/category/re-categorize/${userId}/csv`,
+                null,
+                { params: { startDate, endDate } }
+            );
+            return Array.isArray(response.data) ? response.data : [];
+        } catch (error) {
+            console.error('Error re-categorizing transactions:', error);
+            return [];
+        }
+    }
+
     public async checkNewTransactionCategoriesByDateRange(userId: number, startDate: Date, endDate: Date) : Promise<boolean>
     {
         try

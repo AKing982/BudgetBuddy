@@ -18,6 +18,8 @@ public interface CSVTransactionService extends ServiceModel<CSVTransactionEntity
 
     Optional<TransactionCSV> findTransactionCSVById(Long transactionId);
 
+    List<TransactionCSV> findTransactionCSVByIds(List<Long> ids);
+
     List<TransactionCSV> findTransactionCSVByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate, int pageNum);
     Page<CSVTransactionEntity> findCSVTransactionEntitiesByUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate, int pageNum);
 }

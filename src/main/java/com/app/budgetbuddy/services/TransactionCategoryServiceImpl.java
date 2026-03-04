@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -155,6 +156,16 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
             log.error("There was an error while updating the TransactionCategory entity", e);
             return;
         }
+    }
+
+    @Override
+    public List<TransactionCategory> getUncategorizedTransactionsByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        return transactionCategoryRepository
+                .findUncategorizedByUserIdAndDateRange(userId, startDate, endDate)
+                .stream()
+                .map(this::convertFromEntity)
+                .collect(Collectors.toList());
     }
 
     @Override
