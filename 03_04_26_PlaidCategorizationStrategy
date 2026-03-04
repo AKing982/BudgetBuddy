@@ -1,0 +1,74 @@
+package com.app.budgetbuddy.workbench.categories;
+
+import com.app.budgetbuddy.domain.Category;
+import com.app.budgetbuddy.domain.CategoryType;
+import com.app.budgetbuddy.entities.SystemCategoryRulesEntity;
+import com.app.budgetbuddy.services.SystemCategoryRulesService;
+import com.app.budgetbuddy.workbench.MerchantMatcherService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+@Component
+@Slf4j
+public class PlaidCategorizationStrategy
+{
+    private final SystemCategoryRulesService systemCategoryRulesService;
+    private final MerchantMatcherService merchantMatcherService;
+    private final String SYSTEM_CATEGORIZED = "SYSTEM";
+
+    @Autowired
+    public PlaidCategorizationStrategy(SystemCategoryRulesService systemCategoryRulesService, MerchantMatcherService merchantMatcherService)
+    {
+        this.systemCategoryRulesService = systemCategoryRulesService;
+        this.merchantMatcherService = merchantMatcherService;
+    }
+
+    private Category buildMatchedCategory(Optional<SystemCategoryRulesEntity> rule)
+    {
+        return rule.isPresent() ? buildCategory(rule.get()) : Category.createUncategorized();
+    }
+
+    public Category categorize(String categoryId, String primary, String secondary, String merchantName, int priority)
+    {
+        Optional<SystemCategoryRulesEntity> rule = Optional.empty();
+        switch(priority){
+            case 1:
+                 rule = systemCategoryRulesService.findByPlaidFull(categoryId, primary, secondary);
+                 return buildMatchedCategory(rule);
+            case 2:
+                rule = systemCategoryRulesService.findByPlaidPrimaryAndSecondary(primary, secondary);
+                return buildMatchedCategory(rule);
+            case 5:
+                rule = systemCategoryRulesService.findByPlaidCategoryIdAndSecondary(categoryId, secondary);
+                return buildMatchedCategory(rule);
+            case 6:
+                rule = systemCategoryRulesService.findByPlaidCategoryIdAndPrimary(categoryId, primary);
+                return buildMatchedCategory(rule);
+            case 7:
+                rule = systemCategoryRulesService.findByPlaidPrimaryOnly(primary);
+                return buildMatchedCategory(rule);
+            case 8:
+                rule = systemCategoryRulesService.findByPlaidSecondaryOnly(secondary);
+                return buildMatchedCategory(rule);
+            case 9:
+                rule = systemCategoryRulesService.findByPlaidCategoryIdOnly(categoryId);
+                return buildMatchedCategory(rule);
+            case 10:
+                Optional<CategoryType> categoryType = merchantMatcherService.matchMerchant(merchantName);
+                return categoryType.isPresent() ? Category.createCategory("", categoryType.get().getType(), SYSTEM_CATEGORIZED, LocalDate.now()) : Category.createUncategorized();
+            default:
+                log.warn("Plaid - No rule matched: categoryId={}, primary={}, secondary={}, merchant={}",
+                categoryId, primary, secondary, merchantName);
+                return Category.createUncategorized();
+        }
+    }
+
+    private Category buildCategory(SystemCategoryRulesEntity rule)
+    {
+        return Category.createCategory("", rule.getMatchedCategory(), SYSTEM_CATEGORIZED, LocalDate.now());
+    }
+}
