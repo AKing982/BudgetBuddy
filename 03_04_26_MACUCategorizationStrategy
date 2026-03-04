@@ -1,0 +1,72 @@
+package com.app.budgetbuddy.workbench.categories;
+
+import com.app.budgetbuddy.domain.Category;
+import com.app.budgetbuddy.entities.SystemCategoryRulesEntity;
+import com.app.budgetbuddy.services.CategoryService;
+import com.app.budgetbuddy.services.SystemCategoryRulesService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+@Component
+@Slf4j
+public class MACUCategorizationStrategy implements CSVCategorizationStrategy
+{
+    private final SystemCategoryRulesService systemCategoryRulesService;
+    private final CategoryService categoryService;
+    private final String SYSTEM_CATEGORIZED = "SYSTEM";
+
+    @Autowired
+    public MACUCategorizationStrategy(SystemCategoryRulesService systemCategoryRulesService,
+                                      CategoryService categoryService)
+    {
+        this.systemCategoryRulesService = systemCategoryRulesService;
+        this.categoryService = categoryService;
+    }
+
+    @Override
+    public boolean supports(String institutionId)
+    {
+        return "Mountain America Credit Union".equals(institutionId);
+    }
+
+    private Category buildMatchedCategory(Optional<SystemCategoryRulesEntity> rule)
+    {
+        return rule.isPresent() ? buildCategory(rule.get(), categoryService) : Category.createUncategorized();
+    }
+
+    @Override
+    public Category categorize(String merchantNameUpper, String transactionCategory,
+                               double absAmount, int priority)
+    {
+        // Level 0: merchant + category + amount
+        Optional<SystemCategoryRulesEntity> rule = Optional.empty();
+        switch(priority){
+            case 1:
+                log.info("MACU - Matched MerchantCategoryAmount: merchant={}, category={}, amount={}",
+                merchantNameUpper, transactionCategory, absAmount);
+                rule = systemCategoryRulesService.findByMerchantCategoryAndAmount(merchantNameUpper, transactionCategory, absAmount);
+                return buildMatchedCategory(rule);
+            case 2:
+                rule = systemCategoryRulesService.findByMerchantAndCategory(merchantNameUpper, transactionCategory);
+                return buildMatchedCategory(rule);
+            case 3:
+                rule = systemCategoryRulesService.findByCategoryOnly(transactionCategory);
+                return buildMatchedCategory(rule);
+            default:
+                log.warn("MACU - No rule matched: merchant={}, category={}, amount={}",
+                merchantNameUpper, transactionCategory, absAmount);
+                return Category.createUncategorized();
+        }
+    }
+
+    private Category buildCategory(SystemCategoryRulesEntity rule, CategoryService categoryService)
+    {
+        String matchedCategoryName = rule.getMatchedCategory();
+        Long categoryId = categoryService.getCategoryIdByName(matchedCategoryName);
+        return Category.createCategory(categoryId, matchedCategoryName, SYSTEM_CATEGORIZED, LocalDate.now());
+    }
+}
