@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -50,8 +51,8 @@ public class CSVParserService {
         CsvParserSettings settings = createDefaultSettings(parserStrategy.getDelimiter());
         CsvParser csvParser = new CsvParser(settings);
 
-        try(InputStream inputStream = file.getInputStream()) {
-            List<String[]> rows = csvParser.parseAll(inputStream);
+        try(InputStreamReader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)) {
+            List<String[]> rows = csvParser.parseAll(reader);
             return rows.stream()
                     .map(row -> parserStrategy.parseRow(row, userId))
                     .collect(Collectors.toList());
@@ -61,14 +62,25 @@ public class CSVParserService {
         }
     }
 
-    private CsvParserSettings createDefaultSettings(char delimiter)
-    {
+    private CsvParserSettings createDefaultSettings(char delimiter) {
         CsvParserSettings settings = new CsvParserSettings();
         settings.getFormat().setDelimiter(delimiter);
         settings.setNumberOfRowsToSkip(1);
         settings.setLineSeparatorDetectionEnabled(true);
+        settings.setIgnoreLeadingWhitespaces(true);
+        settings.setIgnoreTrailingWhitespaces(true);
+        settings.setSkipEmptyLines(true);
         return settings;
     }
+
+//    private CsvParserSettings createDefaultSettings(char delimiter)
+//    {
+//        CsvParserSettings settings = new CsvParserSettings();
+//        settings.getFormat().setDelimiter(delimiter);
+//        settings.setNumberOfRowsToSkip(1);
+//        settings.setLineSeparatorDetectionEnabled(true);
+//        return settings;
+//    }
 }
 
 //@Service

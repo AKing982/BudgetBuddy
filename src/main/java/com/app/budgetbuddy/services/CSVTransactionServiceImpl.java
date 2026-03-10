@@ -140,7 +140,7 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
                 }
                 uniqueCSVTransactionEntities.add(csvTransactionEntity);
             }
-            csvTransactionRepository.saveAll(csvTransactionEntities);
+            csvTransactionRepository.saveAll(uniqueCSVTransactionEntities);
         }catch(DataAccessException e){
             log.error("There was an error saving the CSV transaction entities: ", e);
             throw e;

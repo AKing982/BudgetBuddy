@@ -26,8 +26,8 @@ public class MountainAmericaTransactionParser implements TransactionParser
 
         // MACU Specific Mapping
         tx.setTransactionId(row[0]);
-        tx.setTransactionDate(ParserUtils.toLocalDate(row[1], "MM/dd/yyyy"));
-        tx.setEffectiveDate(ParserUtils.toLocalDate(row[2], "MM/dd/yyyy"));
+        tx.setTransactionDate(ParserUtils.toLocalDate(row[1], "M/d/yyyy"));
+        tx.setEffectiveDate(ParserUtils.toLocalDate(row[2], "M/d/yyyy"));
         tx.setType(row[3]);
         tx.setTransactionAmount(ParserUtils.toBigDecimal(row[4]));
         tx.setDescription(row[7]);

@@ -59,11 +59,15 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     @Transactional
     public void save(TransactionCategoryEntity transactionCategorizationEntity)
     {
-        try
-        {
-
+        try {
+            Long csvTransactionId = transactionCategorizationEntity.getCsvTransaction().getId();
+            if (csvTransactionId != null && transactionCategoryRepository
+                    .existsByCsvTransactionId(csvTransactionId)) {
+                log.debug("Skipping duplicate transaction category for csv_transaction_id: {}", csvTransactionId);
+                return;
+            }
             transactionCategoryRepository.save(transactionCategorizationEntity);
-        }catch(DataAccessException e){
+        } catch (DataAccessException e) {
             log.error("There was an error while saving the TransactionCategory entity", e);
         }
     }

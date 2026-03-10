@@ -37,6 +37,8 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
     @Query("UPDATE TransactionCategoryEntity tce SET tce.status =:status WHERE tce.csvTransaction.id =:csvId")
     void updateTransactionCategoryStatus(@Param("csvId") Long csvId, @Param("status") TransactionCategoryStatus status);
 
+    boolean existsByCsvTransactionId(Long csvTransactionId);
+
     @Query("SELECT tce FROM TransactionCategoryEntity tce " +
             "JOIN tce.csvTransaction ct " +
             "WHERE ct.user.id = :userId " +

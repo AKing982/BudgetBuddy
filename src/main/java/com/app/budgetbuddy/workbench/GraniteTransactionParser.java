@@ -26,10 +26,12 @@ public class GraniteTransactionParser implements TransactionParser
         tx.setAccount(row[0]);
         tx.setSuffix(Integer.parseInt(row[1]));
         tx.setSequenceNo(ParserUtils.removeLeadingZeros(row[2]));
-        tx.setTransactionDate(ParserUtils.toLocalDate(row[3], "yyyy/MM/dd"));
+        tx.setTransactionDate(ParserUtils.toLocalDate(row[3]));
         tx.setTransactionAmount(ParserUtils.toBigDecimal(row[4]));
         tx.setDescription(row[5]);
         tx.setExtendedDescription(row[6]);
+        tx.setBalance(ParserUtils.toBigDecimal(row[9]));
+        tx.setElectronicTransactionDate(ParserUtils.toLocalDate(row[7]));
         tx.setMerchantName(merchantNameBuilder.build("Granite Credit Union", row[5], row[6]));
         tx.setInstitution_id("Granite Credit Union");
         tx.setUserId(userId);
