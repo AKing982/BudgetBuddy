@@ -148,7 +148,6 @@ const TransactionsPage: React.FC = () => {
     const [customCategories, setCustomCategories] = useState<string[]>([]);
     const [loadingRules, setLoadingRules] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
-
     const categoryService = CategoryService.getInstance();
     const transactionService = TransactionService.getInstance();
     const transactionCategoryService = TransactionCategoryService.getInstance();
@@ -169,6 +168,7 @@ const TransactionsPage: React.FC = () => {
             alert(`Session Error: Invalid User ID found (${rawUserId}). Please log in again.`);
         }
     }, []);
+
 
     const handleSyncTransactions = async () =>
     {
@@ -331,36 +331,19 @@ const TransactionsPage: React.FC = () => {
     const handleSaveCategory = async (data: CategorySaveData) => {
         try {
             const userId = Number(sessionStorage.getItem('userId'));
-            const hasAdv = data.advancedMatching && (
-                data.advancedMatching.matchByMerchant || data.advancedMatching.matchByDescription ||
-                data.advancedMatching.matchByExtendedDescription || data.advancedMatching.matchByAmountRange
+            await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
+            setTransactions(prev =>
+                prev.map(t => t.transactionId === data.transactionId ? { ...t, categories: [data.category] } : t)
             );
-            if (hasAdv) {
-                const rule: TransactionRule = {
-                    userId, categoryName: data.category, priority: 6,
-                    isActive: true, amountMin: 0, amountMax: 0, matchCount: 0,
-                };
-                if (data.advancedMatching?.matchByMerchant && data.advancedMatching.merchantNameMatch)
-                    rule.merchantRule = data.advancedMatching.merchantNameMatch;
-                if (data.advancedMatching?.matchByDescription && data.advancedMatching.descriptionMatch)
-                    rule.descriptionRule = data.advancedMatching.descriptionMatch;
-                if (data.advancedMatching?.matchByAmountRange) {
-                    if (data.advancedMatching.amountRangeMin !== undefined) rule.amountMin = data.advancedMatching.amountRangeMin;
-                    if (data.advancedMatching.amountRangeMax !== undefined) rule.amountMax = data.advancedMatching.amountRangeMax;
-                }
-                await transactionRuleServiceInst.addTransactionRule(userId, rule);
-                await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
-            } else {
-                await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
-            }
-            setTransactions(prev => prev.map(t => t.transactionId === data.transactionId ? { ...t, categories: [data.category] } : t));
-            // @ts-ignore
-            if (data.transactionId.startsWith('csv-')) {
-                // @ts-ignore
+            if (typeof data.transactionId === 'string' && data.transactionId.startsWith('csv-')) {
                 const csvId = data.transactionId.split('-')[1];
-                setCsvTransactions(prev => prev.map(c => c.id?.toString() === csvId ? { ...c, category: data.category } : c));
+                setCsvTransactions(prev =>
+                    prev.map(c => c.id?.toString() === csvId ? { ...c, category: data.category } : c)
+                );
             }
-        } catch (error) { console.error('Error saving category:', error); }
+        } catch (error) {
+            console.error('Error saving category:', error);
+        }
     };
 
     const combinedTransactions = useMemo(() => {
@@ -1071,21 +1054,13 @@ const TransactionsPage: React.FC = () => {
                     currentCategory={selectedTransaction.categories[0] || ''}
                     transactionId={selectedTransaction.transactionId}
                     merchantName={selectedTransaction.merchantName || selectedTransaction.name}
-                    description={selectedTransaction.description}
-                    extendedDescription={selectedTransaction.extendedDescription || ''}
-                    amount={selectedTransaction.amount}
                     availableCategories={uniqueCategories}
                     onSave={handleSaveCategory}
-                    onToggleCategory={async (cat, enabled) => {
-                        if (enabled) setDisabledCategories(prev => prev.filter(c => c !== cat));
-                        else setDisabledCategories(prev => [...prev, cat]);
-                    }}
                     onAddCustomCategory={handleAddCustomCategory}
                     onDeleteCustomCategory={async (cat) => {
                         setCustomCategories(prev => prev.filter(c => c !== cat));
                         setDisabledCategories(prev => prev.filter(c => c !== cat));
                     }}
-                    onResetDisabledCategories={async () => setDisabledCategories([])}
                 />
             )}
 
@@ -1094,8 +1069,15 @@ const TransactionsPage: React.FC = () => {
                 onClose={() => setRulesDialogOpen(false)}
                 rules={transactionRules}
                 loading={loadingRules}
+                userId={Number(sessionStorage.getItem('userId'))}
+                availableCategories={uniqueCategories}
                 onDeleteRule={handleDeleteRule}
                 onToggleRule={handleToggleRule}
+                onAddRule={async (rule) => {
+                    const userId = Number(sessionStorage.getItem('userId'));
+                    const saved = await transactionRuleServiceInst.addTransactionRule(userId, rule);
+                    setTransactionRules(prev => [...prev, saved]);
+                }}
             />
         </Box>
     );

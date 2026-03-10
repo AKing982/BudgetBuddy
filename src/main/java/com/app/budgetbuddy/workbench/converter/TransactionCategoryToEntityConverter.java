@@ -52,6 +52,8 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
             transactionCategoryEntity.setMatchedCategory(transactionCategory.getCategory());
             transactionCategoryEntity.setCategorized_date(transactionCategory.getCategorizedDate());
             transactionCategoryEntity.setStatus(TransactionCategoryStatus.NEW);
+            transactionCategoryEntity.setCategoryLevel(transactionCategory.getCategoryPriorityLevel());
+            transactionCategoryEntity.setExpenseType(transactionCategory.getCategoryExpenseType());
             transactionCategoryEntity.setUpdated(transactionCategoryEntity.isUpdated());
             transactionCategoryEntity.setSubBudget(subBudgetRepository.findById(transactionCategory.getSubBudgetId()).orElse(null));
             Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());

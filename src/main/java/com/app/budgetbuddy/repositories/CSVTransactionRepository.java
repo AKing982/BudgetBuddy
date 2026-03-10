@@ -43,8 +43,9 @@ public interface CSVTransactionRepository extends JpaRepository<CSVTransactionEn
             "AND cte.transactionDate = :date " +
             "AND cte.merchantName =:merchant " +
             "AND cte.extendedDescription =:extended " +
-            "AND cte.description =:description")
-    Optional<CSVTransactionEntity> findCSVTransactionByUserIdAndParams(@Param("userId") Long userId, @Param("date") LocalDate date, @Param("merchant") String merchantName, @Param("extended") String extendedDescription, @Param("description") String description);
+            "AND cte.description =:description " +
+            "AND cte.transactionAmount =:amount")
+    Optional<CSVTransactionEntity> findCSVTransactionByUserIdAndParams(@Param("userId") Long userId, @Param("date") LocalDate date, @Param("merchant") String merchantName, @Param("extended") String extendedDescription, @Param("description") String description, @Param("amount") Double amount);
 
     @Query("SELECT ct FROM CSVTransactionEntity ct WHERE ct.transactionDate BETWEEN :startDate AND :endDate AND ct.user.id=:userId")
     Page<CSVTransactionEntity> findCSVTransactionEntitiesByUserIdAndStartDateAndEndDate(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);

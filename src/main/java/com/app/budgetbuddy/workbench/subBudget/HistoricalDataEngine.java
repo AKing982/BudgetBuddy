@@ -31,49 +31,57 @@ public class HistoricalDataEngine
         this.csvTransactionsByCategoryQueries = csvTransactionsByCategoryQueries;
     }
 
-    public HistoricalTransactionsByCategories getHistoricalTransactionCategories(final Long userId, final LocalDate startDate)
+    public List<TransactionsByCategory> getHistoricalTransactionsByCategories(final Long userId, final LocalDate startDate, final int numberOfMonths)
     {
-        final int MIN_MONTHS = 4;
-        final int MAX_MONTHS = 12;
-        int monthsWithData = 0;
-        Map<String, BigDecimal> aggregated = new HashMap<>();
-        for(int i = 0; i < MAX_MONTHS; i++)
+        if(numberOfMonths == 0)
         {
-            LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
-            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
-            List<CSVTransactionsByCategory> csvTransactionsByCategories =
-                    csvTransactionsByCategoryQueries.getCSVTransactionsByCategories(userId, monthStart, monthEnd);
-            if(!csvTransactionsByCategories.isEmpty())
-            {
-                monthsWithData++;
-                for(CSVTransactionsByCategory csvTransactionsByCategory : csvTransactionsByCategories)
-                {
-                    String category = csvTransactionsByCategory.getCategory();
-                    BigDecimal categorySpending = csvTransactionsByCategory.getTotalCategorySpending();
-                    aggregated.merge(category, categorySpending, BigDecimal::add);
-                }
-            }
-            if(i >= MIN_MONTHS && monthsWithData == 0)
-            {
-                break;
-            }
-
+            return Collections.emptyList();
         }
-        log.info("Found {} months of transaction data scanning back from {}", monthsWithData, startDate);
-        final int actualMonths = Math.max(1, monthsWithData);
-        final BigDecimal monthsDivisor = BigDecimal.valueOf(actualMonths);
-        List<TransactionsByCategory> transactions = aggregated.entrySet().stream()
-                .map(e -> {
-                    TransactionsByCategory t = new TransactionsByCategory();
-                    t.setCategoryName(e.getKey());
-                    BigDecimal monthlyAverage = e.getValue()
-                            .divide(monthsDivisor, 2, RoundingMode.HALF_UP);
-                    t.setTotalCategorySpending(monthlyAverage);
-//                    t.setTotalCategorySpending(e.getValue());
-                    return t;
-                })
-                .toList();
-        return new HistoricalTransactionsByCategories(transactions, actualMonths);
+        try
+        {
+            if(numberOfMonths < 0)
+            {
+                throw new HistoricalDataException("Number of months cannot be negative");
+            }
+            Map<String, BigDecimal> aggregatedSpending = new HashMap<>();
+            Map<String, CategoryExpenseType> categoryExpenseTypes = new HashMap<>();
+            int monthsCounter = 0;
+            for(int i = 0; i < numberOfMonths; i++)
+            {
+                LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
+                LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+                List<TransactionsByCategory> monthlyCsvTransactions =
+                        csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(userId, monthStart, monthEnd);
+                if(!monthlyCsvTransactions.isEmpty())
+                {
+                    monthsCounter++;
+                    for(TransactionsByCategory t : monthlyCsvTransactions)
+                    {
+                        aggregatedSpending.merge(
+                                t.getCategoryName(),
+                                t.getTotalCategorySpending(),
+                                BigDecimal::add);
+                        categoryExpenseTypes.put(t.getCategoryName(), t.getCategoryExpenseType());
+                    }
+                }
+                // Sum totals per category across all months
+            }
+            final int monthDivisor = monthsCounter == 0 ? 1 : monthsCounter;
+            return aggregatedSpending.entrySet().stream()
+                    .map(entry -> {
+                        BigDecimal average = entry.getValue()
+                                .divide(BigDecimal.valueOf(monthDivisor), 2, RoundingMode.HALF_UP);
+                        TransactionsByCategory result = new TransactionsByCategory();
+                        result.setCategoryName(entry.getKey());
+                        result.setTotalCategorySpending(average);
+                        result.setCategoryExpenseType(categoryExpenseTypes.getOrDefault(entry.getKey(), CategoryExpenseType.VARIABLE));
+                        return result;
+                    })
+                    .toList();
+        }catch(HistoricalDataException e){
+            log.error("There was an error fetching the historical spending for {} months: {}", numberOfMonths, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     public Map<String, HistoricalMonthStats> getHistoricalMonthStatsByCategory(final int numberOfMonths, final Long userId, final LocalDate startDate)

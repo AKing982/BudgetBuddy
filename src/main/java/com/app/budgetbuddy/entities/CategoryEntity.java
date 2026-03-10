@@ -37,6 +37,12 @@ public class CategoryEntity
     @Column(name="is_active")
     private boolean isActive;
 
+    @Column(name="type")
+    private String type;
+
+    @Column(name="bucket_level")
+    private int bucketLevel;
+
     @Column(name="created_at")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;

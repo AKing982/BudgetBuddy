@@ -27,4 +27,10 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long>
     @Query("SELECT c FROM CategoryEntity c WHERE c.description =:descr OR c.category =:name")
     Optional<CategoryEntity> findByDescriptionOrCategoryName(@Param("descr") String descr, @Param("name") String name);
 
+    @Query("SELECT c.type FROM CategoryEntity c WHERE c.category =:category")
+    String findCategoryType(@Param("category") String category);
+
+    @Query("SELECT c.bucketLevel FROM CategoryEntity c WHERE c.category =:category")
+    Integer findBucketLevel(@Param("category") String category);
+
 }

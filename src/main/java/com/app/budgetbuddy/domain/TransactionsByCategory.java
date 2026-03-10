@@ -11,9 +11,14 @@ import java.util.Objects;
 @Setter
 @ToString
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@Builder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class TransactionsByCategory
 {
    private String categoryName;
+   private CategoryExpenseType categoryExpenseType;
+   private boolean isSystemCategory;
+   private CategoryPriorityLevel priority;
    private BigDecimal totalCategorySpending;
    private List<Transaction> transactions;
 

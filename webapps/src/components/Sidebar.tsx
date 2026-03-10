@@ -6,7 +6,7 @@ import {
 import { Dashboard, AccountBalance, Search, ShoppingCart } from '@mui/icons-material';
 import {
     Settings, HelpCircle, BellIcon, User, CreditCard,
-    Shield, LogOut, Calculator, Sparkles,
+    Shield, LogOut, Calculator, Sparkles, BarChartIcon, BarChart2,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarMenu from './SidebarMenu';
@@ -16,6 +16,7 @@ import { BudgetType } from '../domain/BudgetType';
 import Tooltip from '@mui/material/Tooltip';
 import UserLogService from '../services/UserLogService';
 import SessionService from '../services/SessionService';
+import {BarChart} from "recharts";
 
 interface MenuItemType {
     text: string;
@@ -73,7 +74,7 @@ const Sidebar: React.FC = () => {
             } catch (e) { console.error('Error fetching budget:', e); }
         };
         load();
-    });
+    }, []);
 
     const getBudgetPath = () => {
         switch (budgetType) {
@@ -88,7 +89,8 @@ const Sidebar: React.FC = () => {
     const menuItems: MenuItemType[] = [
         { text: 'Dashboard',       icon: <Dashboard sx={{ fontSize: 20 }} />,     path: '/dashboard' },
         { text: 'Budgets',         icon: <AccountBalance sx={{ fontSize: 20 }} />, path: getBudgetPath() },
-        { text: 'Grocery Tracker', icon: <ShoppingCart sx={{ fontSize: 20 }} />,  path: '/grocery-tracker' },
+        { text: 'Spending Tracker', icon: <BarChart2 size={20} />, path: '/spending-tracker' },
+        // { text: 'Grocery Tracker', icon: <ShoppingCart sx={{ fontSize: 20 }} />,  path: '/grocery-tracker' },
         { text: 'Transactions',    icon: <Search sx={{ fontSize: 20 }} />,         path: '/transactions' },
         { text: 'BudgetPlanner',   icon: <Calculator size={19} />,                path: '/budget-planner' },
     ];

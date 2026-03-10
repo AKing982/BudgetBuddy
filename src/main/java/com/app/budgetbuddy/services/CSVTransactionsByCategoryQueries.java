@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.CSVTransactionsByCategory;
-import com.app.budgetbuddy.domain.CategorySpendAmount;
-import com.app.budgetbuddy.domain.TransactionCSV;
-import com.app.budgetbuddy.domain.TransactionCategoryStatus;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DataException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -164,6 +161,62 @@ public class CSVTransactionsByCategoryQueries
             log.error("There was an error: {}", e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    public List<TransactionsByCategory> getCSVExpenseTransactionsByCategories(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            final String csvTransactionCategoryQuery = """
+                    SELECT tc.matchedCategory,
+                    ABS(SUM(ct.transactionAmount)) as totalSpending,
+                    tc.categoryLevel,
+                    tc.expenseType
+                    FROM TransactionCategoryEntity tc
+                    INNER JOIN CSVTransactionEntity ct
+                        ON tc.csvTransaction.id = ct.id
+                    WHERE ct.transactionDate BETWEEN :startDate AND :endDate
+                        AND ct.user.id =:userId AND tc.matchedCategory NOT IN ('Uncategorized', 'Deposit', 'Income', 'Withdrawal')
+                    GROUP BY tc.matchedCategory, tc.categoryLevel, tc.expenseType, tc.subBudget.id
+                    """;
+            List<Object[]> results = entityManager.createQuery(csvTransactionCategoryQuery, Object[].class)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .setParameter("userId", userId)
+                    .getResultList();
+            return convertCSVExpenseTransactionsByCategory(results);
+        }catch(DataException e){
+            log.error("There was an error fetching the csv transactions by categories: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private List<TransactionsByCategory> convertCSVExpenseTransactionsByCategory(final List<Object[]> results)
+    {
+        if(results == null || results.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return results.stream()
+                .map(result -> {
+                    String category = (String) result[0];
+                    BigDecimal categorySpending = (BigDecimal) result[1];
+                    CategoryPriorityLevel categoryPriorityLevel = result[2] != null
+                            ? (CategoryPriorityLevel) result[2]
+                            : CategoryPriorityLevel.LEVEL_5;
+                    CategoryExpenseType categoryExpenseType = result[3] != null
+                            ? (CategoryExpenseType) result[3]
+                            : CategoryExpenseType.VARIABLE;
+
+                    return TransactionsByCategory.builder()
+                            .categoryExpenseType(categoryExpenseType)
+                            .categoryName(category)
+                            .priority(categoryPriorityLevel)
+                            .totalCategorySpending(categorySpending)
+                            .build();
+                })
+                .sorted(Comparator.comparing(TransactionsByCategory::getCategoryName))
+                .toList();
     }
 
     public List<CSVTransactionsByCategory> getCSVTransactionsByCategories(final Long userId, final LocalDate startDate, final LocalDate endDate)

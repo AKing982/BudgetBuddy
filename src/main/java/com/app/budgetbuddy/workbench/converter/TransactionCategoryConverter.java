@@ -18,8 +18,9 @@ public class TransactionCategoryConverter implements Converter<TransactionCatego
                 .subBudgetId(transactionCategoryEntity.getSubBudget().getId())
                 .category(transactionCategoryEntity.getMatchedCategory())
                 .isUpdated(transactionCategoryEntity.isUpdated())
+                .id(transactionCategoryEntity.getId())
                 .transactionCategoryStatus(transactionCategoryEntity.getStatus())
-                .transactionId(transactionCategoryEntity.getTransaction().getId())
+//                .transactionId(transactionCategoryEntity.getTransaction().getId())
                 .build();
     }
 }

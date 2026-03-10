@@ -142,6 +142,31 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 
     @Override
     @Transactional
+    public void updateAll(List<TransactionCategory> transactionCategoryList)
+    {
+        try
+        {
+            for(TransactionCategory transactionCategory : transactionCategoryList)
+            {
+                transactionCategoryRepository.findById(transactionCategory.getId())
+                        .ifPresent(entity -> {
+                            entity.setMatchedCategory(transactionCategory.getCategory());
+                            entity.setCategorizedBy(transactionCategory.getCategorizedBy());
+                            entity.setCategorized_date(transactionCategory.getCategorizedDate());
+                            entity.setUpdated(transactionCategory.isUpdated());
+                            entity.setStatus(transactionCategory.getTransactionCategoryStatus());
+                            entity.setCategoryLevel(transactionCategory.getCategoryPriorityLevel());
+                            entity.setExpenseType(transactionCategory.getCategoryExpenseType());
+                            transactionCategoryRepository.save(entity);
+                        });
+            }
+        }catch(DataAccessException e){
+            log.error("There was an error while updating the TransactionCategory entity", e);
+        }
+    }
+
+    @Override
+    @Transactional
     public void updateTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId)
     {
         if(transactionCategoryStatus == null || csvId < 1L)

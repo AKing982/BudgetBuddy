@@ -130,8 +130,9 @@ public class CSVTransactionServiceImpl implements CSVTransactionService
                 String description = csvTransactionEntity.getDescription();
                 String extendedDescription = csvTransactionEntity.getExtendedDescription();
                 String merchant = csvTransactionEntity.getMerchantName();
+                BigDecimal transactionAmount = csvTransactionEntity.getTransactionAmount();
                 // Does the transaction already exist in the database?
-                Optional<CSVTransactionEntity> existing = csvTransactionRepository.findCSVTransactionByUserIdAndParams(userId, transactionDate, merchant, extendedDescription, description);
+                Optional<CSVTransactionEntity> existing = csvTransactionRepository.findCSVTransactionByUserIdAndParams(userId, transactionDate, merchant, extendedDescription, description, transactionAmount.doubleValue());
                 if(existing.isPresent())
                 {
                     log.info("CSVTransaction with id {} already exists", csvTransactionEntity.getId());

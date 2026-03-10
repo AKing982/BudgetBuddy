@@ -26,7 +26,7 @@ public class GraniteTransactionParser implements TransactionParser
         tx.setAccount(row[0]);
         tx.setSuffix(Integer.parseInt(row[1]));
         tx.setSequenceNo(ParserUtils.removeLeadingZeros(row[2]));
-        tx.setTransactionDate(ParserUtils.toLocalDate(row[3], "MM/d/yyyy"));
+        tx.setTransactionDate(ParserUtils.toLocalDate(row[3], "yyyy/MM/dd"));
         tx.setTransactionAmount(ParserUtils.toBigDecimal(row[4]));
         tx.setDescription(row[5]);
         tx.setExtendedDescription(row[6]);

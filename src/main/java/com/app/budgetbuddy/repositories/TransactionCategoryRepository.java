@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.repositories;
 
+import com.app.budgetbuddy.domain.CategoryExpenseType;
+import com.app.budgetbuddy.domain.CategoryPriorityLevel;
 import com.app.budgetbuddy.domain.TransactionCategoryStatus;
 import com.app.budgetbuddy.entities.TransactionCategoryEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -39,7 +41,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
             "JOIN tce.csvTransaction ct " +
             "WHERE ct.user.id = :userId " +
             "AND ct.transactionDate BETWEEN :startDate AND :endDate " +
-            "AND (tce.matchedCategory IS NULL OR tce.matchedCategory = 'Uncategorized')")
+            "AND tce.matchedCategory = 'Uncategorized'")
     List<TransactionCategoryEntity> findUncategorizedByUserIdAndDateRange(
             @Param("userId") Long userId,
             @Param("startDate") LocalDate startDate,
@@ -58,7 +60,26 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
     @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.csvTransaction ct WHERE (tce.isUpdated = FALSE AND tce.status = 'NEW') AND ct.transactionDate BETWEEN :start AND :end AND ct.user.id =:userId")
     int findNewTransactionCategories(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
 
-
+    @Modifying
+    @Query("UPDATE TransactionCategoryEntity tce SET " +
+            "tce.matchedCategory = :matchedCategory, " +
+            "tce.categorizedBy = :categorizedBy, " +
+            "tce.categorized_date = :categorizedDate, " +
+            "tce.isUpdated = :isUpdated, " +
+            "tce.status = :status, " +
+            "tce.categoryLevel = :categoryLevel, " +
+            "tce.expenseType = :expenseType " +
+            "WHERE tce.id = :id")
+    void updateTransactionCategory(
+            @Param("id") Long id,
+            @Param("matchedCategory") String matchedCategory,
+            @Param("categorizedBy") String categorizedBy,
+            @Param("categorizedDate") LocalDate categorizedDate,
+            @Param("isUpdated") boolean isUpdated,
+            @Param("status") TransactionCategoryStatus status,
+            @Param("categoryLevel") CategoryPriorityLevel categoryLevel,
+            @Param("expenseType") CategoryExpenseType expenseType
+    );
 
     @Modifying
     @Query("UPDATE TransactionCategoryEntity tce SET tce.matchedCategory =:category WHERE tce.matchedCategory IS NOT NULL AND tce.id =:id")

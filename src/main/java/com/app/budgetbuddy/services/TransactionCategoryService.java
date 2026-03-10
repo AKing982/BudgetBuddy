@@ -18,6 +18,7 @@ public interface TransactionCategoryService extends ServiceModel<TransactionCate
     Optional<TransactionCategory> getTransactionCategoryByCsvIdAndCatName(String category, Long csvId);
     void updateTransactionCategoriesByIdAndCategory(String category, Long id);
 
+    void updateAll(List<TransactionCategory> transactionCategoryList);
     void updateTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId);
 
     List<TransactionCategory> getUncategorizedTransactionsByUserIdAndDateRange(

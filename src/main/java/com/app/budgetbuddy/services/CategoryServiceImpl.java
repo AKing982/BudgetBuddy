@@ -48,16 +48,7 @@ public class CategoryServiceImpl implements CategoryService
 
     @Override
     public CategoryEntity createAndSaveCategory(String categoryId, List<String> categories) {
-//        if(categories == null || categoryId == null){
-//            return null;
-//        }
-//
-//        Optional<CategoryEntity> existingCategory = categoryRepository.findByCategoryId(categoryId);
-//        return existingCategory.orElseGet(() -> {
-//            String mainCategory = categories.get(0);
-//            String subCategory = categories.size() > 1 ? categories.get(1) : null;
-//            return categoryRepository.save(createCategory(categoryId, false, subCategory, mainCategory, LocalDateTime.now(), 0L));
-//        });
+
         return null;
     }
 
@@ -78,6 +69,45 @@ public class CategoryServiceImpl implements CategoryService
         }catch(DataAccessException e){
             log.error("There was an error retrieving all the system categories: ", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public String getCategoryType(String categoryName)
+    {
+        try
+        {
+            String type = categoryRepository.findCategoryType(categoryName);
+            if(type == null || type.isEmpty())
+            {
+                log.warn("No category type found for category '{}', defaulting to VARIABLE", categoryName);
+                return "VARIABLE";
+            }
+            return type;
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving all the system categories: ", e);
+            return "";
+        }
+    }
+
+    @Override
+    @Transactional
+    public int getCategoryBucketLevel(String categoryName)
+    {
+        try
+        {
+            log.info("Getting bucket level for category: {}", categoryName);
+            Integer bucketLevel = categoryRepository.findBucketLevel(categoryName);
+            if(bucketLevel == null)
+            {
+                log.warn("No bucket level found for category: {}", categoryName);
+                return 0;
+            }
+            return bucketLevel;
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving all the system categories: ", e);
+            return 0;
         }
     }
 

@@ -85,9 +85,9 @@ public class CategoryController
     {
         try
         {
-            List<TransactionCSV> updatedTransactions = categoryRunner.reCategorizeCsvTransactionsByRange(userId, startDate, endDate);
+            categoryRunner.reCategorizeCsvTransactionsByRange(userId, startDate, endDate);
             log.info("Successfully re-categorized uncategorized CSV transactions for user {} between {} and {}", userId, startDate, endDate);
-            return ResponseEntity.ok(updatedTransactions);
+            return ResponseEntity.ok().build();
         }catch(CategoryRunnerException e){
             log.error("There was an error re-categorizing CSV transactions for user {} between {} and {}: ", userId, startDate, endDate, e);
             return ResponseEntity.internalServerError().build();

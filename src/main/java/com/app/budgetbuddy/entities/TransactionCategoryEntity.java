@@ -1,5 +1,7 @@
 package com.app.budgetbuddy.entities;
 
+import com.app.budgetbuddy.domain.CategoryExpenseType;
+import com.app.budgetbuddy.domain.CategoryPriorityLevel;
 import com.app.budgetbuddy.domain.TransactionCategoryStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,6 +50,14 @@ public class TransactionCategoryEntity
     @Column(name="status", columnDefinition = "NEW")
     @Enumerated(EnumType.STRING)
     private TransactionCategoryStatus status;
+
+    @Column(name="category_level")
+    @Enumerated(EnumType.STRING)
+    private CategoryPriorityLevel categoryLevel;
+
+    @Column(name="expense_type")
+    @Enumerated(EnumType.STRING)
+    private CategoryExpenseType expenseType;
 
     @Column(name="created_at")
     private LocalDateTime createdAt;

@@ -22,6 +22,8 @@ public class TransactionCategory
     private LocalDate categorizedDate;
     private boolean isCategorized;
     private boolean isUpdated;
+    private CategoryPriorityLevel categoryPriorityLevel;
+    private CategoryExpenseType categoryExpenseType;
     private TransactionCategoryStatus transactionCategoryStatus;
     private LocalDateTime createdAt;
 
