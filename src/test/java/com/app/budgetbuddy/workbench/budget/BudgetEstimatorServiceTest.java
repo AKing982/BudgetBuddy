@@ -434,6 +434,15 @@ class BudgetEstimatorServiceTest
         assertNotNull(actual);
         assertEquals(0, actual.size());
     }
+
+    @Test
+    void testOptimizeBudgetCategoryAmount_whenBudgetCategoryIsNull_thenReturnEmptyOptional(){
+        Optional<CategoryBudgetAmount> actual = budgetEstimatorService.optimizeBudgetCategoryAmount(null, testSubBudget);
+        assertNotNull(actual);
+        assertFalse(actual.isPresent());
+    }
+
+
 //
 //    @Test
 //    void testGetBudgetCategoryAmountByCategory_whenCategoryIsEmpty_thenReturnZero(){
