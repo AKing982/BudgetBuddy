@@ -33,7 +33,8 @@ export interface Transaction {
     accountId: string;
     amount: number;  // BigDecimal in Java maps to number in TypeScript
     isoCurrencyCode: string;
-    categories: string[];
+    primaryCategory?: string;
+    secondaryCategory?: string;
     categoryId: string;
     date: string;    // LocalDate will come as string in JSON
     description: string;
@@ -46,6 +47,7 @@ export interface Transaction {
     logoUrl: string | null;         // Optional
     posted: string | null;          // LocalDate, optional
     balance?: number;
+    category?: string;
 }
 
 export interface CSVTransaction {

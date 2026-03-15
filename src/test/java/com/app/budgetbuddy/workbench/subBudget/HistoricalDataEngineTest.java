@@ -29,28 +29,65 @@ import static org.mockito.Mockito.*;
 class HistoricalDataEngineTest
 {
     @Mock
-    private TransactionCategoryQueries transactionCategoryQueries;
+    private CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries;
 
     @Mock
-    private CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries;
+    private TransactionsByCategoryQueries transactionsByCategoryQueries;
 
     @Mock
     private BudgetCategoryService budgetCategoryService;
 
     private HistoricalDataEngine historicalDataEngine;
 
+    private SubBudget stubSubBudget(Long userId, LocalDate start, LocalDate end) {
+        Budget budget = new Budget();
+        budget.setUserId(userId);
+        SubBudget subBudget = new SubBudget();
+        subBudget.setBudget(budget);
+        subBudget.setStartDate(start);
+        subBudget.setEndDate(end);
+        return subBudget;
+    }
+
     @BeforeEach
     void setUp() {
-        historicalDataEngine = new HistoricalDataEngine(transactionCategoryQueries, csvTransactionsByCategoryQueries, budgetCategoryService);
+        historicalDataEngine = new HistoricalDataEngine(csvTransactionsByCategoryQueries, transactionsByCategoryQueries, budgetCategoryService);
+    }
+
+    private TransactionsByCategory buildTransaction(String category, BigDecimal amount)
+    {
+        TransactionsByCategory t = new TransactionsByCategory();
+        t.setCategoryName(category);
+        t.setTotalCategorySpending(amount);
+        t.setCategoryExpenseType(CategoryExpenseType.VARIABLE);
+        return t;
+    }
+
+
+    @Test
+    void testGetHistoricalTransactionsByCategories_whenNumberOfMonthsZero_thenReturnEmptyList()
+    {
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2025, 10, 1);
+
+        List<TransactionsByCategory> result = historicalDataEngine
+                .getHistoricalTransactionsByCategories(userId, startDate, 0);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(csvTransactionsByCategoryQueries, transactionsByCategoryQueries);
     }
 
     @Test
-    void testGetHistoricalTransactionsByCategories_whenNumberOfMonthsZero_thenReturnEmptyList(){
-        final int numberOfMonths = 0;
+    void testGetHistoricalTransactionsByCategories_whenNumberOfMonthsNegative_thenReturnEmptyList()
+    {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2025, 10, 1);
-        List<TransactionsByCategory> actual = historicalDataEngine.getHistoricalTransactionsByCategories(userId, startDate, numberOfMonths);
-        assertTrue(actual.isEmpty());
+
+        List<TransactionsByCategory> result = historicalDataEngine
+                .getHistoricalTransactionsByCategories(userId, startDate, -1);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(csvTransactionsByCategoryQueries, transactionsByCategoryQueries);
     }
 
     @Test
@@ -62,116 +99,194 @@ class HistoricalDataEngineTest
     }
 
     @Test
-    void testGetHistoricalTransactionsByCategories_whenNumberOfMonthsIsSix_thenReturnSixMonthsOfTransactions(){
-        final int numberOfMonths = 6;
+    void testGetHistoricalTransactionsByCategories_whenNumberOfMonthsIsSix_thenReturnAveragedTransactions()
+    {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2026, 3, 1);
-        TransactionsByCategory groceriesFeb = new TransactionsByCategory("Groceries", new BigDecimal("300.00"), Collections.emptyList());
-        TransactionsByCategory groceriesJan = new TransactionsByCategory("Groceries", new BigDecimal("240.00"), Collections.emptyList());
-        TransactionsByCategory groceriesDec = new TransactionsByCategory("Groceries", new BigDecimal("360.00"), Collections.emptyList());
-        TransactionsByCategory groceriesNov = new TransactionsByCategory("Groceries", new BigDecimal("180.00"), Collections.emptyList());
-        TransactionsByCategory groceriesOct = new TransactionsByCategory("Groceries", new BigDecimal("300.00"), Collections.emptyList());
-        TransactionsByCategory groceriesSep = new TransactionsByCategory("Groceries", new BigDecimal("420.00"), Collections.emptyList());
 
-        // Total Groceries = 1800.00, average over 6 months = 300.00
+        record MonthRange(LocalDate start, LocalDate end, BigDecimal groceriesAmount) {}
+        List<MonthRange> months = List.of(
+                new MonthRange(LocalDate.of(2026, 2, 1),  LocalDate.of(2026, 2, 28),  new BigDecimal("300.00")),
+                new MonthRange(LocalDate.of(2026, 1, 1),  LocalDate.of(2026, 1, 31),  new BigDecimal("240.00")),
+                new MonthRange(LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 31), new BigDecimal("360.00")),
+                new MonthRange(LocalDate.of(2025, 11, 1), LocalDate.of(2025, 11, 30), new BigDecimal("180.00")),
+                new MonthRange(LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31), new BigDecimal("300.00")),
+                new MonthRange(LocalDate.of(2025, 9, 1),  LocalDate.of(2025, 9, 30),  new BigDecimal("420.00"))
+        );
 
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28)))
-                .thenReturn(List.of(groceriesFeb));
+        for (MonthRange m : months)
+        {
+            when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(userId, m.start(), m.end()))
+                    .thenReturn(List.of(buildTransaction("Groceries", m.groceriesAmount())));
+            when(transactionsByCategoryQueries.getExpenseTransactionsByCategoryList(userId, m.start(), m.end()))
+                    .thenReturn(Collections.emptyList());
+        }
 
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)))
-                .thenReturn(List.of(groceriesJan));
-
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 31)))
-                .thenReturn(List.of(groceriesDec));
-
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 11, 1), LocalDate.of(2025, 11, 30)))
-                .thenReturn(List.of(groceriesNov));
-
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31)))
-                .thenReturn(List.of(groceriesOct));
-
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 9, 1), LocalDate.of(2025, 9, 30)))
-                .thenReturn(List.of(groceriesSep));
-
-        List<TransactionsByCategory> result = historicalDataEngine.getHistoricalTransactionsByCategories(userId, startDate, numberOfMonths);
+        List<TransactionsByCategory> result = historicalDataEngine
+                .getHistoricalTransactionsByCategories(userId, startDate, 6);
 
         assertNotNull(result);
         assertEquals(1, result.size());
 
-        TransactionsByCategory groceriesResult = result.stream()
+        TransactionsByCategory groceries = result.stream()
                 .filter(t -> "Groceries".equals(t.getCategoryName()))
                 .findFirst()
                 .orElseThrow();
 
-        // 1800.00 / 6 = 300.00
-        assertEquals(new BigDecimal("300.00"), groceriesResult.getTotalCategorySpending());
-
-        verify(csvTransactionsByCategoryQueries, times(6))
-                .getCSVExpenseTransactionsByCategories(eq(userId), any(LocalDate.class), any(LocalDate.class));
-
+        // 300+240+360+180+300+420 = 1800 / 6 = 300.00
+        assertEquals(new BigDecimal("300.00"), groceries.getTotalCategorySpending());
     }
 
     @Test
-    void testGetHistoricalTransactionsByCategories_whenNoTransactionsByCategoriesForMonth_thenSkipAndReturn() {
-        final int numberOfMonths = 6;
+    void testGetHistoricalTransactionsByCategories_whenSomeMonthsHaveNoTransactions_thenAverageOverMonthsWithData()
+    {
         Long userId = 1L;
         LocalDate startDate = LocalDate.of(2026, 3, 1);
 
-        // 3 months with data, 3 months empty
-        TransactionsByCategory groceriesFeb = new TransactionsByCategory(
-                "Groceries", new BigDecimal("300.00"), Collections.emptyList());
-        TransactionsByCategory groceriesDec = new TransactionsByCategory(
-                "Groceries", new BigDecimal("360.00"), Collections.emptyList());
-        TransactionsByCategory groceriesOct = new TransactionsByCategory(
-                "Groceries", new BigDecimal("300.00"), Collections.emptyList());
+        record MonthRange(LocalDate start, LocalDate end) {}
+        List<MonthRange> allMonths = List.of(
+                new MonthRange(LocalDate.of(2026, 2, 1),  LocalDate.of(2026, 2, 28)),
+                new MonthRange(LocalDate.of(2026, 1, 1),  LocalDate.of(2026, 1, 31)),
+                new MonthRange(LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 31)),
+                new MonthRange(LocalDate.of(2025, 11, 1), LocalDate.of(2025, 11, 30)),
+                new MonthRange(LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31)),
+                new MonthRange(LocalDate.of(2025, 9, 1),  LocalDate.of(2025, 9, 30))
+        );
 
-        // Total = 960.00, divided by 3 actual months with data = 320.00
+        // months with CSV data: Feb (300), Dec (360), Oct (300) → total 960 / 3 = 320.00
+        Map<LocalDate, BigDecimal> dataMonths = Map.of(
+                LocalDate.of(2026, 2, 1),  new BigDecimal("300.00"),
+                LocalDate.of(2025, 12, 1), new BigDecimal("360.00"),
+                LocalDate.of(2025, 10, 1), new BigDecimal("300.00")
+        );
 
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28)))
-                .thenReturn(List.of(groceriesFeb));
+        for (MonthRange m : allMonths)
+        {
+            List<TransactionsByCategory> csvData = dataMonths.containsKey(m.start())
+                    ? List.of(buildTransaction("Groceries", dataMonths.get(m.start())))
+                    : Collections.emptyList();
 
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)))
-                .thenReturn(Collections.emptyList());
+            when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(userId, m.start(), m.end()))
+                    .thenReturn(csvData);
+            when(transactionsByCategoryQueries.getExpenseTransactionsByCategoryList(userId, m.start(), m.end()))
+                    .thenReturn(Collections.emptyList());
+        }
 
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 12, 1), LocalDate.of(2025, 12, 31)))
-                .thenReturn(List.of(groceriesDec));
-
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 11, 1), LocalDate.of(2025, 11, 30)))
-                .thenReturn(Collections.emptyList());
-
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31)))
-                .thenReturn(List.of(groceriesOct));
-
-        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(
-                userId, LocalDate.of(2025, 9, 1), LocalDate.of(2025, 9, 30)))
-                .thenReturn(Collections.emptyList());
-
-        List<TransactionsByCategory> result = historicalDataEngine.getHistoricalTransactionsByCategories(userId, startDate, numberOfMonths);
+        List<TransactionsByCategory> result = historicalDataEngine
+                .getHistoricalTransactionsByCategories(userId, startDate, 6);
 
         assertNotNull(result);
         assertEquals(1, result.size());
 
-        TransactionsByCategory groceriesResult = result.stream()
+        TransactionsByCategory groceries = result.stream()
                 .filter(t -> "Groceries".equals(t.getCategoryName()))
                 .findFirst()
                 .orElseThrow();
 
         // 960.00 / 3 months with data = 320.00
-        assertEquals(new BigDecimal("320.00"), groceriesResult.getTotalCategorySpending());
+        assertEquals(new BigDecimal("320.00"), groceries.getTotalCategorySpending());
+    }
 
+    @Test
+    void testGetHistoricalTransactionsByCategories_whenCsvAndPlaidBothHaveData_thenMergeAndAverage()
+    {
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2026, 2, 1);
+
+        LocalDate monthStart = LocalDate.of(2026, 1, 1);
+        LocalDate monthEnd   = LocalDate.of(2026, 1, 31);
+
+        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(userId, monthStart, monthEnd))
+                .thenReturn(List.of(buildTransaction("Groceries", new BigDecimal("200.00"))));
+        when(transactionsByCategoryQueries.getExpenseTransactionsByCategoryList(userId, monthStart, monthEnd))
+                .thenReturn(List.of(buildTransaction("Groceries", new BigDecimal("100.00"))));
+
+        List<TransactionsByCategory> result = historicalDataEngine
+                .getHistoricalTransactionsByCategories(userId, startDate, 1);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        // merged total = 300.00 / 1 month = 300.00
+        assertEquals(new BigDecimal("300.00"), result.get(0).getTotalCategorySpending());
+    }
+
+    @Test
+    void testGetHistoricalTransactionsByCategories_whenOnlyPlaidHasData_thenPlaidCsvGateSkipsMonth()
+    {
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2026, 2, 1);
+
+        LocalDate monthStart = LocalDate.of(2026, 1, 1);
+        LocalDate monthEnd   = LocalDate.of(2026, 1, 31);
+
+        // CSV is empty — monthsCounter won't increment, so result should be empty
+        when(csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(userId, monthStart, monthEnd))
+                .thenReturn(Collections.emptyList());
+        when(transactionsByCategoryQueries.getExpenseTransactionsByCategoryList(userId, monthStart, monthEnd))
+                .thenReturn(List.of(buildTransaction("Groceries", new BigDecimal("150.00"))));
+
+        List<TransactionsByCategory> result = historicalDataEngine
+                .getHistoricalTransactionsByCategories(userId, startDate, 1);
+
+        // monthsCounter stays 0 → no months iterated into aggregation
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetHistoricalTransactionsByCategories_dbQueriesDoNotScaleWithCategoryCount()
+    {
+        Long userId = 1L;
+        LocalDate startDate = LocalDate.of(2026, 3, 1);
+
+        // Simulate a realistic month with many categories
+        List<TransactionsByCategory> largeMonthData = List.of(
+                buildTransaction("Groceries",    new BigDecimal("300.00")),
+                buildTransaction("Gas",          new BigDecimal("58.50")),
+                buildTransaction("Subscription", new BigDecimal("27.91")),
+                buildTransaction("Order Out",    new BigDecimal("70.78")),
+                buildTransaction("Payment",      new BigDecimal("32.71")),
+                buildTransaction("Utilities",    new BigDecimal("130.78")),
+                buildTransaction("Insurance",    new BigDecimal("67.14")),
+                buildTransaction("Other",        new BigDecimal("23.37")),
+                buildTransaction("To Go",        new BigDecimal("8.43"))
+        );
+
+        // Only February has data — 5 remaining months are empty
+        LocalDate feb1 = LocalDate.of(2026, 2, 1);
+        LocalDate feb28 = LocalDate.of(2026, 2, 28);
+
+        when(csvTransactionsByCategoryQueries
+                .getCSVExpenseTransactionsByCategories(userId, feb1, feb28))
+                .thenReturn(largeMonthData);
+        when(transactionsByCategoryQueries
+                .getExpenseTransactionsByCategoryList(userId, feb1, feb28))
+                .thenReturn(Collections.emptyList());
+
+        // All other months return empty
+        when(csvTransactionsByCategoryQueries
+                .getCSVExpenseTransactionsByCategories(eq(userId), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(Collections.emptyList());
+        when(transactionsByCategoryQueries
+                .getExpenseTransactionsByCategoryList(eq(userId), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(Collections.emptyList());
+
+        // Specific stub overrides generic one for February
+        when(csvTransactionsByCategoryQueries
+                .getCSVExpenseTransactionsByCategories(userId, feb1, feb28))
+                .thenReturn(largeMonthData);
+
+        List<TransactionsByCategory> result = historicalDataEngine
+                .getHistoricalTransactionsByCategories(userId, startDate, 6);
+
+        assertNotNull(result);
+        assertEquals(9, result.size());
+
+        // THE CRITICAL ASSERTION:
+        // Should be called exactly numberOfMonths times (6), NOT numberOfMonths × numberOfCategories (54)
         verify(csvTransactionsByCategoryQueries, times(6))
                 .getCSVExpenseTransactionsByCategories(eq(userId), any(LocalDate.class), any(LocalDate.class));
+        verify(transactionsByCategoryQueries, times(6))
+                .getExpenseTransactionsByCategoryList(eq(userId), any(LocalDate.class), any(LocalDate.class));
     }
 
 //    @Test

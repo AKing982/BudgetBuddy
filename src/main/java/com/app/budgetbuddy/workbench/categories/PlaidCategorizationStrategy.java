@@ -2,7 +2,9 @@ package com.app.budgetbuddy.workbench.categories;
 
 import com.app.budgetbuddy.domain.Category;
 import com.app.budgetbuddy.domain.CategoryType;
+import com.app.budgetbuddy.entities.PlaidCategoriesEntity;
 import com.app.budgetbuddy.entities.SystemCategoryRulesEntity;
+import com.app.budgetbuddy.services.PlaidCategoriesService;
 import com.app.budgetbuddy.services.SystemCategoryRulesService;
 import com.app.budgetbuddy.workbench.MerchantMatcherService;
 import lombok.extern.slf4j.Slf4j;
@@ -16,93 +18,88 @@ import java.util.Optional;
 @Slf4j
 public class PlaidCategorizationStrategy
 {
-    private final SystemCategoryRulesService systemCategoryRulesService;
+    private final PlaidCategoriesService plaidCategoriesService;
     private final MerchantMatcherService merchantMatcherService;
     private final String SYSTEM_CATEGORIZED = "SYSTEM";
 
     @Autowired
-    public PlaidCategorizationStrategy(SystemCategoryRulesService systemCategoryRulesService, MerchantMatcherService merchantMatcherService)
+    public PlaidCategorizationStrategy(MerchantMatcherService merchantMatcherService,
+                                       PlaidCategoriesService plaidCategoriesService)
     {
-        this.systemCategoryRulesService = systemCategoryRulesService;
         this.merchantMatcherService = merchantMatcherService;
+        this.plaidCategoriesService = plaidCategoriesService;
     }
 
-    public Category categorize(String categoryId, String primary, String secondary, String merchantName)
+    public Category categorize(String categoryId, String primary, String secondary, String merchantName, int priority)
     {
-        Optional<SystemCategoryRulesEntity> rule = systemCategoryRulesService
-                .findByPlaidFull(categoryId, primary, secondary);
-        if(rule.isPresent())
-        {
-            log.info("Plaid - Matched Full: categoryId={}, primary={}, secondary={}", categoryId, primary, secondary);
-            return buildCategory(rule.get());
-        }
-
-        // Priority 2: primary + secondary
-        rule = systemCategoryRulesService.findByPlaidPrimaryAndSecondary(primary, secondary);
-        if(rule.isPresent())
-        {
-            log.info("Plaid - Matched PrimarySecondary: primary={}, secondary={}", primary, secondary);
-            return buildCategory(rule.get());
-        }
-
-        // Priority 5: categoryId + secondary
-        rule = systemCategoryRulesService.findByPlaidCategoryIdAndSecondary(categoryId, secondary);
-        if(rule.isPresent())
-        {
-            log.info("Plaid - Matched IdSecondary: categoryId={}, secondary={}", categoryId, secondary);
-            return buildCategory(rule.get());
-        }
-
-        // Priority 6: categoryId + primary
-        rule = systemCategoryRulesService.findByPlaidCategoryIdAndPrimary(categoryId, primary);
-        if(rule.isPresent())
-        {
-            log.info("Plaid - Matched IdPrimary: categoryId={}, primary={}", categoryId, primary);
-            return buildCategory(rule.get());
-        }
-
-        // Priority 7: primary only
-        rule = systemCategoryRulesService.findByPlaidPrimaryOnly(primary);
-        if(rule.isPresent())
-        {
-            log.info("Plaid - Matched PrimaryOnly: primary={}", primary);
-            return buildCategory(rule.get());
-        }
-
-        // Priority 8: secondary only
-        rule = systemCategoryRulesService.findByPlaidSecondaryOnly(secondary);
-        if(rule.isPresent())
-        {
-            log.info("Plaid - Matched SecondaryOnly: secondary={}", secondary);
-            return buildCategory(rule.get());
-        }
-
-        // Priority 9: categoryId only
-        rule = systemCategoryRulesService.findByPlaidCategoryIdOnly(categoryId);
-        if(rule.isPresent())
-        {
-            log.info("Plaid - Matched CategoryIdOnly: categoryId={}", categoryId);
-            return buildCategory(rule.get());
-        }
-
-        // Priority 10: merchant name fallback
-        if(merchantName != null && !merchantName.isEmpty())
-        {
-            Optional<CategoryType> categoryType = merchantMatcherService.matchMerchant(merchantName);
-            if(categoryType.isPresent())
-            {
-                log.info("Plaid - Matched Merchant: merchantName={}", merchantName);
-                return Category.createCategory("", categoryType.get().getType(), SYSTEM_CATEGORIZED, LocalDate.now());
+        Optional<PlaidCategoriesEntity> rule;
+        Category matchedCategory;
+        log.info("Priority: {}", priority);
+        return switch (priority) {
+            case 1 -> {
+                rule = plaidCategoriesService.findByPlaidFull(categoryId, primary, secondary);
+                matchedCategory = buildMatchedCategory(rule);
+                yield matchedCategory;
             }
-        }
-
-        log.warn("Plaid - No rule matched: categoryId={}, primary={}, secondary={}, merchant={}",
-                categoryId, primary, secondary, merchantName);
-        return Category.createUncategorized();
+            case 2 -> {
+                rule = plaidCategoriesService.findByPlaidPrimaryAndSecondary(primary, secondary);
+                matchedCategory = buildMatchedCategory(rule);
+                yield matchedCategory;
+            }
+            case 5 -> {
+                rule = plaidCategoriesService.findByPlaidCategoryIdAndSecondary(categoryId, secondary);
+                matchedCategory = buildMatchedCategory(rule);
+                yield matchedCategory;
+            }
+            case 6 -> {
+                rule = plaidCategoriesService.findByPlaidCategoryIdAndPrimary(categoryId, primary);
+                matchedCategory = buildMatchedCategory(rule);
+                yield matchedCategory;
+            }
+            case 7 -> {
+                rule = plaidCategoriesService.findByPlaidPrimaryOnly(primary);
+                matchedCategory = buildMatchedCategory(rule);
+                yield matchedCategory;
+            }
+            case 8 -> {
+                rule = plaidCategoriesService.findByPlaidSecondaryOnly(secondary);
+                matchedCategory = buildMatchedCategory(rule);
+                yield matchedCategory;
+            }
+            case 9 -> {
+                rule = plaidCategoriesService.findByPlaidCategoryIdOnly(categoryId);
+                matchedCategory = buildMatchedCategory(rule);
+                yield matchedCategory;
+            }
+            case 10 -> {
+                Optional<CategoryType> categoryType = merchantMatcherService.matchMerchant(merchantName);
+                yield Category.builder()
+                        .categorizedBy(SYSTEM_CATEGORIZED)
+                        .plaidCategoryId("")
+                        .categorizedDate(LocalDate.now())
+                        .categoryName(categoryType.get().getType())
+                        .build();
+            }
+            default -> {
+                log.warn("Plaid - No rule matched: categoryId={}, primary={}, secondary={}, merchant={}",
+                        categoryId, primary, secondary, merchantName);
+                yield Category.createUncategorized();
+            }
+        };
     }
 
-    private Category buildCategory(SystemCategoryRulesEntity rule)
+    private Category buildMatchedCategory(Optional<PlaidCategoriesEntity> rule)
     {
-        return Category.createCategory("", rule.getMatchedCategory(), SYSTEM_CATEGORIZED, LocalDate.now());
+        return rule.isPresent() ? buildCategory(rule.get()) : Category.createUncategorized();
+    }
+
+    private Category buildCategory(PlaidCategoriesEntity rule)
+    {
+        return Category.builder()
+                .categorizedBy(SYSTEM_CATEGORIZED)
+                .plaidCategoryId("")
+                .categorizedDate(LocalDate.now())
+                .categoryName(rule.getMatchedCategory())
+                .build();
     }
 }

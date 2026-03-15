@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
     Box, Grid, Typography, Paper, Button, LinearProgress, Chip,
     Divider, Dialog, Alert, AlertTitle, DialogActions,
@@ -16,6 +16,8 @@ import PlaidService from '../services/PlaidService';
 import UserService from '../services/UserService';
 import CsvUploadService from '../services/CsvUploadService';
 import CSVImportDialog from './CSVImportDialog';
+import PlaidImportService from "../services/PlaidImportService";
+import TransactionService from "../services/TransactionService";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const MAROON      = '#6b1a1a';
@@ -173,11 +175,88 @@ const DashboardPage: React.FC = () => {
 
     const userFullName     = sessionStorage.getItem('fullName');
     const userId           = Number(sessionStorage.getItem('userId'));
-    const plaidService     = PlaidService.getInstance();
+    const transactionService = TransactionService.getInstance();
+    const plaidTransactionImportService = PlaidImportService.getInstance();
     const userService      = UserService.getInstance();
     const csvUploadService = new CsvUploadService();
 
     useEffect(() => { document.title = 'Dashboard'; }, []);
+
+    const hasFetchedRef = useRef(false);
+
+    useEffect(() => {
+        if (!userId || hasFetchedRef.current) return;
+
+        const syncPlaidTransactions = async () => {
+            hasFetchedRef.current = true;
+
+            const today = new Date().toISOString().split('T')[0];
+            const twoDaysAgo = new Date();
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+            const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
+            // safe 3-month lookback that handles January correctly
+            const startDate = new Date();
+            startDate.setMonth(startDate.getMonth() - 3);
+            startDate.setDate(1);
+            const startDateStr = startDate.toISOString().split('T')[0];
+
+            try {
+                const transactions = await transactionService
+                    .fetchTransactionsByUserAndDateRange(userId, startDateStr, today);
+
+                const hasNoTransactions = !transactions || transactions.length === 0;
+                const missingToday = !transactions?.some(t => t.date === today);
+
+                if (hasNoTransactions) {
+                    // No data at all — import full 3-month range
+                    await plaidTransactionImportService
+                        .importPlaidTransactions(userId, startDateStr, today);
+                } else if (missingToday) {
+                    // Have historical data but today is missing — import today only
+                    await plaidTransactionImportService
+                        .importPlaidTransactions(userId, twoDaysAgoStr, today);  // start === end
+                }
+                // else: data is up to date, do nothing
+
+            } catch (e) {
+                hasFetchedRef.current = false; // allow retry on failure
+                console.error('Failed to sync Plaid transactions:', e);
+            }
+        };
+
+        syncPlaidTransactions();
+    }, [userId]);
+
+    // useEffect(() => {
+    //     const syncPlaidTransactions = async () => {
+    //         try {
+    //             const today = new Date().toISOString().split('T')[0];
+    //             const endDate = new Date().toISOString().split('T')[0];
+    //             const startDate = new Date(
+    //                 new Date().getFullYear(),
+    //                 new Date().getMonth() - 3,
+    //                 1).toISOString().split('T')[0];
+    //             const transactions = await transactionService
+    //                 .fetchTransactionsByUserAndDateRange(userId, startDate, endDate);
+    //             const hasNoTransactions = !transactions || transactions.length === 0;
+    //             const missingToday = !transactions?.some(t => t.date === today);
+    //             if(!transactions || transactions.length === 0)
+    //             {
+    //                 await plaidTransactionImportService.importPlaidTransactions(userId, startDate, endDate);
+    //             }
+    //             // any transactions for the current date?
+    //             else if(transactionsForToday.length == 0)
+    //             {
+    //                 await plaidTransactionImportService.importPlaidTransactions(userId, today, endDate);
+    //             }
+    //
+    //         } catch(e) {
+    //             console.error(e);
+    //         }
+    //     };
+    //
+    //     if (userId) syncPlaidTransactions();
+    // }, [userId]);
 
     useEffect(() => {
         const load = async () => {

@@ -17,18 +17,45 @@ import java.util.*;
 @Slf4j
 public class HistoricalDataEngine
 {
-    private final TransactionCategoryQueries transactionCategoryQueries;
     private final CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries;
+    private final TransactionsByCategoryQueries transactionsByCategoryQueries;
     private final BudgetCategoryService budgetCategoryService;
 
     @Autowired
-    public HistoricalDataEngine(TransactionCategoryQueries transactionCategoryQueries,
-                                CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries,
+    public HistoricalDataEngine(CSVTransactionsByCategoryQueries csvTransactionsByCategoryQueries,
+                                TransactionsByCategoryQueries transactionsByCategoryQueries,
                                 BudgetCategoryService budgetCategoryService)
     {
-        this.transactionCategoryQueries = transactionCategoryQueries;
-        this.budgetCategoryService = budgetCategoryService;
         this.csvTransactionsByCategoryQueries = csvTransactionsByCategoryQueries;
+        this.transactionsByCategoryQueries = transactionsByCategoryQueries;
+        this.budgetCategoryService = budgetCategoryService;
+    }
+
+    private List<TransactionsByCategory> mergeTransactionsByCategory(List<TransactionsByCategory> csvMonthlyTransactions, List<TransactionsByCategory> plaidMonthlyTransactions)
+    {
+        Map<String, TransactionsByCategory> mergedTransactionsByCategory = new HashMap<>();
+        for(TransactionsByCategory csvTransaction : csvMonthlyTransactions)
+        {
+            mergedTransactionsByCategory.put(csvTransaction.getCategoryName(), csvTransaction);
+        }
+
+        for(TransactionsByCategory plaidTransaction : plaidMonthlyTransactions)
+        {
+            mergedTransactionsByCategory.merge(
+                    plaidTransaction.getCategoryName(),
+                    plaidTransaction,
+                    (existing, incoming) -> {
+                        TransactionsByCategory merged = new TransactionsByCategory();
+                        merged.setCategoryName(existing.getCategoryName());
+                        merged.setTotalCategorySpending(
+                                existing.getTotalCategorySpending().add(incoming.getTotalCategorySpending()));
+                        merged.setCategoryExpenseType(existing.getCategoryExpenseType());
+                        return merged;
+                    }
+            );
+        }
+
+        return new ArrayList<>(mergedTransactionsByCategory.values());
     }
 
     public List<TransactionsByCategory> getHistoricalTransactionsByCategories(final Long userId, final LocalDate startDate, final int numberOfMonths)
@@ -50,13 +77,16 @@ public class HistoricalDataEngine
             {
                 LocalDate monthStart = startDate.minusMonths(i + 1).withDayOfMonth(1);
                 LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
-                List<TransactionsByCategory> monthlyCsvTransactions =
-                        csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(userId, monthStart, monthEnd);
+                log.info("Fetching transactions for month: {} - {}", monthStart, monthEnd);
+                List<TransactionsByCategory> monthlyCsvTransactions = csvTransactionsByCategoryQueries.getCSVExpenseTransactionsByCategories(userId, monthStart, monthEnd);
+                List<TransactionsByCategory> monthlyPlaidTransactions = transactionsByCategoryQueries.getExpenseTransactionsByCategoryList(userId, monthStart, monthEnd);
+                List<TransactionsByCategory> mergedTransactions = mergeTransactionsByCategory(monthlyCsvTransactions, monthlyPlaidTransactions);
                 if(!monthlyCsvTransactions.isEmpty())
                 {
                     monthsCounter++;
-                    for(TransactionsByCategory t : monthlyCsvTransactions)
+                    for(TransactionsByCategory t : mergedTransactions)
                     {
+                        log.info("Transactions By Category: {}", t);
                         aggregatedSpending.merge(
                                 t.getCategoryName(),
                                 t.getTotalCategorySpending(),
@@ -67,7 +97,7 @@ public class HistoricalDataEngine
                 // Sum totals per category across all months
             }
             final int monthDivisor = monthsCounter == 0 ? 1 : monthsCounter;
-            return aggregatedSpending.entrySet().stream()
+            List<TransactionsByCategory> aggregatedTransactions = aggregatedSpending.entrySet().stream()
                     .map(entry -> {
                         BigDecimal average = entry.getValue()
                                 .divide(BigDecimal.valueOf(monthDivisor), 2, RoundingMode.HALF_UP);
@@ -78,6 +108,8 @@ public class HistoricalDataEngine
                         return result;
                     })
                     .toList();
+            log.info("Aggregated Spending: {}", aggregatedTransactions);
+            return aggregatedTransactions;
         }catch(HistoricalDataException e){
             log.error("There was an error fetching the historical spending for {} months: {}", numberOfMonths, e.getMessage());
             return Collections.emptyList();

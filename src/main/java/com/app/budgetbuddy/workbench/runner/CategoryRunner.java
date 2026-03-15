@@ -4,18 +4,13 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.CategoryException;
 import com.app.budgetbuddy.exceptions.CategoryRunnerException;
 import com.app.budgetbuddy.services.*;
-import com.app.budgetbuddy.workbench.categories.CategorizationEngine;
 import com.app.budgetbuddy.workbench.categories.TransactionCategoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -44,6 +39,27 @@ public class CategoryRunner
         this.transactionCategoryService = transactionCategoryService;
     }
 
+    public void categorizeSingleTransaction(final CategorySaveData categorySaveData)
+    {
+        if(categorySaveData == null)
+        {
+            throw new CategoryRunnerException("Category save data cannot be null");
+        }
+        try
+        {
+            String category = categorySaveData.category();
+            if(category == null || category.isEmpty())
+            {
+                throw new CategoryRunnerException("Category cannot be empty");
+            }
+            String transactionId = categorySaveData.transactionId();
+            transactionCategoryService.updateTransactionCategoriesByIdAndCategory(category, transactionId);
+        }catch(CategoryRunnerException e){
+            log.error("There was an error categorizing the category save data: {}", e.getMessage());
+            throw e;
+        }
+    }
+
     public void categorizeSingleCSVTransaction(final CategorySaveData categorySaveData)
     {
         if(categorySaveData == null)
@@ -58,7 +74,7 @@ public class CategoryRunner
                 throw new CategoryRunnerException("Category cannot be empty");
             }
             Long transactionId = parseTransactionId(categorySaveData.transactionId());
-            transactionCategoryService.updateTransactionCategoriesByIdAndCategory(category, transactionId);
+            transactionCategoryService.updateTransactionCategoriesByCsvIdAndCategory(category, transactionId);
 
         }catch(CategoryRunnerException e){
             log.error("There was an error categorizing the category save data: {}", e.getMessage());
@@ -76,6 +92,33 @@ public class CategoryRunner
         {
             log.error("There was an error parsing the transaction id: {}", transactionId);
             return 0L;
+        }
+    }
+
+    public void categorizeTransactionsByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByUserIdAndDateRange(userId, startDate, endDate);
+            if(subBudgets.isEmpty())
+            {
+                log.info("There are no sub-budgets for user {} at {}", userId, startDate);
+                return;
+            }
+            List<Transaction> transactions = transactionService.getConvertedPlaidTransactions(userId, startDate, endDate);
+            log.info("Transactions: {}", transactions);
+            if(transactions.isEmpty())
+            {
+                log.info("There are no transactions to convert...");
+                return;
+            }
+            List<TransactionCategory> transactionCategories = transactionCategoryBuilder.build(transactions, subBudgets);
+            log.info("Transaction Categories: {}", transactionCategories);
+            log.info("Categorized {} transactions", transactionCategories.size());
+            transactionCategoryService.saveAll(transactionCategories);
+        }catch(Exception e){
+            log.error("There was an error categorizing transactions: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -108,6 +151,32 @@ public class CategoryRunner
         }
     }
 
+    public void reCategorizeTransactionsByRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<TransactionCategory> uncategorized = transactionCategoryService.getUncategorizedTransactionsByUserIdAndDateRange(userId, startDate, endDate);
+            List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByUserIdAndDateRange(userId, startDate, endDate);
+            if(subBudgets.isEmpty())
+            {
+                log.info("There are no sub-budgets for user {} at {}", userId, startDate);
+                return;
+            }
+            List<String> transactionIds = uncategorized.stream()
+                    .map(TransactionCategory::getTransactionId)
+                    .toList();
+            log.info("Uncategorized Transactions: {}", transactionIds);
+            List<Transaction> transactions = transactionService.getConvertedPlaidTransactions(userId, startDate, endDate);
+            log.info("Transactions: {}", transactions);
+            List<TransactionCategory> categorizedTransactions = transactionCategoryBuilder.reCategorize(uncategorized, transactions, subBudgets);
+            log.info("Transaction Categories: {}", categorizedTransactions);
+            transactionCategoryService.updateAll(categorizedTransactions);
+        } catch(Exception e){
+            log.error("There was an error fetching the uncategorized transactions: {}", e.getMessage());
+            throw e;
+        }
+    }
+
     public void reCategorizeCsvTransactionsByRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try
@@ -136,22 +205,4 @@ public class CategoryRunner
         }
     }
 
-
-    public void categorizeTransactionsByRange(Long userId, LocalDate startDate, LocalDate endDate)
-    {
-        try
-        {
-            List<Transaction> transactions = transactionService.getConvertedPlaidTransactions(userId, startDate, endDate);
-            if(transactions.isEmpty())
-            {
-                log.info("There are no transactions to convert...");
-                return;
-            }
-            List<TransactionCategory> transactionCategories = transactionCategoryBuilder.build(transactions, List.of());
-            transactionCategoryService.saveAll(transactionCategories);
-        }catch(CategoryException e){
-            log.error("There was an error categorizing transactions: {}", e.getMessage());
-            throw e;
-        }
-    }
 }

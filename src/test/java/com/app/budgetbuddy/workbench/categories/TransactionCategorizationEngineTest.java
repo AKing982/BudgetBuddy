@@ -10,10 +10,7 @@ import com.app.budgetbuddy.entities.SystemCategoryRulesEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.AccountNotFoundException;
 import com.app.budgetbuddy.exceptions.CategoryException;
-import com.app.budgetbuddy.services.AccountService;
-import com.app.budgetbuddy.services.SystemCategoryRulesService;
-import com.app.budgetbuddy.services.TransactionRuleService;
-import com.app.budgetbuddy.services.UserCategoryService;
+import com.app.budgetbuddy.services.*;
 import com.app.budgetbuddy.workbench.MerchantMatcherService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,10 +47,10 @@ class TransactionCategorizationEngineTest
     private TransactionRuleService transactionRuleService;
 
     @Mock
-    private SystemCategoryRulesService systemCategoryRulesService;
+    private PlaidCategorizationStrategy plaidStrategy;
 
     @Mock
-    private PlaidCategorizationStrategy plaidStrategy;
+    private PlaidCategoriesService plaidCategoriesService;
 
     private TransactionCategorizationEngine transactionCategorizerService;
 
@@ -61,7 +58,7 @@ class TransactionCategorizationEngineTest
 
     @BeforeEach
     void setUp() {
-        plaidStrategy = new PlaidCategorizationStrategy(systemCategoryRulesService, merchantMatcherService);
+        plaidStrategy = new PlaidCategorizationStrategy(merchantMatcherService, plaidCategoriesService);
         transactionCategorizerService = new TransactionCategorizationEngine(
                 userCategoryService, accountService, transactionRuleService,
                 merchantMatcherService, plaidStrategy);
@@ -119,11 +116,11 @@ class TransactionCategorizationEngineTest
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
-        SystemCategoryRulesEntity rule = buildPlaidRule("19047000", "Shops", "Supermarkets and Groceries", "Groceries");
+        PlaidCategoriesEntity rule = buildPlaidRule("19047000", "Shops", "Supermarkets and Groceries", "Groceries");
 
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
         when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
-        when(systemCategoryRulesService.findByPlaidFull("19047000", "Shops", "Supermarkets and Groceries"))
+        when(plaidCategoriesService.findByPlaidFull("19047000", "Shops", "Supermarkets and Groceries"))
                 .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
@@ -147,11 +144,11 @@ class TransactionCategorizationEngineTest
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
-        SystemCategoryRulesEntity rule = buildPlaidRule(null, "Shops", null, "Other");
+        PlaidCategoriesEntity rule = buildPlaidRule(null, "Shops", null, "Other");
 
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
         when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
-        when(systemCategoryRulesService.findByPlaidPrimaryOnly("Shops"))
+        when(plaidCategoriesService.findByPlaidPrimaryOnly("Shops"))
                 .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
@@ -175,11 +172,11 @@ class TransactionCategorizationEngineTest
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
-        SystemCategoryRulesEntity rule = buildPlaidRule("19047000", null, "Supermarkets and Groceries", "Groceries");
+        PlaidCategoriesEntity rule = buildPlaidRule("19047000", null, "Supermarkets and Groceries", "Groceries");
 
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
         when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
-        when(systemCategoryRulesService.findByPlaidCategoryIdAndSecondary("19047000", "Supermarkets and Groceries"))
+        when(plaidCategoriesService.findByPlaidCategoryIdAndSecondary("19047000", "Supermarkets and Groceries"))
                 .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
@@ -203,11 +200,11 @@ class TransactionCategorizationEngineTest
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
-        SystemCategoryRulesEntity rule = buildPlaidRule("16000000", "Payment", null, "Payment");
+        PlaidCategoriesEntity rule = buildPlaidRule("16000000", "Payment", null, "Payment");
 
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
         when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
-        when(systemCategoryRulesService.findByPlaidCategoryIdAndPrimary("16000000", "Payment"))
+        when(plaidCategoriesService.findByPlaidCategoryIdAndPrimary("16000000", "Payment"))
                 .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
@@ -231,11 +228,11 @@ class TransactionCategorizationEngineTest
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
-        SystemCategoryRulesEntity rule = buildPlaidRule(null, "Shops", "Supermarkets and Groceries", "Groceries");
+        PlaidCategoriesEntity rule = buildPlaidRule(null, "Shops", "Supermarkets and Groceries", "Groceries");
 
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
         when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
-        when(systemCategoryRulesService.findByPlaidPrimaryAndSecondary("Shops", "Supermarkets and Groceries"))
+        when(plaidCategoriesService.findByPlaidPrimaryAndSecondary("Shops", "Supermarkets and Groceries"))
                 .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
@@ -259,11 +256,11 @@ class TransactionCategorizationEngineTest
         accountEntity.setId("e2323232");
         accountEntity.setUser(UserEntity.builder().id(1L).build());
 
-        SystemCategoryRulesEntity rule = buildPlaidRule("19000000", null, null, "Other");
+        PlaidCategoriesEntity rule = buildPlaidRule("19000000", null, null, "Other");
 
         when(accountService.findByAccountId("e2323232")).thenReturn(Optional.of(accountEntity));
         when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
-        when(systemCategoryRulesService.findByPlaidCategoryIdOnly("19000000"))
+        when(plaidCategoriesService.findByPlaidCategoryIdOnly("19000000"))
                 .thenReturn(Optional.of(rule));
 
         Category result = transactionCategorizerService.categorize(transaction);
@@ -272,6 +269,7 @@ class TransactionCategorizationEngineTest
         assertEquals("Other", result.getCategoryName());
         assertEquals("SYSTEM", result.getCategorizedBy());
     }
+
 
     @Test
     void testCategorize_whenTransactionMatchesTransactionRule_thenReturnCategory()
@@ -373,8 +371,7 @@ class TransactionCategorizationEngineTest
         when(accountService.findByAccountId("acct-123")).thenReturn(Optional.of(accountEntity));
         when(transactionRuleService.findByUserId(1L)).thenReturn(new ArrayList<>());
 
-        // Wire up whichever service method the strategy will call for this scenario
-        stubSystemRulesForScenario(primaryCategory, secondaryCategory, categoryId, merchantName, expectedCategoryName);
+        stubPlaidRulesForScenario(primaryCategory, secondaryCategory, categoryId, merchantName, expectedCategoryName);
 
         Category result = transactionCategorizerService.categorize(transaction);
 
@@ -386,72 +383,75 @@ class TransactionCategorizationEngineTest
     }
 
     // Stubs the right service method based on which fields are present
-    private void stubSystemRulesForScenario(String primary, String secondary,
-                                            String categoryId, String merchant,
-                                            String expectedCategory)
+    private void stubPlaidRulesForScenario(String primary, String secondary,
+                                           String categoryId, String merchant,
+                                           String expectedCategory)
     {
-        boolean hasPrimary = primary != null && !primary.isEmpty();
-        boolean hasSecondary = secondary != null && !secondary.isEmpty();
+        boolean hasPrimary    = primary    != null && !primary.isEmpty();
+        boolean hasSecondary  = secondary  != null && !secondary.isEmpty();
         boolean hasCategoryId = categoryId != null && !categoryId.isEmpty();
-        boolean hasMerchant = merchant != null && !merchant.isEmpty();
+        boolean hasMerchant   = merchant   != null && !merchant.isEmpty();
 
-        if("Uncategorized".equals(expectedCategory))
+        if ("Uncategorized".equals(expectedCategory))
         {
-            return; // priority 0 - no service call needed
+            return; // priority 0 — no service call needed
         }
 
-        SystemCategoryRulesEntity rule = buildPlaidRule(categoryId, primary, secondary, expectedCategory);
+        PlaidCategoriesEntity rule = buildPlaidRule(categoryId, primary, secondary, expectedCategory);
 
-        if(hasPrimary && hasSecondary && hasCategoryId)
+        if (hasPrimary && hasSecondary && hasCategoryId)
         {
-            when(systemCategoryRulesService.findByPlaidFull(categoryId, primary, secondary))
+            // Priority 1
+            when(plaidCategoriesService.findByPlaidFull(categoryId, primary, secondary))
                     .thenReturn(Optional.of(rule));
         }
-        else if(hasPrimary && hasSecondary)
+        else if (hasPrimary && hasSecondary)
         {
-            when(systemCategoryRulesService.findByPlaidFull(any(), eq(primary), eq(secondary)))
-                    .thenReturn(Optional.empty());
-            when(systemCategoryRulesService.findByPlaidPrimaryAndSecondary(primary, secondary))
+            // Priority 2
+            when(plaidCategoriesService.findByPlaidPrimaryAndSecondary(primary, secondary))
                     .thenReturn(Optional.of(rule));
         }
-        else if(hasSecondary && hasCategoryId)
+        else if (hasSecondary && hasCategoryId)
         {
-            when(systemCategoryRulesService.findByPlaidFull(any(), any(), any()))
-                    .thenReturn(Optional.empty());
-            when(systemCategoryRulesService.findByPlaidCategoryIdAndSecondary(categoryId, secondary))
+            // Priority 5
+            when(plaidCategoriesService.findByPlaidCategoryIdAndSecondary(categoryId, secondary))
                     .thenReturn(Optional.of(rule));
         }
-        else if(hasPrimary && hasCategoryId)
+        else if (hasPrimary && hasCategoryId)
         {
-            when(systemCategoryRulesService.findByPlaidFull(any(), any(), any()))
-                    .thenReturn(Optional.empty());
-            when(systemCategoryRulesService.findByPlaidCategoryIdAndPrimary(categoryId, primary))
+            // Priority 6
+            when(plaidCategoriesService.findByPlaidCategoryIdAndPrimary(categoryId, primary))
                     .thenReturn(Optional.of(rule));
         }
-        else if(hasPrimary)
+        else if (hasPrimary)
         {
-            when(systemCategoryRulesService.findByPlaidPrimaryOnly(primary))
+            // Priority 7
+            when(plaidCategoriesService.findByPlaidPrimaryOnly(primary))
                     .thenReturn(Optional.of(rule));
         }
-        else if(hasSecondary)
+        else if (hasSecondary)
         {
-            when(systemCategoryRulesService.findByPlaidSecondaryOnly(secondary))
+            // Priority 8
+            when(plaidCategoriesService.findByPlaidSecondaryOnly(secondary))
                     .thenReturn(Optional.of(rule));
         }
-        else if(hasCategoryId)
+        else if (hasCategoryId)
         {
-            when(systemCategoryRulesService.findByPlaidCategoryIdOnly(categoryId))
+            // Priority 9
+            when(plaidCategoriesService.findByPlaidCategoryIdOnly(categoryId))
                     .thenReturn(Optional.of(rule));
         }
-        else if(hasMerchant)
+        else if (hasMerchant)
         {
+            // Priority 10
             when(merchantMatcherService.matchMerchant(merchant))
                     .thenReturn(Optional.of(CategoryType.getCategoryType(expectedCategory)));
         }
     }
 
+
     // Builds a stub entity with just the matched category name populated
-    private SystemCategoryRulesEntity buildPlaidRule(String categoryId, String primary,
+    private PlaidCategoriesEntity buildPlaidRule(String categoryId, String primary,
                                                      String secondary, String matchedCategory)
     {
         PlaidCategoriesEntity plaidEntity = new PlaidCategoriesEntity();
@@ -459,11 +459,7 @@ class TransactionCategorizationEngineTest
         plaidEntity.setPrimaryCategory(primary);
         plaidEntity.setSecondaryCategory(secondary);
         plaidEntity.setMatchedCategory(matchedCategory);
-
-        SystemCategoryRulesEntity rule = new SystemCategoryRulesEntity();
-        rule.setPlaidCategoryId(plaidEntity);
-        rule.setMatchedCategory(matchedCategory);
-        return rule;
+        return plaidEntity;
     }
 
     private static Stream<Arguments> provideTransactionRuleMatchingScenarios() {

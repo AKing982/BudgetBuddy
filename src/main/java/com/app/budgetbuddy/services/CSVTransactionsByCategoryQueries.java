@@ -340,7 +340,7 @@ public class CSVTransactionsByCategoryQueries
         {
             for(Long csvId : csvIds)
             {
-                transactionCategoryService.updateTransactionCategoryIsUpdated(csvId, false);
+                transactionCategoryService.updateCSVTransactionCategoryIsUpdated(csvId, false);
             }
         }catch(DataException e){
             log.error(e.getMessage());
@@ -357,7 +357,7 @@ public class CSVTransactionsByCategoryQueries
         {
             for(Long csvId : csvTransactionIds)
             {
-                transactionCategoryService.updateTransactionCategoryStatus(
+                transactionCategoryService.updateCSVTransactionCategoryStatus(
                         TransactionCategoryStatus.PROCESSED,
                         csvId
                 );

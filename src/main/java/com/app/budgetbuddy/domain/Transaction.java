@@ -12,9 +12,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Getter
-@ToString
 @Setter
 @SuperBuilder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class Transaction
 {
     private String accountId;
@@ -42,6 +42,7 @@ public class Transaction
     private LocalDate posted;
 
     private boolean isSystemCategorized;
+    private String category;
 
     public Transaction(
             @JsonProperty("accountId") String accountId,

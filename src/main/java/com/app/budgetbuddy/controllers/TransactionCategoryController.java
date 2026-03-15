@@ -37,7 +37,27 @@ public class TransactionCategoryController
         this.csvTransactionsByCategoryQueries = csvTransactionsByCategoryQueries;
     }
 
-    @GetMapping("/is-updated-by-month")
+    @GetMapping("/is-updated-by-month/csv")
+    public ResponseEntity<BoolStatus> checkIfAnyUpdatedCSVTransactionCategoriesByMonth(@RequestParam Long userId,
+                                                                                    @RequestParam LocalDate startDate,
+                                                                                    @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            boolean anyUpdated = transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, startDate, endDate);
+            if(anyUpdated)
+            {
+                BoolStatus updatedStatus = new BoolStatus(true, "Found Updated Transaction Categories");
+                return ResponseEntity.ok(updatedStatus);
+            }
+            return ResponseEntity.ok(new BoolStatus(false, "No Updated Transaction Categories"));
+        }catch(DataException e){
+            log.error("There was an error checking for any updated transaction categories: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/is-updated-by-month/transaction")
     public ResponseEntity<BoolStatus> checkIfAnyUpdatedTransactionCategoriesByMonth(@RequestParam Long userId,
                                                                                     @RequestParam LocalDate startDate,
                                                                                     @RequestParam LocalDate endDate)
@@ -79,7 +99,28 @@ public class TransactionCategoryController
         }
     }
 
-    @GetMapping("/is-new-by-month")
+    @GetMapping("/is-new-by-month/csv")
+    public ResponseEntity<BoolStatus> checkIfAnyNewCSVTransactionCategoriesByMonth(@RequestParam Long userId,
+                                                                                @RequestParam LocalDate startDate,
+                                                                                @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            boolean anyNew =  transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, startDate, endDate);
+            log.info("Found {} new transaction categories", anyNew ? 1 : 0);
+            if(anyNew)
+            {
+                BoolStatus newStatus = new BoolStatus(true, "Found New Transaction Categories");
+                return ResponseEntity.ok(newStatus);
+            }
+            return ResponseEntity.ok(new BoolStatus(false, "No New Transaction Categories"));
+        }catch(DataException e){
+            log.error("There was an error checking for any new transaction categories: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/is-new-by-month/transaction")
     public ResponseEntity<BoolStatus> checkIfAnyNewTransactionCategoriesByMonth(@RequestParam Long userId,
                                                                                 @RequestParam LocalDate startDate,
                                                                                 @RequestParam LocalDate endDate)
@@ -100,7 +141,8 @@ public class TransactionCategoryController
         }
     }
 
-    @PutMapping("/update/category")
+
+    @PutMapping("/update/category/csv")
     public ResponseEntity<TransactionCSV> updateCSVTransactionCategory(@RequestParam Long csvTransactionId,
                                                                        @RequestParam String category,
                                                                        @RequestParam Long userId)
@@ -108,7 +150,7 @@ public class TransactionCategoryController
         try
         {
             log.info("Updating TransactionCategory with csv Id {} with updated category {}", csvTransactionId, category);
-            transactionCategoryService.updateTransactionCategoriesByIdAndCategory(category, csvTransactionId);
+            transactionCategoryService.updateTransactionCategoriesByCsvIdAndCategory(category, csvTransactionId);
             log.info("Updated TransactionCategory with csv Id {}", csvTransactionId);
             Optional<TransactionCSV> transactionCSVOptional = transactionCategoryQueries.getSingleTransactionCSVWithCategory(csvTransactionId, userId);
             return transactionCSVOptional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
@@ -117,6 +159,25 @@ public class TransactionCategoryController
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/update/category")
+    public ResponseEntity<Transaction> updateTransactionCategory(@RequestParam String transactionId,
+                                                                    @RequestParam String category,
+                                                                    @RequestParam Long userId)
+    {
+        try
+        {
+            log.info("Updating TransactionCategory with Id {} with updated category {}", transactionId, category);
+            transactionCategoryService.updateTransactionCategoriesByIdAndCategory(category, transactionId);
+            log.info("Updated TransactionCategory with Id {}", transactionId);
+            Optional<Transaction> transactionCSVOptional = transactionCategoryQueries.getSingleTransactionWithCategory(transactionId, userId);
+            return transactionCSVOptional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        }catch(Exception ex){
+            log.error("Exception in updateCSVTransactionCategory", ex);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 
     @GetMapping("/{userId}/transactions")
     public ResponseEntity<List<Transaction>> getTransactionsByCategoryList(@PathVariable Long userId,

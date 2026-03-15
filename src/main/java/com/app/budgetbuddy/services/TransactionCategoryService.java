@@ -16,18 +16,26 @@ public interface TransactionCategoryService extends ServiceModel<TransactionCate
     TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity);
 
     Optional<TransactionCategory> getTransactionCategoryByCsvIdAndCatName(String category, Long csvId);
-    void updateTransactionCategoriesByIdAndCategory(String category, Long id);
+    void updateTransactionCategoriesByCsvIdAndCategory(String category, Long id);
+    void updateTransactionCategoriesByIdAndCategory(String category, String id);
 
     void updateAll(List<TransactionCategory> transactionCategoryList);
-    void updateTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId);
+    void updateCSVTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId);
+    void updateTransactionCategoryStatus(String id, TransactionCategoryStatus transactionCategoryStatus);
 
-    List<TransactionCategory> getUncategorizedTransactionsByUserIdAndDateRange(
+    List<TransactionCategory> getUncategorizedTransactionsByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
+    List<TransactionCategory> getUncategorizedCsvTransactionsByUserIdAndDateRange(
             Long userId, LocalDate startDate, LocalDate endDate);
 
+    boolean checkNewCSVTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     boolean checkNewTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
+
+    boolean checkUpdatedCSVTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     boolean checkUpdatedTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate);
 
-    void updateTransactionCategoryIsUpdated(Long csvId, boolean isUpdated);
+    void updateCSVTransactionCategoryIsUpdated(Long csvId, boolean isUpdated);
+    void updateTransactionCategoryIsUpdated(String id, boolean isUpdated);
+
 
     List<TransactionCategory> getTransactionCategoryListByTransactionIds(List<String> transactionIds);
     List<TransactionCategory> getTransactionCategoriesBetweenStartAndEndDates(LocalDate startDate, LocalDate endDate, Long userId);

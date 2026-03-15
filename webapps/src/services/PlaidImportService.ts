@@ -37,7 +37,8 @@ class PlaidImportService
         return PlaidImportService.instance;
     }
 
-    public async importPlaidTransactions(userId: number, startDate: string, endDate: string): Promise<PlaidImportResult> {
+    public async importPlaidTransactions(userId: number, startDate: string, endDate: string): Promise<PlaidImportResult>
+    {
         if(userId < 1)
         {
             throw new Error("UserId is invalid");

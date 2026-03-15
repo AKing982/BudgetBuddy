@@ -70,7 +70,8 @@ public class TransactionCategorizationEngine extends AbstractCategorizationEngin
                 transaction.getCategoryId(),
                 transaction.getPrimaryCategory(),
                 transaction.getSecondaryCategory(),
-                transaction.getMerchantName()
+                transaction.getMerchantName(),
+                transactionPriority
         );
     }
 

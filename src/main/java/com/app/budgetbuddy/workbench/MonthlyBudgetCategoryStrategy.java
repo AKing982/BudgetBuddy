@@ -35,9 +35,7 @@ public class MonthlyBudgetCategoryStrategy implements BudgetCategoryBuilderStrat
     public List<BudgetCategory> build(SubBudget subBudget, List<TransactionsByCategory> transactionsByCategory, BudgetScheduleRange budgetScheduleRange)
     {
         log.info("Building budget categories for monthly budget");
-        log.info("SubBudget: {}", subBudget);
-        log.info("Transactions: {}", transactionsByCategory);
-        log.info("BudgetScheduleRange: {}", budgetScheduleRange);
+        log.info("Transaction Categories: {}", transactionsByCategory);
         BudgetSchedule budgetSchedule = getBudgetSchedule(subBudget);
         SubBudgetGoals goals = subBudget.getSubBudgetGoals();
         List<BudgetScheduleRange> ranges = budgetSchedule.getBudgetScheduleRanges();

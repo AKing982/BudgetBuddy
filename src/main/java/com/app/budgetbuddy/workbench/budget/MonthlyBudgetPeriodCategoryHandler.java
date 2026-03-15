@@ -54,7 +54,7 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
             WHERE tc.startDate >= :startDate
             AND tc.endDate <= :endDate
             AND tc.subBudget.id = :budgetId
-            AND tc.active = true AND tc.categoryName <> 'Uncategorized'
+            AND tc.active = true AND tc.categoryName NOT IN ('Uncategorized', 'Income', 'Deposit', 'Withdrawal', 'Transfer')
             GROUP BY tc.categoryName
             """;
 

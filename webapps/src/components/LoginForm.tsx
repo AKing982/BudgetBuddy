@@ -207,30 +207,29 @@ const LoginForm: React.FC = () => {
             sessionStorage.setItem('email', userEmail);
 
             const isUserOverrideEnabled = await userService.fetchUserOverrideEnabled(userId);
-            // if (isUserOverrideEnabled || overrideAccessClick) {
-            //     await userService.updateUserUploadEnabledAccess(userId, overrideAccessClick);
-            //     await userLogService.saveUserLog(userId, 0, 0, new Date(), new Date());
-            //     sessionStorage.setItem('sessionDuration', '0');
-            //     navigate('/dashboard');
-            //     return;
-            // }
-            //
-            // const plaidStatus = await handlePlaidLinkVerification(userId);
-            // if (!plaidStatus) return;
-            //
-            // if (!plaidStatus.isLinked) {
-            //     if (plaidStatus.requiresLinkUpdate) {
-            //         await openUpdateMode(userId);
-            //     } else {
-            //         const linkResponse = await plaidService.createLinkToken();
-            //         if (!linkResponse?.linkToken) return;
-            //         setLinkToken(linkResponse.linkToken);
-            //         sessionStorage.setItem('plaidLinkToken', linkResponse.linkToken);
-            //     }
-            // } else {
-            //     navigate('/dashboard');
-            // }
-            navigate('/dashboard');
+            if (isUserOverrideEnabled || overrideAccessClick) {
+                await userService.updateUserUploadEnabledAccess(userId, overrideAccessClick);
+                await userLogService.saveUserLog(userId, 0, 0, new Date(), new Date());
+                sessionStorage.setItem('sessionDuration', '0');
+                navigate('/dashboard');
+                return;
+            }
+
+            const plaidStatus = await handlePlaidLinkVerification(userId);
+            if (!plaidStatus) return;
+
+            if (!plaidStatus.isLinked) {
+                if (plaidStatus.requiresLinkUpdate) {
+                    await openUpdateMode(userId);
+                } else {
+                    const linkResponse = await plaidService.createLinkToken();
+                    if (!linkResponse?.linkToken) return;
+                    setLinkToken(linkResponse.linkToken);
+                    sessionStorage.setItem('plaidLinkToken', linkResponse.linkToken);
+                }
+            } else {
+                navigate('/dashboard');
+            }
         } catch (error) {
             setIsAuthenticated(false);
             loginAttempts++;
@@ -322,12 +321,11 @@ const LoginForm: React.FC = () => {
 
             const linkedAccounts = await plaidService.fetchAndLinkPlaidAccounts(userId);
             if (!linkedAccounts) throw new Error('Failed to link accounts');
-
-            const currentYear = new Date().getFullYear();
-            const currentMonth = new Date().getMonth();
-            const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-            const endDate = new Date().toISOString().split('T')[0];
-            await plaidTransactionImport.importPlaidTransactions(userId, startDate, endDate);
+            //
+            // const currentYear = new Date().getFullYear();
+            // const currentMonth = new Date().getMonth();
+            // const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+            // const endDate = new Date().toISOString().split('T')[0];
 
             navigate('/dashboard');
             sessionStorage.removeItem('plaidLinkToken');

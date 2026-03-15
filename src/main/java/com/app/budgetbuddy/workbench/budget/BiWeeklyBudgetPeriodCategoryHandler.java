@@ -71,7 +71,7 @@ public class BiWeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategory
                 (bc.startDate >= :firstPeriodStart AND bc.endDate <= :firstPeriodEnd)
                 OR
                 (bc.startDate >= :secondPeriodStart AND bc.endDate <= :secondPeriodEnd)
-            )
+            ) AND bc.categoryName NOT IN ('Uncategorized', 'Income', 'Deposit', 'Withdrawal', 'Transfer')
             GROUP BY categoryName
             """;
             BudgetScheduleRange firstBiWeekRange = biWeeklyRanges.get(0);

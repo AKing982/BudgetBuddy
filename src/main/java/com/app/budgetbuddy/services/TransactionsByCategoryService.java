@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.domain.TransactionsByCategory;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.DataException;
@@ -32,6 +33,17 @@ public class TransactionsByCategoryService
         this.transactionsByCategoryQueries = transactionsByCategoryQueries;
     }
 
+    public List<TransactionsByCategory> fetchExpenseTransactionCategories(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            return transactionsByCategoryQueries.getExpenseTransactionsByCategoryList(userId, startDate, endDate);
+        }catch(DataException e){
+            log.error("There was an error fetching the expense transaction categories: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     @Async("taskExecutor")
     public CompletableFuture<List<TransactionsByCategory>> fetchTransactionsByCategoryListByDate(final Long userId, final LocalDate date)
     {
@@ -55,6 +67,19 @@ public class TransactionsByCategoryService
             return CompletableFuture.completedFuture(transactionsByCategoryList);
         }catch(DataException e){
             log.error("There was an error fetching the updated transactions by category list {}: ", e.getMessage());
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<List<TransactionsByCategory>> fetchProcessedTransactionsByCategoryList(final Long userId, final LocalDate startDate, final LocalDate endDate)
+    {
+        try
+        {
+            List<TransactionsByCategory> processedTransactionsByCategoryList = transactionsByCategoryQueries.getProcessedTransactionsByCategoryListByDateRange(userId, startDate, endDate);
+            return CompletableFuture.completedFuture(processedTransactionsByCategoryList);
+        }catch(DataException e){
+            log.error("There was an error fetching the processed transactions by category list {}: ", e.getMessage());
             return CompletableFuture.failedFuture(e);
         }
     }

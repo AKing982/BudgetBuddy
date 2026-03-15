@@ -30,7 +30,7 @@ public class TransactionToEntityConverter implements Converter<Transaction, Tran
         TransactionsEntity transactionsEntity = new TransactionsEntity();
         transactionsEntity.setAccount(fetchAccountByAccountId(transaction.getAccountId()));
         transactionsEntity.setPending(transaction.getPending());
-        transactionsEntity.setAmount(transaction.getAmount());
+        transactionsEntity.setAmount(transaction.getAmount().negate());
         transactionsEntity.setDescription(transaction.getDescription());
         transactionsEntity.setPosted(transaction.getPosted());
         transactionsEntity.setId(transaction.getTransactionId());

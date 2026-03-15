@@ -161,15 +161,6 @@ const TransactionsPage: React.FC = () => {
         return () => { document.title = 'BudgetBuddy'; };
     }, []);
 
-    useEffect(() => {
-        const rawUserId = sessionStorage.getItem('userId');
-        const userId = Number(rawUserId);
-        if (!rawUserId || isNaN(userId) || userId <= 0) {
-            alert(`Session Error: Invalid User ID found (${rawUserId}). Please log in again.`);
-        }
-    }, []);
-
-
     const handleSyncTransactions = async () =>
     {
         if (isSyncing) return;
@@ -288,7 +279,7 @@ const TransactionsPage: React.FC = () => {
                 const startDateStr = dateRange.startDate.toISOString().split('T')[0];
                 const endDateStr   = dateRange.endDate.toISOString().split('T')[0];
                 const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
-                const transactionResponse: Transaction[] = await transactionService.fetchTransactionsByUserAndDateRange(userId, startDateStr, endDateStr);
+                const transactionResponse: Transaction[] = await transactionCategoryService.fetchTransactionCategoryList(userId, startDateStr, endDateStr);
                 const csvTransactionResponse = await transactionCategoryService.fetchTransactionCSVByCategoryList(userId, startDateStr, endDateStr);
                 const safeT = Array.isArray(transactionResponse) ? transactionResponse : [];
                 const safeC = Array.isArray(csvTransactionResponse) ? csvTransactionResponse : [];
@@ -329,16 +320,28 @@ const TransactionsPage: React.FC = () => {
     const handleCloseCategoryDialog = () => { setCategoryDialogOpen(false); setSelectedTransaction(null); };
 
     const handleSaveCategory = async (data: CategorySaveData) => {
-        try {
+        try
+        {
             const userId = Number(sessionStorage.getItem('userId'));
-            await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
-            setTransactions(prev =>
-                prev.map(t => t.transactionId === data.transactionId ? { ...t, categories: [data.category] } : t)
-            );
-            if (typeof data.transactionId === 'string' && data.transactionId.startsWith('csv-')) {
-                const csvId = data.transactionId.split('-')[1];
+            const { transactionId } = data;
+            if(!transactionId)
+            {
+                throw new Error('Transaction ID is required');
+            }
+            const idStr = String(transactionId);
+
+            if (idStr.startsWith('csv-')) {
+                // CSV path
+                await transactionCategoryService.updateTransactionCSVWithCategory(userId, data);
+                const rawId = Number(idStr.split('-')[1]);
                 setCsvTransactions(prev =>
-                    prev.map(c => c.id?.toString() === csvId ? { ...c, category: data.category } : c)
+                    prev.map(c => c.id === rawId ? { ...c, category: data.category } : c)
+                );
+            } else {
+                // Plaid path
+                await transactionCategoryService.updateTransactionWithCategory(userId, data);
+                setTransactions(prev =>
+                    prev.map(t => t.transactionId === idStr ? { ...t, category: data.category } : t)
                 );
             }
         } catch (error) {
@@ -346,13 +349,89 @@ const TransactionsPage: React.FC = () => {
         }
     };
 
+    // const combinedTransactions = useMemo(() => {
+    //     const converted: Transaction[] = csvTransactions.filter(c => c.transactionDate).map((c, i) => ({
+    //         transactionId: c.id ? `csv-${c.id}-${i}` : `csv-generated-${i}-${c.transactionDate}-${c.transactionAmount}`,
+    //         amount: c.transactionAmount, date: c.transactionDate!, posted: c.transactionDate,
+    //         name: c.merchantName || c.description || 'Unknown', description: c.description || '',
+    //         authorizedDate: c.transactionDate || null, categoryId: '', extendedDescription: c.extendedDescription || '',
+    //         merchantName: c.merchantName, categories: c.category ? [c.category] : ['Uncategorized'],
+    //         pending: false, logoUrl: null, isoCurrencyCode: '', accountId: '', balance: c.balance,
+    //     }));
+    //     const all = [...transactions, ...converted];
+    //     const seen = new Set<string>();
+    //     return all.filter(t => {
+    //         const key = `${t.date}|${t.amount}|${(t.merchantName || t.name || '').toLowerCase().trim()}`;
+    //         if (seen.has(key)) return false;
+    //         seen.add(key); return true;
+    //     });
+    // }, [transactions, csvTransactions]);
+    //
+    // const sortedTransactions = useMemo(() => {
+    //     const s = [...combinedTransactions];
+    //     if (sortConfig.key) {
+    //         s.sort((a, b) => {
+    //             if (sortConfig.key === 'date') {
+    //                 const d = new Date(sortConfig.direction === 'asc' ? a.posted || a.date : b.posted || b.date).getTime()
+    //                     - new Date(sortConfig.direction === 'asc' ? b.posted || b.date : a.posted || a.date).getTime();
+    //                 return d;
+    //             }
+    //             if (sortConfig.key === 'amount') return sortConfig.direction === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+    //             if (sortConfig.key === 'name') {
+    //                 const an = a.name || '', bn = b.name || '';
+    //                 return sortConfig.direction === 'asc' ? an.localeCompare(bn) : bn.localeCompare(an);
+    //             }
+    //             if (sortConfig.key === 'category') {
+    //                 const ac = a.categories[0] || '', bc = b.categories[0] || '';
+    //                 return sortConfig.direction === 'asc' ? ac.localeCompare(bc) : bc.localeCompare(ac);
+    //             }
+    //             return 0;
+    //         });
+    //     }
+    //     return s;
+    // }, [combinedTransactions, sortConfi
+
+    // const filteredTransactions = useMemo(() => {
+    //     const { startDate, endDate } = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
+    //     const pad = (n: number) => String(n).padStart(2, '0');
+    //     const toDateStr = (val: any): string | null => {
+    //         if (!val) return null;
+    //         if (typeof val === 'string') return val.split('T')[0];
+    //         if (Array.isArray(val)) { const [y, m, d] = val; return `${y}-${pad(m)}-${pad(d)}`; }
+    //         return null;
+    //     };
+    //     const startStr = `${startDate.getFullYear()}-${pad(startDate.getMonth()+1)}-${pad(startDate.getDate())}`;
+    //     const endStr   = `${endDate.getFullYear()}-${pad(endDate.getMonth()+1)}-${pad(endDate.getDate())}`;
+    //
+    //     let filtered = sortedTransactions.filter(t => {
+    //         const ds = toDateStr(t.posted) || toDateStr(t.date);
+    //         return ds && ds >= startStr && ds <= endStr;
+    //     });
+    //     if (searchTerm.trim()) {
+    //         const s = searchTerm.toLowerCase().trim();
+    //         filtered = filtered.filter(t =>
+    //             (t.name?.toLowerCase() ?? '').includes(s) ||
+    //             (t.categories[0]?.toLowerCase() ?? '').includes(s) ||
+    //             (t.merchantName?.toLowerCase() ?? '').includes(s) ||
+    //             (t.amount?.toString() ?? '').includes(s) ||
+    //             formatDate(t.posted, t.date).toLowerCase().includes(s)
+    //         );
+    //     }
+    //     if (activeFilters.categories.length > 0)
+    //         filtered = filtered.filter(t => t.categories.some(c => activeFilters.categories.includes(c)));
+    //     if (activeFilters.type) {
+    //         filtered = filtered.filter(t => activeFilters.type === 'income' ? t.amount < 0 : t.amount > 0);
+    //     }
+    //     return filtered;
+    // }, [sortedTransactions, searchTerm, activeFilters, selectedMonth]);
+
     const combinedTransactions = useMemo(() => {
         const converted: Transaction[] = csvTransactions.filter(c => c.transactionDate).map((c, i) => ({
             transactionId: c.id ? `csv-${c.id}-${i}` : `csv-generated-${i}-${c.transactionDate}-${c.transactionAmount}`,
             amount: c.transactionAmount, date: c.transactionDate!, posted: c.transactionDate,
             name: c.merchantName || c.description || 'Unknown', description: c.description || '',
             authorizedDate: c.transactionDate || null, categoryId: '', extendedDescription: c.extendedDescription || '',
-            merchantName: c.merchantName, categories: c.category ? [c.category] : ['Uncategorized'],
+            merchantName: c.merchantName, category: c.category || 'Uncategorized',
             pending: false, logoUrl: null, isoCurrencyCode: '', accountId: '', balance: c.balance,
         }));
         const all = [...transactions, ...converted];
@@ -379,7 +458,7 @@ const TransactionsPage: React.FC = () => {
                     return sortConfig.direction === 'asc' ? an.localeCompare(bn) : bn.localeCompare(an);
                 }
                 if (sortConfig.key === 'category') {
-                    const ac = a.categories[0] || '', bc = b.categories[0] || '';
+                    const ac = a.category || '', bc = b.category || '';
                     return sortConfig.direction === 'asc' ? ac.localeCompare(bc) : bc.localeCompare(ac);
                 }
                 return 0;
@@ -408,14 +487,14 @@ const TransactionsPage: React.FC = () => {
             const s = searchTerm.toLowerCase().trim();
             filtered = filtered.filter(t =>
                 (t.name?.toLowerCase() ?? '').includes(s) ||
-                (t.categories[0]?.toLowerCase() ?? '').includes(s) ||
+                (t.category?.toLowerCase() ?? '').includes(s) ||
                 (t.merchantName?.toLowerCase() ?? '').includes(s) ||
                 (t.amount?.toString() ?? '').includes(s) ||
                 formatDate(t.posted, t.date).toLowerCase().includes(s)
             );
         }
         if (activeFilters.categories.length > 0)
-            filtered = filtered.filter(t => t.categories.some(c => activeFilters.categories.includes(c)));
+            filtered = filtered.filter(t => activeFilters.categories.includes(t.category ?? ''));
         if (activeFilters.type) {
             filtered = filtered.filter(t => activeFilters.type === 'income' ? t.amount < 0 : t.amount > 0);
         }
@@ -452,7 +531,7 @@ const TransactionsPage: React.FC = () => {
 
     const uniqueCategories = useMemo(() => {
         const s = new Set<string>();
-        transactions.forEach(t => t.categories.forEach(c => { if (c) s.add(c); }));
+        transactions.forEach(t => { if (t.category) s.add(t.category); });
         return Array.from(s);
     }, [transactions]);
 
@@ -466,7 +545,7 @@ const TransactionsPage: React.FC = () => {
         let income = 0, expense = 0, pending = 0, lastPeriodExpense = 0;
         filteredTransactions.forEach(t => {
             if (t.pending) { pending++; return; }
-            if (t.amount > 0 && t.categories.includes('Income')) {
+            if (t.amount > 0 && t.category == 'Income') {
                 income += Math.abs(t.amount);
             } else {
                 expense += t.amount;
@@ -487,9 +566,8 @@ const TransactionsPage: React.FC = () => {
     const categoryBreakdown = useMemo(() => {
         const b: Record<string, number> = {};
         combinedTransactions.forEach(t => {
-            if (t.amount > 0 && t.categories.length > 0) {
-                const c = t.categories[0];
-                b[c] = (b[c] || 0) + t.amount;
+            if (t.amount > 0 && t.category) {
+                b[t.category] = (b[t.category] || 0) + t.amount;
             }
         });
         return Object.entries(b).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount).slice(0, 5);
@@ -557,7 +635,8 @@ const TransactionsPage: React.FC = () => {
                                         <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: t.valueColor, mb: 0.5 }}>{formatCurrency(transactionStats.income)}</Typography>}
                                     <LinearProgress variant="determinate" value={pct} sx={{ my: 1, height: 6, borderRadius: 4, bgcolor: alpha(t.barColor, 0.15), '& .MuiLinearProgress-bar': { bgcolor: t.barColor, borderRadius: 4 } }} />
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.5 }}>
-                                        <Typography variant="body2" sx={{ color: t.labelColor }}>{filteredTransactions.filter(t => t.amount > 0 && t.categories.includes('Income')).length} transactions</Typography>
+                                        <Typography variant="body2" sx={{ color: t.labelColor }}>{filteredTransactions.filter(t => t.amount > 0 && t.category === 'Income').length
+                                        } transactions</Typography>
                                         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, px: 0.9, py: 0.3, borderRadius: '20px', bgcolor: t.chipBg, color: t.chipColor, fontSize: '0.7rem', fontWeight: 700 }}>
                                             <TrendingUp size={12} /> Money in
                                         </Box>
@@ -577,7 +656,7 @@ const TransactionsPage: React.FC = () => {
                                         <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: t.valueColor, mb: 0.5 }}>{formatCurrency(transactionStats.expense)}</Typography>}
                                     <LinearProgress variant="determinate" value={pct} sx={{ my: 1, height: 6, borderRadius: 4, bgcolor: alpha(t.barColor, 0.15), '& .MuiLinearProgress-bar': { bgcolor: t.barColor, borderRadius: 4 } }} />
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.5 }}>
-                                        <Typography variant="body2" sx={{ color: t.labelColor }}>{filteredTransactions.filter(t => !(t.amount > 0 && t.categories.includes('Income'))).length} transactions</Typography>
+                                        <Typography variant="body2" sx={{ color: t.labelColor }}>{filteredTransactions.filter(t => !(t.amount > 0 && t.category === 'Income')).length} transactions</Typography>
                                         {!isLoading && (
                                             <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, px: 0.9, py: 0.3, borderRadius: '20px', bgcolor: t.chipBg, color: t.chipColor, fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
                                                 {transactionStats.expenseTrend > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
@@ -846,7 +925,7 @@ const TransactionsPage: React.FC = () => {
                                             filteredTransactions.map((t, index) => {
                                                 const isIncome = t.amount < 0;
                                                 const amountColor = isIncome ? '#16a34a' : MAROON;
-                                                const catColor = categoryColors[t.categories[0]] || '#94a3b8';
+                                                const catColor = categoryColors[t.category ?? ''] || '#94a3b8';
 
                                                 return (
                                                     <TableRow key={t.transactionId}
@@ -915,7 +994,7 @@ const TransactionsPage: React.FC = () => {
                                                         {/* Category */}
                                                         <TableCell sx={{ py: 2.5 }}>
                                                             <Chip
-                                                                label={t.categories[0] || 'Uncategorized'}
+                                                                label={t.category || 'Uncategorized'}
                                                                 size="small"
                                                                 onClick={() => handleOpenCategoryDialog(t)}
                                                                 sx={{
@@ -1051,7 +1130,7 @@ const TransactionsPage: React.FC = () => {
                 <CategoryDialog
                     open={categoryDialogOpen}
                     onClose={handleCloseCategoryDialog}
-                    currentCategory={selectedTransaction.categories[0] || ''}
+                    currentCategory={selectedTransaction.category || ''}
                     transactionId={selectedTransaction.transactionId}
                     merchantName={selectedTransaction.merchantName || selectedTransaction.name}
                     availableCategories={uniqueCategories}

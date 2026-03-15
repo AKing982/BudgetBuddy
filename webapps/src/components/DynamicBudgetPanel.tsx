@@ -543,7 +543,9 @@ const DynamicBudgetPanel: React.FC<DynamicBudgetPanelProps> = ({
             if (d instanceof Date) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             return '';
         };
-        const catTxns = categoryTransactionsByDate.filter(t=>t.category===cat.categoryName);
+        const catTxns = Array.isArray(categoryTransactionsByDate)
+            ? categoryTransactionsByDate.filter(t=>t.category===cat.categoryName)
+            : [];
 
         const getDailyData = () => {
             const map = new Map<string,number>();

@@ -32,6 +32,23 @@ public class TransactionCategoryQueries
         this.em = em;
     }
 
+    private Transaction convertObjectToTransaction(Object[] result)
+    {
+        String id = (String) result[0];
+        String merchantName = (String) result[1];
+        BigDecimal transactionAmount = (BigDecimal) result[2];
+        LocalDate posted = (LocalDate) result[3];
+        String description = (String) result[4];
+        return Transaction.builder()
+                .transactionId(id)
+                .merchantName(merchantName)
+                .amount(transactionAmount)
+                .posted(posted)
+                .description(description)
+                .build();
+
+    }
+
     private TransactionCSV convertObjectToCSV(Object[] result)
     {
         Long id = (Long) result[0];
@@ -51,6 +68,29 @@ public class TransactionCategoryQueries
                 .description(description)
                 .institution_id(institutionId)
                 .build();
+    }
+
+    public Optional<Transaction> getSingleTransactionWithCategory(final String transactionId, Long userId)
+    {
+        final String transactionCategoryQuery = """
+                SELECT t.id, t.merchantName, t.amount, t.posted,
+                t.description
+                FROM TransactionCategoryEntity tc
+                INNER JOIN TransactionsEntity t
+                    ON tc.transaction.id = t.id
+                WHERE t.id = :transactionId AND t.account.user.id = :userId
+                """;
+        try
+        {
+            Object[] result = em.createQuery(transactionCategoryQuery, Object[].class)
+                    .setParameter("transactionId", transactionId)
+                    .setParameter("userId", userId)
+                    .getSingleResult();
+            return Optional.of(convertObjectToTransaction(result));
+        }catch(DataAccessException ex){
+            log.error("There was an error fetching the transaction list by category {}: ", ex.getMessage());
+            return Optional.empty();
+        }
     }
 
     public Optional<TransactionCSV> getSingleTransactionCSVWithCategory(final Long csvId, final Long userId)
@@ -106,7 +146,8 @@ public class TransactionCategoryQueries
     {
         return queryResults.stream()
                 .map(result -> Transaction.builder()
-                        .primaryCategory((String) result[1])
+                        .transactionId((String) result[0])
+                        .category((String) result[1])
                         .amount((BigDecimal) result[2])
                         .merchantName((String) result[3])
                         .description((String) result[4])

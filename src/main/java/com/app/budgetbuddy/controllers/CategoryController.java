@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.CategorySaveData;
+import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.domain.TransactionCSV;
 import com.app.budgetbuddy.domain.TransactionCategory;
 import com.app.budgetbuddy.entities.CategoryEntity;
@@ -47,7 +48,21 @@ public class CategoryController
         }
     }
 
-    @PostMapping("/categorize/transaction")
+    @PostMapping("/categtorize/transaction")
+    public ResponseEntity<Transaction> categorizeTransaction(@RequestBody CategorySaveData categorySaveData)
+    {
+        try
+        {
+            categoryRunner.categorizeSingleTransaction(categorySaveData);
+            log.info("Successfully categorized transaction with category save data: {}", categorySaveData);
+            return ResponseEntity.ok().build();
+        }catch(CategoryRunnerException e){
+            log.error("There was an error categorizing the transaction: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/categorize/csv_transaction")
     public ResponseEntity<TransactionCSV> categorizeCSVTransaction(@RequestBody @NotNull CategorySaveData categorySaveData)
     {
         try
@@ -57,6 +72,22 @@ public class CategoryController
             return ResponseEntity.ok().build();
         }catch(CategoryRunnerException e){
             log.error("There was an error categorizing the CSV transaction: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/categorize/{userId}/transaction")
+    public ResponseEntity<List<Transaction>> categorizeTransactionsByUserId(@PathVariable Long userId,
+                                                                            @RequestParam LocalDate startDate,
+                                                                            @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            categoryRunner.categorizeTransactionsByDateRange(userId, startDate, endDate);
+            log.info("Successfully categorized transactions for user {} between {} and {}", userId, startDate, endDate);
+            return ResponseEntity.ok().build();
+        }catch(CategoryRunnerException e){
+            log.error("There was an error running the category runner for user {} between {} and {}: ", userId, startDate, endDate, e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -90,6 +121,22 @@ public class CategoryController
             return ResponseEntity.ok().build();
         }catch(CategoryRunnerException e){
             log.error("There was an error re-categorizing CSV transactions for user {} between {} and {}: ", userId, startDate, endDate, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/re-categorize/{userId}/transactions")
+    public ResponseEntity<List<Transaction>> reCategorizeTransactionsByUserId(@PathVariable Long userId,
+                                                                              @RequestParam LocalDate startDate,
+                                                                              @RequestParam LocalDate endDate)
+    {
+        try
+        {
+            categoryRunner.reCategorizeTransactionsByRange(userId, startDate, endDate);
+            log.info("Successfully re-categorized uncategorized transactions for user {} between {} and {}", userId, startDate, endDate);
+            return ResponseEntity.ok().build();
+        }catch(CategoryRunnerException e){
+            log.error("There was an error re-categorizing transactions for user {} between {} and {}: ", userId, startDate, endDate, e);
             return ResponseEntity.internalServerError().build();
         }
     }

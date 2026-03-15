@@ -166,6 +166,7 @@ public class SystemCategoryRulesServiceImpl implements SystemCategoryRulesServic
     }
 
     @Override
+    @Transactional
     public List<SystemCategoryRulesEntity> findAllOrderedByPriority()
     {
         try
@@ -180,42 +181,49 @@ public class SystemCategoryRulesServiceImpl implements SystemCategoryRulesServic
     }
 
     @Override
+    @Transactional
     public Optional<SystemCategoryRulesEntity> findByPlaidFull(String categoryId, String primary, String secondary)
     {
         return Optional.empty();
     }
 
     @Override
+    @Transactional
     public Optional<SystemCategoryRulesEntity> findByPlaidPrimaryAndSecondary(String primary, String secondary)
     {
         return Optional.empty();
     }
 
     @Override
+    @Transactional
     public Optional<SystemCategoryRulesEntity> findByPlaidCategoryIdAndSecondary(String categoryId, String secondary)
     {
         return Optional.empty();
     }
 
     @Override
+    @Transactional
     public Optional<SystemCategoryRulesEntity> findByPlaidCategoryIdAndPrimary(String categoryId, String primary)
     {
         return Optional.empty();
     }
 
     @Override
+    @Transactional
     public Optional<SystemCategoryRulesEntity> findByPlaidPrimaryOnly(String primary)
     {
         return Optional.empty();
     }
 
     @Override
+    @Transactional
     public Optional<SystemCategoryRulesEntity> findByPlaidSecondaryOnly(String secondary)
     {
         return Optional.empty();
     }
 
     @Override
+    @Transactional
     public Optional<SystemCategoryRulesEntity> findByPlaidCategoryIdOnly(String categoryId)
     {
         return Optional.empty();

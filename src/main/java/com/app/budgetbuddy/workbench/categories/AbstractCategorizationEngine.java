@@ -65,7 +65,7 @@ public abstract class AbstractCategorizationEngine<T extends Transaction>
                     if(obj instanceof Transaction){
                         Transaction t = (Transaction) obj;
                         String plaidCategoryId = t.getCategoryId();
-                        category = Category.createCategory(user_category_id, plaidCategoryId, matched_category, matched_category, LocalDate.now());
+                        category = Category.createCategory(user_category_id, plaidCategoryId, matched_category, USER_CATEGORIZED, LocalDate.now());
                     }else if(obj instanceof TransactionCSV){
                         category = Category.createCategory(user_category_id, matched_category, USER_CATEGORIZED, LocalDate.now());
                     }

@@ -53,7 +53,29 @@ class TransactionCategoryService {
         try
         {
             const response = await axios.get<BoolStatus>(
-                `${API_BASE_URL}/transaction-category/is-updated-by-month`,
+                `${API_BASE_URL}/transaction-category/is-updated-by-month/transaction`,
+                {
+                    params: {
+                        userId: userId,
+                        startDate: this.formatDate(startDate),
+                        endDate: this.formatDate(endDate)
+                    }
+                }
+            );
+
+            return response.data.status;
+        }catch(error){
+            console.error("There was an error checking for updated transaction categories: ", error);
+            return false;
+        }
+    }
+
+    public async checkUpdatedCSVTransactionCategoriesByDateRange(userId: number, startDate: Date, endDate: Date) : Promise<boolean>
+    {
+        try
+        {
+            const response = await axios.get<BoolStatus>(
+                `${API_BASE_URL}/transaction-category/is-updated-by-month/csv`,
                 {
                     params: {
                         userId: userId,
@@ -96,12 +118,36 @@ class TransactionCategoryService {
         }
     }
 
+    public async checkNewCSVTransactionCategoriesByDateRange(userId: number, startDate: Date, endDate: Date) : Promise<boolean>
+    {
+        try
+        {
+            const response = await axios.get<BoolStatus>(
+                `${API_BASE_URL}/transaction-category/is-new-by-month/csv`,
+                {
+                    params: {
+                        userId: userId,
+                        startDate: this.formatDate(startDate),
+                        endDate: this.formatDate(endDate)
+                    }
+                }
+            );
+
+            console.log(response.data.message); // Log the message from backend
+            return response.data.status;
+
+        } catch(error) {
+            console.error(`There was an error checking for new transaction categories for userId ${userId}:`, error);
+            return false;
+        }
+    }
+
     public async checkNewTransactionCategoriesByDateRange(userId: number, startDate: Date, endDate: Date) : Promise<boolean>
     {
         try
         {
             const response = await axios.get<BoolStatus>(
-                `${API_BASE_URL}/transaction-category/is-new-by-month`,
+                `${API_BASE_URL}/transaction-category/is-new-by-month/transaction`,
                 {
                     params: {
                         userId: userId,
@@ -149,6 +195,31 @@ class TransactionCategoryService {
         }
     }
 
+    public async updateTransactionWithCategory(userId: number, categorySaveData: CategorySaveData) : Promise<Transaction>
+    {
+        if(categorySaveData == null)
+        {
+            throw new Error('Category save data is null');
+        }
+        const transactionIdString = categorySaveData.transactionId;
+        const category = categorySaveData.category;
+        try
+        {
+            const response = await axios.put<Transaction>(`${API_BASE_URL}/transaction-category/update/category`, null,
+                {
+                    params: {
+                        transactionId: transactionIdString,
+                        category: category,
+                        userId: userId
+                    }
+                });
+            return response.data;
+        }catch(error){
+            console.error(`There was an error updating the transaction with id ${transactionIdString} with new category ${category}: `, error);
+            throw error;
+        }
+    }
+
     public async updateTransactionCSVWithCategory(userId: number, categorySaveData: CategorySaveData) : Promise<CSVTransaction>
     {
         if(categorySaveData == null)
@@ -160,7 +231,7 @@ class TransactionCategoryService {
         const category = categorySaveData.category;
         try
         {
-            const response = await axios.put<CSVTransaction>(`${API_BASE_URL}/transaction-category/update/category`, null,
+            const response = await axios.put<CSVTransaction>(`${API_BASE_URL}/transaction-category/update/category/csv`, null,
                 {
                     params: {
                         csvTransactionId: csvId,

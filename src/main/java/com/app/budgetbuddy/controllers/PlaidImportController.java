@@ -40,9 +40,10 @@ public class PlaidImportController
         try
         {
             List<Transaction> importedTransactions = plaidTransactionRunner.getTransactionsResponse(userId, startDate, endDate);
+            log.info("Successfully imported {} transactions for user {} between {} and {}", importedTransactions.size(), userId, startDate, endDate);
             plaidTransactionRunner.saveTransactions(importedTransactions);
             PlaidImportResult plaidImportResult = new PlaidImportResult(userId, importedTransactions, new ArrayList<>());
-            categoryRunner.categorizeTransactionsByRange(userId, startDate, endDate);
+            categoryRunner.categorizeTransactionsByDateRange(userId, startDate, endDate);
             return ResponseEntity.ok(plaidImportResult);
         }catch(Exception e){
             log.error("There was an error importing plaid transactions: {}", e.getMessage());

@@ -41,6 +41,7 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
     @Override
     public TransactionCategoryEntity convert(TransactionCategory transactionCategory)
     {
+        log.info("Converting transaction category model to entity: {}", transactionCategory);
         TransactionCategoryEntity transactionCategoryEntity = new TransactionCategoryEntity();
         try
         {
@@ -56,15 +57,15 @@ public class TransactionCategoryToEntityConverter implements Converter<Transacti
             transactionCategoryEntity.setExpenseType(transactionCategory.getCategoryExpenseType());
             transactionCategoryEntity.setUpdated(transactionCategoryEntity.isUpdated());
             transactionCategoryEntity.setSubBudget(subBudgetRepository.findById(transactionCategory.getSubBudgetId()).orElse(null));
-            Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());
-            Optional<CSVTransactionEntity> csvTransactionEntity = getCSVTransactionEntity(transactionCategory.getCsvTransactionId());
-            if(transactionEntity.isEmpty() && csvTransactionEntity.isPresent())
+            if(transactionCategory.getCsvTransactionId() == null && transactionCategory.getTransactionId() != null)
             {
-                transactionCategoryEntity.setCsvTransaction(csvTransactionEntity.get());
+                Optional<TransactionsEntity> transactionEntity = getTransactionEntity(transactionCategory.getTransactionId());
+                transactionEntity.ifPresent(transactionCategoryEntity::setTransaction);
             }
-            else if(csvTransactionEntity.isEmpty() && transactionEntity.isPresent())
+            else if(transactionCategory.getCsvTransactionId() != null && transactionCategory.getTransactionId() == null)
             {
-                transactionCategoryEntity.setTransaction(transactionEntity.get());
+                Optional<CSVTransactionEntity> csvTransactionEntity = getCSVTransactionEntity(transactionCategory.getCsvTransactionId());
+                csvTransactionEntity.ifPresent(transactionCategoryEntity::setCsvTransaction);
             }
             return transactionCategoryEntity;
         }catch(Exception e){

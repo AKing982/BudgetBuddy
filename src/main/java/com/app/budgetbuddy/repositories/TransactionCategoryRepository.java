@@ -29,37 +29,65 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
             "ORDER BY tc.id")
     List<TransactionCategoryEntity> findTransactionCategoryByTransactionIds(@Param("transactionIds") List<String> transactionIds);
 
+
     @Modifying
     @Query("UPDATE TransactionCategoryEntity tce SET tce.isUpdated =:isUpdated WHERE tce.csvTransaction.id =:csvId")
-    void updateTransactionCategoryIsUpdated(@Param("csvId") Long csvId, @Param("isUpdated") boolean isUpdated);
+    void updateCSVTransactionCategoryIsUpdated(@Param("csvId") Long csvId, @Param("isUpdated") boolean isUpdated);
+
+    @Modifying
+    @Query("UPDATE TransactionCategoryEntity tce SET tce.isUpdated =:updated WHERE tce.transaction.id =:id")
+    void updateTransactionCategoryUpdated(@Param("id") String id, @Param("updated") boolean isUpdated);
 
     @Modifying
     @Query("UPDATE TransactionCategoryEntity tce SET tce.status =:status WHERE tce.csvTransaction.id =:csvId")
-    void updateTransactionCategoryStatus(@Param("csvId") Long csvId, @Param("status") TransactionCategoryStatus status);
+    void updateCSVTransactionCategoryStatus(@Param("csvId") Long csvId, @Param("status") TransactionCategoryStatus status);
+
+    @Modifying
+    @Query("UPDATE TransactionCategoryEntity tce SET tce.status =:status WHERE tce.transaction.id =:id")
+    void updateTransactionCategoryStatus(@Param("id") String id, @Param("status") TransactionCategoryStatus status);
 
     boolean existsByCsvTransactionId(Long csvTransactionId);
+
+    @Query("SELECT tce FROM TransactionCategoryEntity tce " +
+           "JOIN tce.transaction t " +
+           "WHERE t.account.user.id =:userId " +
+           "AND t.posted BETWEEN :startDate AND :endDate " +
+           "AND tce.matchedCategory = 'Uncategorized'")
+    List<TransactionCategoryEntity> findUncategorizedTransactionsByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     @Query("SELECT tce FROM TransactionCategoryEntity tce " +
             "JOIN tce.csvTransaction ct " +
             "WHERE ct.user.id = :userId " +
             "AND ct.transactionDate BETWEEN :startDate AND :endDate " +
             "AND tce.matchedCategory = 'Uncategorized'")
-    List<TransactionCategoryEntity> findUncategorizedByUserIdAndDateRange(
+    List<TransactionCategoryEntity> findUncategorizedCsvByUserIdAndDateRange(
             @Param("userId") Long userId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    boolean existsByTransactionId(String transactionId);
 
     @Query("SELECT tce FROM TransactionCategoryEntity tce WHERE tce.matchedCategory =:category AND tce.csvTransaction.id =:id")
     Optional<TransactionCategoryEntity> findTransactionCategoryByCategoryAndId(@Param("category") String category, @Param("id") Long id);
 
     @Modifying
     @Query("UPDATE TransactionCategoryEntity tce SET tce.matchedCategory =:category, tce.isUpdated=true WHERE tce.csvTransaction.id =:id")
-    void updateTransactionCategoryByIdAndCategory(@Param("id") Long id, @Param("category") String category);
+    void updateTransactionCategoryByCsvIdAndCategory(@Param("id") Long id, @Param("category") String category);
+
+    @Modifying
+    @Query("UPDATE TransactionCategoryEntity tce SET tce.matchedCategory =:category, tce.isUpdated=true WHERE tce.transaction.id =:id")
+    void updateTransactionCategoryByTransactionIdAndCategory(@Param("id") String id, @Param("category") String category);
 
     @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.csvTransaction ct WHERE tce.isUpdated = TRUE AND ct.transactionDate BETWEEN :start AND :end AND ct.user.id =:userId")
+    int findUpdatedCSVTransactionCategories(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.transaction t WHERE tce.isUpdated = TRUE AND t.posted BETWEEN :start AND :end AND t.account.user.id =:userId")
     int findUpdatedTransactionCategories(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
 
     @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.csvTransaction ct WHERE (tce.isUpdated = FALSE AND tce.status = 'NEW') AND ct.transactionDate BETWEEN :start AND :end AND ct.user.id =:userId")
+    int findNewCSVTransactionCategories(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(tce) FROM TransactionCategoryEntity tce JOIN tce.transaction t WHERE (tce.isUpdated = FALSE AND tce.status = 'NEW') AND t.posted BETWEEN :start AND :end AND t.account.user.id =:userId")
     int findNewTransactionCategories(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
 
     @Modifying

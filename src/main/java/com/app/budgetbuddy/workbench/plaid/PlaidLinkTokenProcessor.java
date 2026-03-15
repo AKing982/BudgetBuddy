@@ -88,6 +88,7 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
                 .countryCodes(Arrays.asList(CountryCode.US))
                 .transactions(transactions)
                 .accountFilters(accountFilters)
+                .webhook("https://budgetbuddy.app/api/v1/plaid/webhook")
                 .redirectUri(redirectUri)
                 .language("en");
     }

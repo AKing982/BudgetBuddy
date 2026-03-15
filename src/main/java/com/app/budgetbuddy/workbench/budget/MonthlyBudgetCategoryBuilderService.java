@@ -67,6 +67,7 @@ public class MonthlyBudgetCategoryBuilderService extends AbstractBudgetCategoryB
         }
         log.info("Monthly Budget Category Criteria: {}", budgetCriteria);
         Map<String, BudgetCategory> uniqueBudgetCategories = new HashMap<>();
+        Set<BudgetCategory> budgetCategorySet = new HashSet<>();
         for(MonthlyBudgetCategoryCriteria monthlyCriteria : budgetCriteria)
         {
             SubBudget subBudget = monthlyCriteria.getSubBudget();

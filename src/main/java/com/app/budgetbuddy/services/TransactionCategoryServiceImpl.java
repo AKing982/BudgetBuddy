@@ -59,12 +59,22 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     @Transactional
     public void save(TransactionCategoryEntity transactionCategorizationEntity)
     {
-        try {
-            Long csvTransactionId = transactionCategorizationEntity.getCsvTransaction().getId();
-            if (csvTransactionId != null && transactionCategoryRepository
-                    .existsByCsvTransactionId(csvTransactionId)) {
-                log.debug("Skipping duplicate transaction category for csv_transaction_id: {}", csvTransactionId);
-                return;
+        try
+        {
+            // CSV transaction dedup
+            if (transactionCategorizationEntity.getCsvTransaction() != null) {
+                Long csvTransactionId = transactionCategorizationEntity.getCsvTransaction().getId();
+                if (csvTransactionId != null && transactionCategoryRepository
+                        .existsByCsvTransactionId(csvTransactionId)) {
+                    log.debug("Skipping duplicate transaction category for csv_transaction_id: {}", csvTransactionId);
+                    return;
+                }
+            } else if (transactionCategorizationEntity.getTransaction() != null) {
+                String transactionId = transactionCategorizationEntity.getTransaction().getId();
+                if (transactionId != null && transactionCategoryRepository.existsByTransactionId(transactionId)) {
+                    log.debug("Skipping duplicate transaction category for transaction_id: {}", transactionId);
+                    return;
+                }
             }
             transactionCategoryRepository.save(transactionCategorizationEntity);
         } catch (DataAccessException e) {
@@ -133,11 +143,24 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 
     @Override
     @Transactional
-    public void updateTransactionCategoriesByIdAndCategory(String category, Long id)
+    public void updateTransactionCategoriesByCsvIdAndCategory(String category, Long id)
     {
         try
         {
-            transactionCategoryRepository.updateTransactionCategoryByIdAndCategory(id, category);
+            transactionCategoryRepository.updateTransactionCategoryByCsvIdAndCategory(id, category);
+        }catch(DataAccessException e){
+            log.error("There was an error while updating the TransactionCategory entity", e);
+            return;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateTransactionCategoriesByIdAndCategory(String category, String id)
+    {
+        try
+        {
+            transactionCategoryRepository.updateTransactionCategoryByTransactionIdAndCategory(id, category);
         }catch(DataAccessException e){
             log.error("There was an error while updating the TransactionCategory entity", e);
             return;
@@ -171,7 +194,7 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 
     @Override
     @Transactional
-    public void updateTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId)
+    public void updateCSVTransactionCategoryStatus(TransactionCategoryStatus transactionCategoryStatus, Long csvId)
     {
         if(transactionCategoryStatus == null || csvId < 1L)
         {
@@ -179,8 +202,25 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
         }
         try
         {
-            transactionCategoryRepository.updateTransactionCategoryStatus(csvId, transactionCategoryStatus);
+            transactionCategoryRepository.updateCSVTransactionCategoryStatus(csvId, transactionCategoryStatus);
             log.info("Successfully updated the TransactionCategory status to {} for the csv Id: {} ", transactionCategoryStatus, csvId);
+        }catch(DataAccessException e){
+            log.error("There was an error while updating the TransactionCategory entity", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateTransactionCategoryStatus(String id, TransactionCategoryStatus transactionCategoryStatus)
+    {
+        if(transactionCategoryStatus == null || id.isEmpty())
+        {
+            return;
+        }
+        try
+        {
+            transactionCategoryRepository.updateTransactionCategoryStatus(id, transactionCategoryStatus);
+            log.info("Successfully updated the TransactionCategory status to {} for the id: {} ", transactionCategoryStatus, id);
         }catch(DataAccessException e){
             log.error("There was an error while updating the TransactionCategory entity", e);
             return;
@@ -188,10 +228,21 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
+    @Transactional
     public List<TransactionCategory> getUncategorizedTransactionsByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         return transactionCategoryRepository
-                .findUncategorizedByUserIdAndDateRange(userId, startDate, endDate)
+                .findUncategorizedTransactionsByUserIdAndDateRange(userId, startDate, endDate)
+                .stream()
+                .map(this::convertFromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TransactionCategory> getUncategorizedCsvTransactionsByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        return transactionCategoryRepository
+                .findUncategorizedCsvByUserIdAndDateRange(userId, startDate, endDate)
                 .stream()
                 .map(this::convertFromEntity)
                 .collect(Collectors.toList());
@@ -199,11 +250,11 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 
     @Override
     @Transactional
-    public boolean checkNewTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    public boolean checkNewCSVTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try
         {
-            int checkCountNew = transactionCategoryRepository.findNewTransactionCategories(startDate, endDate, userId);
+            int checkCountNew = transactionCategoryRepository.findNewCSVTransactionCategories(startDate, endDate, userId);
             return checkCountNew > 0;
         }catch(DataAccessException e){
             log.error("There was an error fetching new transaction categories by date range", e);
@@ -213,12 +264,26 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 
     @Override
     @Transactional
-    public boolean checkUpdatedTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    public boolean checkNewTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+       try
+       {
+           int checkCountNew = transactionCategoryRepository.findNewTransactionCategories(startDate, endDate, userId);
+           return checkCountNew > 0;
+       }catch(DataAccessException e){
+           log.error("There was an error fetching new transaction categories by date range", e);
+           return false;
+       }
+    }
+
+    @Override
+    @Transactional
+    public boolean checkUpdatedCSVTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try
         {
             log.info("Checking if there are any updated transaction categories between {} and {}", startDate, endDate);
-            int checkUpdated = transactionCategoryRepository.findUpdatedTransactionCategories(startDate, endDate, userId);
+            int checkUpdated = transactionCategoryRepository.findUpdatedCSVTransactionCategories(startDate, endDate, userId);
             log.info("Found {} updated transaction categories between {} and {}", checkUpdated, startDate, endDate);
             return checkUpdated > 0;
         }catch(DataAccessException e){
@@ -229,7 +294,21 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 
     @Override
     @Transactional
-    public void updateTransactionCategoryIsUpdated(Long csvId, boolean isUpdated)
+    public boolean checkUpdatedTransactionCategoriesByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            int checkUpdated = transactionCategoryRepository.findUpdatedTransactionCategories(startDate, endDate, userId);
+            return checkUpdated > 0;
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the updated transaction categories by date range", e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateCSVTransactionCategoryIsUpdated(Long csvId, boolean isUpdated)
     {
         if(csvId < 1L)
         {
@@ -237,10 +316,27 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
         }
         try
         {
-            transactionCategoryRepository.updateTransactionCategoryIsUpdated(csvId, isUpdated);
+            transactionCategoryRepository.updateCSVTransactionCategoryIsUpdated(csvId, isUpdated);
             log.info("Successfully updated transaction category isUpdated field to {} for the csv Id: {} ", isUpdated, csvId);
         }catch(DataAccessException e){
             log.error("There was an error while updating the is updated field for transaction category with csvId {}: {}", csvId, e.getMessage());
+            return;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateTransactionCategoryIsUpdated(String id, boolean isUpdated)
+    {
+        if(id == null)
+        {
+            return;
+        }
+        try
+        {
+            transactionCategoryRepository.updateTransactionCategoryUpdated(id, isUpdated);
+        }catch(DataAccessException e){
+            log.error("There was an error while updating the is updated field for transaction category with id {}: {}", id, e.getMessage());
             return;
         }
     }

@@ -88,6 +88,7 @@ public class WeeklyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHa
                 AND bc.endDate <= :endDate
                 AND bc.subBudget.id = :budgetId
                 AND bc.active = true
+                AND bc.categoryName NOT IN ('Uncategorized', 'Income', 'Deposit', 'Withdrawal', 'Transfer')
                 """;
                 List<Object[]> results = entityManager.createQuery(weeklyBudgetQuery, Object[].class)
                         .setParameter("startDate", budgetScheduleWeekStart)
