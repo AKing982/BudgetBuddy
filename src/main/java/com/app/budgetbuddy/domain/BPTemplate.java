@@ -16,19 +16,17 @@ public class BPTemplate
     private Long id;
     private Long subBudgetId;
     private String templateName;
-    private boolean isFiftyThirtyTwentyRule;
     private BPTemplateType templateType;
     private List<BPTemplateHeader> bpTemplateHeader;
     private BPGoalsDetail bpGoalsDetail;
     private BPTemplateDetail bpTemplateDetail;
     private boolean active;
 
-    public BPTemplate(Long id, Long subBudgetId, String templateName, boolean isFiftyThirtyTwentyRule, BPTemplateType templateType, BPTemplateHeader bpTemplateHeader, BPGoalsDetail bpGoalsDetail, BPTemplateDetail bpTemplateDetail, boolean active)
+    public BPTemplate(Long id, Long subBudgetId, String templateName, BPTemplateType templateType, BPTemplateHeader bpTemplateHeader, BPGoalsDetail bpGoalsDetail, BPTemplateDetail bpTemplateDetail, boolean active)
     {
         this.id = id;
         this.subBudgetId = subBudgetId;
         this.templateName = templateName;
-        this.isFiftyThirtyTwentyRule = isFiftyThirtyTwentyRule;
         this.templateType = templateType;
     }
 
