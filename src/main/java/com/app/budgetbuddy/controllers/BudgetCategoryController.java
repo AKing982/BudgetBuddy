@@ -2,6 +2,7 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
 import com.app.budgetbuddy.domain.BudgetCategoryBody;
+import com.app.budgetbuddy.domain.BudgetCategoryUpdate;
 import com.app.budgetbuddy.domain.SubBudget;
 import com.app.budgetbuddy.exceptions.BudgetCategoryException;
 import com.app.budgetbuddy.exceptions.DataException;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -36,6 +38,33 @@ public class BudgetCategoryController
         this.budgetCategoryRunner = budgetCategoryRunner;
         this.budgetCategoryService = budgetCategoryService;
         this.subBudgetService = subBudgetService;
+    }
+
+    @GetMapping("/{userId}/all")
+    public ResponseEntity<List<BudgetCategory>> findAllUserBudgetCategories(@PathVariable Long userId)
+    {
+        try
+        {
+            List<BudgetCategory> userBudgetCategories = budgetCategoryService.getBudgetCategoriesByUserId(userId);
+            return ResponseEntity.ok(userBudgetCategories);
+        }catch(Exception e){
+            log.error("There was an error retrieving all budget categories for user {}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/{userId}/update-all")
+    public ResponseEntity<List<BudgetCategory>> updateBudgetCategories(@PathVariable Long userId,
+                                                                       @RequestBody BudgetCategoryUpdate budgetCategoryUpdate)
+    {
+        try
+        {
+           Map<Long, String> budgetCategoriesMap = budgetCategoryUpdate.budgetCategoryUpdateMap();
+           return ResponseEntity.ok(budgetCategoryService.updateBudgetCategories(budgetCategoriesMap));
+        }catch(Exception e){
+            log.error("There was an error updating budget categories for user {}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/create")

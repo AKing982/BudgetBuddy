@@ -15,6 +15,8 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
 
     List<BudgetCategoryEntity> getActiveBudgetCategoriesByUser(Long userId);
 
+    List<BudgetCategory> updateBudgetCategories(Map<Long, String> budgetCategoriesToUpdate);
+
     boolean existsByCategoryDateRange(String category, LocalDate dateStart, LocalDate dateEnd, Long subBudgetId);
     List<BudgetCategoryEntity> getBudgetCategoriesByBudgetId(Long budgetId);
     List<BudgetCategoryEntity> getBudgetCategoriesByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate);
@@ -24,6 +26,8 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
     List<BudgetCategory> getBudgetCategoriesByDate(Long subBudgetId, LocalDate currentDate, LocalDate startDate, LocalDate endDate);
 
     List<BudgetCategory> saveAll(List<BudgetCategory> budgetCategories);
+
+    List<BudgetCategory> getBudgetCategoriesByUserId(Long userId);
 
     List<Object[]> getHistoricalMonthStatsByCategory(Long userId, LocalDate startDate, LocalDate endDate);
 

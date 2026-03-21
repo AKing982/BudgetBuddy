@@ -35,6 +35,10 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
            "AND bc.active = TRUE")
     boolean existsByCategoryDateRange(@Param("category") String category, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("subBudgetId") Long subBudgetId);
 
+    @Modifying
+    @Query("UPDATE BudgetCategoryEntity u SET u.categoryName =:category WHERE u.id =:id")
+    void updateCategoryNameById(@Param("id") Long id, @Param("category") String category);
+
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id AND u.startDate =:start AND u.endDate =:end")
     List<BudgetCategoryEntity> findByBudgetIdAndDateRange(@Param("id") Long budgetId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
@@ -46,6 +50,9 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
 
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id AND :date BETWEEN :start AND :end")
     List<BudgetCategoryEntity> findBudgetCategoriesByDate(@Param("id") Long subBudgetId, @Param("date") LocalDate currentDate, @Param("start") LocalDate startDate, @Param("end") LocalDate endDate);
+
+    @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.user.id =:userId")
+    List<BudgetCategoryEntity> findCategoriesByUser(@Param("userId") Long userId);
 
     @Modifying
     @Query("""

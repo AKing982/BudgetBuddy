@@ -11,6 +11,7 @@ import com.app.budgetbuddy.repositories.BudgetCategoryRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
+import com.app.budgetbuddy.workbench.converter.BudgetCategoryModelConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -29,19 +31,19 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
 {
     private final BudgetCategoryRepository budgetCategoryRepository;
     private final BudgetCategoryConverter transactionCategoryConverter;
+    private final BudgetCategoryModelConverter budgetCategoryModelConverter;
     private final SubBudgetRepository subBudgetRepository;
-    private final CategoryRepository categoryRepository;
 
     @Autowired
     public BudgetCategoryServiceImpl(BudgetCategoryRepository budgetCategoryRepository,
                                      BudgetCategoryConverter transactionCategoryConverter,
-                                     SubBudgetRepository subBudgetRepository,
-                                     CategoryRepository categoryRepository)
+                                     BudgetCategoryModelConverter budgetCategoryModelConverter,
+                                     SubBudgetRepository subBudgetRepository)
     {
         this.budgetCategoryRepository = budgetCategoryRepository;
         this.transactionCategoryConverter = transactionCategoryConverter;
         this.subBudgetRepository = subBudgetRepository;
-        this.categoryRepository = categoryRepository;
+        this.budgetCategoryModelConverter = budgetCategoryModelConverter;
     }
 
     @Override
@@ -75,6 +77,30 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     public List<BudgetCategoryEntity> getActiveBudgetCategoriesByUser(Long userId)
     {
         return budgetCategoryRepository.findActiveCategoriesByUser(userId);
+    }
+
+    @Override
+    @Transactional
+    public List<BudgetCategory> updateBudgetCategories(Map<Long, String> budgetCategoriesToUpdate)
+    {
+        if(budgetCategoriesToUpdate.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<Long> budgetCategoryIds = budgetCategoriesToUpdate.keySet().stream().toList();
+            budgetCategoriesToUpdate.forEach(budgetCategoryRepository::updateCategoryNameById);
+            List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategoryRepository.findAllById(budgetCategoryIds);
+            return budgetCategoryEntities.stream()
+                    .map(budgetCategoryModelConverter::convert)
+                    .distinct()
+                    .toList();
+
+        }catch(DataAccessException e){
+            log.error("There was an error updating the budget categories: ", e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
@@ -230,6 +256,28 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         }catch(DataAccessException e){
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    @Transactional
+    public List<BudgetCategory> getBudgetCategoriesByUserId(Long userId)
+    {
+        try
+        {
+            List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategoryRepository.findCategoriesByUser(userId);
+            return convertBudgetCategoryEntities(budgetCategoryEntities);
+        }catch(DataAccessException e){
+            log.error("There was an error getting the budget categories by user ID: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<BudgetCategory> convertBudgetCategoryEntities(List<BudgetCategoryEntity> budgetCategoryEntities)
+    {
+        return budgetCategoryEntities.stream()
+                .map(budgetCategoryModelConverter::convert)
+                .distinct()
+                .toList();
     }
 
     @Override

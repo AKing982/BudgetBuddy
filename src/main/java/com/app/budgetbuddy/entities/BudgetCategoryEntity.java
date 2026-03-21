@@ -33,6 +33,10 @@ public class BudgetCategoryEntity
     @JoinColumn(name="sub_budgetId")
     private SubBudgetEntity subBudget;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="userId")
+    private UserEntity user;
+
     @Column(name="category_name")
     @NotNull
     private String categoryName;

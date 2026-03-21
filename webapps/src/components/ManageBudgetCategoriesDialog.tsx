@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-    Dialog, DialogContent, DialogActions, Button, TextField,
+    Dialog, DialogContent, Button, TextField,
     Box, Typography, IconButton, Stack, Chip, alpha, Switch,
-    FormControlLabel, Divider, Tabs, Tab, Tooltip, InputAdornment,
-    CircularProgress, Grid,
+    Tabs, Tab, Tooltip, InputAdornment,
+    CircularProgress, List, ListItem, ListItemButton, ListItemText,
+    Collapse, Checkbox,
 } from '@mui/material';
 import {
     X, Plus, Trash2, Eye, EyeOff, Tag, CheckCircle2,
-    LayoutGrid, Sparkles, PiggyBank, Save,
+    LayoutGrid, Sparkles, PiggyBank, Save, Search, PenLine,
+    ListChecks, ArrowLeftRight, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import CategoryService from '../services/CategoryService';
+import UserCategoryService, { UserCategory } from '../services/UserCategoryService';
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const MAROON  = '#6b1a1a';
@@ -16,26 +20,34 @@ const MAROON2 = '#4a1010';
 const TEAL    = '#0d9488';
 const TEAL2   = '#0f766e';
 const GREEN   = '#059669';
+const AMBER   = '#d97706';
 const SLATE   = '#64748b';
 const RED     = '#dc2626';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface BudgetCategory {
-    id?:             number;
-    name:            string;
-    budgetedAmount:  number;
-    savingsGoal?:    number;
-    isDefault:       boolean;
-    isActive:        boolean;
-    isCustom:        boolean;
+    id?:            number;
+    name:           string;
+    budgetedAmount: number;
+    savingsGoal?:   number;
+    isDefault:      boolean;
+    isActive:       boolean;
+    isCustom:       boolean;
 }
 
+// Maps customCategoryId -> set of default category ids it replaces
+type SwapMap = Record<number, Set<number>>;
+
 interface ManageBudgetCategoriesDialogProps {
-    open:               boolean;
-    onClose:            () => void;
-    defaultCategories:  BudgetCategory[];
-    customCategories:   BudgetCategory[];
-    onSaveCategories:   (categories: BudgetCategory[], useCustomOnly: boolean) => Promise<void>;
+    open:              boolean;
+    onClose:           () => void;
+    defaultCategories: BudgetCategory[];
+    customCategories:  BudgetCategory[];
+    onSaveCategories:  (
+        categories: BudgetCategory[],
+        useCustomOnly: boolean,
+        swappedDefaultIds: number[],
+    ) => Promise<void>;
 }
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
@@ -58,154 +70,447 @@ const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 );
 
 // ── Default category row ──────────────────────────────────────────────────────
-const DefaultRow: React.FC<{ cat: BudgetCategory; onToggle: () => void }> = ({ cat, onToggle }) => (
-    <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 1.5,
-        px: 1.75, py: 1.25, borderRadius: '10px',
-        border: `1px solid ${cat.isActive ? alpha(TEAL, 0.25) : alpha('#000', 0.07)}`,
-        borderLeft: `4px solid ${cat.isActive ? TEAL : alpha('#000', 0.12)}`,
-        bgcolor: cat.isActive ? alpha(TEAL, 0.035) : '#fafafa',
-        transition: 'all 0.15s ease',
-        '&:hover': { boxShadow: `0 2px 8px ${alpha(TEAL, 0.1)}` },
-    }}>
-        {/* Status dot */}
-        <Box sx={{
-            width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-            bgcolor: cat.isActive ? TEAL : alpha('#000', 0.2),
-        }} />
-
-        {/* Name + budget */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: cat.isActive ? '#111' : '#888' }}>
-                    {cat.name}
-                </Typography>
-                <Chip size="small" label="Default"
-                      sx={{ height: 16, fontSize: '0.55rem', fontWeight: 800,
-                          bgcolor: alpha(MAROON, 0.08), color: MAROON,
-                          border: `1px solid ${alpha(MAROON, 0.18)}` }} />
-            </Box>
-            <Typography sx={{ fontSize: '0.65rem', color: SLATE, mt: 0.2 }}>
-                {cat.budgetedAmount > 0 ? `$${cat.budgetedAmount.toFixed(2)} budgeted` : 'No budget set'}
-            </Typography>
-        </Box>
-
-        {/* Toggle */}
-        <Tooltip title={cat.isActive ? 'Disable category' : 'Enable category'}>
-            <IconButton size="small" onClick={onToggle} sx={{
-                color: cat.isActive ? TEAL : alpha('#000', 0.3),
-                '&:hover': { bgcolor: cat.isActive ? alpha(TEAL, 0.1) : alpha('#000', 0.05) },
-            }}>
-                {cat.isActive ? <Eye size={15} /> : <EyeOff size={15} />}
-            </IconButton>
-        </Tooltip>
-    </Box>
-);
-
-// ── Custom category card ──────────────────────────────────────────────────────
-const CustomCard: React.FC<{ cat: BudgetCategory; onDelete: () => void }> = ({ cat, onDelete }) => (
-    <Box sx={{
-        p: 1.75, borderRadius: '10px',
-        border: `1px solid ${alpha(TEAL, 0.22)}`,
-        borderLeft: `4px solid ${TEAL}`,
-        bgcolor: '#fff',
-        transition: 'box-shadow 0.15s',
-        '&:hover': { boxShadow: `0 3px 12px ${alpha(TEAL, 0.12)}`, '& .del-btn': { opacity: 1 } },
-    }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
-                    <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#111' }}>
-                        {cat.name}
-                    </Typography>
-                    <Chip size="small" label="Custom"
-                          sx={{ height: 16, fontSize: '0.55rem', fontWeight: 800,
-                              bgcolor: alpha(TEAL, 0.1), color: TEAL,
-                              border: `1px solid ${alpha(TEAL, 0.25)}` }} />
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Box>
-                        <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: SLATE }}>Budgeted</Typography>
-                        <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: MAROON, fontVariantNumeric: 'tabular-nums' }}>
-                            ${cat.budgetedAmount.toFixed(2)}
-                        </Typography>
-                    </Box>
-                    {cat.savingsGoal && cat.savingsGoal > 0 && (
-                        <Box>
-                            <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: SLATE }}>Savings Goal</Typography>
-                            <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: GREEN, fontVariantNumeric: 'tabular-nums' }}>
-                                ${cat.savingsGoal.toFixed(2)}
-                            </Typography>
-                        </Box>
-                    )}
-                </Box>
-            </Box>
-
-            <IconButton className="del-btn" size="small" onClick={onDelete} sx={{
-                opacity: 0, transition: 'opacity 0.15s',
-                color: RED, '&:hover': { bgcolor: alpha(RED, 0.1) },
-            }}>
-                <Trash2 size={14} />
-            </IconButton>
-        </Box>
-    </Box>
-);
-
-// ── Add category form ─────────────────────────────────────────────────────────
-const AddCategoryForm: React.FC<{
-    onAdd: (name: string, budget: string, savings: string) => void;
-    onCancel: () => void;
-}> = ({ onAdd, onCancel }) => {
-    const [name,    setName]    = useState('');
-    const [budget,  setBudget]  = useState('');
-    const [savings, setSavings] = useState('');
-
-    const numericOnly = (v: string) => v === '' || /^\d*\.?\d{0,2}$/.test(v);
+const DefaultRow: React.FC<{
+    cat:         BudgetCategory;
+    onToggle:    () => void;
+    replacedBy?: string;
+}> = ({ cat, onToggle, replacedBy }) => {
+    const isReplaced       = Boolean(replacedBy);
+    const effectivelyActive = cat.isActive && !isReplaced;
 
     return (
         <Box sx={{
-            p: 2, mb: 2, borderRadius: '12px',
-            border: `1.5px solid ${alpha(TEAL, 0.3)}`,
-            bgcolor: alpha(TEAL, 0.03),
+            display: 'flex', alignItems: 'center', gap: 1.5,
+            px: 1.75, py: 1.25, borderRadius: '10px',
+            border: `1px solid ${isReplaced ? alpha(AMBER, 0.3) : effectivelyActive ? alpha(TEAL, 0.25) : alpha('#000', 0.07)}`,
+            borderLeft: `4px solid ${isReplaced ? AMBER : effectivelyActive ? TEAL : alpha('#000', 0.12)}`,
+            bgcolor: isReplaced ? alpha(AMBER, 0.04) : effectivelyActive ? alpha(TEAL, 0.035) : '#fafafa',
+            transition: 'all 0.15s ease',
+            '&:hover': { boxShadow: `0 2px 8px ${alpha(isReplaced ? AMBER : TEAL, 0.1)}` },
         }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: TEAL, mb: 1.75 }}>
-                New Category
+            <Box sx={{
+                width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                bgcolor: isReplaced ? AMBER : effectivelyActive ? TEAL : alpha('#000', 0.2),
+            }} />
+
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                    <Typography sx={{
+                        fontWeight: 700, fontSize: '0.8rem',
+                        color: isReplaced ? alpha('#111', 0.45) : effectivelyActive ? '#111' : '#888',
+                        textDecoration: isReplaced ? 'line-through' : 'none',
+                    }}>
+                        {cat.name}
+                    </Typography>
+                    <Chip size="small" label="Default"
+                          sx={{ height: 16, fontSize: '0.55rem', fontWeight: 800,
+                              bgcolor: alpha(MAROON, 0.08), color: MAROON,
+                              border: `1px solid ${alpha(MAROON, 0.18)}` }} />
+                    {isReplaced && (
+                        <Chip size="small"
+                              icon={<ArrowLeftRight size={9} />}
+                              label={`→ ${replacedBy}`}
+                              sx={{ height: 16, fontSize: '0.55rem', fontWeight: 700,
+                                  bgcolor: alpha(AMBER, 0.12), color: AMBER,
+                                  border: `1px solid ${alpha(AMBER, 0.25)}`,
+                                  '& .MuiChip-icon': { color: AMBER, ml: '4px' } }} />
+                    )}
+                </Box>
+                <Typography sx={{ fontSize: '0.65rem', color: SLATE, mt: 0.2 }}>
+                    {isReplaced
+                        ? 'Hidden — replaced by custom category'
+                        : cat.budgetedAmount > 0
+                            ? `$${cat.budgetedAmount.toFixed(2)} budgeted`
+                            : 'No budget set'}
+                </Typography>
+            </Box>
+
+            <Tooltip title={isReplaced ? 'Managed via custom category swap' : cat.isActive ? 'Disable category' : 'Enable category'}>
+                <span>
+                    <IconButton size="small" onClick={onToggle} disabled={isReplaced} sx={{
+                        color: isReplaced ? alpha('#000', 0.2) : effectivelyActive ? TEAL : alpha('#000', 0.3),
+                        '&:hover': { bgcolor: effectivelyActive ? alpha(TEAL, 0.1) : alpha('#000', 0.05) },
+                    }}>
+                        {effectivelyActive || isReplaced ? <Eye size={15} /> : <EyeOff size={15} />}
+                    </IconButton>
+                </span>
+            </Tooltip>
+        </Box>
+    );
+};
+
+// ── Swap selector (inside custom card) ───────────────────────────────────────
+const SwapSelector: React.FC<{
+    customCatName: string;
+    defaultCats:   BudgetCategory[];
+    swappedIds:    Set<number>;
+    allSwappedIds: Set<number>;
+    onToggleSwap:  (defaultId: number) => void;
+}> = ({ customCatName, defaultCats, swappedIds, allSwappedIds, onToggleSwap }) => {
+    const [search, setSearch] = useState('');
+
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        return defaultCats.filter(c => !q || c.name.toLowerCase().includes(q));
+    }, [defaultCats, search]);
+
+    return (
+        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px dashed ${alpha(AMBER, 0.3)}` }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                <ArrowLeftRight size={12} color={AMBER} />
+                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: AMBER }}>
+                    Replace Default Categories
+                </Typography>
+                {swappedIds.size > 0 && (
+                    <Chip size="small" label={`${swappedIds.size} selected`}
+                          sx={{ height: 15, fontSize: '0.52rem', fontWeight: 700,
+                              bgcolor: alpha(AMBER, 0.12), color: AMBER,
+                              border: `1px solid ${alpha(AMBER, 0.25)}` }} />
+                )}
+            </Box>
+
+            <Typography sx={{ fontSize: '0.65rem', color: SLATE, mb: 1.25, lineHeight: 1.5 }}>
+                Check any default categories to hide them and have{' '}
+                <strong style={{ color: TEAL }}>"{customCatName}"</strong> take their place in your budget.
             </Typography>
-            <Stack spacing={1.5}>
-                <TextField fullWidth size="small" label="Category Name *" sx={fieldSx}
-                           value={name} onChange={e => setName(e.target.value)}
-                           placeholder="e.g. Entertainment, Pet Care, Hobbies" />
-                <Grid container spacing={1.5}>
-                    <Grid item xs={6}>
-                        <TextField fullWidth size="small" label="Budgeted Amount" sx={fieldSx}
-                                   value={budget} onChange={e => numericOnly(e.target.value) && setBudget(e.target.value)}
-                                   placeholder="0.00"
-                                   InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
-                    </Grid>
-                    <Grid item xs={6}>
-                        <TextField fullWidth size="small" label="Savings Goal" sx={fieldSx}
-                                   value={savings} onChange={e => numericOnly(e.target.value) && setSavings(e.target.value)}
-                                   placeholder="0.00"
-                                   InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-                                   helperText="Optional" />
-                    </Grid>
-                </Grid>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+
+            {defaultCats.length > 6 && (
+                <TextField fullWidth size="small" placeholder="Search defaults…"
+                           value={search} onChange={e => setSearch(e.target.value)}
+                           sx={{ ...fieldSx, mb: 1,
+                               '& .MuiOutlinedInput-root': { borderRadius: '7px', fontSize: '0.75rem' } }}
+                           InputProps={{
+                               startAdornment: (
+                                   <InputAdornment position="start">
+                                       <Search size={12} color={SLATE} />
+                                   </InputAdornment>
+                               ),
+                           }} />
+            )}
+
+            <Box sx={{
+                borderRadius: '8px',
+                border: `1px solid ${alpha(AMBER, 0.2)}`,
+                bgcolor: alpha(AMBER, 0.02),
+                overflow: 'hidden',
+                maxHeight: 230,
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': { width: 4 },
+                '&::-webkit-scrollbar-thumb': { bgcolor: alpha(AMBER, 0.3), borderRadius: 2 },
+            }}>
+                {filtered.length === 0 ? (
+                    <Box sx={{ py: 2, textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: '0.7rem', color: SLATE }}>No matching default categories</Typography>
+                    </Box>
+                ) : filtered.map((cat, i) => {
+                    const isChecked  = swappedIds.has(cat.id!);
+                    const isDisabled = !isChecked && allSwappedIds.has(cat.id!); // swapped by a different custom cat
+
+                    return (
+                        <Box key={cat.id} onClick={() => !isDisabled && onToggleSwap(cat.id!)} sx={{
+                            display: 'flex', alignItems: 'center', gap: 0.5,
+                            px: 1.25, py: 0.85,
+                            borderBottom: i < filtered.length - 1 ? `1px solid ${alpha('#000', 0.05)}` : 'none',
+                            bgcolor: isChecked ? alpha(AMBER, 0.06) : 'transparent',
+                            opacity: isDisabled ? 0.4 : 1,
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            transition: 'background 0.12s',
+                            '&:hover': !isDisabled ? { bgcolor: isChecked ? alpha(AMBER, 0.09) : alpha(AMBER, 0.04) } : {},
+                        }}>
+                            <Checkbox size="small" checked={isChecked} disabled={isDisabled}
+                                      onChange={() => !isDisabled && onToggleSwap(cat.id!)}
+                                      onClick={e => e.stopPropagation()}
+                                      sx={{ p: 0.5, color: alpha(AMBER, 0.4), '&.Mui-checked': { color: AMBER } }} />
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography sx={{ fontSize: '0.75rem', fontWeight: isChecked ? 700 : 500, color: '#111' }}>
+                                    {cat.name}
+                                </Typography>
+                                {isDisabled && (
+                                    <Typography sx={{ fontSize: '0.58rem', color: SLATE }}>
+                                        Already swapped to another category
+                                    </Typography>
+                                )}
+                            </Box>
+                            {isChecked && <CheckCircle2 size={13} color={AMBER} style={{ flexShrink: 0 }} />}
+                        </Box>
+                    );
+                })}
+            </Box>
+        </Box>
+    );
+};
+
+// ── Custom category card ──────────────────────────────────────────────────────
+const CustomCard: React.FC<{
+    cat:           BudgetCategory;
+    defaultCats:   BudgetCategory[];
+    swappedIds:    Set<number>;
+    allSwappedIds: Set<number>;
+    onDelete:      () => void;
+    onToggleSwap:  (defaultId: number) => void;
+}> = ({ cat, defaultCats, swappedIds, allSwappedIds, onDelete, onToggleSwap }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    return (
+        <Box sx={{
+            borderRadius: '10px',
+            border: `1px solid ${alpha(TEAL, 0.22)}`,
+            borderLeft: `4px solid ${TEAL}`,
+            bgcolor: '#fff',
+            transition: 'box-shadow 0.15s',
+            overflow: 'hidden',
+            '&:hover': { boxShadow: `0 3px 12px ${alpha(TEAL, 0.12)}` },
+        }}>
+            {/* Header row */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1.75, py: 1.25 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, bgcolor: TEAL }} />
+
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#111' }}>
+                            {cat.name}
+                        </Typography>
+                        <Chip size="small" label="Custom"
+                              sx={{ height: 16, fontSize: '0.55rem', fontWeight: 800,
+                                  bgcolor: alpha(TEAL, 0.1), color: TEAL,
+                                  border: `1px solid ${alpha(TEAL, 0.25)}` }} />
+                        {swappedIds.size > 0 && (
+                            <Chip size="small"
+                                  icon={<ArrowLeftRight size={9} />}
+                                  label={`Replaces ${swappedIds.size}`}
+                                  sx={{ height: 16, fontSize: '0.55rem', fontWeight: 700,
+                                      bgcolor: alpha(AMBER, 0.1), color: AMBER,
+                                      border: `1px solid ${alpha(AMBER, 0.25)}`,
+                                      '& .MuiChip-icon': { color: AMBER, ml: '4px' } }} />
+                        )}
+                    </Box>
+                </Box>
+
+                {/* Swap expand button */}
+                <Tooltip title={expanded ? 'Close swap settings' : 'Choose which default categories this replaces'}>
+                    <Box onClick={() => setExpanded(v => !v)} sx={{
+                        display: 'flex', alignItems: 'center', gap: 0.4,
+                        px: 1, py: 0.5, borderRadius: '6px', cursor: 'pointer',
+                        border: `1px solid ${expanded ? alpha(AMBER, 0.35) : alpha('#000', 0.1)}`,
+                        bgcolor: expanded ? alpha(AMBER, 0.08) : 'transparent',
+                        color: expanded ? AMBER : SLATE,
+                        transition: 'all 0.15s',
+                        '&:hover': { bgcolor: alpha(AMBER, 0.1), color: AMBER, borderColor: alpha(AMBER, 0.3) },
+                    }}>
+                        <ArrowLeftRight size={12} />
+                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.03em' }}>
+                            Swap
+                        </Typography>
+                        {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                    </Box>
+                </Tooltip>
+
+                <Tooltip title="Remove custom category">
+                    <IconButton size="small" onClick={onDelete}
+                                sx={{ color: RED, '&:hover': { bgcolor: alpha(RED, 0.1) } }}>
+                        <Trash2 size={14} />
+                    </IconButton>
+                </Tooltip>
+            </Box>
+
+            {/* Expandable swap section */}
+            <Collapse in={expanded}>
+                <Box sx={{ px: 1.75, pb: 1.75 }}>
+                    <SwapSelector
+                        customCatName={cat.name}
+                        defaultCats={defaultCats}
+                        swappedIds={swappedIds}
+                        allSwappedIds={allSwappedIds}
+                        onToggleSwap={onToggleSwap}
+                    />
+                </Box>
+            </Collapse>
+        </Box>
+    );
+};
+
+// ── Add category form ─────────────────────────────────────────────────────────
+type AddMode = 'new' | 'existing';
+
+const AddCategoryForm: React.FC<{
+    onAdd:               (name: string) => void;
+    onCancel:            () => void;
+    existingBudgetNames: Set<string>;
+}> = ({ onAdd, onCancel, existingBudgetNames }) => {
+    const [mode,     setMode]     = useState<AddMode>('new');
+    const [newName,  setNewName]  = useState('');
+    const [search,   setSearch]   = useState('');
+    const [selected, setSelected] = useState('');
+    const [loading,  setLoading]  = useState(false);
+
+    const [systemCats, setSystemCats] = useState<string[]>([]);
+    const [userCats,   setUserCats]   = useState<UserCategory[]>([]);
+
+    const categoryService     = CategoryService.getInstance();
+    const userCategoryService = UserCategoryService.getInstance();
+    const userId = Number(sessionStorage.getItem('userId'));
+
+    useEffect(() => {
+        if (mode !== 'existing') return;
+        const load = async () => {
+            setLoading(true);
+            try {
+                const [sys, usr] = await Promise.all([
+                    categoryService.getAllSystemCategories(),
+                    userCategoryService.getCustomUserCategories(userId),
+                ]);
+                setSystemCats(sys.map(c => c.category));
+                setUserCats(usr);
+            } catch (e) {
+                console.error('Error fetching categories:', e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [mode, userId]);
+
+    const allExisting = useMemo(() => {
+        const set = new Set<string>();
+        systemCats.forEach(c => set.add(c));
+        userCats.forEach(c => { if (c.category) set.add(c.category); });
+        return Array.from(set).sort();
+    }, [systemCats, userCats]);
+
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        return allExisting.filter(c =>
+            (!q || c.toLowerCase().includes(q)) && !existingBudgetNames.has(c)
+        );
+    }, [allExisting, search, existingBudgetNames]);
+
+    const isSystemCat = (c: string) => systemCats.includes(c);
+    const canAdd = mode === 'new' ? newName.trim().length > 0 : selected.length > 0;
+    const handleAdd = () => {
+        const name = mode === 'new' ? newName.trim() : selected;
+        if (name) onAdd(name);
+    };
+
+    return (
+        <Box sx={{ mb: 2, borderRadius: '12px', border: `1.5px solid ${alpha(TEAL, 0.3)}`, bgcolor: alpha(TEAL, 0.03), overflow: 'hidden' }}>
+            {/* Mode tabs */}
+            <Box sx={{ display: 'flex', borderBottom: `1px solid ${alpha(TEAL, 0.15)}` }}>
+                {(['new', 'existing'] as AddMode[]).map((m) => (
+                    <Box key={m} onClick={() => { setMode(m); setSelected(''); setSearch(''); }}
+                         sx={{
+                             flex: 1, py: 1.25, display: 'flex', alignItems: 'center',
+                             justifyContent: 'center', gap: 0.75, cursor: 'pointer',
+                             bgcolor: mode === m ? alpha(TEAL, 0.08) : 'transparent',
+                             borderBottom: `2px solid ${mode === m ? TEAL : 'transparent'}`,
+                             transition: 'all 0.15s',
+                         }}>
+                        {m === 'new'
+                            ? <PenLine size={13} color={mode === m ? TEAL : SLATE} />
+                            : <ListChecks size={13} color={mode === m ? TEAL : SLATE} />}
+                        <Typography sx={{
+                            fontSize: '0.68rem', fontWeight: 700,
+                            color: mode === m ? TEAL : SLATE,
+                            textTransform: 'uppercase', letterSpacing: '0.06em',
+                        }}>
+                            {m === 'new' ? 'New Name' : 'From Existing'}
+                        </Typography>
+                    </Box>
+                ))}
+            </Box>
+
+            <Box sx={{ p: 2 }}>
+                {mode === 'new' ? (
+                    <TextField fullWidth size="small" label="Category Name *" sx={fieldSx}
+                               value={newName} onChange={e => setNewName(e.target.value)}
+                               placeholder="e.g. Entertainment, Pet Care, Hobbies"
+                               onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd(); }}
+                               autoFocus />
+                ) : (
+                    <Box>
+                        <TextField fullWidth size="small" placeholder="Search categories…"
+                                   sx={{ ...fieldSx, mb: 1 }}
+                                   value={search} onChange={e => setSearch(e.target.value)}
+                                   InputProps={{
+                                       startAdornment: (
+                                           <InputAdornment position="start">
+                                               <Search size={14} color={SLATE} />
+                                           </InputAdornment>
+                                       ),
+                                   }} />
+                        {loading ? (
+                            <Box sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
+                                <CircularProgress size={22} sx={{ color: TEAL }} />
+                            </Box>
+                        ) : filtered.length === 0 ? (
+                            <Box sx={{ py: 2.5, textAlign: 'center' }}>
+                                <Typography sx={{ fontSize: '0.72rem', color: SLATE }}>
+                                    {allExisting.length === 0
+                                        ? 'No categories found. Try "New Name" instead.'
+                                        : 'All matching categories are already added.'}
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <Box sx={{
+                                maxHeight: 200, overflowY: 'auto',
+                                borderRadius: '8px', border: `1px solid ${alpha(TEAL, 0.15)}`, bgcolor: '#fff',
+                                '&::-webkit-scrollbar': { width: 4 },
+                                '&::-webkit-scrollbar-thumb': { bgcolor: alpha(TEAL, 0.25), borderRadius: 2 },
+                            }}>
+                                <List disablePadding>
+                                    {filtered.map((cat, i) => {
+                                        const isSys      = isSystemCat(cat);
+                                        const isSelected = selected === cat;
+                                        return (
+                                            <ListItem key={cat} disablePadding
+                                                      sx={{ borderBottom: i < filtered.length - 1 ? `1px solid ${alpha('#000', 0.05)}` : 'none' }}>
+                                                <ListItemButton onClick={() => setSelected(cat)} sx={{
+                                                    py: 0.9, px: 1.5,
+                                                    bgcolor: isSelected ? alpha(TEAL, 0.08) : 'transparent',
+                                                    '&:hover': { bgcolor: alpha(TEAL, 0.05) },
+                                                }}>
+                                                    <ListItemText primary={
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                            <Typography sx={{
+                                                                fontSize: '0.78rem', fontWeight: isSelected ? 700 : 500,
+                                                                color: isSelected ? TEAL : '#111', flex: 1,
+                                                            }}>
+                                                                {cat}
+                                                            </Typography>
+                                                            <Chip size="small" label={isSys ? 'System' : 'Custom'}
+                                                                  sx={{
+                                                                      height: 15, fontSize: '0.52rem', fontWeight: 700,
+                                                                      bgcolor: alpha(isSys ? MAROON : TEAL, 0.1),
+                                                                      color: isSys ? MAROON : TEAL,
+                                                                      border: `1px solid ${alpha(isSys ? MAROON : TEAL, 0.2)}`,
+                                                                  }} />
+                                                        </Box>
+                                                    } />
+                                                    {isSelected && <CheckCircle2 size={14} color={TEAL} style={{ flexShrink: 0, marginLeft: 4 }} />}
+                                                </ListItemButton>
+                                            </ListItem>
+                                        );
+                                    })}
+                                </List>
+                            </Box>
+                        )}
+                    </Box>
+                )}
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1.5 }}>
                     <Button size="small" onClick={onCancel}
                             sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.72rem', color: SLATE,
                                 borderRadius: '7px', '&:hover': { bgcolor: alpha('#000', 0.04) } }}>
                         Cancel
                     </Button>
-                    <Button size="small" variant="contained" onClick={() => { if (name.trim()) onAdd(name, budget, savings); }}
-                            disabled={!name.trim()}
-                            startIcon={<Plus size={13} />}
+                    <Button size="small" variant="contained" onClick={handleAdd}
+                            disabled={!canAdd} startIcon={<Plus size={13} />}
                             sx={{ bgcolor: TEAL, color: '#fff', textTransform: 'none', fontWeight: 700, fontSize: '0.72rem',
                                 borderRadius: '7px', '&:hover': { bgcolor: TEAL2 },
                                 '&:disabled': { bgcolor: alpha(TEAL, 0.3), color: 'rgba(255,255,255,0.6)' } }}>
                         Add
                     </Button>
                 </Box>
-            </Stack>
+            </Box>
         </Box>
     );
 };
@@ -214,49 +519,89 @@ const AddCategoryForm: React.FC<{
 const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> = ({
                                                                                        open, onClose, defaultCategories, customCategories, onSaveCategories,
                                                                                    }) => {
-    const [activeTab,            setActiveTab]            = useState(0);
-    const [useCustomOnly,        setUseCustomOnly]        = useState(false);
-    const [localDefault,         setLocalDefault]         = useState<BudgetCategory[]>(defaultCategories);
-    const [localCustom,          setLocalCustom]          = useState<BudgetCategory[]>(customCategories);
-    const [showAddForm,          setShowAddForm]          = useState(false);
-    const [isSaving,             setIsSaving]             = useState(false);
+    const [activeTab,     setActiveTab]     = useState(0);
+    const [useCustomOnly, setUseCustomOnly] = useState(false);
+    const [localDefault,  setLocalDefault]  = useState<BudgetCategory[]>(defaultCategories);
+    const [localCustom,   setLocalCustom]   = useState<BudgetCategory[]>(customCategories);
+    const [showAddForm,   setShowAddForm]   = useState(false);
+    const [isSaving,      setIsSaving]      = useState(false);
+
+    // swapMap: customCategoryId -> Set<defaultCategoryId>
+    const [swapMap, setSwapMap] = useState<SwapMap>({});
 
     useEffect(() => { setLocalDefault(defaultCategories); }, [defaultCategories]);
     useEffect(() => { setLocalCustom(customCategories);   }, [customCategories]);
 
-    const activeDefaultCount = localDefault.filter(c => c.isActive).length;
-    const totalActive        = useCustomOnly ? localCustom.length : activeDefaultCount + localCustom.length;
+    // All default ids swapped to ANY custom category
+    const allSwappedDefaultIds = useMemo(() => {
+        const s = new Set<number>();
+        Object.values(swapMap).forEach(ids => ids.forEach(id => s.add(id)));
+        return s;
+    }, [swapMap]);
 
-    const handleAddCustom = (name: string, budget: string, savings: string) => {
-        const cat: BudgetCategory = {
+    // defaultId -> customCatName for display
+    const replacedByMap = useMemo(() => {
+        const m: Record<number, string> = {};
+        Object.entries(swapMap).forEach(([customId, defaultIds]) => {
+            const customCat = localCustom.find(c => c.id === Number(customId));
+            if (customCat) defaultIds.forEach(did => { m[did] = customCat.name; });
+        });
+        return m;
+    }, [swapMap, localCustom]);
+
+    const activeDefaultCount = localDefault.filter(c => c.isActive && !allSwappedDefaultIds.has(c.id!)).length;
+    const swappedCount       = allSwappedDefaultIds.size;
+    const totalActive        = useCustomOnly
+        ? localCustom.length
+        : activeDefaultCount + localCustom.length;
+
+    const existingCustomNames = useMemo(() => new Set(localCustom.map(c => c.name)), [localCustom]);
+
+    const handleAddCustom = (name: string) => {
+        const trimmed = name.trim();
+        if (!trimmed || existingCustomNames.has(trimmed)) return;
+        const newCat: BudgetCategory = {
             id:             Date.now(),
-            name:           name.trim(),
-            budgetedAmount: parseFloat(budget) || 0,
-            savingsGoal:    parseFloat(savings) > 0 ? parseFloat(savings) : undefined,
+            name:           trimmed,
+            budgetedAmount: 0,
             isDefault:      false,
             isActive:       true,
             isCustom:       true,
         };
-        setLocalCustom(prev => [...prev, cat]);
+        setLocalCustom(prev => [...prev, newCat]);
         setShowAddForm(false);
     };
 
     const handleToggleDefault = (id: number) =>
         setLocalDefault(prev => prev.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c));
 
-    const handleDeleteCustom = (id: number) =>
+    const handleDeleteCustom = (id: number) => {
         setLocalCustom(prev => prev.filter(c => c.id !== id));
+        setSwapMap(prev => { const n = { ...prev }; delete n[id]; return n; });
+    };
+
+    const handleToggleSwap = (customId: number, defaultId: number) => {
+        setSwapMap(prev => {
+            const current = new Set(prev[customId] ?? []);
+            if (current.has(defaultId)) current.delete(defaultId); else current.add(defaultId);
+            return { ...prev, [customId]: current };
+        });
+    };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const swappedDefaultIds = Array.from(allSwappedDefaultIds);
             const all = useCustomOnly
                 ? localCustom
-                : [...localDefault.filter(c => c.isActive), ...localCustom];
-            await onSaveCategories(all, useCustomOnly);
+                : [
+                    ...localDefault.filter(c => c.isActive && !allSwappedDefaultIds.has(c.id!)),
+                    ...localCustom,
+                ];
+            await onSaveCategories(all, useCustomOnly, swappedDefaultIds);
             onClose();
         } catch { alert('Failed to save categories. Please try again.'); }
-        finally { setIsSaving(false); }
+        finally   { setIsSaving(false); }
     };
 
     return (
@@ -275,7 +620,6 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
             }}>
                 <Box sx={{ position:'absolute', top:-30, right:-30, width:100, height:100, borderRadius:'50%', bgcolor:'rgba(255,255,255,0.05)', pointerEvents:'none' }} />
                 <Box sx={{ position:'absolute', bottom:-20, right:70, width:65, height:65, borderRadius:'50%', bgcolor:'rgba(255,255,255,0.04)', pointerEvents:'none' }} />
-
                 <Box sx={{ display:'flex', alignItems:'center', gap:1.5, position:'relative' }}>
                     <Box sx={{ width:34, height:34, borderRadius:'8px', bgcolor:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                         <Tag size={16} color="#fff" />
@@ -286,6 +630,7 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
                         </Typography>
                         <Typography sx={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.7)', mt:0.2 }}>
                             {totalActive} {totalActive === 1 ? 'category' : 'categories'} active
+                            {swappedCount > 0 && ` · ${swappedCount} default${swappedCount > 1 ? 's' : ''} swapped out`}
                         </Typography>
                     </Box>
                 </Box>
@@ -318,9 +663,10 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
             {/* ── Stats strip ── */}
             <Box sx={{ px: 3, py: 1.5, borderBottom: `1px solid ${alpha('#000', 0.06)}`, display: 'flex', gap: 3 }}>
                 {[
-                    { label: 'Default Active',  value: activeDefaultCount, color: MAROON, dim: useCustomOnly },
-                    { label: 'Custom',          value: localCustom.length, color: TEAL, dim: false },
-                    { label: 'Total Active',    value: totalActive, color: '#111', dim: false, bold: true },
+                    { label: 'Default Active', value: activeDefaultCount, color: MAROON, dim: useCustomOnly },
+                    { label: 'Swapped Out',    value: swappedCount,       color: AMBER,  dim: useCustomOnly },
+                    { label: 'Custom',         value: localCustom.length, color: TEAL,   dim: false },
+                    { label: 'Total Active',   value: totalActive,        color: '#111', dim: false, bold: true },
                 ].map(({ label, value, color, dim, bold }) => (
                     <Box key={label} sx={{ opacity: dim ? 0.35 : 1 }}>
                         <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: SLATE }}>
@@ -362,14 +708,13 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
                         '&::-webkit-scrollbar-thumb': { bgcolor: alpha(MAROON, 0.2), borderRadius: 3 },
                     }}>
                         <Typography sx={{ fontSize: '0.72rem', color: SLATE, mb: 2 }}>
-                            Toggle categories on or off to show or hide them from your budget. Disabled categories won't be counted.
+                            Toggle categories on or off. Categories marked{' '}
+                            <Box component="span" sx={{ color: AMBER, fontWeight: 700 }}>↔ Replaced</Box>
+                            {' '}are hidden because a custom category is swapping them out.
                         </Typography>
 
                         {useCustomOnly && (
-                            <Box sx={{
-                                p: 1.5, mb: 2, borderRadius: '8px',
-                                bgcolor: alpha(TEAL, 0.06), border: `1px solid ${alpha(TEAL, 0.2)}`,
-                            }}>
+                            <Box sx={{ p: 1.5, mb: 2, borderRadius: '8px', bgcolor: alpha(TEAL, 0.06), border: `1px solid ${alpha(TEAL, 0.2)}` }}>
                                 <Typography sx={{ fontSize: '0.7rem', color: TEAL, fontWeight: 600 }}>
                                     Custom-only mode is active — default categories are currently excluded.
                                 </Typography>
@@ -377,12 +722,15 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
                         )}
 
                         <SectionLabel>
-                            {localDefault.filter(c => c.isActive).length} of {localDefault.length} enabled
+                            {activeDefaultCount} of {localDefault.length} active
+                            {swappedCount > 0 && ` · ${swappedCount} swapped out`}
                         </SectionLabel>
 
                         <Stack spacing={0.75} sx={{ opacity: useCustomOnly ? 0.45 : 1, pointerEvents: useCustomOnly ? 'none' : 'auto' }}>
                             {localDefault.map(cat => (
-                                <DefaultRow key={cat.id} cat={cat} onToggle={() => handleToggleDefault(cat.id!)} />
+                                <DefaultRow key={cat.id} cat={cat}
+                                            onToggle={() => handleToggleDefault(cat.id!)}
+                                            replacedBy={replacedByMap[cat.id!]} />
                             ))}
                         </Stack>
                     </Box>
@@ -396,7 +744,9 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
                     }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                             <Typography sx={{ fontSize: '0.72rem', color: SLATE, flex: 1, mr: 2 }}>
-                                Create custom categories with optional budgets and savings goals. These are always included regardless of mode.
+                                Add custom categories and optionally swap out default ones. Click the{' '}
+                                <Box component="span" sx={{ color: AMBER, fontWeight: 700 }}>↔ Swap</Box>
+                                {' '}button on any card to pick which defaults it replaces.
                             </Typography>
                             {!showAddForm && (
                                 <Button size="small" variant="outlined" startIcon={<Plus size={13} />}
@@ -413,6 +763,7 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
                             <AddCategoryForm
                                 onAdd={handleAddCustom}
                                 onCancel={() => setShowAddForm(false)}
+                                existingBudgetNames={existingCustomNames}
                             />
                         )}
 
@@ -421,7 +772,15 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
                                 <SectionLabel>{localCustom.length} custom {localCustom.length === 1 ? 'category' : 'categories'}</SectionLabel>
                                 <Stack spacing={0.75}>
                                     {localCustom.map(cat => (
-                                        <CustomCard key={cat.id} cat={cat} onDelete={() => handleDeleteCustom(cat.id!)} />
+                                        <CustomCard
+                                            key={cat.id}
+                                            cat={cat}
+                                            defaultCats={localDefault}
+                                            swappedIds={swapMap[cat.id!] ?? new Set()}
+                                            allSwappedIds={allSwappedDefaultIds}
+                                            onDelete={() => handleDeleteCustom(cat.id!)}
+                                            onToggleSwap={(defaultId) => handleToggleSwap(cat.id!, defaultId)}
+                                        />
                                     ))}
                                 </Stack>
                             </>
@@ -451,12 +810,21 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 bgcolor: '#fff',
             }}>
-                {/* Summary pill */}
-                <Chip size="small"
-                      icon={<CheckCircle2 size={11} />}
-                      label={`${totalActive} ${totalActive === 1 ? 'category' : 'categories'} will be saved`}
-                      sx={{ bgcolor: alpha(GREEN, 0.09), color: GREEN, fontWeight: 700, fontSize: '0.65rem',
-                          border: `1px solid ${alpha(GREEN, 0.22)}` }} />
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Chip size="small"
+                          icon={<CheckCircle2 size={11} />}
+                          label={`${totalActive} ${totalActive === 1 ? 'category' : 'categories'} will be saved`}
+                          sx={{ bgcolor: alpha(GREEN, 0.09), color: GREEN, fontWeight: 700, fontSize: '0.65rem',
+                              border: `1px solid ${alpha(GREEN, 0.22)}` }} />
+                    {swappedCount > 0 && (
+                        <Chip size="small"
+                              icon={<ArrowLeftRight size={10} />}
+                              label={`${swappedCount} default${swappedCount > 1 ? 's' : ''} replaced`}
+                              sx={{ bgcolor: alpha(AMBER, 0.09), color: AMBER, fontWeight: 700, fontSize: '0.65rem',
+                                  border: `1px solid ${alpha(AMBER, 0.22)}`,
+                                  '& .MuiChip-icon': { color: AMBER } }} />
+                    )}
+                </Stack>
 
                 <Box sx={{ display: 'flex', gap: 1.25 }}>
                     <Button size="small" onClick={onClose}
@@ -480,534 +848,3 @@ const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> 
 };
 
 export default ManageBudgetCategoriesDialog;
-
-// import React, { useState, useEffect } from 'react';
-// import {
-//     Dialog,
-//     DialogTitle,
-//     DialogContent,
-//     DialogActions,
-//     Button,
-//     TextField,
-//     Box,
-//     Typography,
-//     IconButton,
-//     Stack,
-//     Chip,
-//     Card,
-//     alpha,
-//     Switch,
-//     FormControlLabel,
-//     Divider,
-//     Tab,
-//     Tabs,
-//     List,
-//     ListItem,
-//     ListItemText,
-//     ListItemSecondaryAction,
-//     Tooltip,
-//     InputAdornment
-// } from '@mui/material';
-// import CloseIcon from '@mui/icons-material/Close';
-// import AddIcon from '@mui/icons-material/Add';
-// import DeleteIcon from '@mui/icons-material/Delete';
-// import EditIcon from '@mui/icons-material/Edit';
-// import SaveIcon from '@mui/icons-material/Save';
-// import CancelIcon from '@mui/icons-material/Cancel';
-// import CategoryIcon from '@mui/icons-material/Category';
-// import VisibilityIcon from '@mui/icons-material/Visibility';
-// import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-//
-// const maroonColor = '#800000';
-// const tealColor = '#0d9488';
-//
-// interface BudgetCategory {
-//     id?: number;
-//     name: string;
-//     budgetedAmount: number;
-//     savingsGoal?: number;
-//     isDefault: boolean;
-//     isActive: boolean;
-//     isCustom: boolean;
-// }
-//
-// interface ManageBudgetCategoriesDialogProps {
-//     open: boolean;
-//     onClose: () => void;
-//     defaultCategories: BudgetCategory[];
-//     customCategories: BudgetCategory[];
-//     onSaveCategories: (categories: BudgetCategory[], useCustomOnly: boolean) => Promise<void>;
-// }
-//
-// const ManageBudgetCategoriesDialog: React.FC<ManageBudgetCategoriesDialogProps> = ({
-//                                                                                        open,
-//                                                                                        onClose,
-//                                                                                        defaultCategories,
-//                                                                                        customCategories,
-//                                                                                        onSaveCategories
-//                                                                                    }) => {
-//     const [activeTab, setActiveTab] = useState(0);
-//     const [useCustomOnly, setUseCustomOnly] = useState(false);
-//     const [localDefaultCategories, setLocalDefaultCategories] = useState<BudgetCategory[]>(defaultCategories);
-//     const [localCustomCategories, setLocalCustomCategories] = useState<BudgetCategory[]>(customCategories);
-//     const [editingCategory, setEditingCategory] = useState<number | null>(null);
-//     const [isSaving, setIsSaving] = useState(false);
-//
-//     // Sync local state with props when they change
-//     useEffect(() => {
-//         setLocalDefaultCategories(defaultCategories);
-//     }, [defaultCategories]);
-//
-//     useEffect(() => {
-//         setLocalCustomCategories(customCategories);
-//     }, [customCategories]);
-//
-//     // New category form
-//     const [newCategoryName, setNewCategoryName] = useState('');
-//     const [newCategoryBudget, setNewCategoryBudget] = useState('');
-//     const [newCategorySavings, setNewCategorySavings] = useState('');
-//     const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
-//
-//     const handleAddCustomCategory = () => {
-//         if (newCategoryName.trim() === '') {
-//             alert('Please enter a category name');
-//             return;
-//         }
-//
-//         const budgetAmount = parseFloat(newCategoryBudget) || 0;
-//         const savingsGoal = parseFloat(newCategorySavings) || 0;
-//
-//         const newCategory: BudgetCategory = {
-//             id: Date.now(), // temporary ID, backend will assign real ID
-//             name: newCategoryName.trim(),
-//             budgetedAmount: budgetAmount,
-//             savingsGoal: savingsGoal > 0 ? savingsGoal : undefined,
-//             isDefault: false,
-//             isActive: true,
-//             isCustom: true
-//         };
-//
-//         setLocalCustomCategories([...localCustomCategories, newCategory]);
-//
-//         // Reset form
-//         setNewCategoryName('');
-//         setNewCategoryBudget('');
-//         setNewCategorySavings('');
-//         setShowNewCategoryForm(false);
-//     };
-//
-//     const handleDeleteCustomCategory = (id: number) => {
-//         setLocalCustomCategories(localCustomCategories.filter(cat => cat.id !== id));
-//     };
-//
-//     const handleToggleDefaultCategory = (id: number) => {
-//         setLocalDefaultCategories(localDefaultCategories.map(cat =>
-//             cat.id === id ? { ...cat, isActive: !cat.isActive } : cat
-//         ));
-//     };
-//
-//     const handleSave = async () => {
-//         setIsSaving(true);
-//         try {
-//             const allCategories = useCustomOnly
-//                 ? localCustomCategories
-//                 : [...localDefaultCategories.filter(cat => cat.isActive), ...localCustomCategories];
-//
-//             await onSaveCategories(allCategories, useCustomOnly);
-//             onClose();
-//         } catch (error) {
-//             console.error('Error saving categories:', error);
-//             alert('Failed to save categories. Please try again.');
-//         } finally {
-//             setIsSaving(false);
-//         }
-//     };
-//
-//     const handleUpdateCustomCategory = (id: number, field: 'budgetedAmount' | 'savingsGoal', value: number) => {
-//         setLocalCustomCategories(localCustomCategories.map(cat =>
-//             cat.id === id ? { ...cat, [field]: value } : cat
-//         ));
-//     };
-//
-//     return (
-//         <Dialog
-//             open={open}
-//             onClose={onClose}
-//             maxWidth="md"
-//             fullWidth
-//             PaperProps={{
-//                 sx: {
-//                     borderRadius: 3,
-//                     maxHeight: '90vh'
-//                 }
-//             }}
-//         >
-//             {/* Header */}
-//             <Box sx={{
-//                 background: `linear-gradient(135deg, ${maroonColor} 0%, #a00000 100%)`,
-//                 color: 'white',
-//                 p: 3,
-//                 display: 'flex',
-//                 justifyContent: 'space-between',
-//                 alignItems: 'center'
-//             }}>
-//                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-//                     <CategoryIcon />
-//                     <Typography variant="h6" fontWeight={600}>
-//                         Manage Budget Categories
-//                     </Typography>
-//                 </Box>
-//                 <IconButton onClick={onClose} sx={{ color: 'white' }}>
-//                     <CloseIcon />
-//                 </IconButton>
-//             </Box>
-//
-//             {/* Mode Toggle */}
-//             <Box sx={{ px: 3, pt: 3, pb: 2 }}>
-//                 <Card sx={{
-//                     p: 2,
-//                     bgcolor: alpha(useCustomOnly ? tealColor : maroonColor, 0.05),
-//                     border: `1px solid ${alpha(useCustomOnly ? tealColor : maroonColor, 0.2)}`
-//                 }}>
-//                     <FormControlLabel
-//                         control={
-//                             <Switch
-//                                 checked={useCustomOnly}
-//                                 onChange={(e) => setUseCustomOnly(e.target.checked)}
-//                                 sx={{
-//                                     '& .MuiSwitch-switchBase.Mui-checked': {
-//                                         color: tealColor,
-//                                     },
-//                                     '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-//                                         backgroundColor: tealColor,
-//                                     }
-//                                 }}
-//                             />
-//                         }
-//                         label={
-//                             <Box>
-//                                 <Typography variant="body2" fontWeight={600}>
-//                                     {useCustomOnly ? 'Using Custom Categories Only' : 'Using Default + Custom Categories'}
-//                                 </Typography>
-//                                 <Typography variant="caption" color="text.secondary">
-//                                     {useCustomOnly
-//                                         ? 'Only your custom categories will be used'
-//                                         : 'Enabled default categories plus your custom categories will be used'
-//                                     }
-//                                 </Typography>
-//                             </Box>
-//                         }
-//                     />
-//                 </Card>
-//             </Box>
-//
-//             {/* Tabs */}
-//             <Tabs
-//                 value={activeTab}
-//                 onChange={(e, newValue) => setActiveTab(newValue)}
-//                 sx={{
-//                     px: 3,
-//                     '& .MuiTab-root': {
-//                         textTransform: 'none',
-//                         fontWeight: 600
-//                     },
-//                     '& .MuiTabs-indicator': {
-//                         backgroundColor: maroonColor
-//                     }
-//                 }}
-//             >
-//                 <Tab label={`Default Categories (${localDefaultCategories.filter(c => c.isActive).length})`} />
-//                 <Tab label={`Custom Categories (${localCustomCategories.length})`} />
-//             </Tabs>
-//
-//             <Divider />
-//
-//             <DialogContent sx={{ p: 0 }}>
-//                 {/* Default Categories Tab */}
-//                 {activeTab === 0 && (
-//                     <Box sx={{ p: 3 }}>
-//                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-//                             These are the categories currently in your budget. Toggle them on/off to show or hide them from your budget view.
-//                         </Typography>
-//                         <List>
-//                             {localDefaultCategories.map((category) => (
-//                                 <ListItem
-//                                     key={category.id}
-//                                     sx={{
-//                                         border: `1px solid ${alpha(category.isActive ? tealColor : '#ccc', 0.3)}`,
-//                                         borderRadius: 2,
-//                                         mb: 1,
-//                                         bgcolor: alpha(category.isActive ? tealColor : '#ccc', 0.05)
-//                                     }}
-//                                 >
-//                                     <ListItemText
-//                                         primary={
-//                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-//                                                 <Typography variant="body1" fontWeight={600}>
-//                                                     {category.name}
-//                                                 </Typography>
-//                                                 <Chip
-//                                                     label="Default"
-//                                                     size="small"
-//                                                     sx={{
-//                                                         height: 20,
-//                                                         fontSize: '0.65rem',
-//                                                         bgcolor: alpha(maroonColor, 0.1),
-//                                                         color: maroonColor
-//                                                     }}
-//                                                 />
-//                                             </Box>
-//                                         }
-//                                         secondary={
-//                                             category.budgetedAmount > 0
-//                                                 ? `Budgeted: $${category.budgetedAmount.toFixed(2)}`
-//                                                 : 'No budget set'
-//                                         }
-//                                     />
-//                                     <ListItemSecondaryAction>
-//                                         <Tooltip title={category.isActive ? 'Disable category' : 'Enable category'}>
-//                                             <IconButton
-//                                                 edge="end"
-//                                                 onClick={() => handleToggleDefaultCategory(category.id!)}
-//                                                 sx={{
-//                                                     color: category.isActive ? tealColor : '#999'
-//                                                 }}
-//                                             >
-//                                                 {category.isActive ? <VisibilityIcon /> : <VisibilityOffIcon />}
-//                                             </IconButton>
-//                                         </Tooltip>
-//                                     </ListItemSecondaryAction>
-//                                 </ListItem>
-//                             ))}
-//                         </List>
-//                     </Box>
-//                 )}
-//
-//                 {/* Custom Categories Tab */}
-//                 {activeTab === 1 && (
-//                     <Box sx={{ p: 3 }}>
-//                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-//                             <Typography variant="body2" color="text.secondary">
-//                                 Create custom budget categories with optional budgeted amounts and savings goals.
-//                             </Typography>
-//                             {!showNewCategoryForm && (
-//                                 <Button
-//                                     variant="outlined"
-//                                     size="small"
-//                                     startIcon={<AddIcon />}
-//                                     onClick={() => setShowNewCategoryForm(true)}
-//                                     sx={{
-//                                         borderColor: maroonColor,
-//                                         color: maroonColor,
-//                                         '&:hover': {
-//                                             borderColor: maroonColor,
-//                                             bgcolor: alpha(maroonColor, 0.05)
-//                                         }
-//                                     }}
-//                                 >
-//                                     Add Category
-//                                 </Button>
-//                             )}
-//                         </Box>
-//
-//                         {/* New Category Form */}
-//                         {showNewCategoryForm && (
-//                             <Card sx={{
-//                                 p: 2,
-//                                 mb: 3,
-//                                 bgcolor: alpha(tealColor, 0.05),
-//                                 border: `1px solid ${alpha(tealColor, 0.2)}`
-//                             }}>
-//                                 <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
-//                                     New Custom Category
-//                                 </Typography>
-//                                 <Stack spacing={2}>
-//                                     <TextField
-//                                         label="Category Name"
-//                                         value={newCategoryName}
-//                                         onChange={(e) => setNewCategoryName(e.target.value)}
-//                                         size="small"
-//                                         fullWidth
-//                                         required
-//                                         placeholder="e.g., Entertainment, Hobbies, Pet Care"
-//                                     />
-//                                     <TextField
-//                                         label="Budgeted Amount (Optional)"
-//                                         value={newCategoryBudget}
-//                                         onChange={(e) => {
-//                                             const value = e.target.value;
-//                                             if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-//                                                 setNewCategoryBudget(value);
-//                                             }
-//                                         }}
-//                                         size="small"
-//                                         fullWidth
-//                                         placeholder="0.00"
-//                                         InputProps={{
-//                                             startAdornment: <InputAdornment position="start">$</InputAdornment>
-//                                         }}
-//                                     />
-//                                     <TextField
-//                                         label="Savings Goal (Optional)"
-//                                         value={newCategorySavings}
-//                                         onChange={(e) => {
-//                                             const value = e.target.value;
-//                                             if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-//                                                 setNewCategorySavings(value);
-//                                             }
-//                                         }}
-//                                         size="small"
-//                                         fullWidth
-//                                         placeholder="0.00"
-//                                         InputProps={{
-//                                             startAdornment: <InputAdornment position="start">$</InputAdornment>
-//                                         }}
-//                                         helperText="Amount you want to save in this category"
-//                                     />
-//                                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-//                                         <Button
-//                                             variant="outlined"
-//                                             size="small"
-//                                             onClick={() => {
-//                                                 setShowNewCategoryForm(false);
-//                                                 setNewCategoryName('');
-//                                                 setNewCategoryBudget('');
-//                                                 setNewCategorySavings('');
-//                                             }}
-//                                             startIcon={<CancelIcon />}
-//                                         >
-//                                             Cancel
-//                                         </Button>
-//                                         <Button
-//                                             variant="contained"
-//                                             size="small"
-//                                             onClick={handleAddCustomCategory}
-//                                             startIcon={<AddIcon />}
-//                                             sx={{
-//                                                 bgcolor: tealColor,
-//                                                 '&:hover': {
-//                                                     bgcolor: '#0f766e'
-//                                                 }
-//                                             }}
-//                                         >
-//                                             Add Category
-//                                         </Button>
-//                                     </Box>
-//                                 </Stack>
-//                             </Card>
-//                         )}
-//
-//                         {/* Custom Categories List */}
-//                         {localCustomCategories.length > 0 ? (
-//                             <List>
-//                                 {localCustomCategories.map((category) => (
-//                                     <ListItem
-//                                         key={category.id}
-//                                         sx={{
-//                                             border: `1px solid ${alpha(tealColor, 0.3)}`,
-//                                             borderRadius: 2,
-//                                             mb: 1,
-//                                             bgcolor: alpha(tealColor, 0.05),
-//                                             display: 'block',
-//                                             p: 2
-//                                         }}
-//                                     >
-//                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-//                                             <Box>
-//                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-//                                                     <Typography variant="body1" fontWeight={600}>
-//                                                         {category.name}
-//                                                     </Typography>
-//                                                     <Chip
-//                                                         label="Custom"
-//                                                         size="small"
-//                                                         sx={{
-//                                                             height: 20,
-//                                                             fontSize: '0.65rem',
-//                                                             bgcolor: alpha(tealColor, 0.2),
-//                                                             color: tealColor
-//                                                         }}
-//                                                     />
-//                                                 </Box>
-//                                                 <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-//                                                     <Box>
-//                                                         <Typography variant="caption" color="text.secondary">
-//                                                             Budgeted
-//                                                         </Typography>
-//                                                         <Typography variant="body2" fontWeight={600}>
-//                                                             ${category.budgetedAmount.toFixed(2)}
-//                                                         </Typography>
-//                                                     </Box>
-//                                                     {category.savingsGoal && category.savingsGoal > 0 && (
-//                                                         <Box>
-//                                                             <Typography variant="caption" color="text.secondary">
-//                                                                 Savings Goal
-//                                                             </Typography>
-//                                                             <Typography variant="body2" fontWeight={600} color={tealColor}>
-//                                                                 ${category.savingsGoal.toFixed(2)}
-//                                                             </Typography>
-//                                                         </Box>
-//                                                     )}
-//                                                 </Stack>
-//                                             </Box>
-//                                             <Tooltip title="Delete category">
-//                                                 <IconButton
-//                                                     edge="end"
-//                                                     onClick={() => handleDeleteCustomCategory(category.id!)}
-//                                                     sx={{
-//                                                         color: '#dc2626',
-//                                                         '&:hover': {
-//                                                             bgcolor: alpha('#dc2626', 0.1)
-//                                                         }
-//                                                     }}
-//                                                 >
-//                                                     <DeleteIcon />
-//                                                 </IconButton>
-//                                             </Tooltip>
-//                                         </Box>
-//                                     </ListItem>
-//                                 ))}
-//                             </List>
-//                         ) : (
-//                             <Box sx={{
-//                                 p: 4,
-//                                 textAlign: 'center',
-//                                 color: 'text.secondary',
-//                                 bgcolor: alpha('#ccc', 0.05),
-//                                 borderRadius: 2
-//                             }}>
-//                                 <CategoryIcon sx={{ fontSize: 48, mb: 2, opacity: 0.3 }} />
-//                                 <Typography variant="body2">
-//                                     No custom categories yet. Click "Add Category" to create one.
-//                                 </Typography>
-//                             </Box>
-//                         )}
-//                     </Box>
-//                 )}
-//             </DialogContent>
-//
-//             {/* Footer */}
-//             <DialogActions sx={{ p: 3, pt: 2 }}>
-//                 <Button onClick={onClose} variant="outlined">
-//                     Cancel
-//                 </Button>
-//                 <Button
-//                     onClick={handleSave}
-//                     variant="contained"
-//                     disabled={isSaving}
-//                     startIcon={isSaving ? <SaveIcon /> : <SaveIcon />}
-//                     sx={{
-//                         bgcolor: maroonColor,
-//                         '&:hover': {
-//                             bgcolor: '#a00000'
-//                         }
-//                     }}
-//                 >
-//                     {isSaving ? 'Saving...' : 'Save Changes'}
-//                 </Button>
-//             </DialogActions>
-//         </Dialog>
-//     );
-// };
-//
-// export default ManageBudgetCategoriesDialog;
