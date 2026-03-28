@@ -21,40 +21,33 @@ public class QuadraticModel extends AbstractMathModel
         this.b = b;
         this.c = c;
         this.function = x -> a * x * x + b * x + c;
-        this.parameters = new double[] {a, b, c};
+        this.parameters = new double[]{ a, b, c };
     }
 
     @Override
     public void fit(double[] x, double[] y)
     {
-        PolynomialCurveFitter polynomialCurveFitter = PolynomialCurveFitter.create(2);
+        if(x.length < 3 || x.length != y.length)
+        {
+            throw new IllegalArgumentException("Quadratic fit requires at least 3 points");
+        }
+        PolynomialCurveFitter fitter = PolynomialCurveFitter.create(2);
         WeightedObservedPoints obs = new WeightedObservedPoints();
         for(int i = 0; i < x.length; i++)
         {
             obs.add(x[i], y[i]);
         }
-        double[] coeffs = polynomialCurveFitter.fit(obs.toList());
-        this.a = coeffs[0];
+        double[] coeffs = fitter.fit(obs.toList());
+        this.c = coeffs[0];
         this.b = coeffs[1];
-        this.c = coeffs[2];
+        this.a = coeffs[2];
         this.function = t -> a * t * t + b * t + c;
-        this.parameters = new double[] {a, b, c};
+        this.parameters = new double[]{ a, b, c };
     }
 
     @Override
-    public UnivariateFunction getFunction()
+    public String equationString()
     {
-        return function;
-    }
-
-    @Override
-    public double[] getParameters()
-    {
-        return parameters;
-    }
-
-    @Override
-    public String getEquationString() {
         return String.format("y = %.3fx² + %.3fx + %.3f", a, b, c);
     }
 }

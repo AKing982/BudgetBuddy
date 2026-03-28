@@ -1,10 +1,8 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 
@@ -12,59 +10,71 @@ import java.math.BigDecimal;
 @Setter
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Builder
 public class BPAccountBalance implements Cloneable
 {
     private Long id;
+    private int columnIndex;
     private String accountId;
     private DateRange dateRange;
     private BigDecimal currentBalance;
+    private BigDecimal plannedBalance;
+    private BigDecimal availableBalance;
+    private BigDecimal closingBalance;
 
-    public BPAccountBalance(String accountId, DateRange dateRange, BigDecimal currentBalance)
-    {
-        this.accountId = accountId;
-        this.dateRange = dateRange;
-        this.currentBalance = currentBalance;
-    }
-
-    public BigDecimal calculatePlannedBalance(final BigDecimal currentBalance, final BigDecimal totalPlannedSpending)
+    public BigDecimal calculatePlannedBalance(final BigDecimal totalPlannedSpending)
     {
         if(currentBalance == null)
         {
+            log.warn("Current balance is null for accountId: {}", accountId);
             return BigDecimal.ZERO;
         }
         try
         {
-            return currentBalance.subtract(totalPlannedSpending);
-        }catch(ArithmeticException ex){
+            this.plannedBalance = currentBalance.subtract(totalPlannedSpending);
+            return this.plannedBalance;
+        }
+        catch(ArithmeticException ex)
+        {
             log.error("There was an error calculating the planned balance: ", ex);
             return BigDecimal.ZERO;
         }
     }
 
-    public BigDecimal calculateAvailableBalance(final BigDecimal plannedBalance, final BigDecimal actualBalance)
+    public BigDecimal calculateAvailableBalance()
     {
-        if (plannedBalance == null || actualBalance == null)
+        if(plannedBalance == null || currentBalance == null)
         {
+            log.warn("Planned or current balance is null for accountId: {}", accountId);
             return BigDecimal.ZERO;
         }
         try
         {
-            return plannedBalance.subtract(actualBalance);
-        } catch (ArithmeticException ex)
+            this.availableBalance = plannedBalance.subtract(currentBalance);
+            return this.availableBalance;
+        }
+        catch(ArithmeticException ex)
         {
             log.error("There was an error calculating the available balance: ", ex);
             return BigDecimal.ZERO;
         }
     }
 
+
     @Override
     public BPAccountBalance clone()
     {
         try
         {
-            // TODO: copy mutable state here, so the clone can't change the internals of the original
-            return (BPAccountBalance) super.clone();
-        } catch (CloneNotSupportedException e)
+            BPAccountBalance clone = (BPAccountBalance) super.clone();
+            clone.currentBalance = this.currentBalance;
+            clone.plannedBalance = this.plannedBalance;
+            clone.availableBalance = this.availableBalance;
+            clone.dateRange = this.dateRange;
+            return clone;
+        }
+        catch(CloneNotSupportedException e)
         {
             throw new AssertionError();
         }

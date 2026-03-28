@@ -278,7 +278,7 @@ public class PreCalculationTrendService
                 String category = calculationEntry.category();
                 DateRange dateRange = calculationEntry.dateRange();
                 BigDecimal budgetedAmount = calculationEntry.budgeted();
-                BigDecimal spentAmount = calculationEntry.actual();
+                BigDecimal spentAmount = calculationEntry.currentSpending();
                 EntryType entryType = calculationEntry.entryType();
                 CategoryEntryAmount entryAmount = new CategoryEntryAmount(entryType, dateRange, category, budgetedAmount, spentAmount);
                 entryAmountList.add(entryAmount);

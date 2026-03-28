@@ -25,12 +25,16 @@ public class LinearModel extends AbstractMathModel
         this.slope = slope;
         this.intercept = intercept;
         this.function = x -> slope * x + intercept;
-        this.parameters = new double[] {slope, intercept};
+        this.parameters = new double[]{ slope, intercept };
     }
 
     @Override
     public void fit(double[] x, double[] y)
     {
+        if(x.length < 2 || x.length != y.length)
+        {
+            throw new IllegalArgumentException("Linear fit requires at least 2 points");
+        }
         SimpleRegression regression = new SimpleRegression();
         for(int i = 0; i < x.length; i++)
         {
@@ -39,33 +43,11 @@ public class LinearModel extends AbstractMathModel
         this.slope = regression.getSlope();
         this.intercept = regression.getIntercept();
         this.function = t -> slope * t + intercept;
-        this.parameters = new double[] {slope, intercept};
-    }
-
-    public double calculateSlope(double x1, double y1, double x2, double y2)
-    {
-        return (y2 - y1) / (x2 - x1);
-    }
-
-    public double calculateIntercept(double x1, double y1, double x2, double y2)
-    {
-        return y1 - calculateSlope(x1, y1, x2, y2) * x1;
+        this.parameters = new double[]{ slope, intercept };
     }
 
     @Override
-    public UnivariateFunction getFunction()
-    {
-        return function;
-    }
-
-    @Override
-    public double[] getParameters()
-    {
-        return parameters;
-    }
-
-    @Override
-    public String getEquationString()
+    public String equationString()
     {
         return String.format("y = %.5fx + %.5f", slope, intercept);
     }

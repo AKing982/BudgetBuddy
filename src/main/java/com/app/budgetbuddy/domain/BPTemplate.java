@@ -15,20 +15,18 @@ public class BPTemplate
 {
     private Long id;
     private Long subBudgetId;
-    private String templateName;
     private BPTemplateType templateType;
-    private List<BPTemplateHeader> bpTemplateHeader;
+    private Period period;
     private BPGoalsDetail bpGoalsDetail;
     private BPTemplateDetail bpTemplateDetail;
     private boolean active;
+    private boolean isSaved;
 
-    public BPTemplate(Long id, Long subBudgetId, String templateName, BPTemplateType templateType, BPTemplateHeader bpTemplateHeader, BPGoalsDetail bpGoalsDetail, BPTemplateDetail bpTemplateDetail, boolean active)
+    public BPTemplate(Long id, Long subBudgetId, BPTemplateType templateType, Period period, BPGoalsDetail bpGoalsDetail, BPTemplateDetail bpTemplateDetail, boolean active)
     {
         this.id = id;
         this.subBudgetId = subBudgetId;
-        this.templateName = templateName;
         this.templateType = templateType;
+        this.period = period;
     }
-
-
 }

@@ -16,23 +16,18 @@ import java.util.*;
 @Slf4j
 public class PreCalculationEngine
 {
-    private final PreCalculationThreadService preCalculationThreadService;
     private final PreCalculationTrendService preCalculationTrendService;
     private final PreCalculationModelService preCalculationModelService;
-    private Map<WeekNumber, List<PreCalculationEntry>> precalculationEntriesByMonth = new HashMap<>();
-    private Map<WeekNumber, List<BudgetCategory>> budgetCategoriesByWeekNumber = new HashMap<>();
 
     @Autowired
-    public PreCalculationEngine(PreCalculationThreadService preCalculationThreadService,
-                                PreCalculationTrendService preCalculationTrendService,
+    public PreCalculationEngine(PreCalculationTrendService preCalculationTrendService,
                                 PreCalculationModelService preCalculationModelService)
     {
-       this.preCalculationThreadService = preCalculationThreadService;
        this.preCalculationTrendService = preCalculationTrendService;
        this.preCalculationModelService = preCalculationModelService;
     }
 
-    List<WeekNumber> generateWeekNumbersByCurrentBudgetSchedule(final BudgetSchedule budgetSchedule)
+    public List<WeekNumber> generateWeekNumbersByCurrentBudgetSchedule(final BudgetSchedule budgetSchedule)
     {
         if(budgetSchedule == null)
         {
@@ -63,6 +58,7 @@ public class PreCalculationEngine
         {
             return Collections.emptyMap();
         }
+        Map<WeekNumber, List<BudgetCategory>> budgetCategoriesByWeekNumber = new HashMap<>();
         try
         {
             if(budgetSchedule == null)
@@ -103,13 +99,14 @@ public class PreCalculationEngine
                 !weekNumberRange.getEndDate().isAfter(monthEnd);
     }
 
-    public Map<WeekNumber, List<PreCalculationEntry>> getPrecalculationEntriesByMonth(final Map<WeekNumber, List<BudgetCategory>> budgetCategories, final SubBudget subBudget)
+    public Map<WeekNumber, List<PreCalculationEntry>> getPreCalculationEntriesByMonth(final Map<WeekNumber, List<BudgetCategory>> budgetCategories, final SubBudget subBudget)
     {
         if(budgetCategories == null || subBudget == null)
         {
             return Collections.emptyMap();
         }
         BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);
+        Map<WeekNumber, List<PreCalculationEntry>> precalculationEntriesByMonth = new HashMap<>();
         try
         {
             for(Map.Entry<WeekNumber, List<BudgetCategory>> entry : budgetCategories.entrySet())

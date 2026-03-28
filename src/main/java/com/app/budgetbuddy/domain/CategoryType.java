@@ -28,6 +28,8 @@ public enum CategoryType
     DEPOSIT("Deposit"),
     REFUND("Refund"),
     TRANSFER("Transfer"),
+    SAVINGS("Savings"),
+    NONE("None"),
     PET("Pet");
 
     private String type;
@@ -35,6 +37,27 @@ public enum CategoryType
     CategoryType(String type)
     {
         this.type = type;
+    }
+
+    public boolean isExpense()
+    {
+        return switch (this) {
+            case PAYMENT, GROCERIES, RESTAURANTS, ORDER_OUT, GAS, SUBSCRIPTION, RENT, UTILITIES, HAIRCUT, INSURANCE, ELECTRIC, GAS_UTILITIES, COFFEE, TRIP, OTHER, PET -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isIncome()
+    {
+        return switch(this){
+            case INCOME, PAYROLL, DEPOSIT, REFUND, TRANSFER, NONE -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isSavings()
+    {
+        return this == SAVINGS;
     }
 
     public static CategoryType getCategoryType(String category)

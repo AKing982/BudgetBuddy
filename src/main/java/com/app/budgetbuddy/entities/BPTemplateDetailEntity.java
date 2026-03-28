@@ -5,7 +5,10 @@ import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -30,9 +33,33 @@ public class BPTemplateDetailEntity
     @NotNull
     private String bpTypeName;
 
-    @Column(name="isSavingsFiftyThirtyTwentyApplied")
-    private boolean isSavingsFiftyThirtyTwentyApplied;
+    @Column(name="is_classic")
+    private boolean isClassic;
 
-//    @OneToMany(mappedBy = "bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private Set<BPWeekDetailEntity> weekDetails = new HashSet<>();
+    @Column(name="is_visual")
+    private boolean isVisual;
+
+    @Column(name="is_saved")
+    private boolean isSaved;
+
+    @Column(name="created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name="last_updated")
+    private LocalDateTime lastUpdated;
+
+    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<BPColumnEntity> columns = new ArrayList<>();
+
+    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<BPRowEntity> rows = new ArrayList<>();
+
+    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<BPBudgetCategoryEntity> budgetCategories = new ArrayList<>();
+
+    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<BPCategoryGroupEntity> categoryGroups = new ArrayList<>();
+
+    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<BPAccountBalanceEntity> accountBalances = new ArrayList<>();
 }

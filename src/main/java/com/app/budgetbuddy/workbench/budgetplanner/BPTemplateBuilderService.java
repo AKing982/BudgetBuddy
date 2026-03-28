@@ -1,11 +1,10 @@
 package com.app.budgetbuddy.workbench.budgetplanner;
 
-import com.app.budgetbuddy.domain.BPGoalsDetail;
-import com.app.budgetbuddy.domain.BPTemplate;
-import com.app.budgetbuddy.domain.BPTemplateDetail;
+import com.app.budgetbuddy.domain.*;
 
 public interface BPTemplateBuilderService
 {
-    BPTemplate buildInitialTemplate(String templateType);
+    BPTemplate buildInitialTemplate(BPTemplateType templateType, Period period, Long subBudgetId);
     BPTemplate buildTemplate(BPTemplate firstTemplate, BPGoalsDetail bpGoalsDetail, BPTemplateDetail bpTemplateDetail);
+    BPTemplate saveTemplate(BPTemplate template);
 }
