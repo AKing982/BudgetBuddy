@@ -104,8 +104,8 @@ class MonthlyLayoutBuilderServiceTest
                 BPTemplateType.MONTHLY_STD, Period.MONTHLY, dateRanges))
                 .thenReturn(mockColumns);
 
-        when(bpRowBuilderService.buildCategoryRows(any(), eq(mockColumns)))
-                .thenReturn(mockRows);
+//        when(bpRowBuilderService.buildCategoryRows(any(), eq(mockColumns)))
+//                .thenReturn(mockRows);
 
         monthlyLayoutBuilderService.buildLayout(BPTemplateType.MONTHLY_STD, validSchedule);
 
@@ -119,8 +119,8 @@ class MonthlyLayoutBuilderServiceTest
                 BPTemplateType.MONTHLY_STD, Period.MONTHLY, dateRanges))
                 .thenReturn(mockColumns);
 
-        when(bpRowBuilderService.buildCategoryRows(any(), eq(mockColumns)))
-                .thenReturn(mockRows);
+//        when(bpRowBuilderService.buildCategoryRows(any(), eq(mockColumns)))
+//                .thenReturn(mockRows);
 
         BPLayout expected = new BPLayout(mockColumns, mockRows);
 

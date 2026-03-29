@@ -94,9 +94,9 @@ public class BPAccountBalanceEngine
     {
         return rows.stream()
                 .filter(row -> income
-                        ? row.categoryType().isIncome()
-                        : row.categoryType().isExpense())
-                .flatMap(row -> row.bpCells().stream())
+                        ? row.getCategoryType().isIncome()
+                        : row.getCategoryType().isExpense())
+                .flatMap(row -> row.getCells().stream())
                 .filter(cell -> cell.column().columnIndex() == column.columnIndex())
                 .map(cell -> BigDecimal.valueOf(cell.amount())
                         .setScale(2, RoundingMode.HALF_UP))  // round each cell amount first
