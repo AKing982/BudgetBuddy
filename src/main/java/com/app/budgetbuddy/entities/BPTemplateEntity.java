@@ -21,12 +21,8 @@ public class BPTemplateEntity
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="sub_budgetid")
-    private SubBudgetEntity subBudget;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="goalId")
-    private SubBudgetGoalsEntity subBudgetGoals;
+    @JoinColumn(name="userid")
+    private UserEntity user;
 
     @OneToOne(mappedBy="bpTemplate", cascade=CascadeType.ALL)
     private BPTemplateDetailEntity bpTemplateDetail;

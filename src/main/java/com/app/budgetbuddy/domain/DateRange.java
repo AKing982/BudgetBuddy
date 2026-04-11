@@ -105,6 +105,17 @@ public class DateRange implements Comparable<DateRange>
         return dateRanges;
     }
 
+    public List<DateRange> splitIntoIncomeWeeks(LocalDate firstDate, LocalDate lastDate)
+    {
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate current = firstDate;
+        while(!current.isAfter(lastDate)){
+            dateRanges.add(new DateRange(current, current.plusDays(14)));
+            current = current.plusWeeks(1);
+        }
+        return dateRanges;
+    }
+
     public List<DateRange> splitIntoISOWeeks()
     {
         List<DateRange> dateRanges = new ArrayList<>();

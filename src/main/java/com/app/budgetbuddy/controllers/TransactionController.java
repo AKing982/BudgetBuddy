@@ -40,6 +40,19 @@ public class TransactionController
         this.csvTransactionService = csvTransactionService;
     }
 
+    @GetMapping("/{userId}/latest-posted")
+    public ResponseEntity<?> getLatestPostedTransaction(@PathVariable Long userId)
+    {
+        try
+        {
+            LocalDate latestPostedDate = transactionService.getLatestPostedDate(userId);
+            return ResponseEntity.ok(latestPostedDate);
+        }catch(Exception e){
+            log.error("There was an error retrieving the latest posted transaction", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/")
     public ResponseEntity<?> getAllTransactions() {
         List<TransactionsEntity> transactions = (List<TransactionsEntity>) transactionService.findAll();

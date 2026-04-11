@@ -36,7 +36,7 @@ class BPColumnBuilderServiceImplTest
     void testBuildColumns_whenTemplateTypeIsNull_thenReturnEmptyCollection()
     {
         List<DateRange> dateRanges = List.of(validDateRange);
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(null, Period.MONTHLY, dateRanges);
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, dateRanges);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -45,7 +45,7 @@ class BPColumnBuilderServiceImplTest
     void testBuildColumns_whenPeriodIsNull_thenReturnEmptyCollection()
     {
         List<DateRange> dateRanges = List.of(validDateRange);
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(BPTemplateType.MONTHLY_STD, null, dateRanges);
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(null, dateRanges);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -53,7 +53,7 @@ class BPColumnBuilderServiceImplTest
     @Test
     void testBuildColumns_whenDateRangesIsNull_thenReturnEmptyCollection()
     {
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(BPTemplateType.MONTHLY_STD, Period.MONTHLY, null);
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, null);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -61,7 +61,7 @@ class BPColumnBuilderServiceImplTest
     @Test
     void testBuildColumns_whenDateRangesIsEmpty_thenReturnEmptyCollection()
     {
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(BPTemplateType.MONTHLY_STD, Period.MONTHLY, List.of());
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, List.of());
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -83,7 +83,7 @@ class BPColumnBuilderServiceImplTest
         );
 
         List<BPColumn> actual = bpColumnBuilderService.buildColumns(
-                BPTemplateType.MONTHLY_STD, Period.MONTHLY, dateRanges);
+                Period.MONTHLY, dateRanges);
 
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
@@ -98,36 +98,66 @@ class BPColumnBuilderServiceImplTest
     }
 
     @Test
-    void testBuildHeaderColumn_whenValidArgs_thenReturnHeaderColumn()
+    void buildHeaderColumn_whenDateRangeIsNull_thenReturnNull()
     {
-        BPColumn actual = bpColumnBuilderService.buildHeaderColumn(0, validDateRange, Period.MONTHLY);
+        BPColumn actual = bpColumnBuilderService.buildHeaderColumn(0, Period.MONTHLY, null);
+        assertNull(actual);
+    }
+
+    @Test
+    void buildHeaderColumn_whenValidArgs_thenReturnHeaderColumn()
+    {
+        BPColumn expected = new BPColumn(0, validDateRange, Period.MONTHLY, null, true);
+
+        BPColumn actual = bpColumnBuilderService.buildHeaderColumn(0, Period.MONTHLY, validDateRange);
 
         assertNotNull(actual);
+        assertEquals(expected.columnIndex(), actual.columnIndex());
+        assertEquals(expected.dateRange(),   actual.dateRange());
+        assertEquals(expected.period(),      actual.period());
         assertTrue(actual.isHeader());
-        assertEquals(0, actual.columnIndex());
-        assertEquals(validDateRange, actual.dateRange());
-        assertEquals(Period.MONTHLY, actual.period());
+        assertNull(actual.columnType());
     }
 
     @Test
-    void testBuildSubColumn_whenValidArgs_thenReturnSubColumn()
+    void buildSubColumn_whenDateRangeIsNull_thenReturnNull()
     {
-        BPColumn actual = bpColumnBuilderService.buildSubColumn(1, validDateRange, Period.MONTHLY, BPColumnType.ACTUAL);
+        BPColumn actual = bpColumnBuilderService.buildSubColumn(0, Period.MONTHLY, null, BPColumnType.ACTUAL);
+        assertNull(actual);
+    }
+
+    @Test
+    void buildSubColumn_whenColumnTypeIsNull_thenReturnNull()
+    {
+        BPColumn actual = bpColumnBuilderService.buildSubColumn(0, Period.MONTHLY, validDateRange, null);
+        assertNull(actual);
+    }
+
+    @Test
+    void buildSubColumn_whenValidArgsActual_thenReturnActualSubColumn()
+    {
+        BPColumn expected = new BPColumn(1, validDateRange, Period.MONTHLY, BPColumnType.ACTUAL, false);
+
+        BPColumn actual = bpColumnBuilderService.buildSubColumn(1, Period.MONTHLY, validDateRange, BPColumnType.ACTUAL);
 
         assertNotNull(actual);
+        assertEquals(expected.columnIndex(), actual.columnIndex());
+        assertEquals(expected.dateRange(),   actual.dateRange());
+        assertEquals(expected.period(),      actual.period());
+        assertEquals(expected.columnType(),  actual.columnType());
         assertFalse(actual.isHeader());
-        assertEquals(1, actual.columnIndex());
-        assertEquals(BPColumnType.ACTUAL, actual.columnType());
-        assertEquals(validDateRange, actual.dateRange());
     }
 
     @Test
-    void testBuildSubColumn_whenColumnTypeIsEstimated_thenReturnEstimatedColumn()
+    void buildSubColumn_whenValidArgsEstimated_thenReturnEstimatedSubColumn()
     {
-        BPColumn actual = bpColumnBuilderService.buildSubColumn(1, validDateRange, Period.MONTHLY, BPColumnType.ESTIMATED);
+        BPColumn expected = new BPColumn(1, validDateRange, Period.MONTHLY, BPColumnType.ESTIMATED, false);
+
+        BPColumn actual = bpColumnBuilderService.buildSubColumn(1, Period.MONTHLY, validDateRange, BPColumnType.ESTIMATED);
 
         assertNotNull(actual);
-        assertEquals(BPColumnType.ESTIMATED, actual.columnType());
+        assertEquals(expected.columnIndex(), actual.columnIndex());
+        assertEquals(expected.columnType(),  actual.columnType());
         assertFalse(actual.isHeader());
     }
 

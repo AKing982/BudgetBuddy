@@ -1,29 +1,22 @@
 package com.app.budgetbuddy.domain;
 
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
+@Setter
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class BPKpiDetail
 {
-    private BPDateRangeAmount totalIncome;
-    private BPDateRangeAmount totalExpenses;
-    private BPDateRangeAmount totalBalance;
-    private BigDecimal savedPercent;
-
-    // spending donut — category breakdown
-    private List<BudgetCategoryGroup> categoryGroups = new ArrayList<>();
-    private List<BPBudgetCategory> nonCategoryBudgetCategories = new ArrayList<>();
-
-    // account balances
-    private List<BPAccountBalance> accountBalances = new ArrayList<>();
-
-    // balance trend sparkline — the rising line in Image 3
-    private List<BPBalanceTrendPoint> balanceTrend = new ArrayList<>();
-
-    // period structure
-    private List<BPColumn> columns = new ArrayList<>();
-    private List<BPDateRangeAmount> totalPeriodIncome = new ArrayList<>();
-    private List<BPDateRangeAmount> totalPeriodSaved = new ArrayList<>();
-    private List<BPDateRangeAmount> totalRemainingBalances = new ArrayList<>();
+    private BPDateRangeAmount totalIncome;        // "$5k" card
+    private BPDateRangeAmount totalExpenses;      // "$4k" card
+    private BPDateRangeAmount totalBalance;       // "$725" card
+    private BigDecimal savedPercent;              // "+14%" card
+    private List<BudgetCategoryGroup> categoryGroups;   // spending donut
+    private List<BPAccountBalance> accountBalances;
+    private List<BPBalanceTrendPoint> balanceTrend;     // sparkline
 }

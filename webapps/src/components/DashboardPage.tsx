@@ -191,9 +191,8 @@ const DashboardPage: React.FC = () => {
             hasFetchedRef.current = true;
 
             const today = new Date().toISOString().split('T')[0];
-            const twoDaysAgo = new Date();
-            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-            const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
+            const latestPostedDate = await transactionService.fetchLatestPostedDateByUserId(userId);
+            const latestPostedDateStr = latestPostedDate.toISOString().split('T')[0];
             // safe 3-month lookback that handles January correctly
             const startDate = new Date();
             startDate.setMonth(startDate.getMonth() - 3);
@@ -205,13 +204,18 @@ const DashboardPage: React.FC = () => {
                     .fetchTransactionsByUserAndDateRange(userId, startDateStr, today);
 
                 const hasNoTransactions = !transactions || transactions.length === 0;
-                const missingToday = !transactions?.some(t => t.date === today);
-
+                const missingSinceLastPost = !transactions?.some(t => t.date === latestPostedDateStr);
+                const twoDaysAgo = new Date();
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
+                const missingLastDay = !transactions?.some(t => t.date === twoDaysAgoStr);
                 if (hasNoTransactions) {
                     // No data at all — import full 3-month range
                     await plaidTransactionImportService
                         .importPlaidTransactions(userId, startDateStr, today);
-                } else if (missingToday) {
+                }else if(missingSinceLastPost){
+                    await plaidTransactionImportService.importPlaidTransactions(userId, latestPostedDateStr, today);
+                }else if (missingLastDay) {
                     // Have historical data but today is missing — import today only
                     await plaidTransactionImportService
                         .importPlaidTransactions(userId, twoDaysAgoStr, today);  // start === end

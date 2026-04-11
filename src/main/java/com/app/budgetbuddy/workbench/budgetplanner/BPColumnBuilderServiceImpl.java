@@ -12,30 +12,23 @@ import java.util.stream.IntStream;
 @Service
 public class BPColumnBuilderServiceImpl implements BPColumnBuilderService
 {
-    private final BPColumnService bpColumnService;
-
-    @Autowired
-    public BPColumnBuilderServiceImpl(BPColumnService bpColumnService)
-    {
-        this.bpColumnService = bpColumnService;
-    }
 
     @Override
-    public List<BPColumn> buildColumns(BPTemplateType templateType, Period period, List<DateRange> dateRanges)
+    public List<BPColumn> buildColumns(Period period, List<DateRange> dateRanges)
     {
-        if(templateType == null || period == null || dateRanges == null || dateRanges.isEmpty())
+        if(dateRanges == null)
         {
             return Collections.emptyList();
         }
         return IntStream.range(0, dateRanges.size())
-                .mapToObj(index -> new BPColumn(index, dateRanges.get(index), period,BPColumnType.ACTUAL, false))
+                .mapToObj(index -> new BPColumn(index, dateRanges.get(index), period, BPColumnType.ACTUAL, false))
                 .toList();
     }
 
     @Override
-    public BPColumn buildHeaderColumn(int columnIndex, DateRange dateRange, Period period)
+    public BPColumn buildHeaderColumn(int columnIndex, Period period, DateRange dateRange)
     {
-        if(dateRange == null || period == null)
+        if(dateRange == null)
         {
             return null;
         }
@@ -43,9 +36,9 @@ public class BPColumnBuilderServiceImpl implements BPColumnBuilderService
     }
 
     @Override
-    public BPColumn buildSubColumn(int columnIndex, DateRange dateRange, Period period, BPColumnType columnType)
+    public BPColumn buildSubColumn(int columnIndex, Period period, DateRange dateRange, BPColumnType columnType)
     {
-        if(dateRange == null || period == null || columnType == null)
+        if(dateRange == null || columnType == null)
         {
             return null;
         }

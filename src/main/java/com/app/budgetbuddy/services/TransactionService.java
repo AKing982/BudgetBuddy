@@ -19,6 +19,7 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     Collection<TransactionsEntity> getTransactionsByAmountGreaterThan(BigDecimal amount);
     Collection<TransactionsEntity> getTransactionsByAmountLessThan(BigDecimal amount);
 
+    LocalDate getLatestPostedDate(Long userId);
     List<String> findTransactionIdsByIds(List<String> transactionIds);
 
     List<TransactionsEntity> convertPlaidTransactionsToEntities(List<PlaidTransaction> plaidTransactions);

@@ -14,7 +14,7 @@ public class BPTemplateDetail
 {
     private Long id;
     private Long bp_template_id;
-    private BPForecastDetail bpForecastModel;
+    private BPTemplateType templateType;
     private BPRollingDetail rollingDetail;
     private BPKpiDetail bpKpiDetail;
     private boolean isSaved;

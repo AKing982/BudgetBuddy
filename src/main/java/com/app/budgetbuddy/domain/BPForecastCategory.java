@@ -8,6 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
+@Deprecated
 public class BPForecastCategory
 {
     private String category;

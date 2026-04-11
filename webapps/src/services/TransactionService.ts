@@ -31,6 +31,25 @@ class TransactionService {
         return currentDate.toISOString().split('T')[0];
     }
 
+    public async fetchLatestPostedDateByUserId(userId: number) : Promise<Date>
+    {
+        if(userId < 1)
+        {
+            throw new Error('Invalid userId. UserId must be a positive number.');
+        }
+        if(!Number.isInteger(userId)){
+            throw new Error('Invalid userId. UserId must be an integer.');
+        }
+        try
+        {
+            const response = await axios.get(`${API_BASE_URL}/transaction/${userId}/latest-posted`);
+            return new Date(response.data);
+        }catch(error){
+            console.error('There was an error fetching the latest posted date: ', error);
+            throw error;
+        }
+    }
+
     public async updateCSVTransactionWithCategorySaveData(categorySaveData: CategorySaveData) : Promise<CSVTransaction> {
         try
         {

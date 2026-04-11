@@ -26,7 +26,10 @@ public class BPCategoryGroupEntity
     @Column(name="group_name")
     private String groupName;
 
-    @OneToMany(mappedBy="categoryGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<BPCategoryGroupMemberEntity> members = new ArrayList<>();
+    @Column(name="color")
+    private String color;
+
+    @Column(name="sort_order", nullable = false)
+    private int sortOrder;
 
 }

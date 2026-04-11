@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.app.budgetbuddy.domain.BPLayoutType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jetbrains.annotations.NotNull;
@@ -33,11 +34,9 @@ public class BPTemplateDetailEntity
     @NotNull
     private String bpTypeName;
 
-    @Column(name="is_classic")
-    private boolean isClassic;
-
-    @Column(name="is_visual")
-    private boolean isVisual;
+    @Column(name="layout_type")
+    @Enumerated(EnumType.STRING)
+    private BPLayoutType layoutType;
 
     @Column(name="is_saved")
     private boolean isSaved;
@@ -52,14 +51,5 @@ public class BPTemplateDetailEntity
     private List<BPColumnEntity> columns = new ArrayList<>();
 
     @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<BPRowEntity> rows = new ArrayList<>();
-
-    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<BPBudgetCategoryEntity> budgetCategories = new ArrayList<>();
-
-    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<BPCategoryGroupEntity> categoryGroups = new ArrayList<>();
-
-    @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<BPAccountBalanceEntity> accountBalances = new ArrayList<>();
+    private List<BPCategoryEntity> budgetCategories = new ArrayList<>();
 }

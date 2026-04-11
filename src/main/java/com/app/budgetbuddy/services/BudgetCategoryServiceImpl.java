@@ -105,6 +105,52 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
 
     @Override
     @Transactional
+    public BigDecimal getTotalExpensesByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        if(subBudgetId == null || startDate == null || endDate == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        try
+        {
+            return budgetCategoryRepository.findExpenseTotalByUserAndDateRange(subBudgetId, startDate, endDate);
+        }catch(DataAccessException e) {
+            log.error("There was an error getting the total expense by user ID and date range: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal getTotalIncomeByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            return budgetCategoryRepository.findIncomeTotalByUserAndDateRange(subBudgetId, startDate, endDate);
+        }catch(DataAccessException e) {
+            log.error("There was an error getting the total income by user ID and date range: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    public BigDecimal getBudgetCategorySpendingByDateRange(String category, LocalDate startDate, LocalDate endDate, Long subBudgetId)
+    {
+        if(category.isEmpty() || startDate == null || endDate == null || subBudgetId == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        try
+        {
+            return budgetCategoryRepository.findActualAmountByCategoryAndDateRange(category, startDate, endDate, subBudgetId);
+        }catch(DataAccessException e){
+            log.error("There was an error getting the budget category spending for category {} and date range {}: {}: {}", category, startDate, endDate, e.getMessage());
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    @Transactional
     public boolean existsByCategoryDateRange(final String category, final LocalDate dateStart, final LocalDate dateEnd, final Long subBudgetId)
     {
         if(category.isEmpty() || dateStart == null || dateEnd == null || subBudgetId == null)
@@ -189,6 +235,41 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         {
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    @Transactional
+    public List<BudgetCategory> getBudgetCategoriesByDateRange(LocalDate startDate, LocalDate endDate, Long userId)
+    {
+        if(startDate == null || endDate == null || userId == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategoryRepository.findByDateRangeAndUserId(startDate, endDate, userId);
+            if(budgetCategoryEntities == null || budgetCategoryEntities.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            else
+            {
+                return budgetCategoryEntities.stream()
+                        .map(this::convertEntityToModel)
+                        .distinct()
+                        .toList();
+            }
+        }catch(DataAccessException e)
+        {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<BudgetCategoryEntity> findBudgetCategoryById(Long id)
+    {
+        return budgetCategoryRepository.findById(id);
     }
 
     private BudgetCategoryEntity convertBudgetCategoryToEntity(BudgetCategory budgetCategory)

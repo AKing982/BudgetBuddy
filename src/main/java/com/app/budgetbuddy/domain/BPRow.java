@@ -9,6 +9,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
 @Builder
+@Deprecated
 public class BPRow
 {
     private String category;

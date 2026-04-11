@@ -148,6 +148,22 @@ public class TransactionServiceImpl implements TransactionService
 
     @Override
     @Transactional
+    public LocalDate getLatestPostedDate(Long userId)
+    {
+        if(userId == null){
+            throw new NullPointerException("userId is null");
+        }
+        try
+        {
+            return transactionRepository.findLatestPostedDate(userId);
+        }catch(DataAccessException e){
+            LOGGER.error("There was an error fetching the latest posted date: {}", e.getMessage());
+            throw new RuntimeException("There was an error fetching the latest posted date");
+        }
+    }
+
+    @Override
+    @Transactional
     public List<String> findTransactionIdsByIds(List<String> transactionIds) {
         return transactionRepository.findTransactionIdsByIds(transactionIds);
     }
@@ -251,23 +267,6 @@ public class TransactionServiceImpl implements TransactionService
         return Collections.emptyList();
     }
 
-//    @Override
-//    @Transactional
-//    public List<Transaction> getTransactionsByCategory(String categoryId)
-//    {
-//        if(categoryId.isEmpty())
-//        {
-//            return List.of();
-//        }
-//        try
-//        {
-//            List<TransactionsEntity> transactionsEntities = transactionRepository.findByCategoryId(categoryId);
-//            return convertedTransactions(transactionsEntities);
-//        }catch(DataAccessException ex){
-//            LOGGER.error("There was an error fetching transactions for category: {}, {}", categoryId, ex.getMessage());
-//            return List.of();
-//        }
-//    }
 
     @Override
     @Transactional
@@ -281,13 +280,6 @@ public class TransactionServiceImpl implements TransactionService
             return Optional.empty();
         }
     }
-
-//    @Override
-//    @Transactional
-//    public Optional<TransactionsEntity> getTransactionByIdAndCategoryId(String id, String categoryId)
-//    {
-//        return transactionRepository.findTransactionByIdAndCategoryId(id, categoryId);
-//    }
 
     @Override
     @Transactional

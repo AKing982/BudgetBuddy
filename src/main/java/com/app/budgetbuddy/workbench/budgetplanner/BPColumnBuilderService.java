@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface BPColumnBuilderService
 {
-    List<BPColumn> buildColumns(BPTemplateType templateType, Period period, List<DateRange> budgetSchedules);
-    BPColumn buildHeaderColumn(int columnIndex, DateRange dateRange, Period period);
-    BPColumn buildSubColumn(int columnIndex, DateRange dateRange, Period period, BPColumnType columnType);
+    List<BPColumn> buildColumns(Period period, List<DateRange> budgetSchedules);
+    BPColumn buildHeaderColumn(int columnIndex, Period period, DateRange dateRange);
+    BPColumn buildSubColumn(int columnIndex, Period period, DateRange dateRange, BPColumnType columnType);
 }

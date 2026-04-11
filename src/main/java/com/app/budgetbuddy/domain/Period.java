@@ -9,5 +9,6 @@ public enum Period
     QUARTERLY, // Every Three Months
     SEMIANNUAL, // Every Six Months
     BIMONTHLY, // Every Two Months
-    ANNUAL // Every Year
+    ANNUAL, // Every Year
+    INCOME
 }

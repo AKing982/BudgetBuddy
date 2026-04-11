@@ -1,11 +1,13 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.BPTemplateDetail;
 import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPTemplateDetailsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -85,6 +87,19 @@ public class BPTemplateDetailsServiceImpl implements BPTemplateDetailsService
         {
             log.error("There was an error retrieving the budget template detail with id {}: ", id, e);
             return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void saveModel(BPTemplateDetail detail)
+    {
+        try
+        {
+
+        }catch(DataAccessException e){
+            log.error("There was an error saving the budget template detail: ", e);
+            throw new DataAccessException("There was an error saving the budget template detail", e);
         }
     }
 }

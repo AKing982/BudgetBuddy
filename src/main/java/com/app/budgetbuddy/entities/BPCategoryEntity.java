@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class BPBudgetCategoryEntity
+public class BPCategoryEntity
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,11 +24,16 @@ public class BPBudgetCategoryEntity
     private BPTemplateDetailEntity bpTemplateDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="bp_column_id", nullable = false)
+    private BPColumnEntity bpColumn;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="budget_category_id")
     private BudgetCategoryEntity budgetCategory;
 
-    @Column(name="column_index")
-    private int columnIndex;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="bp_category_group_id")
+    private BPCategoryGroupEntity categoryGroup;
 
     @Column(name="start_date")
     private LocalDate startDate;

@@ -22,7 +22,7 @@ public class BPCategoryGroupMemberEntity
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="bp_budget_category_id")
-    private BPBudgetCategoryEntity bpBudgetCategory;
+    private BPCategoryEntity bpBudgetCategory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="bp_row_id")

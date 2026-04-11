@@ -14,7 +14,7 @@ public class MonthlyStandardTemplateBuilder implements BPTemplateBuilderService
 
     @Autowired
     public MonthlyStandardTemplateBuilder(BPTemplateService bpTemplateService,
-                                          @Qualifier("monthlyTemplateBuilder") BPTemplateDetailBuilderService templateDetailBuilderService)
+                                          BPTemplateDetailBuilderService templateDetailBuilderService)
     {
         this.templateService = bpTemplateService;
         this.templateDetailBuilderService = templateDetailBuilderService;

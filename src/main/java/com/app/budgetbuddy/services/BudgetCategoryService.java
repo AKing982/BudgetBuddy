@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity>
 {
@@ -17,6 +18,9 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
 
     List<BudgetCategory> updateBudgetCategories(Map<Long, String> budgetCategoriesToUpdate);
 
+    BigDecimal getTotalExpensesByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate);
+    BigDecimal getTotalIncomeByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate);
+    BigDecimal getBudgetCategorySpendingByDateRange(String category, LocalDate startDate, LocalDate endDate, Long subBudgetId);
     boolean existsByCategoryDateRange(String category, LocalDate dateStart, LocalDate dateEnd, Long subBudgetId);
     List<BudgetCategoryEntity> getBudgetCategoriesByBudgetId(Long budgetId);
     List<BudgetCategoryEntity> getBudgetCategoriesByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate);
@@ -24,7 +28,9 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
 
     List<BudgetCategory> getBudgetCategoryListByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate);
     List<BudgetCategory> getBudgetCategoriesByDate(Long subBudgetId, LocalDate currentDate, LocalDate startDate, LocalDate endDate);
+    List<BudgetCategory> getBudgetCategoriesByDateRange(LocalDate startDate, LocalDate endDate, Long userId);
 
+    Optional<BudgetCategoryEntity> findBudgetCategoryById(Long id);
     List<BudgetCategory> saveAll(List<BudgetCategory> budgetCategories);
 
     List<BudgetCategory> getBudgetCategoriesByUserId(Long userId);
