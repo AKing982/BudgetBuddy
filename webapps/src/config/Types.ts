@@ -14,17 +14,6 @@ interface Transaction {
     transactionType: string;
 }
 
-export enum Period {
-    DAILY = 'DAILY',
-    WEEKLY = 'WEEKLY',
-    MONTHLY = 'MONTHLY',
-    BIWEEKLY = 'BIWEEKLY',
-    QUARTERLY = 'QUARTERLY',
-    SEMIANNUAL = 'SEMIANNUAL',
-    BIMONTHLY = 'BIMONTHLY',
-    ANNUAL = 'ANNUAL'
-}
-
 export interface GroceryBudget {
     id?: number;
     name: string;
@@ -215,6 +204,56 @@ export type BudgetPeriod = 'week' | 'biweekly' | 'month' | 'day';
 
 export interface BudgetCategoryResponse {
     budgetPeriodCategories: BudgetPeriodCategory[];
+}
+
+// Replace with this:
+export enum BPTemplateType {
+    MONTHLY_STD                  = "MONTHLY_STD",
+    BIWEEKLY_STD                 = "BIWEEKLY_STD",
+    WEEKLY_STD                   = "WEEKLY_STD",
+    TWO_MONTHLY_STD              = "TWO_MONTHLY_STD",
+    THREE_MONTHLY_STD            = "THREE_MONTHLY_STD",
+    BIWEEKLY_PAYCHECK            = "BIWEEKLY_PAYCHECK",
+    MONTHLY_PAYCHECK             = "MONTHLY_PAYCHECK",
+    TWO_MONTHLY_PAYCHECK         = "TWO_MONTHLY_PAYCHECK",
+    THREE_MONTHLY_PAYCHECK       = "THREE_MONTHLY_PAYCHECK",
+    FIFTY_THIRTY_TWENTY_MONTHLY  = "FIFTY_THIRTY_TWENTY_MONTHLY",
+    FIFTY_THIRTY_TWENTY_BIWEEKLY = "FIFTY_THIRTY_TWENTY_BIWEEKLY",
+    MONTHLY_BALANCE_SHEET        = "MONTHLY_BALANCE_SHEET",
+    BASIC_ESSENTIALS             = "BASIC_ESSENTIALS",
+}
+
+export interface DateRange {
+    startDate: string; // ISO-8601, e.g. "2024-01-01"
+    endDate: string;
+}
+
+export enum Period {
+    DAILY = "DAILY",
+    WEEKLY = "WEEKLY",
+    MONTHLY = "MONTHLY",
+    BIWEEKLY = "BIWEEKLY",
+    QUARTERLY = "QUARTERLY",
+    SEMIANNUAL = "SEMIANNUAL",
+    BIMONTHLY = "BIMONTHLY",
+    ANNUAL = "ANNUAL",
+    INCOME = "INCOME",
+}
+
+
+export interface BudgetPlannerRequest {
+    userId: number;
+    dateRanges: DateRange[];
+    templateType: BPTemplateType;
+    period: Period;
+}
+
+// Shape returned by the controller – extend as needed once you know the full model
+export interface BPTemplate {
+    id?: number;
+    userId?: number;
+    templateType?: BPTemplateType;
+    [key: string]: unknown;
 }
 
 // export interface BudgetPeriodCategory {

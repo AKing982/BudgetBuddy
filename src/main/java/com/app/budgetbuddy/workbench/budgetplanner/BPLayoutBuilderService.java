@@ -7,7 +7,9 @@ import com.app.budgetbuddy.services.BPColumnService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 @Service
 public class BPLayoutBuilderService
@@ -31,50 +33,39 @@ public class BPLayoutBuilderService
 
     public BPLayout buildLayout(BPTemplateType templateType, List<SubBudget> subBudgets)
     {
-        if(templateType == null || subBudgets == null)
+        if(templateType == null || subBudgets == null || subBudgets.isEmpty())
         {
-            throw new DataException("Template Type or Budget Schedule cannot be null");
+            throw new DataException("Template type and sub budgets cannot be null or empty");
         }
-        switch(templateType){
-            case MONTHLY_STD -> {
-                Period period = Period.MONTHLY;
-                DateRange monthRange = new DateRange(subBudget.getStartDate(), subBudget.getEndDate());
-                List<DateRange> weeklyRanges = monthRange.splitIntoWeeks();
-                List<BPColumn> columns = columnBuilder.buildColumns(period, weeklyRanges);
-                saveColumns(columns);
-                // Save the columns to the database
-                List<BPCategory> rowData = bpRowDataBuilderService.buildRowData(subBudget, columns);
-                saveCategoryRows(rowData);
-                return new BPLayout(columns, rowData);
-            }
-            case BIWEEKLY_STD -> {
-                Period period = Period.BIWEEKLY;
-                DateRange monthRange = new DateRange(subBudget.getStartDate(), subBudget.getEndDate());
+        return switch(templateType) {
+            case MONTHLY_STD  -> buildCombinedLayout(Period.MONTHLY,   subBudgets, DateRange::asSingleRange);
+            case BIWEEKLY_STD -> buildCombinedLayout(Period.BIWEEKLY,  subBudgets, DateRange::splitIntoBiWeeks);
+            case WEEKLY_STD   -> buildCombinedLayout(Period.WEEKLY,    subBudgets, DateRange::splitIntoWeeks);
+            case MONTHLY_PAYCHECK -> buildCombinedLayout(Period.INCOME, subBudgets, DateRange::asSingleRange);
+            default -> throw new DataException("Invalid template type: " + templateType);
+        };
+    }
 
-                List<DateRange> biWeekRanges = monthRange.splitIntoBiWeeks();
-                List<BPColumn> columns = columnBuilder.buildColumns(period, biWeekRanges);
-                saveColumns(columns);
-                List<BPCategory> rowData = bpRowDataBuilderService.buildRowData(subBudget, columns);
-                saveCategoryRows(rowData);
-                return new BPLayout(columns, rowData);
-            }
-            case WEEKLY_STD -> {
-                Period period = Period.WEEKLY;
-                DateRange monthRange = new DateRange(subBudget.getStartDate(), subBudget.getEndDate());
-                List<DateRange> weeklyRanges = monthRange.splitIntoWeeks();
-                List<BPColumn> columns = columnBuilder.buildColumns(period, weeklyRanges);
-                saveColumns(columns);
-                List<BPCategory> rowData = bpRowDataBuilderService.buildRowData(subBudget, columns);
-                saveCategoryRows(rowData);
-                return new BPLayout(columns, rowData);
-            }
-            case MONTHLY_PAYCHECK -> {
-                Period period = Period.INCOME;
-                DateRange monthRange = new DateRange(subBudget.getStartDate(), subBudget.getEndDate());
-            }
-            default -> throw new DataException("Invalid template type");
+    private BPLayout buildCombinedLayout(Period period,
+                                         List<SubBudget> subBudgets,
+                                         Function<DateRange, List<DateRange>> splitter)
+    {
+        List<BPColumn> allColumns = new ArrayList<>();
+        List<BPCategory> allCategories = new ArrayList<>();
+        for(SubBudget subBudget : subBudgets)
+        {
+            DateRange range = new DateRange(subBudget.getStartDate(), subBudget.getEndDate());
+            List<DateRange> ranges = splitter.apply(range);
+            List<BPColumn> columns = columnBuilder.buildColumns(period, ranges);
+            List<BPCategory> categories = bpRowDataBuilderService.buildRowData(subBudget, columns);
+
+            allColumns.addAll(columns);
+            allCategories.addAll(categories);
         }
-        return null;
+
+        saveColumns(allColumns);
+        saveCategoryRows(allCategories);
+        return new BPLayout(allColumns, allCategories);
     }
 
     private void saveColumns(List<BPColumn> columns)

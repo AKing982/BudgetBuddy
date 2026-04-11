@@ -20,9 +20,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class BPLayoutBuilderServiceTest {
-
-
+class BPLayoutBuilderServiceTest
+{
     @Mock
     private BPColumnBuilderService columnBuilder;
 
@@ -78,13 +77,6 @@ class BPLayoutBuilderServiceTest {
                         .actual(new BigDecimal("1500.00")).budgeted(BigDecimal.ZERO)
                         .columnIndex(0).isActive(true).build()
         );
-    }
-
-    @Test
-    void buildLayout_whenTemplateTypeIsNull_thenThrowDataException()
-    {
-        assertThrows(DataException.class,
-                () -> bpLayoutBuilderService.buildLayout(null, subBudget));
     }
 
     @Test

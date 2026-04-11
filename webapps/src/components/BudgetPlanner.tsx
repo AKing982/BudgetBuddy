@@ -20,6 +20,7 @@ import {
 import Sidebar from './Sidebar';
 import ManualTemplateWizard from './ManualTemplateWizard';
 import BudgetOptimizerPanel from './BudgetOptimizerPanel';
+import BudgetTemplateWizard from "./BudgetTemplateWizard";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const MAROON      = '#6b1a1a';
@@ -1225,7 +1226,11 @@ const BudgetPlanner: React.FC = () => {
                 )}
             </Container>
 
-            <ManualTemplateWizard open={openWizard} onClose={()=>setOpenWizard(false)} onCreateTemplate={handleWizardCreate}/>
+            <ManualTemplateWizard
+                open={openWizard}
+                onClose={() => setOpenWizard(false)}
+                onCreateTemplate={handleWizardCreate}
+            />
 
             <Dialog open={openSaveDialog} onClose={()=>setOpenSaveDialog(false)} PaperProps={{sx:{borderRadius:'12px',p:1,minWidth:360}}}>
                 <DialogTitle sx={{fontWeight:700,color:NAVY,pb:1}}>Save a Copy</DialogTitle>

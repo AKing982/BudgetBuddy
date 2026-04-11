@@ -19,15 +19,18 @@ public class BPTemplateRunner
     @Autowired
     public BPTemplateRunner(BPTemplateService templateService,
                             BPTemplateBuilderService templateBuilder,
-                            SubBudgetService subBudgetService) {
+                            SubBudgetService subBudgetService)
+    {
         this.templateService = templateService;
         this.templateBuilder = templateBuilder;
         this.subBudgetService = subBudgetService;
 
     }
 
-    public BPTemplate runTemplateBuild(BPTemplateType templateType, Period period, List<DateRange> dateRanges, Long userId) {
-        if (templateType == null || dateRanges.isEmpty() || userId == null) {
+    public BPTemplate runTemplateBuild(BPTemplateType templateType, Period period, List<DateRange> dateRanges, Long userId)
+    {
+        if(templateType == null || dateRanges.isEmpty() || userId == null)
+        {
             throw new DataException("Template Type, Date Range, and User Id cannot be null");
         }
         List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByDateRanges(dateRanges, userId);
@@ -35,13 +38,13 @@ public class BPTemplateRunner
         BPGoalsDetail initialGoals = initialTemplate.getBpGoalsDetail();
         BPTemplateDetail initialDetail = initialTemplate.getBpTemplateDetail();
         BPTemplate finalTemplate = templateBuilder.buildTemplate(initialTemplate, initialGoals, initialDetail);
-
-        return null;
+        saveTemplate(finalTemplate);
+        return finalTemplate;
     }
 
     private void saveTemplate(BPTemplate template)
     {
-
+        templateService.saveTemplate(template);
     }
 
 }

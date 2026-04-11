@@ -28,6 +28,11 @@ public class DateRange implements Comparable<DateRange>
         this.endDate = endDate;
     }
 
+    public List<DateRange> asSingleRange()
+    {
+        return List.of(this);
+    }
+
     public static DateRange createDateRange(LocalDate startDate, LocalDate endDate)
     {
         return new DateRange(startDate, endDate);

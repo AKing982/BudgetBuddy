@@ -187,17 +187,19 @@ const DashboardPage: React.FC = () => {
     useEffect(() => {
         if (!userId || hasFetchedRef.current) return;
 
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 3);
+        startDate.setDate(1);
+        const startDateStr = startDate.toISOString().split('T')[0];
         const syncPlaidTransactions = async () => {
             hasFetchedRef.current = true;
 
             const today = new Date().toISOString().split('T')[0];
             const latestPostedDate = await transactionService.fetchLatestPostedDateByUserId(userId);
-            const latestPostedDateStr = latestPostedDate.toISOString().split('T')[0];
-            // safe 3-month lookback that handles January correctly
-            const startDate = new Date();
-            startDate.setMonth(startDate.getMonth() - 3);
-            startDate.setDate(1);
-            const startDateStr = startDate.toISOString().split('T')[0];
+            const isValidDate = !isNaN(latestPostedDate.getTime());
+            const latestPostedDateStr = isValidDate
+                ? latestPostedDate.toISOString().split('T')[0]
+                : startDateStr;
 
             try {
                 const transactions = await transactionService
