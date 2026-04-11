@@ -1,42 +1,91 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.BPTemplate;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPTemplateRepository;
+import com.app.budgetbuddy.workbench.converter.BPTemplateToEntityConverter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class BPTemplateServiceImpl implements BPTemplateService
 {
     private final BPTemplateRepository repository;
+    private final BPTemplateToEntityConverter converter;
 
     @Autowired
-    public BPTemplateServiceImpl(BPTemplateRepository repository)
+    public BPTemplateServiceImpl(BPTemplateRepository repository,
+                                 BPTemplateToEntityConverter converter)
     {
         this.repository = repository;
+        this.converter = converter;
     }
 
     @Override
-    public Collection<BPTemplateEntity> findAll() {
-        return List.of();
+    @Transactional
+    public Collection<BPTemplateEntity> findAll()
+    {
+        try
+        {
+            return repository.findAll();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving all the budget templates", e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
-    public void save(BPTemplateEntity bpTemplateEntity) {
-
+    @Transactional
+    public void save(BPTemplateEntity bpTemplateEntity)
+    {
+        try
+        {
+            repository.save(bpTemplateEntity);
+        }catch(DataAccessException e){
+            log.error("There was an error saving the budget template", e);
+            return;
+        }
     }
 
     @Override
-    public void delete(BPTemplateEntity bpTemplateEntity) {
-
+    @Transactional
+    public void delete(BPTemplateEntity bpTemplateEntity)
+    {
+        try
+        {
+            repository.delete(bpTemplateEntity);
+        }catch(DataAccessException e){
+            log.error("There was an error deleting the budget template", e);
+            return;
+        }
     }
 
     @Override
-    public Optional<BPTemplateEntity> findById(Long id) {
+    public Optional<BPTemplateEntity> findById(Long id)
+    {
         return Optional.empty();
+    }
+
+    @Override
+    @Transactional
+    public void saveTemplate(BPTemplate template)
+    {
+        try
+        {
+            BPTemplateEntity entity = converter.convert(template);
+            repository.save(entity);
+        }catch(DataAccessException e){
+            log.error("There was an error saving the budget template", e);
+            return;
+        }
     }
 }

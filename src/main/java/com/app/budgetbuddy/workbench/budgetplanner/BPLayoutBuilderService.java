@@ -29,9 +29,9 @@ public class BPLayoutBuilderService
         this.bpColumnService = bpColumnService;
     }
 
-    public BPLayout buildLayout(BPTemplateType templateType, SubBudget subBudget)
+    public BPLayout buildLayout(BPTemplateType templateType, List<SubBudget> subBudgets)
     {
-        if(templateType == null || subBudget == null)
+        if(templateType == null || subBudgets == null)
         {
             throw new DataException("Template Type or Budget Schedule cannot be null");
         }

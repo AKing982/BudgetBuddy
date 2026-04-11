@@ -3,16 +3,20 @@ package com.app.budgetbuddy.entities;
 import com.app.budgetbuddy.domain.BPTemplateType;
 import com.app.budgetbuddy.domain.Period;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name="bp_templates")
 @Getter
 @Setter
+@AllArgsConstructor(access = lombok.AccessLevel.PUBLIC)
+@NoArgsConstructor(access = lombok.AccessLevel.PUBLIC)
+@Builder
 public class BPTemplateEntity
 {
 

@@ -15,17 +15,20 @@ import java.util.Objects;
 public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBuilderService
 {
     private final BPLayoutBuilderService layoutBuilderService;
+    private final BPGoalsDetailBuilderService bpGoalsDetailBuilderService;
     private final BPTemplateDetailsService bpTemplateDetailsService;
 
     @Autowired
     public MonthlyTemplateDetailsBuilderService(BPLayoutBuilderService layoutBuilderService,
+                                                BPGoalsDetailBuilderService bpGoalsDetailBuilderService,
                                                 BPTemplateDetailsService bpTemplateDetailsService)
     {
         this.layoutBuilderService = layoutBuilderService;
+        this.bpGoalsDetailBuilderService = bpGoalsDetailBuilderService;
         this.bpTemplateDetailsService = bpTemplateDetailsService;
     }
 
-    private BPRollingDetail buildRollingDetail(BPLayout layout)
+    private BPRollingDetail buildRollingDetail(BPLayout layout, BPTemplateType templateType)
     {
         List<BPCategory> categories = layout.bpCategories();
         BPRollingDetail detail = new BPRollingDetail();
@@ -35,6 +38,7 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
         detail.setAccountBalances(BPTemplateExtractorUtil.accountBalances(categories));
         detail.setIncomeRow(BPTemplateExtractorUtil.row(categories, "Income"));
         detail.setSavingsRow(BPTemplateExtractorUtil.row(categories, "Savings"));
+        detail.setGoalsDetail(bpGoalsDetailBuilderService.buildGoalsDetail(templateType, categories));
         detail.setClassic(false);
         detail.setGrouped(true);
         return detail;
@@ -71,14 +75,14 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
     }
 
     @Override
-    public BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, SubBudget subBudget)
+    public BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, List<SubBudget> subBudgets)
     {
-        BPLayout layout = layoutBuilderService.buildLayout(bpTemplateType, subBudget);
+        BPLayout layout = layoutBuilderService.buildLayout(bpTemplateType, subBudgets);
         BPTemplateDetail detail = new BPTemplateDetail();
         detail.setTemplateType(bpTemplateType);
         switch(bpTemplateType){
             case MONTHLY_STD, WEEKLY_STD, BIWEEKLY_STD -> {
-                detail.setRollingDetail(buildRollingDetail(layout));
+                detail.setRollingDetail(buildRollingDetail(layout, bpTemplateType));
             }
             case MONTHLY_BALANCE_SHEET -> {
                 detail.setBpKpiDetail(buildKpiDetail(layout));

@@ -93,6 +93,30 @@ public class SubBudgetServiceImpl implements SubBudgetService
 
     @Override
     @Transactional
+    public List<SubBudget> getSubBudgetsByDateRanges(List<DateRange> dateRanges, Long userId)
+    {
+        if(dateRanges == null || dateRanges.isEmpty() || userId == null || userId <= 0)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            return dateRanges.stream()
+                    .map(dateRange -> {
+                        LocalDate startDate = dateRange.getStartDate();
+                        LocalDate endDate = dateRange.getEndDate();
+                        return getSubBudgetsByUserIdAndDateRange(userId, startDate, endDate);
+                    })
+                    .flatMap(Collection::stream)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error getting the subBudgets by date ranges: ", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<SubBudget> getSubBudgetsByUserIdAndDate(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try

@@ -5,5 +5,5 @@ import com.app.budgetbuddy.entities.BPTemplateEntity;
 
 public interface BPTemplateService extends ServiceModel<BPTemplateEntity>
 {
-
+    void saveTemplate(BPTemplate template);
 }

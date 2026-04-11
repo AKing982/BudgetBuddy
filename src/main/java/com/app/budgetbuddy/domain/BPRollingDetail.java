@@ -14,6 +14,7 @@ public class BPRollingDetail
     private List<BudgetCategoryGroup> categoryGroups;
     private List<BPCategory> budgetCategories;
     private List<BPAccountBalance> accountBalances;
+    private BPGoalsDetail goalsDetail;
     private BPCategory incomeRow;
     private BPCategory savingsRow;
     private boolean isClassic;
