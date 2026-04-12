@@ -1,14 +1,12 @@
 package com.app.budgetbuddy.workbench.budgetplanner;
 
-import com.app.budgetbuddy.domain.BPTemplateDetail;
-import com.app.budgetbuddy.domain.BPTemplateType;
-import com.app.budgetbuddy.domain.DateRange;
-import com.app.budgetbuddy.domain.SubBudget;
+import com.app.budgetbuddy.domain.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface BPTemplateDetailBuilderService
 {
-    BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, List<SubBudget> subBudgets);
-    BPTemplateDetail saveDetail(BPTemplateDetail detail);
+    BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria, boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets);
+    void saveDetail(BPTemplateDetail detail);
 }

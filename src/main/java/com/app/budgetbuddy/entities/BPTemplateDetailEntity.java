@@ -30,16 +30,9 @@ public class BPTemplateDetailEntity
     @JoinColumn(name="id")
     private BPTemplateEntity bpTemplate;
 
-    @Column(name="bp_type_name")
-    @NotNull
-    private String bpTypeName;
-
     @Column(name="layout_type")
     @Enumerated(EnumType.STRING)
     private BPLayoutType layoutType;
-
-    @Column(name="is_saved")
-    private boolean isSaved;
 
     @Column(name="created_at")
     private LocalDateTime createdAt;

@@ -9,19 +9,13 @@ public class BPTemplateDetailToEntityConverter implements Converter<BPTemplateDe
 {
 
     @Override
-    public BPTemplateDetailEntity convert(BPTemplateDetail bpTemplateDetail)
+    public BPTemplateDetailEntity convert(BPTemplateDetail detail)
     {
-//        BPTemplateDetailEntity bpTemplateDetailEntity = new BPTemplateDetailEntity();
-//        bpTemplateDetailEntity.setBpTypeName(bpTemplateDetail.getTemplateType().name());
-//        bpTemplateDetailEntity.setLastUpdated(bpTemplateDetail.getLastUpdated());
-//        bpTemplateDetailEntity.setCreatedAt(bpTemplateDetail.getCreatedAt());
-//        if(bpTemplateDetail.getRollingDetail() != null)
-//        {
-//            bpTemplateDetailEntity.setClassic(bpTemplateDetailEntity.isClassic());
-//            bpTemplateDetailEntity.setVisual(bpTemplateDetailEntity.isVisual());
-//            bpTemplateDetailEntity.setColumns();
-//        }
-//        return null;
-        return null;
+        if(detail == null) return null;
+        return BPTemplateDetailEntity.builder()
+                .layoutType(detail.getLayoutType())
+                .createdAt(detail.getCreatedAt())
+                .lastUpdated(detail.getLastUpdated())
+                .build();
     }
 }

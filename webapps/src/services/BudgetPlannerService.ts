@@ -32,6 +32,13 @@ class BudgetPlannerService {
         }
     }
 
+    public async fetchUserTemplates(userId: number): Promise<BPTemplate[]> {
+        const response = await axios.get<BPTemplate[]>(
+            `${API_BASE_URL}/budget-planner/templates/${userId}`
+        );
+        return response.data;
+    }
+
     public async updateBudgetTemplate(id: number, request: BudgetPlannerRequest): Promise<BPTemplate> {
         if (!Number.isInteger(id) || id < 1) {
             throw new Error("Invalid id. Id must be a positive integer.");

@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.BPTemplate;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPTemplateRepository;
+import com.app.budgetbuddy.workbench.converter.BPTemplateEntityToModelConverter;
 import com.app.budgetbuddy.workbench.converter.BPTemplateToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,13 +22,16 @@ public class BPTemplateServiceImpl implements BPTemplateService
 {
     private final BPTemplateRepository repository;
     private final BPTemplateToEntityConverter converter;
+    private final BPTemplateEntityToModelConverter entityToModelConverter;
 
     @Autowired
     public BPTemplateServiceImpl(BPTemplateRepository repository,
-                                 BPTemplateToEntityConverter converter)
+                                 BPTemplateToEntityConverter converter,
+                                 BPTemplateEntityToModelConverter entityToModelConverter)
     {
         this.repository = repository;
         this.converter = converter;
+        this.entityToModelConverter = entityToModelConverter;
     }
 
     @Override
@@ -87,5 +91,28 @@ public class BPTemplateServiceImpl implements BPTemplateService
             log.error("There was an error saving the budget template", e);
             return;
         }
+    }
+
+    @Override
+    @Transactional
+    public List<BPTemplate> getAllUserBudgetTemplates(Long userId)
+    {
+        try
+        {
+            List<BPTemplateEntity> templateEntities = repository.findByUserId(userId);
+            return templateEntities.stream()
+                    .map(entityToModelConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the user budget templates", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<BPTemplate> getUserTemplatesByType(Long userId, String templateType)
+    {
+        return Optional.empty();
     }
 }

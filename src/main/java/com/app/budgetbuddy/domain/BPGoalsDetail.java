@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
 @EqualsAndHashCode
+@Builder
 public class BPGoalsDetail
 {
     private Long id;

@@ -31,6 +31,9 @@ public class BPTemplateEntity
     @OneToOne(mappedBy="bpTemplate", cascade=CascadeType.ALL)
     private BPTemplateDetailEntity bpTemplateDetail;
 
+    @OneToOne(mappedBy="bpTemplate", cascade=CascadeType.ALL)
+    private BPGoalsDetailEntity bpGoalsDetail;
+
     @Column(name="bp-template-type")
     @Enumerated(EnumType.STRING)
     private BPTemplateType bpTemplateType;

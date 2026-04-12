@@ -21,6 +21,8 @@ import Sidebar from './Sidebar';
 import ManualTemplateWizard from './ManualTemplateWizard';
 import BudgetOptimizerPanel from './BudgetOptimizerPanel';
 import BudgetTemplateWizard from "./BudgetTemplateWizard";
+import {BPTemplate, BudgetPlannerRequest, Period} from "../config/Types";
+import BudgetPlannerService from "../services/BudgetPlannerService";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const MAROON      = '#6b1a1a';
@@ -955,6 +957,113 @@ const PlanningView:React.FC<{
     );
 };
 
+function resolveRowType(bpType: string, category: string): SpreadsheetRow['rowType'] {
+    if (!bpType) return 'expense';
+    const t = bpType.toUpperCase();
+    if (t === 'INCOME')  return 'salary';
+    if (t === 'BALANCE') return 'balance';
+    if (category?.toLowerCase().includes('expense')) return 'expenses';
+    return 'expense';
+}
+
+function mapPeriodToType(period: string): PeriodType {
+    const map: Record<string, PeriodType> = {
+        WEEKLY:    'Weekly',
+        BIWEEKLY:  'Biweekly',
+        MONTHLY:   'Monthly',
+        BIMONTHLY: '2-Monthly',
+        QUARTERLY: '3-Monthly',
+    };
+    return map[period?.toUpperCase()] ?? 'Monthly';
+}
+
+function mapFormatToPeriod(format: string): Period
+{
+    const map: Record<string, Period> = {
+        Weekly:      Period.WEEKLY,
+        Biweekly:    Period.BIWEEKLY,
+        '2-Monthly': Period.BIMONTHLY,
+        '3-Monthly': Period.QUARTERLY,
+        Monthly:     Period.MONTHLY,
+    };
+    return map[format] ?? Period.MONTHLY;
+}
+
+function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
+    const detail     = template.bpTemplateDetail;
+    const layoutGrid = detail?.layoutGrid;
+
+    if (!layoutGrid) {
+        return {
+            id:         String(template.id ?? generateUUID()),
+            name:       template.templateType ?? 'New Template',
+            periodType: mapPeriodToType(template.period),
+            months:     [],
+            periods:    [],
+            rows:       [],
+        };
+    }
+
+    const columns = layoutGrid.columns ?? [];
+    const gridRows = layoutGrid.rows ?? [];
+
+    // Build period label strings from columns (skip header columns)
+    const dataCols = columns.filter(c => !c.isHeader);
+    const periods: string[] = dataCols.map(c => {
+        const start = c.dateRange?.startDate ?? '';
+        const end   = c.dateRange?.endDate   ?? '';
+        if (!start) return String(c.columnIndex);
+        const s = new Date(start);
+        const e = new Date(end);
+        return `${s.getMonth() + 1}/${s.getDate()}–${e.getMonth() + 1}/${e.getDate()}`;
+    });
+
+    // Group columns into months
+    const monthMap = new Map<string, number[]>();
+    dataCols.forEach((col, idx) => {
+        const d     = new Date(col.dateRange?.startDate ?? '');
+        const label = isNaN(d.getTime())
+            ? `Period ${idx + 1}`
+            : d.toLocaleString('default', { month: 'long', year: 'numeric' });
+        if (!monthMap.has(label)) monthMap.set(label, []);
+        monthMap.get(label)!.push(idx);
+    });
+    const months: MonthGroup[] = Array.from(monthMap.entries()).map(([name, cols]) => ({ name, cols }));
+
+    // Map grid rows → SpreadsheetRows
+    const spreadsheetRows: SpreadsheetRow[] = gridRows.map(row => {
+        const values: (number | null)[] = dataCols.map(col => {
+            const cell = row.cells?.find(c => c.columnIndex === col.columnIndex);
+            if (!cell) return null;
+            // prefer actual if present, otherwise budgeted
+            const val = cell.actual ?? cell.budgeted;
+            return val !== null && val !== undefined ? Number(val) : null;
+        });
+
+        const rowType = resolveRowType(row.type, row.category);
+        return { label: row.category, rowType, values };
+    });
+
+    // Ensure summary rows exist — add them if the backend didn't include them
+    const hasSalary   = spreadsheetRows.some(r => r.rowType === 'salary');
+    const hasExpenses = spreadsheetRows.some(r => r.rowType === 'expenses');
+    const hasBalance  = spreadsheetRows.some(r => r.rowType === 'balance');
+    const blank = () => Array(dataCols.length).fill(null) as null[];
+
+    if (!hasSalary)   spreadsheetRows.push({ label: 'Salary',            rowType: 'salary',   values: blank() });
+    if (!hasExpenses) spreadsheetRows.push({ label: 'Expenses',           rowType: 'expenses', values: blank() });
+    if (!hasBalance)  spreadsheetRows.push({ label: 'Remaining Balance',  rowType: 'balance',  values: blank() });
+
+    return {
+        id:         String(template.id ?? generateUUID()),
+        name:       template.templateType ?? 'New Template',
+        periodType: mapPeriodToType(template.period),
+        months,
+        periods,
+        rows:       spreadsheetRows,
+    };
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 const BudgetPlanner: React.FC = () => {
     const [animateIn,setAnimateIn]=useState(false);
@@ -977,7 +1086,31 @@ const BudgetPlanner: React.FC = () => {
     const monthLabel=currentMonth.toLocaleString('default',{month:'long',year:'numeric'});
 
     useEffect(()=>{setTimeout(()=>setAnimateIn(true),100);},[]);
-    useEffect(()=>{setTemplates([ROLLING_TEMPLATE,NOV_MAY,ROLLING_BALANCE_TEMPLATE,ROLLING_PLANNED_ACTUAL_TEMPLATE,FORECAST_CLASSIC_TEMPLATE,FORECAST_VISUAL_TEMPLATE]);},[]);
+
+    useEffect(() => {
+        // Always load presets so the page isn't empty
+        // setTemplates([ROLLING_TEMPLATE, NOV_MAY, ROLLING_BALANCE_TEMPLATE,
+        //     ROLLING_PLANNED_ACTUAL_TEMPLATE, FORECAST_CLASSIC_TEMPLATE,
+        //     FORECAST_VISUAL_TEMPLATE]);
+
+        // Then fetch user's saved templates from backend and append them
+        const user = JSON.parse(sessionStorage.getItem('user') ?? '{}');
+        const userId = user.id ?? user.userId;
+        if (!userId) return;
+
+        BudgetPlannerService.getInstance().fetchUserTemplates(userId)
+            .then(bpTemplates => {
+                const mapped = bpTemplates
+                    .map(mapBPTemplateToSpreadsheet)
+                    .filter(t => t.periods.length > 0); // drop empty templates
+                if (mapped.length > 0) {
+                    setTemplates(prev => [...prev, ...mapped]);
+                    setSelectedId(mapped[0].id); // auto-select first backend template
+                }
+            })
+            .catch(err => console.error('Failed to load user templates:', err));
+    }, []);
+
 
     const currentTemplate=templates.find(t=>t.id===selectedId)??templates[0];
 
@@ -999,20 +1132,56 @@ const BudgetPlanner: React.FC = () => {
         }));
     };
 
-    const handleWizardCreate=(config:{name:string;periodType:PeriodType;startMonth:string;endMonth:string;income:number;categories:{name:string;color:string}[];allocs:Record<string,number>})=>{
-        const start=new Date(config.startMonth+'-01'),end=new Date(config.endMonth+'-01');
-        end.setMonth(end.getMonth()+1);end.setDate(0);
-        const{periods,months}=generatePeriods(config.periodType,start,end);
-        const rows=makeBlankRows(periods.length);
-        const salaryIdx=rows.findIndex(r=>r.label==='Salary');
-        if(salaryIdx>=0&&config.income>0)rows[salaryIdx]={...rows[salaryIdx],values:rows[salaryIdx].values.map(()=>config.income)};
-        config.categories.forEach(cat=>{const amount=config.allocs[cat.name]??0;if(amount<=0)return;const rowIdx=rows.findIndex(r=>r.label===cat.name);if(rowIdx>=0)rows[rowIdx]={...rows[rowIdx],values:rows[rowIdx].values.map(()=>amount)};});
-        const expIdx=rows.findIndex(r=>r.rowType==='expenses'),salIdx=rows.findIndex(r=>r.rowType==='salary');
-        if(expIdx>=0){const expenseRows=rows.filter(r=>r.rowType==='expense');rows[expIdx]={...rows[expIdx],values:rows[expIdx].values.map((_,ci)=>expenseRows.reduce((s,r)=>s+(r.values[ci]??0),0))};}
-        const balIdx=rows.findIndex(r=>r.rowType==='balance');
-        if(balIdx>=0&&salIdx>=0){let running=0;rows[balIdx]={...rows[balIdx],values:rows[balIdx].values.map((_,ci)=>{const sal=rows[salIdx].values[ci]??0,exp=expIdx>=0?rows[expIdx].values[ci]??0:0;running=running+sal-exp;return running;})};}
-        const newTemplate:SpreadsheetTemplate={id:generateUUID(),name:config.name,periodType:config.periodType,months,periods,rows};
-        setTemplates(prev=>[...prev,newTemplate]);setSelectedId(newTemplate.id);
+
+
+    const handleWizardCreate = async (config: {
+        name: string;
+        periodType: PeriodType;
+        startMonth: string;
+        endMonth: string;
+        income: number;
+        categories: { name: string; color: string }[];
+        allocs: Record<string, number>;
+    }) => {
+        const userId = JSON.parse(sessionStorage.getItem('user') ?? '{}');
+
+        const request: BudgetPlannerRequest = {
+            userId:       userId.id ?? userId.userId,
+            templateType: config.name as any,
+            period:       mapFormatToPeriod(config.periodType),
+            dateRanges:   [{ startDate: config.startMonth + '-01', endDate: config.endMonth + '-01' }],
+        };
+
+        try
+        {
+            const bpTemplate = await BudgetPlannerService.getInstance().createBudgetTemplate(request);
+            const newTemplate = mapBPTemplateToSpreadsheet(bpTemplate);
+            setTemplates(prev => [...prev, newTemplate]);
+            setSelectedId(newTemplate.id);
+        } catch (err) {
+            console.error('Failed to create template:', err);
+
+            // Fallback: build locally if backend fails
+            const start = new Date(config.startMonth + '-01');
+            const end   = new Date(config.endMonth   + '-01');
+            end.setMonth(end.getMonth() + 1);
+            end.setDate(0);
+
+            const { periods, months } = generatePeriods(config.periodType, start, end);
+            const rows = makeBlankRows(periods.length);
+
+            const salaryIdx = rows.findIndex(r => r.label === 'Salary');
+            if (salaryIdx >= 0 && config.income > 0) {
+                rows[salaryIdx] = { ...rows[salaryIdx], values: rows[salaryIdx].values.map(() => config.income) };
+            }
+
+            const newTemplate: SpreadsheetTemplate = {
+                id: generateUUID(), name: config.name,
+                periodType: config.periodType, months, periods, rows,
+            };
+            setTemplates(prev => [...prev, newTemplate]);
+            setSelectedId(newTemplate.id);
+        }
     };
 
     const handleSaveCopy=()=>{

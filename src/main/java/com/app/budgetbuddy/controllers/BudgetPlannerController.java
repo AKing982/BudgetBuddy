@@ -37,14 +37,44 @@ public class BudgetPlannerController
         List<DateRange> dateRanges = request.dateRanges();
         BPTemplateType templateType = request.templateType();
         Period period = request.period();
+        boolean isCustom = request.isCustom();
+        boolean requireCategoryHeaders = request.requireHeaders();
+        List<String> categoryHeaders = request.categoryHeaders();
+        List<CategoryAllocation> categoryAllocations = request.categoryAllocations();
+        BPIncomeCriteria incomeCriteria = request.incomeCriteria();
         try
         {
-            BPTemplate template = bpTemplateRunner.runTemplateBuild(templateType, period, dateRanges, userId);
+            if(isCustom)
+            {
+                BPTemplate template = bpTemplateRunner.runCustomTemplateBuild(templateType, period, requireCategoryHeaders, dateRanges, categoryHeaders, categoryAllocations, incomeCriteria);
+                return ResponseEntity.ok(template);
+            }
+            BPTemplate template = bpTemplateRunner.runTemplateBuild(templateType, period, requireCategoryHeaders, categoryHeaders, dateRanges, incomeCriteria, userId);
             return ResponseEntity.ok(template);
         }catch(DataException ex){
             log.error("Error creating budget template for user {}: {}", userId, ex.getMessage());
             return ResponseEntity.internalServerError().body(null);
         }
+    }
+
+    @GetMapping("/templates/{userId}")
+    public ResponseEntity<List<BPTemplate>> getUserBudgetTemplates(@PathVariable Long userId)
+    {
+        try
+        {
+            List<BPTemplate> templates = bpTemplateRunner.getUserBudgetTemplates(userId);
+            return ResponseEntity.ok(templates);
+        }catch(DataException ex){
+            log.error("Error getting budget templates for user {}: {}", userId, ex.getMessage());
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+    @GetMapping("/template-name/{userId}")
+    public ResponseEntity<BPTemplate> getUserBudgetTemplateByName(@PathVariable Long userId,
+                                                                  @RequestParam String templateName)
+    {
+        return null;
     }
 
     @PutMapping("/{id}/update-template")
@@ -63,8 +93,4 @@ public class BudgetPlannerController
     {
         return null;
     }
-
-
-
-
 }

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -25,9 +26,9 @@ public class MonthlyStandardTemplateBuilder implements BPTemplateBuilderService
     }
 
     @Override
-    public BPTemplate buildInitialTemplate(BPTemplateType templateType, Period period, List<SubBudget> subBudgets)
+    public BPTemplate buildInitialTemplate(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, BPIncomeCriteria incomeCriteria, List<SubBudget> subBudgets)
     {
-        BPTemplateDetail detail = templateDetailBuilderService.buildDetail(templateType, subBudgets);
+        BPTemplateDetail detail = templateDetailBuilderService.buildDetail(templateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets);
         saveTemplateDetail(detail);
         BPTemplate template = new BPTemplate();
         template.setTemplateType(templateType);

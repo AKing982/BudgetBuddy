@@ -10,6 +10,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@Deprecated
 public class BPKpiDetail
 {
     private BPDateRangeAmount totalIncome;        // "$5k" card

@@ -10,14 +10,13 @@ import java.util.*;
 @Setter
 @NoArgsConstructor(access=AccessLevel.PUBLIC)
 @AllArgsConstructor(access=AccessLevel.PUBLIC)
+@Builder
 public class BPTemplateDetail
 {
     private Long id;
     private Long templateId;
-    private BPTemplateType templateType;
-    private BPRollingDetail rollingDetail;
-    private BPKpiDetail bpKpiDetail;
-    private boolean isSaved;
+    private BPLayoutGrid layoutGrid;
+    private BPLayoutType layoutType;
     private LocalDateTime lastUpdated;
     private LocalDateTime createdAt;
 }

@@ -241,19 +241,111 @@ export enum Period {
 }
 
 
-export interface BudgetPlannerRequest {
-    userId: number;
-    dateRanges: DateRange[];
-    templateType: BPTemplateType;
-    period: Period;
+export enum BPType {
+    INCOME  = "INCOME",
+    EXPENSE = "EXPENSE",
+    BALANCE = "BALANCE",
 }
+
+export enum BPLayoutType {
+    CLASSIC = "CLASSIC",
+    VISUAL  = "VISUAL",
+    MIX     = "MIX",
+}
+
+export enum GoalStatus {
+    ON_TRACK  = "ON_TRACK",
+    AT_RISK   = "AT_RISK",
+    EXCEEDED  = "EXCEEDED",
+    MET       = "MET",
+    NOT_STARTED = "NOT_STARTED",
+}
+
+export interface BudgetPlannerRequest {
+    userId:               number;
+    dateRanges:           DateRange[];
+    templateType:         BPTemplateType;
+    period:               Period;
+    isCustom?:            boolean;
+    requireHeaders?:      boolean;
+    categoryHeaders?:     string[];
+    categoryAllocations?: CategoryAllocation[];
+    incomeCriteria?:      BPIncomeCriteria;
+}
+
+export interface CategoryAllocation {
+    category: string;
+    amount:   number;
+}
+
+export interface BPIncomeCriteria {
+    incomeAmount:    number;
+    incomeFrequency: Period;
+    startDate:       string;
+    endDate:         string;
+}
+
+export interface BPGridCell {
+    columnIndex: number;
+    dateRange:   DateRange;
+    actual:      number | null;
+    budgeted:    number | null;
+    isBalance:   boolean;
+    isEditable:  boolean;
+}
+
+export interface BPGridRow {
+    category: string;
+    type:     BPType;
+    cells:    BPGridCell[];
+}
+
+export interface BPColumn {
+    columnIndex: number;
+    dateRange:   DateRange;
+    period:      Period;
+    columnType:  string;
+    isHeader:    boolean;
+}
+
+export interface BPLayoutGrid {
+    columns: BPColumn[];
+    rows:    BPGridRow[];
+}
+
+export interface BPGoalsDetail {
+    id:                    number;
+    bp_template_id:        number;
+    subBudgetGoals_id:     number;
+    bpGoalsName:           string;
+    totalAllocatedAmount:  number;
+    totalSpent:            number;
+    monthGoalAmount:       number;
+    goalType:              string;
+    goalStatus:            GoalStatus;
+    savingsPercent:        number;
+    overBudgetPercentage:  number;
+}
+
+export interface BPTemplateDetail {
+    id:          number;
+    templateId:  number;
+    layoutGrid:  BPLayoutGrid;
+    layoutType:  BPLayoutType;
+    lastUpdated: string;
+    createdAt:   string;
+}
+
 
 // Shape returned by the controller – extend as needed once you know the full model
 export interface BPTemplate {
-    id?: number;
-    userId?: number;
-    templateType?: BPTemplateType;
-    [key: string]: unknown;
+    id:               number;
+    templateType:     BPTemplateType;
+    period:           Period;
+    bpGoalsDetail:    BPGoalsDetail  | null;
+    bpTemplateDetail: BPTemplateDetail | null;
+    active:           boolean;
+    isSaved:          boolean;
 }
 
 // export interface BudgetPeriodCategory {

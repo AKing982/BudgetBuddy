@@ -5,17 +5,17 @@ import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.BPCategoryGroupService;
 import com.app.budgetbuddy.services.BPCategoryService;
 import com.app.budgetbuddy.services.BudgetCategoryService;
+import com.app.budgetbuddy.services.SubBudgetGoalsService;
 import com.app.budgetbuddy.workbench.converter.BPBudgetCategoryConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -98,23 +98,27 @@ public class BPCategoryRowBuilderService
         }
     }
 
-    List<BPCategory> buildBudgetCategoryGroups(Long userId, Long templateDetailId)
+    List<BPCategory> buildBudgetCategoryGroups(Long userId, List<String> categoryHeaders)
     {
-        if(userId == null)
+        if(categoryHeaders == null || categoryHeaders.isEmpty())
         {
             return Collections.emptyList();
         }
         try
         {
-            return categoryGroupService.findCategoryGroupsByTemplateDetailIdAndUserId(templateDetailId, userId).stream()
-                    .map(group -> BPCategory.builder()
-                            .name(group.getGroupName())
-                            .type(BPType.BUDGET)
+            if(userId == null || userId < 0)
+            {
+                throw new DataException("User Id cannot be null");
+            }
+            return categoryHeaders.stream()
+                    .map(header -> BPCategory.builder()
+                            .name(header)
+                            .type(BPType.HEADER)
                             .isGroupHeader(true)
+                            .actual(BigDecimal.ZERO)
+                            .budgeted(BigDecimal.ZERO)
                             .isActive(true)
-                            .actual(BigDecimal.ZERO)      // aggregated by renderer from children
-                            .budgeted(BigDecimal.ZERO)    // aggregated by renderer from children
-                            .lastAmount(BigDecimal.ZERO)
+                            .columnIndex(0)
                             .build())
                     .toList();
         }catch(DataException ex){
@@ -123,36 +127,85 @@ public class BPCategoryRowBuilderService
         }
     }
 
-    List<BPCategory> buildBPIncomes(SubBudget subBudget, List<BPColumn> columns)
+    private Set<LocalDate> calculatePayDates(LocalDate lastPayDate, LocalDate nextPayDate, List<BPColumn> columns)
     {
-        if(columns.isEmpty())
+        long payDayIntervals = ChronoUnit.DAYS.between(lastPayDate, nextPayDate);
+        Set<LocalDate> payDates = new HashSet<>();
+        LocalDate current = lastPayDate;
+        LocalDate lastColumnEnd = columns.get(columns.size() - 1).dateRange().getEndDate();
+        while(!current.isAfter(lastColumnEnd))
+        {
+            payDates.add(current);
+            current = current.plusDays(payDayIntervals);
+        }
+        return payDates;
+    }
+
+    List<BPCategory> buildBPIncomes(SubBudget subBudget, BPIncomeCriteria incomeCriteria, List<BPColumn> columns)
+    {
+        if(subBudget == null && incomeCriteria == null)
+        {
+            throw new DataException("Income and sub budget cannot both be null");
+        }
+        if(subBudget == null || columns == null || columns.isEmpty())
         {
             return Collections.emptyList();
         }
         Long subBudgetId = subBudget.getId();
-        try
-        {
-            return columns.stream()
-                    .map(column -> {
-                        DateRange dateRange = column.dateRange();
-                        LocalDate startDate = dateRange.getStartDate();
-                        LocalDate endDate = dateRange.getEndDate();
-                        BigDecimal totalIncome = budgetCategoryService.getTotalIncomeByDateRange(subBudgetId, startDate, endDate);
-                        return BPCategory.builder()
-                                .name("Salary")
-                                .type(BPType.INCOME)
-                                .range(dateRange)
-                                .actual(totalIncome)
-                                .budgeted(BigDecimal.ZERO)
-                                .isActive(true)
-                                .columnIndex(column.columnIndex())
-                                .build();
-                    })
-                    .toList();
-        }catch(DataException ex){
-            log.error("There was an error building the incomes: ", ex);
-            return Collections.emptyList();
-        }
+        BigDecimal income = incomeCriteria.monthlyIncome();
+        LocalDate lastPayDate = incomeCriteria.lastPayDate();
+        LocalDate nextPayDate = incomeCriteria.nextPayDate();
+        PayPeriod payPeriod = incomeCriteria.payPeriod();
+        Set<LocalDate> payDates = calculatePayDates(lastPayDate, nextPayDate, columns);
+//        try
+//        {
+            if(income != null)
+            {
+                return columns.stream()
+                        .map(column -> {
+                            DateRange dateRange = column.dateRange();
+                            boolean isPayPeriod = payDates.stream()
+                                    .anyMatch(dateRange::containsDate);
+                            BigDecimal payAmount = switch(payPeriod){
+                                case BIWEEKLY, WEEKLY -> income.divide(new BigDecimal(2), 2, RoundingMode.HALF_UP);
+                                case MONTHLY -> income;
+                            };
+                            return BPCategory.builder()
+                                    .name("Salary")
+                                    .type(BPType.INCOME)
+                                    .range(dateRange)
+                                    .actual(isPayPeriod ? payAmount : BigDecimal.ZERO)
+                                    .budgeted(BigDecimal.ZERO)
+                                    .isActive(true)
+                                    .columnIndex(column.columnIndex())
+                                    .build();
+                        })
+                        .toList();
+            }
+            else
+            {
+                return columns.stream()
+                        .map(column -> {
+                            DateRange dateRange = column.dateRange();
+                            LocalDate startDate = dateRange.getStartDate();
+                            LocalDate endDate = dateRange.getEndDate();
+                            BigDecimal totalIncome = budgetCategoryService.getTotalIncomeByDateRange(subBudgetId, startDate, endDate);
+                            return BPCategory.builder()
+                                    .name("Salary")
+                                    .type(BPType.INCOME)
+                                    .range(dateRange)
+                                    .actual(totalIncome)
+                                    .budgeted(BigDecimal.ZERO)
+                                    .isActive(true)
+                                    .columnIndex(column.columnIndex())
+                                    .build();
+                        })
+                        .toList();
+            }
+//        }catch(DataException ex){
+//            log.error("There was an error building the incomes: ", ex);
+//            return Collections.emptyList();
+//        }
     }
 
     List<BPCategory> buildBPExpenses(SubBudget subBudget, List<BPColumn> columns)
@@ -201,13 +254,27 @@ public class BPCategoryRowBuilderService
         }
     }
 
-    public List<BPCategory> buildRowData(SubBudget subBudget, List<BPColumn> columns)
+    public List<BPCategory> buildRowData(SubBudget subBudget, boolean requireCategoryHeaders, List<String> categoryHeaders, BPIncomeCriteria incomeCriteria, List<BPColumn> columns)
     {
         Long userId = subBudget.getBudget().getUserId();
         List<BPCategory> allCategories = new ArrayList<>();
         List<BPCategory> budgetCategories = buildBPBudgetCategories(userId, columns);
-//        List<BPCategory> categoryGroups = buildBudgetCategoryGroups(userId);
-        List<BPCategory> incomes = buildBPIncomes(subBudget, columns);
+        if(requireCategoryHeaders)
+        {
+            List<BPCategory> categoryGroups = buildBudgetCategoryGroups(userId, categoryHeaders);
+            List<BPCategory> incomes = buildBPIncomes(subBudget, incomeCriteria, columns);
+            List<BPCategory> expenses = buildBPExpenses(subBudget, columns);
+            List<BPCategory> accountBalances = buildAccountBalances(columns, incomes, expenses);
+            List<BPCategory> savings = buildBPSavings(subBudget, columns);
+            allCategories.addAll(budgetCategories);
+            allCategories.addAll(incomes);
+            allCategories.addAll(expenses);
+            allCategories.addAll(accountBalances);
+            allCategories.addAll(categoryGroups);
+            allCategories.addAll(savings);
+            return allCategories;
+        }
+        List<BPCategory> incomes = buildBPIncomes(subBudget, incomeCriteria, columns);
         List<BPCategory> expenses = buildBPExpenses(subBudget, columns);
         List<BPCategory> accountBalances = buildAccountBalances(columns, incomes, expenses);
         List<BPCategory> savings = buildBPSavings(subBudget, columns);
@@ -215,7 +282,6 @@ public class BPCategoryRowBuilderService
         allCategories.addAll(incomes);
         allCategories.addAll(expenses);
         allCategories.addAll(accountBalances);
-//        allCategories.addAll(categoryGroups);
         allCategories.addAll(savings);
         return allCategories;
     }
