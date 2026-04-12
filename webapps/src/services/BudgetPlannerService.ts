@@ -57,6 +57,20 @@ class BudgetPlannerService {
         }
     }
 
+    public async createDefaultTemplate(userId: number) : Promise<BPTemplate>
+    {
+        try
+        {
+            console.log("Creating Default Template");
+            const response = await axios.post<BPTemplate>(`${API_BASE_URL}/budget-planner/create-default/${userId}`, {userId});
+            return response.data;
+        }catch(error)
+        {
+            console.error("There was an error creating the default budget template: ", error);
+            throw error;
+        }
+    }
+
     public async updateBudgetTemplateCategoryAmount(updatedAmount: number, startDate: string, endDate: string, userId: number, category: string): Promise<BPTemplate>
     {
         if (!Number.isInteger(userId) || userId < 1)

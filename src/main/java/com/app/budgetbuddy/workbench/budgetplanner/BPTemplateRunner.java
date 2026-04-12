@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -25,7 +26,6 @@ public class BPTemplateRunner
         this.templateService = templateService;
         this.templateBuilder = templateBuilder;
         this.subBudgetService = subBudgetService;
-
     }
 
     public List<BPTemplate> getUserBudgetTemplates(Long userId)
@@ -36,6 +36,20 @@ public class BPTemplateRunner
     public BPTemplate runCustomTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<DateRange> dateRanges, List<String> categoryHeaders, List<CategoryAllocation> categoryAllocations, BPIncomeCriteria incomeCriteria)
     {
         return null;
+    }
+
+    public BPTemplate runDefaultTemplateBuild(Long userId)
+    {
+        DateRange templateDateRange = new DateRange();
+        LocalDate currentDate = LocalDate.now();
+        List<DateRange> monthRanges = templateDateRange.rangesByCurrentDateType(Period.MONTHLY, currentDate);
+        List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByDateRanges(monthRanges, userId);
+        BPTemplate initialTemplate = templateBuilder.buildInitialTemplate(BPTemplateType.MONTHLY_STD, Period.MONTHLY, false, List.of(), null, subBudgets);
+        BPGoalsDetail initialGoals = initialTemplate.getBpGoalsDetail();
+        BPTemplateDetail initialDetail = initialTemplate.getBpTemplateDetail();
+        BPTemplate finalTemplate = templateBuilder.buildTemplate(initialTemplate, initialGoals, initialDetail);
+        saveTemplate(finalTemplate);
+        return finalTemplate;
     }
 
     public BPTemplate runTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, List<DateRange> dateRanges, BPIncomeCriteria incomeCriteria, Long userId)

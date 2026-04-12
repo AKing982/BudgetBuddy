@@ -1088,27 +1088,32 @@ const BudgetPlanner: React.FC = () => {
     useEffect(()=>{setTimeout(()=>setAnimateIn(true),100);},[]);
 
     useEffect(() => {
-        // Always load presets so the page isn't empty
-        // setTemplates([ROLLING_TEMPLATE, NOV_MAY, ROLLING_BALANCE_TEMPLATE,
-        //     ROLLING_PLANNED_ACTUAL_TEMPLATE, FORECAST_CLASSIC_TEMPLATE,
-        //     FORECAST_VISUAL_TEMPLATE]);
-
-        // Then fetch user's saved templates from backend and append them
         const user = JSON.parse(sessionStorage.getItem('user') ?? '{}');
-        const userId = user.id ?? user.userId;
+        const userId: number = user.id ?? user.userId;
         if (!userId) return;
 
-        BudgetPlannerService.getInstance().fetchUserTemplates(userId)
-            .then(bpTemplates => {
-                const mapped = bpTemplates
-                    .map(mapBPTemplateToSpreadsheet)
-                    .filter(t => t.periods.length > 0); // drop empty templates
-                if (mapped.length > 0) {
-                    setTemplates(prev => [...prev, ...mapped]);
-                    setSelectedId(mapped[0].id); // auto-select first backend template
+        BudgetPlannerService.getInstance()
+            .fetchUserTemplates(userId)
+            .then(async (bpTemplates: BPTemplate[]) => {
+                if (bpTemplates.length === 0) {
+                    try {
+                        console.log('Creating default template');
+                        const defaultTemplate = await BudgetPlannerService.getInstance().createDefaultTemplate(userId);
+                        const mapped = mapBPTemplateToSpreadsheet(defaultTemplate);
+                        setTemplates([mapped]);
+                        setSelectedId(mapped.id);
+                    } catch (defaultErr) {
+                        console.error('Failed to create default template:', defaultErr);
+                    }
+                } else {
+                    const mapped = bpTemplates
+                        .map(mapBPTemplateToSpreadsheet)
+                        .filter(t => t.periods.length > 0);
+                    setTemplates(mapped);
+                    if (mapped.length > 0) setSelectedId(mapped[0].id);
                 }
             })
-            .catch(err => console.error('Failed to load user templates:', err));
+            .catch(err => console.error('Failed to fetch user templates:', err));
     }, []);
 
 

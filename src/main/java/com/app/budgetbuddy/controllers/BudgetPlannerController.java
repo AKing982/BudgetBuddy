@@ -26,6 +26,19 @@ public class BudgetPlannerController
         this.bpTemplateRunner = bpTemplateRunner;
     }
 
+    @PostMapping("/create-default/{userId}")
+    public ResponseEntity<BPTemplate> createDefaultBudgetTemplate(@PathVariable Long userId)
+    {
+        try
+        {
+            BPTemplate bpTemplate = bpTemplateRunner.runDefaultTemplateBuild(userId);
+            return ResponseEntity.ok(bpTemplate);
+        }catch(DataException ex){
+            log.error("Error creating default budget template: {}", ex.getMessage());
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
     @PostMapping("/create-template")
     public ResponseEntity<BPTemplate> createBudgetTemplate(@RequestBody BudgetPlannerRequest request)
     {

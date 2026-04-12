@@ -28,6 +28,54 @@ public class DateRange implements Comparable<DateRange>
         this.endDate = endDate;
     }
 
+    public List<DateRange> rangesByCurrentDateType(Period period, LocalDate currentDate)
+    {
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate sixMonthsAgo = currentDate.minusMonths(6);
+        switch(period){
+            case DAILY -> {
+                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoDays();
+            }
+            case WEEKLY -> {
+                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoWeeks();
+            }
+            case BIWEEKLY -> {
+                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoBiWeeks();
+            }
+            case MONTHLY -> {
+                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoMonths();
+            }
+            case BIMONTHLY -> {
+                LocalDate current = sixMonthsAgo;
+                while (!current.isAfter(currentDate)) {
+                    LocalDate rangeEnd = current.plusMonths(2).minusDays(1);
+                    if (rangeEnd.isAfter(currentDate)) rangeEnd = currentDate;
+                    dateRanges.add(new DateRange(current, rangeEnd));
+                    current = rangeEnd.plusDays(1);
+                }
+            }
+            case QUARTERLY -> {
+                LocalDate current = sixMonthsAgo;
+                while (!current.isAfter(currentDate)) {
+                    LocalDate rangeEnd = current.plusMonths(3).minusDays(1);
+                    if (rangeEnd.isAfter(currentDate)) rangeEnd = currentDate;
+                    dateRanges.add(new DateRange(current, rangeEnd));
+                    current = rangeEnd.plusDays(1);
+                }
+            }
+            case SEMIANNUAL -> {
+                // 6 months ago to current date is exactly one semiannual range
+                dateRanges.add(new DateRange(sixMonthsAgo, currentDate));
+            }
+            case ANNUAL -> {
+                // 6 months is less than a year, so this is a single partial range
+                dateRanges.add(new DateRange(sixMonthsAgo, currentDate));
+            }
+            default -> throw new UnsupportedOperationException("Unsupported period: " + period);
+        }
+        return dateRanges;
+    }
+
     public List<DateRange> asSingleRange()
     {
         return List.of(this);
