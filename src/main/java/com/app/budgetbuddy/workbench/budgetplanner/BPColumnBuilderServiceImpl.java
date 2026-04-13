@@ -14,14 +14,14 @@ public class BPColumnBuilderServiceImpl implements BPColumnBuilderService
 {
 
     @Override
-    public List<BPColumn> buildColumns(Period period, List<DateRange> dateRanges)
+    public List<BPColumn> buildColumns(Period period, List<DateRange> dateRanges, int indexOffset)
     {
         if(dateRanges == null)
         {
             return Collections.emptyList();
         }
         return IntStream.range(0, dateRanges.size())
-                .mapToObj(index -> new BPColumn(index, dateRanges.get(index), period, BPColumnType.ACTUAL, false))
+                .mapToObj(index -> new BPColumn(indexOffset + index, dateRanges.get(index), period, BPColumnType.ACTUAL, false))
                 .toList();
     }
 

@@ -7,6 +7,7 @@ import lombok.*;
 @AllArgsConstructor(access = lombok.AccessLevel.PUBLIC)
 @NoArgsConstructor(access = lombok.AccessLevel.PUBLIC)
 @ToString
+@Builder
 public class BPColumn
 {
     private int columnIndex;

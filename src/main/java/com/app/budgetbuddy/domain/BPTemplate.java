@@ -10,6 +10,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor(access=AccessLevel.PUBLIC)
 @Builder
+@ToString
 @AllArgsConstructor(access=AccessLevel.PUBLIC)
 public class BPTemplate
 {

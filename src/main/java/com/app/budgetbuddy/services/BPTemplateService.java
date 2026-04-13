@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface BPTemplateService extends ServiceModel<BPTemplateEntity>
 {
-    BPTemplateEntity saveTemplate(BPTemplate template);
+    BPTemplateEntity saveTemplate(BPTemplate template, Long userId);
 
     List<BPTemplate> getAllUserBudgetTemplates(Long userId);
 

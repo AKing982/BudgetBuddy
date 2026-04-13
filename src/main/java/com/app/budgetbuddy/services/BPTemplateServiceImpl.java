@@ -2,8 +2,10 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BPTemplate;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
+import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPTemplateRepository;
+import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.workbench.converter.BPTemplateEntityToModelConverter;
 import com.app.budgetbuddy.workbench.converter.BPTemplateToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
@@ -21,15 +23,18 @@ import java.util.Optional;
 public class BPTemplateServiceImpl implements BPTemplateService
 {
     private final BPTemplateRepository repository;
+    private final UserRepository userRepository;
     private final BPTemplateToEntityConverter converter;
     private final BPTemplateEntityToModelConverter entityToModelConverter;
 
     @Autowired
     public BPTemplateServiceImpl(BPTemplateRepository repository,
+                                 UserRepository userRepository,
                                  BPTemplateToEntityConverter converter,
                                  BPTemplateEntityToModelConverter entityToModelConverter)
     {
         this.repository = repository;
+        this.userRepository = userRepository;
         this.converter = converter;
         this.entityToModelConverter = entityToModelConverter;
     }
@@ -81,11 +86,13 @@ public class BPTemplateServiceImpl implements BPTemplateService
 
     @Override
     @Transactional
-    public BPTemplateEntity saveTemplate(BPTemplate template)
+    public BPTemplateEntity saveTemplate(BPTemplate template, Long userId)
     {
+        UserEntity user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         try
         {
             BPTemplateEntity entity = converter.convert(template);
+            entity.setUser(user);
             return repository.save(entity);
         }catch(DataAccessException e){
             log.error("There was an error saving the budget template", e);

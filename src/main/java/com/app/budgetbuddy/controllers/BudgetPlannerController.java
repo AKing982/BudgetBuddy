@@ -76,6 +76,7 @@ public class BudgetPlannerController
         try
         {
             List<BPTemplate> templates = bpTemplateRunner.getUserBudgetTemplates(userId);
+            log.info("Budget templates: {}", templates);
             return ResponseEntity.ok(templates);
         }catch(DataException ex){
             log.error("Error getting budget templates for user {}: {}", userId, ex.getMessage());

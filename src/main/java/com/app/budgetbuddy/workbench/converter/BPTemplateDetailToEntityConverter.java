@@ -14,6 +14,7 @@ public class BPTemplateDetailToEntityConverter implements Converter<BPTemplateDe
         if(detail == null) return null;
         return BPTemplateDetailEntity.builder()
                 .layoutType(detail.getLayoutType())
+                .id(detail.getId())
                 .createdAt(detail.getCreatedAt())
                 .lastUpdated(detail.getLastUpdated())
                 .build();

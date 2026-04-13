@@ -30,7 +30,7 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id")
     List<BudgetCategoryEntity> findByBudgetId(@Param("id") Long budgetId);
 
-    @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.startDate >=:start AND u.endDate <=:end AND u.subBudget.budget.user.id =:userId")
+    @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.startDate >=:start AND u.endDate <=:end AND u.subBudget.budget.user.id =:userId AND u.categoryName NOT IN ('Income', 'Deposit', 'Uncategorized')")
     List<BudgetCategoryEntity> findByDateRangeAndUserId(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
 
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id AND u.categoryName =:category AND u.startDate >=:start AND u.endDate <=:endDate")

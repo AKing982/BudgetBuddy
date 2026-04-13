@@ -50,11 +50,12 @@ public class BPLayoutBuilderService
     {
         List<BPColumn> allColumns = new ArrayList<>();
         List<BPCategory> allCategories = new ArrayList<>();
+        int columnIndexOffset = 0;
         for(SubBudget subBudget : subBudgets)
         {
             DateRange range = new DateRange(subBudget.getStartDate(), subBudget.getEndDate());
             List<DateRange> ranges = splitter.apply(range);
-            List<BPColumn> columns = columnBuilder.buildColumns(period, ranges);
+            List<BPColumn> columns = columnBuilder.buildColumns(period, ranges, columnIndexOffset);
             List<BPCategory> categories = bpRowDataBuilderService.buildRowData(subBudget, requireCategoryHeaders, categoryHeaders, income, columns);
 
             allColumns.addAll(columns);

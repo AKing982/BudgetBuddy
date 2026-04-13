@@ -1,7 +1,6 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BPColumn;
-import com.app.budgetbuddy.domain.BPTemplateDetail;
 import com.app.budgetbuddy.entities.BPColumnEntity;
 import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
@@ -14,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -87,13 +87,16 @@ public class BPColumnServiceImpl implements BPColumnService
             Long templateDetailId = detail.getId();
             BPTemplateDetailEntity templateDetailEntity = bpTemplateDetailsRepository.findById(templateDetailId)
                             .orElseThrow(() -> new DataAccessException("Template detail not found"));
-
-            columns.forEach(bpColumn -> {
+            for(int i = 0; i < columns.size(); i++)
+            {
+                BPColumn bpColumn = columns.get(i);
                 BPColumnEntity columnEntity = columnToEntityConverter.convert(bpColumn);
                 columnEntity.setBpTemplateDetail(templateDetailEntity);
+                int domainIndex = bpColumn.getColumnIndex() > 0 ? bpColumn.getColumnIndex() : i;
+                columnEntity.setColumnIndex(domainIndex);
                 BPColumnEntity bpColumnEntity = bpColumnRepository.save(columnEntity);
                 columnEntities.add(bpColumnEntity);
-            });
+            }
             return columnEntities;
         }catch(DataAccessException e){
             log.error("There was an error saving the budget columns", e);

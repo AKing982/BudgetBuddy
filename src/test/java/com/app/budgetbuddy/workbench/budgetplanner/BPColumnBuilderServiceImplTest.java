@@ -36,7 +36,7 @@ class BPColumnBuilderServiceImplTest
     void testBuildColumns_whenTemplateTypeIsNull_thenReturnEmptyCollection()
     {
         List<DateRange> dateRanges = List.of(validDateRange);
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, dateRanges);
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, dateRanges, 0);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -45,7 +45,7 @@ class BPColumnBuilderServiceImplTest
     void testBuildColumns_whenPeriodIsNull_thenReturnEmptyCollection()
     {
         List<DateRange> dateRanges = List.of(validDateRange);
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(null, dateRanges);
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(null, dateRanges, 0);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -53,7 +53,7 @@ class BPColumnBuilderServiceImplTest
     @Test
     void testBuildColumns_whenDateRangesIsNull_thenReturnEmptyCollection()
     {
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, null);
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, null, 0);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -61,7 +61,7 @@ class BPColumnBuilderServiceImplTest
     @Test
     void testBuildColumns_whenDateRangesIsEmpty_thenReturnEmptyCollection()
     {
-        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, List.of());
+        List<BPColumn> actual = bpColumnBuilderService.buildColumns(Period.MONTHLY, List.of(), 0);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
@@ -83,7 +83,7 @@ class BPColumnBuilderServiceImplTest
         );
 
         List<BPColumn> actual = bpColumnBuilderService.buildColumns(
-                Period.MONTHLY, dateRanges);
+                Period.MONTHLY, dateRanges, 0);
 
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());

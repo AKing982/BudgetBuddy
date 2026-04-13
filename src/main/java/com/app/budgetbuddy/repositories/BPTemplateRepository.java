@@ -12,7 +12,9 @@ import java.util.Optional;
 @Repository
 public interface BPTemplateRepository extends JpaRepository<BPTemplateEntity, Long>
 {
-    @Query("SELECT bpt FROM BPTemplateEntity bpt WHERE bpt.user.id =:userId")
+    @Query("SELECT bpt FROM BPTemplateEntity bpt " +
+            "LEFT JOIN FETCH bpt.bpTemplateDetail " +
+            "WHERE bpt.user.id = :userId")
     List<BPTemplateEntity> findByUserId(@Param("userId") Long userId);
 
     @Query("SELECT bpt FROM BPTemplateEntity bpt WHERE bpt.user.id =:userId AND bpt.bpTemplateType =:type")

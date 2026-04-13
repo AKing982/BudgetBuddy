@@ -11,6 +11,7 @@ import java.util.*;
 @NoArgsConstructor(access=AccessLevel.PUBLIC)
 @AllArgsConstructor(access=AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class BPTemplateDetail
 {
     private Long id;

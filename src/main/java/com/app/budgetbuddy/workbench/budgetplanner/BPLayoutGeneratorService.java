@@ -9,10 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,7 +71,15 @@ public class BPLayoutGeneratorService
                     return new BPGridRow(name, type, gridCells);
                 })
                 .toList();
-        return new BPLayoutGrid(columns, gridRows);
+
+        Set<String> specialRows = Set.of("Salary", "Expenses", "Balance", "Savings");
+        List<BPGridRow> orderedRows = new ArrayList<>();
+        gridRows.stream().filter(row -> !specialRows.contains(row.category())).forEach(orderedRows::add);
+        gridRows.stream().filter(row -> row.category().equals("Salary")).findFirst().ifPresent(orderedRows::add);
+        gridRows.stream().filter(row -> row.category().equals("Expenses")).findFirst().ifPresent(orderedRows::add);
+        gridRows.stream().filter(row -> row.category().equals("Savings")).findFirst().ifPresent(orderedRows::add);
+        gridRows.stream().filter(row -> row.category().equals("Balance")).findFirst().ifPresent(orderedRows::add);
+        return new BPLayoutGrid(columns, orderedRows);
     }
 
     public void saveLayoutGrid(BPLayoutGrid layoutGrid, BPTemplateDetail detail)

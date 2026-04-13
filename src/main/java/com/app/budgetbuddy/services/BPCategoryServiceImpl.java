@@ -98,18 +98,26 @@ public class BPCategoryServiceImpl implements BPCategoryService
         }
         try
         {
+            Map<String, BPColumnEntity> columnByDateRange = columnEntities.stream()
+                    .collect(Collectors.toMap(
+                            col -> col.getStartDate() + "_" + col.getEndDate(),
+                            col -> col,
+                            (a, b) -> a // keep first if duplicate
+                    ));
+
             // Build a map of columnIndex -> saved entity so we can look up the FK
             List<BPCategoryEntity> savedEntities = new ArrayList<>();
             rows.forEach(row -> row.cells().forEach(cell -> {
-                if(cell.actual() == null) return; // skip empty cells
-                BPColumnEntity columnEntity = columnEntities.stream()
-                        .filter(col -> col.getColumnIndex() == cell.columnIndex()
-                                && col.getStartDate().equals(cell.dateRange().getStartDate())
-                                && col.getEndDate().equals(cell.dateRange().getEndDate()))
-                        .findFirst()
-                        .orElse(null);
+                if (cell.actual() == null && cell.budgeted() == null) return;
 
-                if(columnEntity == null) return;
+                String key = cell.dateRange().getStartDate() + "_" + cell.dateRange().getEndDate();
+                BPColumnEntity columnEntity = columnByDateRange.get(key);
+                if(columnEntity == null)
+                {
+                    log.warn("No column entity found for cell index={} dateRange={}",
+                            cell.columnIndex(), cell.dateRange());
+                    return;
+                }
                 BPCategoryEntity entity = BPCategoryEntity.builder()
                         .bpColumn(columnEntity)
                         .bpTemplateDetail(columnEntity.getBpTemplateDetail())

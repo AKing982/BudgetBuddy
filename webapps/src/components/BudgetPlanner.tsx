@@ -23,6 +23,7 @@ import BudgetOptimizerPanel from './BudgetOptimizerPanel';
 import BudgetTemplateWizard from "./BudgetTemplateWizard";
 import {BPTemplate, BudgetPlannerRequest, Period} from "../config/Types";
 import BudgetPlannerService from "../services/BudgetPlannerService";
+import budgetPlannerService from "../services/BudgetPlannerService";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const MAROON      = '#6b1a1a';
@@ -208,23 +209,57 @@ function derivePeriodSummary(t:SpreadsheetTemplate){
         spendPct:sal[i]?((exp[i]??0)/sal[i]!)*100:0,
     }));
 }
-function filterByPeriod(t:SpreadsheetTemplate,pf:PeriodFilter):SpreadsheetTemplate{
-    if(pf!=='Monthly')return t;
-    const newPeriods=t.months.map(m=>m.name);
-    const newMonths:MonthGroup[]=t.months.map((m,mi)=>({name:m.name,cols:[mi]}));
-    const newRows:SpreadsheetRow[]=t.rows.map(row=>({
+
+function filterByPeriod(t: SpreadsheetTemplate, pf: PeriodFilter): SpreadsheetTemplate {
+    if (pf !== 'Monthly') return t;
+
+    const newPeriods = t.months.map(m => {
+        // Format as "Nov '24" or keep month name — pick your preference
+        return m.name;
+    });
+    const newMonths: MonthGroup[] = t.months.map((m, mi) => ({ name: m.name, cols: [mi] }));
+    // Sum all rows per month group
+    const newRows: SpreadsheetRow[] = t.rows.map(row => ({
         ...row,
-        values:t.months.map(m=>{
-            const sum=m.cols.reduce((a,ci)=>a+(row.values[ci]??0),0);
-            return sum===0&&m.cols.every(ci=>row.values[ci]===null)?null:sum;
+        values: t.months.map(m => {
+            // For Expenses and Balance rows, skip — we'll recalculate below
+            if (row.rowType === 'expenses' || row.rowType === 'balance') {
+                return null; // placeholder, will be overwritten
+            }
+            const sum = m.cols.reduce((a, ci) => a + (row.values[ci] ?? 0), 0);
+            return sum === 0 && m.cols.every(ci => row.values[ci] === null) ? null : sum;
         }),
     }));
-    const expIdx=newRows.findIndex(r=>r.rowType==='expenses');
-    const balIdx=newRows.findIndex(r=>r.rowType==='balance');
-    const salIdx=newRows.findIndex(r=>r.rowType==='salary');
-    if(expIdx>=0){const er=newRows.filter(r=>r.rowType==='expense');newRows[expIdx]={...newRows[expIdx],values:newRows[expIdx].values.map((_,ci)=>er.reduce((s,r)=>s+(r.values[ci]??0),0))};}
-    if(balIdx>=0&&salIdx>=0){let run=0;newRows[balIdx]={...newRows[balIdx],values:newRows[balIdx].values.map((_,ci)=>{const s=newRows[salIdx].values[ci]??0;const e=expIdx>=0?newRows[expIdx].values[ci]??0:0;run=run+s-e;return run;})};}
-    return{...t,periods:newPeriods,months:newMonths,rows:newRows};
+
+    // Recalculate Expenses from expense sub-rows (fresh, not from preset totals)
+    const expIdx = newRows.findIndex(r => r.rowType === 'expenses');
+    const balIdx = newRows.findIndex(r => r.rowType === 'balance');
+    const salIdx = newRows.findIndex(r => r.rowType === 'salary');
+
+    if (expIdx >= 0) {
+        const er = newRows.filter(r => r.rowType === 'expense');
+        newRows[expIdx] = {
+            ...newRows[expIdx],
+            values: newRows[expIdx].values.map((_, ci) =>
+                er.reduce((s, r) => s + (r.values[ci] ?? 0), 0)
+            ),
+        };
+    }
+
+    if (balIdx >= 0 && salIdx >= 0) {
+        let run = 0;
+        newRows[balIdx] = {
+            ...newRows[balIdx],
+            values: newRows[balIdx].values.map((_, ci) => {
+                const s = newRows[salIdx].values[ci] ?? 0;
+                const e = expIdx >= 0 ? newRows[expIdx].values[ci] ?? 0 : 0;
+                run = run + s - e;
+                return run;
+            }),
+        };
+    }
+
+    return { ...t, periods: newPeriods, months: newMonths, rows: newRows };
 }
 
 // ── Shared UI components ──────────────────────────────────────────────────────
@@ -327,8 +362,13 @@ const ClassicSpreadsheet:React.FC<{
                                     <TableRow key={row.label} sx={{'&:hover td':{bgcolor:row.rowType==='expense'?alpha(MAROON,0.025):undefined}}}>
                                         <TableCell sx={{position:'sticky',left:0,zIndex:4,bgcolor:bg,borderRight:`1.5px solid ${alpha(MAROON,0.16)}`,borderTop:isSection?`1.5px solid ${alpha(MAROON,0.15)}`:`1px solid ${alpha('#000',0.04)}`,boxShadow:`2px 0 8px -3px rgba(0,0,0,0.1)`,fontWeight:isSection?600:isSummary?600:400,color:row.rowType==='salary'?MAROON:row.rowType==='balance'?'#0f766e':NAVY,whiteSpace:'nowrap',fontSize:'0.79rem',px:2}}>
                                             <Box sx={{display:'flex',alignItems:'center',gap:0.875}}>
-                                                {row.rowType==='expense'&&CATEGORY_GROUPS[row.label]&&(
-                                                    <Box sx={{width:3,height:13,borderRadius:'1.5px',bgcolor:CAT_COLORS[CATEGORY_GROUPS[row.label]]??SLATE,flexShrink:0}}/>
+                                                {row.rowType==='expense' && (
+                                                    <Box sx={{
+                                                        width:3, height:13, borderRadius:'1.5px', flexShrink:0,
+                                                        bgcolor: CATEGORY_GROUPS[row.label]
+                                                            ? CAT_COLORS[CATEGORY_GROUPS[row.label]]
+                                                            : SLATE
+                                                    }}/>
                                                 )}
                                                 {row.label}
                                             </Box>
@@ -989,6 +1029,25 @@ function mapFormatToPeriod(format: string): Period
     return map[format] ?? Period.MONTHLY;
 }
 
+const parseDateField = (d: any): { month: number; day: number; year: number } | null => {
+    if (!d) return null;
+    if (Array.isArray(d)) {
+        return { year: d[0], month: d[1], day: d[2] };
+    }
+    if (typeof d === 'string') {
+        const parts = d.split('-');
+        if (parts.length < 3) return null;
+        return { year: parseInt(parts[0], 10), month: parseInt(parts[1], 10), day: parseInt(parts[2], 10) };
+    }
+    return null;
+};
+
+// Helper to make a comparison key from either format
+const dateKey = (d: any): string => {
+    const p = parseDateField(d);
+    return p ? `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}` : '';
+};
+
 function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
     const detail     = template.bpTemplateDetail;
     const layoutGrid = detail?.layoutGrid;
@@ -1004,55 +1063,65 @@ function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
         };
     }
 
-    const columns = layoutGrid.columns ?? [];
+    const columns  = layoutGrid.columns ?? [];
     const gridRows = layoutGrid.rows ?? [];
 
-    // Build period label strings from columns (skip header columns)
+    // Only non-header columns are data columns
     const dataCols = columns.filter(c => !c.isHeader);
+    console.log('dataCols sample:', JSON.stringify(dataCols[0], null, 2));
+
+    // Build period labels from date ranges
     const periods: string[] = dataCols.map(c => {
-        const start = c.dateRange?.startDate ?? '';
-        const end   = c.dateRange?.endDate   ?? '';
-        if (!start) return String(c.columnIndex);
-        const s = new Date(start);
-        const e = new Date(end);
-        return `${s.getMonth() + 1}/${s.getDate()}–${e.getMonth() + 1}/${e.getDate()}`;
+        const s = parseDateField(c.dateRange?.startDate);
+        const e = parseDateField(c.dateRange?.endDate);
+        if (!s || !e) return `Period ${c.columnIndex ?? '?'}`;
+        return `${s.month}/${s.day}–${e.month}/${e.day}`;
     });
 
-    // Group columns into months
+    // Group columns into months by year-month of startDate
     const monthMap = new Map<string, number[]>();
+    const monthNames = ['January','February','March','April','May','June',
+        'July','August','September','October','November','December'];
     dataCols.forEach((col, idx) => {
-        const d     = new Date(col.dateRange?.startDate ?? '');
-        const label = isNaN(d.getTime())
-            ? `Period ${idx + 1}`
-            : d.toLocaleString('default', { month: 'long', year: 'numeric' });
+        const s = parseDateField(col.dateRange?.startDate);
+        const label = s ? `${monthNames[s.month - 1]} ${s.year}` : `Period ${idx + 1}`;
         if (!monthMap.has(label)) monthMap.set(label, []);
         monthMap.get(label)!.push(idx);
     });
-    const months: MonthGroup[] = Array.from(monthMap.entries()).map(([name, cols]) => ({ name, cols }));
+    const months: MonthGroup[] = Array.from(monthMap.entries())
+        .map(([name, cols]) => ({ name, cols }));
 
-    // Map grid rows → SpreadsheetRows
+    // Map grid rows → SpreadsheetRows, matching cells by dateRange not columnIndex
     const spreadsheetRows: SpreadsheetRow[] = gridRows.map(row => {
         const values: (number | null)[] = dataCols.map(col => {
-            const cell = row.cells?.find(c => c.columnIndex === col.columnIndex);
+            // Match on startDate + endDate — this is reliable since columnIndex
+            // in the API response may not be sequential
+            const cell = row.cells?.find(c => {
+                return dateKey(c.dateRange?.startDate) === dateKey(col.dateRange?.startDate) &&
+                    dateKey(c.dateRange?.endDate)   === dateKey(col.dateRange?.endDate);
+            });
             if (!cell) return null;
-            // prefer actual if present, otherwise budgeted
-            const val = cell.actual ?? cell.budgeted;
-            return val !== null && val !== undefined ? Number(val) : null;
+            // Prefer actual if non-zero, otherwise use budgeted
+            const actual   = cell.actual   != null ? Number(cell.actual)   : null;
+            const budgeted = cell.budgeted != null ? Number(cell.budgeted) : null;
+            if (actual !== null && actual !== 0)   return actual;
+            if (budgeted !== null && budgeted !== 0) return budgeted;
+            return null;
         });
 
         const rowType = resolveRowType(row.type, row.category);
         return { label: row.category, rowType, values };
     });
 
-    // Ensure summary rows exist — add them if the backend didn't include them
+    // Ensure summary rows exist
     const hasSalary   = spreadsheetRows.some(r => r.rowType === 'salary');
     const hasExpenses = spreadsheetRows.some(r => r.rowType === 'expenses');
     const hasBalance  = spreadsheetRows.some(r => r.rowType === 'balance');
     const blank = () => Array(dataCols.length).fill(null) as null[];
 
-    if (!hasSalary)   spreadsheetRows.push({ label: 'Salary',            rowType: 'salary',   values: blank() });
-    if (!hasExpenses) spreadsheetRows.push({ label: 'Expenses',           rowType: 'expenses', values: blank() });
-    if (!hasBalance)  spreadsheetRows.push({ label: 'Remaining Balance',  rowType: 'balance',  values: blank() });
+    if (!hasSalary)   spreadsheetRows.push({ label: 'Salary',           rowType: 'salary',   values: blank() });
+    if (!hasExpenses) spreadsheetRows.push({ label: 'Expenses',          rowType: 'expenses', values: blank() });
+    if (!hasBalance)  spreadsheetRows.push({ label: 'Remaining Balance', rowType: 'balance',  values: blank() });
 
     return {
         id:         String(template.id ?? generateUUID()),
@@ -1060,7 +1129,7 @@ function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
         periodType: mapPeriodToType(template.period),
         months,
         periods,
-        rows:       spreadsheetRows,
+        rows: spreadsheetRows,
     };
 }
 
@@ -1082,12 +1151,14 @@ const BudgetPlanner: React.FC = () => {
     const [currentMonth,setCurrentMonth]=useState(new Date());
     const [periodFilter,setPeriodFilter]=useState<PeriodFilter>('Biweekly');
     const [openWizard,setOpenWizard]=useState(false);
+    const budgetPlannerService = BudgetPlannerService.getInstance();
 
     const monthLabel=currentMonth.toLocaleString('default',{month:'long',year:'numeric'});
 
     useEffect(()=>{setTimeout(()=>setAnimateIn(true),100);},[]);
 
     useEffect(() => {
+        let cancelled = false;
         const loadTemplates = async () => {
             const userId: number = Number(sessionStorage.getItem('userId'));
             if (!userId) return;
@@ -1095,13 +1166,22 @@ const BudgetPlanner: React.FC = () => {
             try
             {
                 console.log('Loading templates');
-                const bpTemplates = await BudgetPlannerService.getInstance().fetchUserTemplates(userId);
-                if (bpTemplates.length === 0) {
-                    console.log('Creating default template');
+                const bpTemplates = await budgetPlannerService.fetchUserTemplates(userId);
+                console.log('Fetched templates:', bpTemplates);
+
+                if(cancelled) return;
+
+                if (!bpTemplates || bpTemplates.length === 0) {
+                    console.log('No templates found, creating default');
                     const defaultTemplate = await BudgetPlannerService.getInstance().createDefaultTemplate(userId);
+                    if(cancelled) return;
                     const mapped = mapBPTemplateToSpreadsheet(defaultTemplate);
                     setTemplates([mapped]);
                     setSelectedId(mapped.id);
+                }else{
+                    const mapped = bpTemplates.map(mapBPTemplateToSpreadsheet);
+                    setTemplates(mapped);
+                    setSelectedId(mapped[0].id);
                 }
             } catch (err) {
                 console.error('Failed to load templates:', err);
@@ -1109,6 +1189,7 @@ const BudgetPlanner: React.FC = () => {
         };
 
         loadTemplates();
+        return () => { cancelled = true; };
     }, []);
 
     const currentTemplate=templates.find(t=>t.id===selectedId)??templates[0];
