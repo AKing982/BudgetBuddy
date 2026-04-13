@@ -54,6 +54,11 @@ public class BPTemplateRunner
         }
     }
 
+    public BPTemplate runUpdateTemplatePeriod(Period period, Long templateId)
+    {
+        return null;
+    }
+
     public BPTemplate runCustomTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<DateRange> dateRanges, List<String> categoryHeaders, List<CategoryAllocation> categoryAllocations, BPIncomeCriteria incomeCriteria)
     {
         return null;

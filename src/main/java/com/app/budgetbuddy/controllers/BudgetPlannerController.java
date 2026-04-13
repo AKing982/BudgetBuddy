@@ -6,6 +6,7 @@ import com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -24,6 +25,20 @@ public class BudgetPlannerController
     public BudgetPlannerController(BPTemplateRunner bpTemplateRunner)
     {
         this.bpTemplateRunner = bpTemplateRunner;
+    }
+
+    @PutMapping("/update-template-period/{templateId}")
+    public ResponseEntity<BPTemplate> updateBudgetTemplatePeriod(@PathVariable Long templateId,
+                                                                 @RequestParam Period period)
+    {
+        try
+        {
+
+        }catch(DataException ex){
+            log.error("Error updating budget template period: {}", ex.getMessage());
+            return ResponseEntity.internalServerError().body(null);
+        }
+        return null;
     }
 
     @PostMapping("/create-default/{userId}")
