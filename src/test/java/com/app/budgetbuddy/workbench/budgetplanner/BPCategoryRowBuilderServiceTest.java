@@ -125,12 +125,12 @@ class BPCategoryRowBuilderServiceTest
         List<BPCategory> expected = List.of(
                 BPCategory.builder()
                         .name("Salary").type(BPType.INCOME)
-                        .range(janColumn.dateRange()).actual(income)
+                        .range(janColumn.getDateRange()).actual(income)
                         .budgeted(BigDecimal.ZERO).isActive(true)
                         .isGroupHeader(false).columnIndex(0).build(),
                 BPCategory.builder()
                         .name("Salary").type(BPType.INCOME)
-                        .range(febColumn.dateRange()).actual(income)
+                        .range(febColumn.getDateRange()).actual(income)
                         .budgeted(BigDecimal.ZERO).isActive(true)
                         .isGroupHeader(false).columnIndex(1).build()
         );
@@ -172,11 +172,11 @@ class BPCategoryRowBuilderServiceTest
         List<BPCategory> expected = List.of(
                 BPCategory.builder()
                         .name("Salary").type(BPType.INCOME)
-                        .range(janColumn.dateRange()).actual(janIncomeFetched)
+                        .range(janColumn.getDateRange()).actual(janIncomeFetched)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(0).build(),
                 BPCategory.builder()
                         .name("Salary").type(BPType.INCOME)
-                        .range(febColumn.dateRange()).actual(febIncomeFetched)
+                        .range(febColumn.getDateRange()).actual(febIncomeFetched)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(1).build()
         );
 
@@ -215,19 +215,19 @@ class BPCategoryRowBuilderServiceTest
         BigDecimal weeklyIncome = monthlyIncome.divide(new BigDecimal(2), 2, RoundingMode.HALF_UP);
         List<BPCategory> expected = List.of(
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(janWeek1.dateRange()).actual(weeklyIncome)
+                        .range(janWeek1.getDateRange()).actual(weeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(0).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(janWeek2.dateRange()).actual(BigDecimal.ZERO)
+                        .range(janWeek2.getDateRange()).actual(BigDecimal.ZERO)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(1).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(janWeek3.dateRange()).actual(weeklyIncome)
+                        .range(janWeek3.getDateRange()).actual(weeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(2).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(janWeek4.dateRange()).actual(BigDecimal.ZERO)
+                        .range(janWeek4.getDateRange()).actual(BigDecimal.ZERO)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(3).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(janWeek5.dateRange()).actual(BigDecimal.ZERO)
+                        .range(janWeek5.getDateRange()).actual(BigDecimal.ZERO)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(4).build()
         );
 
@@ -266,16 +266,16 @@ class BPCategoryRowBuilderServiceTest
 
         List<BPCategory> expected = List.of(
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek1.dateRange()).actual(biWeeklyIncome)
+                        .range(biWeek1.getDateRange()).actual(biWeeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(0).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek2.dateRange()).actual(biWeeklyIncome)
+                        .range(biWeek2.getDateRange()).actual(biWeeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(1).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek3.dateRange()).actual(BigDecimal.ZERO)
+                        .range(biWeek3.getDateRange()).actual(BigDecimal.ZERO)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(2).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek4.dateRange()).actual(BigDecimal.ZERO)
+                        .range(biWeek4.getDateRange()).actual(BigDecimal.ZERO)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(3).build()
         );
 
@@ -321,16 +321,16 @@ class BPCategoryRowBuilderServiceTest
 
         List<BPCategory> expected = List.of(
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek1.dateRange()).actual(biWeeklyIncome)
+                        .range(biWeek1.getDateRange()).actual(biWeeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(0).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek2.dateRange()).actual(biWeeklyIncome)
+                        .range(biWeek2.getDateRange()).actual(biWeeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(1).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek3.dateRange()).actual(biWeeklyIncome)
+                        .range(biWeek3.getDateRange()).actual(biWeeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(2).build(),
                 BPCategory.builder().name("Salary").type(BPType.INCOME)
-                        .range(biWeek4.dateRange()).actual(biWeeklyIncome)
+                        .range(biWeek4.getDateRange()).actual(biWeeklyIncome)
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(3).build()
         );
 

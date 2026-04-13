@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name="bp_budget_categories")
+@Table(name="bp_categories")
 @Getter
 @Setter
 @Builder
@@ -27,9 +27,12 @@ public class BPCategoryEntity
     @JoinColumn(name="bp_column_id", nullable = false)
     private BPColumnEntity bpColumn;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="budget_category_id")
-    private BudgetCategoryEntity budgetCategory;
+    @Column(name="category",  nullable = false)
+    private String category;
+
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name="budget_category_id")
+//    private BudgetCategoryEntity budgetCategory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="bp_category_group_id")

@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -11,6 +8,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor( access = lombok.AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class BPCategory
 {
     private String name;

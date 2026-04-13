@@ -14,14 +14,11 @@ import java.util.List;
 @Service
 public class MonthlyStandardTemplateBuilder implements BPTemplateBuilderService
 {
-    private final BPTemplateDetailsService templateService;
     private final BPTemplateDetailBuilderService templateDetailBuilderService;
 
     @Autowired
-    public MonthlyStandardTemplateBuilder(BPTemplateDetailsService bpTemplateDetailsService,
-                                          BPTemplateDetailBuilderService templateDetailBuilderService)
+    public MonthlyStandardTemplateBuilder(BPTemplateDetailBuilderService templateDetailBuilderService)
     {
-        this.templateService = bpTemplateDetailsService;
         this.templateDetailBuilderService = templateDetailBuilderService;
     }
 
@@ -29,7 +26,6 @@ public class MonthlyStandardTemplateBuilder implements BPTemplateBuilderService
     public BPTemplate buildInitialTemplate(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, BPIncomeCriteria incomeCriteria, List<SubBudget> subBudgets)
     {
         BPTemplateDetail detail = templateDetailBuilderService.buildDetail(templateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets);
-        saveTemplateDetail(detail);
         BPTemplate template = new BPTemplate();
         template.setTemplateType(templateType);
         template.setPeriod(period);
@@ -37,11 +33,6 @@ public class MonthlyStandardTemplateBuilder implements BPTemplateBuilderService
         template.setActive(true);
         template.setSaved(false);
         return template;
-    }
-
-    private void saveTemplateDetail(BPTemplateDetail detail)
-    {
-        templateService.saveModel(detail);
     }
 
     @Override

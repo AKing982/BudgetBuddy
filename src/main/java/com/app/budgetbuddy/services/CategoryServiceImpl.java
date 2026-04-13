@@ -1,5 +1,8 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.BPGridRow;
+import com.app.budgetbuddy.entities.BPCategoryEntity;
+import com.app.budgetbuddy.entities.BPColumnEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.CategoryRepository;

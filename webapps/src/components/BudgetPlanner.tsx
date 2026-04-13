@@ -1088,34 +1088,28 @@ const BudgetPlanner: React.FC = () => {
     useEffect(()=>{setTimeout(()=>setAnimateIn(true),100);},[]);
 
     useEffect(() => {
-        const user = JSON.parse(sessionStorage.getItem('user') ?? '{}');
-        const userId: number = user.id ?? user.userId;
-        if (!userId) return;
+        const loadTemplates = async () => {
+            const userId: number = Number(sessionStorage.getItem('userId'));
+            if (!userId) return;
 
-        BudgetPlannerService.getInstance()
-            .fetchUserTemplates(userId)
-            .then(async (bpTemplates: BPTemplate[]) => {
+            try
+            {
+                console.log('Loading templates');
+                const bpTemplates = await BudgetPlannerService.getInstance().fetchUserTemplates(userId);
                 if (bpTemplates.length === 0) {
-                    try {
-                        console.log('Creating default template');
-                        const defaultTemplate = await BudgetPlannerService.getInstance().createDefaultTemplate(userId);
-                        const mapped = mapBPTemplateToSpreadsheet(defaultTemplate);
-                        setTemplates([mapped]);
-                        setSelectedId(mapped.id);
-                    } catch (defaultErr) {
-                        console.error('Failed to create default template:', defaultErr);
-                    }
-                } else {
-                    const mapped = bpTemplates
-                        .map(mapBPTemplateToSpreadsheet)
-                        .filter(t => t.periods.length > 0);
-                    setTemplates(mapped);
-                    if (mapped.length > 0) setSelectedId(mapped[0].id);
+                    console.log('Creating default template');
+                    const defaultTemplate = await BudgetPlannerService.getInstance().createDefaultTemplate(userId);
+                    const mapped = mapBPTemplateToSpreadsheet(defaultTemplate);
+                    setTemplates([mapped]);
+                    setSelectedId(mapped.id);
                 }
-            })
-            .catch(err => console.error('Failed to fetch user templates:', err));
-    }, []);
+            } catch (err) {
+                console.error('Failed to load templates:', err);
+            }
+        };
 
+        loadTemplates();
+    }, []);
 
     const currentTemplate=templates.find(t=>t.id===selectedId)??templates[0];
 

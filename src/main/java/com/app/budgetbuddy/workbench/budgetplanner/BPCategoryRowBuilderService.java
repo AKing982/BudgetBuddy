@@ -46,7 +46,7 @@ public class BPCategoryRowBuilderService
         {
             return columns.stream()
                     .flatMap(column -> {
-                        DateRange dateRange = column.dateRange();
+                        DateRange dateRange = column.getDateRange();
                         List<BudgetCategory> budgetCategories = budgetCategoryService
                                 .getBudgetCategoriesByDateRange(dateRange.getStartDate(), dateRange.getEndDate(), userId);
                         return budgetCategories.stream()
@@ -57,7 +57,7 @@ public class BPCategoryRowBuilderService
                                         .actual(BigDecimal.valueOf(bc.getBudgetActual()))
                                         .budgeted(BigDecimal.valueOf(bc.getBudgetedAmount()))
                                         .isActive(true)
-                                        .columnIndex(column.columnIndex())
+                                        .columnIndex(column.getColumnIndex())
                                         .build());
                     })
                     .toList();
@@ -74,15 +74,16 @@ public class BPCategoryRowBuilderService
         {
             return Collections.emptyList();
         }
+        log.info("Columns: {}", columns);
         try
         {
             List<BPAccountBalance> accountBalances = accountBalanceEngine.buildAccountBalances(columns, incomes, expenses);
             return columns.stream()
                     .map(column -> {
-                        DateRange dateRange = column.dateRange();
-                        BPAccountBalance balance = accountBalances.get(column.columnIndex());
+                        DateRange dateRange = column.getDateRange();
+                        BPAccountBalance balance = accountBalances.get(column.getColumnIndex());
                         return BPCategory.builder()
-                                .columnIndex(column.columnIndex())
+                                .columnIndex(column.getColumnIndex())
                                 .actual(balance.getCurrentBalance())
                                 .budgeted(balance.getClosingBalance())
                                 .name("Balance")
@@ -132,7 +133,7 @@ public class BPCategoryRowBuilderService
         long payDayIntervals = ChronoUnit.DAYS.between(lastPayDate, nextPayDate);
         Set<LocalDate> payDates = new HashSet<>();
         LocalDate current = lastPayDate;
-        LocalDate lastColumnEnd = columns.get(columns.size() - 1).dateRange().getEndDate();
+        LocalDate lastColumnEnd = columns.get(columns.size() - 1).getDateRange().getEndDate();
         while(!current.isAfter(lastColumnEnd))
         {
             payDates.add(current);
@@ -152,18 +153,18 @@ public class BPCategoryRowBuilderService
             return Collections.emptyList();
         }
         Long subBudgetId = subBudget.getId();
-        BigDecimal income = incomeCriteria.monthlyIncome();
-        LocalDate lastPayDate = incomeCriteria.lastPayDate();
-        LocalDate nextPayDate = incomeCriteria.nextPayDate();
-        PayPeriod payPeriod = incomeCriteria.payPeriod();
-        Set<LocalDate> payDates = calculatePayDates(lastPayDate, nextPayDate, columns);
 //        try
 //        {
-            if(income != null)
+            if(incomeCriteria != null)
             {
+                LocalDate lastPayDate = incomeCriteria.lastPayDate();
+                LocalDate nextPayDate = incomeCriteria.nextPayDate();
+                PayPeriod payPeriod = incomeCriteria.payPeriod();
+                BigDecimal income = incomeCriteria.monthlyIncome();
+                Set<LocalDate> payDates = calculatePayDates(lastPayDate, nextPayDate, columns);
                 return columns.stream()
                         .map(column -> {
-                            DateRange dateRange = column.dateRange();
+                            DateRange dateRange = column.getDateRange();
                             boolean isPayPeriod = payDates.stream()
                                     .anyMatch(dateRange::containsDate);
                             BigDecimal payAmount = switch(payPeriod){
@@ -177,7 +178,7 @@ public class BPCategoryRowBuilderService
                                     .actual(isPayPeriod ? payAmount : BigDecimal.ZERO)
                                     .budgeted(BigDecimal.ZERO)
                                     .isActive(true)
-                                    .columnIndex(column.columnIndex())
+                                    .columnIndex(column.getColumnIndex())
                                     .build();
                         })
                         .toList();
@@ -186,10 +187,11 @@ public class BPCategoryRowBuilderService
             {
                 return columns.stream()
                         .map(column -> {
-                            DateRange dateRange = column.dateRange();
+                            DateRange dateRange = column.getDateRange();
                             LocalDate startDate = dateRange.getStartDate();
                             LocalDate endDate = dateRange.getEndDate();
                             BigDecimal totalIncome = budgetCategoryService.getTotalIncomeByDateRange(subBudgetId, startDate, endDate);
+                            log.info("Total income: {}", totalIncome);
                             return BPCategory.builder()
                                     .name("Salary")
                                     .type(BPType.INCOME)
@@ -197,7 +199,7 @@ public class BPCategoryRowBuilderService
                                     .actual(totalIncome)
                                     .budgeted(BigDecimal.ZERO)
                                     .isActive(true)
-                                    .columnIndex(column.columnIndex())
+                                    .columnIndex(column.getColumnIndex())
                                     .build();
                         })
                         .toList();
@@ -218,7 +220,7 @@ public class BPCategoryRowBuilderService
         {
             return columns.stream()
                     .map(column -> {
-                        DateRange dateRange = column.dateRange();
+                        DateRange dateRange = column.getDateRange();
                         LocalDate startDate = dateRange.getStartDate();
                         LocalDate endDate = dateRange.getEndDate();
                         BigDecimal totalExpenses = budgetCategoryService.getTotalExpensesByDateRange(subBudget.getId(), startDate, endDate);
@@ -229,7 +231,7 @@ public class BPCategoryRowBuilderService
                                 .actual(totalExpenses)
                                 .budgeted(BigDecimal.ZERO)
                                 .isActive(true)
-                                .columnIndex(column.columnIndex())
+                                .columnIndex(column.getColumnIndex())
                                 .build();
                     })
                     .toList();
@@ -275,7 +277,9 @@ public class BPCategoryRowBuilderService
             return allCategories;
         }
         List<BPCategory> incomes = buildBPIncomes(subBudget, incomeCriteria, columns);
+        log.info("Incomes: {}", incomes);
         List<BPCategory> expenses = buildBPExpenses(subBudget, columns);
+        log.info("Expenses: {}", expenses);
         List<BPCategory> accountBalances = buildAccountBalances(columns, incomes, expenses);
         List<BPCategory> savings = buildBPSavings(subBudget, columns);
         allCategories.addAll(budgetCategories);

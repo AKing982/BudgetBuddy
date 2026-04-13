@@ -89,10 +89,10 @@ class BPColumnBuilderServiceImplTest
         assertEquals(expected.size(), actual.size());
         for (int i = 0; i < expected.size(); i++)
         {
-            assertEquals(expected.get(i).columnIndex(), actual.get(i).columnIndex());
-            assertEquals(expected.get(i).dateRange(),   actual.get(i).dateRange());
-            assertEquals(expected.get(i).period(),      actual.get(i).period());
-            assertEquals(expected.get(i).columnType(),  actual.get(i).columnType());
+            assertEquals(expected.get(i).getColumnIndex(), actual.get(i).getColumnIndex());
+            assertEquals(expected.get(i).getDateRange(),   actual.get(i).getDateRange());
+            assertEquals(expected.get(i).getPeriod(),      actual.get(i).getPeriod());
+            assertEquals(expected.get(i).getColumnType(),  actual.get(i).getColumnType());
             assertEquals(expected.get(i).isHeader(),    actual.get(i).isHeader());
         }
     }
@@ -112,11 +112,11 @@ class BPColumnBuilderServiceImplTest
         BPColumn actual = bpColumnBuilderService.buildHeaderColumn(0, Period.MONTHLY, validDateRange);
 
         assertNotNull(actual);
-        assertEquals(expected.columnIndex(), actual.columnIndex());
-        assertEquals(expected.dateRange(),   actual.dateRange());
-        assertEquals(expected.period(),      actual.period());
+        assertEquals(expected.getColumnIndex(), actual.getColumnIndex());
+        assertEquals(expected.getDateRange(),  actual.getDateRange());
+        assertEquals(expected.getPeriod(),      actual.getPeriod());
         assertTrue(actual.isHeader());
-        assertNull(actual.columnType());
+        assertNull(actual.getColumnType());
     }
 
     @Test
@@ -141,10 +141,10 @@ class BPColumnBuilderServiceImplTest
         BPColumn actual = bpColumnBuilderService.buildSubColumn(1, Period.MONTHLY, validDateRange, BPColumnType.ACTUAL);
 
         assertNotNull(actual);
-        assertEquals(expected.columnIndex(), actual.columnIndex());
-        assertEquals(expected.dateRange(),   actual.dateRange());
-        assertEquals(expected.period(),      actual.period());
-        assertEquals(expected.columnType(),  actual.columnType());
+        assertEquals(expected.getColumnIndex(), actual.getColumnIndex());
+        assertEquals(expected.getDateRange(),   actual.getDateRange());
+        assertEquals(expected.getPeriod(),      actual.getPeriod());
+        assertEquals(expected.getColumnType(),  actual.getColumnType());
         assertFalse(actual.isHeader());
     }
 
@@ -156,8 +156,8 @@ class BPColumnBuilderServiceImplTest
         BPColumn actual = bpColumnBuilderService.buildSubColumn(1, Period.MONTHLY, validDateRange, BPColumnType.ESTIMATED);
 
         assertNotNull(actual);
-        assertEquals(expected.columnIndex(), actual.columnIndex());
-        assertEquals(expected.columnType(),  actual.columnType());
+        assertEquals(expected.getColumnIndex(), actual.getColumnIndex());
+        assertEquals(expected.getColumnType(),  actual.getColumnType());
         assertFalse(actual.isHeader());
     }
 

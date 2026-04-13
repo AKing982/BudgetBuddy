@@ -2,8 +2,11 @@ package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BPTemplateDetail;
 import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
+import com.app.budgetbuddy.entities.BPTemplateEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPTemplateDetailsRepository;
+import com.app.budgetbuddy.workbench.converter.BPTemplateDetailEntityToModelConverter;
+import com.app.budgetbuddy.workbench.converter.BPTemplateDetailToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,11 +21,17 @@ import java.util.Optional;
 public class BPTemplateDetailsServiceImpl implements BPTemplateDetailsService
 {
     private final BPTemplateDetailsRepository bpTemplateDetailsRepository;
+    private final BPTemplateDetailToEntityConverter bpTemplateDetailToEntityConverter;
+    private final BPTemplateDetailEntityToModelConverter bpTemplateDetailEntityToModelConverter;
 
     @Autowired
-    public BPTemplateDetailsServiceImpl(BPTemplateDetailsRepository bpTemplateDetailsRepository)
+    public BPTemplateDetailsServiceImpl(BPTemplateDetailsRepository bpTemplateDetailsRepository,
+                                        BPTemplateDetailToEntityConverter bpTemplateDetailToEntityConverter,
+                                        BPTemplateDetailEntityToModelConverter bpTemplateDetailEntityToModelConverter)
     {
         this.bpTemplateDetailsRepository = bpTemplateDetailsRepository;
+        this.bpTemplateDetailToEntityConverter = bpTemplateDetailToEntityConverter;
+        this.bpTemplateDetailEntityToModelConverter = bpTemplateDetailEntityToModelConverter;
     }
 
     @Override
@@ -92,14 +101,17 @@ public class BPTemplateDetailsServiceImpl implements BPTemplateDetailsService
 
     @Override
     @Transactional
-    public void saveModel(BPTemplateDetail detail)
+    public BPTemplateDetailEntity saveModel(BPTemplateDetail detail, BPTemplateEntity template)
     {
         try
         {
-
+            BPTemplateDetailEntity entity = bpTemplateDetailToEntityConverter.convert(detail);
+            entity.setBpTemplate(template);
+            return bpTemplateDetailsRepository.save(entity);
         }catch(DataAccessException e){
             log.error("There was an error saving the budget template detail: ", e);
             throw new DataAccessException("There was an error saving the budget template detail", e);
         }
     }
+
 }

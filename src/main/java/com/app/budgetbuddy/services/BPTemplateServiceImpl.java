@@ -81,15 +81,15 @@ public class BPTemplateServiceImpl implements BPTemplateService
 
     @Override
     @Transactional
-    public void saveTemplate(BPTemplate template)
+    public BPTemplateEntity saveTemplate(BPTemplate template)
     {
         try
         {
             BPTemplateEntity entity = converter.convert(template);
-            repository.save(entity);
+            return repository.save(entity);
         }catch(DataAccessException e){
             log.error("There was an error saving the budget template", e);
-            return;
+            return null;
         }
     }
 

@@ -53,14 +53,16 @@ public class BPLayoutGeneratorService
                     String name = entry.getKey();
                     List<BPCategory> cells = entry.getValue();
                     // fill missing columns with empty cells
-                    Map<Integer, BPCategory> cellByIndex = cells.stream()
-                            .collect(Collectors.toMap(BPCategory::getColumnIndex, c -> c));
                     List<BPGridCell> gridCells = columns.stream()
                             .map(col -> {
-                                BPCategory cell = cellByIndex.get(col.columnIndex());
+                                BPCategory cell = cells.stream()
+                                        .filter(c -> c.getColumnIndex() == col.getColumnIndex()
+                                                && c.getRange().equals(col.getDateRange()))
+                                        .findFirst()
+                                        .orElse(null);
                                 return new BPGridCell(
-                                        col.columnIndex(),
-                                        col.dateRange(),
+                                        col.getColumnIndex(),
+                                        col.getDateRange(),
                                         cell != null ? cell.getActual() : null,
                                         cell != null ? cell.getBudgeted() : null,
                                         cell != null && cell.getType() == BPType.BUDGET,
@@ -75,13 +77,13 @@ public class BPLayoutGeneratorService
         return new BPLayoutGrid(columns, gridRows);
     }
 
-    public void saveLayoutGrid(BPLayoutGrid layoutGrid)
+    public void saveLayoutGrid(BPLayoutGrid layoutGrid, BPTemplateDetail detail)
     {
         if(layoutGrid == null)
         {
             throw new DataException("Layout grid cannot be null");
         }
-        bpColumnService.saveColumns(layoutGrid.columns());
+//        bpColumnService.saveColumns(layoutGrid.columns(), detail);
         // 2. save categories — bp_column_id now exists
         List<BPCategory> allCategories = layoutGrid.rows().stream()
                 .flatMap(row -> {
@@ -89,12 +91,12 @@ public class BPLayoutGeneratorService
                             .collect(Collectors.toMap(BPGridCell::columnIndex, c -> c));
                     return layoutGrid.columns().stream()
                             .map(col -> {
-                                BPGridCell cell = cellByIndex.get(col.columnIndex());
+                                BPGridCell cell = cellByIndex.get(col.getColumnIndex());
                                 return BPCategory.builder()
                                         .name(row.category())
                                         .type(row.type())
-                                        .columnIndex(col.columnIndex())
-                                        .range(col.dateRange())
+                                        .columnIndex(col.getColumnIndex())
+                                        .range(col.getDateRange())
                                         .actual(cell != null ? cell.actual() : null)
                                         .budgeted(cell != null ? cell.budgeted() : null)
                                         .isActive(true)
@@ -103,7 +105,7 @@ public class BPLayoutGeneratorService
                 })
                 .filter(c -> c.getActual() != null)  // skip empty cells
                 .toList();
-        bpcategoryService.saveCategories(allCategories);
+//        bpcategoryService.saveCategories(allCategories);
     }
 }
 

@@ -1,6 +1,8 @@
 package com.app.budgetbuddy.workbench.budgetplanner;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
+import com.app.budgetbuddy.entities.BPTemplateEntity;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.BPTemplateDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,25 +34,26 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
     public BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria , boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets)
     {
         BPLayoutGrid layout = layoutGeneratorService.generateLayoutGrid(bpTemplateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets);
-        saveGridLayout(layout);
         BPTemplateDetail detail = new BPTemplateDetail();
         detail.setLayoutGrid(layout);
-
+        detail.setLayoutType(BPLayoutType.CLASSIC);
+//        BPTemplateDetail savedDetail = saveDetail(detail);
+//        saveGridLayout(layout, detail);
         return detail;
     }
 
-    private void saveGridLayout(BPLayoutGrid layout)
+    private void saveGridLayout(BPLayoutGrid layout, BPTemplateDetail detail)
     {
-        layoutGeneratorService.saveLayoutGrid(layout);
+        layoutGeneratorService.saveLayoutGrid(layout, detail);
     }
 
     @Override
-    public void saveDetail(BPTemplateDetail detail)
+    public BPTemplateDetailEntity saveDetail(BPTemplateDetail detail, BPTemplateEntity template)
     {
         if(detail == null)
         {
             throw new DataException("Detail cannot be null");
         }
-        bpTemplateDetailsService.saveModel(detail);
+        return bpTemplateDetailsService.saveModel(detail, template);
     }
 }

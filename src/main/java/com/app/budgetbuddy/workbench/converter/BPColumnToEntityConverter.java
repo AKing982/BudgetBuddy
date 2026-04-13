@@ -15,12 +15,12 @@ public class BPColumnToEntityConverter implements Converter<BPColumn, BPColumnEn
             return null;
         }
         BPColumnEntity entity = new BPColumnEntity();
-        entity.setColumnType(bpColumn.columnType());
-        entity.setColumnIndex(bpColumn.columnIndex());
-        entity.setPeriod(bpColumn.period());
+        entity.setColumnType(bpColumn.getColumnType());
+        entity.setColumnIndex(bpColumn.getColumnIndex());
+        entity.setPeriod(bpColumn.getPeriod());
         entity.setHeader(bpColumn.isHeader());
-        entity.setStartDate(bpColumn.dateRange().getStartDate());
-        entity.setEndDate(bpColumn.dateRange().getEndDate());
+        entity.setStartDate(bpColumn.getDateRange().getStartDate());
+        entity.setEndDate(bpColumn.getDateRange().getEndDate());
         entity.setBpTemplateDetail(null);
         return entity;
     }

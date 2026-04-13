@@ -15,7 +15,6 @@ public class BPGoalsDetailEntityToModelConverter implements Converter<BPGoalsDet
         return BPGoalsDetail.builder()
                 .id(entity.getId())
                 .bp_template_id(entity.getBpTemplate() != null ? entity.getBpTemplate().getId() : null)
-                .subBudgetGoals_id(entity.getSubBudgetGoalsEntity() != null ? entity.getSubBudgetGoalsEntity().getId() : null)
                 .totalAllocatedAmount(entity.getTotalPlanned())
                 .totalSpent(entity.getTotalSpent())
                 .monthGoalAmount(entity.getGoalAmount())

@@ -34,7 +34,7 @@ public class BPTemplateEntity
     @OneToOne(mappedBy="bpTemplate", cascade=CascadeType.ALL)
     private BPGoalsDetailEntity bpGoalsDetail;
 
-    @Column(name="bp-template-type")
+    @Column(name="bp_template_type")
     @Enumerated(EnumType.STRING)
     private BPTemplateType bpTemplateType;
 
@@ -42,7 +42,7 @@ public class BPTemplateEntity
     @Enumerated(EnumType.STRING)
     private Period period;
 
-    @Column(name="isActive")
+    @Column(name="active")
     private boolean active;
 
     @Column(name="is_custom_template")

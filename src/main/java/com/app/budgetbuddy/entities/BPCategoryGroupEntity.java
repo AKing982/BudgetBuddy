@@ -32,4 +32,5 @@ public class BPCategoryGroupEntity
     @Column(name="sort_order", nullable = false)
     private int sortOrder;
 
+
 }

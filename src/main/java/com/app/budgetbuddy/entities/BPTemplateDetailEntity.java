@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.entities;
 
 import com.app.budgetbuddy.domain.BPLayoutType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jetbrains.annotations.NotNull;
@@ -26,8 +27,9 @@ public class BPTemplateDetailEntity
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="id")
+    @JoinColumn(name="bp_template_id")
     private BPTemplateEntity bpTemplate;
 
     @Column(name="layout_type")

@@ -23,10 +23,6 @@ public class BPGoalsDetailEntity
     @JoinColumn(name="bp_template_id")
     private BPTemplateEntity bpTemplate;
 
-    @OneToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="goal_id")
-    private SubBudgetGoalsEntity subBudgetGoalsEntity;
-
     @Column(name="goal_amount")
     private BigDecimal goalAmount;
 

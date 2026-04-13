@@ -1,32 +1,35 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BPColumn;
+import com.app.budgetbuddy.domain.BPTemplateDetail;
 import com.app.budgetbuddy.entities.BPColumnEntity;
+import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPColumnRepository;
+import com.app.budgetbuddy.repositories.BPTemplateDetailsRepository;
 import com.app.budgetbuddy.workbench.converter.BPColumnToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
 public class BPColumnServiceImpl implements BPColumnService
 {
     private final BPColumnRepository bpColumnRepository;
+    private final BPTemplateDetailsRepository bpTemplateDetailsRepository;
     private final BPColumnToEntityConverter columnToEntityConverter;
 
     @Autowired
     public BPColumnServiceImpl(BPColumnRepository bpColumnRepository,
+                               BPTemplateDetailsRepository bpTemplateDetailsRepository,
                                BPColumnToEntityConverter columnToEntityConverter)
     {
         this.bpColumnRepository = bpColumnRepository;
+        this.bpTemplateDetailsRepository = bpTemplateDetailsRepository;
         this.columnToEntityConverter = columnToEntityConverter;
     }
 
@@ -76,14 +79,22 @@ public class BPColumnServiceImpl implements BPColumnService
 
     @Override
     @Transactional
-    public void saveColumns(List<BPColumn> columns)
+    public List<BPColumnEntity> saveColumns(List<BPColumn> columns, BPTemplateDetailEntity detail)
     {
         try
         {
+            List<BPColumnEntity> columnEntities = new ArrayList<>();
+            Long templateDetailId = detail.getId();
+            BPTemplateDetailEntity templateDetailEntity = bpTemplateDetailsRepository.findById(templateDetailId)
+                            .orElseThrow(() -> new DataAccessException("Template detail not found"));
+
             columns.forEach(bpColumn -> {
                 BPColumnEntity columnEntity = columnToEntityConverter.convert(bpColumn);
-                bpColumnRepository.save(columnEntity);
+                columnEntity.setBpTemplateDetail(templateDetailEntity);
+                BPColumnEntity bpColumnEntity = bpColumnRepository.save(columnEntity);
+                columnEntities.add(bpColumnEntity);
             });
+            return columnEntities;
         }catch(DataAccessException e){
             log.error("There was an error saving the budget columns", e);
             throw new DataAccessException("There was an error saving the budget columns", e);

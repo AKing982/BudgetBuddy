@@ -80,7 +80,7 @@ public class BPTemplateExtractorUtil
     public static DateRange fullRange(List<BPColumn> columns)
     {
         return new DateRange(
-                columns.get(0).dateRange().getStartDate(),
-                columns.get(columns.size() - 1).dateRange().getEndDate());
+                columns.get(0).getDateRange().getStartDate(),
+                columns.get(columns.size() - 1).getDateRange().getEndDate());
     }
 }

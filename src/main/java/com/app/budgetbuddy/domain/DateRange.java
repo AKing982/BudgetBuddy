@@ -31,22 +31,22 @@ public class DateRange implements Comparable<DateRange>
     public List<DateRange> rangesByCurrentDateType(Period period, LocalDate currentDate)
     {
         List<DateRange> dateRanges = new ArrayList<>();
-        LocalDate sixMonthsAgo = currentDate.minusMonths(6);
+        LocalDate fiveMonthsAgo = currentDate.minusMonths(5);
         switch(period){
             case DAILY -> {
-                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoDays();
+                dateRanges = new DateRange(fiveMonthsAgo, currentDate).splitIntoDays();
             }
             case WEEKLY -> {
-                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoWeeks();
+                dateRanges = new DateRange(fiveMonthsAgo, currentDate).splitIntoWeeks();
             }
             case BIWEEKLY -> {
-                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoBiWeeks();
+                dateRanges = new DateRange(fiveMonthsAgo, currentDate).splitIntoBiWeeks();
             }
             case MONTHLY -> {
-                dateRanges = new DateRange(sixMonthsAgo, currentDate).splitIntoMonths();
+                dateRanges = new DateRange(fiveMonthsAgo, currentDate).splitIntoMonths();
             }
             case BIMONTHLY -> {
-                LocalDate current = sixMonthsAgo;
+                LocalDate current = fiveMonthsAgo;
                 while (!current.isAfter(currentDate)) {
                     LocalDate rangeEnd = current.plusMonths(2).minusDays(1);
                     if (rangeEnd.isAfter(currentDate)) rangeEnd = currentDate;
@@ -55,7 +55,7 @@ public class DateRange implements Comparable<DateRange>
                 }
             }
             case QUARTERLY -> {
-                LocalDate current = sixMonthsAgo;
+                LocalDate current = fiveMonthsAgo;
                 while (!current.isAfter(currentDate)) {
                     LocalDate rangeEnd = current.plusMonths(3).minusDays(1);
                     if (rangeEnd.isAfter(currentDate)) rangeEnd = currentDate;
@@ -65,11 +65,11 @@ public class DateRange implements Comparable<DateRange>
             }
             case SEMIANNUAL -> {
                 // 6 months ago to current date is exactly one semiannual range
-                dateRanges.add(new DateRange(sixMonthsAgo, currentDate));
+                dateRanges.add(new DateRange(fiveMonthsAgo, currentDate));
             }
             case ANNUAL -> {
                 // 6 months is less than a year, so this is a single partial range
-                dateRanges.add(new DateRange(sixMonthsAgo, currentDate));
+                dateRanges.add(new DateRange(fiveMonthsAgo, currentDate));
             }
             default -> throw new UnsupportedOperationException("Unsupported period: " + period);
         }

@@ -35,8 +35,8 @@ public class BPAccountBalanceEngine
         BigDecimal runningBalance = BigDecimal.ZERO;
         for(BPColumn column : columns)
         {
-            BigDecimal income = incomes.get(column.columnIndex()).getActual();
-            BigDecimal expense = expenses.get(column.columnIndex()).getActual();
+            BigDecimal income = incomes.get(column.getColumnIndex()).getActual();
+            BigDecimal expense = expenses.get(column.getColumnIndex()).getActual();
             BigDecimal netAmount = income.subtract(expense).setScale(2, RoundingMode.HALF_UP);
             BigDecimal closingBalance;
             if(runningBalance.compareTo(BigDecimal.ZERO) == 0)
@@ -48,8 +48,8 @@ public class BPAccountBalanceEngine
                 closingBalance = runningBalance.add(netAmount).setScale(2, RoundingMode.HALF_UP);
             }
             balances.add(BPAccountBalance.builder()
-                    .dateRange(column.dateRange())
-                    .columnIndex(column.columnIndex())
+                    .dateRange(column.getDateRange())
+                    .columnIndex(column.getColumnIndex())
                     .currentBalance(runningBalance)
                     .closingBalance(closingBalance)
                     .build());
