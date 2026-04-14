@@ -6,7 +6,7 @@ import {
 import { Dashboard, AccountBalance, Search, ShoppingCart } from '@mui/icons-material';
 import {
     Settings, HelpCircle, BellIcon, User, CreditCard,
-    Shield, LogOut, Calculator, Sparkles, BarChartIcon, BarChart2,
+    Shield, LogOut, Calculator, Sparkles, BarChartIcon, BarChart2, Wallet,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarMenu from './SidebarMenu';
@@ -17,6 +17,7 @@ import Tooltip from '@mui/material/Tooltip';
 import UserLogService from '../services/UserLogService';
 import SessionService from '../services/SessionService';
 import {BarChart} from "recharts";
+import BudgetEnvelopesPage from "./BudgetEnvelopesPage";
 
 interface MenuItemType {
     text: string;
@@ -89,6 +90,7 @@ const Sidebar: React.FC = () => {
     const menuItems: MenuItemType[] = [
         { text: 'Dashboard',       icon: <Dashboard sx={{ fontSize: 20 }} />,     path: '/dashboard' },
         { text: 'Budgets',         icon: <AccountBalance sx={{ fontSize: 20 }} />, path: getBudgetPath() },
+        { text: 'Budget Envelopes', icon: <Wallet /> ,path: '/budget-envelopes' },
         { text: 'Spending Tracker', icon: <BarChart2 size={20} />, path: '/spending-tracker' },
         // { text: 'Grocery Tracker', icon: <ShoppingCart sx={{ fontSize: 20 }} />,  path: '/grocery-tracker' },
         { text: 'Transactions',    icon: <Search sx={{ fontSize: 20 }} />,         path: '/transactions' },

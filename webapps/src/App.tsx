@@ -24,6 +24,7 @@ import GroceryTracker from "./components/GroceryTracker";
 import OAuthRedirect from "./components/OAuthRedirect";
 import ProfilePage from "./components/ProfilePage";
 import SpendingPage from "./components/SpendingPage";
+import BudgetEnvelopesPage from "./components/BudgetEnvelopesPage";
 // import BudgetControlPage from "./components/BudgetControlPage";
 // import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
 
@@ -59,6 +60,7 @@ function App() {
                       <Route path="/forgot-password" element={<ForgotPassword />}/>
                       <Route path="/oauth-redirect" element={<OAuthRedirect />}/>
                       <Route path="/budget-planner" element={<BudgetPlanner />}/>
+                      <Route path="/budget-envelopes" element={<BudgetEnvelopesPage />}/>
                       <Route path="/pb-template" element={<PBTemplate />}/>
                       <Route path="/profile" element={<ProfilePage />}/>
                       {/*<Route path="/budget-debt" element={<BudgetDebtPage />}/>*/}

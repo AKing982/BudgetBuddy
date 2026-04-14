@@ -5,6 +5,7 @@ public enum BPTemplateType
     BIWEEKLY_STD("Bi-Weekly Standard Template"),
     MONTHLY_STD("Monthly Standard Template"),
     WEEKLY_STD("Weekly Standard Template"),
+    INCOME_STD("Income Standard Template"),
     TWO_MONTHLY_STD("Two Monthly Standard Template"),
     THREE_MONTHLY_STD("Three Monthly Standard Template"),
     BIWEEKLY_PAYCHECK("Bi-Weekly Paycheck Template"),

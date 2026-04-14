@@ -33,10 +33,10 @@ public class BPLayoutBuilderService
             throw new DataException("Template type and sub budgets cannot be null or empty");
         }
         return switch(templateType) {
-            case MONTHLY_STD  -> buildCombinedLayout(Period.MONTHLY,   subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, DateRange::asSingleRange);
-            case BIWEEKLY_STD -> buildCombinedLayout(Period.BIWEEKLY,  subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, DateRange::splitIntoBiWeeks);
-            case WEEKLY_STD   -> buildCombinedLayout(Period.WEEKLY,    subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, DateRange::splitIntoWeeks);
-            case MONTHLY_PAYCHECK -> buildCombinedLayout(Period.INCOME, subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, DateRange::asSingleRange);
+            case MONTHLY_STD  -> buildCombinedLayout(Period.MONTHLY,   subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, false, DateRange::asSingleRange);
+            case BIWEEKLY_STD -> buildCombinedLayout(Period.BIWEEKLY,  subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, false, DateRange::splitIntoBiWeeks);
+            case WEEKLY_STD   -> buildCombinedLayout(Period.WEEKLY,    subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, false, DateRange::splitIntoWeeks);
+            case INCOME_STD -> buildCombinedLayout(Period.INCOME, subBudgets, incomeCriteria, requireCategoryHeaders, categoryHeaders, true, DateRange::asSingleRange);
             default -> throw new DataException("Invalid template type: " + templateType);
         };
     }
@@ -46,6 +46,7 @@ public class BPLayoutBuilderService
                                          BPIncomeCriteria income,
                                          boolean requireCategoryHeaders,
                                          List<String> categoryHeaders,
+                                         boolean isIncomeTemplate,
                                          Function<DateRange, List<DateRange>> splitter)
     {
         List<BPColumn> allColumns = new ArrayList<>();
@@ -55,6 +56,10 @@ public class BPLayoutBuilderService
         {
             DateRange range = new DateRange(subBudget.getStartDate(), subBudget.getEndDate());
             List<DateRange> ranges = splitter.apply(range);
+            if(isIncomeTemplate)
+            {
+
+            }
             List<BPColumn> columns = columnBuilder.buildColumns(period, ranges, columnIndexOffset);
             List<BPCategory> categories = bpRowDataBuilderService.buildRowData(subBudget, requireCategoryHeaders, categoryHeaders, income, columns);
 
