@@ -47,8 +47,10 @@ public class BPCategoryRowBuilderService
             return columns.stream()
                     .flatMap(column -> {
                         DateRange dateRange = column.getDateRange();
+                        log.info("Date Range: {}", dateRange);
                         List<BudgetCategory> budgetCategories = budgetCategoryService
                                 .getBudgetCategoriesByDateRange(dateRange.getStartDate(), dateRange.getEndDate(), userId);
+                        log.info("Budget Categories: {}", budgetCategories);
                         return budgetCategories.stream()
                                 .map(bc -> BPCategory.builder()
                                         .name(bc.getCategoryName())

@@ -122,6 +122,19 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
     }
 
     @Override
+    @Transactional
+    public List<LocalDate> getIncomePostedDates(Long userId, Long subBudgetId)
+    {
+        try
+        {
+            return transactionCategoryRepository.findIncomePostedDate(userId, subBudgetId);
+        }catch(DataAccessException e){
+            log.error("There was an error while getting the income posted dates", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     public Optional<TransactionCategory> getTransactionCategoryByCsvIdAndCatName(String category, Long csvId)
     {
         try

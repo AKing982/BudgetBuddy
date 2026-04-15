@@ -15,6 +15,7 @@ public interface TransactionCategoryService extends ServiceModel<TransactionCate
     TransactionCategoryEntity convertToEntity(TransactionCategory transactionCategory);
     TransactionCategory convertFromEntity(TransactionCategoryEntity transactionCategoryEntity);
 
+    List<LocalDate> getIncomePostedDates(Long userId, Long subBudgetId);
     Optional<TransactionCategory> getTransactionCategoryByCsvIdAndCatName(String category, Long csvId);
     void updateTransactionCategoriesByCsvIdAndCategory(String category, Long id);
     void updateTransactionCategoriesByIdAndCategory(String category, String id);

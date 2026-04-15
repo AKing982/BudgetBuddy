@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BudgetCategory;
+import com.app.budgetbuddy.domain.BudgetCategorySpending;
 import com.app.budgetbuddy.entities.BudgetCategoryEntity;
 import com.app.budgetbuddy.entities.CategoryEntity;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
@@ -247,15 +248,25 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
         }
         try
         {
-            List<BudgetCategoryEntity> budgetCategoryEntities = budgetCategoryRepository.findByDateRangeAndUserId(startDate, endDate, userId);
-            if(budgetCategoryEntities == null || budgetCategoryEntities.isEmpty())
+            List<BudgetCategorySpending> budgetCategorySpending = budgetCategoryRepository.findSpendingByDateRangeAndUserId(startDate, endDate, userId);
+            if(budgetCategorySpending == null || budgetCategorySpending.isEmpty())
             {
                 return Collections.emptyList();
             }
             else
             {
-                return budgetCategoryEntities.stream()
-                        .map(this::convertEntityToModel)
+                return budgetCategorySpending.stream()
+                        .map(budgetCategorySpending1 -> {
+                            BudgetCategory budgetCategory = new BudgetCategory();
+                            budgetCategory.setIsActive(true);
+                            budgetCategory.setBudgetedAmount(budgetCategorySpending1.totalBudgeted());
+                            budgetCategory.setStartDate(budgetCategorySpending1.startDate());
+                            budgetCategory.setEndDate(budgetCategorySpending1.endDate());
+                            budgetCategory.setCategoryName(budgetCategorySpending1.categoryName());
+                            budgetCategory.setBudgetActual(budgetCategorySpending1.spending());
+                            budgetCategory.setSubBudgetId(budgetCategorySpending1.subBudgetId());
+                            return budgetCategory;
+                        })
                         .distinct()
                         .toList();
             }

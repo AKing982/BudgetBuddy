@@ -46,6 +46,11 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
     @Query("UPDATE TransactionCategoryEntity tce SET tce.status =:status WHERE tce.transaction.id =:id")
     void updateTransactionCategoryStatus(@Param("id") String id, @Param("status") TransactionCategoryStatus status);
 
+    @Query("SELECT t.posted FROM TransactionCategoryEntity tc " +
+            "INNER JOIN tc.transaction t " +
+            "WHERE tc.matchedCategory = 'Income' AND t.account.user.id =:userId AND tc.subBudget.id =:id")
+    List<LocalDate> findIncomePostedDate(@Param("userId") Long userId, @Param("id") Long subBudgetId);
+
     boolean existsByCsvTransactionId(Long csvTransactionId);
 
     @Query("SELECT tce FROM TransactionCategoryEntity tce " +
