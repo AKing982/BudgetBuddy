@@ -3,6 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.BPBudgetCategory;
 import com.app.budgetbuddy.domain.BPCategory;
 import com.app.budgetbuddy.domain.BPGridRow;
+import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.entities.BPCategoryEntity;
 import com.app.budgetbuddy.entities.BPColumnEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -140,6 +142,35 @@ public class BPCategoryServiceImpl implements BPCategoryService
     }
 
     @Override
+    public List<BPCategory> getCategoriesByTemplateDetailId(Long templateDetailId)
+    {
+        if(templateDetailId == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<BPCategoryEntity> entities = bpBudgetCategoryRepository.findByBpTemplateDetailId(templateDetailId);
+            return entities.stream()
+                    .map(bpCategoryEntity -> {
+                        BPCategory bpCategory = new BPCategory();
+                        bpCategory.setBudgetCategoryId(bpCategoryEntity.getId());
+                        bpCategory.setActual(bpCategoryEntity.getActualAmount());
+                        bpCategory.setActive(true);
+                        bpCategory.setRange(new DateRange(bpCategoryEntity.getStartDate(), bpCategoryEntity.getEndDate()));
+                        bpCategory.setName(bpCategoryEntity.getCategory());
+                        bpCategory.setBudgeted(bpCategoryEntity.getBudgetedAmount());
+                        bpCategory.setColumnIndex(bpCategoryEntity.getBpColumn().getColumnIndex());
+                        return bpCategory;
+                    })
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the budget categories", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     @Transactional
     public void saveCategories(List<BPCategory> categories)
     {
@@ -152,6 +183,33 @@ public class BPCategoryServiceImpl implements BPCategoryService
         }catch(DataAccessException e){
             log.error("There was an error saving the budget categories", e);
             throw new DataAccessException("There was an error saving the budget categories", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateCategories(List<BPCategory> categories) {
+        try
+        {
+//            categories.forEach(category -> {
+//                BPCategoryEntity categoryEntity = bpBudgetCategoryToEntityConverter.convert(category);
+//                Long id = categoryEntity.getId();
+//                BigDecimal updatedAmount = categoryEntity.getBudgetedAmount();
+//                log.info("Updating budget category id={} amount={}", id, updatedAmount);
+//                bpBudgetCategoryRepository.updateActualAmount(id, categoryEntity.getActualAmount());
+//            });
+            categories.forEach(category -> {
+                if (category.getRange() == null || category.getName() == null) return;
+                bpBudgetCategoryRepository.updateActualAmountByCategoryAndDateRange(
+                        category.getName(),
+                        category.getRange().getStartDate(),
+                        category.getRange().getEndDate(),
+                        category.getActual()
+                );
+            });
+        }catch(DataAccessException e){
+            log.error("There was an error updating the budget categories", e);
+            return;
         }
     }
 }

@@ -27,17 +27,25 @@ public class BudgetPlannerController
         this.bpTemplateRunner = bpTemplateRunner;
     }
 
-    @PutMapping("/update-template-period/{templateId}")
-    public ResponseEntity<BPTemplate> updateBudgetTemplatePeriod(@PathVariable Long templateId,
-                                                                 @RequestParam Period period)
+    @PutMapping("/update-template-categories/{templateId}")
+    public ResponseEntity<BPTemplate> updateBudgetTemplateCategories(@PathVariable Long templateId,
+                                                                     @RequestParam Long userId)
     {
         try
         {
-
+            BPTemplate updatedTemplate = bpTemplateRunner.updateBPTemplateCategories(templateId, userId);
+            return ResponseEntity.ok(updatedTemplate);
         }catch(DataException ex){
-            log.error("Error updating budget template period: {}", ex.getMessage());
+            log.error("Error updating budget template categories: {}", ex.getMessage());
             return ResponseEntity.internalServerError().body(null);
         }
+    }
+
+    @PutMapping("/update-template-period/{templateId}")
+    public ResponseEntity<BPTemplate> updateBudgetTemplatePeriod(@PathVariable Long templateId,
+                                                                 @RequestParam Long userId,
+                                                                 @RequestParam Period period)
+    {
         return null;
     }
 
@@ -70,6 +78,7 @@ public class BudgetPlannerController
         List<String> categoryHeaders = request.categoryHeaders();
         List<CategoryAllocation> categoryAllocations = request.categoryAllocations();
         BPIncomeCriteria incomeCriteria = request.incomeCriteria();
+        Integer startDay = request.startDay();
         try
         {
             if(isCustom)
@@ -77,7 +86,7 @@ public class BudgetPlannerController
                 BPTemplate template = bpTemplateRunner.runCustomTemplateBuild(templateType, period, requireCategoryHeaders, dateRanges, categoryHeaders, categoryAllocations, incomeCriteria);
                 return ResponseEntity.ok(template);
             }
-            BPTemplate template = bpTemplateRunner.runTemplateBuild(templateType, period, requireCategoryHeaders, categoryHeaders, dateRanges, incomeCriteria, userId);
+            BPTemplate template = bpTemplateRunner.runTemplateBuild(templateType, period, requireCategoryHeaders, categoryHeaders, dateRanges, incomeCriteria, userId, startDay);
             return ResponseEntity.ok(template);
         }catch(DataException ex){
             log.error("Error creating budget template for user {}: {}", userId, ex.getMessage());

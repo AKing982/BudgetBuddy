@@ -30,13 +30,13 @@ public class BPLayoutGeneratorService
         this.bpcategoryService = bpcategoryService;
     }
 
-    public BPLayoutGrid generateLayoutGrid(BPTemplateType templateType, BPIncomeCriteria incomeCriteria, boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgetList)
+    public BPLayoutGrid generateLayoutGrid(BPTemplateType templateType, BPIncomeCriteria incomeCriteria, boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgetList, Integer startDay)
     {
         if(templateType == null || subBudgetList == null || subBudgetList.isEmpty())
         {
             throw new DataException("Template type and sub budgets cannot be null or empty");
         }
-        BPLayout layout = bpLayoutBuilderService.buildLayout(templateType,incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgetList);
+        BPLayout layout = bpLayoutBuilderService.buildLayout(templateType,incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgetList, startDay);
         List<BPColumn> columns = layout.columns();
         List<BPCategory> categories = layout.bpCategories();
         Map<String, List<BPCategory>> categoryRowMap = new LinkedHashMap<>();

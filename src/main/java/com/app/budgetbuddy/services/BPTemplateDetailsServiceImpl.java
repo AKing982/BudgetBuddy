@@ -114,4 +114,22 @@ public class BPTemplateDetailsServiceImpl implements BPTemplateDetailsService
         }
     }
 
+    @Override
+    @Transactional
+    public Optional<BPTemplateDetail> findByTemplateId(Long id)
+    {
+        if(id == null || id < 1)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            BPTemplateDetailEntity entity = bpTemplateDetailsRepository.findByBpTemplateId(id);
+            return Optional.of(bpTemplateDetailEntityToModelConverter.convert(entity));
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the budget template detail: ", e);
+            return Optional.empty();
+        }
+    }
+
 }

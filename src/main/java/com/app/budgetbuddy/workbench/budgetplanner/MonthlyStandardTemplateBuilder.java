@@ -23,9 +23,9 @@ public class MonthlyStandardTemplateBuilder implements BPTemplateBuilderService
     }
 
     @Override
-    public BPTemplate buildInitialTemplate(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, BPIncomeCriteria incomeCriteria, List<SubBudget> subBudgets)
+    public BPTemplate buildInitialTemplate(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, BPIncomeCriteria incomeCriteria, List<SubBudget> subBudgets, Integer startDay)
     {
-        BPTemplateDetail detail = templateDetailBuilderService.buildDetail(templateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets);
+        BPTemplateDetail detail = templateDetailBuilderService.buildDetail(templateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets, startDay);
         BPTemplate template = new BPTemplate();
         template.setTemplateType(templateType);
         template.setPeriod(period);

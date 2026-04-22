@@ -18,6 +18,11 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
 
     List<BudgetCategory> updateBudgetCategories(Map<Long, String> budgetCategoriesToUpdate);
 
+    BigDecimal getTotalCSVIncomesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId);
+    BigDecimal getTotalIncomesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId);
+
+    BigDecimal getTotalCSVExpensesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId);
+    BigDecimal getTotalExpensesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId);
     BigDecimal getTotalExpensesByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate);
     BigDecimal getTotalIncomeByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate);
     BigDecimal getBudgetCategorySpendingByDateRange(String category, LocalDate startDate, LocalDate endDate, Long subBudgetId);
@@ -29,6 +34,8 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
     List<BudgetCategory> getBudgetCategoryListByBudgetIdAndDateRange(Long budgetId, LocalDate startDate, LocalDate endDate);
     List<BudgetCategory> getBudgetCategoriesByDate(Long subBudgetId, LocalDate currentDate, LocalDate startDate, LocalDate endDate);
     List<BudgetCategory> getBudgetCategoriesByDateRange(LocalDate startDate, LocalDate endDate, Long userId);
+
+    List<BudgetCategory> getBudgetCategorySpendingByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId);
 
     Optional<BudgetCategoryEntity> findBudgetCategoryById(Long id);
     List<BudgetCategory> saveAll(List<BudgetCategory> budgetCategories);

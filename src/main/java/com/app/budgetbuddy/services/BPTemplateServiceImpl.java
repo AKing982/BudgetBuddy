@@ -8,6 +8,8 @@ import com.app.budgetbuddy.repositories.BPTemplateRepository;
 import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.workbench.converter.BPTemplateEntityToModelConverter;
 import com.app.budgetbuddy.workbench.converter.BPTemplateToEntityConverter;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,17 +27,22 @@ public class BPTemplateServiceImpl implements BPTemplateService
     private final BPTemplateRepository repository;
     private final UserRepository userRepository;
     private final BPTemplateToEntityConverter converter;
+
+    @PersistenceContext
+    private final EntityManager entityManager;
     private final BPTemplateEntityToModelConverter entityToModelConverter;
 
     @Autowired
     public BPTemplateServiceImpl(BPTemplateRepository repository,
                                  UserRepository userRepository,
                                  BPTemplateToEntityConverter converter,
+                                 EntityManager entityManager,
                                  BPTemplateEntityToModelConverter entityToModelConverter)
     {
         this.repository = repository;
         this.userRepository = userRepository;
         this.converter = converter;
+        this.entityManager = entityManager;
         this.entityToModelConverter = entityToModelConverter;
     }
 
@@ -113,6 +120,22 @@ public class BPTemplateServiceImpl implements BPTemplateService
         }catch(DataAccessException e){
             log.error("There was an error retrieving the user budget templates", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<BPTemplate> getTemplateByUserAndId(Long userId, Long templateId)
+    {
+        try
+        {
+            entityManager.clear();
+            BPTemplateEntity templateEntity = repository.findById(templateId).orElseThrow(() -> new RuntimeException("Template not found"));
+            BPTemplate template = entityToModelConverter.convert(templateEntity);
+            return Optional.of(template);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the user budget templates", e);
+            return Optional.empty();
         }
     }
 

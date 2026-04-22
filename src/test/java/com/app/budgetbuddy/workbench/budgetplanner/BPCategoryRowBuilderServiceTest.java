@@ -70,7 +70,7 @@ class BPCategoryRowBuilderServiceTest
         List<BPColumn> columns = List.of(
                 new BPColumn(0, new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)), Period.MONTHLY, BPColumnType.ACTUAL, false));
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(null, incomeCriteria, columns);
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(null, incomeCriteria, columns, false);
 
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
@@ -83,7 +83,7 @@ class BPCategoryRowBuilderServiceTest
                 new BPColumn(0, new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)), Period.MONTHLY, BPColumnType.ACTUAL, false));
 
         assertThrows(DataException.class,
-                () -> bpCategoryRowBuilderService.buildBPIncomes(null, null, columns));
+                () -> bpCategoryRowBuilderService.buildBPIncomes(null, null, columns, false));
     }
 
     @Test
@@ -92,7 +92,7 @@ class BPCategoryRowBuilderServiceTest
         BPIncomeCriteria incomeCriteria = new BPIncomeCriteria(
                 new BigDecimal("3988"), lastPayDate, nextPayDate, PayPeriod.MONTHLY);
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, null);
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, null, false);
 
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
@@ -105,7 +105,7 @@ class BPCategoryRowBuilderServiceTest
         BPIncomeCriteria incomeCriteria = new BPIncomeCriteria(
                 new BigDecimal("3988"), lastPayDate, nextPayDate, PayPeriod.MONTHLY);
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, Collections.emptyList());
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, Collections.emptyList(), false);
 
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
@@ -135,7 +135,7 @@ class BPCategoryRowBuilderServiceTest
                         .isGroupHeader(false).columnIndex(1).build()
         );
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns);
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns, false);
 
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
@@ -180,7 +180,7 @@ class BPCategoryRowBuilderServiceTest
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(1).build()
         );
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns);
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns, false);
 
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
@@ -231,7 +231,7 @@ class BPCategoryRowBuilderServiceTest
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(4).build()
         );
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns);
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns, false);
 
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
@@ -279,7 +279,7 @@ class BPCategoryRowBuilderServiceTest
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(3).build()
         );
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns);
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns, false);
 
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
@@ -334,7 +334,7 @@ class BPCategoryRowBuilderServiceTest
                         .budgeted(BigDecimal.ZERO).isActive(true).columnIndex(3).build()
         );
 
-        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns);
+        List<BPCategory> actual = bpCategoryRowBuilderService.buildBPIncomes(subBudget, incomeCriteria, columns, false);
 
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());

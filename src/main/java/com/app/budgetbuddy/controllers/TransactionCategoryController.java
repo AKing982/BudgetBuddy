@@ -44,7 +44,7 @@ public class TransactionCategoryController
     {
         try
         {
-            boolean anyUpdated = transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, startDate, endDate);
+            boolean anyUpdated = transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, startDate, endDate);
             if(anyUpdated)
             {
                 BoolStatus updatedStatus = new BoolStatus(true, "Found Updated Transaction Categories");

@@ -17,6 +17,9 @@ public interface BPTemplateRepository extends JpaRepository<BPTemplateEntity, Lo
             "WHERE bpt.user.id = :userId")
     List<BPTemplateEntity> findByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT bpt FROM BPTemplateEntity bpt WHERE bpt.user.id =:userId AND bpt.id =:id")
+    Optional<BPTemplateEntity> findByUserIdAndId(@Param("userId") Long userId, @Param("id") Long id);
+
     @Query("SELECT bpt FROM BPTemplateEntity bpt WHERE bpt.user.id =:userId AND bpt.bpTemplateType =:type")
     Optional<BPTemplateEntity> findByUserIdAndType(@Param("userId") Long userId, @Param("type") String type);
 }

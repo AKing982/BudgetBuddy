@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class BPAccountBalanceEngine
@@ -35,28 +36,29 @@ public class BPAccountBalanceEngine
         BigDecimal runningBalance = BigDecimal.ZERO;
         for(BPColumn column : columns)
         {
-            BigDecimal income = incomes.get(column.getColumnIndex()).getActual();
-            BigDecimal expense = expenses.get(column.getColumnIndex()).getActual();
-            BigDecimal netAmount = income.subtract(expense).setScale(2, RoundingMode.HALF_UP);
-            BigDecimal closingBalance;
-            if(runningBalance.compareTo(BigDecimal.ZERO) == 0)
-            {
-                closingBalance = netAmount;
-            }
-            else
-            {
-                closingBalance = runningBalance.add(netAmount).setScale(2, RoundingMode.HALF_UP);
-            }
+            BigDecimal income = getActualForIndex(incomes, column.getColumnIndex());
+            BigDecimal expense = getActualForIndex(expenses, column.getColumnIndex());
+            BigDecimal net = income.subtract(expense);
+            runningBalance = runningBalance.add(net).setScale(2, RoundingMode.HALF_UP);
+
             balances.add(BPAccountBalance.builder()
                     .dateRange(column.getDateRange())
                     .columnIndex(column.getColumnIndex())
                     .currentBalance(runningBalance)
-                    .closingBalance(closingBalance)
+                    .closingBalance(runningBalance)
                     .build());
-
-            runningBalance = closingBalance;
         }
         return balances;
+    }
+
+    private BigDecimal getActualForIndex(List<BPCategory> categories, int columnIndex)
+    {
+        return categories.stream()
+                .filter(c -> c.getColumnIndex() == columnIndex)
+                .map(BPCategory::getActual)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(BigDecimal.ZERO);
     }
 
 }

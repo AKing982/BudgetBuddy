@@ -12,5 +12,7 @@ public interface BPTemplateService extends ServiceModel<BPTemplateEntity>
 
     List<BPTemplate> getAllUserBudgetTemplates(Long userId);
 
+    Optional<BPTemplate> getTemplateByUserAndId(Long userId, Long templateId);
+
     Optional<BPTemplate> getUserTemplatesByType(Long userId, String templateType);
 }

@@ -31,16 +31,35 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategoryEn
     @Query("SELECT u FROM BudgetCategoryEntity u WHERE u.subBudget.id =:id")
     List<BudgetCategoryEntity> findByBudgetId(@Param("id") Long budgetId);
 
+//    @Query("SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(" +
+//            "u.categoryName, " +
+//            "u.subBudget.id, " +
+//            "SUM(u.actual), " +
+//            "SUM(u.budgetedAmount), " +
+//            "MAX(u.startDate), " +
+//            "MAX(u.endDate)) " +
+//            "FROM BudgetCategoryEntity u " +
+//            "WHERE u.startDate >= :start " +
+//            "AND u.endDate <= :end " +
+//            "AND u.subBudget.budget.user.id = :userId " +
+//            "AND u.categoryName NOT IN ('Income', 'Deposit', 'Uncategorized') " +
+//            "GROUP BY u.categoryName, u.subBudget.id")
+//    List<BudgetCategorySpending> findSpendingByDateRangeAndUserId(
+//            @Param("start") LocalDate start,
+//            @Param("end") LocalDate end,
+//            @Param("userId") Long userId
+//    );
+
     @Query("SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(" +
             "u.categoryName, " +
             "u.subBudget.id, " +
             "SUM(u.actual), " +
             "SUM(u.budgetedAmount), " +
-            "MAX(u.startDate), " +
+            "MIN(u.startDate), " +
             "MAX(u.endDate)) " +
             "FROM BudgetCategoryEntity u " +
-            "WHERE u.startDate >= :start " +
-            "AND u.endDate <= :end " +
+            "WHERE u.startDate <= :end " +
+            "AND u.endDate >= :start " +
             "AND u.subBudget.budget.user.id = :userId " +
             "AND u.categoryName NOT IN ('Income', 'Deposit', 'Uncategorized') " +
             "GROUP BY u.categoryName, u.subBudget.id")

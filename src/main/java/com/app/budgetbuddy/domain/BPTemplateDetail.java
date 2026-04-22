@@ -20,4 +20,5 @@ public class BPTemplateDetail
     private BPLayoutType layoutType;
     private LocalDateTime lastUpdated;
     private LocalDateTime createdAt;
+    private boolean enableSync;
 }

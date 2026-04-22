@@ -31,9 +31,9 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
     }
 
     @Override
-    public BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria , boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets)
+    public BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria , boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets, Integer startDay)
     {
-        BPLayoutGrid layout = layoutGeneratorService.generateLayoutGrid(bpTemplateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets);
+        BPLayoutGrid layout = layoutGeneratorService.generateLayoutGrid(bpTemplateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets, startDay);
         BPTemplateDetail detail = new BPTemplateDetail();
         detail.setLayoutGrid(layout);
         detail.setLayoutType(BPLayoutType.CLASSIC);

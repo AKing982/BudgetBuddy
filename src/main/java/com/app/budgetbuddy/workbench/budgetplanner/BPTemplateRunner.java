@@ -26,6 +26,7 @@ public class BPTemplateRunner
     private final BPTemplateBuilderService templateBuilder;
     private final SubBudgetService subBudgetService;
     private final BPCategoryService categoryService;
+    private final BPTemplateUpdaterService bpTemplateUpdaterService;
 
     @Autowired
     public BPTemplateRunner(BPTemplateService templateService,
@@ -33,7 +34,8 @@ public class BPTemplateRunner
                             BPTemplateDetailsService templateDetailsService,
                             BPTemplateBuilderService templateBuilder,
                             BPCategoryService bpcategoryService,
-                            SubBudgetService subBudgetService)
+                            SubBudgetService subBudgetService,
+                            BPTemplateUpdaterService templateUpdaterService)
     {
         this.templateService = templateService;
         this.bpColumnService = bpColumnService;
@@ -41,6 +43,25 @@ public class BPTemplateRunner
         this.templateBuilder = templateBuilder;
         this.categoryService = bpcategoryService;
         this.subBudgetService = subBudgetService;
+        this.bpTemplateUpdaterService = templateUpdaterService;
+    }
+
+    public BPTemplate updateBPTemplateCategories(Long templateId, Long userId)
+    {
+        Optional<BPTemplateDetail> bpTemplateDetailOptional = templateDetailsService.findByTemplateId(templateId);
+        if(bpTemplateDetailOptional.isEmpty())
+        {
+            throw new DataException("Budget template detail not found");
+        }
+        try
+        {
+            BPTemplateDetail bpTemplateDetail = bpTemplateDetailOptional.get();
+            bpTemplateUpdaterService.updateBPCategories(bpTemplateDetail, userId);
+            return templateService.getTemplateByUserAndId(userId, templateId).get();
+        }catch(DataException e){
+            log.error("Error updating budget template categories: ", e);
+            throw new DataException("Error updating budget template categories");
+        }
     }
 
     public List<BPTemplate> getUserBudgetTemplates(Long userId)
@@ -59,6 +80,11 @@ public class BPTemplateRunner
         return null;
     }
 
+    public BPTemplate runTemplateSyncUpdate(Long templateId)
+    {
+        return null;
+    }
+
     public BPTemplate runCustomTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<DateRange> dateRanges, List<String> categoryHeaders, List<CategoryAllocation> categoryAllocations, BPIncomeCriteria incomeCriteria)
     {
         return null;
@@ -70,7 +96,7 @@ public class BPTemplateRunner
         LocalDate currentDate = LocalDate.now();
         List<DateRange> monthRanges = templateDateRange.rangesByCurrentDateType(Period.MONTHLY, currentDate);
         List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByDateRanges(monthRanges, userId);
-        BPTemplate initialTemplate = templateBuilder.buildInitialTemplate(BPTemplateType.MONTHLY_STD, Period.MONTHLY, false, List.of(), null, subBudgets);
+        BPTemplate initialTemplate = templateBuilder.buildInitialTemplate(BPTemplateType.MONTHLY_STD, Period.MONTHLY, false, List.of(), null, subBudgets, 0);
 
         BPTemplateEntity savedTemplate = templateService.saveTemplate(initialTemplate, userId);
         BPGoalsDetail initialGoals = initialTemplate.getBpGoalsDetail();
@@ -82,7 +108,7 @@ public class BPTemplateRunner
         return templateBuilder.buildTemplate(initialTemplate, initialGoals, initialDetail);
     }
 
-    public BPTemplate runTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, List<DateRange> dateRanges, BPIncomeCriteria incomeCriteria, Long userId)
+    public BPTemplate runTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, List<DateRange> dateRanges, BPIncomeCriteria incomeCriteria, Long userId, Integer startDay)
     {
         if (templateType == null || dateRanges.isEmpty() || userId == null) {
             throw new DataException("Template Type, Date Range, and User Id cannot be null");
@@ -99,7 +125,7 @@ public class BPTemplateRunner
 
         List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByDateRanges(dateRanges, userId);
         BPTemplate initialTemplate = templateBuilder.buildInitialTemplate(
-                templateType, period, requireCategoryHeaders, categoryHeaders, incomeCriteria, subBudgets
+                templateType, period, requireCategoryHeaders, categoryHeaders, incomeCriteria, subBudgets, startDay
         );
 
         BPGoalsDetail initialGoals   = initialTemplate.getBpGoalsDetail();

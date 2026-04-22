@@ -42,6 +42,9 @@ public class BPTemplateDetailEntity
     @Column(name="last_updated")
     private LocalDateTime lastUpdated;
 
+    @Column(name="enable_sync")
+    private boolean enableSync;
+
     @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BPColumnEntity> columns = new ArrayList<>();
 

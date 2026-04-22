@@ -15,6 +15,19 @@ class BudgetPlannerService {
         return BudgetPlannerService.instance;
     }
 
+    public async updateTemplateCategories(templateId: number, userId: number) : Promise<BPTemplate>
+    {
+        try
+        {
+            const response = await axios.put<BPTemplate>(`${API_BASE_URL}/budget-planner/update-template-categories/${templateId}`,
+                null, {params: {userId}});
+            return response.data;
+        }catch(error){
+            console.error("There was an error updating the template categories: ", error);
+            throw error;
+        }
+    }
+
     public async createBudgetTemplate(request: BudgetPlannerRequest): Promise<BPTemplate>
     {
         if (!request) {

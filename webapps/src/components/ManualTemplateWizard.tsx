@@ -133,6 +133,15 @@ const TEMPLATE_PRESETS: TemplatePreset[] = [
         badge: 'Custom',
         badgeColor: SLATE,
     },
+    {
+        name: 'Income Dashboard Template',
+        group: 'Dashboard',
+        description: 'Visual dashboard with period selector, donut chart, balance tracker, and savings goal tracking',
+        suggestedFormat: 'Biweekly',
+        suggestedCategories: ['Housing','Food','Transportation','Other','Savings'],
+        badge: 'Visual',
+        badgeColor: '#378ADD',
+    },
 ];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -412,33 +421,49 @@ const AutoStepTemplate: React.FC<{
 const AutoStepPeriod: React.FC<{
     format: string; startMonth: string; endMonth: string;
     onFormat: (f: string) => void; onStart: (s: string) => void; onEnd: (e: string) => void;
-}> = ({ format, startMonth, endMonth, onFormat, onStart, onEnd }) => {
+    hideFormatPicker?: boolean;
+    startDate?: string;
+    onStartDay?: (d: string) => void;
+}> = ({ format, startMonth, endMonth, onFormat, onStart, onEnd, hideFormatPicker, startDate, onStartDay }) => {
     const np = calcNumPeriods(format, startMonth, endMonth);
     return (
         <Box>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1 }}>Period format</Typography>
-            <Grid container spacing={1} sx={{ mb: 2 }}>
-                {FORMATS.map(f => (
-                    <Grid item xs={6} sm={4} key={f.id}>
-                        <Box onClick={() => onFormat(f.id)} sx={{
-                            p: 1.25, borderRadius: '8px', cursor: 'pointer',
-                            border: `1.5px solid ${format === f.id ? MAROON : alpha('#000', 0.1)}`,
-                            bgcolor: format === f.id ? alpha(MAROON, 0.04) : '#fff',
-                            transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 1,
-                            '&:hover': { borderColor: MAROON },
-                        }}>
-                            <Box sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: format === f.id ? alpha(MAROON, 0.1) : alpha('#000', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: format === f.id ? MAROON : SLATE }}>{f.abbr}</Typography>
-                            </Box>
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                                <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: NAVY, lineHeight: 1 }}>{f.label}</Typography>
-                                <Typography sx={{ fontSize: '0.62rem', color: SLATE }}>{f.desc}</Typography>
-                            </Box>
-                            {format === f.id && <CheckCircle2 size={13} color={MAROON} style={{ flexShrink: 0 }} />}
-                        </Box>
+            {!hideFormatPicker && (
+                <>
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1 }}>Period format</Typography>
+                    <Grid container spacing={1} sx={{ mb: 2 }}>
+                        {FORMATS.map(f => (
+                            <Grid item xs={6} sm={4} key={f.id}>
+                                <Box onClick={() => onFormat(f.id)} sx={{
+                                    p: 1.25, borderRadius: '8px', cursor: 'pointer',
+                                    border: `1.5px solid ${format === f.id ? MAROON : alpha('#000', 0.1)}`,
+                                    bgcolor: format === f.id ? alpha(MAROON, 0.04) : '#fff',
+                                    transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 1,
+                                    '&:hover': { borderColor: MAROON },
+                                }}>
+                                    <Box sx={{ width: 26, height: 26, borderRadius: '6px', bgcolor: format === f.id ? alpha(MAROON, 0.1) : alpha('#000', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: format === f.id ? MAROON : SLATE }}>{f.abbr}</Typography>
+                                    </Box>
+                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: NAVY, lineHeight: 1 }}>{f.label}</Typography>
+                                        <Typography sx={{ fontSize: '0.62rem', color: SLATE }}>{f.desc}</Typography>
+                                    </Box>
+                                    {format === f.id && <CheckCircle2 size={13} color={MAROON} style={{ flexShrink: 0 }} />}
+                                </Box>
+                            </Grid>
+                        ))}
                     </Grid>
-                ))}
-            </Grid>
+                </>
+            )}
+
+            {hideFormatPicker && (
+                <Box sx={{ mb: 2, p: 1.25, borderRadius: '8px', bgcolor: alpha(TEAL, 0.05), border: `0.5px solid ${alpha(TEAL, 0.2)}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#0f766e', fontWeight: 600 }}>
+                        Income tracking uses biweekly periods automatically
+                    </Typography>
+                </Box>
+            )}
+
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={6}>
                     <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.75 }}>Start month</Typography>
@@ -459,6 +484,25 @@ const AutoStepPeriod: React.FC<{
             {startMonth && endMonth && new Date(endMonth + '-01') < new Date(startMonth + '-01') && (
                 <Box sx={{ mt: 1, p: 1, borderRadius: '8px', bgcolor: alpha(RED, 0.06), border: `0.5px solid ${alpha(RED, 0.2)}`, fontSize: '0.75rem', color: RED }}>
                     End month must be after start month.
+                </Box>
+            )}
+            {hideFormatPicker && onStartDay && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.75 }}>
+                        First pay day of start month
+                    </Typography>
+                    <TextField
+                        fullWidth size="small" type="number"
+                        placeholder="e.g. 1, 10, 15, 23"
+                        value={startDate ?? ''}
+                        onChange={e => {
+                            const v = Math.max(1, Math.min(31, parseInt(e.target.value) || 1));
+                            onStartDay(String(v));
+                        }}
+                        inputProps={{ min: 1, max: 31 }}
+                        helperText="The day of the month your first biweekly pay period begins"
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.85rem' } }}
+                    />
                 </Box>
             )}
         </Box>
@@ -538,79 +582,6 @@ const LAYOUT_OPTIONS = [
 ];
 
 // Step 0 — Format, name, layout
-const StepFormat: React.FC<{ state: WizardState; update: (p: Partial<WizardState>) => void }> = ({ state, update }) => {
-    const selectedPreset = TEMPLATE_PRESETS.find(p => p.name === state.templateName) ?? null;
-    const isCustomTyped  = !!state.templateName && !selectedPreset;
-
-    return (
-        <Box>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1 }}>Template name</Typography>
-            <PresetDropdown selected={selectedPreset} onSelect={p => update({ templateName: p.name, format: p.suggestedFormat || state.format })} />
-            <TextField
-                fullWidth size="small"
-                placeholder="Or type a custom name…"
-                value={isCustomTyped ? state.templateName : ''}
-                onChange={e => update({ templateName: e.target.value })}
-                sx={{ mb: 2.5, '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.85rem' } }}
-                helperText="Type here to override the dropdown with a custom name"
-            />
-
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1.25 }}>Period format</Typography>
-            <Grid container spacing={1.25} sx={{ mb: 2.75 }}>
-                {FORMATS.map(f => (
-                    <Grid item xs={12} sm={4} key={f.id}>
-                        <Box onClick={() => update({ format: f.id })} sx={{
-                            p: 1.5, borderRadius: '10px', cursor: 'pointer',
-                            border: `1.5px solid ${state.format === f.id ? MAROON : alpha('#000', 0.1)}`,
-                            bgcolor: state.format === f.id ? alpha(MAROON, 0.04) : '#fff',
-                            transition: 'all 0.15s', position: 'relative',
-                            '&:hover': { borderColor: MAROON },
-                        }}>
-                            {state.format === f.id && <Box sx={{ position: 'absolute', top: 8, right: 8, color: MAROON }}><CheckCircle2 size={14} /></Box>}
-                            <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: state.format === f.id ? alpha(MAROON, 0.1) : alpha('#000', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.875 }}>
-                                <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: state.format === f.id ? MAROON : SLATE }}>{f.abbr}</Typography>
-                            </Box>
-                            <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: NAVY, mb: 0.2 }}>{f.label}</Typography>
-                            <Typography sx={{ fontSize: '0.68rem', color: SLATE }}>{f.desc}</Typography>
-                        </Box>
-                    </Grid>
-                ))}
-            </Grid>
-
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1.25 }}>Layout style</Typography>
-            <Grid container spacing={1.25}>
-                {LAYOUT_OPTIONS.map(opt => {
-                    const isSelected = state.groupByCategory === opt.val;
-                    return (
-                        <Grid item xs={12} sm={6} key={String(opt.val)}>
-                            <Box onClick={() => update({ groupByCategory: opt.val })} sx={{
-                                p: 1.75, borderRadius: '10px', cursor: 'pointer', height: '100%',
-                                border: `1.5px solid ${isSelected ? MAROON : alpha('#000', 0.1)}`,
-                                bgcolor: isSelected ? alpha(MAROON, 0.04) : '#fff',
-                                transition: 'all 0.15s', position: 'relative',
-                                '&:hover': { borderColor: MAROON },
-                            }}>
-                                {isSelected && <Box sx={{ position: 'absolute', top: 8, right: 8, color: MAROON }}><CheckCircle2 size={14} /></Box>}
-                                <Box sx={{ width: 30, height: 30, borderRadius: '7px', mb: 1, bgcolor: isSelected ? alpha(MAROON, 0.1) : alpha('#000', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center', color: isSelected ? MAROON : SLATE }}>
-                                    {opt.icon}
-                                </Box>
-                                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: NAVY, mb: 0.35, pr: 2 }}>{opt.label}</Typography>
-                                <Typography sx={{ fontSize: '0.70rem', color: SLATE, lineHeight: 1.55, mb: 1 }}>{opt.desc}</Typography>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                    {opt.tags.map(tag => (
-                                        <Box key={tag} sx={{ px: 0.75, py: 0.25, borderRadius: '4px', bgcolor: isSelected ? alpha(MAROON, 0.08) : alpha('#000', 0.05), fontSize: '0.62rem', fontWeight: 700, color: isSelected ? MAROON : SLATE }}>
-                                            {tag}
-                                        </Box>
-                                    ))}
-                                </Box>
-                            </Box>
-                        </Grid>
-                    );
-                })}
-            </Grid>
-        </Box>
-    );
-};
 
 // Step 1 — Categories
 const StepCategories: React.FC<{ state: WizardState; update: (p: Partial<WizardState>) => void }> = ({ state, update }) => {
@@ -685,14 +656,25 @@ const StepCategories: React.FC<{ state: WizardState; update: (p: Partial<WizardS
     );
 };
 
+
 // Step 2 — Period range + income (manual only)
 const StepPeriod: React.FC<{ state: WizardState; update: (p: Partial<WizardState>) => void }> = ({ state, update }) => {
-    const np  = calcNumPeriods(state.format, state.startMonth, state.endMonth);
+    const isIncomeDash    = state.templateName === 'Income Dashboard Template';
+    const effectiveFormat = isIncomeDash ? 'Biweekly' : state.format;
+    const np  = calcNumPeriods(effectiveFormat, state.startMonth, state.endMonth);
     const inc = parseFloat(state.income) || 0;
-    const periodLabel = state.format === 'Biweekly' ? 'biweekly period' : state.format === 'Weekly' ? 'week' : state.format === '2-Monthly' ? '2-month period' : state.format === '3-Monthly' ? 'quarter' : 'month';
+    const periodLabel = effectiveFormat === 'Biweekly' ? 'biweekly period' : effectiveFormat === 'Weekly' ? 'week' : effectiveFormat === '2-Monthly' ? '2-month period' : effectiveFormat === '3-Monthly' ? 'quarter' : 'month';
 
     return (
         <Box>
+            {isIncomeDash && (
+                <Box sx={{ mb: 2, p: 1.25, borderRadius: '8px', bgcolor: alpha(TEAL, 0.05), border: `0.5px solid ${alpha(TEAL, 0.2)}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#0f766e', fontWeight: 600 }}>
+                        Income Dashboard uses biweekly periods automatically
+                    </Typography>
+                </Box>
+            )}
+
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={6}>
                     <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.75 }}>Start month</Typography>
@@ -705,6 +687,27 @@ const StepPeriod: React.FC<{ state: WizardState; update: (p: Partial<WizardState
                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.85rem' } }} />
                 </Grid>
             </Grid>
+
+            {isIncomeDash && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.75 }}>
+                        First pay day of start month{' '}
+                        <Typography component="span" sx={{ fontSize: '0.68rem', color: SLATE, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</Typography>
+                    </Typography>
+                    <TextField
+                        fullWidth size="small" type="number"
+                        placeholder="e.g. 1, 10, 15, 23"
+                        value={state.allocs['__startDay__'] ?? ''}
+                        onChange={e => {
+                            const v = Math.max(1, Math.min(31, parseInt(e.target.value) || 1));
+                            update({ allocs: { ...state.allocs, '__startDay__': String(v) } });
+                        }}
+                        inputProps={{ min: 1, max: 31 }}
+                        helperText="The day of the month your first biweekly pay period begins"
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.85rem' } }}
+                    />
+                </Box>
+            )}
 
             <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.75 }}>
                 Take-home income per {periodLabel}
@@ -719,7 +722,7 @@ const StepPeriod: React.FC<{ state: WizardState; update: (p: Partial<WizardState
                 <Box sx={{ p: 1.5, borderRadius: '10px', bgcolor: alpha(TEAL, 0.05), border: `0.5px solid ${alpha(TEAL, 0.25)}` }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: TEAL }}>
-                            {np} {state.format.toLowerCase()} period{np !== 1 ? 's' : ''} generated
+                            {np} {effectiveFormat.toLowerCase()} period{np !== 1 ? 's' : ''} generated
                         </Typography>
                         <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: NAVY }}>Total: ${fmtMoney(np * inc)}</Typography>
                     </Box>
@@ -732,6 +735,93 @@ const StepPeriod: React.FC<{ state: WizardState; update: (p: Partial<WizardState
                     End month must be after start month.
                 </Box>
             )}
+        </Box>
+    );
+};
+
+const StepFormat: React.FC<{ state: WizardState; update: (p: Partial<WizardState>) => void }> = ({ state, update }) => {
+    const selectedPreset = TEMPLATE_PRESETS.find(p => p.name === state.templateName) ?? null;
+    const isCustomTyped  = !!state.templateName && !selectedPreset;
+    const isIncomeDash   = selectedPreset?.group === 'Dashboard';
+
+
+    return (
+        <Box>
+            <Box sx={{ p: 1, mb: 1, bgcolor: 'red', color: 'white', fontSize: '0.7rem' }}>
+                templateName: "{state.templateName}" | isIncomeDash: {String(isIncomeDash)} | group: {selectedPreset?.group ?? 'null'}
+            </Box>
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1 }}>Template name</Typography>
+            <PresetDropdown selected={selectedPreset} onSelect={p => update({ templateName: p.name, format: p.name === 'Income Dashboard Template' ? 'Biweekly' : (p.suggestedFormat || state.format) })} />
+            <TextField
+                fullWidth size="small"
+                placeholder="Or type a custom name…"
+                value={isCustomTyped ? state.templateName : ''}
+                onChange={e => update({ templateName: e.target.value })}
+                sx={{ mb: 2.5, '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.85rem' } }}
+                helperText="Type here to override the dropdown with a custom name"
+            />
+
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1.25 }}>Period format</Typography>
+            {isIncomeDash ? (
+                <Box sx={{ mb: 2.75, p: 1.25, borderRadius: '8px', bgcolor: alpha(TEAL, 0.05), border: `0.5px solid ${alpha(TEAL, 0.2)}` }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#0f766e', fontWeight: 600 }}>
+                        Income Dashboard uses biweekly periods — no format selection needed
+                    </Typography>
+                </Box>
+            ) : (
+                <Grid container spacing={1.25} sx={{ mb: 2.75 }}>
+                    {FORMATS.map(f => (
+                        <Grid item xs={12} sm={4} key={f.id}>
+                            <Box onClick={() => update({ format: f.id })} sx={{
+                                p: 1.5, borderRadius: '10px', cursor: 'pointer',
+                                border: `1.5px solid ${state.format === f.id ? MAROON : alpha('#000', 0.1)}`,
+                                bgcolor: state.format === f.id ? alpha(MAROON, 0.04) : '#fff',
+                                transition: 'all 0.15s', position: 'relative',
+                                '&:hover': { borderColor: MAROON },
+                            }}>
+                                {state.format === f.id && <Box sx={{ position: 'absolute', top: 8, right: 8, color: MAROON }}><CheckCircle2 size={14} /></Box>}
+                                <Box sx={{ width: 30, height: 30, borderRadius: '7px', bgcolor: state.format === f.id ? alpha(MAROON, 0.1) : alpha('#000', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.875 }}>
+                                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: state.format === f.id ? MAROON : SLATE }}>{f.abbr}</Typography>
+                                </Box>
+                                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: NAVY, mb: 0.2 }}>{f.label}</Typography>
+                                <Typography sx={{ fontSize: '0.68rem', color: SLATE }}>{f.desc}</Typography>
+                            </Box>
+                        </Grid>
+                    ))}
+                </Grid>
+            )}
+
+            <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1.25 }}>Layout style</Typography>
+            <Grid container spacing={1.25}>
+                {LAYOUT_OPTIONS.map(opt => {
+                    const isSelected = state.groupByCategory === opt.val;
+                    return (
+                        <Grid item xs={12} sm={6} key={String(opt.val)}>
+                            <Box onClick={() => update({ groupByCategory: opt.val })} sx={{
+                                p: 1.75, borderRadius: '10px', cursor: 'pointer', height: '100%',
+                                border: `1.5px solid ${isSelected ? MAROON : alpha('#000', 0.1)}`,
+                                bgcolor: isSelected ? alpha(MAROON, 0.04) : '#fff',
+                                transition: 'all 0.15s', position: 'relative',
+                                '&:hover': { borderColor: MAROON },
+                            }}>
+                                {isSelected && <Box sx={{ position: 'absolute', top: 8, right: 8, color: MAROON }}><CheckCircle2 size={14} /></Box>}
+                                <Box sx={{ width: 30, height: 30, borderRadius: '7px', mb: 1, bgcolor: isSelected ? alpha(MAROON, 0.1) : alpha('#000', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center', color: isSelected ? MAROON : SLATE }}>
+                                    {opt.icon}
+                                </Box>
+                                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: NAVY, mb: 0.35, pr: 2 }}>{opt.label}</Typography>
+                                <Typography sx={{ fontSize: '0.70rem', color: SLATE, lineHeight: 1.55, mb: 1 }}>{opt.desc}</Typography>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                    {opt.tags.map(tag => (
+                                        <Box key={tag} sx={{ px: 0.75, py: 0.25, borderRadius: '4px', bgcolor: isSelected ? alpha(MAROON, 0.08) : alpha('#000', 0.05), fontSize: '0.62rem', fontWeight: 700, color: isSelected ? MAROON : SLATE }}>
+                                            {tag}
+                                        </Box>
+                                    ))}
+                                </Box>
+                            </Box>
+                        </Grid>
+                    );
+                })}
+            </Grid>
         </Box>
     );
 };
@@ -875,6 +965,7 @@ interface ManualTemplateWizardProps {
         periodType: PeriodType;
         startMonth: string;
         endMonth: string;
+        startDay?: number;
         income: number;
         categories: WizardCategory[];
         allocs: Record<string, number>;
@@ -894,7 +985,7 @@ export const ManualTemplateWizard: React.FC<ManualTemplateWizardProps> = ({ open
     // Manual state
     const [ws,     setWs]     = useState<WizardState>(BLANK_WS);
     const update = (p: Partial<WizardState>) => setWs(prev => ({ ...prev, ...p }));
-
+    const [autoStartDay, setAutoStartDay] = useState('');
     // Auto state
     const [autoPreset,     setAutoPreset]     = useState<TemplatePreset | null>(null);
     const [autoCustomName, setAutoCustomName] = useState('');
@@ -951,13 +1042,18 @@ export const ManualTemplateWizard: React.FC<ManualTemplateWizardProps> = ({ open
                 const ord = autoStart && autoEnd && new Date(autoEnd + '-01') >= new Date(autoStart + '-01');
                 return !!(ok && ord);
             }
-            return true; // step 2 = review, always ok
+            return true;
         }
         if (mode === 'manual') {
-            if (step === 0) return !!ws.format && ws.templateName.trim().length > 0;
+            if (step === 0) {
+                const formatOk = ws.templateName === 'Income Dashboard Template' || !!ws.format;
+                return formatOk && ws.templateName.trim().length > 0;
+            }
             if (step === 1) return ws.categories.length > 0;
             if (step === 2) {
-                const ok  = !!ws.startMonth && !!ws.endMonth && !!ws.income && manualNp > 0;
+                const effectiveFormat = ws.templateName === 'Income Dashboard Template' ? 'Biweekly' : ws.format;
+                const np  = calcNumPeriods(effectiveFormat, ws.startMonth, ws.endMonth);
+                const ok  = !!ws.startMonth && !!ws.endMonth && !!ws.income && np > 0;
                 const ord = ws.startMonth && ws.endMonth && new Date(ws.endMonth + '-01') >= new Date(ws.startMonth + '-01');
                 return !!(ok && ord);
             }
@@ -972,26 +1068,36 @@ export const ManualTemplateWizard: React.FC<ManualTemplateWizardProps> = ({ open
     const handleNext = () => {
         if (step < maxStep) { setStep(s => s + 1); return; }
 
-        // Emit
         if (mode === 'auto' && autoPreset) {
             const name = autoPreset.group === 'Custom'
                 ? (autoCustomName.trim() || 'Custom Template')
                 : autoPreset.name;
             const cats = autoPreset.suggestedCategories.map(catFromName);
-            // Auto templates emit 0 income — income is entered by the user later inside the template itself
             onCreateTemplate({
                 name, periodType: autoFormat as PeriodType,
                 startMonth: autoStart, endMonth: autoEnd,
+                startDay: autoStartDay ? parseInt(autoStartDay) : undefined,
                 income: 0, categories: cats,
                 allocs: Object.fromEntries(cats.map(c => [c.name, 0])),
                 groupByCategory: false,
             });
         } else if (mode === 'manual') {
+            const isIncomeDash = ws.templateName === 'Income Dashboard Template';
+            const startDayRaw  = ws.allocs['__startDay__'];
+            const allocs       = Object.fromEntries(
+                Object.entries(ws.allocs)
+                    .filter(([k]) => k !== '__startDay__')
+                    .map(([k, v]) => [k, parseFloat(v) || 0])
+            );
             onCreateTemplate({
-                name: ws.templateName, periodType: ws.format as PeriodType,
-                startMonth: ws.startMonth, endMonth: ws.endMonth,
-                income: parseFloat(ws.income) || 0, categories: ws.categories,
-                allocs: Object.fromEntries(Object.entries(ws.allocs).map(([k, v]) => [k, parseFloat(v) || 0])),
+                name: ws.templateName,
+                periodType: isIncomeDash ? 'Biweekly' : ws.format as PeriodType,
+                startMonth: ws.startMonth,
+                endMonth: ws.endMonth,
+                startDay: startDayRaw ? parseInt(startDayRaw) : undefined,
+                income: parseFloat(ws.income) || 0,
+                categories: ws.categories,
+                allocs,
                 groupByCategory: ws.groupByCategory,
             });
         }
@@ -1038,7 +1144,10 @@ export const ManualTemplateWizard: React.FC<ManualTemplateWizardProps> = ({ open
                             )}
                             {mode === 'auto' && step === 1 && (
                                 <AutoStepPeriod format={autoFormat} startMonth={autoStart} endMonth={autoEnd}
-                                                onFormat={setAutoFormat} onStart={setAutoStart} onEnd={setAutoEnd} />
+                                                onFormat={setAutoFormat} onStart={setAutoStart} onEnd={setAutoEnd}
+                                                hideFormatPicker={(autoPreset?.group === 'Rolling' && autoPreset?.badge === 'Biweekly') || autoPreset?.group === 'Dashboard'}
+                                                startDate={autoStartDay}
+                                                onStartDay={setAutoStartDay}/>
                             )}
                             {mode === 'auto' && step === 2 && autoPreset && (
                                 <AutoStepReview preset={autoPreset} format={autoFormat}

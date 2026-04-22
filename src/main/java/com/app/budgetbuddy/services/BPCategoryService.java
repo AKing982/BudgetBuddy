@@ -13,5 +13,7 @@ public interface BPCategoryService extends ServiceModel<BPCategoryEntity>
     void saveModel(BPCategory budgetCategory);
 
     List<BPCategoryEntity> saveCategories(List<BPGridRow> rows, List<BPColumnEntity> columnEntities);
+    List<BPCategory> getCategoriesByTemplateDetailId(Long templateDetailId);
     void saveCategories(List<BPCategory> categories);
+    void updateCategories(List<BPCategory> categories);
 }

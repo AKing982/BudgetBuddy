@@ -1,0 +1,568 @@
+2026-04-12 15:13:28 INFO  c.a.b.BudgetBuddyApplication - Starting BudgetBuddyApplication using Java 21.0.9 with PID 44384 (C:\Users\alexk\Documents\BudgetBuddy\target\classes started by alexk in C:\Users\alexk\Documents\BudgetBuddy)
+2026-04-12 15:13:28 DEBUG c.a.b.BudgetBuddyApplication - Running with Spring Boot v3.3.3, Spring v6.1.12
+2026-04-12 15:13:28 INFO  c.a.b.BudgetBuddyApplication - No active profile set, falling back to 1 default profile: "default"
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 75 ms. Found 39 JPA repository interfaces.
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.AccountRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPAccountBalanceRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPBudgetCategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPCategoryDetailsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPCategoryGroupMemberRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPCategoryGroupRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPCellRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPColumnRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPRowRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPTemplateDetailsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPTemplateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BPWeekDetailsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BudgetCategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BudgetGoalsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BudgetRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BudgetScheduleRangeRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BudgetScheduleRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.BudgetStatisticsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.CategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.ControlledSpendingCategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.CSVAccountRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.CSVTransactionRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.GroceryBudgetRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.GroceryListRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.GroceryReceiptRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.PlaidCategoriesRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.PlaidCursorRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.PlaidLinkRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.PreCalculationCategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.RecurringTransactionsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.SubBudgetGoalsRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.SubBudgetRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.SystemCategoryRulesRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.TransactionCategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.TransactionRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.TransactionRuleRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.UserCategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.UserLogRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.app.budgetbuddy.repositories.UserRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-04-12 15:13:28 INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 10 ms. Found 0 Redis repository interfaces.
+2026-04-12 15:13:28 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-04-12 15:13:28 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-04-12 15:13:28 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-04-12 15:13:28 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.28]
+2026-04-12 15:13:28 INFO  o.a.c.c.C.[Tomcat-1].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-04-12 15:13:28 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 529 ms
+2026-04-12 15:13:28 INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-12 15:13:28 INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-04-12 15:13:29 INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-12 15:13:29 WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-12 15:13:29 DEBUG o.h.t.d.sql.spi.DdlTypeRegistry - addDescriptor(2003, org.hibernate.type.descriptor.sql.internal.ArrayDdlTypeImpl@72eb2722) replaced previous registration(org.hibernate.type.descriptor.sql.internal.ArrayDdlTypeImpl@53aaaa60)
+2026-04-12 15:13:29 DEBUG o.h.t.d.sql.spi.DdlTypeRegistry - addDescriptor(6, org.hibernate.type.descriptor.sql.internal.CapacityDependentDdlType@183d575c) replaced previous registration(org.hibernate.type.descriptor.sql.internal.DdlTypeImpl@37bac420)
+2026-04-12 15:13:29 INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-12 15:13:29 INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-12 15:13:30 WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-12 15:13:30 INFO  o.s.s.c.a.a.c.InitializeAuthenticationProviderBeanManagerConfigurer$InitializeAuthenticationProviderManagerConfigurer - Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationService
+2026-04-12 15:13:30 WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used for username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider.
+2026-04-12 15:13:30 INFO  org.quartz.impl.StdSchedulerFactory - Using default implementation for ThreadExecutor
+2026-04-12 15:13:30 INFO  o.quartz.core.SchedulerSignalerImpl - Initialized Scheduler Signaller of type: class org.quartz.core.SchedulerSignalerImpl
+2026-04-12 15:13:30 INFO  org.quartz.core.QuartzScheduler - Quartz Scheduler v.2.3.2 created.
+2026-04-12 15:13:30 INFO  org.quartz.simpl.RAMJobStore - RAMJobStore initialized.
+2026-04-12 15:13:30 INFO  org.quartz.core.QuartzScheduler - Scheduler meta-data: Quartz Scheduler (v2.3.2) 'quartzScheduler' with instanceId 'NON_CLUSTERED'
+  Scheduler class: 'org.quartz.core.QuartzScheduler' - running locally.
+  NOT STARTED.
+  Currently in standby mode.
+  Number of jobs executed: 0
+  Using thread pool 'org.quartz.simpl.SimpleThreadPool' - with 10 threads.
+  Using job-store 'org.quartz.simpl.RAMJobStore' - which does not support persistence. and is not clustered.
+
+2026-04-12 15:13:30 INFO  org.quartz.impl.StdSchedulerFactory - Quartz scheduler 'quartzScheduler' initialized from an externally provided properties instance.
+2026-04-12 15:13:30 INFO  org.quartz.impl.StdSchedulerFactory - Quartz scheduler version: 2.3.2
+2026-04-12 15:13:30 INFO  org.quartz.core.QuartzScheduler - JobFactory set to: org.springframework.scheduling.quartz.SpringBeanJobFactory@50d0d8b2
+2026-04-12 15:13:30 INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-04-12 15:13:30 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-04-12 15:13:30 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-04-12 15:13:30 INFO  o.s.s.quartz.SchedulerFactoryBean - Starting Quartz Scheduler now
+2026-04-12 15:13:30 INFO  org.quartz.core.QuartzScheduler - Scheduler quartzScheduler_$_NON_CLUSTERED started.
+2026-04-12 15:13:30 INFO  c.a.b.BudgetBuddyApplication - Started BudgetBuddyApplication in 2.038 seconds (process running for 7392.033)
+2026-04-12 15:13:30 INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-04-12 15:13:40 INFO  o.a.c.c.C.[Tomcat-1].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-04-12 15:13:40 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-04-12 15:13:40 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2026-04-12 15:13:40 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:13:40 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:13:40 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:13:40 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:14:48 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:14:48 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:14:48 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:14:48 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:03 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:03 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:03 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:03 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:05 INFO  c.a.b.services.BudgetServiceImpl - UserID: 1
+2026-04-12 15:17:05 INFO  c.a.b.services.BudgetServiceImpl - Year: 2026
+2026-04-12 15:17:05 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:05 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:05 INFO  c.a.b.services.BudgetServiceImpl - Budget exists for year 2026: true
+2026-04-12 15:17:05 INFO  c.a.b.controllers.BudgetController - Budget exists: true
+2026-04-12 15:17:05 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:05 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:05 INFO  c.a.b.services.BudgetServiceImpl - UserID: 1
+2026-04-12 15:17:05 INFO  c.a.b.services.BudgetServiceImpl - Year: 2026
+2026-04-12 15:17:05 INFO  c.a.b.services.BudgetServiceImpl - Budget exists for year 2026: true
+2026-04-12 15:17:05 INFO  c.a.b.controllers.BudgetController - Budget exists: true
+2026-04-12 15:17:05 INFO  c.a.b.c.TransactionCategoryController - Found 0 new transaction categories
+2026-04-12 15:17:05 INFO  c.a.b.c.TransactionCategoryController - Found 0 new transaction categories
+2026-04-12 15:17:05 INFO  c.a.b.c.TransactionCategoryController - Found 0 new transaction categories
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Starting monthly budget process for user 1 between 2026-04-01 and 2026-04-30
+2026-04-12 15:17:05 INFO  c.a.b.c.TransactionCategoryController - Found 0 new transaction categories
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Found Budget: com.app.budgetbuddy.domain.Budget@347d9233
+2026-04-12 15:17:05 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@15e16023, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@781a8f49, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@3f9da874, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@476db4e3, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2a2ac7e5], size: 5
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Processing SubBudget ID: 16 with Budget Schedule ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - SubBudget Savings Target: 875.00
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Budget Amount: 3095.08
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Total Spent: 2057.98
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Remaining: 1037.10
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Savings: 1037.10
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Allocated amount for sub-budget 16 is 3095.08
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Spent on sub-budget 16 is 18.26
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Spending ratio for sub-budget 16 is 0.01
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Spending ratio for sub-budget 16 is 0.01
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Variance for sub-budget 16 is 3076.82
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Savings ratio for sub-budget 16 is 0.03
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Final Score: 102.50
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Health score for sub-budget 16 is 100
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - SubBudget Stats: BudgetStats(budgetId=16, totalBudget=3095.08, totalSpent=2057.98, remaining=1037.10, totalSaved=1037.10, averageSpendingPerDay=70.96, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), healthScore=100, monthlyProjection=null)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Budget Stats for SubBudget 16: [BudgetStats(budgetId=16, totalBudget=3095.08, totalSpent=2057.98, remaining=1037.10, totalSaved=1037.10, averageSpendingPerDay=70.96, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), healthScore=100, monthlyProjection=null)]
+2026-04-12 15:17:05 INFO  c.a.b.w.b.BudgetPeriodCategoryHandlerFactory - Getting budget period handler for period: MONTHLY
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved 8 budget period categories for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Electric, budgeted=44.61, actual=74.87, remaining=0, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=true, spendingPercentage=1.6783232459089892, budgetStatus=OVER_BUDGET)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Gas, budgeted=56.43, actual=24.63, remaining=31.80, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.43646996278575223, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Groceries, budgeted=512.9, actual=261.12, remaining=251.78, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.5091050887112498, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Order Out, budgeted=117.48, actual=77.47, remaining=40.01, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.65943139257746, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Other, budgeted=185.24, actual=135.4, remaining=49.84, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.7309436406823581, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Payment, budgeted=427.71, actual=62.15, remaining=365.56, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.14530873722849594, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Rent, budgeted=798.19, actual=1220.03, remaining=0, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=true, spendingPercentage=1.528495721570052, budgetStatus=OVER_BUDGET)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Subscription, budgeted=73.07, actual=63.24, remaining=9.83, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.865471465717805, budgetStatus=GOOD)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved 5 top five expenses for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved Optional[ExpenseCategory(category=Expense, budgetedExpenses=3095.0800000000000000, actualExpenses=1918.91, remainingExpenses=1176.1700000000000000, isActive=true, startDate=2026-04-01, endDate=2026-04-30, isVariable=false)] expense categories for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetMonthOverviewServiceImpl - Adjusted start date from 2026-04-01 to 2026-03-29 to include end of previous year
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetMonthOverviewServiceImpl - SubBudgetIds: [16, 15]
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetMonthOverviewServiceImpl - Previous sub budget id is 15
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved Optional[IncomeCategory(category=Income, budgetedIncome=3971.0000000000000000, actualBudgetedIncome=2012.97, remainingIncome=1958.03, startMonth=null, endMonth=null, isActive=false)] income category for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved Optional[com.app.budgetbuddy.domain.SavingsCategory@f65b1d2] savings category for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Budget Runner Result: {spendingPercentage=0.0000, remainingAmount=37140.96, processDate=2026-04-12T15:17:05.701599600, budgetSchedule=BudgetSchedule{budgetScheduleId=16, subBudgetId=16, startDate=2026-04-01, endDate=2026-04-30, scheduleRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), budgetScheduleRanges=[BudgetScheduleRange(id=null, budgetScheduleId=77, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-22, endDate=2026-04-28), rangeType=Week, isActive=false, startRange=2026-04-22, endRange=2026-04-28, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=75, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-08, endDate=2026-04-14), rangeType=Week, isActive=false, startRange=2026-04-08, endRange=2026-04-14, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=76, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-15, endDate=2026-04-21), rangeType=Week, isActive=false, startRange=2026-04-15, endRange=2026-04-21, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=78, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-29, endDate=2026-04-30), rangeType=Week, isActive=false, startRange=2026-04-29, endRange=2026-04-30, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=74, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-01, endDate=2026-04-07), rangeType=Week, isActive=false, startRange=2026-04-01, endRange=2026-04-07, isSingleDate=false)], periodType='MONTHLY', totalPeriods=5, status='ACTIVE', createdDate=null}, subBudget=SubBudget(id=16, subBudgetName=April 2026 - Budget, allocatedAmount=3095.08, subSavingsTarget=875.00, subSavingsAmount=99.22, spentOnBudget=18.26, budget=com.app.budgetbuddy.domain.Budget@5d547bb6, startDate=2026-04-01, endDate=2026-04-30, year=0, subBudgetGoals=null, budgetSchedule=[BudgetSchedule{budgetScheduleId=16, subBudgetId=16, startDate=2026-04-01, endDate=2026-04-30, scheduleRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), budgetScheduleRanges=[BudgetScheduleRange(id=null, budgetScheduleId=77, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-22, endDate=2026-04-28), rangeType=Week, isActive=false, startRange=2026-04-22, endRange=2026-04-28, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=75, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-08, endDate=2026-04-14), rangeType=Week, isActive=false, startRange=2026-04-08, endRange=2026-04-14, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=76, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-15, endDate=2026-04-21), rangeType=Week, isActive=false, startRange=2026-04-15, endRange=2026-04-21, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=78, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-29, endDate=2026-04-30), rangeType=Week, isActive=false, startRange=2026-04-29, endRange=2026-04-30, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=74, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-01, endDate=2026-04-07), rangeType=Week, isActive=false, startRange=2026-04-01, endRange=2026-04-07, isSingleDate=false)], periodType='MONTHLY', totalPeriods=5, status='ACTIVE', createdDate=null}], controlledBudgetCategory=null, isActive=true), budget=com.app.budgetbuddy.domain.Budget@347d9233, isOverBudget=false, budgetScheduleRanges=[BudgetScheduleRange(id=null, budgetScheduleId=77, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-22, endDate=2026-04-28), rangeType=Week, isActive=false, startRange=2026-04-22, endRange=2026-04-28, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=75, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-08, endDate=2026-04-14), rangeType=Week, isActive=false, startRange=2026-04-08, endRange=2026-04-14, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=76, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-15, endDate=2026-04-21), rangeType=Week, isActive=false, startRange=2026-04-15, endRange=2026-04-21, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=78, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-29, endDate=2026-04-30), rangeType=Week, isActive=false, startRange=2026-04-29, endRange=2026-04-30, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=74, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-01, endDate=2026-04-07), rangeType=Week, isActive=false, startRange=2026-04-01, endRange=2026-04-07, isSingleDate=false)]}
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Starting monthly budget process for user 1 between 2026-04-01 and 2026-04-30
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Found Budget: com.app.budgetbuddy.domain.Budget@73bc1291
+2026-04-12 15:17:05 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@3d4d673f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@73793d5, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@729c5b4f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@5f2c206f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@51156893], size: 5
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Processing SubBudget ID: 16 with Budget Schedule ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - SubBudget Savings Target: 875.00
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Budget Amount: 3095.08
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Total Spent: 2057.98
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Remaining: 1037.10
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - Savings: 1037.10
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Allocated amount for sub-budget 16 is 3095.08
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Spent on sub-budget 16 is 18.26
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Spending ratio for sub-budget 16 is 0.01
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Spending ratio for sub-budget 16 is 0.01
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Variance for sub-budget 16 is 3076.82
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Savings ratio for sub-budget 16 is 0.03
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Final Score: 102.50
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetHealthScoreImpl - Health score for sub-budget 16 is 100
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetStatisticsServiceImpl - SubBudget Stats: BudgetStats(budgetId=16, totalBudget=3095.08, totalSpent=2057.98, remaining=1037.10, totalSaved=1037.10, averageSpendingPerDay=70.96, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), healthScore=100, monthlyProjection=null)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Budget Stats for SubBudget 16: [BudgetStats(budgetId=16, totalBudget=3095.08, totalSpent=2057.98, remaining=1037.10, totalSaved=1037.10, averageSpendingPerDay=70.96, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), healthScore=100, monthlyProjection=null)]
+2026-04-12 15:17:05 INFO  c.a.b.w.b.BudgetPeriodCategoryHandlerFactory - Getting budget period handler for period: MONTHLY
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved 8 budget period categories for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Electric, budgeted=44.61, actual=74.87, remaining=0, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=true, spendingPercentage=1.6783232459089892, budgetStatus=OVER_BUDGET)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Gas, budgeted=56.43, actual=24.63, remaining=31.80, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.43646996278575223, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Groceries, budgeted=512.9, actual=261.12, remaining=251.78, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.5091050887112498, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Order Out, budgeted=117.48, actual=77.47, remaining=40.01, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.65943139257746, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Other, budgeted=185.24, actual=135.4, remaining=49.84, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.7309436406823581, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Payment, budgeted=427.71, actual=62.15, remaining=365.56, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.14530873722849594, budgetStatus=UNDER_UTILIZED)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Rent, budgeted=798.19, actual=1220.03, remaining=0, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=true, spendingPercentage=1.528495721570052, budgetStatus=OVER_BUDGET)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - BudgetPeriodCategory: BudgetPeriodCategory(category=Subscription, budgeted=73.07, actual=63.24, remaining=9.83, dateRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), biWeekRanges=null, isOverBudget=false, spendingPercentage=0.865471465717805, budgetStatus=GOOD)
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved 5 top five expenses for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved Optional[ExpenseCategory(category=Expense, budgetedExpenses=3095.0800000000000000, actualExpenses=1918.91, remainingExpenses=1176.1700000000000000, isActive=true, startDate=2026-04-01, endDate=2026-04-30, isVariable=false)] expense categories for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetMonthOverviewServiceImpl - Adjusted start date from 2026-04-01 to 2026-03-29 to include end of previous year
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetMonthOverviewServiceImpl - SubBudgetIds: [16, 15]
+2026-04-12 15:17:05 INFO  c.a.b.w.b.SubBudgetMonthOverviewServiceImpl - Previous sub budget id is 15
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved Optional[IncomeCategory(category=Income, budgetedIncome=3971.0000000000000000, actualBudgetedIncome=2012.97, remainingIncome=1958.03, startMonth=null, endMonth=null, isActive=false)] income category for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Retrieved Optional[com.app.budgetbuddy.domain.SavingsCategory@3746c9de] savings category for SubBudget ID: 16
+2026-04-12 15:17:05 INFO  c.a.b.workbench.runner.BudgetRunner - Budget Runner Result: {spendingPercentage=0.0000, remainingAmount=37140.96, processDate=2026-04-12T15:17:05.792101, budgetSchedule=BudgetSchedule{budgetScheduleId=16, subBudgetId=16, startDate=2026-04-01, endDate=2026-04-30, scheduleRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), budgetScheduleRanges=[BudgetScheduleRange(id=null, budgetScheduleId=77, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-22, endDate=2026-04-28), rangeType=Week, isActive=false, startRange=2026-04-22, endRange=2026-04-28, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=75, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-08, endDate=2026-04-14), rangeType=Week, isActive=false, startRange=2026-04-08, endRange=2026-04-14, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=76, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-15, endDate=2026-04-21), rangeType=Week, isActive=false, startRange=2026-04-15, endRange=2026-04-21, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=78, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-29, endDate=2026-04-30), rangeType=Week, isActive=false, startRange=2026-04-29, endRange=2026-04-30, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=74, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-01, endDate=2026-04-07), rangeType=Week, isActive=false, startRange=2026-04-01, endRange=2026-04-07, isSingleDate=false)], periodType='MONTHLY', totalPeriods=5, status='ACTIVE', createdDate=null}, subBudget=SubBudget(id=16, subBudgetName=April 2026 - Budget, allocatedAmount=3095.08, subSavingsTarget=875.00, subSavingsAmount=99.22, spentOnBudget=18.26, budget=com.app.budgetbuddy.domain.Budget@19feea1b, startDate=2026-04-01, endDate=2026-04-30, year=0, subBudgetGoals=null, budgetSchedule=[BudgetSchedule{budgetScheduleId=16, subBudgetId=16, startDate=2026-04-01, endDate=2026-04-30, scheduleRange=DateRange(startDate=2026-04-01, endDate=2026-04-30), budgetScheduleRanges=[BudgetScheduleRange(id=null, budgetScheduleId=77, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-22, endDate=2026-04-28), rangeType=Week, isActive=false, startRange=2026-04-22, endRange=2026-04-28, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=75, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-08, endDate=2026-04-14), rangeType=Week, isActive=false, startRange=2026-04-08, endRange=2026-04-14, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=76, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-15, endDate=2026-04-21), rangeType=Week, isActive=false, startRange=2026-04-15, endRange=2026-04-21, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=78, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-29, endDate=2026-04-30), rangeType=Week, isActive=false, startRange=2026-04-29, endRange=2026-04-30, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=74, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-01, endDate=2026-04-07), rangeType=Week, isActive=false, startRange=2026-04-01, endRange=2026-04-07, isSingleDate=false)], periodType='MONTHLY', totalPeriods=5, status='ACTIVE', createdDate=null}], controlledBudgetCategory=null, isActive=true), budget=com.app.budgetbuddy.domain.Budget@73bc1291, isOverBudget=false, budgetScheduleRanges=[BudgetScheduleRange(id=null, budgetScheduleId=77, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-22, endDate=2026-04-28), rangeType=Week, isActive=false, startRange=2026-04-22, endRange=2026-04-28, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=75, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-08, endDate=2026-04-14), rangeType=Week, isActive=false, startRange=2026-04-08, endRange=2026-04-14, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=76, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-15, endDate=2026-04-21), rangeType=Week, isActive=false, startRange=2026-04-15, endRange=2026-04-21, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=78, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-29, endDate=2026-04-30), rangeType=Week, isActive=false, startRange=2026-04-29, endRange=2026-04-30, isSingleDate=false), BudgetScheduleRange(id=null, budgetScheduleId=74, spentOnRange=0.000, budgetedAmount=619.020, budgetDateRange=DateRange(startDate=2026-04-01, endDate=2026-04-07), rangeType=Week, isActive=false, startRange=2026-04-01, endRange=2026-04-07, isSingleDate=false)]}
+2026-04-12 15:17:05 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@72df1c9e, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@593f570c, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@64c25906, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7ba60b73, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@538e8b59], size: 5
+2026-04-12 15:17:05 INFO  c.a.b.w.budget.BudgetPeriodQueries - Getting budget period query data for userId: 1
+2026-04-12 15:17:05 INFO  c.a.b.w.b.BudgetPeriodCategoryHandlerFactory - Getting budget period handler for period: MONTHLY
+2026-04-12 15:17:05 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@6781e732, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@17c45cb0, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@13b7b461, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@5215001c, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@36711acd], size: 5
+2026-04-12 15:17:05 INFO  c.a.b.w.budget.BudgetPeriodQueries - Getting budget period query data for userId: 1
+2026-04-12 15:17:05 INFO  c.a.b.w.b.BudgetPeriodCategoryHandlerFactory - Getting budget period handler for period: MONTHLY
+2026-04-12 15:17:08 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:08 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:08 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:08 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:09 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:09 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:17:09 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:17:09 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:18:29 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:18:29 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:18:29 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:18:29 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:20:01 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:20:01 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@4767d655, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@4bdad25f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@d77b6c0, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@5caf8e08, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7716b9cf], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7b40a782, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@3262ec56, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@539a7f4c, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@1b5b8cdc, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@76bf2935], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@627a8a58, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@54ded93a, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7ae39fd7, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@5a2e97a9, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@537a76d4], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@45ebe739, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@6619466a, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@67736f96, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@39982fcd, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7012854b], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@51ee92ae, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@df847c9, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7aababe9, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@3d9957b2, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@6cfc263], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@18d083d4, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@44ebb126, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@29e72e5a, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@12b7056, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@3dbcbd73], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@56361a64, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2b2b8f13, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@741dca37, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@f39cf02, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@57ce6f11], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@11ca116c, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@63f133c7, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@4aa5286d, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@15352e6e], size: 4
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@57ce1456, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7177ef8c, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2c434d2e, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@134fb1a1, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@198b8364], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7a0a07eb, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@59cb14ae, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@68902cbb, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@21593885, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@20b62659], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@3d78a5ab, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@477f15f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@65baad87, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@136d4ea3], size: 4
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2ebbfb28, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7f1aa82, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@c2638f3, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@31290f55, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@27258f2a], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@13df7b8f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@32535321, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2e385c0a, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@72b258a7, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@6dad8b7], size: 5
+2026-04-12 15:20:01 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7adbb8ea, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@a635c95, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@6ea047f6, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@414a3170, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@6a0ad770], size: 5
+2026-04-12 15:20:02 ERROR o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.NullPointerException: Cannot invoke "com.app.budgetbuddy.domain.BPIncomeCriteria.monthlyIncome()" because "incomeCriteria" is null] with root cause
+java.lang.NullPointerException: Cannot invoke "com.app.budgetbuddy.domain.BPIncomeCriteria.monthlyIncome()" because "incomeCriteria" is null
+	at com.app.budgetbuddy.workbench.budgetplanner.BPCategoryRowBuilderService.buildBPIncomes(BPCategoryRowBuilderService.java:155)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPCategoryRowBuilderService.buildRowData(BPCategoryRowBuilderService.java:277)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutBuilderService.buildCombinedLayout(BPLayoutBuilderService.java:58)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutBuilderService.buildLayout(BPLayoutBuilderService.java:36)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutGeneratorService.generateLayoutGrid(BPLayoutGeneratorService.java:42)
+	at com.app.budgetbuddy.workbench.budgetplanner.MonthlyTemplateDetailsBuilderService.buildDetail(MonthlyTemplateDetailsBuilderService.java:34)
+	at com.app.budgetbuddy.workbench.budgetplanner.MonthlyStandardTemplateBuilder.buildInitialTemplate(MonthlyStandardTemplateBuilder.java:31)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner.runDefaultTemplateBuild(BPTemplateRunner.java:47)
+	at com.app.budgetbuddy.controllers.BudgetPlannerController.createDefaultBudgetTemplate(BudgetPlannerController.java:34)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$3(HandlerMappingIntrospector.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:230)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.session.web.http.SessionRepositoryFilter.doFilterInternal(SessionRepositoryFilter.java:142)
+	at org.springframework.session.web.http.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:82)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:904)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-04-12 15:20:02 ERROR o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.NullPointerException: Cannot invoke "com.app.budgetbuddy.domain.BPIncomeCriteria.monthlyIncome()" because "incomeCriteria" is null] with root cause
+java.lang.NullPointerException: Cannot invoke "com.app.budgetbuddy.domain.BPIncomeCriteria.monthlyIncome()" because "incomeCriteria" is null
+	at com.app.budgetbuddy.workbench.budgetplanner.BPCategoryRowBuilderService.buildBPIncomes(BPCategoryRowBuilderService.java:155)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPCategoryRowBuilderService.buildRowData(BPCategoryRowBuilderService.java:277)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutBuilderService.buildCombinedLayout(BPLayoutBuilderService.java:58)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutBuilderService.buildLayout(BPLayoutBuilderService.java:36)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutGeneratorService.generateLayoutGrid(BPLayoutGeneratorService.java:42)
+	at com.app.budgetbuddy.workbench.budgetplanner.MonthlyTemplateDetailsBuilderService.buildDetail(MonthlyTemplateDetailsBuilderService.java:34)
+	at com.app.budgetbuddy.workbench.budgetplanner.MonthlyStandardTemplateBuilder.buildInitialTemplate(MonthlyStandardTemplateBuilder.java:31)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner.runDefaultTemplateBuild(BPTemplateRunner.java:47)
+	at com.app.budgetbuddy.controllers.BudgetPlannerController.createDefaultBudgetTemplate(BudgetPlannerController.java:34)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$3(HandlerMappingIntrospector.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:230)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.session.web.http.SessionRepositoryFilter.doFilterInternal(SessionRepositoryFilter.java:142)
+	at org.springframework.session.web.http.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:82)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:904)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-04-12 15:20:02 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)
+2026-04-12 15:20:02 WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: Document nesting depth (1001) exceeds the maximum allowed (1000, from `StreamWriteConstraints.getMaxNestingDepth()`)]
+2026-04-12 15:21:36 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@92da73f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@713386f0, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2e64b36f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@1543df38, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2971c6ed], size: 5
+2026-04-12 15:21:36 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@46cde0cd, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@667d3a8a, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@2b95194d, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@60df89c2, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7a702d9f], size: 5
+2026-04-12 15:21:36 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@4a7ad02b, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@5cf40b77, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@20a22444, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@352c5e81, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@79a0c13e], size: 5
+2026-04-12 15:21:36 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@1a76f487, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@4c6bcb28, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@5a78f84b, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@890aad8, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@173d5ad2], size: 5
+2026-04-12 15:21:36 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@7c0e07e4, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@1251c99f, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@974626a, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@3a1d23d3], size: 4
+2026-04-12 15:21:36 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@309b13bb, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@10f88089, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@286e1dc8, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@531d766a, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@45210166], size: 5
+2026-04-12 15:21:36 INFO  c.a.b.w.budget.BudgetScheduleUtil - Retrieving Budget Schedule Ranges: [com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@79adea7d, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@126be8a9, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@28819804, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@39b6750e, com.app.budgetbuddy.entities.BudgetScheduleRangeEntity@483169b], size: 5
+2026-04-12 15:21:36 ERROR o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.NullPointerException: Cannot invoke "com.app.budgetbuddy.domain.BPIncomeCriteria.monthlyIncome()" because "incomeCriteria" is null] with root cause
+java.lang.NullPointerException: Cannot invoke "com.app.budgetbuddy.domain.BPIncomeCriteria.monthlyIncome()" because "incomeCriteria" is null
+	at com.app.budgetbuddy.workbench.budgetplanner.BPCategoryRowBuilderService.buildBPIncomes(BPCategoryRowBuilderService.java:155)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPCategoryRowBuilderService.buildRowData(BPCategoryRowBuilderService.java:277)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutBuilderService.buildCombinedLayout(BPLayoutBuilderService.java:58)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutBuilderService.buildLayout(BPLayoutBuilderService.java:36)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPLayoutGeneratorService.generateLayoutGrid(BPLayoutGeneratorService.java:42)
+	at com.app.budgetbuddy.workbench.budgetplanner.MonthlyTemplateDetailsBuilderService.buildDetail(MonthlyTemplateDetailsBuilderService.java:34)
+	at com.app.budgetbuddy.workbench.budgetplanner.MonthlyStandardTemplateBuilder.buildInitialTemplate(MonthlyStandardTemplateBuilder.java:31)
+	at com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner.runDefaultTemplateBuild(BPTemplateRunner.java:47)
+	at com.app.budgetbuddy.controllers.BudgetPlannerController.createDefaultBudgetTemplate(BudgetPlannerController.java:34)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$3(HandlerMappingIntrospector.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:230)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.session.web.http.SessionRepositoryFilter.doFilterInternal(SessionRepositoryFilter.java:142)
+	at org.springframework.session.web.http.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:82)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:904)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-04-12 15:23:54 INFO  org.quartz.core.QuartzScheduler - Scheduler quartzScheduler_$_NON_CLUSTERED paused.
+2026-04-12 15:23:54 INFO  o.s.s.quartz.SchedulerFactoryBean - Shutting down Quartz Scheduler
+2026-04-12 15:23:54 INFO  org.quartz.core.QuartzScheduler - Scheduler quartzScheduler_$_NON_CLUSTERED shutting down.
+2026-04-12 15:23:54 INFO  org.quartz.core.QuartzScheduler - Scheduler quartzScheduler_$_NON_CLUSTERED paused.
+2026-04-12 15:23:54 INFO  org.quartz.core.QuartzScheduler - Scheduler quartzScheduler_$_NON_CLUSTERED shutdown complete.
+2026-04-12 15:23:54 INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'

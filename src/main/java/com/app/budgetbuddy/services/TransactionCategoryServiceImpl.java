@@ -123,6 +123,19 @@ public class TransactionCategoryServiceImpl implements TransactionCategoryServic
 
     @Override
     @Transactional
+    public List<LocalDate> getIncomePostedDatesByDateShift(Long userId, Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            return transactionCategoryRepository.findIncomePostedDateByDateShift(userId, subBudgetId, startDate, endDate);
+        }catch(DataAccessException e){
+            log.error("There was an error while getting the income posted dates", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
     public List<LocalDate> getIncomePostedDates(Long userId, Long subBudgetId)
     {
         try

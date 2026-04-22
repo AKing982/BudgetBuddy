@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.repositories;
 
+import com.app.budgetbuddy.domain.BudgetCategorySpending;
 import com.app.budgetbuddy.domain.CategoryExpenseType;
 import com.app.budgetbuddy.domain.CategoryPriorityLevel;
 import com.app.budgetbuddy.domain.TransactionCategoryStatus;
@@ -48,8 +49,130 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
 
     @Query("SELECT t.posted FROM TransactionCategoryEntity tc " +
             "INNER JOIN tc.transaction t " +
-            "WHERE tc.matchedCategory = 'Income' AND t.account.user.id =:userId AND tc.subBudget.id =:id")
+            "WHERE tc.matchedCategory = 'Income' " +
+            "AND t.account.user.id = :userId " +
+            "AND tc.subBudget.id = :id " +
+            "UNION " +
+            "SELECT csv.transactionDate FROM TransactionCategoryEntity tc2 " +
+            "INNER JOIN tc2.csvTransaction csv " +
+            "WHERE tc2.matchedCategory = 'Income' " +
+            "AND csv.user.id = :userId " +
+            "AND tc2.subBudget.id = :id " +
+            "ORDER BY 1 ASC")
     List<LocalDate> findIncomePostedDate(@Param("userId") Long userId, @Param("id") Long subBudgetId);
+
+
+    @Query("""
+        SELECT CAST(SUM(t.amount) AS double)
+        FROM TransactionCategoryEntity tc
+        INNER JOIN tc.transaction t
+        WHERE t.posted >= :start
+        AND t.posted <= :end
+        AND t.account.user.id = :userId
+        AND tc.matchedCategory IN ('Income', 'Deposit', 'Refund')
+        """)
+    Double findTransactionIncomeTotalByDateRangeAndUserId(
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("userId") Long userId
+    );
+
+    @Query("""
+        SELECT CAST(SUM(csv.transactionAmount) AS double)
+        FROM TransactionCategoryEntity tc
+        INNER JOIN tc.csvTransaction csv
+        WHERE csv.transactionDate >= :start
+        AND csv.transactionDate <= :end
+        AND csv.user.id = :userId
+        AND tc.matchedCategory IN ('Income', 'Deposit', 'Refund')
+        """)
+    Double findCSVIncomeTotalByDateRangeAndUserId(
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("userId") Long userId
+    );
+
+
+    @Query("""
+        SELECT CAST(ABS(SUM(t.amount)) AS double)
+        FROM TransactionCategoryEntity tc
+        INNER JOIN tc.transaction t
+        WHERE t.posted >= :start
+        AND t.posted <= :end
+        AND t.account.user.id = :userId
+        AND tc.matchedCategory NOT IN ('Income', 'Deposit', 'Uncategorized', 'Refund')
+        """)
+    Double findTransactionExpenseTotalByDateRangeAndUserId(
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("userId") Long userId
+    );
+
+    @Query("""
+        SELECT CAST(ABS(SUM(csv.transactionAmount)) AS double)
+        FROM TransactionCategoryEntity tc
+        INNER JOIN tc.csvTransaction csv
+        WHERE csv.transactionDate >= :start
+        AND csv.transactionDate <= :end
+        AND csv.user.id = :userId
+        AND tc.matchedCategory NOT IN ('Income', 'Deposit', 'Uncategorized', 'Refund')
+        """)
+    Double findCSVExpenseTotalByDateRangeAndUserId(
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("userId") Long userId
+    );
+
+
+    @Query("""
+        SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(
+            tc.matchedCategory,
+            CAST(ABS(SUM(t.amount)) AS double),
+            CAST(0.0 AS double),
+            MIN(t.posted),
+            MAX(t.posted))
+        FROM TransactionCategoryEntity tc
+        INNER JOIN tc.transaction t
+        WHERE t.posted >= :start
+        AND t.posted <= :end
+        AND t.account.user.id = :userId
+        AND tc.matchedCategory NOT IN ('Income', 'Deposit', 'Uncategorized')
+        GROUP BY tc.matchedCategory
+        UNION
+        SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(
+            tc2.matchedCategory,
+            CAST(ABS(SUM(csv.transactionAmount)) AS double),
+            CAST(0.0 AS double),
+            MIN(csv.transactionDate),
+            MAX(csv.transactionDate))
+        FROM TransactionCategoryEntity tc2
+        INNER JOIN tc2.csvTransaction csv
+        WHERE csv.transactionDate >= :start
+        AND csv.transactionDate <= :end
+        AND csv.user.id = :userId
+        AND tc2.matchedCategory NOT IN ('Income', 'Deposit', 'Uncategorized')
+        GROUP BY tc2.matchedCategory
+        """)
+    List<BudgetCategorySpending> findSpendingByDateRangeAndUserId(
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("userId") Long userId
+    );
+
+    @Query("SELECT t.posted FROM TransactionCategoryEntity tc " +
+            "INNER JOIN tc.transaction t " +
+            "WHERE tc.matchedCategory = 'Income' " +
+            "AND t.account.user.id = :userId " +
+            "AND tc.subBudget.id = :id AND tc.transaction.posted BETWEEN :start AND :end " +
+            "UNION " +
+            "SELECT csv.transactionDate FROM TransactionCategoryEntity tc2 " +
+            "INNER JOIN tc2.csvTransaction csv " +
+            "WHERE tc2.matchedCategory = 'Income' " +
+            "AND csv.user.id = :userId " +
+            "AND tc2.subBudget.id = :id AND tc2.csvTransaction.transactionDate BETWEEN :start AND :end " +
+            "ORDER BY 1 ASC")
+    List<LocalDate> findIncomePostedDateByDateShift(@Param("userId") Long userId, @Param("id") Long subBudgetId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
 
     boolean existsByCsvTransactionId(Long csvTransactionId);
 

@@ -12,5 +12,5 @@ import java.time.LocalDate;
 public interface BPColumnRepository extends JpaRepository<BPColumnEntity, Long>
 {
     @Query("SELECT bce FROM BPColumnEntity bce WHERE bce.columnIndex =:index AND bce.startDate =:start AND bce.endDate =:endDate")
-    BPColumnEntity findByColumnIndexAndStartDateAndEndDate(@Param("index") int index, @Param("start") LocalDate start, @Param("end") LocalDate endDate);
+    BPColumnEntity findByColumnIndexAndStartDateAndEndDate(@Param("index") int index, @Param("start") LocalDate start, @Param("endDate") LocalDate endDate);
 }

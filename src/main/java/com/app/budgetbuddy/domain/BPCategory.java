@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @ToString
 public class BPCategory
 {
+    private Long id;
     private String name;
     private BPType type;
     private Long budgetCategoryId;
@@ -23,7 +24,8 @@ public class BPCategory
     private boolean isActive;
     private boolean isOverBudget;
 
-    public BPCategory(String name, BPType type, Long budgetCategoryId, DateRange range, BigDecimal actual, BigDecimal budgeted, BigDecimal lastAmount, boolean isGroupHeader, int columnIndex, boolean isActive, boolean isOverBudget) {
+    public BPCategory(Long id, String name, BPType type, Long budgetCategoryId, DateRange range, BigDecimal actual, BigDecimal budgeted, BigDecimal lastAmount, boolean isGroupHeader, int columnIndex, boolean isActive, boolean isOverBudget) {
+        this.id = id;
         this.name = name;
         this.type = type;
         this.budgetCategoryId = budgetCategoryId;

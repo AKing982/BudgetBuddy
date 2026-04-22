@@ -191,156 +191,156 @@ function chipIcon(title: string, amount: number, totalBudget: number) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const BudgetPage: React.FC = () => {
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [animateIn, setAnimateIn] = useState(false);
-    const [importDialogOpen, setImportDialogOpen] = useState(false);
-    const [uploadAccess, setUploadAccess] = useState<boolean>(false);
-    const budgetRunnerService = BudgetRunnerService.getInstance();
-    const budgetCategoryService = BudgetCategoriesService.getInstance();
-    const transactionCategoryService = TransactionCategoryService.getInstance();
-    const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
-    const userId = Number(sessionStorage.getItem('userId'));
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [snackBarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
-    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>();
-    const [newBudgetDialogOpen, setNewBudgetDialogOpen] = useState<boolean>(false);
-    const [manageBudgetsDialogOpen, setManageBudgetsDialogOpen] = useState<boolean>(false);
-    const [manageCategoriesDialogOpen, setManageCategoriesDialogOpen] = useState<boolean>(false);
-    const [isBudgetCategoryLoading, setIsBudgetCategoryLoading] = useState<boolean>(false);
-    const [budgetCategoryLoadingMessage, setBudgetCategoryLoadingMessage] = useState<string>('');
-    const [categoryTransactionsByDate, setCategoryTransactionsByDate] = useState<CSVTransactionsByDateCategory[]>([]);
-    const userService = UserService.getInstance();
-    const startDate = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
-    const endDate   = useMemo(() => endOfMonth(currentMonth),   [currentMonth]);
-    const [budgetUpdateConfirmOpen, setBudgetUpdateConfirmOpen] = useState(false);
-    const [pendingBudgetUpdate, setPendingBudgetUpdate] = useState<{ categoryName: string; newAmount: number } | null>(null);
+                    const [currentMonth, setCurrentMonth] = useState(new Date());
+                    const [isLoading, setIsLoading] = useState(false);
+                    const [error, setError] = useState<string | null>(null);
+                    const [animateIn, setAnimateIn] = useState(false);
+                    const [importDialogOpen, setImportDialogOpen] = useState(false);
+                    const [uploadAccess, setUploadAccess] = useState<boolean>(false);
+                    const budgetRunnerService = BudgetRunnerService.getInstance();
+                    const budgetCategoryService = BudgetCategoriesService.getInstance();
+                    const transactionCategoryService = TransactionCategoryService.getInstance();
+                    const [budgetData, setBudgetData] = useState<BudgetRunnerResult[]>([]);
+                    const userId = Number(sessionStorage.getItem('userId'));
+                    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+                    const [snackBarOpen, setSnackbarOpen] = useState(false);
+                    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+                    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>();
+                    const [newBudgetDialogOpen, setNewBudgetDialogOpen] = useState<boolean>(false);
+                    const [manageBudgetsDialogOpen, setManageBudgetsDialogOpen] = useState<boolean>(false);
+                    const [manageCategoriesDialogOpen, setManageCategoriesDialogOpen] = useState<boolean>(false);
+                    const [isBudgetCategoryLoading, setIsBudgetCategoryLoading] = useState<boolean>(false);
+                    const [budgetCategoryLoadingMessage, setBudgetCategoryLoadingMessage] = useState<string>('');
+                    const [categoryTransactionsByDate, setCategoryTransactionsByDate] = useState<CSVTransactionsByDateCategory[]>([]);
+                    const userService = UserService.getInstance();
+                    const startDate = useMemo(() => startOfMonth(currentMonth), [currentMonth]);
+                    const endDate   = useMemo(() => endOfMonth(currentMonth),   [currentMonth]);
+                    const [budgetUpdateConfirmOpen, setBudgetUpdateConfirmOpen] = useState(false);
+                    const [pendingBudgetUpdate, setPendingBudgetUpdate] = useState<{ categoryName: string; newAmount: number } | null>(null);
 
-    const formatDate = (date: Date) => format(date, 'yyyy-MM-dd');
-    const uploadService = new CsvUploadService();
-    const budgetService = BudgetService.getInstance();
+                    const formatDate = (date: Date) => format(date, 'yyyy-MM-dd');
+                    const uploadService = new CsvUploadService();
+                    const budgetService = BudgetService.getInstance();
 
-    const handlePreviousMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
-    const handleNextMonth     = () => setCurrentMonth(prev => addMonths(prev, 1));
+                    const handlePreviousMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
+                    const handleNextMonth     = () => setCurrentMonth(prev => addMonths(prev, 1));
 
-    useEffect(() => {
-        if (!userId) return;
-        const s = startOfMonth(currentMonth);
-        const e = endOfMonth(currentMonth);
-
-        const run = async () => {
-            try {
-                const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
-
-                const [plaidHasNew, plaidHasUpdated] = await Promise.all([
-                    transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e),
-                    transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e),
-                ]);
-                const [csvHasNew, csvHasUpdated] = hasPlaidCSVSync
-                    ? await Promise.all([
-                        transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e),
-                        transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e),
-                    ])
-                    : [false, false];
-
-                if (plaidHasNew || csvHasNew) {
-                    setIsBudgetCategoryLoading(true);
-                    await budgetCategoryService.createBudgetCategoriesForDateRange(userId, s, e);
-                }
-
-                if (plaidHasUpdated || csvHasUpdated) {
-                    setIsBudgetCategoryLoading(true);
-                    await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
-                }
-
-                const data = await fetchBudgetData(currentMonth);
-
-                // Only fall back to update if nothing was built and no transactions triggered above
-                if ((!data || data.length === 0) && !plaidHasNew && !csvHasNew && !plaidHasUpdated && !csvHasUpdated) {
-                    setIsBudgetCategoryLoading(true);
-                    await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
-                    await fetchBudgetData(currentMonth);
-                }
-            } catch (ex) {
-                console.error(ex);
-                setSnackbarMessage('Failed to sync budget categories');
-                setSnackbarSeverity('error');
-                setSnackbarOpen(true);
-            } finally {
-                setIsBudgetCategoryLoading(false);
-            }
-        };
-
-        run();
-    }, [userId, currentMonth]); // single effect, single dependency array
-
-    // useEffect(() => {
-    //     const s = startOfMonth(currentMonth);
-    //     const e = endOfMonth(currentMonth);
-    //     const run = async () => {
-    //         try {
-    //             const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
-    //             const plaidHasNew = await transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e);
-    //             const csvHasNew = hasPlaidCSVSync
-    //                 ? await transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e)
-    //                 : false;
+    //                 useEffect(() => {
+    //                     if (!userId) return;
+    //                     const s = startOfMonth(currentMonth);
+    //                     const e = endOfMonth(currentMonth);
+    //
+    //                     const run = async () => {
+    //                         try {
+    //                             const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
+    //
+    //                             const [plaidHasNew, plaidHasUpdated] = await Promise.all([
+    //                                 transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e),
+    //                                 transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e),
+    //             ]);
+    //             const [csvHasNew, csvHasUpdated] = hasPlaidCSVSync
+    //                 ? await Promise.all([
+    //                     transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e),
+    //                     transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e),
+    //                 ])
+    //                 : [false, false];
+    //
     //             if (plaidHasNew || csvHasNew) {
     //                 setIsBudgetCategoryLoading(true);
     //                 await budgetCategoryService.createBudgetCategoriesForDateRange(userId, s, e);
-    //                 fetchBudgetData(currentMonth, true);
-    //                 await new Promise(r => setTimeout(r, 2000));
-    //                 setIsBudgetCategoryLoading(false);
     //             }
-    //         } catch (ex) {
-    //             console.error(ex);
-    //             setSnackbarMessage('Failed to create budget categories');
-    //             setSnackbarSeverity('error');
-    //             setSnackbarOpen(true);
-    //             setIsBudgetCategoryLoading(false);
-    //         }
-    //     };
-    //     run();
-    // }, [userId, currentMonth]);
-
-    // useEffect(() => {
-    //     const s = startOfMonth(currentMonth);
-    //     const e = endOfMonth(currentMonth);
-    //     const run = async () => {
-    //         try {
-    //             const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
-    //             const plaidHasUpdated = await transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e);
-    //             const csvHasUpdated = hasPlaidCSVSync
-    //                 ? await transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e)
-    //                 : false;
     //
     //             if (plaidHasUpdated || csvHasUpdated) {
     //                 setIsBudgetCategoryLoading(true);
     //                 await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
+    //             }
+    //
+    //             const data = await fetchBudgetData(currentMonth);
+    //
+    //             // Only fall back to update if nothing was built and no transactions triggered above
+    //             if ((!data || data.length === 0) && !plaidHasNew && !csvHasNew && !plaidHasUpdated && !csvHasUpdated) {
+    //                 setIsBudgetCategoryLoading(true);
+    //                 await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
     //                 await fetchBudgetData(currentMonth);
-    //                 await new Promise(r => setTimeout(r, 2000));
-    //                 setIsBudgetCategoryLoading(false);
-    //             } else {
-    //                 const data = await fetchBudgetData(currentMonth);
-    //                 if (!data || data.length === 0) {
-    //                     setIsBudgetCategoryLoading(true);
-    //                     await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
-    //                     await fetchBudgetData(currentMonth);
-    //                     await new Promise(r => setTimeout(r, 2000));
-    //                     setIsBudgetCategoryLoading(false);
-    //                 }
     //             }
     //         } catch (ex) {
     //             console.error(ex);
-    //             setSnackbarMessage('Failed to update budget categories');
+    //             setSnackbarMessage('Failed to sync budget categories');
     //             setSnackbarSeverity('error');
     //             setSnackbarOpen(true);
+    //         } finally {
     //             setIsBudgetCategoryLoading(false);
     //         }
     //     };
+    //
     //     run();
-    // }, [currentMonth]);
+    // }, [userId, currentMonth]); // single effect, single dependency array
+
+    useEffect(() => {
+        const s = startOfMonth(currentMonth);
+        const e = endOfMonth(currentMonth);
+        const run = async () => {
+            try {
+                const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
+                const plaidHasNew = await transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e);
+                const csvHasNew = hasPlaidCSVSync
+                    ? await transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e)
+                    : false;
+                if (plaidHasNew || csvHasNew) {
+                    setIsBudgetCategoryLoading(true);
+                    await budgetCategoryService.createBudgetCategoriesForDateRange(userId, s, e);
+                    fetchBudgetData(currentMonth, true);
+                    await new Promise(r => setTimeout(r, 2000));
+                    setIsBudgetCategoryLoading(false);
+                }
+            } catch (ex) {
+                console.error(ex);
+                setSnackbarMessage('Failed to create budget categories');
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+                setIsBudgetCategoryLoading(false);
+            }
+        };
+        run();
+    }, [userId, currentMonth]);
+
+    useEffect(() => {
+        const s = startOfMonth(currentMonth);
+        const e = endOfMonth(currentMonth);
+        const run = async () => {
+            try {
+                const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
+                const plaidHasUpdated = await transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e);
+                const csvHasUpdated = hasPlaidCSVSync
+                    ? await transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e)
+                    : false;
+
+                if (plaidHasUpdated || csvHasUpdated) {
+                    setIsBudgetCategoryLoading(true);
+                    await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
+                    await fetchBudgetData(currentMonth);
+                    await new Promise(r => setTimeout(r, 2000));
+                    setIsBudgetCategoryLoading(false);
+                } else {
+                    const data = await fetchBudgetData(currentMonth);
+                    if (!data || data.length === 0) {
+                        setIsBudgetCategoryLoading(true);
+                        await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
+                        await fetchBudgetData(currentMonth);
+                        await new Promise(r => setTimeout(r, 2000));
+                        setIsBudgetCategoryLoading(false);
+                    }
+                }
+            } catch (ex) {
+                console.error(ex);
+                setSnackbarMessage('Failed to update budget categories');
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+                setIsBudgetCategoryLoading(false);
+            }
+        };
+        run();
+    }, [currentMonth]);
 
     useEffect(() => {
         const run = async () => {

@@ -271,6 +271,7 @@ export interface BudgetPlannerRequest {
     categoryHeaders?:     string[];
     categoryAllocations?: CategoryAllocation[];
     incomeCriteria?:      BPIncomeCriteria;
+    startDay?: number;
 }
 
 export interface CategoryAllocation {

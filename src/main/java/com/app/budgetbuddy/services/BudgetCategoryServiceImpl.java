@@ -11,6 +11,7 @@ import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.repositories.BudgetCategoryRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
+import com.app.budgetbuddy.repositories.TransactionCategoryRepository;
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryConverter;
 import com.app.budgetbuddy.workbench.converter.BudgetCategoryModelConverter;
 import lombok.extern.slf4j.Slf4j;
@@ -32,17 +33,20 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
 {
     private final BudgetCategoryRepository budgetCategoryRepository;
     private final BudgetCategoryConverter transactionCategoryConverter;
+    private final TransactionCategoryRepository transactionCategoryRepository;
     private final BudgetCategoryModelConverter budgetCategoryModelConverter;
     private final SubBudgetRepository subBudgetRepository;
 
     @Autowired
     public BudgetCategoryServiceImpl(BudgetCategoryRepository budgetCategoryRepository,
                                      BudgetCategoryConverter transactionCategoryConverter,
+                                     TransactionCategoryRepository transactionCategoryRepository,
                                      BudgetCategoryModelConverter budgetCategoryModelConverter,
                                      SubBudgetRepository subBudgetRepository)
     {
         this.budgetCategoryRepository = budgetCategoryRepository;
         this.transactionCategoryConverter = transactionCategoryConverter;
+        this.transactionCategoryRepository = transactionCategoryRepository;
         this.subBudgetRepository = subBudgetRepository;
         this.budgetCategoryModelConverter = budgetCategoryModelConverter;
     }
@@ -106,6 +110,94 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
 
     @Override
     @Transactional
+    public BigDecimal getTotalCSVIncomesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId)
+    {
+        try
+        {
+            Double totalIncome = transactionCategoryRepository.findCSVIncomeTotalByDateRangeAndUserId(startDate, endDate, userId);
+            if(totalIncome == null || totalIncome == 0)
+            {
+                return BigDecimal.ZERO;
+            }
+            else
+            {
+                return BigDecimal.valueOf(totalIncome);
+            }
+        }catch(DataAccessException e) {
+            log.error("There was an error getting the total CSV income by user ID and date range: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal getTotalIncomesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId)
+    {
+        try
+        {
+            Double totalIncome = transactionCategoryRepository.findTransactionIncomeTotalByDateRangeAndUserId(startDate, endDate, userId);
+            if(totalIncome == null || totalIncome == 0)
+            {
+                return BigDecimal.ZERO;
+            }
+            else
+            {
+                return BigDecimal.valueOf(totalIncome);
+            }
+        }catch(DataAccessException e) {
+            log.error("There was an error getting the total income by user ID and date range: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal getTotalCSVExpensesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId)
+    {
+        try
+        {
+            log.info("Getting total CSV expense by date range overlaps: {} to {}", startDate, endDate);
+            Double totalExpense = transactionCategoryRepository.findCSVExpenseTotalByDateRangeAndUserId(startDate, endDate, userId);
+            log.info("Total CSV Expense: {}", totalExpense);
+            if(totalExpense == null || totalExpense == 0)
+            {
+                return BigDecimal.ZERO;
+            }
+            else
+            {
+                return BigDecimal.valueOf(totalExpense);
+            }
+        }catch(DataAccessException e) {
+            log.error("There was an error getting the total CSV expense by user ID and date range: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal getTotalExpensesByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId)
+    {
+        try
+        {
+            log.info("Getting total expense by date range overlaps: {} to {}", startDate, endDate);
+            Double totalExpense = transactionCategoryRepository.findTransactionExpenseTotalByDateRangeAndUserId(startDate, endDate, userId);
+            log.info("Total Expense: {}", totalExpense);
+            if(totalExpense == null || totalExpense == 0)
+            {
+                return BigDecimal.ZERO;
+            }
+            else
+            {
+                return BigDecimal.valueOf(totalExpense);
+            }
+        }catch(DataAccessException e) {
+            log.error("There was an error getting the total expense by user ID and date range: ", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    @Transactional
     public BigDecimal getTotalExpensesByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate)
     {
         if(subBudgetId == null || startDate == null || endDate == null)
@@ -127,6 +219,7 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     {
         try
         {
+            log.info("Getting total income by subBudgetId and date range: {} to {}, {}", subBudgetId, startDate, endDate);
             return budgetCategoryRepository.findIncomeTotalByUserAndDateRange(subBudgetId, startDate, endDate);
         }catch(DataAccessException e) {
             log.error("There was an error getting the total income by user ID and date range: ", e);
@@ -272,6 +365,37 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
             }
         }catch(DataAccessException e)
         {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<BudgetCategory> getBudgetCategorySpendingByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId)
+    {
+        try
+        {
+            // TODO: Fix issue with setting proper start date and end date and sub BudgetId for budget categories created below
+
+            log.info("Getting budget category spending by date range overlaps: {} to {}", startDate, endDate);
+            List<BudgetCategorySpending> budgetCategorySpendings = transactionCategoryRepository.findSpendingByDateRangeAndUserId(startDate, endDate, userId);
+            log.info("Budget Category Spending by Date Range Overlaps: {}", budgetCategorySpendings);
+            return budgetCategorySpendings.stream()
+                    .map(budgetCategorySpending -> {
+                        BudgetCategory budgetCategory = new BudgetCategory();
+                        budgetCategory.setIsActive(true);
+                        budgetCategory.setBudgetedAmount(budgetCategorySpending.totalBudgeted());
+                        budgetCategory.setStartDate(startDate);
+                        budgetCategory.setEndDate(endDate);
+                        budgetCategory.setCategoryName(budgetCategorySpending.categoryName());
+                        budgetCategory.setBudgetActual(budgetCategorySpending.spending());
+                        log.info("Budget Category for date range {} to {} : {}", startDate, endDate, budgetCategory);
+                        return budgetCategory;
+                    })
+                    .toList();
+
+        }catch(DataAccessException e){
+            log.error("There was an error getting the budget category spending by date range overlaps: ", e);
             return Collections.emptyList();
         }
     }

@@ -9,6 +9,6 @@ import java.util.List;
 
 public interface BPTemplateDetailBuilderService
 {
-    BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria, boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets);
+    BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria, boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets, Integer startDay);
     BPTemplateDetailEntity saveDetail(BPTemplateDetail detail, BPTemplateEntity template);
 }

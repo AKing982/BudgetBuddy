@@ -49,6 +49,7 @@ public class BPCategoryToEntityConverter implements Converter<BPCategory, BPCate
         BudgetCategoryEntity budgetCategoryEntity = getBudgetCategory(budgetCategory);
         BPCategoryEntity bpCategoryEntity = new BPCategoryEntity();
         bpCategoryEntity.setBpColumn(columnEntity);
+        bpCategoryEntity.setId(budgetCategory.getBudgetCategoryId());
 //        bpCategoryEntity.setBudgetCategory(budgetCategoryEntity);
         bpCategoryEntity.setOverBudget(budgetCategory.isOverBudget());
         bpCategoryEntity.setStartDate(budgetCategory.getRange().getStartDate());

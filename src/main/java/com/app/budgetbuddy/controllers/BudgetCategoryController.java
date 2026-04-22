@@ -89,6 +89,8 @@ public class BudgetCategoryController
         }
     }
 
+    @PutMapping("/update")
+
 
     @GetMapping("/create-date")
     public ResponseEntity<List<BudgetCategory>> createBudgetCategoriesForDate(@RequestParam Long userId,
