@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.repositories;
 
+import com.app.budgetbuddy.domain.BPTemplateType;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -22,4 +23,7 @@ public interface BPTemplateRepository extends JpaRepository<BPTemplateEntity, Lo
 
     @Query("SELECT bpt FROM BPTemplateEntity bpt WHERE bpt.user.id =:userId AND bpt.bpTemplateType =:type")
     Optional<BPTemplateEntity> findByUserIdAndType(@Param("userId") Long userId, @Param("type") String type);
+
+    @Query("SELECT bpt.bpTemplateType FROM BPTemplateEntity bpt WHERE bpt.id =:id")
+    Optional<BPTemplateType> findTypeById(@Param("id") Long id);
 }

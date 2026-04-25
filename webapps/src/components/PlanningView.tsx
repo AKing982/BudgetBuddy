@@ -4,13 +4,19 @@
 //   Dashboard — timeline + period detail + sidebar cards
 //   What-if  — scenario explorer with live sliders, smooth SVG curve chart,
 //               goal impact bars, period-by-period comparison table
+// ── PlanningView.tsx ──────────────────────────────────────────────────────────
+// Three sub-views in the maroon header:
+//   Classic  — existing ClassicSpreadsheet
+//   Dashboard — timeline + period detail + sidebar cards
+//   What-if  — scenario explorer with live sliders, smooth SVG curve chart,
+//               goal impact bars, period-by-period comparison table
 import React, { useMemo, useState, useCallback } from 'react';
 import {
     Box, Typography, Grid, Stack, Button,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Edit, EditOff, Save, Add } from '@mui/icons-material';
+import { Save, Add } from '@mui/icons-material';
 import { TableIcon, LayoutDashboard, Award, TrendingUp, BarChart2, GitBranch } from 'lucide-react';
 import {
     MAROON, NAVY, SLATE, GREEN, RED, TEAL, BLUE, fmt, fmtS,
@@ -20,6 +26,7 @@ import type { SpreadsheetTemplate, SpreadsheetRow, PeriodFilter } from '../domai
 import { MaroonCardHeader } from './SharedBudgetUI';
 import ClassicSpreadsheet from './ClassicSpreadsheet';
 import PeriodDetailCard from './PeriodDetailCard';
+import FuturePeriodDialog from './FuturePeriodDialog';
 
 // ── Local tokens ──────────────────────────────────────────────────────────────
 const AMBER       = '#d97706';
@@ -61,8 +68,8 @@ interface MonthPlanItem {
     due:    string | null;
     status: ItemStatus;
 }
-type MonthItem = MonthGoalItem | MonthPlanItem;
-type MonthItemMap = Record<string, MonthItem[]>; // keyed by month name
+type MonthItem    = MonthGoalItem | MonthPlanItem;
+type MonthItemMap = Record<string, MonthItem[]>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtC = (n: number | null | undefined): string => {
@@ -86,7 +93,7 @@ function getPeriodType(template: SpreadsheetTemplate, pi: number): 'past' | 'pre
     return 'past';
 }
 
-// ── Smooth cubic-bezier SVG path from a series of points ─────────────────────
+// ── Smooth cubic-bezier SVG path ──────────────────────────────────────────────
 function smoothPath(pts: { x: number; y: number }[]): string {
     if (pts.length < 2) return '';
     let d = `M ${pts[0].x},${pts[0].y}`;
@@ -145,7 +152,7 @@ const ModeToggle: React.FC<{ active: 'manual' | 'auto'; onChange: (v: 'manual' |
     </Box>
 );
 
-// ── MonthChip — with goal dots, plan count badge, at-risk warning, + add btn ──
+// ── MonthChip ─────────────────────────────────────────────────────────────────
 const MonthChip: React.FC<{
     name: string; type: 'past' | 'present' | 'future-manual' | 'future-auto';
     sub: string; selected?: boolean; onClick?: () => void;
@@ -180,54 +187,38 @@ const MonthChip: React.FC<{
             )}
             <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: COLOR[type] }}>{name}</Typography>
             <Typography sx={{ fontSize: '0.68rem', color: alpha(COLOR[type], 0.7), mt: 0.2 }}>{sub}</Typography>
-
-            {/* Goal dots + plan count + at-risk indicator */}
             {hasItems && (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.375, mt: 0.5, flexWrap: 'wrap' }}>
                     {goals.slice(0, 3).map(g => (
-                        <Box key={g.id} title={g.label} sx={{
-                            width: 7, height: 7, borderRadius: '50%', bgcolor: g.color, flexShrink: 0,
-                            border: '1.5px solid white',
-                            boxShadow: g.status === 'at-risk' ? `0 0 0 1.5px ${AMBER}` : 'none',
-                        }} />
+                        <Box key={g.id} title={g.label} sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: g.color, flexShrink: 0, border: '1.5px solid white', boxShadow: g.status === 'at-risk' ? `0 0 0 1.5px ${AMBER}` : 'none' }} />
                     ))}
                     {plans.length > 0 && (
                         <Box sx={{ fontSize: '0.57rem', fontWeight: 700, px: 0.5, py: '1px', borderRadius: '3px', bgcolor: alpha(PURPLE, 0.1), color: PURPLE, lineHeight: 1.4 }}>
                             {plans.length}p
                         </Box>
                     )}
-                    {atRisk && (
-                        <Typography sx={{ fontSize: '0.6rem', color: AMBER, lineHeight: 1 }}>⚠</Typography>
-                    )}
+                    {atRisk && <Typography sx={{ fontSize: '0.6rem', color: AMBER, lineHeight: 1 }}>⚠</Typography>}
                 </Box>
             )}
-
-            {/* + add hover button */}
             {onAdd && (
                 <Box
                     onMouseEnter={() => setAddHover(true)}
                     onMouseLeave={() => setAddHover(false)}
                     onClick={e => { e.stopPropagation(); onAdd(); }}
-                    sx={{
-                        mt: 0.5, py: '2px', borderRadius: '3px', cursor: 'pointer',
-                        bgcolor: addHover ? alpha(MAROON, 0.08) : 'transparent',
-                        color: addHover ? MAROON : alpha(SLATE, 0.35),
-                        fontSize: '0.6rem', fontWeight: 700,
-                        transition: 'all .12s', userSelect: 'none',
-                    }}
+                    sx={{ mt: 0.5, py: '2px', borderRadius: '3px', cursor: 'pointer', bgcolor: addHover ? alpha(MAROON, 0.08) : 'transparent', color: addHover ? MAROON : alpha(SLATE, 0.35), fontSize: '0.6rem', fontWeight: 700, transition: 'all .12s', userSelect: 'none' }}
                 >+ add</Box>
             )}
         </Box>
     );
 };
 
-// ── AddItemModal ─────────────────────────────────────────────────────────────
+// ── AddItemModal ──────────────────────────────────────────────────────────────
 const PLAN_TYPES: { value: PlanType; label: string; color: string }[] = [
-    { value: 'payment',      label: 'Payment',      color: PURPLE   },
-    { value: 'subscription', label: 'Subscription', color: BLUE     },
-    { value: 'savings',      label: 'Savings goal', color: GREEN    },
-    { value: 'bill',         label: 'Bill',         color: AMBER    },
-    { value: 'custom',       label: 'Custom',       color: SLATE    },
+    { value: 'payment',      label: 'Payment',      color: PURPLE },
+    { value: 'subscription', label: 'Subscription', color: BLUE   },
+    { value: 'savings',      label: 'Savings goal', color: GREEN  },
+    { value: 'bill',         label: 'Bill',         color: AMBER  },
+    { value: 'custom',       label: 'Custom',       color: SLATE  },
 ];
 const GOAL_COLORS = [GREEN, BLUE, AMBER, TEAL, PURPLE, RED];
 
@@ -265,13 +256,8 @@ const AddItemModal: React.FC<{
     };
 
     return (
-        <Box sx={{
-            position: 'fixed', inset: 0, zIndex: 1300,
-            bgcolor: 'rgba(0,0,0,0.32)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <Box sx={{ position: 'fixed', inset: 0, zIndex: 1300, bgcolor: 'rgba(0,0,0,0.32)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
             <Box sx={{ bgcolor: '#fff', borderRadius: '12px', width: 420, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-                {/* Header */}
                 <Box sx={{ background: `linear-gradient(135deg, ${MAROON_DARK} 0%, ${MAROON} 60%, #5a1515 100%)`, px: 2.25, py: 1.375, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
                         <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>Add to {monthName}</Typography>
@@ -279,7 +265,6 @@ const AddItemModal: React.FC<{
                     </Box>
                     <Box onClick={onClose} sx={{ cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: 18, lineHeight: 1, px: 0.5 }}>✕</Box>
                 </Box>
-                {/* Tabs */}
                 <Box sx={{ display: 'flex', borderBottom: `1px solid ${alpha('#000', 0.08)}` }}>
                     {([['plan', 'Payment / Plan'], ['goal', 'Budget Goal']] as const).map(([t, l]) => (
                         <Box key={t} onClick={() => setTab(t)} sx={{ flex: 1, py: 1.125, textAlign: 'center', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', color: tab === t ? MAROON : SLATE, borderBottom: tab === t ? `2px solid ${MAROON}` : '2px solid transparent', transition: 'all .15s' }}>
@@ -290,7 +275,6 @@ const AddItemModal: React.FC<{
                 <Box sx={{ px: 2.25, py: 1.75 }}>
                     {tab === 'plan' ? (
                         <>
-                            {/* Plan type */}
                             <Box sx={{ mb: 1.5 }}>
                                 <Typography sx={{ fontSize: '0.67rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.75 }}>Type</Typography>
                                 <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
@@ -301,12 +285,10 @@ const AddItemModal: React.FC<{
                                     ))}
                                 </Box>
                             </Box>
-                            {/* Label */}
                             <Box sx={{ mb: 1.25 }}>
                                 <Typography sx={{ fontSize: '0.67rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.625 }}>Label</Typography>
                                 <Box component="input" value={label} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLabel(e.target.value)} placeholder="e.g. Car payment, Annual renewal..." sx={{ width: '100%', border: `1px solid ${alpha('#000', 0.15)}`, borderRadius: '6px', px: 1.125, py: 0.75, fontSize: '0.79rem', color: NAVY, fontFamily: 'inherit', boxSizing: 'border-box', '&:focus': { outline: `1.5px solid ${MAROON}` } }} />
                             </Box>
-                            {/* Amount + Due */}
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.25, mb: 1.25 }}>
                                 <Box>
                                     <Typography sx={{ fontSize: '0.67rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.625 }}>Amount</Typography>
@@ -320,7 +302,6 @@ const AddItemModal: React.FC<{
                                     <Box component="input" value={due} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDue(e.target.value)} placeholder={`e.g. ${monthName} 15`} sx={{ width: '100%', border: `1px solid ${alpha('#000', 0.15)}`, borderRadius: '6px', px: 1.125, py: 0.75, fontSize: '0.79rem', color: NAVY, fontFamily: 'inherit', boxSizing: 'border-box', '&:focus': { outline: `1.5px solid ${MAROON}` } }} />
                                 </Box>
                             </Box>
-                            {/* Status */}
                             <Box sx={{ mb: 1.75 }}>
                                 <Typography sx={{ fontSize: '0.67rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.625 }}>Status</Typography>
                                 <Box sx={{ display: 'flex', gap: 0.75 }}>
@@ -384,13 +365,12 @@ const MonthDetailPanel: React.FC<{
     onAddItem:    () => void;
     onUpdateItem: (id: string, status: ItemStatus) => void;
 }> = ({ monthName, items, onAddItem, onUpdateItem }) => {
-    const goals = items.filter(it => it.kind === 'goal') as MonthGoalItem[];
-    const plans = items.filter(it => it.kind === 'plan') as MonthPlanItem[];
+    const goals       = items.filter(it => it.kind === 'goal') as MonthGoalItem[];
+    const plans       = items.filter(it => it.kind === 'plan') as MonthPlanItem[];
     const atRiskCount = items.filter(it => it.status === 'at-risk' || it.status === 'overdue').length;
 
     return (
         <Box sx={{ borderRadius: '9px', border: `1px solid ${alpha(MAROON, 0.13)}`, overflow: 'hidden', bgcolor: '#fff', mt: 1.25, mb: 0.5 }}>
-            {/* Header */}
             <Box sx={{ px: 1.75, py: 1, background: `linear-gradient(90deg, ${alpha(MAROON, 0.05)} 0%, transparent 100%)`, borderBottom: `0.5px solid ${alpha('#000', 0.07)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: MAROON, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
@@ -406,7 +386,6 @@ const MonthDetailPanel: React.FC<{
                     + Add goal or plan
                 </Box>
             </Box>
-
             {items.length === 0 ? (
                 <Box sx={{ px: 1.75, py: 1.75, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
                     <Typography sx={{ fontSize: '0.77rem', color: SLATE }}>No goals or plans attached to {monthName} yet.</Typography>
@@ -416,7 +395,6 @@ const MonthDetailPanel: React.FC<{
                 </Box>
             ) : (
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-                    {/* Goals */}
                     <Box sx={{ px: 1.75, py: 1.125, borderRight: `0.5px solid ${alpha('#000', 0.07)}` }}>
                         <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.875 }}>
                             Budget goals{goals.length > 0 ? ` (${goals.length})` : ''}
@@ -442,7 +420,6 @@ const MonthDetailPanel: React.FC<{
                             })
                         }
                     </Box>
-                    {/* Plans */}
                     <Box sx={{ px: 1.75, py: 1.125 }}>
                         <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.875 }}>
                             Payment plans{plans.length > 0 ? ` (${plans.length})` : ''}
@@ -494,10 +471,10 @@ const PeriodBars: React.FC<{ template: SpreadsheetTemplate }> = ({ template }) =
 
 // ── BudgetGoalsCard ───────────────────────────────────────────────────────────
 const BudgetGoalsCard: React.FC<{ template: SpreadsheetTemplate }> = ({ template }) => {
-    const salaryRow = template.rows.find(r => r.rowType === 'salary');
-    const expRow    = template.rows.find(r => r.rowType === 'expenses');
-    const totalInc  = salaryRow?.values.reduce((a: number, v) => a + (v ?? 0), 0) ?? 0;
-    const totalExp  = expRow?.values.reduce((a: number, v) => a + (v ?? 0), 0) ?? 0;
+    const salaryRow       = template.rows.find(r => r.rowType === 'salary');
+    const expRow          = template.rows.find(r => r.rowType === 'expenses');
+    const totalInc        = salaryRow?.values.reduce((a: number, v) => a + (v ?? 0), 0) ?? 0;
+    const totalExp        = expRow?.values.reduce((a: number, v) => a + (v ?? 0), 0) ?? 0;
     const savingsFloorPct = totalInc > 0 ? Math.min(100, Math.round(((totalInc - totalExp) / totalInc) * 100 * 5)) : 0;
     const goals = [
         { name: 'Savings floor',   detail: `$500/period · ${Math.min(100, savingsFloorPct + 30)}% there`, dot: '#059669', pct: Math.min(100, savingsFloorPct + 30), ok: true },
@@ -585,9 +562,7 @@ const BalanceTrajectoryCard: React.FC<{ template: SpreadsheetTemplate }> = ({ te
                         </Box>
                     </Box>
                 )}
-                <Box sx={{ mt: 1.25, py: 0.625, borderRadius: '6px', border: `0.5px solid ${alpha('#000', 0.15)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', '&:hover': { bgcolor: alpha(MAROON, 0.03) } }}
-                    // clicking "Run a scenario" switches to the scenario tab is handled by PlanningView
-                >
+                <Box sx={{ mt: 1.25, py: 0.625, borderRadius: '6px', border: `0.5px solid ${alpha('#000', 0.15)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', '&:hover': { bgcolor: alpha(MAROON, 0.03) } }}>
                     <Typography sx={{ fontSize: '0.75rem', color: NAVY }}>Run a scenario ↗</Typography>
                 </Box>
             </Box>
@@ -632,7 +607,6 @@ const SpendingSignalsCard: React.FC<{ template: SpreadsheetTemplate; selectedPi:
 
 // ════════════════════════════════════════════════════════════════════════════════
 // ── WhatIfScenario ────────────────────────────────────────────────────────────
-// Self-contained — derives everything from SpreadsheetTemplate
 // ════════════════════════════════════════════════════════════════════════════════
 
 interface ScenarioCut { label: string; color: string; base: number; min: number; max: number }
@@ -640,21 +614,17 @@ interface ScenarioCut { label: string; color: string; base: number; min: number;
 const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template }) => {
     const expenseRows = template.rows.filter(r => r.rowType === 'expense');
     const salaryRow   = template.rows.find(r => r.rowType === 'salary');
-    const expTotRow   = template.rows.find(r => r.rowType === 'expenses');
 
-    // Per-period baseline income and expense totals
     const baselineIncome: number[] = template.periods.map((_, pi) => salaryRow?.values[pi] ?? 0);
     const baselineExp:    number[] = template.periods.map((_, pi) =>
         expenseRows.reduce((s, r) => s + (r.values[pi] ?? 0), 0)
     );
 
-    // Running baseline balance
     const baselineBals: number[] = useMemo(() => {
         let run = 0;
         return template.periods.map((_, pi) => { run += baselineIncome[pi] - baselineExp[pi]; return run; });
     }, [template]);
 
-    // Derive categories for sliders from real expense rows
     const categories: ScenarioCut[] = useMemo(() =>
             expenseRows.map(row => {
                 const vals  = row.values.filter((v): v is number => v !== null && v > 0);
@@ -664,7 +634,6 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
             }).filter(c => c.base > 0),
         [expenseRows]);
 
-    // Slider state keyed by category label
     const [cuts, setCuts] = useState<Record<string, number>>(() =>
         Object.fromEntries(categories.map(c => [c.label, c.base]))
     );
@@ -674,7 +643,6 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
     });
     const [activePreset, setActivePreset] = useState<string | null>(null);
 
-    // Presets
     const PRESETS = [
         { id: 'aggressive', label: 'Aggressive cuts', factor: 0.65 },
         { id: 'moderate',   label: 'Moderate cuts',   factor: 0.80 },
@@ -689,7 +657,6 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
         setCuts(Object.fromEntries(categories.map(c => [c.label, c.base])));
     };
 
-    // Derive scenario balances
     const { scenarioBals, savedPerPeriod, cumulativeExtra } = useMemo(() => {
         const spp = categories.reduce((sum, c) => sum + (c.base - (cuts[c.label] ?? c.base)), 0);
         let run   = 0;
@@ -702,133 +669,71 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
         return { scenarioBals: bals, savedPerPeriod: spp, cumulativeExtra: cum };
     }, [cuts, applyFrom, categories, baselineIncome, baselineExp, template.periods.length]);
 
-    // Savings rate
-    const totalInc    = baselineIncome.reduce((a, b) => a + b, 0);
-    const baseRate    = totalInc > 0 ? ((totalInc - baselineExp.reduce((a, b) => a + b, 0)) / totalInc) * 100 : 0;
-    const scenRate    = totalInc > 0 ? baseRate + (savedPerPeriod / totalInc) * template.periods.length * 100 : 0;
-    const endBal      = baselineBals[baselineBals.length - 1] ?? 0;
-    const endScenBal  = scenarioBals[scenarioBals.length - 1] ?? 0;
+    const totalInc   = baselineIncome.reduce((a, b) => a + b, 0);
+    const baseRate   = totalInc > 0 ? ((totalInc - baselineExp.reduce((a, b) => a + b, 0)) / totalInc) * 100 : 0;
+    const scenRate   = totalInc > 0 ? baseRate + (savedPerPeriod / totalInc) * template.periods.length * 100 : 0;
+    const endBal     = baselineBals[baselineBals.length - 1] ?? 0;
+    const endScenBal = scenarioBals[scenarioBals.length - 1] ?? 0;
 
-    // SVG chart dimensions
     const W = 560, H = 180;
     const PAD = { t: 16, r: 16, b: 32, l: 52 };
     const CW  = W - PAD.l - PAD.r;
     const CH  = H - PAD.t - PAD.b;
     const n   = template.periods.length;
 
-    const allVals  = [...baselineBals, ...scenarioBals];
-    const minV     = Math.min(...allVals, 0);
-    const maxV     = Math.max(...allVals, 1);
-    const range    = maxV - minV || 1;
+    const allVals = [...baselineBals, ...scenarioBals];
+    const minV    = Math.min(...allVals, 0);
+    const maxV    = Math.max(...allVals, 1);
+    const range   = maxV - minV || 1;
 
     const px = (i: number) => PAD.l + (i / Math.max(n - 1, 1)) * CW;
     const py = (v: number) => PAD.t + CH - ((v - minV) / range) * CH;
 
-    const basePts  = baselineBals.map((v, i) => ({ x: px(i), y: py(v) }));
-    const scenPts  = scenarioBals.map((v, i) => ({ x: px(i), y: py(v) }));
+    const basePts = baselineBals.map((v, i) => ({ x: px(i), y: py(v) }));
+    const scenPts = scenarioBals.map((v, i) => ({ x: px(i), y: py(v) }));
 
-    // Gradient area under scenario curve
     const areaD = scenPts.length >= 2
         ? `${smoothPath(scenPts)} L ${scenPts[scenPts.length - 1].x},${py(minV)} L ${scenPts[0].x},${py(minV)} Z`
         : '';
 
-    // Y-axis ticks
     const tickStep = range > 3000 ? 1000 : range > 1000 ? 500 : range > 400 ? 200 : 100;
     const ticks: number[] = [];
     for (let v = Math.ceil(minV / tickStep) * tickStep; v <= maxV; v += tickStep) ticks.push(v);
 
-    // Goals derived from template
     const goalsData = useMemo(() => {
-        const salTotal = baselineIncome.reduce((a, b) => a + b, 0);
-        const expTotal = baselineExp.reduce((a, b) => a + b, 0);
+        const salTotal     = baselineIncome.reduce((a, b) => a + b, 0);
+        const expTotal     = baselineExp.reduce((a, b) => a + b, 0);
         const baseNetSaved = salTotal - expTotal;
         return [
-            {
-                label:       'Savings floor — $500/period',
-                dot:         GREEN,
-                basePct:     Math.min(100, Math.round((baseNetSaved / Math.max(template.periods.length, 1) / 500) * 100)),
-                scenPct:     Math.min(100, Math.round(((baseNetSaved + cumulativeExtra) / Math.max(template.periods.length, 1) / 500) * 100)),
-            },
-            {
-                label:       'Car repair fund — $1,200 by Apr',
-                dot:         BLUE,
-                basePct:     30,
-                scenPct:     Math.min(100, 30 + Math.round(cumulativeExtra * 0.025)),
-            },
-            {
-                label:       'Trip deposit — $800 by May',
-                dot:         AMBER,
-                basePct:     10,
-                scenPct:     Math.min(100, 10 + Math.round(cumulativeExtra * 0.015)),
-            },
+            { label: 'Savings floor — $500/period',    dot: GREEN, basePct: Math.min(100, Math.round((baseNetSaved / Math.max(template.periods.length, 1) / 500) * 100)), scenPct: Math.min(100, Math.round(((baseNetSaved + cumulativeExtra) / Math.max(template.periods.length, 1) / 500) * 100)) },
+            { label: 'Car repair fund — $1,200 by Apr', dot: BLUE,  basePct: 30,  scenPct: Math.min(100, 30  + Math.round(cumulativeExtra * 0.025)) },
+            { label: 'Trip deposit — $800 by May',      dot: AMBER, basePct: 10,  scenPct: Math.min(100, 10  + Math.round(cumulativeExtra * 0.015)) },
         ];
     }, [baselineIncome, baselineExp, cumulativeExtra, template.periods.length]);
 
     return (
         <Box>
-            {/* ── Scenario header bar ── */}
-            <Box sx={{
-                background: `linear-gradient(135deg, ${MAROON_DARK} 0%, ${MAROON} 60%, #5a1515 100%)`,
-                borderRadius: '8px', px: 2, py: 1.375, mb: 2.5,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1,
-            }}>
+            <Box sx={{ background: `linear-gradient(135deg, ${MAROON_DARK} 0%, ${MAROON} 60%, #5a1515 100%)`, borderRadius: '8px', px: 2, py: 1.375, mb: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                 <Box>
                     <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>What-if scenario explorer</Typography>
-                    <Typography sx={{ fontSize: '0.67rem', color: 'rgba(255,255,255,0.65)', mt: 0.25 }}>
-                        Drag sliders to cut category spending · see live impact on balance and goals
-                    </Typography>
+                    <Typography sx={{ fontSize: '0.67rem', color: 'rgba(255,255,255,0.65)', mt: 0.25 }}>Drag sliders to cut category spending · see live impact on balance and goals</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
                     {PRESETS.map(p => (
-                        <Box key={p.id} onClick={() => applyPreset(p.factor, p.id)} sx={{
-                            px: 1.25, py: 0.4, borderRadius: '5px', cursor: 'pointer',
-                            border: `1px solid ${activePreset === p.id ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)'}`,
-                            bgcolor: activePreset === p.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)',
-                            color: '#fff', fontSize: '0.71rem', fontWeight: 600,
-                            transition: 'all .15s',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' },
-                            userSelect: 'none',
-                        }}>
+                        <Box key={p.id} onClick={() => applyPreset(p.factor, p.id)} sx={{ px: 1.25, py: 0.4, borderRadius: '5px', cursor: 'pointer', border: `1px solid ${activePreset === p.id ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)'}`, bgcolor: activePreset === p.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '0.71rem', fontWeight: 600, transition: 'all .15s', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }, userSelect: 'none' }}>
                             {p.label}
                         </Box>
                     ))}
-                    <Box onClick={resetAll} sx={{ px: 1.25, py: 0.4, borderRadius: '5px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.75)', fontSize: '0.71rem', fontWeight: 600, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }, userSelect: 'none' }}>
-                        Reset
-                    </Box>
+                    <Box onClick={resetAll} sx={{ px: 1.25, py: 0.4, borderRadius: '5px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.75)', fontSize: '0.71rem', fontWeight: 600, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }, userSelect: 'none' }}>Reset</Box>
                 </Box>
             </Box>
 
-            {/* ── Live KPI row ── */}
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1.25, mb: 2.5 }}>
                 {[
-                    {
-                        label:    'End balance — baseline',
-                        baseline: fmtC(endBal),
-                        val:      fmtC(endScenBal),
-                        color:    endScenBal >= 0 ? GREEN : RED,
-                        sub:      savedPerPeriod === 0 ? 'no change yet' : `vs ${fmtC(endBal)} baseline`,
-                    },
-                    {
-                        label:    'Extra saved total',
-                        baseline: '$0',
-                        val:      cumulativeExtra > 0 ? `+${fmtC(cumulativeExtra)}` : '$0',
-                        color:    cumulativeExtra > 0 ? GREEN : NAVY,
-                        sub:      `across ${template.periods.length - applyFrom} periods`,
-                    },
-                    {
-                        label:    'Savings rate',
-                        baseline: `${baseRate.toFixed(1)}%`,
-                        val:      `${scenRate.toFixed(1)}%`,
-                        color:    scenRate >= 10 ? GREEN : scenRate >= 0 ? AMBER : RED,
-                        sub:      scenRate >= 10 ? 'on target' : 'below 10% target',
-                    },
-                    {
-                        label:    'Goals unlocked',
-                        baseline: `${goalsData.filter(g => g.basePct >= 90).length} of 3`,
-                        val:      `${goalsData.filter(g => g.scenPct >= 90).length} of 3`,
-                        color:    goalsData.filter(g => g.scenPct >= 90).length === 3 ? GREEN : RED,
-                        sub:      goalsData.filter(g => g.scenPct >= 90).length < 3 ? 'car fund at risk' : 'all goals funded',
-                    },
+                    { label: 'End balance — baseline', baseline: fmtC(endBal),     val: fmtC(endScenBal),                                       color: endScenBal >= 0 ? GREEN : RED,                             sub: savedPerPeriod === 0 ? 'no change yet' : `vs ${fmtC(endBal)} baseline` },
+                    { label: 'Extra saved total',       baseline: '$0',              val: cumulativeExtra > 0 ? `+${fmtC(cumulativeExtra)}` : '$0', color: cumulativeExtra > 0 ? GREEN : NAVY,                        sub: `across ${template.periods.length - applyFrom} periods` },
+                    { label: 'Savings rate',            baseline: `${baseRate.toFixed(1)}%`, val: `${scenRate.toFixed(1)}%`,                      color: scenRate >= 10 ? GREEN : scenRate >= 0 ? AMBER : RED,      sub: scenRate >= 10 ? 'on target' : 'below 10% target' },
+                    { label: 'Goals unlocked',          baseline: `${goalsData.filter(g => g.basePct >= 90).length} of 3`, val: `${goalsData.filter(g => g.scenPct >= 90).length} of 3`, color: goalsData.filter(g => g.scenPct >= 90).length === 3 ? GREEN : RED, sub: goalsData.filter(g => g.scenPct >= 90).length < 3 ? 'car fund at risk' : 'all goals funded' },
                 ].map((k, i) => (
                     <Box key={i} sx={{ bgcolor: '#fff', borderRadius: '8px', px: 1.5, py: 1.125, border: `0.5px solid ${alpha('#000', 0.09)}`, boxShadow: `0 1px 6px ${alpha('#000', 0.04)}` }}>
                         <Typography sx={{ fontSize: '0.67rem', color: SLATE, mb: 0.25 }}>{k.label}</Typography>
@@ -839,42 +744,23 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                 ))}
             </Box>
 
-            {/* ── Two-column body ── */}
             <Grid container spacing={2.5} alignItems="flex-start">
-
-                {/* LEFT — sliders */}
                 <Grid item xs={12} md={4}>
                     <Box sx={{ bgcolor: '#fff', borderRadius: '10px', border: `0.5px solid ${alpha('#000', 0.09)}`, overflow: 'hidden' }}>
-                        <Box sx={{ px: 1.75, py: 1.125, borderBottom: `0.5px solid ${alpha('#000', 0.07)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box sx={{ px: 1.75, py: 1.125, borderBottom: `0.5px solid ${alpha('#000', 0.07)}` }}>
                             <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Spending cuts per period</Typography>
                         </Box>
-
-                        {/* Apply-from selector */}
                         <Box sx={{ px: 1.75, pt: 1.375, pb: 0.875, borderBottom: `0.5px solid ${alpha('#000', 0.06)}`, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography sx={{ fontSize: '0.75rem', color: SLATE, whiteSpace: 'nowrap' }}>Apply from:</Typography>
-                            <Box
-                                component="select"
-                                value={applyFrom}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setApplyFrom(Number(e.target.value))}
-                                sx={{
-                                    flex: 1, border: `1px solid ${alpha('#000', 0.14)}`, borderRadius: '5px',
-                                    px: 0.875, py: 0.375, fontSize: '0.75rem', color: NAVY, bgcolor: '#fff',
-                                    cursor: 'pointer', fontFamily: 'inherit',
-                                    '&:focus': { outline: `1.5px solid ${MAROON}`, outlineOffset: '1px' },
-                                }}
-                            >
-                                {template.periods.map((p, i) => (
-                                    <option key={i} value={i}>{p}</option>
-                                ))}
+                            <Box component="select" value={applyFrom} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setApplyFrom(Number(e.target.value))} sx={{ flex: 1, border: `1px solid ${alpha('#000', 0.14)}`, borderRadius: '5px', px: 0.875, py: 0.375, fontSize: '0.75rem', color: NAVY, bgcolor: '#fff', cursor: 'pointer', fontFamily: 'inherit', '&:focus': { outline: `1.5px solid ${MAROON}`, outlineOffset: '1px' } }}>
+                                {template.periods.map((p, i) => <option key={i} value={i}>{p}</option>)}
                             </Box>
                         </Box>
-
-                        {/* Slider rows */}
-                        <Box sx={{ px: 1.75, py: 1.25, maxHeight: 420, overflowY: 'auto', scrollbarWidth: 'thin', '&::-webkit-scrollbar': { width: '4px' }, '&::-webkit-scrollbar-track': { background: 'transparent' }, '&::-webkit-scrollbar-thumb': { background: 'rgba(124,29,29,0.18)', borderRadius: '2px' }, '&::-webkit-scrollbar-thumb:hover': { background: 'rgba(124,29,29,0.35)' } }}>
+                        <Box sx={{ px: 1.75, py: 1.25, maxHeight: 420, overflowY: 'auto', scrollbarWidth: 'thin' }}>
                             {categories.map(cat => {
-                                const val      = cuts[cat.label] ?? cat.base;
-                                const delta    = val - cat.base;
-                                const pctFill  = ((val - cat.min) / Math.max(cat.max - cat.min, 1)) * 100;
+                                const val     = cuts[cat.label] ?? cat.base;
+                                const delta   = val - cat.base;
+                                const pctFill = ((val - cat.min) / Math.max(cat.max - cat.min, 1)) * 100;
                                 return (
                                     <Box key={cat.label} sx={{ mb: 1.75, '&:last-child': { mb: 0 } }}>
                                         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 0.5 }}>
@@ -891,33 +777,11 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                                 </Typography>
                                             </Box>
                                         </Box>
-
-                                        {/* Custom slider track */}
                                         <Box sx={{ position: 'relative', height: 20, display: 'flex', alignItems: 'center' }}>
                                             <Box sx={{ position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, bgcolor: alpha('#000', 0.08) }} />
                                             <Box sx={{ position: 'absolute', left: 0, width: `${pctFill}%`, height: 4, borderRadius: 2, bgcolor: delta < 0 ? GREEN : delta > 0 ? RED : alpha(NAVY, 0.3), transition: 'width .1s, background-color .2s' }} />
-                                            {/* baseline marker */}
                                             <Box sx={{ position: 'absolute', left: `${((cat.base - cat.min) / Math.max(cat.max - cat.min, 1)) * 100}%`, width: 2, height: 10, bgcolor: alpha(NAVY, 0.25), borderRadius: 1, transform: 'translateX(-50%)' }} />
-                                            <Box
-                                                component="input" type="range"
-                                                min={cat.min} max={cat.max} step={5} value={val}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                                    setActivePreset(null);
-                                                    setCuts(p => ({ ...p, [cat.label]: Number(e.target.value) }));
-                                                }}
-                                                sx={{
-                                                    position: 'absolute', left: 0, right: 0, width: '100%', m: 0,
-                                                    appearance: 'none', bgcolor: 'transparent', cursor: 'pointer', zIndex: 1, height: 20,
-                                                    '&::-webkit-slider-thumb': {
-                                                        appearance: 'none', width: 16, height: 16, borderRadius: '50%',
-                                                        bgcolor: MAROON, border: '2.5px solid #fff',
-                                                        boxShadow: `0 1px 5px ${alpha(MAROON, 0.4)}`,
-                                                        cursor: 'pointer', mt: '-6px',
-                                                    },
-                                                    '&::-webkit-slider-runnable-track': { height: 4, background: 'transparent' },
-                                                    '&:focus': { outline: 'none' },
-                                                }}
-                                            />
+                                            <Box component="input" type="range" min={cat.min} max={cat.max} step={5} value={val} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setActivePreset(null); setCuts(p => ({ ...p, [cat.label]: Number(e.target.value) })); }} sx={{ position: 'absolute', left: 0, right: 0, width: '100%', m: 0, appearance: 'none', bgcolor: 'transparent', cursor: 'pointer', zIndex: 1, height: 20, '&::-webkit-slider-thumb': { appearance: 'none', width: 16, height: 16, borderRadius: '50%', bgcolor: MAROON, border: '2.5px solid #fff', boxShadow: `0 1px 5px ${alpha(MAROON, 0.4)}`, cursor: 'pointer', mt: '-6px' }, '&::-webkit-slider-runnable-track': { height: 4, background: 'transparent' }, '&:focus': { outline: 'none' } }} />
                                         </Box>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.25 }}>
                                             <Typography sx={{ fontSize: '0.6rem', color: SLATE }}>${fmtS(cat.min)}</Typography>
@@ -927,12 +791,7 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                 );
                             })}
                         </Box>
-
-                        {/* Totals footer */}
-                        <Box sx={{
-                            px: 1.75, py: 1.125, borderTop: `0.5px solid ${alpha('#000', 0.07)}`,
-                            bgcolor: savedPerPeriod > 0 ? alpha(GREEN, 0.04) : alpha('#000', 0.02),
-                        }}>
+                        <Box sx={{ px: 1.75, py: 1.125, borderTop: `0.5px solid ${alpha('#000', 0.07)}`, bgcolor: savedPerPeriod > 0 ? alpha(GREEN, 0.04) : alpha('#000', 0.02) }}>
                             {[
                                 { label: 'Total saved per period', val: savedPerPeriod > 0 ? `+$${fmtS(savedPerPeriod)}` : '$0', color: savedPerPeriod > 0 ? GREEN : NAVY },
                                 { label: `Cumulative extra by ${template.periods[template.periods.length - 1] ?? 'end'}`, val: cumulativeExtra > 0 ? `+$${fmtS(cumulativeExtra)}` : '$0', color: cumulativeExtra > 0 ? GREEN : NAVY },
@@ -946,24 +805,15 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                     </Box>
                 </Grid>
 
-                {/* RIGHT — chart + goals */}
                 <Grid item xs={12} md={8}>
                     <Stack spacing={2}>
-
-                        {/* Balance trajectory chart */}
                         <Box sx={{ bgcolor: '#fff', borderRadius: '10px', border: `0.5px solid ${alpha('#000', 0.09)}`, overflow: 'hidden' }}>
                             <Box sx={{ px: 1.75, py: 1.125, borderBottom: `0.5px solid ${alpha('#000', 0.07)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Balance trajectory</Typography>
                                 <Box sx={{ display: 'flex', gap: 1.5 }}>
-                                    {[
-                                        { stroke: alpha('#000', 0.25), dash: '',    label: 'Baseline' },
-                                        { stroke: GREEN,               dash: '',    label: 'Scenario' },
-                                        { stroke: alpha(AMBER, 0.6),   dash: '4 3', label: 'Balance floor' },
-                                    ].map(l => (
+                                    {[{ stroke: alpha('#000', 0.25), dash: '', label: 'Baseline' }, { stroke: GREEN, dash: '', label: 'Scenario' }, { stroke: alpha(AMBER, 0.6), dash: '4 3', label: 'Balance floor' }].map(l => (
                                         <Box key={l.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            <Box component="svg" width={18} height={8}>
-                                                <line x1="0" y1="4" x2="18" y2="4" stroke={l.stroke} strokeWidth="2" strokeDasharray={l.dash} strokeLinecap="round" />
-                                            </Box>
+                                            <Box component="svg" width={18} height={8}><line x1="0" y1="4" x2="18" y2="4" stroke={l.stroke} strokeWidth="2" strokeDasharray={l.dash} strokeLinecap="round" /></Box>
                                             <Typography sx={{ fontSize: '0.65rem', color: SLATE }}>{l.label}</Typography>
                                         </Box>
                                     ))}
@@ -973,52 +823,23 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                 <Box component="svg" viewBox={`0 0 ${W} ${H}`} sx={{ width: '100%', height: 'auto', overflow: 'visible' }}>
                                     <defs>
                                         <linearGradient id="scen-fill" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%"   stopColor={GREEN} stopOpacity="0.15" />
+                                            <stop offset="0%" stopColor={GREEN} stopOpacity="0.15" />
                                             <stop offset="100%" stopColor={GREEN} stopOpacity="0.02" />
                                         </linearGradient>
                                     </defs>
-
-                                    {/* Grid lines */}
-                                    {ticks.map(v => (
-                                        <line key={v} x1={PAD.l} y1={py(v)} x2={PAD.l + CW} y2={py(v)} stroke={alpha('#000', 0.05)} strokeWidth="1" />
-                                    ))}
-                                    {/* Y labels */}
-                                    {ticks.map(v => (
-                                        <text key={v} x={PAD.l - 6} y={py(v) + 4} textAnchor="end" fontSize="10" fill={SLATE}>
-                                            {v < 0 ? `-$${fmtS(Math.abs(v))}` : `$${fmtS(v)}`}
-                                        </text>
-                                    ))}
-                                    {/* X labels */}
-                                    {template.periods.map((p, i) => (
-                                        <text key={i} x={px(i)} y={PAD.t + CH + 18} textAnchor="middle" fontSize="10"
-                                              fill={isPeriodPresent(template, i) ? MAROON : SLATE}
-                                              fontWeight={isPeriodPresent(template, i) ? '700' : '400'}>
-                                            {p}
-                                        </text>
-                                    ))}
-                                    {/* Zero line */}
-                                    {minV < 0 && maxV > 0 && (
-                                        <line x1={PAD.l} y1={py(0)} x2={PAD.l + CW} y2={py(0)} stroke={alpha('#000', 0.12)} strokeWidth="1" strokeDasharray="3 3" />
-                                    )}
-                                    {/* Balance floor $500 */}
-                                    {py(500) > PAD.t && py(500) < PAD.t + CH && (
-                                        <line x1={PAD.l} y1={py(500)} x2={PAD.l + CW} y2={py(500)} stroke={alpha(AMBER, 0.55)} strokeWidth="1.5" strokeDasharray="5 3" />
-                                    )}
-                                    {/* Scenario area fill */}
+                                    {ticks.map(v => <line key={v} x1={PAD.l} y1={py(v)} x2={PAD.l + CW} y2={py(v)} stroke={alpha('#000', 0.05)} strokeWidth="1" />)}
+                                    {ticks.map(v => <text key={v} x={PAD.l - 6} y={py(v) + 4} textAnchor="end" fontSize="10" fill={SLATE}>{v < 0 ? `-$${fmtS(Math.abs(v))}` : `$${fmtS(v)}`}</text>)}
+                                    {template.periods.map((p, i) => <text key={i} x={px(i)} y={PAD.t + CH + 18} textAnchor="middle" fontSize="10" fill={isPeriodPresent(template, i) ? MAROON : SLATE} fontWeight={isPeriodPresent(template, i) ? '700' : '400'}>{p}</text>)}
+                                    {minV < 0 && maxV > 0 && <line x1={PAD.l} y1={py(0)} x2={PAD.l + CW} y2={py(0)} stroke={alpha('#000', 0.12)} strokeWidth="1" strokeDasharray="3 3" />}
+                                    {py(500) > PAD.t && py(500) < PAD.t + CH && <line x1={PAD.l} y1={py(500)} x2={PAD.l + CW} y2={py(500)} stroke={alpha(AMBER, 0.55)} strokeWidth="1.5" strokeDasharray="5 3" />}
                                     {areaD && <path d={areaD} fill="url(#scen-fill)" />}
-                                    {/* Baseline smooth curve */}
                                     <path d={smoothPath(basePts)} fill="none" stroke={alpha('#000', 0.22)} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                                    {/* Scenario smooth curve */}
                                     <path d={smoothPath(scenPts)} fill="none" stroke={GREEN} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
-                                    {/* Scenario dots */}
-                                    {scenarioBals.map((v, i) => (
-                                        <circle key={i} cx={px(i)} cy={py(v)} r="3.5" fill={v >= 0 ? GREEN : RED} stroke="#fff" strokeWidth="1.5" />
-                                    ))}
+                                    {scenarioBals.map((v, i) => <circle key={i} cx={px(i)} cy={py(v)} r="3.5" fill={v >= 0 ? GREEN : RED} stroke="#fff" strokeWidth="1.5" />)}
                                 </Box>
                             </Box>
                         </Box>
 
-                        {/* Goal impact */}
                         <Box sx={{ bgcolor: '#fff', borderRadius: '10px', border: `0.5px solid ${alpha('#000', 0.09)}`, overflow: 'hidden' }}>
                             <Box sx={{ px: 1.75, py: 1.125, borderBottom: `0.5px solid ${alpha('#000', 0.07)}` }}>
                                 <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Goal impact</Typography>
@@ -1034,7 +855,6 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                                 <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: g.dot, flexShrink: 0 }} />
                                                 <Typography sx={{ fontSize: '0.77rem', fontWeight: 600, color: NAVY }}>{g.label}</Typography>
                                             </Box>
-                                            {/* Baseline bar */}
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.4 }}>
                                                 <Typography sx={{ fontSize: '0.65rem', color: SLATE, minWidth: 52 }}>Baseline</Typography>
                                                 <Box sx={{ flex: 1, height: 6, bgcolor: alpha('#000', 0.07), borderRadius: '3px', overflow: 'hidden' }}>
@@ -1042,7 +862,6 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                                 </Box>
                                                 <Typography sx={{ fontSize: '0.65rem', color: SLATE, minWidth: 28, textAlign: 'right' }}>{g.basePct}%</Typography>
                                             </Box>
-                                            {/* Scenario bar */}
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: needMore ? 0.625 : 0 }}>
                                                 <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: NAVY, minWidth: 52 }}>Scenario</Typography>
                                                 <Box sx={{ flex: 1, height: 6, bgcolor: alpha('#000', 0.07), borderRadius: '3px', overflow: 'hidden' }}>
@@ -1052,16 +871,12 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                             </Box>
                                             {needMore && (
                                                 <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 0.875, py: '2px', borderRadius: '4px', bgcolor: alpha(AMBER, 0.1), border: `1px solid ${alpha(AMBER, 0.28)}` }}>
-                                                    <Typography sx={{ fontSize: '0.64rem', fontWeight: 700, color: AMBER }}>
-                                                        Need ${fmtS(Math.round((100 - g.scenPct) * 12))} more
-                                                    </Typography>
+                                                    <Typography sx={{ fontSize: '0.64rem', fontWeight: 700, color: AMBER }}>Need ${fmtS(Math.round((100 - g.scenPct) * 12))} more</Typography>
                                                 </Box>
                                             )}
                                         </Box>
                                     );
                                 })}
-
-                                {/* Nudge box */}
                                 {savedPerPeriod === 0 ? (
                                     <Box sx={{ mt: 1.5, p: 1.25, borderRadius: '7px', bgcolor: '#fdf8f8', border: `1px solid ${alpha(MAROON, 0.1)}` }}>
                                         <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: NAVY, mb: 0.375 }}>Move the sliders to explore your scenario</Typography>
@@ -1069,37 +884,28 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                     </Box>
                                 ) : (
                                     <Box sx={{ mt: 1.5, p: 1.25, borderRadius: '7px', bgcolor: alpha(GREEN, 0.05), border: `1px solid ${alpha(GREEN, 0.18)}` }}>
-                                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: GREEN, mb: 0.375 }}>
-                                            Saving +${fmtS(savedPerPeriod)}/period from {template.periods[applyFrom]}
-                                        </Typography>
+                                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: GREEN, mb: 0.375 }}>Saving +${fmtS(savedPerPeriod)}/period from {template.periods[applyFrom]}</Typography>
                                         <Typography sx={{ fontSize: '0.71rem', color: SLATE, lineHeight: 1.5 }}>
                                             {goalsData.filter(g => g.scenPct >= 90).length === 3
                                                 ? '✓ All 3 goals fully covered with this scenario.'
-                                                : `${goalsData.filter(g => g.scenPct >= 90).length} of 3 goals covered — cut a bit more to unlock the rest.`
-                                            }
+                                                : `${goalsData.filter(g => g.scenPct >= 90).length} of 3 goals covered — cut a bit more to unlock the rest.`}
                                         </Typography>
                                     </Box>
                                 )}
                             </Box>
                         </Box>
-
                     </Stack>
                 </Grid>
             </Grid>
 
-            {/* ── Period-by-period comparison table ── */}
             <Box sx={{ mt: 2.5 }}>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1 }}>
-                    Period-by-period comparison
-                </Typography>
+                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1 }}>Period-by-period comparison</Typography>
                 <Box sx={{ borderRadius: '10px', overflow: 'hidden', border: `1px solid ${alpha(MAROON, 0.12)}`, boxShadow: `0 1px 8px ${alpha(MAROON, 0.05)}` }}>
                     <Table size="small" sx={{ '& .MuiTableCell-root': { border: 'none' } }}>
                         <TableHead>
                             <TableRow sx={{ bgcolor: '#fdf8f8' }}>
                                 {['Period', 'Baseline bal', '', 'Scenario bal', 'Gain'].map((h, i) => (
-                                    <TableCell key={i} align={i === 0 ? 'left' : 'right'} sx={{ fontWeight: 600, color: MAROON, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.125, px: 1.75, borderBottom: `1.5px solid ${alpha(MAROON, 0.12)}` }}>
-                                        {h}
-                                    </TableCell>
+                                    <TableCell key={i} align={i === 0 ? 'left' : 'right'} sx={{ fontWeight: 600, color: MAROON, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.125, px: 1.75, borderBottom: `1.5px solid ${alpha(MAROON, 0.12)}` }}>{h}</TableCell>
                                 ))}
                             </TableRow>
                         </TableHead>
@@ -1112,21 +918,12 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
                                 return (
                                     <TableRow key={i} sx={{ bgcolor: isP ? alpha(MAROON, 0.02) : i % 2 === 0 ? '#fff' : '#fafbfc', '&:hover': { bgcolor: alpha(MAROON, 0.025) } }}>
                                         <TableCell sx={{ py: 0.875, px: 1.75, fontSize: '0.77rem', color: isP ? MAROON : NAVY, fontWeight: isP ? 700 : 400, borderBottom: `0.5px solid ${alpha('#000', 0.04)}` }}>
-                                            {p}
-                                            {isP && <Box component="span" sx={{ ml: 0.75, fontSize: '0.6rem', px: 0.625, py: 0.1, borderRadius: '10px', bgcolor: alpha(MAROON, 0.1), color: MAROON, fontWeight: 700 }}>now</Box>}
+                                            {p}{isP && <Box component="span" sx={{ ml: 0.75, fontSize: '0.6rem', px: 0.625, py: 0.1, borderRadius: '10px', bgcolor: alpha(MAROON, 0.1), color: MAROON, fontWeight: 700 }}>now</Box>}
                                         </TableCell>
-                                        <TableCell align="right" sx={{ py: 0.875, px: 1.75, fontSize: '0.77rem', color: bb >= 0 ? NAVY : RED, fontVariantNumeric: 'tabular-nums', borderBottom: `0.5px solid ${alpha('#000', 0.04)}` }}>
-                                            {fmtC(bb)}
-                                        </TableCell>
-                                        <TableCell align="right" sx={{ py: 0.875, px: 0.5, fontSize: '0.65rem', color: gain > 0 ? GREEN : SLATE, borderBottom: `0.5px solid ${alpha('#000', 0.04)}` }}>
-                                            {gain > 0 ? '▶' : ''}
-                                        </TableCell>
-                                        <TableCell align="right" sx={{ py: 0.875, px: 1.75, fontSize: '0.77rem', fontWeight: gain !== 0 ? 600 : 400, color: sb >= 0 ? GREEN : RED, fontVariantNumeric: 'tabular-nums', borderBottom: `0.5px solid ${alpha('#000', 0.04)}`, transition: 'color .2s' }}>
-                                            {fmtC(sb)}
-                                        </TableCell>
-                                        <TableCell align="right" sx={{ py: 0.875, px: 1.75, fontSize: '0.77rem', fontWeight: 600, color: gain > 0 ? GREEN : gain < 0 ? RED : alpha(SLATE, 0.4), fontVariantNumeric: 'tabular-nums', borderBottom: `0.5px solid ${alpha('#000', 0.04)}`, transition: 'color .2s' }}>
-                                            {gain > 0 ? `+${fmtC(gain)}` : gain < 0 ? fmtC(gain) : '—'}
-                                        </TableCell>
+                                        <TableCell align="right" sx={{ py: 0.875, px: 1.75, fontSize: '0.77rem', color: bb >= 0 ? NAVY : RED, fontVariantNumeric: 'tabular-nums', borderBottom: `0.5px solid ${alpha('#000', 0.04)}` }}>{fmtC(bb)}</TableCell>
+                                        <TableCell align="right" sx={{ py: 0.875, px: 0.5, fontSize: '0.65rem', color: gain > 0 ? GREEN : SLATE, borderBottom: `0.5px solid ${alpha('#000', 0.04)}` }}>{gain > 0 ? '▶' : ''}</TableCell>
+                                        <TableCell align="right" sx={{ py: 0.875, px: 1.75, fontSize: '0.77rem', fontWeight: gain !== 0 ? 600 : 400, color: sb >= 0 ? GREEN : RED, fontVariantNumeric: 'tabular-nums', borderBottom: `0.5px solid ${alpha('#000', 0.04)}`, transition: 'color .2s' }}>{fmtC(sb)}</TableCell>
+                                        <TableCell align="right" sx={{ py: 0.875, px: 1.75, fontSize: '0.77rem', fontWeight: 600, color: gain > 0 ? GREEN : gain < 0 ? RED : alpha(SLATE, 0.4), fontVariantNumeric: 'tabular-nums', borderBottom: `0.5px solid ${alpha('#000', 0.04)}`, transition: 'color .2s' }}>{gain > 0 ? `+${fmtC(gain)}` : gain < 0 ? fmtC(gain) : '—'}</TableCell>
                                     </TableRow>
                                 );
                             })}
@@ -1139,7 +936,7 @@ const WhatIfScenario: React.FC<{ template: SpreadsheetTemplate }> = ({ template 
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
-// ── PlanningView ──────────────────────────────────────────────────────────────
+// ── PlanningView ──────────────────────────────────────════════════════════════
 // ════════════════════════════════════════════════════════════════════════════════
 
 interface Props {
@@ -1151,10 +948,12 @@ interface Props {
 }
 
 const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter, onCellChange, onSaveTemplate }) => {
-    const [subView,         setSubView]         = useState<SubViewMode>('dashboard');
-    const [editMode,        setEditMode]        = useState(false);
-    const [mode,            setMode]            = useState<'manual' | 'auto'>('auto');
-    const [categoryTargets, setCategoryTargets] = useState<CategoryTargets>({});
+    const [subView,           setSubView]           = useState<SubViewMode>('dashboard');
+    const [mode,              setMode]              = useState<'manual' | 'auto'>('auto');
+    const [categoryTargets,   setCategoryTargets]   = useState<CategoryTargets>({});
+    const [monthItems,        setMonthItems]        = useState<MonthItemMap>({});
+    const [addTarget,         setAddTarget]         = useState<string | null>(null);
+    const [futurePeriodOpen,  setFuturePeriodOpen]  = useState(false);
 
     const defaultPeriod = useMemo(() => {
         const pi = template.periods.findIndex((_, pi) => isPeriodPresent(template, pi));
@@ -1164,13 +963,10 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
 
     const [selectedPeriod, setSelectedPeriod] = useState<number>(defaultPeriod);
 
-    // Month-level goals & plans — keyed by month name, stored in local state
-    const [monthItems,  setMonthItems]  = useState<MonthItemMap>({});
-    const [addTarget,   setAddTarget]   = useState<string | null>(null); // month name
-
     const handleAddItem = (monthName: string, item: MonthItem) => {
         setMonthItems(prev => ({ ...prev, [monthName]: [...(prev[monthName] ?? []), item] }));
     };
+
     const handleUpdateItem = (monthName: string, id: string, status: ItemStatus) => {
         setMonthItems(prev => ({
             ...prev,
@@ -1185,6 +981,15 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
             return { ...prev, [key]: value };
         });
     }, []);
+
+    const handleFuturePeriodApply = useCallback(
+        (periodIndex: number, values: Record<string, number | null>) => {
+            template.rows.forEach((row, ri) => {
+                if (row.label in values) onCellChange(ri, periodIndex, values[row.label]);
+            });
+        },
+        [template.rows, onCellChange],
+    );
 
     const totalSalary   = template.rows.find(r => r.label === 'Salary')?.values.reduce((a: number, v) => a + (v ?? 0), 0) ?? 0;
     const totalExpenses = template.rows.find(r => r.rowType === 'expenses')?.values.reduce((a: number, v) => a + (v ?? 0), 0) ?? 0;
@@ -1212,14 +1017,6 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
     const dashboardContent = (
         <Grid container spacing={2.5} alignItems="flex-start">
             <Grid item xs={12} lg={7}>
-                {/*{mode === 'auto' && (*/}
-                {/*    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, bgcolor: '#EAF3DE', border: '1px solid #97C459', borderRadius: '8px', px: 1.5, py: 1.125, mb: 1.75 }}>*/}
-                {/*        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#639922', mt: 0.35, flexShrink: 0 }} />*/}
-                {/*        <Typography sx={{ fontSize: '0.77rem', color: '#27500A', lineHeight: 1.5 }}>*/}
-                {/*            <strong>Auto-plan mode</strong> — Claude has analysed your history and suggests targets per category. Accept all or tweak individual lines. Indicators update live as you adjust.*/}
-                {/*        </Typography>*/}
-                {/*    </Box>*/}
-                {/*)}*/}
                 <Box sx={{ mb: 0.5 }}>
                     <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: SLATE, textTransform: 'uppercase', letterSpacing: '0.07em', mb: 1 }}>
                         Timeline — click a period to inspect or edit
@@ -1260,7 +1057,6 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                         ))}
                     </Box>
                 </Box>
-                {/* Month goals & plans detail panel */}
                 {(() => {
                     const activeMth = months.find(m => m.cols.includes(selectedPeriod));
                     if (!activeMth) return null;
@@ -1304,21 +1100,20 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                         {subView === 'dashboard' && <ModeToggle active={mode} onChange={setMode} />}
+
+                        {/* ── Future period button — classic view only ── */}
                         {subView === 'classic' && (
-                            <>
-                                <Button size="small" onClick={() => setEditMode(v => !v)} sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.72rem', gap: 0.5, px: 1.25, py: 0.4, border: `1px solid ${editMode ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)'}`, color: '#fff', bgcolor: editMode ? 'rgba(255,255,255,0.18)' : 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}>
-                                    {editMode ? <EditOff sx={{ fontSize: '0.8rem' }} /> : <Edit sx={{ fontSize: '0.8rem' }} />}
-                                    {editMode ? 'Stop' : 'Edit'}
-                                </Button>
-                                {editMode && onSaveTemplate && (
-                                    <Button size="small" onClick={onSaveTemplate} sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.72rem', gap: 0.5, px: 1.25, py: 0.4, bgcolor: 'rgba(255,255,255,0.18)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' } }}>
-                                        <Save sx={{ fontSize: '0.8rem' }} /> Save
-                                    </Button>
-                                )}
-                            </>
+                            <Button
+                                size="small"
+                                onClick={() => setFuturePeriodOpen(true)}
+                                sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.72rem', gap: 0.5, px: 1.25, py: 0.4, border: '1px solid rgba(255,255,255,0.25)', color: '#fff', bgcolor: 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}
+                            >
+                                + Future period
+                            </Button>
                         )}
+
                         <Box sx={{ width: '1px', height: 20, bgcolor: 'rgba(255,255,255,0.2)' }} />
-                        <SubViewToggle active={subView} onChange={v => { setSubView(v); setEditMode(false); }} />
+                        <SubViewToggle active={subView} onChange={v => setSubView(v)} />
                         <Button size="small" sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.72rem', px: 1.25, py: 0.4, bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
                             <Add sx={{ fontSize: '0.85rem' }} /> Add period
                         </Button>
@@ -1328,10 +1123,10 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                 {/* KPI strip */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: `0.5px solid ${alpha('#000', 0.08)}` }}>
                     {[
-                        { label: 'Avg income / period',  val: `$${fmtS(totalSalary / n)}`,  sub: 'historical avg',  color: NAVY                          },
-                        { label: 'Avg spend / period',   val: `$${fmtS(totalExpenses / n)}`, sub: 'actuals only',    color: MAROON                        },
-                        { label: 'Projected balance',    val: `$${fmtS(finalBalance)}`,       sub: 'end of plan',     color: finalBalance >= 0 ? GREEN : RED },
-                        { label: 'Goals on track',       val: '3 of 3',                        sub: 'all goals met',   color: GREEN                         },
+                        { label: 'Avg income / period', val: `$${fmtS(totalSalary / n)}`,  sub: 'historical avg',  color: NAVY                            },
+                        { label: 'Avg spend / period',  val: `$${fmtS(totalExpenses / n)}`, sub: 'actuals only',    color: MAROON                          },
+                        { label: 'Projected balance',   val: `$${fmtS(finalBalance)}`,       sub: 'end of plan',     color: finalBalance >= 0 ? GREEN : RED  },
+                        { label: 'Goals on track',      val: '3 of 3',                        sub: 'all goals met',   color: GREEN                           },
                     ].map((kpi, i) => (
                         <Box key={i} sx={{ px: 2, py: 1.375, borderRight: i < 3 ? `0.5px solid ${alpha('#000', 0.08)}` : 'none' }}>
                             <Typography sx={{ fontSize: '0.68rem', color: SLATE, mb: 0.25 }}>{kpi.label}</Typography>
@@ -1344,10 +1139,8 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                 {/* Content */}
                 <Box sx={{ p: subView === 'dashboard' ? 2 : 2.75, bgcolor: '#fff' }}>
                     {subView === 'dashboard' && dashboardContent}
-                    {subView === 'classic' && (
-                        <ClassicSpreadsheet template={template} editMode={editMode} onCellChange={onCellChange} periodFilter={periodFilter} onPeriodFilter={onPeriodFilter} />
-                    )}
-                    {subView === 'scenario' && <WhatIfScenario template={template} />}
+                    {subView === 'classic'   && <ClassicSpreadsheet template={template} editMode={false} onCellChange={onCellChange} periodFilter={periodFilter} onPeriodFilter={onPeriodFilter} />}
+                    {subView === 'scenario'  && <WhatIfScenario template={template} />}
                 </Box>
             </Box>
 
@@ -1373,8 +1166,8 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                                                 { v: `$${fmt(totalSalary)}`,   c: NAVY   },
                                                 { v: `$${fmt(totalExpenses)}`, c: MAROON },
                                                 { v: `$${fmt(netSaved)}`,      c: netSaved >= 0 ? GREEN : RED },
-                                                { v: `${savingsRate >= 0 ? '+' : ''}${savingsRate.toFixed(1)}%`, c: savingsRate >= 0 ? GREEN : RED },
-                                                { v: `${overBudgetPct > 100 ? '+' : '–'}${Math.abs(overBudgetPct - 100).toFixed(1)}%`, c: overBudgetPct > 100 ? RED : GREEN },
+                                                { v: `${savingsRate >= 0 ? '+' : ''}${savingsRate.toFixed(1)}%`,                              c: savingsRate   >= 0 ? GREEN : RED },
+                                                { v: `${overBudgetPct > 100 ? '+' : '–'}${Math.abs(overBudgetPct - 100).toFixed(1)}%`, c: overBudgetPct > 100 ? RED   : GREEN },
                                             ].map(({ v, c }, i) => (
                                                 <TableCell key={i} sx={{ fontWeight: 600, fontSize: '0.86rem', color: c, py: 1.5, px: 2, fontVariantNumeric: 'tabular-nums' }}>{v}</TableCell>
                                             ));
@@ -1386,6 +1179,7 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                     </Box>
                 </Box>
             )}
+
             {/* Add item modal */}
             {addTarget && (
                 <AddItemModal
@@ -1394,10 +1188,17 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                     onAdd={item => { handleAddItem(addTarget, item); setAddTarget(null); }}
                 />
             )}
+
+            {/* Future period dialog — classic view only */}
+            {futurePeriodOpen && (
+                <FuturePeriodDialog
+                    template={template}
+                    onClose={() => setFuturePeriodOpen(false)}
+                    onApply={handleFuturePeriodApply}
+                />
+            )}
         </Box>
-
-
-);
+    );
 };
 
 export default PlanningView;

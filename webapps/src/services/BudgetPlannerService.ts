@@ -15,6 +15,29 @@ class BudgetPlannerService {
         return BudgetPlannerService.instance;
     }
 
+
+    public async updateCategoryAmounts(templateId: number, userId: number, dateRange: { startDate: string; endDate: string }, categories: { category: string; planned: number; budgeted: number }[]): Promise<BPTemplate>
+    {
+        if (!Number.isInteger(templateId) || templateId < 1)
+        {
+            throw new Error("Invalid templateId. Must be a positive integer.");
+        }
+        if (!Number.isInteger(userId) || userId < 1)
+        {
+            throw new Error("Invalid userId. Must be a positive integer.");
+        }
+        try
+        {
+            const response = await axios.put<BPTemplate>(`${API_BASE_URL}/budget-planner/${templateId}/update-category-amounts`, { userId, dateRange, categories });
+            return response.data;
+        }
+        catch(error)
+        {
+            console.error("There was an error updating the template category amounts: ", error);
+            throw error;
+        }
+    }
+
     public async updateTemplateCategories(templateId: number, userId: number) : Promise<BPTemplate>
     {
         try

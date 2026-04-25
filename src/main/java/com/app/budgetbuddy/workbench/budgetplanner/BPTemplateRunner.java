@@ -46,7 +46,7 @@ public class BPTemplateRunner
         this.bpTemplateUpdaterService = templateUpdaterService;
     }
 
-    public BPTemplate updateBPTemplateCategories(Long templateId, Long userId)
+    public BPTemplate runFuturePeriodTemplateBuild(Long templateId, Long userId, DateRange dateRange, List<FuturePeriodCategories> categories)
     {
         Optional<BPTemplateDetail> bpTemplateDetailOptional = templateDetailsService.findByTemplateId(templateId);
         if(bpTemplateDetailOptional.isEmpty())
@@ -56,7 +56,34 @@ public class BPTemplateRunner
         try
         {
             BPTemplateDetail bpTemplateDetail = bpTemplateDetailOptional.get();
-            bpTemplateUpdaterService.updateBPCategories(bpTemplateDetail, userId);
+            bpTemplateUpdaterService.updateFuturePeriodBPCategories(bpTemplateDetail, categories, dateRange);
+            return templateService.getTemplateByUserAndId(userId, templateId).get();
+
+        }catch(DataException e){
+            log.error("Error updating budget template categories: ", e);
+            throw new DataException("Error updating budget template categories");
+        }
+    }
+
+    public BPTemplate updateBPTemplateCategories(Long templateId, Long userId)
+    {
+        Optional<BPTemplateDetail> bpTemplateDetailOptional = templateDetailsService.findByTemplateId(templateId);
+        if(bpTemplateDetailOptional.isEmpty())
+        {
+            throw new DataException("Budget template detail not found");
+        }
+        BPTemplateType templateType = templateService.getTemplateTypeById(templateId);
+        try
+        {
+            BPTemplateDetail bpTemplateDetail = bpTemplateDetailOptional.get();
+            if(templateType == BPTemplateType.MONTHLY_STD)
+            {
+                bpTemplateUpdaterService.updateBPCategories(bpTemplateDetail, userId, false);
+            }
+            else if(templateType == BPTemplateType.INCOME_STD)
+            {
+                bpTemplateUpdaterService.updateBPCategories(bpTemplateDetail, userId, true);
+            }
             return templateService.getTemplateByUserAndId(userId, templateId).get();
         }catch(DataException e){
             log.error("Error updating budget template categories: ", e);
@@ -73,16 +100,6 @@ public class BPTemplateRunner
            log.error("Error getting user budget templates: ", e);
            return Collections.emptyList();
         }
-    }
-
-    public BPTemplate runUpdateTemplatePeriod(Period period, Long templateId)
-    {
-        return null;
-    }
-
-    public BPTemplate runTemplateSyncUpdate(Long templateId)
-    {
-        return null;
     }
 
     public BPTemplate runCustomTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<DateRange> dateRanges, List<String> categoryHeaders, List<CategoryAllocation> categoryAllocations, BPIncomeCriteria incomeCriteria)
@@ -125,8 +142,7 @@ public class BPTemplateRunner
 
         List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByDateRanges(dateRanges, userId);
         BPTemplate initialTemplate = templateBuilder.buildInitialTemplate(
-                templateType, period, requireCategoryHeaders, categoryHeaders, incomeCriteria, subBudgets, startDay
-        );
+                templateType, period, requireCategoryHeaders, categoryHeaders, incomeCriteria, subBudgets, startDay);
 
         BPGoalsDetail initialGoals   = initialTemplate.getBpGoalsDetail();
         BPTemplateDetail initialDetail = initialTemplate.getBpTemplateDetail();

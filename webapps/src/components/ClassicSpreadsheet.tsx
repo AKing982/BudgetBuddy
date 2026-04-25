@@ -544,7 +544,14 @@ const ClassicSpreadsheet: React.FC<Props> = ({
                                              }) => {
     const t           = useMemo(() => filterByPeriod(template, periodFilter), [template, periodFilter]);
     const { months, periods, rows } = t;
+    const [futurePeriodOpen, setFuturePeriodOpen] = useState(false);
     const isMonthStart = (ci: number) => months.some(m => m.cols[0] === ci);
+
+    const handleFuturePeriodApply = (periodIndex: number, values: Record<string, number | null>) =>{
+        template.rows.forEach((row, ri) => {
+            if (row.label in values) onCellChange(ri, periodIndex, values[row.label]);
+        });
+    }
 
     // Precompute per-row averages for heat coloring
     const rowAvgMap = useMemo(() => {

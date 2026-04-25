@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.BPBudgetCategory;
-import com.app.budgetbuddy.domain.BPCategory;
-import com.app.budgetbuddy.domain.BPGridRow;
-import com.app.budgetbuddy.domain.DateRange;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BPCategoryEntity;
 import com.app.budgetbuddy.entities.BPColumnEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
@@ -191,25 +188,91 @@ public class BPCategoryServiceImpl implements BPCategoryService
     public void updateCategories(List<BPCategory> categories) {
         try
         {
-//            categories.forEach(category -> {
-//                BPCategoryEntity categoryEntity = bpBudgetCategoryToEntityConverter.convert(category);
-//                Long id = categoryEntity.getId();
-//                BigDecimal updatedAmount = categoryEntity.getBudgetedAmount();
-//                log.info("Updating budget category id={} amount={}", id, updatedAmount);
-//                bpBudgetCategoryRepository.updateActualAmount(id, categoryEntity.getActualAmount());
-//            });
             categories.forEach(category -> {
-                if (category.getRange() == null || category.getName() == null) return;
-                bpBudgetCategoryRepository.updateActualAmountByCategoryAndDateRange(
-                        category.getName(),
-                        category.getRange().getStartDate(),
-                        category.getRange().getEndDate(),
-                        category.getActual()
-                );
+                if(category.getRange() == null || category.getName() == null) return;
+                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findByCategoryAndStartDateAndEndDate(category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+                if(existing.isEmpty()) return;
+                BigDecimal currentActual = existing.get().getActualAmount();
+                BigDecimal incomingActual = category.getActual();
+                if(incomingActual != null && incomingActual.compareTo(currentActual != null ? currentActual : BigDecimal.ZERO) != 0)
+                {
+                    bpBudgetCategoryRepository.updateActualAmountByCategoryAndDateRange(
+                            category.getName(),
+                            category.getRange().getStartDate(),
+                            category.getRange().getEndDate(),
+                            incomingActual
+                    );
+                }
             });
+
+        }catch(DataAccessException e){
+            log.error("There was an error updating the budget categories", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateCategoryPlannedAmounts(List<BPCategory> categories)
+    {
+        try
+        {
+            for(BPCategory category : categories)
+            {
+                if(category == null) continue;
+                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findByCategoryAndStartDateAndEndDate(category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+                if(existing.isEmpty())
+                {
+                    log.warn("No existing category found for category={} startDate={} endDate={}", category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+                    continue;
+                }
+                log.info("Updating planned amount for category={} startDate={} endDate={}", category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+                BigDecimal existingPlannedAmount = existing.get().getPlannedAmount();
+                BigDecimal incomingPlannedAmount = category.getPlannedAmount();
+                log.info("New planned amount={} existing planned amount={}", incomingPlannedAmount, existingPlannedAmount);
+                if(incomingPlannedAmount != null && incomingPlannedAmount.compareTo(existingPlannedAmount != null ? existingPlannedAmount : BigDecimal.ZERO) != 0)
+                {
+                    bpBudgetCategoryRepository.updatePlannedAmountByCategoryAndDateRange(
+                            category.getName(),
+                            category.getRange().getStartDate(),
+                            category.getRange().getEndDate(),
+                            incomingPlannedAmount
+                    );
+                }
+            }
         }catch(DataAccessException e){
             log.error("There was an error updating the budget categories", e);
             return;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void saveNewTemplateCategories(List<BPCategory> categories, Long templateDetailId)
+    {
+        try
+        {
+            categories.forEach(category -> {
+                BPCategoryEntity categoryEntity = bpBudgetCategoryToEntityConverter.convert(category);
+                bpBudgetCategoryRepository.save(categoryEntity);
+            });
+        }catch(DataAccessException e){
+            log.error("There was an error saving the budget categories", e);
+        }
+    }
+
+    @Override
+    public List<BPCategory> updateBPCategoriesByFutureAmounts(DateRange dateRange, Long userId, List<FuturePeriodCategories> futurePeriodCategories)
+    {
+        if(dateRange == null || futurePeriodCategories == null || futurePeriodCategories.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            return List.of();
+        }catch(DataAccessException e){
+            log.error("There was an error updating the budget categories", e);
+            return Collections.emptyList();
         }
     }
 }

@@ -4,7 +4,7 @@ import {
     Box, Typography, Container, Grid, Grow, Button,
     Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, FormControl, InputLabel, Select, MenuItem,
-    Chip, Card,
+    Chip, Card, CircularProgress,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Add, Save } from '@mui/icons-material';
@@ -235,15 +235,41 @@ const BudgetPlanner: React.FC = () => {
     }, []);
 
     // ── Sync on template switch ───────────────────────────────────────────────
+    // useEffect(() => {
+    //     const userId = Number(sessionStorage.getItem('userId'));
+    //     if (!userId || !selectedId) return;
+    //     let cancelled = false;
+    //
+    //     const sync = async () => {
+    //         const templateId = Number(selectedId);
+    //         if (isNaN(templateId) || syncing) return;
+    //         setSyncing(true);
+    //         try {
+    //             const updated = await service.updateTemplateCategories(templateId, userId);
+    //             if (cancelled) return;
+    //             const mapped = mapBPTemplateToSpreadsheet(updated);
+    //             setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
+    //         } catch (err) {
+    //             console.error('Sync failed:', err);
+    //         } finally {
+    //             if (!cancelled) setSyncing(false);
+    //         }
+    //     };
+    //
+    //     sync();
+    //     return () => { cancelled = true; };
+    // }, [selectedId]);
     useEffect(() => {
         const userId = Number(sessionStorage.getItem('userId'));
         if (!userId || !selectedId) return;
-        let cancelled = false;
 
-        const sync = async () => {
-            const templateId = Number(selectedId);
-            if (isNaN(templateId) || syncing) return;
-            setSyncing(true);
+        const templateId = Number(selectedId);
+        if (isNaN(templateId)) return;
+
+        let cancelled = false;
+        setSyncing(true);
+
+        (async () => {
             try {
                 const updated = await service.updateTemplateCategories(templateId, userId);
                 if (cancelled) return;
@@ -254,12 +280,9 @@ const BudgetPlanner: React.FC = () => {
             } finally {
                 if (!cancelled) setSyncing(false);
             }
-        };
+        })();
 
-        sync();
-        const onVisible = () => { if (document.visibilityState === 'visible') sync(); };
-        document.addEventListener('visibilitychange', onVisible);
-        return () => { cancelled = true; document.removeEventListener('visibilitychange', onVisible); };
+        return () => { cancelled = true; setSyncing(false); };
     }, [selectedId]);
 
     const currentTemplate = templates.find(t => t.id === selectedId) ?? templates[0];
@@ -368,14 +391,43 @@ const BudgetPlanner: React.FC = () => {
                 {/* Planning view */}
                 {currentTemplate && (
                     <Grow in={animateIn} timeout={600}>
-                        <Box>
-                            <PlanningView
-                                template={currentTemplate}
-                                periodFilter={periodFilter}
-                                onPeriodFilter={setPeriodFilter}
-                                onCellChange={handleCellChange}
-                                onSaveTemplate={() => setOpenSaveDialog(true)}
-                            />
+                        <Box sx={{ position: 'relative' }}>
+                            {syncing && (
+                                <Box sx={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    zIndex: 10,
+                                    borderRadius: '12px',
+                                    bgcolor: alpha('#fff', 0.55),
+                                    backdropFilter: 'blur(3px)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 1.5,
+                                    pointerEvents: 'all',
+                                }}>
+                                    <CircularProgress size={36} thickness={3.5} sx={{ color: MAROON }} />
+                                    <Typography sx={{
+                                        fontSize: '0.78rem',
+                                        fontWeight: 600,
+                                        color: MAROON,
+                                        letterSpacing: '0.04em',
+                                        textTransform: 'uppercase',
+                                    }}>
+                                        Syncing categories…
+                                    </Typography>
+                                </Box>
+                            )}
+                            <Box sx={{ pointerEvents: syncing ? 'none' : 'auto' }}>
+                                <PlanningView
+                                    template={currentTemplate}
+                                    periodFilter={periodFilter}
+                                    onPeriodFilter={setPeriodFilter}
+                                    onCellChange={handleCellChange}
+                                    onSaveTemplate={() => setOpenSaveDialog(true)}
+                                />
+                            </Box>
                         </Box>
                     </Grow>
                 )}

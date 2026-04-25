@@ -5,16 +5,15 @@ import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.BPCategoryService;
 import com.app.budgetbuddy.services.BPColumnService;
 import com.app.budgetbuddy.services.TransactionCategoryService;
+import com.app.budgetbuddy.workbench.IncomeRangeBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.function.Function;
 
 @Slf4j
@@ -23,16 +22,16 @@ public class BPLayoutBuilderService
 {
     private final BPColumnBuilderService columnBuilder;
     private final BPCategoryRowBuilderService bpRowDataBuilderService;
-    private final TransactionCategoryService transactionCategoryService;
+    private final IncomeRangeBuilderService incomeRangeBuilderService;
 
     @Autowired
     public BPLayoutBuilderService(BPColumnBuilderService columnBuilder,
                                   BPCategoryRowBuilderService bpRowDataBuilderService,
-                                  TransactionCategoryService transactionCategoryService)
+                                  IncomeRangeBuilderService incomeRangeBuilderService)
     {
         this.columnBuilder = columnBuilder;
         this.bpRowDataBuilderService = bpRowDataBuilderService;
-        this.transactionCategoryService = transactionCategoryService;
+        this.incomeRangeBuilderService = incomeRangeBuilderService;
     }
 
     public BPLayout buildLayout(BPTemplateType templateType, BPIncomeCriteria incomeCriteria, boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets, Integer startDay)
@@ -50,37 +49,6 @@ public class BPLayoutBuilderService
         };
     }
 
-    private List<DateRange> buildIncomeRanges(final List<SubBudget> subBudgets, final Integer startDay)
-    {
-        List<LocalDate> allPostedDates = new ArrayList<>();
-        for(int i = 0; i < subBudgets.size(); i++)
-        {
-            SubBudget subBudget = subBudgets.get(i);
-            Long userId = subBudget.getBudget().getUserId();
-            Long subBudgetId = subBudget.getId();
-            log.info("Building income ranges for sub budget: {}", subBudgetId);
-            LocalDate startDate = (i == 0 && startDay != null) ? subBudget.getStartDate().withDayOfMonth(startDay) : subBudget.getStartDate();
-            LocalDate end = subBudget.getEndDate();
-            List<LocalDate> incomePostedDates = transactionCategoryService.getIncomePostedDatesByDateShift(userId, subBudgetId, startDate, end);
-            log.info("Income posted dates: {}", incomePostedDates);
-            allPostedDates.addAll(incomePostedDates);
-        }
-        allPostedDates.sort(LocalDate::compareTo);
-        if(startDay != null && !allPostedDates.isEmpty())
-        {
-            allPostedDates.set(0, allPostedDates.get(0).withDayOfMonth(startDay));
-        }
-        Set<DateRange> uniquePostedRanges = new LinkedHashSet<>();
-        for(int i = 0; i < allPostedDates.size() - 1; i++)
-        {
-            LocalDate current = allPostedDates.get(i);
-            LocalDate dayPriorNext = allPostedDates.get(i + 1).minusDays(1);
-            uniquePostedRanges.add(new DateRange(current, dayPriorNext));
-        }
-        log.info("Income ranges: {}", uniquePostedRanges);
-        return new ArrayList<>(uniquePostedRanges);
-    }
-
     private BPLayout buildCombinedLayout(Period period,
                                          List<SubBudget> subBudgets,
                                          BPIncomeCriteria income,
@@ -95,7 +63,7 @@ public class BPLayoutBuilderService
         int columnIndexOffset = 0;
         if(isIncomeTemplate)
         {
-            List<DateRange> incomeRanges = buildIncomeRanges(subBudgets, startDay);
+            List<DateRange> incomeRanges = incomeRangeBuilderService.generateStandardIncomeRanges(subBudgets, startDay);
             List<BPColumn> incomeColumns = columnBuilder.buildColumns(period, incomeRanges, columnIndexOffset);
             allColumns.addAll(incomeColumns);
             for(SubBudget subBudget : subBudgets)

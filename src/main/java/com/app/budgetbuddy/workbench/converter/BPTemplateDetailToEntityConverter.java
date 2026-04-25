@@ -17,6 +17,7 @@ public class BPTemplateDetailToEntityConverter implements Converter<BPTemplateDe
                 .id(detail.getId())
                 .createdAt(detail.getCreatedAt())
                 .lastUpdated(detail.getLastUpdated())
+                .enableSync(true)
                 .build();
     }
 }

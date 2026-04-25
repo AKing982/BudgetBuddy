@@ -64,6 +64,9 @@ public class BudgetCategoryEntity
     @Column(name="isOverSpent")
     private Boolean isOverSpent;
 
+    @Column(name="is_updated")
+    private boolean is_updated;
+
     @Column(name="createdat")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdat;

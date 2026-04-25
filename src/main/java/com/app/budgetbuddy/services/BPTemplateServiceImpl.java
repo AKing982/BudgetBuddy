@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BPTemplate;
+import com.app.budgetbuddy.domain.BPTemplateType;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
@@ -120,6 +121,24 @@ public class BPTemplateServiceImpl implements BPTemplateService
         }catch(DataAccessException e){
             log.error("There was an error retrieving the user budget templates", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public BPTemplateType getTemplateTypeById(Long id)
+    {
+        try
+        {
+            Optional<BPTemplateType> templateType = repository.findTypeById(id);
+            if(templateType.isEmpty())
+            {
+                throw new RuntimeException("Template type not found");
+            }
+            return templateType.get();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the user budget templates", e);
+            return null;
         }
     }
 

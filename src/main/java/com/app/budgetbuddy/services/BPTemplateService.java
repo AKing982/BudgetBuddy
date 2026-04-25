@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BPTemplate;
+import com.app.budgetbuddy.domain.BPTemplateType;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
 
 import java.util.List;
@@ -11,6 +12,8 @@ public interface BPTemplateService extends ServiceModel<BPTemplateEntity>
     BPTemplateEntity saveTemplate(BPTemplate template, Long userId);
 
     List<BPTemplate> getAllUserBudgetTemplates(Long userId);
+
+    BPTemplateType getTemplateTypeById(Long id);
 
     Optional<BPTemplate> getTemplateByUserAndId(Long userId, Long templateId);
 

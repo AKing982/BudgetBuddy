@@ -46,7 +46,6 @@ public class BPCategoryToEntityConverter implements Converter<BPCategory, BPCate
                 budgetCategory.getRange().getStartDate(),
                 budgetCategory.getRange().getEndDate()
         );
-        BudgetCategoryEntity budgetCategoryEntity = getBudgetCategory(budgetCategory);
         BPCategoryEntity bpCategoryEntity = new BPCategoryEntity();
         bpCategoryEntity.setBpColumn(columnEntity);
         bpCategoryEntity.setId(budgetCategory.getBudgetCategoryId());
@@ -57,7 +56,7 @@ public class BPCategoryToEntityConverter implements Converter<BPCategory, BPCate
         bpCategoryEntity.setActualAmount(budgetCategory.getActual());
         bpCategoryEntity.setBudgetedAmount(budgetCategory.getBudgeted());
 //        bpCategoryEntity.setCategoryGroup(null);
-        bpCategoryEntity.setPlannedAmount(BigDecimal.ZERO);
+        bpCategoryEntity.setPlannedAmount(budgetCategory.getPlannedAmount());
         return bpCategoryEntity;
     }
 
