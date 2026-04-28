@@ -375,8 +375,6 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
     {
         try
         {
-            LocalDate testStartDate = LocalDate.of(2026, 4, 8);
-            LocalDate testEndDate = LocalDate.of(2026, 4, 21);
             // TODO: Fix issue with setting proper start date and end date and sub BudgetId for budget categories created below
             List<BudgetCategorySpending> budgetCategorySpendings = transactionCategoryRepository.findSpendingByDateRangeAndUserId(startDate, endDate, userId);
             return budgetCategorySpendings.stream()
@@ -388,10 +386,6 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
                         budgetCategory.setEndDate(endDate);
                         budgetCategory.setCategoryName(budgetCategorySpending.categoryName());
                         budgetCategory.setBudgetActual(budgetCategorySpending.spending());
-                        if(startDate.equals(testStartDate) && endDate.equals(testEndDate))
-                        {
-                            log.info("Budget Category for date range {} to {} : {}", startDate, endDate, budgetCategory);
-                        }
 //                        log.info("Budget Category for date range {} to {} : {}", startDate, endDate, budgetCategory);
                         return budgetCategory;
                     })

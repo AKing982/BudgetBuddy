@@ -60,6 +60,7 @@ public class BPTemplateDetailEntityToModelConverter implements Converter<BPTempl
                                         new DateRange(e.getStartDate(), e.getEndDate()),
                                         e.getActualAmount(),
                                         e.getBudgetedAmount(),
+                                        e.getPlannedAmount(),
                                         true, true))
                                 .collect(Collectors.toList())))
                 .collect(Collectors.toList());

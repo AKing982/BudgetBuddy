@@ -26,11 +26,14 @@ public class BudgetPlannerController
         this.bpTemplateRunner = bpTemplateRunner;
     }
 
-    @PutMapping("/update-template-categories/{templateId}")
+
+    @PutMapping("/resync/{templateId}")
     public ResponseEntity<BPTemplate> updateBudgetTemplateCategories(@PathVariable Long templateId,
                                                                      @RequestParam Long userId) {
-        try {
-            BPTemplate updatedTemplate = bpTemplateRunner.updateBPTemplateCategories(templateId, userId);
+        try
+        {
+            log.info("Updating budget template categories for template id {}", templateId);
+            BPTemplate updatedTemplate = bpTemplateRunner.syncBPTemplate(templateId, userId);
             return ResponseEntity.ok(updatedTemplate);
         } catch (DataException ex) {
             log.error("Error updating budget template categories: {}", ex.getMessage());

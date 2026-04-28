@@ -9,12 +9,14 @@ import com.app.budgetbuddy.repositories.BPCategoryGroupRepository;
 import com.app.budgetbuddy.repositories.BPColumnRepository;
 import com.app.budgetbuddy.repositories.BPTemplateDetailsRepository;
 import com.app.budgetbuddy.services.BudgetCategoryService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
 @Component
+@Slf4j
 public class BPCategoryToEntityConverter implements Converter<BPCategory, BPCategoryEntity>
 {
     private final BPColumnRepository bpColumnRepository;
@@ -37,6 +39,7 @@ public class BPCategoryToEntityConverter implements Converter<BPCategory, BPCate
     @Override
     public BPCategoryEntity convert(BPCategory budgetCategory)
     {
+        log.info("Converting BPCategory to BPCategoryEntity: {}", budgetCategory);
         if(budgetCategory == null)
         {
             return null;
@@ -48,6 +51,7 @@ public class BPCategoryToEntityConverter implements Converter<BPCategory, BPCate
         );
         BPCategoryEntity bpCategoryEntity = new BPCategoryEntity();
         bpCategoryEntity.setBpColumn(columnEntity);
+        bpCategoryEntity.setBpTemplateDetail(columnEntity.getBpTemplateDetail());
         bpCategoryEntity.setId(budgetCategory.getBudgetCategoryId());
 //        bpCategoryEntity.setBudgetCategory(budgetCategoryEntity);
         bpCategoryEntity.setOverBudget(budgetCategory.isOverBudget());
@@ -56,6 +60,7 @@ public class BPCategoryToEntityConverter implements Converter<BPCategory, BPCate
         bpCategoryEntity.setActualAmount(budgetCategory.getActual());
         bpCategoryEntity.setBudgetedAmount(budgetCategory.getBudgeted());
 //        bpCategoryEntity.setCategoryGroup(null);
+        bpCategoryEntity.setCategory(budgetCategory.getName());
         bpCategoryEntity.setPlannedAmount(budgetCategory.getPlannedAmount());
         return bpCategoryEntity;
     }

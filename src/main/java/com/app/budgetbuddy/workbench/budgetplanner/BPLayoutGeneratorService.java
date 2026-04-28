@@ -60,8 +60,9 @@ public class BPLayoutGeneratorService
                                 return new BPGridCell(
                                         col.getColumnIndex(),
                                         col.getDateRange(),
-                                        cell != null ? cell.getActual() : null,
-                                        cell != null ? cell.getBudgeted() : null,
+                                        cell != null ? cell.getActual() : BigDecimal.ZERO,
+                                        cell != null ? cell.getBudgeted() : BigDecimal.ZERO,
+                                        cell != null ? cell.getPlannedAmount() : BigDecimal.ZERO,
                                         cell != null && cell.getType() == BPType.BUDGET,
                                         true
                                 );

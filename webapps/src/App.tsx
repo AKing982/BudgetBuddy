@@ -46,7 +46,7 @@ function App() {
                       <Route path="/" element={<LoginForm/>}/>
                       <Route path="/register" element={<RegistrationForm />}/>
                       <Route path="/dashboard" element={<DashboardPage />}/>
-                      <Route path="/spending" element={<SpendingTracker />}/>
+                      {/*<Route path="/spending" element={<SpendingTracker />}/>*/}
                       {/*<Route path="/transactions" element={<RecentTransactionsTable />}/>*/}
                       <Route path="/summary" element={<AccountSummary />}/>
                       <Route path="/payments" element={<PaymentCharges />}/>

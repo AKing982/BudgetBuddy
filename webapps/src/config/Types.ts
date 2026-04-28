@@ -290,6 +290,7 @@ export interface BPGridCell {
     columnIndex: number;
     dateRange:   DateRange;
     actual:      number | null;
+    planned:     number | null;
     budgeted:    number | null;
     isBalance:   boolean;
     isEditable:  boolean;

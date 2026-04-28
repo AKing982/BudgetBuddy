@@ -103,4 +103,17 @@ public class BPColumnServiceImpl implements BPColumnService
             throw new DataAccessException("There was an error saving the budget columns", e);
         }
     }
+
+    @Override
+    @Transactional
+    public void deleteColumnsByDetailEntity(BPTemplateDetailEntity detail)
+    {
+        try
+        {
+            bpColumnRepository.deleteByBpTemplateDetailId(detail.getId());
+        }catch(DataAccessException e){
+            log.error("There was an error deleting the budget columns", e);
+            throw new DataAccessException("There was an error deleting the budget columns", e);
+        }
+    }
 }

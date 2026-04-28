@@ -38,6 +38,28 @@ class BudgetPlannerService {
         }
     }
 
+    public async resyncTemplate(
+        templateId: number,
+        userId: number
+    ): Promise<BPTemplate> {
+        if (!Number.isInteger(templateId) || templateId < 1) {
+            throw new Error("Invalid templateId. Must be a positive integer.");
+        }
+        if (!Number.isInteger(userId) || userId < 1) {
+            throw new Error("Invalid userId. Must be a positive integer.");
+        }
+        try {
+            const response = await axios.put<BPTemplate>(
+                `${API_BASE_URL}/budget-planner/resync/${templateId}`,null,
+                { params: { userId } }
+            );
+            return response.data;
+        } catch (error) {
+            console.error("There was an error resyncing the template: ", error);
+            throw error;
+        }
+    }
+
     public async updateTemplateCategories(templateId: number, userId: number) : Promise<BPTemplate>
     {
         try

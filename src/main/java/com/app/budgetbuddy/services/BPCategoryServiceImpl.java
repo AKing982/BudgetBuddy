@@ -3,6 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BPCategoryEntity;
 import com.app.budgetbuddy.entities.BPColumnEntity;
+import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPBudgetCategoryRepository;
 import com.app.budgetbuddy.workbench.converter.BPCategoryToEntityConverter;
@@ -125,6 +126,7 @@ public class BPCategoryServiceImpl implements BPCategoryService
                         .actualAmount(cell.actual())
                         .category(row.category())
                         .budgetedAmount(cell.budgeted())
+                        .plannedAmount(cell.planned())
                         .isOverBudget(false)
                         .build();
                 savedEntities.add(bpBudgetCategoryRepository.save(entity));
@@ -158,6 +160,7 @@ public class BPCategoryServiceImpl implements BPCategoryService
                         bpCategory.setName(bpCategoryEntity.getCategory());
                         bpCategory.setBudgeted(bpCategoryEntity.getBudgetedAmount());
                         bpCategory.setColumnIndex(bpCategoryEntity.getBpColumn().getColumnIndex());
+                        bpCategory.setPlannedAmount(bpCategoryEntity.getPlannedAmount());
                         return bpCategory;
                     })
                     .toList();
@@ -185,6 +188,18 @@ public class BPCategoryServiceImpl implements BPCategoryService
 
     @Override
     @Transactional
+    public void deleteCategoriesByDetailEntity(BPTemplateDetailEntity detail)
+    {
+        try
+        {
+            bpBudgetCategoryRepository.deleteByBpTemplateDetailId(detail.getId());
+        }catch(DataAccessException e){
+            log.error("There was an error deleting the budget categories", e);
+        }
+    }
+
+    @Override
+    @Transactional
     public void updateCategories(List<BPCategory> categories) {
         try
         {
@@ -196,6 +211,7 @@ public class BPCategoryServiceImpl implements BPCategoryService
                 BigDecimal incomingActual = category.getActual();
                 if(incomingActual != null && incomingActual.compareTo(currentActual != null ? currentActual : BigDecimal.ZERO) != 0)
                 {
+                    log.info("Updating actual amount for category={} startDate={} endDate={} to {}", category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate(), incomingActual);
                     bpBudgetCategoryRepository.updateActualAmountByCategoryAndDateRange(
                             category.getName(),
                             category.getRange().getStartDate(),
@@ -225,19 +241,19 @@ public class BPCategoryServiceImpl implements BPCategoryService
                     log.warn("No existing category found for category={} startDate={} endDate={}", category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
                     continue;
                 }
-                log.info("Updating planned amount for category={} startDate={} endDate={}", category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
                 BigDecimal existingPlannedAmount = existing.get().getPlannedAmount();
                 BigDecimal incomingPlannedAmount = category.getPlannedAmount();
                 log.info("New planned amount={} existing planned amount={}", incomingPlannedAmount, existingPlannedAmount);
-                if(incomingPlannedAmount != null && incomingPlannedAmount.compareTo(existingPlannedAmount != null ? existingPlannedAmount : BigDecimal.ZERO) != 0)
-                {
+//                if(incomingPlannedAmount != null && incomingPlannedAmount.compareTo(existingPlannedAmount != null ? existingPlannedAmount : BigDecimal.ZERO) != 0)
+//                {
+                    log.info("Updating planned amount for category={} startDate={} endDate={} to {}", category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate(), incomingPlannedAmount);
                     bpBudgetCategoryRepository.updatePlannedAmountByCategoryAndDateRange(
                             category.getName(),
                             category.getRange().getStartDate(),
                             category.getRange().getEndDate(),
                             incomingPlannedAmount
                     );
-                }
+//                }
             }
         }catch(DataAccessException e){
             log.error("There was an error updating the budget categories", e);
@@ -253,6 +269,7 @@ public class BPCategoryServiceImpl implements BPCategoryService
         {
             categories.forEach(category -> {
                 BPCategoryEntity categoryEntity = bpBudgetCategoryToEntityConverter.convert(category);
+                log.info("Saving new category: {}", categoryEntity);
                 bpBudgetCategoryRepository.save(categoryEntity);
             });
         }catch(DataAccessException e){

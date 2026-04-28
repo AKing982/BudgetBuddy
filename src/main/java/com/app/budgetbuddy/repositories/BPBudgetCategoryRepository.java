@@ -37,6 +37,10 @@ public interface BPBudgetCategoryRepository extends JpaRepository<BPCategoryEnti
     );
 
     @Modifying
+    @Query("DELETE FROM BPCategoryEntity bpt WHERE bpt.bpTemplateDetail.id =:id")
+    void deleteByBpTemplateDetailId(@Param("id") Long id);
+
+    @Modifying
     @Transactional
     @Query("UPDATE BPCategoryEntity bc SET bc.actualAmount =:actualAmount WHERE bc.id =:id")
     int updateActualAmountById(

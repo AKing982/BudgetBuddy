@@ -1,5 +1,5 @@
 // ── BudgetPlanner.tsx ─────────────────────────────────────────────────────────
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
 import {
     Box, Typography, Container, Grid, Grow, Button,
     Dialog, DialogTitle, DialogContent, DialogActions,
@@ -25,6 +25,7 @@ import type {
     SpreadsheetTemplate, SpreadsheetRow, MonthGroup,
     PeriodType, PeriodFilter,
 } from '../domain/SpreadsheetTypes';
+import ForecastPanel from "./ForecastPanel";
 
 // ── Backend mapping helpers ───────────────────────────────────────────────────
 function resolveRowType(bpType: string, category: string): SpreadsheetRow['rowType'] {
@@ -86,6 +87,8 @@ function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
     const gridRows = layoutGrid.rows    ?? [];
     const dataCols = columns.filter((c: any) => !c.isHeader);
 
+    const now = new Date();
+
     const periods: string[] = dataCols.map((c: any) => {
         const s = parseDateField(c.dateRange?.startDate);
         const e = parseDateField(c.dateRange?.endDate);
@@ -123,26 +126,76 @@ function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
         const idx = CATEGORY_ORDER.findIndex(c => c.toLowerCase() === label.toLowerCase());
         return idx === -1 ? CATEGORY_ORDER.length : idx;
     };
-
     const spreadsheetRows: SpreadsheetRow[] = gridRows.map((row: any) => {
         const rowType = resolveRowType(row.type, row.category);
+
         const values: (number | null)[] = dataCols.map((col: any) => {
+            const s = parseDateField(col.dateRange?.startDate);
+            const e = parseDateField(col.dateRange?.endDate);
+
+            const colStart = s ? new Date(s.year, s.month - 1, s.day) : null;
+            const colEnd   = e ? new Date(e.year, e.month - 1, e.day) : null;
+
+            const isFutureCol  = colStart !== null && colStart > now;
+            const isPresentCol = colStart !== null && colEnd !== null && colStart <= now && colEnd >= now;
+            const isPastCol    = colEnd   !== null && colEnd < now;
+
             const cell = row.cells?.find((c: any) =>
                 dateKey(c.dateRange?.startDate) === dateKey(col.dateRange?.startDate) &&
                 dateKey(c.dateRange?.endDate)   === dateKey(col.dateRange?.endDate)
             );
             if (!cell) return null;
             if (rowType === 'balance') return null;
-            const actual   = cell.actual   != null ? Number(cell.actual)   : null;
-            const budgeted = cell.budgeted != null ? Number(cell.budgeted) : null;
-            if (rowType === 'salary' || rowType === 'expenses')
-                return actual !== null && actual !== 0 ? actual : null;
-            if (actual   !== null && actual   !== 0) return actual;
-            if (budgeted !== null && budgeted !== 0) return budgeted;
+
+            const actual        = cell.actual        != null ? Number(cell.actual)        : null;
+            const budgeted      = cell.budgeted      != null ? Number(cell.budgeted)      : null;
+            const plannedAmount = cell.plannedAmount != null ? Number(cell.plannedAmount) : null;
+
+            if (rowType === 'salary' || rowType === 'expenses') {
+                if (isPastCol || isPresentCol)
+                    return actual !== null && actual !== 0 ? actual : null;
+                if (isFutureCol)
+                    return plannedAmount !== null && plannedAmount !== 0 ? plannedAmount : null;
+                return null;
+            }
+
+            if (isPastCol || isPresentCol) {
+                if (actual   !== null && actual   !== 0) return actual;
+                if (budgeted !== null && budgeted !== 0) return budgeted;
+                return null;
+            }
+            if (isFutureCol) {
+                if (plannedAmount !== null && plannedAmount !== 0) return plannedAmount;
+                if (budgeted      !== null && budgeted      !== 0) return budgeted;
+                return null;
+            }
             return null;
         });
+
         return { label: row.category, rowType, values };
     });
+
+    // const spreadsheetRows: SpreadsheetRow[] = gridRows.map((row: any) => {
+    //     const rowType = resolveRowType(row.type, row.category);
+    //     const values: (number | null)[] = dataCols.map((col: any) => {
+    //         const cell = row.cells?.find((c: any) =>
+    //             dateKey(c.dateRange?.startDate) === dateKey(col.dateRange?.startDate) &&
+    //             dateKey(c.dateRange?.endDate)   === dateKey(col.dateRange?.endDate)
+    //         );
+    //         if (!cell) return null;
+    //         if (rowType === 'balance') return null;
+    //         const actual   = cell.actual   != null ? Number(cell.actual)   : null;
+    //         const budgeted = cell.budgeted != null ? Number(cell.budgeted) : null;
+    //         const plannedAmount = cell.plannedAmount != null ? Number(cell.plannedAmount) : null;
+    //         if (rowType === 'salary' || rowType === 'expenses')
+    //             return actual !== null && actual !== 0 ? actual : plannedAmount !== null && plannedAmount !== 0 ? plannedAmount : null;
+    //         if (actual   !== null && actual   !== 0) return actual;
+    //         if (budgeted !== null && budgeted !== 0) return budgeted;
+    //         if (plannedAmount !== null && plannedAmount !== 0) return plannedAmount;
+    //         return null;
+    //     });
+    //     return { label: row.category, rowType, values };
+    // });
 
     const blank = () => Array(dataCols.length).fill(null) as null[];
     if (!spreadsheetRows.some((r: SpreadsheetRow) => r.rowType === 'salary'))   spreadsheetRows.push({ label: 'Salary',            rowType: 'salary',   values: blank() });
@@ -203,6 +256,7 @@ const BudgetPlanner: React.FC = () => {
     const [saveName,       setSaveName]       = useState('');
     const [syncing,        setSyncing]        = useState(false);
 
+    const [selectedPeriodIndex, setSelectedPeriodIndex] = useState<number>(0);
     const service = BudgetPlannerService.getInstance();
 
     useEffect(() => { setTimeout(() => setAnimateIn(true), 100); }, []);
@@ -235,47 +289,30 @@ const BudgetPlanner: React.FC = () => {
     }, []);
 
     // ── Sync on template switch ───────────────────────────────────────────────
-    // useEffect(() => {
-    //     const userId = Number(sessionStorage.getItem('userId'));
-    //     if (!userId || !selectedId) return;
-    //     let cancelled = false;
-    //
-    //     const sync = async () => {
-    //         const templateId = Number(selectedId);
-    //         if (isNaN(templateId) || syncing) return;
-    //         setSyncing(true);
-    //         try {
-    //             const updated = await service.updateTemplateCategories(templateId, userId);
-    //             if (cancelled) return;
-    //             const mapped = mapBPTemplateToSpreadsheet(updated);
-    //             setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
-    //         } catch (err) {
-    //             console.error('Sync failed:', err);
-    //         } finally {
-    //             if (!cancelled) setSyncing(false);
-    //         }
-    //     };
-    //
-    //     sync();
-    //     return () => { cancelled = true; };
-    // }, [selectedId]);
+    const syncedIds = useRef<Set<string>>(new Set());
+
     useEffect(() => {
         const userId = Number(sessionStorage.getItem('userId'));
         if (!userId || !selectedId) return;
+        if (syncedIds.current.has(selectedId)) return; // already synced this template
 
         const templateId = Number(selectedId);
         if (isNaN(templateId)) return;
 
         let cancelled = false;
         setSyncing(true);
+        syncedIds.current.add(selectedId);
 
         (async () => {
-            try {
-                const updated = await service.updateTemplateCategories(templateId, userId);
+            try
+            {
+                const updated: BPTemplate = await service.resyncTemplate(
+                    templateId, userId);
                 if (cancelled) return;
                 const mapped = mapBPTemplateToSpreadsheet(updated);
                 setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
             } catch (err) {
+                syncedIds.current.delete(selectedId); // allow retry on failure
                 console.error('Sync failed:', err);
             } finally {
                 if (!cancelled) setSyncing(false);
@@ -284,6 +321,32 @@ const BudgetPlanner: React.FC = () => {
 
         return () => { cancelled = true; setSyncing(false); };
     }, [selectedId]);
+    // useEffect(() => {
+    //     const userId = Number(sessionStorage.getItem('userId'));
+    //     if (!userId || !selectedId) return;
+    //
+    //     const templateId = Number(selectedId);
+    //     if (isNaN(templateId)) return;
+    //
+    //     let cancelled = false;
+    //     setSyncing(true);
+    //
+    //     (async () => {
+    //         try {
+    //             const updated: BPTemplate = await service.updateTemplateCategories(templateId, userId);
+    //             console.log('Updated BPTemplate:', updated);
+    //             if (cancelled) return;
+    //             const mapped = mapBPTemplateToSpreadsheet(updated);
+    //             setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
+    //         } catch (err) {
+    //             console.error('Sync failed:', err);
+    //         } finally {
+    //             if (!cancelled) setSyncing(false);
+    //         }
+    //     })();
+    //
+    //     return () => { cancelled = true; setSyncing(false); };
+    // }, [selectedId]);
 
     const currentTemplate = templates.find(t => t.id === selectedId) ?? templates[0];
 
@@ -346,7 +409,7 @@ const BudgetPlanner: React.FC = () => {
     return (
         <Box sx={{ maxWidth: 'calc(100% - 240px)', ml: '240px', minHeight: '100vh', background: BG }}>
             <Sidebar />
-            <Container maxWidth="xl" sx={{ py: 4 }}>
+            <Container maxWidth={false} sx={{ py: 4 }}>
 
                 <Grow in={animateIn} timeout={400}>
                     <Box sx={{ mb: 4 }}>
@@ -389,47 +452,102 @@ const BudgetPlanner: React.FC = () => {
                 </Grow>
 
                 {/* Planning view */}
+                {/*{currentTemplate && (*/}
+                {/*    <Grow in={animateIn} timeout={600}>*/}
+                {/*        <Box sx={{ position: 'relative' }}>*/}
+                {/*            {syncing && (*/}
+                {/*                <Box sx={{*/}
+                {/*                    position: 'absolute',*/}
+                {/*                    inset: 0,*/}
+                {/*                    zIndex: 10,*/}
+                {/*                    borderRadius: '12px',*/}
+                {/*                    bgcolor: alpha('#fff', 0.55),*/}
+                {/*                    backdropFilter: 'blur(3px)',*/}
+                {/*                    display: 'flex',*/}
+                {/*                    flexDirection: 'column',*/}
+                {/*                    alignItems: 'center',*/}
+                {/*                    justifyContent: 'center',*/}
+                {/*                    gap: 1.5,*/}
+                {/*                    pointerEvents: 'all',*/}
+                {/*                }}>*/}
+                {/*                    <CircularProgress size={36} thickness={3.5} sx={{ color: MAROON }} />*/}
+                {/*                    <Typography sx={{*/}
+                {/*                        fontSize: '0.78rem',*/}
+                {/*                        fontWeight: 600,*/}
+                {/*                        color: MAROON,*/}
+                {/*                        letterSpacing: '0.04em',*/}
+                {/*                        textTransform: 'uppercase',*/}
+                {/*                    }}>*/}
+                {/*                        Syncing categories…*/}
+                {/*                    </Typography>*/}
+                {/*                </Box>*/}
+                {/*            )}*/}
+                {/*            <Box sx={{ pointerEvents: syncing ? 'none' : 'auto' }}>*/}
+                {/*                <PlanningView*/}
+                {/*                    template={currentTemplate}*/}
+                {/*                    periodFilter={periodFilter}*/}
+                {/*                    onPeriodFilter={setPeriodFilter}*/}
+                {/*                    onCellChange={handleCellChange}*/}
+                {/*                    onSaveTemplate={() => setOpenSaveDialog(true)}*/}
+                {/*                />*/}
+                {/*            </Box>*/}
+                {/*            /!* ForecastPanel pinned to the right *!/*/}
+                {/*            <ForecastPanel*/}
+                {/*                template={currentTemplate}*/}
+                {/*                selectedPeriodIndex={selectedPeriodIndex}*/}
+                {/*                defaultMode="spending"*/}
+                {/*            />*/}
+                {/*        </Box>*/}
+                {/*    </Grow>*/}
+                {/*)}*/}
                 {currentTemplate && (
-                    <Grow in={animateIn} timeout={600}>
-                        <Box sx={{ position: 'relative' }}>
-                            {syncing && (
-                                <Box sx={{
-                                    position: 'absolute',
-                                    inset: 0,
-                                    zIndex: 10,
-                                    borderRadius: '12px',
-                                    bgcolor: alpha('#fff', 0.55),
-                                    backdropFilter: 'blur(3px)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 1.5,
-                                    pointerEvents: 'all',
-                                }}>
-                                    <CircularProgress size={36} thickness={3.5} sx={{ color: MAROON }} />
-                                    <Typography sx={{
-                                        fontSize: '0.78rem',
-                                        fontWeight: 600,
-                                        color: MAROON,
-                                        letterSpacing: '0.04em',
-                                        textTransform: 'uppercase',
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5 }}>
+
+                        {/* PlanningView owns its own card/border — takes all remaining width */}
+                        <Grow in={animateIn} timeout={600}>
+                            <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
+                                {syncing && (
+                                    <Box sx={{
+                                        position: 'absolute', inset: 0, zIndex: 10,
+                                        borderRadius: '12px',
+                                        bgcolor: alpha('#fff', 0.55),
+                                        backdropFilter: 'blur(3px)',
+                                        display: 'flex', flexDirection: 'column',
+                                        alignItems: 'center', justifyContent: 'center', gap: 1.5,
+                                        pointerEvents: 'all',
                                     }}>
-                                        Syncing categories…
-                                    </Typography>
+                                        <CircularProgress size={36} thickness={3.5} sx={{ color: MAROON }} />
+                                        <Typography sx={{
+                                            fontSize: '0.78rem', fontWeight: 600, color: MAROON,
+                                            letterSpacing: '0.04em', textTransform: 'uppercase',
+                                        }}>
+                                            Syncing categories…
+                                        </Typography>
+                                    </Box>
+                                )}
+                                <Box sx={{ pointerEvents: syncing ? 'none' : 'auto' }}>
+                                    <PlanningView
+                                        template={currentTemplate}
+                                        periodFilter={periodFilter}
+                                        onPeriodFilter={setPeriodFilter}
+                                        onCellChange={handleCellChange}
+                                        onSaveTemplate={() => setOpenSaveDialog(true)}
+                                    />
                                 </Box>
-                            )}
-                            <Box sx={{ pointerEvents: syncing ? 'none' : 'auto' }}>
-                                <PlanningView
+                            </Box>
+                        </Grow>
+
+                        {/* ForecastPanel — completely separate, stands beside PlanningView */}
+                        <Grow in={animateIn} timeout={700}>
+                            <Box>
+                                <ForecastPanel
                                     template={currentTemplate}
-                                    periodFilter={periodFilter}
-                                    onPeriodFilter={setPeriodFilter}
-                                    onCellChange={handleCellChange}
-                                    onSaveTemplate={() => setOpenSaveDialog(true)}
+                                    selectedPeriodIndex={selectedPeriodIndex}
                                 />
                             </Box>
-                        </Box>
-                    </Grow>
+                        </Grow>
+
+                    </Box>
                 )}
             </Container>
 
