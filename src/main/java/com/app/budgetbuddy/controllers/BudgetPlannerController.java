@@ -2,6 +2,7 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.services.BPTemplateService;
 import com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,13 @@ import java.util.List;
 public class BudgetPlannerController
 {
     private final BPTemplateRunner bpTemplateRunner;
+    private final BPTemplateService bpTemplateService;
 
     @Autowired
-    public BudgetPlannerController(BPTemplateRunner bpTemplateRunner) {
+    public BudgetPlannerController(BPTemplateRunner bpTemplateRunner,
+                                   BPTemplateService bpTemplateService) {
         this.bpTemplateRunner = bpTemplateRunner;
+        this.bpTemplateService = bpTemplateService;
     }
 
 
@@ -79,7 +83,7 @@ public class BudgetPlannerController
                 BPTemplate template = bpTemplateRunner.runCustomTemplateBuild(templateType, period, requireCategoryHeaders, dateRanges, categoryHeaders, categoryAllocations, incomeCriteria);
                 return ResponseEntity.ok(template);
             }
-            BPTemplate template = bpTemplateRunner.runTemplateBuild(templateType, period, requireCategoryHeaders, categoryHeaders, dateRanges, incomeCriteria, userId, startDay);
+            BPTemplate template = bpTemplateRunner.runTemplateBuild(templateType, period, dateRanges, userId, startDay);
             return ResponseEntity.ok(template);
         } catch (DataException ex) {
             log.error("Error creating budget template for user {}: {}", userId, ex.getMessage());
@@ -90,7 +94,7 @@ public class BudgetPlannerController
     @GetMapping("/templates/{userId}")
     public ResponseEntity<List<BPTemplate>> getUserBudgetTemplates(@PathVariable Long userId) {
         try {
-            List<BPTemplate> templates = bpTemplateRunner.getUserBudgetTemplates(userId);
+            List<BPTemplate> templates = bpTemplateService.getAllUserBudgetTemplates(userId);
             log.info("Budget templates: {}", templates);
             return ResponseEntity.ok(templates);
         } catch (DataException ex) {

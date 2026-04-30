@@ -141,6 +141,7 @@ public class BPCategoryServiceImpl implements BPCategoryService
     }
 
     @Override
+    @Transactional
     public List<BPCategory> getCategoriesByTemplateDetailId(Long templateDetailId)
     {
         if(templateDetailId == null)

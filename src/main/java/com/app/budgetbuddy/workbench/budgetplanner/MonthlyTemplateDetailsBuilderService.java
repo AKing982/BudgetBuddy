@@ -37,14 +37,7 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
         BPTemplateDetail detail = new BPTemplateDetail();
         detail.setLayoutGrid(layout);
         detail.setLayoutType(BPLayoutType.CLASSIC);
-//        BPTemplateDetail savedDetail = saveDetail(detail);
-//        saveGridLayout(layout, detail);
         return detail;
-    }
-
-    private void saveGridLayout(BPLayoutGrid layout, BPTemplateDetail detail)
-    {
-        layoutGeneratorService.saveLayoutGrid(layout, detail);
     }
 
     @Override

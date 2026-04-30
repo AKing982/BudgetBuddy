@@ -92,38 +92,24 @@ public class BPTemplateRunner
         }
     }
 
-    public BPTemplate runTemplateBuild(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<String> categoryHeaders, List<DateRange> dateRanges, BPIncomeCriteria incomeCriteria, Long userId, Integer startDay)
+    public BPTemplate runTemplateBuildWithCategoryHeaders(BPTemplateType templateType, Period period, boolean requireCategoryHeaders, List<DateRange> dateRanges, List<String> categoryHeaders, Long userId, Integer startDay)
     {
-//        if (templateType == null || dateRanges.isEmpty() || userId == null) {
-//            throw new DataException("Template Type, Date Range, and User Id cannot be null");
-//        }
-//
-//        // Guard: avoid duplicate templates of the same type for this user
-//        List<BPTemplate> existing = templateService.getAllUserBudgetTemplates(userId);
-//        if (existing != null) {
-//            Optional<BPTemplate> match = existing.stream()
-//                    .filter(t -> t.getTemplateType() == templateType)
-//                    .findFirst();
-//            if (match.isPresent()) return match.get();
-//        }
-//
-//        List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByDateRanges(dateRanges, userId);
-//        BPTemplate initialTemplate = templateBuilder.buildInitialTemplate(
-//                templateType, period, requireCategoryHeaders, categoryHeaders, incomeCriteria, subBudgets, startDay);
-//
-//        BPGoalsDetail initialGoals   = initialTemplate.getBpGoalsDetail();
-//        BPTemplateDetail initialDetail = initialTemplate.getBpTemplateDetail();
-//
-//        // Save once
-//        BPTemplateEntity savedTemplate = templateService.saveTemplate(initialTemplate, userId);
-//        BPTemplateDetailEntity savedDetail = templateDetailsService.saveModel(initialDetail, savedTemplate);
-//        List<BPColumnEntity> savedColumns = bpColumnService.saveColumns(
-//                initialDetail.getLayoutGrid().columns(), savedDetail
-//        );
-//        categoryService.saveCategories(initialDetail.getLayoutGrid().rows(), savedColumns);
-//
-//        BPTemplate finalTemplate = templateBuilder.buildTemplate(initialTemplate, initialGoals, initialDetail);
-//        return finalTemplate;  // ← no second save
         return null;
+    }
+
+    public BPTemplate runTemplateBuild(BPTemplateType templateType, Period period, List<DateRange> dateRanges, Long userId, Integer startDay)
+    {
+        try
+        {
+            Optional<BPTemplate> bpTemplateOptional = templateGeneratorService.generateNewTemplate(templateType, period, dateRanges, userId, startDay);
+            if(bpTemplateOptional.isEmpty())
+            {
+                throw new DataException("Budget template not found");
+            }
+            return bpTemplateOptional.get();
+        }catch(BPTemplateException ex){
+            log.error("Error creating budget template: ", ex);
+            throw new DataException("Error creating budget template");
+        }
     }
 }

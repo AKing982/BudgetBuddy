@@ -1,9 +1,11 @@
 package com.app.budgetbuddy.workbench.budgetplanner;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.exceptions.TemplateDetailException;
 import com.app.budgetbuddy.services.BPCategoryService;
 import com.app.budgetbuddy.services.BudgetCategoryService;
+import com.app.budgetbuddy.workbench.budgetplanner.util.BPTemplateUpdaterUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -87,6 +89,38 @@ public class BPTemplateUpdaterService
                 .toList();
         categoryService.saveNewTemplateCategories(newCategories, templateDetailId);
         return newCategories;
+    }
+
+    public List<BPCategory> createUnmatchedBPCategories(final BPTemplateDetail templateDetail, boolean isIncomeTemplate, Long userID)
+    {
+        if(templateDetail == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            Long templateDetailId = templateDetail.getId();
+            List<BPCategory> bpCategories = categoryService.getCategoriesByTemplateDetailId(templateDetailId);
+            List<BudgetCategory> budgetCategories = new ArrayList<>();
+            if(bpCategories.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            for(BPCategory bpCategory : bpCategories)
+            {
+                if(bpCategory == null)
+                {
+                    continue;
+                }
+                DateRange range = bpCategory.getRange();
+                budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
+            }
+            return BPTemplateUpdaterUtil.createUnmatchedBPCategories(bpCategories, budgetCategories, templateDetailId, templateDetail.getLayoutGrid().columns());
+
+        }catch(DataException e){
+            log.error("Error creating new missing BPCategories: ", e);
+            return Collections.emptyList();
+        }
     }
 
     public List<BPCategory> updateBPCategories(BPTemplateDetail detail, Long userID, boolean isIncomeTemplate)

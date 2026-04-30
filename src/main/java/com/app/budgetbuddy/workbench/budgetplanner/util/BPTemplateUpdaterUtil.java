@@ -27,7 +27,6 @@ public class BPTemplateUpdaterUtil
         }
         try
         {
-
             if(templateDetailId == null)
             {
                 throw new TemplateDetailException("Template detail id cannot be null");
