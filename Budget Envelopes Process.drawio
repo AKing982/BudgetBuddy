@@ -40,11 +40,8 @@
         <mxCell id="aqCuHeowpdmrG2qQMAG--15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
           <mxGeometry height="60" width="120" x="365" y="830" as="geometry" />
         </mxCell>
-        <mxCell id="aqCuHeowpdmrG2qQMAG--16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="No" vertex="1">
-          <mxGeometry height="30" width="60" x="740" y="130" as="geometry" />
-        </mxCell>
         <mxCell id="aqCuHeowpdmrG2qQMAG--17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Yes" vertex="1">
-          <mxGeometry height="30" width="60" x="740" y="660" as="geometry" />
+          <mxGeometry height="30" width="60" x="760" y="240" as="geometry" />
         </mxCell>
         <mxCell id="aqCuHeowpdmrG2qQMAG--18" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Single or Linked Envelopes?" vertex="1">
           <mxGeometry height="220" width="230" x="285" y="160" as="geometry" />
@@ -76,14 +73,20 @@
             <mxPoint x="810" y="270" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="vTB8hfSHXdAHnRGc21sp-2" edge="1" parent="1" source="aqCuHeowpdmrG2qQMAG--11" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" value="">
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Terminate and send notification to user that envelope is not feasible." vertex="1">
+          <mxGeometry height="60" width="120" x="610" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-4" edge="1" parent="1" source="aqCuHeowpdmrG2qQMAG--11" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="vTB8hfSHXdAHnRGc21sp-3" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="400" y="560" as="sourcePoint" />
+            <mxPoint x="670" y="375" as="sourcePoint" />
             <mxPoint x="670" y="410" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="vTB8hfSHXdAHnRGc21sp-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
-          <mxGeometry height="60" width="120" x="610" y="410" as="geometry" />
+        <mxCell id="aqCuHeowpdmrG2qQMAG--16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="No" vertex="1">
+          <mxGeometry height="30" width="60" x="670" y="375" as="geometry" />
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="60" width="120" x="810" y="240" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
