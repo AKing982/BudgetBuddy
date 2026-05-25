@@ -70,6 +70,21 @@
         <mxCell id="aqCuHeowpdmrG2qQMAG--23" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Are the linked Envelopes Feasible?" vertex="1">
           <mxGeometry height="240" width="240" x="280" y="420" as="geometry" />
         </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-1" edge="1" parent="1" source="aqCuHeowpdmrG2qQMAG--11" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="400" y="560" as="sourcePoint" />
+            <mxPoint x="810" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-2" edge="1" parent="1" source="aqCuHeowpdmrG2qQMAG--11" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="400" y="560" as="sourcePoint" />
+            <mxPoint x="670" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="60" width="120" x="610" y="410" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
