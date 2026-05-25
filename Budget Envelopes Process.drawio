@@ -85,9 +85,6 @@
         <mxCell id="aqCuHeowpdmrG2qQMAG--16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="No" vertex="1">
           <mxGeometry height="30" width="60" x="670" y="375" as="geometry" />
         </mxCell>
-        <mxCell id="vTB8hfSHXdAHnRGc21sp-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
-          <mxGeometry height="60" width="120" x="810" y="240" as="geometry" />
-        </mxCell>
         <mxCell id="vTB8hfSHXdAHnRGc21sp-7" edge="1" parent="1" source="aqCuHeowpdmrG2qQMAG--23" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="590" y="510" as="sourcePoint" />
@@ -98,6 +95,24 @@
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="590" y="510" as="sourcePoint" />
             <mxPoint x="600" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-9" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Is this a Payment Envelope?" vertex="1">
+          <mxGeometry height="170" width="200" x="810" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-10" edge="1" parent="1" source="vTB8hfSHXdAHnRGc21sp-9" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="590" y="500" as="sourcePoint" />
+            <mxPoint x="1070" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Yes" vertex="1">
+          <mxGeometry height="30" width="60" x="1010" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="vTB8hfSHXdAHnRGc21sp-12" edge="1" parent="1" source="vTB8hfSHXdAHnRGc21sp-9" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="590" y="500" as="sourcePoint" />
+            <mxPoint x="910" y="410" as="targetPoint" />
           </mxGeometry>
         </mxCell>
       </root>
