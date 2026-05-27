@@ -57,6 +57,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t FROM TransactionsEntity t WHERE t.merchantName =:merchant")
     Collection<TransactionsEntity> findTransactionsByMerchant(@Param("merchant") String merchant);
 
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.merchantName =:merchant AND t.amount =:amount")
+    List<TransactionsEntity> findTransactionsByMerchantAndAmount(@Param("merchant") String merchant, @Param("amount") BigDecimal amount);
+
     @Query("SELECT t FROM TransactionsEntity t JOIN t.account a JOIN a.user u WHERE u.id =:id ")
     Collection<TransactionsEntity> findTransactionsByUser(@Param("id") Long id);
 

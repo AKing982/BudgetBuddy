@@ -73,7 +73,15 @@ public class PlaidCategoriesServiceImpl implements PlaidCategoriesService
     {
         try
         {
-            return plaidCategoriesRepository.findByPlaidFull(categoryId, primary, secondary);
+            log.info("Finding Plaid Categories by categoryId: {}, primary: {}, secondary: {}", categoryId, primary, secondary);
+            Optional<PlaidCategoriesEntity> plaidCategoriesEntityOptional = plaidCategoriesRepository.findByPlaidFull(categoryId, primary, secondary);
+            if(plaidCategoriesEntityOptional.isEmpty())
+            {
+                return Optional.empty();
+            }
+            PlaidCategoriesEntity plaidCategoriesEntity = plaidCategoriesEntityOptional.get();
+            log.info("Plaid Categories: {}", plaidCategoriesEntity.toString());
+            return Optional.of(plaidCategoriesEntity);
         }catch(DataAccessException e){
             log.error("There was an error retrieving the Plaid Categories: ", e);
             return Optional.empty();

@@ -19,11 +19,13 @@ public interface RecurringTransactionsRepository extends JpaRepository<Recurring
     @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.merchantName LIKE :name")
     List<RecurringTransactionEntity> findByMerchantName(@Param("name") String name);
 
+    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.merchantName =:merchant AND rt.lastAmount =:amount")
+    List<RecurringTransactionEntity> findByMerchantAndAmount(@Param("merchant") String merchant, @Param("amount") BigDecimal amount);
 
     @Query("SELECT rt.streamId FROM RecurringTransactionEntity rt JOIN rt.transactionsLinks tl WHERE tl.transaction.id IN :transactionIds")
     List<String> findRecurringTransactionIds(@Param("transactionIds") List<String> transactionIds);
 
-    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.category.id =:id AND rt.category.category LIKE :name AND rt.user.id =:uId")
+    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.categoryId =:id AND (rt.primaryCategory LIKE :name OR rt.secondaryCategory LIKE :name) AND rt.user.id =:uId")
     List<RecurringTransactionEntity> findRecurringTransactionsWithIncome(@Param("id") String categoryId, @Param("name") String categoryName, @Param("uId") Long userId);
 
     @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.user.id =:id")
@@ -53,13 +55,13 @@ public interface RecurringTransactionsRepository extends JpaRepository<Recurring
                                                                   @Param("startDate") LocalDate startDate,
                                                                   @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT SUM(rt.lastAmount) as totalExpenses FROM RecurringTransactionEntity rt JOIN rt.category c WHERE rt.active = true AND rt.user.id =:id AND (rt.lastDate >= :start AND rt.lastDate <= :end) AND rt.averageAmount > 0")
+    @Query("SELECT SUM(rt.lastAmount) as totalExpenses FROM RecurringTransactionEntity rt WHERE rt.active = true AND rt.user.id =:id AND (rt.lastDate >= :start AND rt.lastDate <= :end) AND rt.averageAmount > 0")
     BigDecimal findTotalExpensesForDateRange(@Param("id") Long id, @Param("start") LocalDate startDate, @Param("end") LocalDate endDate);
 
     @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.type =:type")
     List<RecurringTransactionEntity> findTransactionsByType(@Param("type") RecurringTransactionType type);
 
 
-    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.category =:category")
-    List<RecurringTransactionEntity> findTransactionsByCategory(@Param("category")CategoryEntity category);
+    @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.categoryId =:categoryId")
+    List<RecurringTransactionEntity> findTransactionsByCategory(@Param("categoryId") String categoryId);
 }

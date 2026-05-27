@@ -84,7 +84,7 @@ public class CategoryServiceImpl implements CategoryService
             String type = categoryRepository.findCategoryType(categoryName);
             if(type == null || type.isEmpty())
             {
-                log.warn("No category type found for category '{}', defaulting to VARIABLE", categoryName);
+//                log.warn("No category type found for category '{}', defaulting to VARIABLE", categoryName);
                 return "VARIABLE";
             }
             return type;
@@ -100,11 +100,11 @@ public class CategoryServiceImpl implements CategoryService
     {
         try
         {
-            log.info("Getting bucket level for category: {}", categoryName);
+//            log.info("Getting bucket level for category: {}", categoryName);
             Integer bucketLevel = categoryRepository.findBucketLevel(categoryName);
             if(bucketLevel == null)
             {
-                log.warn("No bucket level found for category: {}", categoryName);
+//                log.warn("No bucket level found for category: {}", categoryName);
                 return 0;
             }
             return bucketLevel;

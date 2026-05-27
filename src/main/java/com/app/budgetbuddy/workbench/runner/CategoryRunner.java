@@ -95,6 +95,27 @@ public class CategoryRunner
         }
     }
 
+    public List<TransactionCategory> testCategorizeTransactionsByDateRange(Long userId, List<Transaction> transactions, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<SubBudget> subBudgets = subBudgetService.getSubBudgetsByUserIdAndDateRange(userId, startDate, endDate);
+            if(subBudgets.isEmpty())
+            {
+                log.info("There are no sub-budgets for user {} at {}", userId, startDate);
+                return Collections.emptyList();
+            }
+            List<TransactionCategory> transactionCategories = transactionCategoryBuilder.build(transactions, subBudgets);
+            log.info("Transaction Categories: {}", transactionCategories);
+            log.info("Categorized {} transactions", transactionCategories.size());
+            return transactionCategories;
+
+        }catch(Exception e){
+            log.error("There was an error categorizing transactions: {}", e.getMessage());
+            throw e;
+        }
+    }
+
     public void categorizeTransactionsByDateRange(Long userId, LocalDate startDate, LocalDate endDate)
     {
         try

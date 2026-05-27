@@ -18,6 +18,7 @@ public interface RecurringTransactionService extends ServiceModel<RecurringTrans
 
     List<RecurringTransactionEntity> createRecurringTransactionEntitiesFromStream(List<TransactionStream> outflow, List<TransactionStream> inflow, Long userId);
 
+    List<RecurringTransaction> findRecurringTransactionsByMerchantAndAmount(String merchantName, BigDecimal amount);
     Optional<RecurringTransactionEntity> findById(Long id);
     List<RecurringTransactionEntity> findAllByUserId(Long userId);
     List<RecurringTransactionEntity> findAllByAccountId(String accountId);
@@ -30,7 +31,7 @@ public interface RecurringTransactionService extends ServiceModel<RecurringTrans
     List<RecurringTransactionEntity> findByCategory(CategoryEntity category);
 
     List<String> findRecurringTransactionIds(List<String> plaidRecurringTransactionIds);
-    List<RecurringTransactionEntity> createAndSaveRecurringTransactions(List<RecurringTransaction> recurringTransactions);
+    List<RecurringTransactionEntity> createAndSaveRecurringTransactions(List<RecurringTransaction> recurringTransactions, Long userId);
     List<RecurringTransaction> convertRecurringTransactionEntities(List<RecurringTransactionEntity> recurringTransactionEntities);
 
     BigDecimal getTotalRecurringExpensesForPeriod(Long userId, LocalDate startDate, LocalDate endDate);

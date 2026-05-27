@@ -124,7 +124,9 @@ public class PlaidTransactionRunner
             }
             log.info("Fetched {} outflowing streams and {} inflowing streams", outflowingStreams.size(), inflowingStreams.size());
             // Convert the outflowing and inflowing streams to a RecurringTransaction object
-            return recurringTransactionUtil.convertTransactionStreams(outflowingStreams, inflowingStreams);
+            List<RecurringTransaction> recurringTransactions = recurringTransactionUtil.convertTransactionStreams(outflowingStreams, inflowingStreams);
+            log.info("Converted {} recurring transactions", recurringTransactions.size());
+            return recurringTransactions;
         }catch(IOException e){
             log.error("There was an error fetching recurring transaction from the response: {}", e.getMessage());
             return Collections.emptyList();
@@ -189,7 +191,7 @@ public class PlaidTransactionRunner
         }
     }
 
-    public List<RecurringTransactionEntity> saveRecurringTransactions(List<RecurringTransaction> recurringTransactions)
+    public List<RecurringTransactionEntity> saveRecurringTransactions(List<RecurringTransaction> recurringTransactions, Long userId)
     {
         if(recurringTransactions.isEmpty())
         {
@@ -197,7 +199,7 @@ public class PlaidTransactionRunner
         }
         try
         {
-            return recurringTransactionService.createAndSaveRecurringTransactions(recurringTransactions);
+            return recurringTransactionService.createAndSaveRecurringTransactions(recurringTransactions, userId);
         }catch(TransactionRunnerException ex){
             log.error("There was an error saving the recurring transactions to the database: {}", ex.getMessage());
             throw ex;

@@ -36,9 +36,9 @@ public class TransactionImportAsyncService
     @Async("monthlyExecutor")
     public CompletableFuture<List<RecurringTransaction>> importMonthlyRecurringTransactionsAsync(final SubBudget subBudget)
     {
-        try {
+        try
+        {
             Long userId = subBudget.getBudget().getUserId();
-
             List<RecurringTransaction> recurringTransactions = plaidTransactionRunner.getRecurringTransactionsResponse(userId);
 
             return CompletableFuture.completedFuture(recurringTransactions);
@@ -68,7 +68,7 @@ public class TransactionImportAsyncService
     }
 
     @Async("taskExecutor")
-    public CompletableFuture<Void> saveRecurringTransactions(List<RecurringTransaction> recurringTransactions)
+    public CompletableFuture<Void> saveRecurringTransactions(List<RecurringTransaction> recurringTransactions, Long userId)
     {
         if(recurringTransactions.isEmpty())
         {
@@ -76,7 +76,7 @@ public class TransactionImportAsyncService
         }
         try
         {
-            recurringTransactionService.createAndSaveRecurringTransactions(recurringTransactions);
+            recurringTransactionService.createAndSaveRecurringTransactions(recurringTransactions, userId);
             return CompletableFuture.completedFuture(null);
         }catch(Exception e){
             log.error("Error saving recurring transactions", e);

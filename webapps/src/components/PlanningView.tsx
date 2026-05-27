@@ -21,6 +21,7 @@ import { MaroonCardHeader } from './SharedBudgetUI';
 import ClassicSpreadsheet from './ClassicSpreadsheet';
 import PeriodDetailCard from './PeriodDetailCard';
 import FuturePeriodDialog from './FuturePeriodDialog';
+import ForecastPanel from "./ForecastPanel";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const AMBER       = '#d97706';
@@ -958,7 +959,7 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                     if (!activeMth) return null;
                     return <MonthDetailPanel monthName={activeMth.name} items={monthItems[activeMth.name] ?? []} onAddItem={() => setAddTarget(activeMth.name)} onUpdateItem={(id, status) => handleUpdateItem(activeMth.name, id, status)} />;
                 })()}
-                <PeriodDetailCard template={template} periodIndex={selectedPeriod} mode={mode} targets={categoryTargets} onSetTarget={handleSetTarget} />
+                <PeriodDetailCard template={template} periodIndex={selectedPeriod} mode={mode} />
             </Grid>
             <Grid item xs={12} lg={5}>
                 <Stack spacing={1.75}>
@@ -1071,10 +1072,9 @@ const PlanningView: React.FC<Props> = ({ template, periodFilter, onPeriodFilter,
                 </Box>
 
                 {/* Persistent forecast panel — always right, dynamic width */}
-                <InlineForecastPanel
+                <ForecastPanel
+
                     template={template}
-                    collapsed={forecastCollapsed}
-                    onToggle={() => setForecastCollapsed(v => !v)}
                 />
             </Box>
 

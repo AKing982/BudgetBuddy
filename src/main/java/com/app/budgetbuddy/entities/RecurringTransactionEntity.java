@@ -35,9 +35,14 @@ public class RecurringTransactionEntity {
     @Column(name="streamId", nullable = false, unique=true)
     private String streamId;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="categoryId")
-    private CategoryEntity category;
+    @Column(name="categoryId", nullable = false)
+    private String categoryId;
+
+    @Column(name="primary_category")
+    private String primaryCategory;
+
+    @Column(name="secondary_category")
+    private String secondaryCategory;
 
     @Column(name="description", nullable = false)
     private String description;

@@ -25,6 +25,7 @@ import OAuthRedirect from "./components/OAuthRedirect";
 import ProfilePage from "./components/ProfilePage";
 import SpendingPage from "./components/SpendingPage";
 import BudgetEnvelopesPage from "./components/BudgetEnvelopesPage";
+import BalanceSavingsPage from "./components/BalanceSavingsPage";
 // import BudgetControlPage from "./components/BudgetControlPage";
 // import BudgetEmergencyFundPage from "./components/BudgetEmergencyFundPage";
 
@@ -52,6 +53,7 @@ function App() {
                       <Route path="/payments" element={<PaymentCharges />}/>
                       <Route path="/transactions" element={<TransactionsPage />}/>
                       <Route path="/budgets" element={<BudgetPage />}/>
+                      <Route path="/balance-savings-tracker" element={<BalanceSavingsPage />}/>
                       <Route path="/spending-tracker" element={<SpendingPage />}/>
                       <Route path="/grocery-tracker" element={<GroceryTracker />}/>
                       <Route path="/budget-test" element={<BudgetCategoryDetails/>}/>

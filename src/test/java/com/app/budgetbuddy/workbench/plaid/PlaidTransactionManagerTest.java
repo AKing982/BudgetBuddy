@@ -438,7 +438,9 @@ class PlaidTransactionManagerTest
                 "STREAM456",            // streamId
                 "CAT789",               // categoryId
                 "Monthly Subscription", // description
-                "Netflix",              // merchantName
+                "Netflix",              // merchantName,
+                "primary",
+    "secondary",
 //                LocalDate.of(2023, 1, 1),           // firstDate
 //                LocalDate.of(2024, 1,1),
                 "2023-01-01",

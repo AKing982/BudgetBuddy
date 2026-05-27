@@ -11,6 +11,8 @@ public record RecurringTransactionDTO(@JsonProperty("userId") Long userId,
                                       @JsonProperty("accountId") String accountId,
                                       @JsonProperty("streamId") String streamId,
                                       @JsonProperty("categoryId") String categoryId,
+                                      @JsonProperty("primaryCategory") String primaryCategory,
+                                      @JsonProperty("secondaryCategory") String secondaryCategory,
                                       @JsonProperty("description") String description,
                                       @JsonProperty("merchantName") String merchantName,
                                       @JsonDeserialize(using= LocalDateArrayDeserializer.class)

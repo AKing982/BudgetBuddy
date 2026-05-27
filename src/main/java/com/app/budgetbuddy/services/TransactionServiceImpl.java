@@ -267,6 +267,24 @@ public class TransactionServiceImpl implements TransactionService
         return Collections.emptyList();
     }
 
+    @Override
+    @Transactional
+    public List<Transaction> getTransactionsByMerchantAndAmount(final String merchant, final BigDecimal amount)
+    {
+        if(merchant == null || amount == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<TransactionsEntity> transactionsEntities = transactionRepository.findTransactionsByMerchantAndAmount(merchant, amount);
+            return convertedTransactions(transactionsEntities);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching transaction by merchant and amount: {}, {}", merchant, amount);
+            return Collections.emptyList();
+        }
+    }
+
 
     @Override
     @Transactional

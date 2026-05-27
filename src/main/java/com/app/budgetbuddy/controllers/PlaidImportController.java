@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.PlaidImportResult;
+import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
 import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
@@ -42,6 +43,11 @@ public class PlaidImportController
             List<Transaction> importedTransactions = plaidTransactionRunner.getTransactionsResponse(userId, startDate, endDate);
             log.info("Successfully imported {} transactions for user {} between {} and {}", importedTransactions.size(), userId, startDate, endDate);
             plaidTransactionRunner.saveTransactions(importedTransactions);
+
+            List<RecurringTransaction> recurringTransactions = plaidTransactionRunner.getRecurringTransactionsResponse(userId);
+            log.info("Successfully imported {} recurring transactions for user {} between {} and {}", recurringTransactions.size(), userId, startDate, endDate);
+            plaidTransactionRunner.saveRecurringTransactions(recurringTransactions, userId);
+
             PlaidImportResult plaidImportResult = new PlaidImportResult(userId, importedTransactions, new ArrayList<>());
             categoryRunner.categorizeTransactionsByDateRange(userId, startDate, endDate);
             return ResponseEntity.ok(plaidImportResult);

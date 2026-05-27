@@ -34,6 +34,8 @@ public interface TransactionService extends ServiceModel<TransactionsEntity>
     boolean checkTransactionExistsByDate(String transactionId, LocalDate date);
     List<Transaction> convertPlaidTransactions(List<com.plaid.client.model.Transaction> plaidTransactions);
 
+
+    List<Transaction> getTransactionsByMerchantAndAmount(String merchant, BigDecimal amount);
     Optional<TransactionsEntity> getTransactionById(String id);
     List<TransactionsEntity> getTransactionsForUserAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
     Collection<TransactionsEntity> getTransactionsByPendingTrue();

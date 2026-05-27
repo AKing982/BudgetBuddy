@@ -3,11 +3,13 @@ package com.app.budgetbuddy.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Table(name="plaidCategories")
 @Getter
 @Setter
+@ToString
 public class PlaidCategoriesEntity
 {
     @Id

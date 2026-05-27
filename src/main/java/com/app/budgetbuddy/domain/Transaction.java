@@ -14,6 +14,7 @@ import java.util.List;
 @Getter
 @Setter
 @SuperBuilder
+@ToString(callSuper = true)
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class Transaction
 {

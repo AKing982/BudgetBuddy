@@ -16,7 +16,7 @@ import { BudgetType } from '../domain/BudgetType';
 import Tooltip from '@mui/material/Tooltip';
 import UserLogService from '../services/UserLogService';
 import SessionService from '../services/SessionService';
-import {BarChart} from "recharts";
+import {BarChart, PieChart} from "recharts";
 import BudgetEnvelopesPage from "./BudgetEnvelopesPage";
 
 interface MenuItemType {
@@ -92,6 +92,7 @@ const Sidebar: React.FC = () => {
         { text: 'Budgets',         icon: <AccountBalance sx={{ fontSize: 20 }} />, path: getBudgetPath() },
         { text: 'Budget Envelopes', icon: <Wallet /> ,path: '/budget-envelopes' },
         { text: 'Spending Tracker', icon: <BarChart2 size={20} />, path: '/spending-tracker' },
+        { text: 'Balance/Savings Tracker', icon: <PieChart />, path: '/balance-savings-tracker' },
         // { text: 'Grocery Tracker', icon: <ShoppingCart sx={{ fontSize: 20 }} />,  path: '/grocery-tracker' },
         { text: 'Transactions',    icon: <Search sx={{ fontSize: 20 }} />,         path: '/transactions' },
         { text: 'BudgetPlanner',   icon: <Calculator size={19} />,                path: '/budget-planner' },

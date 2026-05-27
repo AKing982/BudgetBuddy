@@ -10,6 +10,7 @@ import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.repositories.CategoryRepository;
 import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
+import com.app.budgetbuddy.repositories.UserRepository;
 import com.app.budgetbuddy.workbench.converter.RecurringTransactionConverter;
 import com.app.budgetbuddy.workbench.converter.TransactionStreamToEntityConverter;
 import com.plaid.client.model.TransactionStream;
@@ -30,6 +31,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     private final RecurringTransactionsRepository recurringTransactionsRepository;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
     private final RecurringTransactionConverter recurringTransactionConverter;
     private final TransactionStreamToEntityConverter transactionStreamToEntityConverter;
 
@@ -37,11 +39,13 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     public RecurringTransactionServiceImpl(RecurringTransactionsRepository recurringTransactionsRepository,
                                            AccountRepository accountRepository,
                                            CategoryRepository categoryRepository,
+                                           UserRepository userRepository,
                                            RecurringTransactionConverter recurringTransactionConverter,
                                            TransactionStreamToEntityConverter transactionStreamToEntityConverter){
         this.recurringTransactionsRepository = recurringTransactionsRepository;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
+        this.userRepository = userRepository;
         this.recurringTransactionConverter = recurringTransactionConverter;
         this.transactionStreamToEntityConverter = transactionStreamToEntityConverter;
     }
@@ -52,27 +56,31 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         return accountEntityOptional.orElse(null);
     }
 
-    private CategoryEntity getCategoryEntityFromId(String id){
-        return null;
-    }
-
-    public List<RecurringTransactionEntity> createAndSaveRecurringTransactions(List<RecurringTransaction> recurringTransactions){
+    public List<RecurringTransactionEntity> createAndSaveRecurringTransactions(List<RecurringTransaction> recurringTransactions, Long userId){
         List<RecurringTransactionEntity> recurringTransactionEntities = new ArrayList<>();
 
         for (RecurringTransaction recurringTransaction : recurringTransactions) {
             RecurringTransactionEntity entity = new RecurringTransactionEntity();
 
+            BigDecimal lastAmount = recurringTransaction.getLastAmount() != null
+                    ? recurringTransaction.getLastAmount()
+                    : BigDecimal.ZERO;
+
             // Set basic fields
             entity.setStreamId(recurringTransaction.getStreamId());
             entity.setDescription(recurringTransaction.getDescription());
             entity.setMerchantName(recurringTransaction.getMerchantName());
+            entity.setCategoryId(recurringTransaction.getCategoryId());
+            entity.setPrimaryCategory(recurringTransaction.getPrimaryCategory());
+            entity.setSecondaryCategory(recurringTransaction.getSecondaryCategory());
             entity.setFirstDate(recurringTransaction.getFirstDate());
             entity.setLastDate(recurringTransaction.getLastDate());
             entity.setFrequency(recurringTransaction.getFrequency());
             entity.setAverageAmount(recurringTransaction.getAverageAmount());
-            entity.setLastAmount(recurringTransaction.getLastAmount());
+            entity.setLastAmount(lastAmount);
             entity.setActive(recurringTransaction.getActive());
             entity.setType(recurringTransaction.getType());
+            entity.setUser(userRepository.findById(userId).get());
 
             // Set relationships
             if (recurringTransaction.getAccountId() != null) {
@@ -80,26 +88,21 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
                 entity.setAccount(account);
             }
 
-            if (recurringTransaction.getCategoryId() != null) {
-                CategoryEntity category = getCategoryEntityFromId(recurringTransaction.getCategoryId());;
-                entity.setCategory(category);
-            }
-
             // Save the entity
             try {
                 // Check if the recurring transaction exists in the database,
                 // if it does, then skip saving the recurring transaction
                 String streamId = entity.getStreamId();
-                Long rId = entity.getId();
-                RecurringTransactionEntity existingRecurringTransaction = recurringTransactionsRepository.findById(rId).orElse(null);
-                if(!existingRecurringTransaction.getStreamId().equals(streamId))
+                boolean alreadyExists = !recurringTransactionsRepository.findByStreamId(streamId).isEmpty();
+                if(alreadyExists)
                 {
-                    RecurringTransactionEntity savedEntity = recurringTransactionsRepository.save(entity);
-                    recurringTransactionEntities.add(savedEntity);
+                    log.warn("Recurring Transaction with StreamId: {} already exists", streamId);
                 }
                 else
                 {
-                    log.warn("Recurring Transaction with StreamId: {} already exists", streamId);
+                    log.info("Saving recurring transaction: {}", entity.toString());
+                    RecurringTransactionEntity savedEntity = recurringTransactionsRepository.save(entity);
+                    recurringTransactionEntities.add(savedEntity);
                 }
 
             } catch (Exception e) {
@@ -115,6 +118,24 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         List<RecurringTransactionEntity> recurringTransactionEntities = transactionStreamToEntityConverter.convertTransactionStreamList(outflow, inflow, userId);
         recurringTransactionsRepository.saveAll(recurringTransactionEntities);
         return recurringTransactionEntities;
+    }
+
+    @Override
+    @Transactional
+    public List<RecurringTransaction> findRecurringTransactionsByMerchantAndAmount(String merchantName, BigDecimal amount)
+    {
+        if(merchantName == null || amount == null)
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            List<RecurringTransactionEntity> recurringTransactions = recurringTransactionsRepository.findByMerchantAndAmount(merchantName, amount);
+            return convertRecurringTransactionEntities(recurringTransactions);
+        }catch(DataAccessException e){
+            log.error("There was an error accessing the recurring transactions: ",e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
@@ -179,7 +200,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
 
     @Override
     public List<RecurringTransactionEntity> findByCategory(CategoryEntity category) {
-        return recurringTransactionsRepository.findTransactionsByCategory(category);
+        return null;
     }
 
     @Override
@@ -248,17 +269,12 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     public List<RecurringTransaction> convertRecurringTransactionEntities(List<RecurringTransactionEntity> recurringTransactionEntities){
         List<RecurringTransaction> recurringTransactions = new ArrayList<>();
         for (RecurringTransactionEntity recurringTransactionEntity : recurringTransactionEntities) {
-            String categoryName = null;
-            if (recurringTransactionEntity.getCategory() != null) {
-                categoryName = recurringTransactionEntity.getCategory().getPlaidCategoryId() != null
-                        ? recurringTransactionEntity.getCategory().getCategory()
-                        : recurringTransactionEntity.getCategory().getDescription(); // Fallback to description
-            }
-
-            List<String> categories = (categoryName != null) ? List.of(categoryName) : new ArrayList<>();
             RecurringTransaction recurringTransaction = RecurringTransaction.builder()
                     .streamId(recurringTransactionEntity.getStreamId())
                     .firstDate(recurringTransactionEntity.getFirstDate())
+                    .primaryCategory(recurringTransactionEntity.getPrimaryCategory())
+                    .secondaryCategory(recurringTransactionEntity.getSecondaryCategory())
+                    .categoryId(recurringTransactionEntity.getCategoryId())
                     .lastDate(recurringTransactionEntity.getLastDate())
                     .frequency(recurringTransactionEntity.getFrequency())
                     .averageAmount(recurringTransactionEntity.getAverageAmount())

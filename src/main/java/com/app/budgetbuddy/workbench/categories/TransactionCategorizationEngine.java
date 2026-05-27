@@ -47,190 +47,44 @@ public class TransactionCategorizationEngine extends AbstractCategorizationEngin
         {
             throw new CategoryException("Transaction was found null... Terminating categorization");
         }
-        int transactionPriority = assignPriorityToTransaction(transaction);
-        if(transactionPriority == 0)
-        {
-            return Category.createUncategorized();
-        }
         String acctId = transaction.getAccountId();
         AccountEntity accountEntity = accountService.findByAccountId(acctId)
                 .orElseThrow(() -> new AccountNotFoundException("Account with id " + acctId + " not found"));
         Long userId = accountEntity.getUser().getId();
-
-        // User rules always win
-        List<TransactionRule> transactionRules = getUserTransactionRules(userId);
-        if(!transactionRules.isEmpty())
+        log.debug("Categorizing transaction {}", transaction.toString());
+        int transactionPriority = assignPriorityToTransaction(transaction);
+        log.debug("Transaction priority: {}", transactionPriority);
+        if(transactionPriority == 0)
         {
-            Category userMatch = matchTransactionRule(transaction, userId, transactionRules);
-            return userMatch != null ? userMatch : Category.createUncategorized();
+            throw new CategoryException("Transaction priority is 0... Terminating categorization");
         }
+        List<TransactionRule> transactionRules = getUserTransactionRules(userId);
+        Category matchedCategory = null;
+        if(transactionRules.isEmpty())
+        {
+            matchedCategory = categorizeBySystemRules(transaction, transactionPriority);
+        }
+        else
+        {
+           matchedCategory = matchTransactionRule(transaction, userId, transactionRules);
+        }
+        if(matchedCategory != null)
+        {
+            log.debug("Matched category: {}", matchedCategory.toString());
+        }
+        return matchedCategory != null ? matchedCategory : Category.createUncategorized();
+    }
 
-        // Delegate to plaid strategy
+    private Category categorizeBySystemRules(Transaction transaction, int priority)
+    {
         return plaidStrategy.categorize(
                 transaction.getCategoryId(),
                 transaction.getPrimaryCategory(),
                 transaction.getSecondaryCategory(),
                 transaction.getMerchantName(),
-                transactionPriority
+                priority
         );
     }
-
-//    void initializePlaidCategoryMap()
-//    {
-//        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithIdAndPrimary("16000000", "Payment"), CategoryType.PAYMENT);
-//        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Shops", "Supermarkets and Groceries"), CategoryType.GROCERIES);
-//        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Food and Drink", "Restaurants"), CategoryType.RESTAURANTS);
-//        plaidCategoryMap.put(PlaidCategory.createPlaidCategoryWithPrimaryAndSecondary("Travel", "Airlines and Aviation Services"), CategoryType.TRIP);
-//        plaidCategoryMap.put(PlaidCategory.createWithIdAndSecondary("19047000", "Supermarkets and Groceries"), CategoryType.GROCERIES);
-//    }
-//
-//    void initializeCategoryIdMap()
-//    {
-//
-//        // Transfer matches
-//        categoryIdMap.put("21001000", CategoryType.TRANSFER);
-//        categoryIdMap.put("21002000", CategoryType.TRANSFER);
-//        categoryIdMap.put("21004000", CategoryType.TRANSFER);
-//        categoryIdMap.put("21005000", CategoryType.TRANSFER);
-//        categoryIdMap.put("21006000", CategoryType.TRANSFER);
-//        categoryIdMap.put("21007000", CategoryType.TRANSFER);
-//        categoryIdMap.put("21009000",  CategoryType.TRANSFER);
-//
-//        categoryIdMap.put("22002000", CategoryType.TRIP);
-//        categoryIdMap.put("22001000", CategoryType.TRIP);
-//        categoryIdMap.put("13001000", CategoryType.ORDER_OUT);
-//        categoryIdMap.put("13000000", CategoryType.ORDER_OUT);
-//        categoryIdMap.put("13002000", CategoryType.ORDER_OUT);
-//        categoryIdMap.put("13003000", CategoryType.ORDER_OUT);
-//        categoryIdMap.put("13004000", CategoryType.ORDER_OUT);
-//        categoryIdMap.put("13005000", CategoryType.ORDER_OUT);
-//    }
-//
-//    void initializeSecondaryMap()
-//    {
-//        // Groceries & Food Stores
-//        secondaryCategoryMap.put("Supermarkets and Groceries", CategoryType.GROCERIES);
-//        secondaryCategoryMap.put("Food and Beverage Store", CategoryType.GROCERIES);
-//        secondaryCategoryMap.put("Convenience Stores", CategoryType.GROCERIES);
-//
-//        // Restaurants & Dining
-//        secondaryCategoryMap.put("Restaurants", CategoryType.RESTAURANTS);
-//        secondaryCategoryMap.put("Bar", CategoryType.ORDER_OUT);
-//        secondaryCategoryMap.put("Breweries", CategoryType.ORDER_OUT);
-//        secondaryCategoryMap.put("Internet Cafes", CategoryType.COFFEE);
-//        secondaryCategoryMap.put("Nightlife", CategoryType.ORDER_OUT);
-//
-//        // Gas & Automotive
-//        secondaryCategoryMap.put("Gas Stations", CategoryType.GAS);
-//        secondaryCategoryMap.put("Automotive", CategoryType.OTHER);
-//
-//        // Utilities
-//        secondaryCategoryMap.put("Utilities", CategoryType.UTILITIES);
-//        secondaryCategoryMap.put("Electric", CategoryType.ELECTRIC);
-//        secondaryCategoryMap.put("Cable", CategoryType.UTILITIES);
-//        secondaryCategoryMap.put("Internet Services", CategoryType.UTILITIES);
-//        secondaryCategoryMap.put("Telecommunication Services", CategoryType.UTILITIES);
-//
-//        // Subscriptions
-//        secondaryCategoryMap.put("Subscription", CategoryType.SUBSCRIPTION);
-//
-//        // Insurance
-//        secondaryCategoryMap.put("Insurance", CategoryType.INSURANCE);
-//
-//        // Personal Care & Health
-//        secondaryCategoryMap.put("Personal Care", CategoryType.HAIRCUT);
-//        secondaryCategoryMap.put("Glasses and Optometrist", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Pharmacies", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Healthcare Services", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Physicians", CategoryType.OTHER);
-//
-//        // Housing
-//        secondaryCategoryMap.put("Rent", CategoryType.RENT);
-//        secondaryCategoryMap.put("Loan", CategoryType.PAYMENT);
-//
-//        // Payments
-//        secondaryCategoryMap.put("Credit Card", CategoryType.PAYMENT);
-//
-//        // Travel
-//        secondaryCategoryMap.put("Airlines and Aviation Services", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Airports", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Lodging", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Car and Truck Rentals", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Taxi", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Car Service", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Parking", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Tolls and Fees", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Public Transportation Services", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Rail", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Boat", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Cruises", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Charter Buses", CategoryType.TRIP);
-//        secondaryCategoryMap.put("Limos and Chauffeurs", CategoryType.TRIP);
-//
-//        // Income & Transfers
-//        secondaryCategoryMap.put("Deposit", CategoryType.DEPOSIT);
-//        secondaryCategoryMap.put("Payroll", CategoryType.INCOME);
-//        secondaryCategoryMap.put("Interest Earned", CategoryType.INCOME);
-//        secondaryCategoryMap.put("Refund", CategoryType.REFUND);
-//
-//        // Transfers & Withdrawals
-//        secondaryCategoryMap.put("Withdrawal", CategoryType.WITHDRAWAL);
-//        secondaryCategoryMap.put("Internal Account Transfer", CategoryType.TRANSFER);
-//        secondaryCategoryMap.put("ACH", CategoryType.TRANSFER);
-//        secondaryCategoryMap.put("Wire", CategoryType.TRANSFER);
-//        secondaryCategoryMap.put("Third Party", CategoryType.TRANSFER);
-//        secondaryCategoryMap.put("Check", CategoryType.TRANSFER);
-//        secondaryCategoryMap.put("Credit", CategoryType.TRANSFER);
-//        secondaryCategoryMap.put("Debit", CategoryType.TRANSFER);
-//
-//        // Pets
-//        secondaryCategoryMap.put("Pets", CategoryType.PET);
-//        secondaryCategoryMap.put("Veterinarians", CategoryType.PET);
-//        secondaryCategoryMap.put("Animal Shelter", CategoryType.PET);
-//
-//        // Shopping & Retail
-//        secondaryCategoryMap.put("Digital Purchase", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Sporting Goods", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Office Supplies", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Department Stores", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Discount Stores", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Clothing and Accessories", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Computers and Electronics", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Furniture and Home Decor", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Hardware Store", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Bookstores", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Toys", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Jewelry and Watches", CategoryType.OTHER);
-//
-//        // Recreation & Entertainment
-//        secondaryCategoryMap.put("Entertainment", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Gyms and Fitness Centers", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Sports Clubs", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Arts and Entertainment", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Parks", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Zoo", CategoryType.OTHER);
-//
-//        // Services
-//        secondaryCategoryMap.put("Home Improvement", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Cleaning", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Legal", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Financial", CategoryType.OTHER);
-//        secondaryCategoryMap.put("Real Estate", CategoryType.OTHER);
-//    }
-//
-//    void initializePrimaryCategoryMap()
-//    {
-//        primaryCategoryMap.put("Shops", CategoryType.OTHER);
-//        primaryCategoryMap.put("Travel", CategoryType.TRIP);
-//        primaryCategoryMap.put("Transfer", CategoryType.TRANSFER);
-//        primaryCategoryMap.put("Food and Drink", CategoryType.ORDER_OUT);
-//        primaryCategoryMap.put("Payment", CategoryType.PAYMENT);
-//        primaryCategoryMap.put("Recreation", CategoryType.OTHER);
-//        primaryCategoryMap.put("Healthcare", CategoryType.OTHER);
-//        primaryCategoryMap.put("Community",  CategoryType.OTHER);
-//        primaryCategoryMap.put("Service", CategoryType.OTHER);
-//        primaryCategoryMap.put("Tax", CategoryType.OTHER);
-//    }
 
     private int assignPriorityToTransaction(Transaction transaction)
     {

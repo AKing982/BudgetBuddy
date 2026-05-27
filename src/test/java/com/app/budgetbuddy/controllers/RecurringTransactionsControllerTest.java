@@ -189,6 +189,8 @@ class RecurringTransactionsControllerTest {
                 "ACC123",               // accountId
                 "STREAM456",            // streamId
                 "CAT789",               // categoryId
+                "primary",
+                "secondary",
                 "Monthly Subscription", // description
                 "Netflix",              // merchantName
 //                LocalDate.of(2023, 1, 1),           // firstDate

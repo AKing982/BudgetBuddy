@@ -97,10 +97,14 @@ class TransactionCategorizationEngineTest
         transaction.setPrimaryCategory(null);
         transaction.setSecondaryCategory(null);
 
-        Category result = transactionCategorizerService.categorize(transaction);
-        assertNotNull(result);
-        assertEquals("Uncategorized", result.getCategoryName());
+        AccountEntity accountEntity = new AccountEntity();
+        accountEntity.setId("acct-123");
+        accountEntity.setUser(UserEntity.builder().id(1L).build());
+
+        when(accountService.findByAccountId("acct-123")).thenReturn(Optional.of(accountEntity));
+        assertThrows(CategoryException.class, () -> transactionCategorizerService.categorize(transaction));
     }
+
 
     @Test
     void testCategorize_whenTransactionHasPrimaryAndSecondaryCategory_thenReturnCategory()

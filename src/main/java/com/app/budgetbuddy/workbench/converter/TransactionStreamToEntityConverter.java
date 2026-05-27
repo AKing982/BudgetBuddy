@@ -48,7 +48,15 @@ public class TransactionStreamToEntityConverter {
         recurringTransactionEntity.setUser(UserEntity.builder().id(userId).build());
         recurringTransactionEntity.setAverageAmount(BigDecimal.valueOf(transactionStream.getAverageAmount().getAmount()));
         recurringTransactionEntity.setActive(transactionStream.getIsActive());
-        recurringTransactionEntity.setCategory(fetchCategoryById(transactionStream.getCategoryId()));
+        recurringTransactionEntity.setCategoryId(transactionStream.getCategoryId());
+
+        List<String> categories = transactionStream.getCategory();
+        String primaryCategory = (categories != null && !categories.isEmpty())
+                ? categories.get(0) : null;
+        String secondaryCategory = (categories != null && categories.size() > 1)
+                ? categories.get(1) : null;
+        recurringTransactionEntity.setPrimaryCategory(primaryCategory);
+        recurringTransactionEntity.setSecondaryCategory(secondaryCategory);
         return recurringTransactionEntity;
     }
 

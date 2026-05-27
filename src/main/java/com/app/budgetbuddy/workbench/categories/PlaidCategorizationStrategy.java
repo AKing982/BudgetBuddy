@@ -39,36 +39,43 @@ public class PlaidCategorizationStrategy
             case 1 -> {
                 rule = plaidCategoriesService.findByPlaidFull(categoryId, primary, secondary);
                 matchedCategory = buildMatchedCategory(rule);
+                log.info("Matched Category: {}", matchedCategory);
                 yield matchedCategory;
             }
             case 2 -> {
                 rule = plaidCategoriesService.findByPlaidPrimaryAndSecondary(primary, secondary);
                 matchedCategory = buildMatchedCategory(rule);
+                log.info("Matched Category: {}", matchedCategory);
                 yield matchedCategory;
             }
             case 5 -> {
                 rule = plaidCategoriesService.findByPlaidCategoryIdAndSecondary(categoryId, secondary);
                 matchedCategory = buildMatchedCategory(rule);
+                log.info("Matched Category: {}", matchedCategory);
                 yield matchedCategory;
             }
             case 6 -> {
                 rule = plaidCategoriesService.findByPlaidCategoryIdAndPrimary(categoryId, primary);
                 matchedCategory = buildMatchedCategory(rule);
+                log.info("Matched Category: {}", matchedCategory);
                 yield matchedCategory;
             }
             case 7 -> {
                 rule = plaidCategoriesService.findByPlaidPrimaryOnly(primary);
                 matchedCategory = buildMatchedCategory(rule);
+                log.info("Matched Category: {}", matchedCategory);
                 yield matchedCategory;
             }
             case 8 -> {
                 rule = plaidCategoriesService.findByPlaidSecondaryOnly(secondary);
                 matchedCategory = buildMatchedCategory(rule);
+                log.info("Matched Category: {}", matchedCategory);
                 yield matchedCategory;
             }
             case 9 -> {
                 rule = plaidCategoriesService.findByPlaidCategoryIdOnly(categoryId);
                 matchedCategory = buildMatchedCategory(rule);
+                log.info("Matched Category: {}", matchedCategory);
                 yield matchedCategory;
             }
             case 10 -> {
@@ -97,7 +104,7 @@ public class PlaidCategorizationStrategy
     {
         return Category.builder()
                 .categorizedBy(SYSTEM_CATEGORIZED)
-                .plaidCategoryId("")
+                .plaidCategoryId(rule.getCategoryId())
                 .categorizedDate(LocalDate.now())
                 .categoryName(rule.getMatchedCategory())
                 .build();
