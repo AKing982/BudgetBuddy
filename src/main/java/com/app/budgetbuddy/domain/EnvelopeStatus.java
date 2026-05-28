@@ -2,5 +2,5 @@ package com.app.budgetbuddy.domain;
 
 public enum EnvelopeStatus
 {
-    ACTIVE, PAUSED, COMPLETED, CANCELLED
+    PENDING, ACTIVE, PAID, SUBMITTED, PAUSED, COMPLETED, FAILED, CANCELLED, LATE
 }

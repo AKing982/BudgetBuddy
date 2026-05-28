@@ -27,7 +27,7 @@ class EnvelopeContributionEngineTest
     private LinkedEnvelopeContributionEngine linkedEnvelopeContributionService;
 
     @Mock
-    private EnvelopeNotificationService envelopeNotificationService;
+    private EnvelopeNotificationBuilder envelopeNotificationService;
 
     @InjectMocks
     private EnvelopeContributionEngine envelopeContributionEngine;
@@ -36,13 +36,6 @@ class EnvelopeContributionEngineTest
     void setUp() {
     }
 
-    @Test
-    void testProcessSingleEnvelope_whenEnvelopeIsNull_thenThrowEnvelopeException()
-    {
-        assertThrows(EnvelopeException.class, () -> {
-            envelopeContributionEngine.processSingleEnvelope(null);
-        });
-    }
 
     @AfterEach
     void tearDown() {

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Table(name="budgetEnvelopes")
 @Getter
 @Setter
+@Deprecated
 public class BudgetEnvelopesEntity
 {
 
@@ -51,6 +52,9 @@ public class BudgetEnvelopesEntity
 
     @Column(name="status")
     private String status;
+
+    @Column(name="is_linked")
+    private boolean isLinked;
 
     @Column(name="priority")
     private int priority;

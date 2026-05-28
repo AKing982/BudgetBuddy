@@ -36,6 +36,6 @@ public class LinkedEnvelopesEntity
     @JoinTable(name="linkedEnvelopeMembers",
     joinColumns=@JoinColumn(name="linkedEnvelopeId"),
     inverseJoinColumns = @JoinColumn(name="envelopeId"))
-    private Set<BudgetEnvelopesEntity> linkedEnvelopeMembers;
+    private Set<EnvelopeEntity> linkedEnvelopeMembers;
 
 }

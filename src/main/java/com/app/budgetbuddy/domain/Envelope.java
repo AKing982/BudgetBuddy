@@ -4,7 +4,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -29,7 +28,10 @@ public class Envelope
     private boolean isActive;
     private boolean isEmailEnabled;
     private String status;
+    private EnvelopeMode mode;
     private BigDecimal currentScore;
+    private String linked_account_id;
+    private EnvelopeStatus envelopeStatus;
 
 
 }

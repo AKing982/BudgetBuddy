@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name="envelopes")
@@ -45,18 +47,34 @@ public class EnvelopeEntity
     @Column(name="budgeted")
     private double budgeted;
 
-    @Column(name="frequency_amount")
-    private double frequencyAmount;
+    @Column(name="frequency")
+    private String frequencyAmount;
 
-    @Column(name="currently_saved")
+    @Column(name="currently_contributed")
     private double currentlySaved;
 
     @Column(name="target_amount")
     private double targetAmount;
+
+    @Column(name="contribution_mode")
+    private String contributionMode;
 
     @Column(name="is_active")
     private boolean isActive;
 
     @Column(name="status")
     private String status;
+
+    @Column(name="priority")
+    private int priority;
+
+    @Column(name="is_linked")
+    private boolean isLinked;
+
+    @OneToMany(mappedBy="envelope", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+    private List<EnvelopeContributionsEntity> contributions;
+
+    @OneToMany(fetch=FetchType.LAZY)
+    @JoinColumn(name="envelope_notification_id")
+    private Set<EnvelopeNotificationsEntity> envelopeNotifications;
 }

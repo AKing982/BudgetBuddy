@@ -1,7 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,8 +8,12 @@ import java.util.Objects;
 
 @Getter
 @Setter
+@NoArgsConstructor(access = lombok.AccessLevel.PUBLIC)
+@AllArgsConstructor(access = lombok.AccessLevel.PUBLIC)
+@Builder
 public class EnvelopeNotification
 {
+    private Long id;
     private String envelopeName;
     private Long envelopeId;
     private EnvelopeType envelopeType;

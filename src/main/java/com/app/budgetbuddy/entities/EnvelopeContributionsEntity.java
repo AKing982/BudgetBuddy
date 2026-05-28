@@ -23,6 +23,9 @@ public class EnvelopeContributionsEntity
     @Column(name="minimum_contribution_amount")
     private Double minimumContributionAmount;
 
+    @Column(name="maximum_contribution_amount")
+    private Double maximumContributionAmount;
+
     @Column(name="contribution_amount")
     private Double contributionAmount;
 

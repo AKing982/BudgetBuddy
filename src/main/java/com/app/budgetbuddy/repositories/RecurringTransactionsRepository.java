@@ -31,6 +31,9 @@ public interface RecurringTransactionsRepository extends JpaRepository<Recurring
     @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.user.id =:id")
     List<RecurringTransactionEntity> findByUser(@Param("id") Long id);
 
+    @Query("SELECT CASE WHEN count(*) > 0 THEN TRUE ELSE FALSE END FROM RecurringTransactionEntity rt WHERE rt.user.id =:id AND rt.lastAmount =:amount AND rt.lastDate =:date")
+    boolean checkForRecurringTransactionCountOnDate(@Param("id") Long id, @Param("amount") BigDecimal amount, @Param("date") LocalDate date);
+
     @Query("SELECT rt FROM RecurringTransactionEntity rt WHERE rt.account.id =:id")
     List<RecurringTransactionEntity> findByAccountId(@Param("id") String id);
 
