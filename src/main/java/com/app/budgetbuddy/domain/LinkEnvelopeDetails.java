@@ -1,6 +1,5 @@
 package com.app.budgetbuddy.domain;
 
-import com.app.budgetbuddy.entities.EnvelopeNotificationsEntity;
 import lombok.*;
 
 import java.util.List;

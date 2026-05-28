@@ -29,18 +29,18 @@ import java.util.Optional;
 @Slf4j
 public class EnvelopeContributionEngine
 {
-    private final EnvelopeContributionHistoryService envelopeContributionService;
+    private final EnvelopeContributionHistoryService envelopeContributionHistoryService;
     private final EnvelopeNotificationBuilder envelopeNotificationService;
     private final EnvelopeContributionScheduler envelopeContributionScheduler;
     private final EnvelopeContributionsService envelopeContributionsService;
 
     @Autowired
-    public EnvelopeContributionEngine(EnvelopeContributionHistoryService envelopeContributionService,
+    public EnvelopeContributionEngine(EnvelopeContributionHistoryService envelopeContributionHistoryService,
                                       EnvelopeContributionScheduler envelopeContributionScheduler,
                                       EnvelopeNotificationBuilder envelopeNotificationService,
                                       EnvelopeContributionsService envelopeContributionsService)
     {
-        this.envelopeContributionService = envelopeContributionService;
+        this.envelopeContributionHistoryService = envelopeContributionHistoryService;
         this.envelopeNotificationService = envelopeNotificationService;
         this.envelopeContributionScheduler = envelopeContributionScheduler;
         this.envelopeContributionsService = envelopeContributionsService;
@@ -103,39 +103,69 @@ public class EnvelopeContributionEngine
         {
             LocalDate today = LocalDate.now();
             Long envelopeId = envelope.getId();
+            String frequency = envelope.getFrequency();
+            EnvelopeDetails envelopeDetails = new EnvelopeDetails();
             // Is there an existing contribution for today?
             Optional<EnvelopeContribution> envelopeContributionOptional = envelopeContributionsService.getEnvelopeContributionsByEnvelopeIdAndScheduledDate(envelopeId, today);
             if(envelopeContributionOptional.isPresent())
             {
                 // Get the existing contribution
                 EnvelopeContribution envelopeContribution = envelopeContributionOptional.get();
-
+                Long envelopeContributionId = envelopeContribution.getId();
                 // Schedule the contribution for today
+                envelopeContributionScheduler.scheduleEnvelopeContribution(envelopeContributionId, today, frequency);
 
                 // Create the notification for the envelope
+                EnvelopeNotification envelopeNotification = envelopeNotificationService.createEnvelopeNotification(envelope, envelopeContribution.getContributions()).get();
 
                 // Create a EnvelopeContributionHistory record for the contribution
+                envelopeContributionHistoryService.createAndSaveContribution(envelopeContribution, today);
 
                 // Update the envelope status from Pending to Paid
-
-                // Update the envelope status from Pending to Completed if the target amount has been reached
-
+                envelope.setEnvelopeStatus(EnvelopeStatus.PAID);
+                BigDecimal envelopeTargetAmount = envelope.getTargetAmount();
+                BigDecimal currentSaved = envelope.getCurrentSaved();
+                if(currentSaved.compareTo(envelopeTargetAmount) > 0)
+                {
+                    envelope.setEnvelopeStatus(EnvelopeStatus.COMPLETED);
+                }
                 // Create the Envelope Details object
-
-                // Return the Envelope Details object
+                envelopeDetails = new EnvelopeDetails(envelope, envelopeContribution.getContributions(), envelopeNotification);
             }
-
-            // If there is no existing contribution for today, then return envelope details with envelopes current status
-
+            return Optional.of(envelopeDetails);
         }catch(EnvelopeException e){
             log.error("There was an error processing the auto envelope contribution: ", e);
             return Optional.empty();
         }
-        return null;
     }
 
     public Optional<LinkEnvelopeDetails> processAutoLinkedEnvelope(final EnvelopeLink envelopeLink)
     {
+        if(envelopeLink == null)
+        {
+            log.warn("There was an error processing the auto linked envelope contribution: ", new EnvelopeException("EnvelopeLink is null"));
+            return Optional.empty();
+        }
+        try
+        {
+            LocalDate today = LocalDate.now();
+            List<EnvelopeContribution> envelopeContributions = envelopeLink.getEnvelopes();
+            List<EnvelopeContribution> envelopeContributionsToday = envelopeContributions.stream()
+                    .filter(e -> e.getContributions().stream()
+                            .filter(a -> a.getScheduledDate().isEqual(today)).isParallel())
+                    .toList();
+            if(!envelopeContributionsToday.isEmpty())
+            {
+                envelopeContributionsToday.forEach(envelopeContribution -> {
+                    Long envelopeId = envelopeContribution.getEnvelope().getId();
+                    envelopeContributionScheduler.unscheduleEnvelopeContribution(envelopeId);
+                });
+            }
+
+        }catch(EnvelopeException e){
+            log.error("There was an error processing the auto linked envelope contribution: ", e);
+            return Optional.empty();
+        }
         return null;
     }
 
