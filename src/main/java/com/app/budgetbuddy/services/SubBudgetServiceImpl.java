@@ -3,8 +3,11 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BudgetEntity;
 import com.app.budgetbuddy.entities.BudgetScheduleEntity;
+import com.app.budgetbuddy.entities.EnvelopeEntity;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.repositories.AccountBalanceHistoryRepository;
+import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.repositories.BudgetRepository;
 import com.app.budgetbuddy.repositories.SubBudgetRepository;
 import com.app.budgetbuddy.workbench.converter.SubBudgetEntityConverter;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.*;
@@ -27,15 +31,21 @@ public class SubBudgetServiceImpl implements SubBudgetService
 {
     private final SubBudgetRepository subBudgetRepository;
     private final BudgetRepository budgetRepository;
+    private final AccountRepository accountRepository;
     private final SubBudgetEntityConverter subBudgetEntityConverter;
+    private final AccountBalanceHistoryRepository accountBalanceHistoryRepository;
 
     @Autowired
     public SubBudgetServiceImpl(SubBudgetRepository subBudgetRepository,
+                                AccountRepository accountRepository,
                                 BudgetRepository budgetRepository,
+                                AccountBalanceHistoryRepository accountBalanceHistoryRepository,
                                 SubBudgetEntityConverter subBudgetEntityConverter)
     {
         this.subBudgetRepository = subBudgetRepository;
+        this.accountRepository = accountRepository;
         this.budgetRepository = budgetRepository;
+        this.accountBalanceHistoryRepository = accountBalanceHistoryRepository;
         this.subBudgetEntityConverter = subBudgetEntityConverter;
     }
 
@@ -302,6 +312,50 @@ public class SubBudgetServiceImpl implements SubBudgetService
         }catch(DataAccessException e){
             log.error("There was an error fetching the sub budgets by start={} and end={}", startDate, endDate);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<BudgetCriteria> getBudgetCriteriaByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<SubBudgetEntity> subBudgets = subBudgetRepository.findSubBudgetsListByDateRange(userId, startDate, endDate);
+            if(subBudgets.isEmpty())
+            {
+                return Optional.empty();
+            }
+            BigDecimal totalBudgeted =  subBudgets.stream()
+                    .map(SubBudgetEntity::getAllocatedAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalSpent = subBudgets.stream()
+                    .map(SubBudgetEntity::getSpentOnBudget)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalEnvelopeAmount = subBudgets.stream()
+                    .flatMap(sb -> sb.getEnvelopes().stream())
+                    .filter(EnvelopeEntity::isActive)
+                    .map(e -> BigDecimal.valueOf(e.getBudgeted()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal currentBalance = accountRepository.findByUserId(userId)
+                    .stream()
+                    .filter(a -> a.getType() == AccountType.DEPOSITORY)
+                    .map(account -> accountBalanceHistoryRepository
+                            .findAvailableBalanceByAccountId(account.getId())
+                            .map(h -> BigDecimal.valueOf(h.getBalance()))
+                            .orElse(BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BudgetCriteria criteria = BudgetCriteria.builder()
+                    .userId(userId)
+                    .budgeted(totalBudgeted)
+                    .actualSpent(totalSpent)
+                    .totalEnvelopeAmount(totalEnvelopeAmount)
+                    .currentAccountBalance(currentBalance)
+                    .build();
+            return Optional.of(criteria);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the budget criteria by start={} and end={}", startDate, endDate);
+            return Optional.empty();
         }
     }
 

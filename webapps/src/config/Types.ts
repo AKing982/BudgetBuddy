@@ -350,6 +350,125 @@ export interface BPTemplate {
     isSaved:          boolean;
 }
 
+export type EnvelopeType = 'PAYOFF' | 'PURCHASE' | 'FUND';
+export type EnvelopeStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+export type ContributionMode = 'AUTO' | 'MANUAL';
+
+export interface Envelope {
+    id: number;
+    userId: number;
+    envelopeName: string;
+    goal: string;
+    envelopeType: EnvelopeType;
+    duration: number;
+    targetDate: string;
+    startDate: string;
+    budgeted: number;
+    currentSaved: number;
+    targetAmount: number;
+    frequency: string;
+    contributionMode: ContributionMode;
+    isActive: boolean;
+    status: EnvelopeStatus;
+    priority: number;
+    isLinked: boolean;
+}
+
+export interface Contributions {
+    id: number;
+    scheduledDate: string;
+    contributionDate: string | null;
+    minAmount: number;
+    maxAmount: number;
+    merchant: string | null;
+    amount: number;
+    status: string;
+    frequency: string;
+}
+
+export interface EnvelopeContribution {
+    id: number;
+    envelope: Envelope;
+    contributions: Contributions[];
+}
+
+export interface EnvelopeLink {
+    id: number;
+    envelopes: EnvelopeContribution[];
+    sharedBudget: number;
+    linkStatus: string;
+    totalContributionAmount: number;
+    actualContributionAmount: number;
+}
+
+
+export interface PaymentInfo {
+    numberOfPayments:   number;
+    totalMonths:        number;
+    totalAmount:        number;
+    endDate:            string;
+    firstPaymentDate:   string;
+    firstPaymentAmount: number;
+    isPayInFour:        boolean;
+    merchant:           string;
+    description:        string;
+}
+
+export interface NewEnvelopeCriteria {
+    goalType:            string;
+    goalName:            string;
+    envelopeType:        EnvelopeType;
+    description:         string;
+    targetAmount:        number;
+    initialContribution: number;
+    startDate:           string;
+    targetDate:          string;
+    autoContribution:  boolean;
+    frequency:           string;
+    paymentInfo:         PaymentInfo | null;
+    score:               number;
+    userId:              number;
+}
+
+export interface EnvelopeCreateRequest {
+    criteria: NewEnvelopeCriteria[];
+    isLinked: boolean;
+}
+
+export interface EnvelopeBuildDetails {
+    envelope: Envelope | null;
+    linkedEnvelope: EnvelopeLink | null;
+}
+
+export interface EnvelopeDetails {
+    envelope: Envelope;
+    contributions: Contributions[];
+    notification: EnvelopeNotification | null;
+}
+
+export interface LinkEnvelopeDetails {
+    envelopeLink: EnvelopeLink;
+    envelopeDetails: EnvelopeDetails[];
+    linkNotification: EnvelopeLinkNotification | null;
+}
+
+export interface EnvelopeNotification {
+    envelopeName: string;
+    envelopeId: number;
+    envelopeType: EnvelopeType;
+    title: string;
+    message: string;
+    envelopeStatus: string;
+    isRead: boolean;
+    amount: number;
+    dateToContribute: string;
+}
+
+export interface EnvelopeLinkNotification {
+    envelopeLink: EnvelopeLink;
+    envelopeNotifications: EnvelopeNotification[];
+}
+
 // export interface BudgetPeriodCategory {
 //     categoryName: string;
 //     budgetedAmount: number;

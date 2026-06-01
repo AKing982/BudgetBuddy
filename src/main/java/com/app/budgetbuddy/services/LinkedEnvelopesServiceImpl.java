@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,5 +74,18 @@ public class LinkedEnvelopesServiceImpl implements LinkedEnvelopesService
             return Optional.empty();
         }
         return Optional.empty();
+    }
+
+    @Override
+    @Transactional
+    public List<LinkedEnvelopesEntity> findByUserId(Long userId)
+    {
+        try
+        {
+            return linkedEnvelopesRepository.findByUserId(userId);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the linked envelopes for the user", e);
+            return Collections.emptyList();
+        }
     }
 }

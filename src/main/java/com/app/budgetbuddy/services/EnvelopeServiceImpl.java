@@ -5,6 +5,7 @@ import com.app.budgetbuddy.entities.EnvelopeEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.EnvelopeRepository;
 import com.app.budgetbuddy.workbench.converter.EnvelopeModelConverter;
+import com.app.budgetbuddy.workbench.converter.EnvelopeToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,12 +22,15 @@ public class EnvelopeServiceImpl implements EnvelopeService
 {
     private final EnvelopeRepository envelopeRepository;
     private final EnvelopeModelConverter envelopeModelConverter;
+    private final EnvelopeToEntityConverter envelopeToEntityConverter;
 
     @Autowired
     public EnvelopeServiceImpl(EnvelopeRepository envelopeRepository,
+                               EnvelopeToEntityConverter envelopeToEntityConverter,
                                EnvelopeModelConverter envelopeModelConverter)
     {
         this.envelopeRepository = envelopeRepository;
+        this.envelopeToEntityConverter = envelopeToEntityConverter;
         this.envelopeModelConverter = envelopeModelConverter;
     }
 
@@ -90,6 +94,22 @@ public class EnvelopeServiceImpl implements EnvelopeService
         }catch(DataAccessException e){
             log.error("There was an error retrieving the envelopes for the user", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Envelope save(Envelope envelope)
+    {
+        try
+        {
+            EnvelopeEntity envelopeEntity = envelopeToEntityConverter.convert(envelope);
+            EnvelopeEntity savedEntity = envelopeRepository.save(envelopeEntity);
+            envelope.setId(savedEntity.getId());
+            return envelope;
+        }catch(DataAccessException e){
+            log.error("There was an error saving the envelope", e);
+            return null;
         }
     }
 

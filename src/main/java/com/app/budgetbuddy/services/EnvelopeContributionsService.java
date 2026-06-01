@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.Contributions;
 import com.app.budgetbuddy.domain.EnvelopeContribution;
 import com.app.budgetbuddy.entities.EnvelopeContributionsEntity;
 
@@ -14,7 +15,9 @@ public interface EnvelopeContributionsService extends ServiceModel<EnvelopeContr
 
     Optional<EnvelopeContribution> findByContributionId(Long contributionId);
 
-    Optional<EnvelopeContribution> createAndSaveEntry(BigDecimal amount, LocalDate entryDate, Long envelopeId);
+    List<EnvelopeContribution> saveContributions(List<EnvelopeContribution> contributions);
+
+    EnvelopeContribution createAndSaveEntry(BigDecimal amount, LocalDate entryDate, Long envelopeId);
 
     Optional<EnvelopeContribution> updateAmountAndDate(Long contributionId, BigDecimal amount, LocalDate entryDate);
 

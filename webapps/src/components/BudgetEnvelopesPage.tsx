@@ -25,8 +25,11 @@ import {
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import Sidebar from './Sidebar';
-import CreateEnvelopeDialog from './CreateEnvelopeDialog';
+import CreateEnvelopeDialog, {NewEnvelopeForm} from './CreateEnvelopeDialog';
 import MultiEnvelopeDashboard from "./MultiEnvelopeDashboard";
+import BudgetEnvelopesService from '../services/BudgetEnvelopeService';
+import BudgetEnvelopeService from "../services/BudgetEnvelopeService";
+import {EnvelopeCreateRequest, EnvelopeType, NewEnvelopeCriteria} from "../config/Types";
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, LineElement,
@@ -1443,7 +1446,7 @@ const BudgetEnvelopesPage: React.FC = () => {
     const [filterStatus,  setFilterStatus]  = useState<string>('ALL');
     const [filterType,    setFilterType]    = useState<string>('ALL');
     const [leftPanelView, setLeftPanelView] = useState<'envelopes' | 'analytics' | 'paymentplan'>('envelopes');
-
+    const userId = Number(localStorage.getItem('userId'));
     // ── Month navigator ────────────────────────────────────────────────────────
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -1468,11 +1471,34 @@ const BudgetEnvelopesPage: React.FC = () => {
     const [planTimeframe, setPlanTimeframe] = useState<number>(4);
     const [planApplied,   setPlanApplied]   = useState(false);
 
+    // useEffect(() => {
+    //     document.title = 'Envelopes';
+    //     setTimeout(() => setAnimateIn(true), 100);
+    //     setIsLoading(true);
+    //     setTimeout(() => { setEnvelopes(MOCK_ENVELOPES); setContributions(MOCK_CONTRIBUTIONS); setIsLoading(false); }, 600);
+    //     return () => { document.title = 'BudgetBuddy'; };
+    // }, []);
+
     useEffect(() => {
         document.title = 'Envelopes';
         setTimeout(() => setAnimateIn(true), 100);
+        const userId = Number(localStorage.getItem('userId'));
         setIsLoading(true);
-        setTimeout(() => { setEnvelopes(MOCK_ENVELOPES); setContributions(MOCK_CONTRIBUTIONS); setIsLoading(false); }, 600);
+        BudgetEnvelopeService.getInstance()
+            .fetchBudgetEnvelopes(userId)
+            .then(data => {
+                setEnvelopes(data);
+                // contributions are not yet returned by the API — keep mock until
+                // a /contributions endpoint exists
+                setContributions(MOCK_CONTRIBUTIONS);
+            })
+            .catch(err => {
+                console.error('Failed to load envelopes, falling back to mock data:', err);
+                setEnvelopes(MOCK_ENVELOPES);
+                setContributions(MOCK_CONTRIBUTIONS);
+            })
+            .finally(() => setIsLoading(false));
+
         return () => { document.title = 'BudgetBuddy'; };
     }, []);
 
@@ -2266,7 +2292,55 @@ const BudgetEnvelopesPage: React.FC = () => {
             {/* Dialogs */}
             <ManualContributionDialog open={contribOpen} envelope={contribEnvelope} onClose={() => setContribOpen(false)} onSubmit={handleAddContribution} onSetupAuto={handleSetupAuto} />
             <AffordabilityDialog open={affordOpen} envelopes={activeEnvelopes} onClose={() => setAffordOpen(false)} onApplyAll={handleApplyAffordability} />
-            <CreateEnvelopeDialog open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={async data => { console.log('New envelope:', data); setCreateOpen(false); }} />
+            <CreateEnvelopeDialog
+                open={createOpen}
+                onClose={() => setCreateOpen(false)}
+                onSubmit={async (data: NewEnvelopeForm | NewEnvelopeForm[], isLinked: boolean) => {
+                    const forms = Array.isArray(data) ? data : [data];
+                    try {
+                        const criteria: NewEnvelopeCriteria[] = forms.map(f => ({
+                            goalType:            f.envelopeType as string,
+                            goalName:            f.envelopeName,
+                            envelopeType:        (f.envelopeType === 'EMERGENCY' || f.envelopeType === ''
+                                ? 'FUND'
+                                : f.envelopeType) as EnvelopeType,
+                            description:         f.description ?? '',
+                            targetAmount:        f.targetAmount === '' ? 0 : f.targetAmount,
+                            initialContribution: f.startingAmount === '' ? 0 : f.startingAmount,
+                            startDate:           new Date().toISOString().split('T')[0],
+                            targetDate:          f.targetDate,
+                            autoContribution:  f.contributionMode === 'auto',
+                            frequency:           f.contributionFrequency,
+                            paymentInfo:         null,
+                            score:               0,
+                            userId:              userId,
+                        }));
+
+                        const request: EnvelopeCreateRequest = { criteria, isLinked };
+
+                        await BudgetEnvelopeService.getInstance().createEnvelope(
+                            request,
+                            userId,
+                            new Date().toISOString().split('T')[0],
+                            forms[0].targetDate
+                        );
+
+                        const updated = await BudgetEnvelopeService.getInstance()
+                            .fetchBudgetEnvelopes(userId);
+                        setEnvelopes(updated);
+                        setSnackMsg(isLinked ? `${forms.length} linked envelopes created!` : 'Envelope created!');
+                        setSnackSev('success');
+                        setSnackOpen(true);
+                    } catch (err) {
+                        console.error('Failed to create envelope:', err);
+                        setSnackMsg('Failed to create envelope. Please try again.');
+                        setSnackSev('error');
+                        setSnackOpen(true);
+                    } finally {
+                        setCreateOpen(false);
+                    }
+                }}
+            />
             <Snackbar open={snackOpen} autoHideDuration={4000} onClose={() => setSnackOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert onClose={() => setSnackOpen(false)} severity={snackSev} sx={{ width: '100%', borderRadius: 2 }}>{snackMsg}</Alert>
             </Snackbar>

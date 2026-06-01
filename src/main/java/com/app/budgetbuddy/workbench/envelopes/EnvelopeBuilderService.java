@@ -1,6 +1,9 @@
 package com.app.budgetbuddy.workbench.envelopes;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.services.EnvelopeContributionsService;
+import com.app.budgetbuddy.services.EnvelopePaymentPlansService;
+import com.app.budgetbuddy.services.EnvelopePaymentSchedulesService;
 import com.app.budgetbuddy.services.EnvelopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,16 +20,82 @@ import java.util.stream.IntStream;
 @Service
 public class EnvelopeBuilderService
 {
-    private EnvelopeService envelopeService;
-    private EnvelopePaymentPlanBuilder envelopePaymentBuilder;
+    private final EnvelopeService envelopeService;
+    private final EnvelopeContributionsService envelopeContributionsService;
+    private final EnvelopePaymentPlansService envelopePaymentPlansService;
+    private final EnvelopePaymentSchedulesService envelopePaymentSchedulesService;
+    private final EnvelopeContributionBuilder envelopeContributionBuilder;
+    private final EnvelopePaymentPlanBuilder envelopePaymentBuilder;
     private final String ACTIVE = "ACTIVE";
 
     @Autowired
     public EnvelopeBuilderService(EnvelopeService envelopeService,
+                                  EnvelopeContributionsService envelopeContributionsService,
+                                  EnvelopePaymentPlansService envelopePaymentPlansService,
+                                  EnvelopePaymentSchedulesService envelopePaymentSchedulesService,
+                                  EnvelopeContributionBuilder envelopeContributionBuilder,
                                   EnvelopePaymentPlanBuilder envelopePaymentBuilder)
     {
         this.envelopeService = envelopeService;
+        this.envelopeContributionsService = envelopeContributionsService;
+        this.envelopeContributionBuilder = envelopeContributionBuilder;
+        this.envelopePaymentPlansService = envelopePaymentPlansService;
+        this.envelopePaymentSchedulesService = envelopePaymentSchedulesService;
         this.envelopePaymentBuilder = envelopePaymentBuilder;
+    }
+
+    public Envelope createSingleEnvelope(final NewEnvelopeCriteria newEnvelopeCriteria, final BudgetCriteria budgetCriteria)
+    {
+        if(newEnvelopeCriteria == null || budgetCriteria == null)
+        {
+            throw new IllegalArgumentException("NewEnvelopeCriteria and BudgetCriteria cannot be null");
+        }
+        LocalDate startDate = newEnvelopeCriteria.getStartDate();
+        LocalDate targetDate = newEnvelopeCriteria.getTargetDate();
+        double initialContribution = newEnvelopeCriteria.getInitialContribution();
+        BigDecimal targetAmount = BigDecimal.valueOf(newEnvelopeCriteria.getTargetAmount());
+        long duration = ChronoUnit.MONTHS.between(startDate, targetDate);
+        BigDecimal envelopeAllocation = EnvelopeCalculations.calculateEnvelopeAllocation(newEnvelopeCriteria,budgetCriteria);
+        EnvelopeType envelopeType = newEnvelopeCriteria.getEnvelopeType();
+        PaymentPlan paymentPlan;
+        String frequency = newEnvelopeCriteria.getFrequency();
+        Envelope envelope = Envelope.builder()
+                .status("ACTIVE")
+                .userId(newEnvelopeCriteria.getUserId())
+                .envelopeName(newEnvelopeCriteria.getGoalName())
+                .startDate(newEnvelopeCriteria.getStartDate())
+                .duration(Integer.parseInt(String.valueOf(duration)))
+                .targetDate(newEnvelopeCriteria.getTargetDate())
+                .envelopeType(newEnvelopeCriteria.getEnvelopeType())
+                .targetAmount(BigDecimal.valueOf(newEnvelopeCriteria.getTargetAmount()))
+                .isActive(true)
+                .currentSaved(BigDecimal.valueOf(initialContribution))
+                .budgeted(envelopeAllocation)
+                .contributions(null)
+                .paymentPlan(null)
+                .build();
+        Envelope savedEnvelope = envelopeService.save(envelope);
+        if(envelopeType == EnvelopeType.PAYOFF)
+        {
+            Optional<PaymentPlan> paymentPlanOptional = envelopePaymentBuilder.build(newEnvelopeCriteria);
+            paymentPlan = paymentPlanOptional.orElseThrow(() -> new RuntimeException("Payment plan could not be created"));
+            paymentPlan.setEnvelopeId(envelope.getId());
+            PaymentPlan savedPaymentPlan = envelopePaymentPlansService.savePaymentPlan(paymentPlan);
+            savedEnvelope.setPaymentPlan(savedPaymentPlan);
+        }
+        // Generate the contributions for the envelope
+        List<Contributions> contributions = envelopeContributionBuilder.build(targetDate, startDate, envelopeType,frequency,targetAmount, envelopeAllocation);
+
+        // Save the contributions to the database
+        EnvelopeContribution envelopeContribution = EnvelopeContribution.builder()
+                .envelope(savedEnvelope)
+                .contributions(contributions)
+                .build();
+
+        // Attach the contributions to the envelope and save the envelope again
+        List<EnvelopeContribution> savedContributions = envelopeContributionsService.saveContributions(List.of(envelopeContribution));
+        savedEnvelope.setContributions(savedContributions.get(0).getContributions());
+        return savedEnvelope;
     }
 
     public List<Envelope> createEnvelopes(final List<NewEnvelopeCriteria> envelopeCriteria, final List<EnvelopeCriteriaAllocations> envelopeAllocations)
@@ -42,8 +111,13 @@ public class EnvelopeBuilderService
                     double initialContribution = newEnvelopeCriteria.getInitialContribution();
                     long duration = ChronoUnit.MONTHS.between(startDate, targetDate);
                     BigDecimal envelopeAllocation = EnvelopeCalculations.getEnvelopeAllocation(newEnvelopeCriteria, envelopeAllocations);
-                    Optional<PaymentPlan> paymentPlanOptional = envelopePaymentBuilder.build(newEnvelopeCriteria);
-                    PaymentPlan paymentPlan = paymentPlanOptional.orElseThrow(() -> new RuntimeException("Payment plan could not be created"));
+                    EnvelopeType envelopeType = newEnvelopeCriteria.getEnvelopeType();
+                    PaymentPlan paymentPlan = null;
+                    if(envelopeType == EnvelopeType.PAYOFF)
+                    {
+                        Optional<PaymentPlan> paymentPlanOptional = envelopePaymentBuilder.build(newEnvelopeCriteria);
+                        paymentPlan = paymentPlanOptional.orElseThrow(() -> new RuntimeException("Payment plan could not be created"));
+                    }
                     return Envelope.builder()
                             .status("ACTIVE")
                             .userId(newEnvelopeCriteria.getUserId())

@@ -1,16 +1,16 @@
 package com.app.budgetbuddy.workbench.runner;
 
-import com.app.budgetbuddy.domain.Envelope;
-import com.app.budgetbuddy.domain.EnvelopeEstimate;
-import com.app.budgetbuddy.domain.EnvelopeEstimateCriteria;
-import com.app.budgetbuddy.domain.NewEnvelopeCriteria;
-import com.app.budgetbuddy.workbench.envelopes.EnvelopeBuilderService;
-import com.app.budgetbuddy.workbench.envelopes.EnvelopeContributionEngine;
-import com.app.budgetbuddy.workbench.envelopes.EnvelopeEstimatorEngine;
-import com.app.budgetbuddy.workbench.envelopes.LinkedEnvelopeBuilder;
+import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.repositories.EnvelopeRepository;
+import com.app.budgetbuddy.workbench.envelopes.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.couchbase.CouchbaseProperties;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +21,7 @@ import java.util.Optional;
  well as the running the contribution engine that will handle contributions to the budget envelopes.
  */
 @Service
+@Slf4j
 public class BudgetEnvelopeRunner
 {
     private final EnvelopeBuilderService envelopeBuilderService;
@@ -40,17 +41,42 @@ public class BudgetEnvelopeRunner
         this.envelopeEstimatorEngine = envelopeEstimatorEngine;
     }
 
-    public List<Envelope> createNewEnvelopes(Long userId, List<NewEnvelopeCriteria> envelopeCriteria)
+    public EnvelopeBuildDetails runEnvelopeCreation(final EnvelopeCreateRequest envelopeCreateRequest, final BudgetCriteria budgetCriteria)
     {
-        return List.of();
+        if(envelopeCreateRequest == null || budgetCriteria == null)
+        {
+            throw new IllegalArgumentException("EnvelopeCreateRequest and BudgetCriteria cannot be null");
+        }
+        try
+        {
+            EnvelopeBuildDetails envelopeBuildDetails = new EnvelopeBuildDetails();
+            List<NewEnvelopeCriteria> newEnvelopeCriteria = envelopeCreateRequest.criteria();
+            boolean isLinked = envelopeCreateRequest.isLinked();
+            if(isLinked)
+            {
+                Optional<EnvelopeLink> envelopeLinkOptional = linkedEnvelopeBuilderService.build(newEnvelopeCriteria, budgetCriteria);
+                envelopeLinkOptional.ifPresent(envelopeBuildDetails::setLinkedEnvelope);
+            }
+            else
+            {
+                // if isLinked is false, then there will be a single element in the list
+                NewEnvelopeCriteria envelopeCriteria = newEnvelopeCriteria.get(0);
+                Envelope envelopeDetails = envelopeBuilderService.createSingleEnvelope(envelopeCriteria, budgetCriteria);
+                envelopeBuildDetails.setEnvelope(envelopeDetails);
+            }
+            return envelopeBuildDetails;
+        }catch(DataException e){
+            log.error("There was an error running the envelope creation process: ", e);
+            throw e;
+        }
     }
 
-    public Optional<EnvelopeEstimate> runEnvelopeAffordabilityEstimator(EnvelopeEstimateCriteria envelopeEstimateCriteria)
+    public Optional<LinkEnvelopeDetails> runLinkedEnvelopeContributions()
     {
         return Optional.empty();
     }
 
-    public List<EnvelopeEstimate> runMultiEnvelopeAffordabilityEstimator(List<EnvelopeEstimateCriteria> envelopeEstimateCriteria)
+    public List<EnvelopeDetails> runEnvelopeContributions(final List<Envelope> envelopes, final BudgetCriteria budgetCriteria)
     {
         return List.of();
     }

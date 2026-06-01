@@ -1,7 +1,6 @@
 package com.app.budgetbuddy.workbench.envelopes;
 
 import com.app.budgetbuddy.domain.*;
-import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -9,13 +8,10 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
 
 
 public class EnvelopeCalculations
 {
-
     public static BigDecimal getEnvelopeAllocation(NewEnvelopeCriteria envelopeCriteria, List<EnvelopeCriteriaAllocations> envelopeCriteriaAllocations)
     {
         if(envelopeCriteria == null || envelopeCriteriaAllocations.isEmpty())
@@ -27,6 +23,15 @@ public class EnvelopeCalculations
                 .map(EnvelopeCriteriaAllocations::allocation)
                 .findFirst()
                 .orElse(BigDecimal.ZERO);
+    }
+
+    public static BigDecimal getSingleEnvelopeAllocation(final NewEnvelopeCriteria envelopeCriteria, final EnvelopeCriteriaAllocations envelopeCriteriaAllocation)
+    {
+        if(envelopeCriteria == null || envelopeCriteriaAllocation == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        return envelopeCriteriaAllocation.criteria().equals(envelopeCriteria) ? envelopeCriteriaAllocation.allocation() : BigDecimal.ZERO;
     }
 
     public static BigDecimal getFeasibilityScore(List<NewEnvelopeCriteria> envelopeCriteria, BudgetCriteria budgetCriteria)
@@ -65,6 +70,21 @@ public class EnvelopeCalculations
                 })
                 .filter(envelopeCriteria1 -> isFeasible(BigDecimal.valueOf(envelopeCriteria1.getScore())))
                 .toList();
+    }
+
+    public static BigDecimal calculateEnvelopeAllocation(final NewEnvelopeCriteria newEnvelopeCriteria, final BudgetCriteria budgetCriteria)
+    {
+        if(newEnvelopeCriteria == null || budgetCriteria == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal envelopeTargetAmount = BigDecimal.valueOf(newEnvelopeCriteria.getTargetAmount());
+        BigDecimal availableBudget = budgetCriteria.getAvailableEnvelopeSurplus();
+        if(availableBudget.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            return BigDecimal.ZERO;
+        }
+        return availableBudget.min(envelopeTargetAmount);
     }
 
     public static List<EnvelopeCriteriaAllocations> calculateEnvelopeAllocations(final List<NewEnvelopeCriteria> newEnvelopeCriteria, final BudgetCriteria budgetCriteria)

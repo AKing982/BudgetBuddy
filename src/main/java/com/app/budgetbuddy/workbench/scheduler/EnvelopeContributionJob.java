@@ -38,20 +38,20 @@ public class EnvelopeContributionJob implements Job
         String envelopeMode = dataMap.getString("envelopeMode");
         try
         {
-            if(envelopeMode.equalsIgnoreCase("SNGLE"))
-            {
-                Long envelopeId = dataMap.getLong("envelopeId");
-                Envelope envelope = envelopeService.findByEnvelopeId(envelopeId).get();
-                envelopeContributionEngine.processSingleEnvelope(envelope);
-                log.info("Envelope contribution job executed for envelope: {}", envelopeId);
-            }
-            else if(envelopeMode.equalsIgnoreCase("LINKED"))
-            {
-                Long linkedEnvelopeId = dataMap.getLong("linkedEnvelopeId");
-                EnvelopeLink envelopeLink = linkedEnvelopesService.findByLinkedEnvelopeId(linkedEnvelopeId).get();
-                envelopeContributionEngine.processLinkedEnvelope(envelopeLink);
-                log.info("Envelope contribution job executed for linked envelope: {}", linkedEnvelopeId);
-            }
+//            if(envelopeMode.equalsIgnoreCase("SNGLE"))
+//            {
+//                Long envelopeId = dataMap.getLong("envelopeId");
+//                Envelope envelope = envelopeService.findByEnvelopeId(envelopeId).get();
+//                envelopeContributionEngine.processSingleEnvelope(envelope);
+//                log.info("Envelope contribution job executed for envelope: {}", envelopeId);
+//            }
+//            else if(envelopeMode.equalsIgnoreCase("LINKED"))
+//            {
+//                Long linkedEnvelopeId = dataMap.getLong("linkedEnvelopeId");
+//                EnvelopeLink envelopeLink = linkedEnvelopesService.findByLinkedEnvelopeId(linkedEnvelopeId).get();
+//                envelopeContributionEngine.processLinkedEnvelope(envelopeLink);
+//                log.info("Envelope contribution job executed for linked envelope: {}", linkedEnvelopeId);
+//            }
         }catch(Exception e)
         {
             log.error("Error running envelope contribution job: ", e);

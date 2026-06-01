@@ -23,6 +23,15 @@ public class EnvelopeContribution
         this.contributions = contributions;
     }
 
+    public Contributions findContributionsForDate(LocalDate date)
+    {
+        return contributions.stream()
+                .filter(e -> e.getContributionDate().isEqual(date))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No contributions found for date: " + date));
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

@@ -1,12 +1,19 @@
 package com.app.budgetbuddy.entities;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
 @Table(name="paymentPlans")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Deprecated
 public class PaymentPlanEntity
 {
     @Id

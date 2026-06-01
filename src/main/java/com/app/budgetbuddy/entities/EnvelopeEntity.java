@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -71,8 +72,15 @@ public class EnvelopeEntity
     @Column(name="is_linked")
     private boolean isLinked;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="subBudgetId")
+    private SubBudgetEntity subBudget;
+
     @OneToMany(mappedBy="envelope", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
     private List<EnvelopeContributionsEntity> contributions;
+
+    @ManyToMany(mappedBy="linkedEnvelopeMembers", fetch=FetchType.LAZY)
+    private Set<LinkedEnvelopesEntity> linkedEnvelopes = new HashSet<>();
 
     @OneToMany(fetch=FetchType.LAZY)
     @JoinColumn(name="envelope_notification_id")

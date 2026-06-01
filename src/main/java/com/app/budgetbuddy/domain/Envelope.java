@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -31,7 +32,9 @@ public class Envelope
     private EnvelopeMode mode;
     private BigDecimal currentScore;
     private String linked_account_id;
+    private int priority;
     private EnvelopeStatus envelopeStatus;
+    private List<Contributions> contributions;
 
 
 }

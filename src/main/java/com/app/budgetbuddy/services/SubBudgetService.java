@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.BudgetCriteria;
 import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.domain.SubBudget;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
@@ -21,5 +22,7 @@ public interface SubBudgetService extends ServiceModel<SubBudgetEntity>
     Optional<SubBudget> updateSubBudgetSpendingByDateRange(Long subBudgetId, LocalDate startDate, LocalDate endDate);
     List<SubBudget> findSubBudgetsByUserIdAndLimit(Long userId, int numOfMonths, int year);
     List<SubBudget> getSubBudgetsByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
+
+    Optional<BudgetCriteria> getBudgetCriteriaByUserIdAndDateRange(Long userId, LocalDate startDate, LocalDate endDate);
 
 }

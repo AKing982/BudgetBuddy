@@ -1,11 +1,13 @@
 package com.app.budgetbuddy.services;
 
+import com.app.budgetbuddy.domain.Contributions;
 import com.app.budgetbuddy.domain.EnvelopeContribution;
 import com.app.budgetbuddy.entities.EnvelopeContributionsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.EnvelopeContributionsRepository;
 import com.app.budgetbuddy.repositories.EnvelopeRepository;
 import com.app.budgetbuddy.workbench.converter.EnvelopeContributionsEntityToModelConverter;
+import com.app.budgetbuddy.workbench.converter.EnvelopeContributionsToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,14 +26,17 @@ public class EnvelopeContributionsServiceImpl implements EnvelopeContributionsSe
 {
     private final EnvelopeContributionsRepository envelopeContributionsRepository;
     private final EnvelopeContributionsEntityToModelConverter envelopeContributionsEntityToModelConverter;
+    private final EnvelopeContributionsToEntityConverter envelopeContributionsToEntityConverter;
     private final EnvelopeRepository envelopeService;
 
     @Autowired
     public EnvelopeContributionsServiceImpl(EnvelopeContributionsRepository envelopeContributionsRepository,
+                                            EnvelopeContributionsToEntityConverter envelopeContributionsToEntityConverter,
                                             EnvelopeContributionsEntityToModelConverter envelopeContributionsEntityToModelConverter,
                                             EnvelopeRepository envelopeService)
     {
         this.envelopeContributionsRepository = envelopeContributionsRepository;
+        this.envelopeContributionsToEntityConverter = envelopeContributionsToEntityConverter;
         this.envelopeService = envelopeService;
         this.envelopeContributionsEntityToModelConverter = envelopeContributionsEntityToModelConverter;
     }
@@ -85,7 +90,37 @@ public class EnvelopeContributionsServiceImpl implements EnvelopeContributionsSe
 
     @Override
     @Transactional
-    public Optional<EnvelopeContribution> createAndSaveEntry(final BigDecimal amount, final LocalDate entryDate, final Long envelopeId)
+    public List<EnvelopeContribution> saveContributions(final List<EnvelopeContribution> contributions)
+    {
+        if(contributions == null || contributions.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        try
+        {
+            // Convert the contributions to entities
+            List<EnvelopeContributionsEntity> envelopeContributionsEntities = contributions.stream()
+                    .map(envelopeContributionsToEntityConverter::convert)
+                    .toList();
+
+            // Persist the entities
+            List<EnvelopeContributionsEntity> saved = envelopeContributionsRepository.saveAll(envelopeContributionsEntities);
+
+            // Convert the entities back to models
+            return saved.stream()
+                    .map(envelopeContributionsEntityToModelConverter::convert)
+                    .toList();
+
+            // Return the models
+        }catch(DataAccessException e){
+            log.error("There was an error saving the envelope contributions", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public EnvelopeContribution createAndSaveEntry(final BigDecimal amount, final LocalDate entryDate, final Long envelopeId)
     {
         try
         {
@@ -102,10 +137,12 @@ public class EnvelopeContributionsServiceImpl implements EnvelopeContributionsSe
             envelopeContributionsEntity.setMinimumContributionAmount(amount.doubleValue());
             envelopeContributionsEntity.setMaximumContributionAmount(amount.doubleValue());
             envelopeContributionsRepository.save(envelopeContributionsEntity);
-            return Optional.of(envelopeContributionsEntity);
+
+            log.info("Successfully created and saved envelope contribution with ID: {}", envelopeContributionsEntity.getId());
+            return envelopeContributionsEntityToModelConverter.convert(envelopeContributionsEntity);
         }catch(DataAccessException e){
             log.error("There was an error creating and saving the envelope contribution", e);
-            return Optional.empty();
+            return null;
         }
     }
 
@@ -130,9 +167,14 @@ public class EnvelopeContributionsServiceImpl implements EnvelopeContributionsSe
     {
         try
         {
-            List<EnvelopeContributionsEntity> envelopeContributions = envelopeContributionsRepository.findByEnvelopeId(envelopeId);
-
-            return envelopeContributionsRepository.findByEnvelopeIdAndScheduledDate(envelopeId, scheduledDate);
+            Optional<EnvelopeContributionsEntity> envelopeContributionsEntityOptional = envelopeContributionsRepository.findByEnvelopeIdAndScheduledDate(envelopeId, scheduledDate);
+            if(envelopeContributionsEntityOptional.isEmpty())
+            {
+                return Optional.empty();
+            }
+            EnvelopeContributionsEntity envelopeContributionsEntity = envelopeContributionsEntityOptional.get();
+            EnvelopeContribution envelopeContribution = envelopeContributionsEntityToModelConverter.convert(envelopeContributionsEntity);
+            return Optional.of(envelopeContribution);
         }catch(DataAccessException e){
             log.error("There was an error retrieving the envelope contributions", e);
             return Optional.empty();

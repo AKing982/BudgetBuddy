@@ -15,4 +15,6 @@ public interface AccountBalanceHistoryRepository extends JpaRepository<AccountBa
     @Query("SELECT a FROM AccountBalanceHistoryEntity a WHERE a.account.id =:id AND a.date BETWEEN :start AND :end")
     Optional<AccountBalanceHistoryEntity> findByAccountIdAndDateBetween(@Param("id") String id, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
+    @Query("SELECT a FROM AccountBalanceHistoryEntity a WHERE a.account.id =:id ORDER BY a.balance DESC")
+    Optional<AccountBalanceHistoryEntity> findAvailableBalanceByAccountId(@Param("id") String id);
 }

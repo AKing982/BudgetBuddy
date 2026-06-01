@@ -64,6 +64,9 @@ public class SubBudgetEntity
     @Column(name="isActive")
     private boolean isActive;
 
+    @OneToMany(mappedBy = "subBudget", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<EnvelopeEntity> envelopes = new HashSet<>();
+
     // One-to-Many Relationship: SubBudget → BudgetSchedules
     @OneToMany(mappedBy = "subBudget", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BudgetScheduleEntity> budgetSchedules = new HashSet<>();
