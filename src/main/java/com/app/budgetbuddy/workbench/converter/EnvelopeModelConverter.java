@@ -14,7 +14,7 @@ public class EnvelopeModelConverter implements Converter<EnvelopeEntity, Envelop
     {
         return Envelope.builder()
                 .id(envelopeEntity.getId())
-                .goal(envelopeEntity.getGoal())
+//                .goal(envelopeEntity.getGoal())
                 .currentSaved(BigDecimal.valueOf(envelopeEntity.getCurrentlySaved()))
                 .budgeted(BigDecimal.valueOf(envelopeEntity.getBudgeted()))
                 .duration(envelopeEntity.getDuration())

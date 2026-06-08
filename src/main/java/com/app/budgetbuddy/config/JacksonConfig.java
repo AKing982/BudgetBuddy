@@ -34,6 +34,7 @@ public class JacksonConfig
         mapper.registerModule(hibernate5Module);
         mapper.enable(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN);
         mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
     }
 

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,7 @@ public class EnvelopeContributionsEntity
 
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="envelope_id")
+    @JsonIgnore
     private EnvelopeEntity envelope;
 
     @Column(name="minimum_contribution_amount")
@@ -43,6 +45,7 @@ public class EnvelopeContributionsEntity
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "linked_contribution_id")
+    @JsonIgnore
     private LinkedEnvelopeContributionsEntity linkedContribution;
 
 }

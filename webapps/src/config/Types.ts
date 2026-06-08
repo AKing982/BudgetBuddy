@@ -381,7 +381,7 @@ export interface Contributions {
     minAmount: number;
     maxAmount: number;
     merchant: string | null;
-    amount: number;
+    contributionAmount: number;
     status: string;
     frequency: string;
 }
@@ -468,6 +468,94 @@ export interface EnvelopeLinkNotification {
     envelopeLink: EnvelopeLink;
     envelopeNotifications: EnvelopeNotification[];
 }
+
+export interface AutoRule {
+    frequency: string;
+    amount:    number;
+    startDate: string;
+    source:    string;
+}
+
+export interface PaymentPlan {
+    originalBalance:  number;
+    apr:              number;
+    isDeferred:       boolean;
+    deferredInterest: number;
+    minPayment:       number;
+    termMonths:       number;
+}
+
+export interface BudgetEnvelope {
+    id: number;
+    envelopeName: string;
+    envelopeType: 'SAVINGS' | 'PAYOFF' | 'PURCHASE' | 'EMERGENCY';
+    description?: string;
+    targetAmount: number;
+    allocatedAmount: number;
+    currentAmount: number;
+    remainingAmount: number;
+    contributionFrequency?: string;
+    startDate: string;
+    targetDate?: string;
+    status: 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'CANCELLED';
+    priority: number;
+    contributionMode: 'MANUAL' | 'AUTO';
+    autoRule?: AutoRule;
+    paymentPlan?: PaymentPlan;
+    streakMonths?: number;
+    linked?: boolean;
+    contributions?: ScheduledContribution[];
+}
+
+export interface EnvelopeContribution {
+    id: number;
+    envelopeId: number;
+    amount: number;
+    contributedAt: string;
+    note?: string;
+}
+
+export interface ScheduledContribution {
+    id:            number;
+    scheduledDate: string;
+    amount:        number;
+    status:        'SCHEDULED' | 'PAID' | 'MISSED';
+    frequency:     string;
+}
+
+export interface PlanEntry {
+    envelopeId:   number;
+    priority:     number;
+    monthlyAlloc: number;
+    locked:       boolean;
+    autoAlloc:    number;
+}
+
+export interface PlanResult {
+    envelopeId:    number;
+    monthlyAlloc:  number;
+    projectedDate: Date;
+    meetsTarget:   boolean;
+    monthsNeeded:  number;
+    shortfall:     number;
+}
+
+export interface AffordabilityResult {
+    envelopeId: number;
+    suggested:  number;
+    status:     'FULL' | 'PARTIAL' | 'SKIP';
+}
+
+export interface AmortizationRow {
+    month:      number;
+    date:       string;
+    payment:    number;
+    principal:  number;
+    interest:   number;
+    balance:    number;
+    status:     'PAID' | 'DUE' | 'UPCOMING' | 'FINAL';
+}
+
 
 // export interface BudgetPeriodCategory {
 //     categoryName: string;

@@ -1,10 +1,12 @@
 package com.app.budgetbuddy.entities;
 
 import com.app.budgetbuddy.domain.EnvelopeType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +18,7 @@ import java.util.Set;
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class EnvelopeEntity
 {
     @Id
@@ -23,14 +26,16 @@ public class EnvelopeEntity
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @ToString.Exclude
     @JoinColumn(name="userId")
     private UserEntity user;
 
     @Column(name="envelope_name")
     private String name;
 
-    @Column(name="goal")
-    private String goal;
+//    @Column(name="goal")
+//    private String goal;
 
     @Column(name="envelope_type")
     @Enumerated(EnumType.STRING)
@@ -49,7 +54,7 @@ public class EnvelopeEntity
     private double budgeted;
 
     @Column(name="frequency")
-    private String frequencyAmount;
+    private String frequency;
 
     @Column(name="currently_contributed")
     private double currentlySaved;
@@ -72,17 +77,25 @@ public class EnvelopeEntity
     @Column(name="is_linked")
     private boolean isLinked;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="subBudgetId")
-    private SubBudgetEntity subBudget;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name="envelope_subbudget",
+    joinColumns=@JoinColumn(name="envelopeId"),
+    inverseJoinColumns=@JoinColumn(name="subBudgetId"))
+    @ToString.Exclude
+    private Set<SubBudgetEntity> subBudgets = new HashSet<>();
 
     @OneToMany(mappedBy="envelope", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+    @ToString.Exclude
     private List<EnvelopeContributionsEntity> contributions;
 
     @ManyToMany(mappedBy="linkedEnvelopeMembers", fetch=FetchType.LAZY)
+    @ToString.Exclude
     private Set<LinkedEnvelopesEntity> linkedEnvelopes = new HashSet<>();
 
-    @OneToMany(fetch=FetchType.LAZY)
-    @JoinColumn(name="envelope_notification_id")
-    private Set<EnvelopeNotificationsEntity> envelopeNotifications;
+    @OneToMany(mappedBy = "envelope",  // ← must match the field name in EnvelopeNotificationsEntity
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private List<EnvelopeNotificationsEntity> notifications = new ArrayList<>();
 }

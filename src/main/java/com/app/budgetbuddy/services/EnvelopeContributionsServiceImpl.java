@@ -99,17 +99,34 @@ public class EnvelopeContributionsServiceImpl implements EnvelopeContributionsSe
         try
         {
             // Convert the contributions to entities
-            List<EnvelopeContributionsEntity> envelopeContributionsEntities = contributions.stream()
-                    .map(envelopeContributionsToEntityConverter::convert)
+            List<EnvelopeContributionsEntity> entities = contributions.stream()
+                    .flatMap(envelopeContribution -> {
+                        if(envelopeContribution.getContributions() == null)
+                        {
+                            return java.util.stream.Stream.empty();
+                        }
+                        return envelopeContribution.getContributions().stream()
+                                .map(singleContribution -> {
+                                    EnvelopeContribution contribution = EnvelopeContribution.builder()
+                                            .envelope(envelopeContribution.getEnvelope())
+                                            .contributions(List.of(singleContribution))
+                                            .build();
+                                    return envelopeContributionsToEntityConverter.convert(contribution);
+                                });
+                    })
                     .toList();
+            log.info("Saving {} contributions", entities.size());
 
             // Persist the entities
-            List<EnvelopeContributionsEntity> saved = envelopeContributionsRepository.saveAll(envelopeContributionsEntities);
+            List<EnvelopeContributionsEntity> saved = envelopeContributionsRepository.saveAll(entities);
+            log.info("Successfully saved {} contributions", saved.size());
 
             // Convert the entities back to models
-            return saved.stream()
+            List<EnvelopeContribution> savedModels = saved.stream()
                     .map(envelopeContributionsEntityToModelConverter::convert)
                     .toList();
+            log.info("Successfully converted {} contributions to models", savedModels.size());
+            return savedModels;
 
             // Return the models
         }catch(DataAccessException e){

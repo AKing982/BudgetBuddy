@@ -7,10 +7,12 @@ import com.app.budgetbuddy.repositories.EnvelopeRepository;
 import com.app.budgetbuddy.workbench.converter.EnvelopeModelConverter;
 import com.app.budgetbuddy.workbench.converter.EnvelopeToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -110,6 +112,25 @@ public class EnvelopeServiceImpl implements EnvelopeService
         }catch(DataAccessException e){
             log.error("There was an error saving the envelope", e);
             return null;
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<EnvelopeEntity> findByUserIdAndDates(Long userId, LocalDate monthStart, LocalDate monthEnd)
+    {
+        try
+        {
+            List<EnvelopeEntity> envelopes = envelopeRepository.findAllByUserId(userId);
+            envelopes.forEach(e -> {
+                Hibernate.initialize(e.getContributions());
+                log.info("Envelope {} contributions: {}", e.getName(), e.getContributions().size());
+            });
+
+            return envelopes;
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the envelopes for the user", e);
+            return Collections.emptyList();
         }
     }
 

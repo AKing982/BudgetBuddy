@@ -18,7 +18,7 @@ public class PaymentScheduleEntity
 
     @JoinColumn(name="payment_plan_id")
     @ManyToOne(fetch = FetchType.LAZY)
-    private PaymentPlanEntity paymentPlan;
+    private EnvelopePaymentPlansEntity paymentPlan;
 
     @Column(name="month")
     private int month;

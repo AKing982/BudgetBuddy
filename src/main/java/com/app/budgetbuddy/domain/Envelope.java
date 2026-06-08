@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
 @AllArgsConstructor(access= AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class Envelope
 {
     private Long id;
@@ -33,8 +34,9 @@ public class Envelope
     private BigDecimal currentScore;
     private String linked_account_id;
     private int priority;
+    private boolean isLinked;
     private EnvelopeStatus envelopeStatus;
     private List<Contributions> contributions;
-
+    private List<SubBudget> subBudgets;
 
 }

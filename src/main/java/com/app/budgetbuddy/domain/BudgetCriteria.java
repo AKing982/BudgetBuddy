@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -12,6 +9,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access= lombok.AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class BudgetCriteria
 {
     private BigDecimal budgeted;

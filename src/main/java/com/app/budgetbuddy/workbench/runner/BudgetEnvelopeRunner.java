@@ -28,20 +28,22 @@ public class BudgetEnvelopeRunner
     private final LinkedEnvelopeBuilder linkedEnvelopeBuilderService;
     private final EnvelopeContributionEngine envelopeContributionEngine;
     private final EnvelopeEstimatorEngine envelopeEstimatorEngine;
+    private final SubBudgetEntityRepository subBudgetEntityRepository;
 
     @Autowired
     public BudgetEnvelopeRunner(EnvelopeBuilderService envelopeBuilderService,
                                 LinkedEnvelopeBuilder linkedEnvelopeBuilderService,
                                 EnvelopeContributionEngine envelopeContributionEngine,
-                                EnvelopeEstimatorEngine envelopeEstimatorEngine)
+                                EnvelopeEstimatorEngine envelopeEstimatorEngine, SubBudgetEntityRepository subBudgetEntityRepository)
     {
         this.envelopeBuilderService = envelopeBuilderService;
         this.linkedEnvelopeBuilderService = linkedEnvelopeBuilderService;
         this.envelopeContributionEngine = envelopeContributionEngine;
         this.envelopeEstimatorEngine = envelopeEstimatorEngine;
+        this.subBudgetEntityRepository = subBudgetEntityRepository;
     }
 
-    public EnvelopeBuildDetails runEnvelopeCreation(final EnvelopeCreateRequest envelopeCreateRequest, final BudgetCriteria budgetCriteria)
+    public EnvelopeBuildDetails runEnvelopeCreation(final EnvelopeCreateRequest envelopeCreateRequest, final BudgetCriteria budgetCriteria, final List<SubBudget> subBudgets)
     {
         if(envelopeCreateRequest == null || budgetCriteria == null)
         {
@@ -54,14 +56,15 @@ public class BudgetEnvelopeRunner
             boolean isLinked = envelopeCreateRequest.isLinked();
             if(isLinked)
             {
-                Optional<EnvelopeLink> envelopeLinkOptional = linkedEnvelopeBuilderService.build(newEnvelopeCriteria, budgetCriteria);
+                Optional<EnvelopeLink> envelopeLinkOptional = linkedEnvelopeBuilderService.build(newEnvelopeCriteria, budgetCriteria, subBudgets);
                 envelopeLinkOptional.ifPresent(envelopeBuildDetails::setLinkedEnvelope);
             }
             else
             {
                 // if isLinked is false, then there will be a single element in the list
                 NewEnvelopeCriteria envelopeCriteria = newEnvelopeCriteria.get(0);
-                Envelope envelopeDetails = envelopeBuilderService.createSingleEnvelope(envelopeCriteria, budgetCriteria);
+                Envelope envelopeDetails = envelopeBuilderService.createSingleEnvelope(envelopeCriteria, budgetCriteria, subBudgets);
+                log.info("Created envelope: {}", envelopeDetails);
                 envelopeBuildDetails.setEnvelope(envelopeDetails);
             }
             return envelopeBuildDetails;

@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access = lombok.AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class PaymentInfo
 {
     private int numberOfPayments;
@@ -18,6 +20,7 @@ public class PaymentInfo
     private LocalDate endDate;
     private LocalDate firstPaymentDate;
     private BigDecimal firstPaymentAmount;
+    @JsonProperty("isPayInFour")
     private boolean isPayInFour;
     private String merchant;
     private String description;

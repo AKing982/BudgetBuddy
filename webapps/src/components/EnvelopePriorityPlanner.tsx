@@ -13,7 +13,7 @@ import {
     Wallet, XCircle, Zap, ArrowRight, Clock,
     BarChart2, RefreshCw,
 } from 'lucide-react';
-import { BudgetEnvelope } from './BudgetEnvelopesPage';
+import { BudgetEnvelope } from '../config/Types';
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const MAROON      = '#6b1a1a';

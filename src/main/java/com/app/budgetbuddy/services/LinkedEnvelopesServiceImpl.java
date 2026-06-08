@@ -5,10 +5,12 @@ import com.app.budgetbuddy.entities.LinkedEnvelopesEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.LinkedEnvelopesRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +55,6 @@ public class LinkedEnvelopesServiceImpl implements LinkedEnvelopesService
             linkedEnvelopesRepository.delete(linkedEnvelopesEntity);
         }catch(DataAccessException e){
             log.error("There was an error deleting the linked envelope: ");
-            return;
         }
     }
 
@@ -83,6 +84,26 @@ public class LinkedEnvelopesServiceImpl implements LinkedEnvelopesService
         try
         {
             return linkedEnvelopesRepository.findByUserId(userId);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the linked envelopes for the user", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<LinkedEnvelopesEntity> findByUserIdAndDates(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<LinkedEnvelopesEntity> linkedEnvelopes = linkedEnvelopesRepository.findByUserId(userId);
+            linkedEnvelopes.forEach(linkedEnvelope -> {
+                Hibernate.initialize(linkedEnvelope.getLinkedEnvelopeMembers());
+                linkedEnvelope.getLinkedEnvelopeMembers().forEach(e -> {
+                    Hibernate.initialize(e.getContributions());
+                });
+            });
+            return linkedEnvelopes;
         }catch(DataAccessException e){
             log.error("There was an error retrieving the linked envelopes for the user", e);
             return Collections.emptyList();

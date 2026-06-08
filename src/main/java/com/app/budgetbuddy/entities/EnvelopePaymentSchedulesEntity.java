@@ -3,6 +3,8 @@ package com.app.budgetbuddy.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name="envelopePaymentSchedules")
 @Getter
@@ -18,7 +20,7 @@ public class EnvelopePaymentSchedulesEntity
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="payment_plan_id")
-    private PaymentPlanEntity paymentPlan;
+    private EnvelopePaymentPlansEntity paymentPlan;
 
     @Column(name="month")
     private Integer month;
@@ -31,6 +33,9 @@ public class EnvelopePaymentSchedulesEntity
 
     @Column(name="current_balance")
     private Double currentBalance;
+
+    @Column(name="due_date")
+    private LocalDate dueDate;
 
     @Column(name="status")
     private String status;

@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.services.EnvelopePaymentPlansService;
 import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class EnvelopePaymentPlanBuilder
 {
     private final RecurringTransactionService recurringTransactionService;
@@ -48,12 +50,17 @@ public class EnvelopePaymentPlanBuilder
                 .paymentSchedules(paymentSchedules)
                 .originalBalance(BigDecimal.valueOf(totalPaymentBalance))
                 .totalPayments(totalPayments)
+                .planDuration(paymentInfo.getTotalMonths())
+                .initialPaymentDate(paymentInfo.getFirstPaymentDate())
+                .isPayInFour(paymentInfo.isPayInFour())
+                .merchant(paymentInfo.getMerchant())
                 .minimumPayment(paymentAmount)
                 .dueDate(dueDate)
                 .currentPaid(BigDecimal.ZERO)
                 .aprRate(BigDecimal.ZERO)
                 .envelopeId(null)
                 .build();
+        log.info("Payment Plan: {}", paymentPlan);
         return Optional.of(paymentPlan);
     }
 

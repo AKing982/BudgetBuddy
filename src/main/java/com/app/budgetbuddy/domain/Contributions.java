@@ -9,6 +9,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access = lombok.AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class Contributions
 {
     private Long id;

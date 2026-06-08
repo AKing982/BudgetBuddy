@@ -18,7 +18,7 @@ public class EnvelopeNotificationsEntity
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="envelopeId")
+    @JoinColumn(name="envelope_id")
     private EnvelopeEntity envelope;
 
     @Column(name="title")

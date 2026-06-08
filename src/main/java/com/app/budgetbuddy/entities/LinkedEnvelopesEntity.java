@@ -1,8 +1,7 @@
 package com.app.budgetbuddy.entities;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -11,6 +10,9 @@ import java.util.Set;
 @Table(name="linkedEnvelopes")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor(access= AccessLevel.PUBLIC)
+@AllArgsConstructor(access= AccessLevel.PUBLIC)
 public class LinkedEnvelopesEntity
 {
     @Id

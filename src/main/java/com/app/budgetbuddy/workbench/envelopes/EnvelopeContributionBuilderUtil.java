@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.envelopes;
 
 import com.app.budgetbuddy.domain.EnvelopeType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@Slf4j
 public class EnvelopeContributionBuilderUtil
 {
     public EnvelopeContributionBuilderUtil(){
@@ -42,23 +44,18 @@ public class EnvelopeContributionBuilderUtil
     {
         return switch(envelopeType){
             case PAYOFF, PURCHASE -> envelopeTargetAmount;
-            case FUND -> contributionAmount.multiply(BigDecimal.valueOf(2));
+            case FUND -> contributionAmount;
         };
     }
 
     public BigDecimal determineContributionAmount(final EnvelopeType envelopeType, final BigDecimal allocationAmount, final BigDecimal targetAmount, int totalPeriods)
     {
+        log.info("Determining Contribution Amount for Envelope Type: {}, Allocation Amount: {}, Target Amount: {}, Total Periods: {}", envelopeType, allocationAmount, targetAmount, totalPeriods);
         return switch(envelopeType){
             case PURCHASE, PAYOFF -> allocationAmount;
-            case FUND -> {
-                if(allocationAmount.compareTo(BigDecimal.ZERO) > 0)
-                {
-                    yield allocationAmount;
-                }
-                yield totalPeriods > 0
-                        ? targetAmount.divide(BigDecimal.valueOf(totalPeriods), 2, RoundingMode.CEILING)
-                        : targetAmount;
-            }
+            case FUND -> totalPeriods > 0
+                    ? targetAmount.divide(BigDecimal.valueOf(totalPeriods), 2, RoundingMode.CEILING)
+                    : targetAmount;
         };
     }
 

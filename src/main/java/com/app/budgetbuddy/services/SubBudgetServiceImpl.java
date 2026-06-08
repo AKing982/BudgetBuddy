@@ -234,7 +234,9 @@ public class SubBudgetServiceImpl implements SubBudgetService
     {
         try
         {
-            Optional<SubBudgetEntity> optionalSubBudgetEntity = subBudgetRepository.findSubBudgetEntityByIdAndDateRange(userId, startDate, endDate);
+            LocalDate lookUpDate = LocalDate.now();
+            LocalDate lookUpEnd = lookUpDate.withDayOfMonth(lookUpDate.lengthOfMonth());
+            Optional<SubBudgetEntity> optionalSubBudgetEntity = subBudgetRepository.findSubBudgetEntityByIdAndDateRange(userId, lookUpDate, lookUpEnd);
             return optionalSubBudgetEntity.map(subBudgetEntityConverter::convert);
         }catch(DataAccessException e){
             log.error("There was an error getting the sub-budget by userId {}", userId);
@@ -306,6 +308,22 @@ public class SubBudgetServiceImpl implements SubBudgetService
         try
         {
             List<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetsListByDateRange(userId, startDate, endDate);
+            return subBudgetEntities.stream()
+                    .map(subBudgetEntityConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error fetching the sub budgets by start={} and end={}", startDate, endDate);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<SubBudget> getSubBudgetsByUserIdAndBetweenDates(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<SubBudgetEntity> subBudgetEntities = subBudgetRepository.findSubBudgetEntitiesByUserIdAndDateRange(userId, startDate, endDate);
             return subBudgetEntities.stream()
                     .map(subBudgetEntityConverter::convert)
                     .toList();

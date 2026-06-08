@@ -3,6 +3,7 @@ package com.app.budgetbuddy.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.Objects;
@@ -10,6 +11,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor(access = lombok.AccessLevel.PUBLIC)
+@ToString
 public class NewEnvelopeCriteria
 {
     private String goalType;

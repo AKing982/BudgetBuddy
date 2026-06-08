@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,9 +20,11 @@ public class LinkedEnvelopeContributionsEntity
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="linked_envelopes_id")
+    @JsonIgnore
     private LinkedEnvelopesEntity linkedEnvelopes;
 
     @OneToMany(mappedBy = "linkedContribution", cascade={CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<EnvelopeContributionsEntity> memberContributions = new ArrayList<>();
 
     @Column(name="total_contribution_amount")

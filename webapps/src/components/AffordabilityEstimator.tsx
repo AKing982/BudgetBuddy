@@ -10,7 +10,7 @@ import {
     Info, Lightbulb, Lock, Plus, RefreshCcw, Sparkles,
     Target, TrendingDown, TrendingUp, X, XCircle, Zap,
 } from 'lucide-react';
-import { BudgetEnvelope } from './BudgetEnvelopesPage';
+import { BudgetEnvelope } from '../config/Types';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const MAROON      = '#6b1a1a';

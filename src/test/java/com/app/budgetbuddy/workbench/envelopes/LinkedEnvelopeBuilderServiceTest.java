@@ -35,7 +35,7 @@ class LinkedEnvelopeBuilderTest {
     @Test
     void testBuild_whenCriteriaIsNull_thenThrowEnvelopeException(){
         BudgetCriteria budgetCriteria = mock(BudgetCriteria.class);
-        Optional<EnvelopeLink> actual = linkedEnvelopeBuilderService.build(null, budgetCriteria);
+        Optional<EnvelopeLink> actual = linkedEnvelopeBuilderService.build(null, budgetCriteria, List.of());
         assertTrue(actual.isEmpty());
     }
 
@@ -44,7 +44,7 @@ class LinkedEnvelopeBuilderTest {
     {
         List<NewEnvelopeCriteria> criteria = List.of();
         BudgetCriteria budgetCriteria = mock(BudgetCriteria.class);
-        Optional<EnvelopeLink> actual = linkedEnvelopeBuilderService.build(criteria, budgetCriteria);
+        Optional<EnvelopeLink> actual = linkedEnvelopeBuilderService.build(criteria, budgetCriteria, List.of());
         assertTrue(actual.isEmpty());
     }
 

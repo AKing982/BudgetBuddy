@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -11,6 +12,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor(access = lombok.AccessLevel.PUBLIC)
 @Builder
+@ToString
 public class EnvelopeContribution
 {
     private Long id;
@@ -25,12 +27,30 @@ public class EnvelopeContribution
 
     public Contributions findContributionsForDate(LocalDate date)
     {
+        if(contributions == null || contributions.isEmpty())
+        {
+            throw new IllegalStateException("No contributions present on this EnvelopeContribution");
+        }
         return contributions.stream()
-                .filter(e -> e.getContributionDate().isEqual(date))
+                .filter(e -> e.getContributionDate() != null && e.getContributionDate().isEqual(date))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No contributions found for date: " + date));
     }
 
+
+    public List<EnvelopeContribution> splitByContribution()
+    {
+        if(contributions == null || contributions.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return contributions.stream()
+                .map(singleContribution -> EnvelopeContribution.builder()
+                        .envelope(this.envelope)
+                        .contributions(List.of(singleContribution))
+                        .build())
+                .toList();
+    }
 
     @Override
     public boolean equals(Object o) {

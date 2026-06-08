@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.controllers;
 
-import com.app.budgetbuddy.domain.BudgetCriteria;
-import com.app.budgetbuddy.domain.Envelope;
-import com.app.budgetbuddy.domain.EnvelopeBuildDetails;
-import com.app.budgetbuddy.domain.EnvelopeCreateRequest;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.EnvelopeEntity;
 import com.app.budgetbuddy.entities.LinkedEnvelopesEntity;
 import com.app.budgetbuddy.exceptions.DataException;
@@ -19,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/budget-envelope")
@@ -51,9 +49,16 @@ public class BudgetEnvelopeController
     {
         try
         {
+
+            List<NewEnvelopeCriteria> envelopeCriteria = envelopeCreateRequest.criteria();
+            log.info("Creating envelope for user {} between {} and {} with criteria: {}", userId, startDate, endDate, envelopeCriteria);
+            List<DateRange> envelopeDateRanges = getEnvelopeDateRanges(envelopeCreateRequest);
+            log.info("Envelope Date Ranges: {}", envelopeDateRanges);
             BudgetCriteria budgetCriteria = subBudgetService.getBudgetCriteriaByUserIdAndDateRange(userId,startDate, endDate)
                     .orElseThrow(() -> new DataException("No budget criteria found for user " + userId + " between " + startDate + " and " + endDate));
-            EnvelopeBuildDetails result = budgetEnvelopeRunner.runEnvelopeCreation(envelopeCreateRequest, budgetCriteria);
+            List<SubBudget> envelopeSubBudgets = getEnvelopeSubBudgets(envelopeDateRanges, userId);
+            log.info("Envelope Sub Budgets: {}", envelopeSubBudgets);
+            EnvelopeBuildDetails result = budgetEnvelopeRunner.runEnvelopeCreation(envelopeCreateRequest, budgetCriteria, envelopeSubBudgets);
             return ResponseEntity.ok(result);
         }catch(DataException ex){
             log.error("There was an error creating the envelope: ", ex);
@@ -61,12 +66,42 @@ public class BudgetEnvelopeController
         }
     }
 
+    private List<DateRange> getEnvelopeDateRanges(EnvelopeCreateRequest envelopeCreateRequest)
+    {
+        return envelopeCreateRequest.criteria().stream()
+                .map(newEnvelopeCriteria -> {
+                    LocalDate start = newEnvelopeCriteria.getStartDate();
+                    LocalDate end = newEnvelopeCriteria.getTargetDate();
+                    return new DateRange(start, end);
+                })
+                .toList();
+    }
+
+    private List<SubBudget> getEnvelopeSubBudgets(List<DateRange> dateRanges, final Long userId)
+    {
+        return dateRanges.stream()
+                .flatMap(dateRange -> {
+                    LocalDate monthStart = dateRange.getStartDate().withDayOfMonth(1);
+                    LocalDate monthEnd = dateRange.getEndDate().withDayOfMonth(dateRange.getEndDate().lengthOfMonth());
+                    return subBudgetService.getSubBudgetsByUserIdAndDateRange(userId, monthStart, monthEnd).stream();
+                })
+                .collect(Collectors.toMap(SubBudget::getId, s -> s, (a, b) -> a))
+                .values()
+                .stream()
+                .toList();
+    }
+
     @GetMapping("/{userId}/linked-envelopes")
-    public ResponseEntity<List<LinkedEnvelopesEntity>> getLinkedEnvelopesByUserId(@PathVariable Long userId)
+    public ResponseEntity<List<LinkedEnvelopesEntity>> getLinkedEnvelopesByUserId(@PathVariable Long userId,
+                                                                                  @RequestParam LocalDate monthStart,
+                                                                                  @RequestParam LocalDate monthEnd)
     {
         try
         {
-            List<LinkedEnvelopesEntity> linkedEnvelopes = linkedEnvelopesService.findByUserId(userId);
+            LocalDate actualMonthEnd = monthEnd.minusDays(1);
+            log.info("Retrieving linked envelopes for user {} between {} and {}", userId, monthStart, actualMonthEnd);
+            List<LinkedEnvelopesEntity> linkedEnvelopes = linkedEnvelopesService.findByUserIdAndDates(userId, monthStart,actualMonthEnd);
+            log.info("Retrieved {} linked envelopes for user {} between {} and {}", linkedEnvelopes.size(), userId, monthStart, actualMonthEnd);
             return ResponseEntity.ok(linkedEnvelopes);
         }catch(DataException ex){
             log.error("There was an error retrieving the linked envelopes: ", ex);
@@ -75,11 +110,18 @@ public class BudgetEnvelopeController
     }
 
     @GetMapping("/{userId}/envelopes")
-    public ResponseEntity<List<EnvelopeEntity>> getEnvelopesByUserId(@PathVariable Long userId)
+    public ResponseEntity<List<EnvelopeEntity>> getEnvelopesByUserId(@PathVariable Long userId,
+                                                                     @RequestParam LocalDate monthStart,
+                                                                     @RequestParam LocalDate monthEnd)
     {
         try
         {
-            List<EnvelopeEntity> envelopes = envelopeService.findByUserId(userId);
+            LocalDate actualMonthEnd = monthEnd.minusDays(1);
+            log.info("Retrieving envelopes for user {} between {} and {}", userId, monthStart, actualMonthEnd);
+            List<EnvelopeEntity> envelopes = envelopeService.findByUserIdAndDates(userId, monthStart, actualMonthEnd);
+            log.info("Retrieved {} envelopes for user {} between {} and {}", envelopes.size(), userId, monthStart, actualMonthEnd);
+
+            log.info("Envelopes: {}", envelopes);
             return ResponseEntity.ok(envelopes);
         }catch(DataException ex){
             log.error("There was an error retrieving the envelopes: ", ex);

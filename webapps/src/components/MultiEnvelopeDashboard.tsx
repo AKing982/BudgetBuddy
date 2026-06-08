@@ -7,7 +7,7 @@ import {
     AlertTriangle, CheckCircle, ChevronRight, GripVertical,
     Lock, RefreshCw, TrendingUp, Unlock,
 } from 'lucide-react';
-import { BudgetEnvelope, EnvelopeContribution } from './BudgetEnvelopesPage';
+import { BudgetEnvelope, EnvelopeContribution } from '../config/Types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface PlanEntry {
