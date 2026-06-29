@@ -35,6 +35,7 @@ public class Envelope
     private String linked_account_id;
     private int priority;
     private boolean isLinked;
+    private BigDecimal balanceThreshold;
     private EnvelopeStatus envelopeStatus;
     private List<Contributions> contributions;
     private List<SubBudget> subBudgets;

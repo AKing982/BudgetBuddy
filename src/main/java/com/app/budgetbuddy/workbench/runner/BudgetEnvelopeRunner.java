@@ -28,19 +28,22 @@ public class BudgetEnvelopeRunner
     private final LinkedEnvelopeBuilder linkedEnvelopeBuilderService;
     private final EnvelopeContributionEngine envelopeContributionEngine;
     private final EnvelopeEstimatorEngine envelopeEstimatorEngine;
-    private final SubBudgetEntityRepository subBudgetEntityRepository;
 
     @Autowired
     public BudgetEnvelopeRunner(EnvelopeBuilderService envelopeBuilderService,
                                 LinkedEnvelopeBuilder linkedEnvelopeBuilderService,
                                 EnvelopeContributionEngine envelopeContributionEngine,
-                                EnvelopeEstimatorEngine envelopeEstimatorEngine, SubBudgetEntityRepository subBudgetEntityRepository)
+                                EnvelopeEstimatorEngine envelopeEstimatorEngine)
     {
         this.envelopeBuilderService = envelopeBuilderService;
         this.linkedEnvelopeBuilderService = linkedEnvelopeBuilderService;
         this.envelopeContributionEngine = envelopeContributionEngine;
         this.envelopeEstimatorEngine = envelopeEstimatorEngine;
-        this.subBudgetEntityRepository = subBudgetEntityRepository;
+    }
+
+    public Optional<EnvelopeBuildDetails> runLinkedEnvelopeByEnvelopeUpdate(final List<Envelope> envelopes, final Long linkedEnvelopeId)
+    {
+        return Optional.empty();
     }
 
     public EnvelopeBuildDetails runEnvelopeCreation(final EnvelopeCreateRequest envelopeCreateRequest, final BudgetCriteria budgetCriteria, final List<SubBudget> subBudgets)

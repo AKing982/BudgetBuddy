@@ -6,6 +6,7 @@ import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -24,6 +25,7 @@ public class EnvelopeContributionScheduler
 
     public void scheduleEnvelopeContribution(Long envelopeId,
                                              LocalDate scheduledDate,
+                                             BigDecimal amount,
                                              String frequency)
     {
         try
@@ -34,6 +36,8 @@ public class EnvelopeContributionScheduler
                     .withIdentity(jobKey)
                     .usingJobData("envelopeId", envelopeId)
                     .usingJobData("envelopeMode", "SINGLE")
+                    .usingJobData("scheduled_date", scheduledDate.toString())   // add this
+                    .usingJobData("scheduled_amount", amount.floatValue())       // add this
                     .build();
             Date triggerStartDate = Date.from(scheduledDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
             Trigger trigger = TriggerBuilder.newTrigger()
@@ -69,17 +73,38 @@ public class EnvelopeContributionScheduler
 
     public void unscheduleEnvelopeContribution(Long envelopeId)
     {
+        try
+        {
+            TriggerKey triggerKey = TriggerKey.triggerKey("envelope-trigger-" + envelopeId, "envelope-contributions");
+            scheduler.unscheduleJob(triggerKey);
 
+        }catch(SchedulerException e){
+            log.error("There was an error unscheduling the envelope contribution", e);
+            return;
+        }
     }
 
     public void resumeEnvelopeContribution(Long envelopeId)
     {
+        try
+        {
+            JobKey jobKey = JobKey.jobKey("envelope-job-" + envelopeId, "envelope-contributions");
+            scheduler.resumeJob(jobKey);
+        }catch(SchedulerException e){
+            log.error("There was an error resuming the envelope contribution", e);
 
+        }
     }
 
     public void pauseEnvelopeContribution(Long envelopeId)
     {
-
+        try
+        {
+            JobKey jobKey = JobKey.jobKey("envelope-job-" + envelopeId, "envelope-contributions");
+            scheduler.pauseJob(jobKey);
+        }catch(SchedulerException e){
+            log.error("There was an error pausing the envelope contribution", e);
+        }
     }
 
     public boolean isScheduled(Long envelopeId)

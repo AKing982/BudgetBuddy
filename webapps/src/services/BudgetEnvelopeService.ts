@@ -19,6 +19,7 @@ interface EnvelopeEntity{
     duration:            number;
     contributionMode:    string;
     linked?:           boolean;
+    balanceThreshold?:   number;
     contributions?: Contributions[]
 }
 
@@ -92,9 +93,10 @@ function mapEntity(e: EnvelopeEntity, index: number): BudgetEnvelope {
         targetDate:            e.targetDate,
         status:                toStatus(e),
         priority:              index + 1,          // backend has no priority field yet
-        contributionMode:      'MANUAL',           // default until backend exposes it
+        contributionMode:      'MANUAL', // default until backend exposes it
         streakMonths:          0,
         linked:              e.linked ?? false,
+        balanceThreshold:      e.balanceThreshold,
         contributions: (e.contributions ?? []).map(c => ({
             id:            c.id,
             scheduledDate: c.scheduledDate,

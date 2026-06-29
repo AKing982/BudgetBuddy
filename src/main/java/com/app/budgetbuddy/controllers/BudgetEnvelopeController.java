@@ -11,11 +11,11 @@ import com.app.budgetbuddy.workbench.runner.BudgetEnvelopeRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -40,6 +40,21 @@ public class BudgetEnvelopeController
         this.envelopeService = envelopeService;
         this.linkedEnvelopesService = linkedEnvelopesService;
     }
+
+    @PutMapping("/update-linkedEnvelope")
+    public ResponseEntity<Optional<LinkedEnvelopesEntity>> updateLinkedEnvelopeByEnvelopes(@RequestParam Long linkedEnvelopeId,
+                                                                                           @RequestBody EnvelopeUpdateRequest envelopeUpdateRequest)
+    {
+        try
+        {
+
+        }catch(DataException ex){
+            log.error("There was an error updating the linked envelope: ", ex);
+            return ResponseEntity.internalServerError().build();
+        }
+        return null;
+    }
+
 
     @PostMapping("/create")
     public ResponseEntity<EnvelopeBuildDetails> createEnvelope(@RequestBody EnvelopeCreateRequest envelopeCreateRequest,

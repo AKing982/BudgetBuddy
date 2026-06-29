@@ -504,6 +504,7 @@ export interface BudgetEnvelope {
     paymentPlan?: PaymentPlan;
     streakMonths?: number;
     linked?: boolean;
+    balanceThreshold?: number;
     contributions?: ScheduledContribution[];
 }
 

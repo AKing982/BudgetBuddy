@@ -6,6 +6,7 @@ import com.app.budgetbuddy.entities.EnvelopeNotificationsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.EnvelopeNotificationRepository;
 import com.app.budgetbuddy.workbench.converter.EnvelopeNotificationToEntityConverter;
+import com.app.budgetbuddy.workbench.converter.EnvelopeNotificationToModelConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,15 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
 {
     private final EnvelopeNotificationRepository envelopeNotificationRepository;
     private final EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter;
+    private final EnvelopeNotificationToModelConverter envelopeNotificationToModelConverter;
 
     @Autowired
     public EnvelopeNotificationServiceImpl(EnvelopeNotificationRepository envelopeNotificationRepository,
+                                           EnvelopeNotificationToModelConverter envelopeNotificationToModelConverter,
                                            EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter)
     {
         this.envelopeNotificationRepository = envelopeNotificationRepository;
+        this.envelopeNotificationToModelConverter = envelopeNotificationToModelConverter;
         this.envelopeNotificationToEntityConverter = envelopeNotificationToEntityConverter;
     }
 
@@ -111,6 +115,35 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
         }catch(DataAccessException e){
             log.error("There was an error creating and saving the envelope notifications: ", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<EnvelopeNotification> getEnvelopeNotificationsByEnvelopeId(Long envelopeId)
+    {
+        try
+        {
+            List<EnvelopeNotificationsEntity> envelopeNotificationsEntities = envelopeNotificationRepository.findAllByEnvelopeId(envelopeId);
+            return envelopeNotificationsEntities.stream()
+                    .map(envelopeNotificationToModelConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the envelope notifications", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateNotificationReadStatus(boolean readStatus, Long notificationId)
+    {
+        try
+        {
+            envelopeNotificationRepository.updateEnvelopeNotificationStatus(notificationId, readStatus);
+            log.info("Envelope notification read status updated successfully");
+        }catch(DataAccessException e){
+            log.error("There was an error updating the envelope notification read status", e);
         }
     }
 }

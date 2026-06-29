@@ -2,6 +2,7 @@ package com.app.budgetbuddy.config;
 
 import com.app.budgetbuddy.workbench.scheduler.EnvelopeContributionJob;
 import org.quartz.*;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -40,6 +41,7 @@ public class SchedulerConfig
 
     @Bean
     @ConfigurationProperties("quartz.datasource")
+    @Qualifier("quartzDataSource")
     public DataSource quartzDataSource() {
         return DataSourceBuilder.create().build();
     }
@@ -52,10 +54,10 @@ public class SchedulerConfig
     }
 
     @Bean
-    public SchedulerFactoryBean schedulerFactoryBean()
+    public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("quartzDataSource") DataSource quartzDataSource)
     {
         SchedulerFactoryBean schedulerFactoryBean = new SchedulerFactoryBean();
-        schedulerFactoryBean.setDataSource(quartzDataSource());
+        schedulerFactoryBean.setDataSource(quartzDataSource);
         schedulerFactoryBean.setJobFactory(springBeanJobFactory());
         schedulerFactoryBean.setAutoStartup(true);
         schedulerFactoryBean.setOverwriteExistingJobs(true);

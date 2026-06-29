@@ -20,13 +20,13 @@ import java.util.stream.Collectors;
 public class DailyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryHandler
 {
     @PersistenceContext
-    private final EntityManager entityManager;
+    private EntityManager entityManager;
 
-    @Autowired
-    public DailyBudgetPeriodCategoryHandler(EntityManager entityManager)
-    {
-        this.entityManager = entityManager;
-    }
+//    @Autowired
+//    public DailyBudgetPeriodCategoryHandler(EntityManager entityManager)
+//    {
+//        this.entityManager = entityManager;
+//    }
 
     @Override
     public List<BudgetPeriodCategory> getBudgetPeriodCategories(SubBudget subBudget)

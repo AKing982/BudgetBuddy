@@ -2,6 +2,10 @@ package com.app.budgetbuddy.workbench.scheduler;
 
 import com.app.budgetbuddy.domain.Envelope;
 import com.app.budgetbuddy.domain.EnvelopeLink;
+import com.app.budgetbuddy.domain.EnvelopeNotification;
+import com.app.budgetbuddy.domain.EnvelopeStatus;
+import com.app.budgetbuddy.exceptions.EnvelopeException;
+import com.app.budgetbuddy.services.EnvelopeNotificationService;
 import com.app.budgetbuddy.services.EnvelopeService;
 import com.app.budgetbuddy.services.LinkedEnvelopesService;
 import com.app.budgetbuddy.workbench.envelopes.EnvelopeContributionEngine;
@@ -13,45 +17,51 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Optional;
+
 @Component
 @Slf4j
 public class EnvelopeContributionJob implements Job
 {
-    private final EnvelopeContributionEngine envelopeContributionEngine;
+    private final EnvelopeNotificationService envelopeNotificationService;
     private final EnvelopeService envelopeService;
-    private final LinkedEnvelopesService linkedEnvelopesService;
 
     @Autowired
-    public EnvelopeContributionJob(EnvelopeContributionEngine envelopeContributionEngine,
-                                   EnvelopeService envelopeService,
-                                   LinkedEnvelopesService linkedEnvelopesService)
+    public EnvelopeContributionJob(EnvelopeNotificationService envelopeNotificationService,
+                                   EnvelopeService envelopeService)
     {
-        this.envelopeContributionEngine = envelopeContributionEngine;
+        this.envelopeNotificationService = envelopeNotificationService;
         this.envelopeService = envelopeService;
-        this.linkedEnvelopesService = linkedEnvelopesService;
     }
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException
     {
         JobDataMap dataMap = jobExecutionContext.getJobDetail().getJobDataMap();
-        String envelopeMode = dataMap.getString("envelopeMode");
+        Long envelopeId = dataMap.getLong("envelopeId");
+        Optional<Envelope> envelopeOptional = envelopeService.findByEnvelopeId(envelopeId);
+        Envelope envelope = envelopeOptional.orElseThrow(() -> new EnvelopeException("Envelope not found"));
+        LocalDate scheduledContributionDate = LocalDate.parse(dataMap.getString("scheduled_date"));
+        BigDecimal scheduled_amount = BigDecimal.valueOf(dataMap.getFloat("scheduled_amount"));
         try
         {
-//            if(envelopeMode.equalsIgnoreCase("SNGLE"))
-//            {
-//                Long envelopeId = dataMap.getLong("envelopeId");
-//                Envelope envelope = envelopeService.findByEnvelopeId(envelopeId).get();
-//                envelopeContributionEngine.processSingleEnvelope(envelope);
-//                log.info("Envelope contribution job executed for envelope: {}", envelopeId);
-//            }
-//            else if(envelopeMode.equalsIgnoreCase("LINKED"))
-//            {
-//                Long linkedEnvelopeId = dataMap.getLong("linkedEnvelopeId");
-//                EnvelopeLink envelopeLink = linkedEnvelopesService.findByLinkedEnvelopeId(linkedEnvelopeId).get();
-//                envelopeContributionEngine.processLinkedEnvelope(envelopeLink);
-//                log.info("Envelope contribution job executed for linked envelope: {}", linkedEnvelopeId);
-//            }
+            final String title = "Envelope Contribution Notification";
+            final String message = "Contribution for envelope " + envelope.getEnvelopeName() + " is due on " + scheduledContributionDate + ".";
+            EnvelopeNotification notification = EnvelopeNotification.builder()
+                    .dateToContribute(scheduledContributionDate)
+                    .envelopeStatus(EnvelopeStatus.PENDING)
+                    .envelopeName(envelope.getEnvelopeName())
+                    .envelopeId(envelopeId)
+                    .message(message)
+                    .isRead(false)
+                    .title(title)
+                    .amount(scheduled_amount)
+                    .envelopeType(envelope.getEnvelopeType())
+                    .build();
+            envelopeNotificationService.createAndSave(notification);
+
         }catch(Exception e)
         {
             log.error("Error running envelope contribution job: ", e);

@@ -68,10 +68,12 @@ public class EnvelopeContributionEngine
                 EnvelopeContribution envelopeContributions = envelopeContributionsService.createAndSaveEntry(entryAmount, entryDate, envelopeId);
                 log.info("Created new envelope contribution: " + envelopeContributions);
                 List<Contributions> contributions = envelopeContributions.getContributions();
+                Contributions contributionsForDate = envelopeContributions.findContributionsForDate(entryDate);
+                BigDecimal amount = BigDecimal.valueOf(contributionsForDate.getAmount());
                 Envelope envelope = envelopeContributions.getEnvelope();
                 if(entryDate.isAfter(today))
                 {
-                    envelopeContributionScheduler.scheduleEnvelopeContribution(envelopeId, entryDate, envelope.getFrequency());
+                    envelopeContributionScheduler.scheduleEnvelopeContribution(envelopeId, entryDate, amount, envelope.getFrequency());
                 }
                 EnvelopeNotification envelopeNotification = envelopeNotificationService.createEnvelopeNotification(envelope, contributions).get();
                 return Optional.of(new EnvelopeDetails(envelope, contributions, envelopeNotification, ""));
@@ -125,9 +127,10 @@ public class EnvelopeContributionEngine
             Long contributionId = envelopeContribution.getId();
             List<Contributions> contributions = envelopeContribution.getContributions();
             Contributions contributionsForDate = envelopeContribution.findContributionsForDate(LocalDate.now());
+            BigDecimal amount = BigDecimal.valueOf(contributionsForDate.getAmount());
             if(!envelopeContributionScheduler.isScheduled(envelopeId))
             {
-                envelopeContributionScheduler.scheduleEnvelopeContribution(contributionId, today, envelope.getFrequency());
+                envelopeContributionScheduler.scheduleEnvelopeContribution(contributionId, today, amount, envelope.getFrequency());
             }
             EnvelopeNotification envelopeNotification = envelopeNotificationService.createEnvelopeNotification(envelope, contributions).get();
             envelopeContributionHistoryService.createAndSaveContribution(envelopeContribution, today);
@@ -172,10 +175,12 @@ public class EnvelopeContributionEngine
                 envelopeContributionsForToday.forEach(envelopeContribution -> {
                     Long envelopeId = envelopeContribution.getEnvelope().getId();
                     Long envelopeContributionId = envelopeContribution.getId();
+                    Contributions contributionsForDate = envelopeContribution.findContributionsForDate(today);
+                    BigDecimal amount = BigDecimal.valueOf(contributionsForDate.getAmount());
                     boolean isScheduled = envelopeContributionScheduler.isScheduled(envelopeId);
                     if(!isScheduled)
                     {
-                        envelopeContributionScheduler.scheduleEnvelopeContribution(envelopeContributionId, today, envelopeContribution.getEnvelope().getFrequency());
+                        envelopeContributionScheduler.scheduleEnvelopeContribution(envelopeContributionId, today, amount, envelopeContribution.getEnvelope().getFrequency());
                     }
                     EnvelopeNotification envelopeNotification = envelopeNotificationService.createEnvelopeNotification(envelopeContribution.getEnvelope(), envelopeContribution.getContributions()).get();
                     envelopeNotifications.add(envelopeNotification);

@@ -151,7 +151,7 @@ class EnvelopeContributionEngineTest
 
         assertTrue(actual.isPresent());
         assertEquals(expected, actual.get());
-        verify(envelopeContributionScheduler).scheduleEnvelopeContribution(eq(1L), eq(currentDate), anyString());
+        verify(envelopeContributionScheduler).scheduleEnvelopeContribution(eq(1L), eq(currentDate), eq(any()), anyString());
     }
 
     @Test
@@ -374,7 +374,7 @@ class EnvelopeContributionEngineTest
 
         assertTrue(actual.isPresent());
         assertEquals(expected, actual.get());
-        verify(envelopeContributionScheduler, never()).scheduleEnvelopeContribution(anyLong(), any(LocalDate.class), anyString());
+        verify(envelopeContributionScheduler, never()).scheduleEnvelopeContribution(anyLong(), any(LocalDate.class), any(), anyString());
         verify(envelopeContributionHistoryService).createAndSaveContribution(eq(envelopeContribution), any(LocalDate.class));
     }
 
