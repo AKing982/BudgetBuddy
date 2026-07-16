@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.EnvelopeNotification;
+import com.app.budgetbuddy.domain.EnvelopeNotificationStatus;
 import com.app.budgetbuddy.entities.EnvelopeNotificationsEntity;
 
 import java.util.List;
@@ -13,5 +14,6 @@ public interface EnvelopeNotificationService extends ServiceModel<EnvelopeNotifi
 
     List<EnvelopeNotification> getEnvelopeNotificationsByEnvelopeId(Long envelopeId);
 
+    Optional<EnvelopeNotificationStatus> sendEnvelopeAcceptedNotification(Long notificationId);
     void updateNotificationReadStatus(boolean readStatus, Long notificationId);
 }

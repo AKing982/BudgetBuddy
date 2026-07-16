@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.EnvelopeNotification;
+import com.app.budgetbuddy.domain.EnvelopeNotificationStatus;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.EnvelopeNotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,19 @@ public class EnvelopeNotificationController
             return ResponseEntity.ok(envelopeNotifications);
         }catch(DataException e){
             log.error("Error while getting envelope notifications", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/send-accept/")
+    public ResponseEntity<EnvelopeNotificationStatus> sendEnvelopeNotificationAccept(@RequestParam Long notificationId)
+    {
+        try
+        {
+            EnvelopeNotificationStatus status = envelopeNotificationService.sendEnvelopeAcceptedNotification(notificationId).get();
+            return ResponseEntity.ok(status);
+        }catch(DataException e){
+            log.error("Error while sending envelope notification accept", e);
             return ResponseEntity.internalServerError().build();
         }
     }

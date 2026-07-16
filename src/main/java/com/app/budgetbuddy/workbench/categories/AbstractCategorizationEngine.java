@@ -85,7 +85,7 @@ public abstract class AbstractCategorizationEngine<T extends Transaction>
         {
             return false;
         }
-        Object obj = (Object) transaction;
+        Object obj = transaction;
         if (obj instanceof Transaction t)
         {
             amount = t.getAmount();

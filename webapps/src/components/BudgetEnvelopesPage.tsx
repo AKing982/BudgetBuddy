@@ -893,7 +893,7 @@ const BudgetEnvelopesPage: React.FC = () => {
                 subjectName={notifDialogTitle}
                 notifications={[
                     {
-                        id:        'test-1',
+                        id:        '1',
                         date:      new Date().toISOString(),
                         message:   'Contribution due — $200 scheduled for today',
                         badge:     'Due today',
@@ -901,7 +901,7 @@ const BudgetEnvelopesPage: React.FC = () => {
                         isRead:    false,
                     },
                     {
-                        id:        'test-2',
+                        id:        '2',
                         date:      new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
                         message:   'Saving pace is behind — need $340/mo to hit your deadline',
                         badge:     'Falling behind',
@@ -909,7 +909,7 @@ const BudgetEnvelopesPage: React.FC = () => {
                         isRead:    false,
                     },
                     {
-                        id:        'test-3',
+                        id:        '3',
                         date:      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
                         message:   '$200 contribution added',
                         badge:     'Read',
@@ -917,7 +917,7 @@ const BudgetEnvelopesPage: React.FC = () => {
                         isRead:    true,
                     },
                     {
-                        id:        'test-4',
+                        id:        '4',
                         date:      new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
                         message:   'Goal milestone reached — 50% of target saved',
                         badge:     'Goal',

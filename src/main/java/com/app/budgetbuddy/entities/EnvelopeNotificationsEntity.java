@@ -34,6 +34,9 @@ public class EnvelopeNotificationsEntity
     @Column(name="is_read")
     private boolean isRead;
 
+    @Column(name="is_accepted")
+    private boolean isAccepted;
+
     @Column(name="amount")
     private double amount;
 

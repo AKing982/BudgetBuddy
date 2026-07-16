@@ -1,7 +1,7 @@
 package com.app.budgetbuddy.services;
 
-import com.app.budgetbuddy.domain.EnvelopeLinkNotification;
 import com.app.budgetbuddy.domain.EnvelopeNotification;
+import com.app.budgetbuddy.domain.EnvelopeNotificationStatus;
 import com.app.budgetbuddy.entities.EnvelopeNotificationsEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.EnvelopeNotificationRepository;
@@ -57,7 +57,6 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
             envelopeNotificationRepository.save(envelopeNotificationsEntity);
         }catch(DataAccessException e){
             log.error("There was an error saving the envelope notification", e);
-            return;
         }
     }
 
@@ -131,6 +130,32 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
         }catch(DataAccessException e){
             log.error("There was an error retrieving the envelope notifications", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<EnvelopeNotificationStatus> sendEnvelopeAcceptedNotification(Long notificationId)
+    {
+        try
+        {
+            envelopeNotificationRepository.updateEnvelopeNotificationAccepted(notificationId);
+            log.info("Envelope accepted notification sent successfully");
+            Optional<EnvelopeNotificationsEntity> envelopeNotificationOptional = envelopeNotificationRepository.findById(notificationId);
+            if(envelopeNotificationOptional.isEmpty())
+            {
+                return Optional.empty();
+            }
+            EnvelopeNotificationStatus notificationStatus = EnvelopeNotificationStatus.builder()
+                    .isRead(true)
+                    .isAccepted(true)
+                    .status("Envelope Notification " + notificationId + " was accepted")
+                    .notificationId(notificationId)
+                    .build();
+            return Optional.of(notificationStatus);
+        }catch(DataAccessException e){
+            log.error("There was an error sending the envelope accepted notification", e);
+            return Optional.empty();
         }
     }
 

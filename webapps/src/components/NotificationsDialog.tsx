@@ -5,6 +5,8 @@ import {
 } from '@mui/material';
 import { Bell, X as XIcon } from 'lucide-react';
 import { MAROON } from '../config/Constants';
+import EnvelopeNotificationService from "../services/EnvelopeNotificationService";
+import envelopeNotificationService from "../services/EnvelopeNotificationService";
 
 export interface EnvelopeNotificationItem {
     id:        string;
@@ -113,6 +115,7 @@ export const NotificationsDialog: React.FC<NotificationsDialogProps> = ({
 
     const active  = notifications.filter(n => !n.isRead);
     const history = notifications.filter(n => n.isRead);
+    const notificationService = EnvelopeNotificationService.getInstance();
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
@@ -176,9 +179,10 @@ export const NotificationsDialog: React.FC<NotificationsDialogProps> = ({
                                     n={n}
                                     selected={selectedId === n.id}
                                     onSelect={() => setSelectedId(prev => prev === n.id ? null : n.id)}
-                                    onAccept={() => {
+                                    onAccept={async () => {
                                         onAccept(n.id);
-                                        setSelectedId(null);
+                                        console.log(n.id);
+                                        await notificationService.sendEnvelopeAcceptNotification(Number(selectedId));
                                     }}
                                 />
                             ))}
