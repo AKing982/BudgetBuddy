@@ -225,122 +225,123 @@ const BudgetPage: React.FC = () => {
                     const handlePreviousMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
                     const handleNextMonth     = () => setCurrentMonth(prev => addMonths(prev, 1));
 
-    //                 useEffect(() => {
-    //                     if (!userId) return;
-    //                     const s = startOfMonth(currentMonth);
-    //                     const e = endOfMonth(currentMonth);
-    //
-    //                     const run = async () => {
-    //                         try {
-    //                             const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
-    //
-    //                             const [plaidHasNew, plaidHasUpdated] = await Promise.all([
-    //                                 transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e),
-    //                                 transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e),
-    //             ]);
-    //             const [csvHasNew, csvHasUpdated] = hasPlaidCSVSync
-    //                 ? await Promise.all([
-    //                     transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e),
-    //                     transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e),
-    //                 ])
-    //                 : [false, false];
-    //
-    //             if (plaidHasNew || csvHasNew) {
-    //                 setIsBudgetCategoryLoading(true);
-    //                 await budgetCategoryService.createBudgetCategoriesForDateRange(userId, s, e);
-    //             }
-    //
-    //             if (plaidHasUpdated || csvHasUpdated) {
-    //                 setIsBudgetCategoryLoading(true);
-    //                 await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
-    //             }
-    //
-    //             const data = await fetchBudgetData(currentMonth);
-    //
-    //             // Only fall back to update if nothing was built and no transactions triggered above
-    //             if ((!data || data.length === 0) && !plaidHasNew && !csvHasNew && !plaidHasUpdated && !csvHasUpdated) {
-    //                 setIsBudgetCategoryLoading(true);
-    //                 await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
-    //                 await fetchBudgetData(currentMonth);
-    //             }
-    //         } catch (ex) {
-    //             console.error(ex);
-    //             setSnackbarMessage('Failed to sync budget categories');
-    //             setSnackbarSeverity('error');
-    //             setSnackbarOpen(true);
-    //         } finally {
-    //             setIsBudgetCategoryLoading(false);
-    //         }
-    //     };
-    //
-    //     run();
-    // }, [userId, currentMonth]); // single effect, single dependency array
+                    useEffect(() => {
+                        if (!userId) return;
+                        const s = startOfMonth(currentMonth);
+                        const e = endOfMonth(currentMonth);
 
-    useEffect(() => {
-        const s = startOfMonth(currentMonth);
-        const e = endOfMonth(currentMonth);
-        const run = async () => {
-            try {
-                const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
-                const plaidHasNew = await transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e);
-                const csvHasNew = hasPlaidCSVSync
-                    ? await transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e)
-                    : false;
+                        const run = async () => {
+                            try {
+                                const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
+
+                                const [plaidHasNew, plaidHasUpdated] = await Promise.all([
+                                    transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e),
+                                    transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e),
+                ]);
+                const [csvHasNew, csvHasUpdated] = hasPlaidCSVSync
+                    ? await Promise.all([
+                        transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e),
+                        transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e),
+                    ])
+                    : [false, false];
+
                 if (plaidHasNew || csvHasNew) {
                     setIsBudgetCategoryLoading(true);
                     await budgetCategoryService.createBudgetCategoriesForDateRange(userId, s, e);
-                    fetchBudgetData(currentMonth, true);
-                    await new Promise(r => setTimeout(r, 2000));
-                    setIsBudgetCategoryLoading(false);
                 }
-            } catch (ex) {
-                console.error(ex);
-                setSnackbarMessage('Failed to create budget categories');
-                setSnackbarSeverity('error');
-                setSnackbarOpen(true);
-                setIsBudgetCategoryLoading(false);
-            }
-        };
-        run();
-    }, [userId, currentMonth]);
-
-    useEffect(() => {
-        const s = startOfMonth(currentMonth);
-        const e = endOfMonth(currentMonth);
-        const run = async () => {
-            try {
-                const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
-                const plaidHasUpdated = await transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e);
-                const csvHasUpdated = hasPlaidCSVSync
-                    ? await transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e)
-                    : false;
 
                 if (plaidHasUpdated || csvHasUpdated) {
                     setIsBudgetCategoryLoading(true);
                     await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
+                }
+
+                const data = await fetchBudgetData(currentMonth);
+
+                // Only fall back to update if nothing was built and no transactions triggered above
+                if ((!data || data.length === 0) && !plaidHasNew && !csvHasNew && !plaidHasUpdated && !csvHasUpdated) {
+                    setIsBudgetCategoryLoading(true);
+                    await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
                     await fetchBudgetData(currentMonth);
-                    await new Promise(r => setTimeout(r, 2000));
-                    setIsBudgetCategoryLoading(false);
-                } else {
-                    const data = await fetchBudgetData(currentMonth);
-                    if (!data || data.length === 0) {
-                        setIsBudgetCategoryLoading(true);
-                        await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
-                        await fetchBudgetData(currentMonth);
-                        await new Promise(r => setTimeout(r, 2000));
-                        setIsBudgetCategoryLoading(false);
-                    }
                 }
             } catch (ex) {
                 console.error(ex);
-                setSnackbarMessage('Failed to update budget categories');
+                setSnackbarMessage('Failed to sync budget categories');
                 setSnackbarSeverity('error');
                 setSnackbarOpen(true);
+            } finally {
                 setIsBudgetCategoryLoading(false);
             }
         };
+
         run();
-    }, [currentMonth]);
+    }, [userId, currentMonth]); // single effect, single dependency array
+
+    // useEffect(() => {
+    //     const s = startOfMonth(currentMonth);
+    //     const e = endOfMonth(currentMonth);
+    //     const run = async () => {
+    //         try {
+    //             const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
+    //             const plaidHasNew = await transactionCategoryService.checkNewTransactionCategoriesByDateRange(userId, s, e);
+    //             const csvHasNew = hasPlaidCSVSync
+    //                 ? await transactionCategoryService.checkNewCSVTransactionCategoriesByDateRange(userId, s, e)
+    //                 : false;
+    //             if (plaidHasNew || csvHasNew) {
+    //                 setIsBudgetCategoryLoading(true);
+    //                 await budgetCategoryService.createBudgetCategoriesForDateRange(userId, s, e);
+    //                 console.log('Fetching budget data for month: ', currentMonth, ' with new categories...');
+    //                 fetchBudgetData(currentMonth, true);
+    //                 await new Promise(r => setTimeout(r, 2000));
+    //                 setIsBudgetCategoryLoading(false);
+    //             }
+    //         } catch (ex) {
+    //             console.error(ex);
+    //             setSnackbarMessage('Failed to create budget categories');
+    //             setSnackbarSeverity('error');
+    //             setSnackbarOpen(true);
+    //             setIsBudgetCategoryLoading(false);
+    //         }
+    //     };
+    //     run();
+    // }, [userId, currentMonth]);
+    //
+    // useEffect(() => {
+    //     const s = startOfMonth(currentMonth);
+    //     const e = endOfMonth(currentMonth);
+    //     const run = async () => {
+    //         try {
+    //             const hasPlaidCSVSync = await userService.checkUserHasPlaidCSVSyncEnabled(userId);
+    //             const plaidHasUpdated = await transactionCategoryService.checkUpdatedTransactionCategoriesByDateRange(userId, s, e);
+    //             const csvHasUpdated = hasPlaidCSVSync
+    //                 ? await transactionCategoryService.checkUpdatedCSVTransactionCategoriesByDateRange(userId, s, e)
+    //                 : false;
+    //
+    //             if (plaidHasUpdated || csvHasUpdated) {
+    //                 setIsBudgetCategoryLoading(true);
+    //                 await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
+    //                 await fetchBudgetData(currentMonth);
+    //                 await new Promise(r => setTimeout(r, 2000));
+    //                 setIsBudgetCategoryLoading(false);
+    //             } else {
+    //                 const data = await fetchBudgetData(currentMonth);
+    //                 if (!data || data.length === 0) {
+    //                     setIsBudgetCategoryLoading(true);
+    //                     await budgetCategoryService.updateBudgetCategoriesByMonth(userId, s, e);
+    //                     await fetchBudgetData(currentMonth);
+    //                     await new Promise(r => setTimeout(r, 2000));
+    //                     setIsBudgetCategoryLoading(false);
+    //                 }
+    //             }
+    //         } catch (ex) {
+    //             console.error(ex);
+    //             setSnackbarMessage('Failed to update budget categories');
+    //             setSnackbarSeverity('error');
+    //             setSnackbarOpen(true);
+    //             setIsBudgetCategoryLoading(false);
+    //         }
+    //     };
+    //     run();
+    // }, [currentMonth]);
 
     useEffect(() => {
         const run = async () => {
@@ -396,7 +397,9 @@ const BudgetPage: React.FC = () => {
             const s = new Date(date.getFullYear(), date.getMonth(), 1);
             const e = new Date(date.getFullYear(), date.getMonth() + 1, 0);
             const results = await budgetRunnerService.getBudgetsByDateRange(userId, s, e);
+            console.log('Fetched budget data:', results);
             if (areAllBudgetCategoriesEmpty(results[0]?.budgetCategoryStats)) {
+                console.log('All budgetCategories are empty, creating new budget categories...');
                 try {
                     await budgetCategoryService.createBudgetCategoriesForDateRange(userId, s, e);
                     const fresh = await budgetRunnerService.getBudgetsByDateRange(userId, s, e);
@@ -408,6 +411,7 @@ const BudgetPage: React.FC = () => {
                     return [];
                 }
             }
+            console.log('Budget categories are not empty, continuing...');
             setBudgetData(results);
             return results;
         } catch {

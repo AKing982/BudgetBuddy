@@ -50,6 +50,7 @@ public class EnvelopeNotificationBuilder
             LocalDate contributionDate = contribution.getContributionDate();
             LocalDate scheduledDate = contribution.getScheduledDate();
             String merchant = contribution.getMerchant();
+            EnvelopeStatus status = !contributionDate.isAfter(scheduledDate) ? EnvelopeStatus.PAID : EnvelopeStatus.LATE;
             switch(envelopeType){
                 case PURCHASE:
                     envelopeNotification.setAmount(BigDecimal.valueOf(contributionAmount));
@@ -58,7 +59,8 @@ public class EnvelopeNotificationBuilder
                     boolean matchingTransactions = transactionRepository.checkTransactionsByMerchantAndPostedDateAndAmountExists(merchant, userId, contributionDate, BigDecimal.valueOf(contributionAmount));
                     if(matchingTransactions)
                     {
-                        envelopeNotification.setEnvelopeStatus(EnvelopeStatus.PAID);
+
+                        envelopeNotification.setEnvelopeStatus(status);
                         envelopeNotification.setTitle("Contribution Paid");
                         envelopeNotification.setMessage("Your contribution of $" + contributionAmount + " for " + envelopeName + " has been verified successfully");
                     }
@@ -76,7 +78,7 @@ public class EnvelopeNotificationBuilder
                     boolean matchingRecurring = recurringTransactionsRepository.checkForRecurringTransactionCountOnDate(userId, BigDecimal.valueOf(contributionAmount), contributionDate);
                     if(matchingRecurring)
                     {
-                        envelopeNotification.setEnvelopeStatus(EnvelopeStatus.PAID);
+                        envelopeNotification.setEnvelopeStatus(status);
                         envelopeNotification.setTitle("Contribution verified");
                         envelopeNotification.setMessage("Your payment of $" + contributionAmount + " for " + envelopeName + " has been verified successfully");
                     }
@@ -107,11 +109,11 @@ public class EnvelopeNotificationBuilder
                     break;
             }
         }
-        // If the contribution was made, then the envelope status should change to Pending, and will be updated once verification of the actual contribution.
-        // The pending state will be updated to Paid for Purchase and Payoff envelopes, Submitted for a Fund Envelope, and Completed if the envelopes target amount has been reached for Purchase and Payoff envelopes.
-        // The verification will be done by either checking the transactions table/recurring transactions table for the corresponding transaction and if found, the state of the envelope will be updated for Purchase and Payoff Envelopes.
-        // Verification for Fund envelopes will be done by checking the user's savings account balance history for the corresponding contribution amount
-        // If the verification was unsuccessful, then the status should be set to Failed.
+//        // If the contribution was made, then the envelope status should change to Pending, and will be updated once verification of the actual contribution.
+//        // The pending state will be updated to Paid for Purchase and Payoff envelopes, Submitted for a Fund Envelope, and Completed if the envelopes target amount has been reached for Purchase and Payoff envelopes.
+//        // The verification will be done by either checking the transactions table/recurring transactions table for the corresponding transaction and if found, the state of the envelope will be updated for Purchase and Payoff Envelopes.
+//        // Verification for Fund envelopes will be done by checking the user's savings account balance history for the corresponding contribution amount
+//        // If the verification was unsuccessful, then the status should be set to Failed.
         envelopeNotification.setEnvelopeId(envelopeId);
         envelopeNotification.setEnvelopeName(envelopeName);
         envelopeNotification.setEnvelopeType(envelopeType);

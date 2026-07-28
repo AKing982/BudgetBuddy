@@ -23,18 +23,23 @@ public class EnvelopeContributionValidator
         this.accountBalanceHistoryService = accountBalanceHistoryService;
     }
 
-    public void runValidation(EnvelopeNotification envelopeNotification, Contributions contributions, Long envelopeId)
+    public Boolean runValidationCheck(EnvelopeNotification envelopeNotification, Contributions contributions, Long envelopeId)
     {
-
+        return null;
     }
 
-    Boolean validateEnvelopeNotification(EnvelopeNotification envelopeNotification)
+    Boolean validateByTransactions(EnvelopeNotification envelopeNotification, Contributions contributions, Long envelopeId)
     {
-        return true;
+        return false;
     }
 
-    Boolean validateContribution(Contributions contributions, Long envelopeId)
+    Boolean validateByRecurringTransactions(EnvelopeNotification envelopeNotification, Contributions contributions, Long envelopeId)
     {
-        return true;
+        return false;
+    }
+
+    Boolean validateByAccountBalanceHistory(EnvelopeNotification envelopeNotification, Contributions contributions, Long envelopeId)
+    {
+        return false;
     }
 }

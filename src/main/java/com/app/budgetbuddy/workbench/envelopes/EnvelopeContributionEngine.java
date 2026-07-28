@@ -1,7 +1,7 @@
 package com.app.budgetbuddy.workbench.envelopes;
 
 import com.app.budgetbuddy.domain.*;
-import com.app.budgetbuddy.entities.EnvelopeContributionsEntity;
+        import com.app.budgetbuddy.entities.EnvelopeContributionsEntity;
 import com.app.budgetbuddy.exceptions.EnvelopeException;
 import com.app.budgetbuddy.services.EnvelopeContributionHistoryService;
 import com.app.budgetbuddy.services.EnvelopeContributionsService;

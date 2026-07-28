@@ -27,6 +27,7 @@ import { Table as TableIcon, BarChart3, PieChart as PieIcon } from 'lucide-react
 import { Stack } from '@mui/material';
 
 import BudgetCategoryCard from './BudgetCategoryCard';
+import { parseISO } from 'date-fns';
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const MAROON = '#6b1a1a';
@@ -79,6 +80,7 @@ const renderActiveShape = (props: any) => {
 const ChartView: React.FC<{ categories: BudgetPeriodCategory[]; rangeLabel: string }> = ({ categories, rangeLabel }) => {
     const [activeIdx, setActiveIdx] = useState(0);
 
+    console.log('ChartView categories:', categories);
     const spenders = categories
         .filter(c => (c.actual || 0) > 0)
         .sort((a, b) => (b.actual || 0) - (a.actual || 0));
@@ -255,14 +257,16 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         try {
             if (period === 'Custom') { setIsLoadingData(false); return; }
             const userId = Number(sessionStorage.getItem('userId'));
-            const s = new Date(subBudget.startDate[0], subBudget.startDate[1]-1, subBudget.startDate[2]);
-            const e = new Date(subBudget.endDate[0],   subBudget.endDate[1]-1,   subBudget.endDate[2]);
+            const s = parseISO(subBudget.startDate as unknown as string);
+            const e = parseISO(subBudget.endDate as unknown as string);
+            console.log('Start Date: {}{},{}', s.getDate(), s.getMonth()+1, s.getFullYear());
+            console.log('End Date: {}{},{}', e.getDate(), e.getMonth()+1, e.getFullYear());
             const result = await getBudgetPeriodData(
                 PERIOD_MAPPING[period], userId,
                 format(s,'yyyy-MM-dd'), format(e,'yyyy-MM-dd'),
                 period === 'Daily' ? format(selectedDate,'yyyy-MM-dd') : ''
             );
-            setPeriodData(result);
+            setPeriodData(dedupeCategories(result));
         } catch (err) {
             console.error('Error fetching period data:', err);
         } finally {
@@ -274,32 +278,56 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         if (data?.[0]?.subBudget) fetchBudgetPeriodData(budgetPeriod, data[0].subBudget);
     }, [budgetPeriod, selectedDate, data?.[0]?.subBudget, customStartDate, customEndDate]);
 
+    const dedupeCategories = (cats: BudgetPeriodCategory[]): BudgetPeriodCategory[] => {
+        const byName = new Map<string, BudgetPeriodCategory>();
+
+        cats.forEach(cat => {
+            const key = cat.category?.trim().toLowerCase();
+            if (!key) return;
+
+            const existing = byName.get(key);
+            if (!existing) {
+                byName.set(key, cat);
+                return;
+            }
+
+            // Keep whichever record has the more complete/non-zero budgeted amount.
+            // If both are non-zero and disagree, log it — that's not a simple duplicate.
+            if (existing.budgeted !== cat.budgeted && existing.budgeted > 0 && cat.budgeted > 0) {
+                console.warn(
+                    `Duplicate category "${cat.category}" with conflicting budgeted amounts (${existing.budgeted} vs ${cat.budgeted}) — keeping the larger one.`,
+                    existing, cat
+                );
+            }
+
+            const keep = (cat.budgeted || 0) > (existing.budgeted || 0) ? cat : existing;
+            byName.set(key, keep);
+        });
+
+        return Array.from(byName.values());
+    };
+
     // ── Date range extraction ──────────────────────────────────────────────────
     const getDateRanges = (subBudget: SubBudget) => {
         if (!periodData?.length || !selectedDate || !subBudget) return [];
-        const sub_s = new Date(subBudget.startDate[0], subBudget.startDate[1]-1, subBudget.startDate[2]);
-        const sub_e = new Date(subBudget.endDate[0],   subBudget.endDate[1]-1,   subBudget.endDate[2]);
+        const sub_s = parseISO(subBudget.startDate as unknown as string);
+        const sub_e = parseISO(subBudget.endDate as unknown as string);
         const uniqueRanges = new Map<string, [Date,Date]>();
-
         periodData.forEach(cat => {
             try {
                 if (budgetPeriod === 'BiWeekly' && cat.biWeekRanges?.length) {
                     cat.biWeekRanges.forEach(r => {
-                        const sa = (r.startDate as unknown) as number[];
-                        const ea = (r.endDate   as unknown) as number[];
-                        const s  = new Date(+sa[0], +sa[1]-1, +sa[2]);
-                        const e  = new Date(+ea[0], +ea[1]-1, +ea[2]);
+                        const s = parseISO(r.startDate as unknown as string);
+                        const e = parseISO(r.endDate as unknown as string);
                         if (isWithinInterval(s,{start:sub_s,end:sub_e}) && isWithinInterval(e,{start:sub_s,end:sub_e})) {
                             const k = `${format(s,'yyyy-MM-dd')}-${format(e,'yyyy-MM-dd')}`;
                             if (!uniqueRanges.has(k)) uniqueRanges.set(k,[s,e]);
                         }
                     });
                 } else if (cat.dateRange?.startDate && cat.dateRange?.endDate) {
-                    const sa = (cat.dateRange.startDate as unknown) as number[];
-                    const ea = (cat.dateRange.endDate   as unknown) as number[];
-                    const s  = new Date(+sa[0], +sa[1]-1, +sa[2]);
-                    const e  = new Date(+ea[0], +ea[1]-1, +ea[2]);
-                    const k  = `${format(s,'yyyy-MM-dd')}-${format(e,'yyyy-MM-dd')}`;
+                    const s = parseISO(cat.dateRange.startDate as unknown as string);
+                    const e = parseISO(cat.dateRange.endDate as unknown as string);
+                    const k = `${format(s,'yyyy-MM-dd')}-${format(e,'yyyy-MM-dd')}`;
                     if (!uniqueRanges.has(k)) uniqueRanges.set(k,[s,e]);
                 }
             } catch (err) { console.error(err, cat); }
@@ -322,20 +350,37 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
         periodData.filter(cat => {
             if (budgetPeriod === 'BiWeekly' && cat.biWeekRanges?.length) {
                 return cat.biWeekRanges.some(r => {
-                    const sa = (r.startDate as unknown) as number[];
-                    const ea = (r.endDate   as unknown) as number[];
-                    return isSameDay(new Date(+sa[0],+sa[1]-1,+sa[2]), start)
-                        && isSameDay(new Date(+ea[0],+ea[1]-1,+ea[2]), end);
+                    const s = parseISO(r.startDate as unknown as string);
+                    const e = parseISO(r.endDate as unknown as string);
+                    return isSameDay(s, start) && isSameDay(e, end);
                 });
             }
             if (cat.dateRange?.startDate && cat.dateRange?.endDate) {
-                const sa = (cat.dateRange.startDate as unknown) as number[];
-                const ea = (cat.dateRange.endDate   as unknown) as number[];
-                return isSameDay(new Date(+sa[0],+sa[1]-1,+sa[2]), start)
-                    && isSameDay(new Date(+ea[0],+ea[1]-1,+ea[2]), end);
+                const s = parseISO(cat.dateRange.startDate as unknown as string);
+                const e = parseISO(cat.dateRange.endDate as unknown as string);
+                return isSameDay(s, start) && isSameDay(e, end);
             }
             return false;
         });
+
+    // const getCategoriesForRange = (start: Date, end: Date) =>
+    //     periodData.filter(cat => {
+    //         if (budgetPeriod === 'BiWeekly' && cat.biWeekRanges?.length) {
+    //             return cat.biWeekRanges.some(r => {
+    //                 const sa = (r.startDate as unknown) as number[];
+    //                 const ea = (r.endDate   as unknown) as number[];
+    //                 return isSameDay(new Date(+sa[0],+sa[1]-1,+sa[2]), start)
+    //                     && isSameDay(new Date(+ea[0],+ea[1]-1,+ea[2]), end);
+    //             });
+    //         }
+    //         if (cat.dateRange?.startDate && cat.dateRange?.endDate) {
+    //             const sa = (cat.dateRange.startDate as unknown) as number[];
+    //             const ea = (cat.dateRange.endDate   as unknown) as number[];
+    //             return isSameDay(new Date(+sa[0],+sa[1]-1,+sa[2]), start)
+    //                 && isSameDay(new Date(+ea[0],+ea[1]-1,+ea[2]), end);
+    //         }
+    //         return false;
+    //     });
 
     // ── Styled components ──────────────────────────────────────────────────────
     const StyledButton = styled(Button)(() => ({
@@ -507,6 +552,7 @@ const BudgetPeriodTable: React.FC<BudgetPeriodTableProps> = ({isLoading, data}) 
                             const rangeKey    = `${format(start,'yyyy-MM-dd')}-${format(end,'yyyy-MM-dd')}`;
                             const isExpanded  = expandedRanges.has(rangeKey);
                             const isLast      = ri === dateRanges.length - 1;
+                            console.log(`Retrieving categories for start ${start} and end ${end}`)
                             const cats        = getCategoriesForRange(start, end);
                             const rangeLabel  = `${format(start,'MMM dd')} – ${format(end,'MMM dd, yyyy')}`;
 

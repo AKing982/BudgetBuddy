@@ -31,9 +31,9 @@ class EnvelopeNotificationService {
         try
         {
             console.log('Notification Id: ', notificationId);
-            const response = await axios.post(`${apiUrl}envelope-notifications/send-accept/`, {
-                params: notificationId
-            });
+            const response = await axios.post(`${apiUrl}/envelope-notifications/send-accept/`, null,
+            {params: {notificationId}}
+            );
             console.log("Response: ", response);
             return response.data;
         }catch(error){

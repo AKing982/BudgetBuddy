@@ -58,6 +58,7 @@ public class BudgetPeriodController
         }
         try
         {
+            log.info("Getting budget period categories for period {} and startDate {} and endDate {}", period, startDate, endDate);
             List<BudgetPeriodCategory> budgetPeriodCategories = budgetPeriodQueries.getBudgetPeriodQueryData(userId, startDate, endDate, period);
             return ResponseEntity.ok(new BudgetPeriodCategoryResponse(budgetPeriodCategories));
         }catch(Exception e)

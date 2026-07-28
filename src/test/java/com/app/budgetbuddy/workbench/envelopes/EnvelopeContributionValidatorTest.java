@@ -5,6 +5,7 @@ import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -30,6 +31,15 @@ class EnvelopeContributionValidatorTest {
     @BeforeEach
     void setUp() {
     }
+
+    @Test
+    void testValidateByTransactions_whenContributionsNull_thenReturnFalse()
+    {
+
+    }
+
+
+
 
 
 

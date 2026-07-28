@@ -7,6 +7,7 @@ import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.EnvelopeNotificationRepository;
 import com.app.budgetbuddy.workbench.converter.EnvelopeNotificationToEntityConverter;
 import com.app.budgetbuddy.workbench.converter.EnvelopeNotificationToModelConverter;
+import com.app.budgetbuddy.workbench.envelopes.EnvelopeContributionValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,15 +25,18 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
     private final EnvelopeNotificationRepository envelopeNotificationRepository;
     private final EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter;
     private final EnvelopeNotificationToModelConverter envelopeNotificationToModelConverter;
+    private final EnvelopeContributionValidator envelopeContributionValidator;
 
     @Autowired
     public EnvelopeNotificationServiceImpl(EnvelopeNotificationRepository envelopeNotificationRepository,
                                            EnvelopeNotificationToModelConverter envelopeNotificationToModelConverter,
-                                           EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter)
+                                           EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter,
+                                           EnvelopeContributionValidator envelopeContributionValidator)
     {
         this.envelopeNotificationRepository = envelopeNotificationRepository;
         this.envelopeNotificationToModelConverter = envelopeNotificationToModelConverter;
         this.envelopeNotificationToEntityConverter = envelopeNotificationToEntityConverter;
+        this.envelopeContributionValidator = envelopeContributionValidator;
     }
 
     @Override
@@ -146,6 +150,7 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
             {
                 return Optional.empty();
             }
+//            Boolean envelopeValidated = envelopeContributionValidator.runValidationCheck(envelopeNotification, );
             EnvelopeNotificationStatus notificationStatus = EnvelopeNotificationStatus.builder()
                     .isRead(true)
                     .isAccepted(true)

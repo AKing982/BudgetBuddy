@@ -46,7 +46,7 @@ public class MonthlyBudgetPeriodCategoryHandler implements BudgetPeriodCategoryH
                 throw new DateRangeException("Monthly budget period cannot have null start date or end date.");
             }
             final String monthlyBudgetQuery = """
-            SELECT tc.categoryName,
+            SELECT DISTINCT tc.categoryName,
                    MAX(tc.budgetedAmount) as totalBudgeted,
                    SUM(tc.actual) as actualSpent,
                    MAX(tc.budgetedAmount) - SUM(tc.actual) as remainingAmount
