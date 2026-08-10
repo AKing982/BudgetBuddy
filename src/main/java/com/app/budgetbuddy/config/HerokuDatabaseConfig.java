@@ -19,8 +19,11 @@ public class HerokuDatabaseConfig
     @Value("${DATABASE_URL}")
     private String databaseUrl;
 
+    @Value("${QUARTZ_DATABASE_URL}")
+    private String quartzDatabaseUrl;
+
     @Bean
-//    @Primary
+    @Primary
     public DataSource dataSource() {
         URI dbUri;
         try {
@@ -42,6 +45,7 @@ public class HerokuDatabaseConfig
         return new HikariDataSource(config);
     }
 
+
     private URI parsedUri() {
         try {
             return new URI(databaseUrl);
@@ -51,12 +55,17 @@ public class HerokuDatabaseConfig
     }
 
 
-    private HikariConfig baseConfig() {
-        URI uri = parsedUri();
+    private HikariConfig baseConfig(String rawUrl) {
+        URI uri;
+        try {
+            uri = new URI(rawUrl);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Invalid database URL: " + rawUrl, e);
+        }
         String[] userInfo = uri.getUserInfo().split(":");
         String jdbcUrl = "jdbc:postgresql://" + uri.getHost()
                 + ":" + uri.getPort() + uri.getPath()
-                + "?sslmode=require";          // required on Heroku Postgres
+                + "?sslmode=require";
 
         HikariConfig cfg = new HikariConfig();
         cfg.setJdbcUrl(jdbcUrl);
@@ -66,9 +75,24 @@ public class HerokuDatabaseConfig
         return cfg;
     }
 
+//    private HikariConfig baseConfig(String rawUrl) {
+//        URI uri = parsedUri();
+//        String[] userInfo = uri.getUserInfo().split(":");
+//        String jdbcUrl = "jdbc:postgresql://" + uri.getHost()
+//                + ":" + uri.getPort() + uri.getPath()
+//                + "?sslmode=require";          // required on Heroku Postgres
+//
+//        HikariConfig cfg = new HikariConfig();
+//        cfg.setJdbcUrl(jdbcUrl);
+//        cfg.setUsername(userInfo[0]);
+//        cfg.setPassword(userInfo[1]);
+//        cfg.setDriverClassName("org.postgresql.Driver");
+//        return cfg;
+//    }
+
     @Bean(name = "quartzDataSource")
     public DataSource quartzDataSource() {
-        HikariConfig cfg = baseConfig();
+        HikariConfig cfg = baseConfig(quartzDatabaseUrl);
         cfg.setPoolName("QuartzPool");
         cfg.setMaximumPoolSize(2);
         cfg.setMinimumIdle(1);

@@ -24,4 +24,9 @@ public interface LinkedEnvelopesRepository extends JpaRepository<LinkedEnvelopes
            "JOIN e.subBudgets sb " +
            "WHERE u.id =:userId AND sb.startDate >=:monthStart AND sb.endDate <=:monthEnd")
     List<LinkedEnvelopesEntity> findByUserIdAndDateRange(@Param("userId") Long userId, @Param("monthStart") LocalDate monthStart, @Param("monthEnd") LocalDate monthEnd);
+
+    @Query("SELECT le FROM LinkedEnvelopesEntity le " +
+           "JOIN le.linkedEnvelopeMembers lem " +
+           "WHERE le.id =:id AND lem.id =:envelopeId")
+    boolean isEnvelopeLinked(@Param("id") Long id, @Param("envelopeId") Long envelopeId);
 }

@@ -32,6 +32,7 @@ public class BudgetCategoryRunner
 
     public List<BudgetCategory> runBudgetCategoryProcessForMonth(final SubBudget subBudget)
     {
+        log.info("Running budget category process for month " + subBudget.getStartDate() + " to " + subBudget.getEndDate());
         try
         {
             BudgetSchedule budgetSchedule = subBudget.getBudgetSchedule().get(0);

@@ -13,5 +13,7 @@ public interface LinkedEnvelopesService extends ServiceModel<LinkedEnvelopesEnti
 
     List<LinkedEnvelopesEntity> findByUserId(Long userId);
 
+    boolean isEnvelopeLinked(Long linkedEnvelopeId, Long envelopeId);
+
     List<LinkedEnvelopesEntity> findByUserIdAndDates(Long userId, LocalDate startDate, LocalDate endDate);
 }

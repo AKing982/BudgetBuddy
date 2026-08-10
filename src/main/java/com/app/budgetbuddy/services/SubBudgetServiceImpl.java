@@ -234,9 +234,7 @@ public class SubBudgetServiceImpl implements SubBudgetService
     {
         try
         {
-            LocalDate lookUpDate = LocalDate.now();
-            LocalDate lookUpEnd = lookUpDate.withDayOfMonth(lookUpDate.lengthOfMonth());
-            Optional<SubBudgetEntity> optionalSubBudgetEntity = subBudgetRepository.findSubBudgetEntityByIdAndDateRange(userId, lookUpDate, lookUpEnd);
+            Optional<SubBudgetEntity> optionalSubBudgetEntity = subBudgetRepository.findSubBudgetEntityByIdAndDateRange(userId, startDate,endDate);
             return optionalSubBudgetEntity.map(subBudgetEntityConverter::convert);
         }catch(DataAccessException e){
             log.error("There was an error getting the sub-budget by userId {}", userId);

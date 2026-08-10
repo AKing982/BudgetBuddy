@@ -9,6 +9,7 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 
@@ -18,16 +19,6 @@ import java.util.Properties;
 @Configuration
 public class SchedulerConfig
 {
-
-    @Value("${quartz.datasource.jdbc-url}")
-    private String quartzUrl;
-
-    @Value("${quartz.datasource.username}")
-    private String quartzUsername;
-
-    @Value("${quartz.datasource.password}")
-    private String quartzPassword;
-
     private final DataSource dataSource;
     private final ApplicationContext applicationContext;
 
@@ -41,7 +32,7 @@ public class SchedulerConfig
 
     @Bean
     @ConfigurationProperties("quartz.datasource")
-    @Qualifier("quartzDataSource")
+    @Profile("!heroku")
     public DataSource quartzDataSource() {
         return DataSourceBuilder.create().build();
     }

@@ -72,6 +72,7 @@ public class BudgetCategoryController
                                                                        @RequestParam(required = false) LocalDate startDate,
                                                                        @RequestParam(required = false) LocalDate endDate)
     {
+        log.info("Creating budget categories for user {} from {} to {}", userID, startDate, endDate);
         // Find the SubBudget for this period
         Optional<SubBudget> subBudget = subBudgetService.findSubBudgetByUserIdAndDateRange(userID, startDate, endDate);
         if(subBudget.isEmpty())
@@ -81,6 +82,7 @@ public class BudgetCategoryController
         try
         {
             SubBudget subBudget1 = subBudget.get();
+            log.info("Found sub budget: {}", subBudget1);
             List<BudgetCategory> createdBudgetCategories = budgetCategoryRunner.runBudgetCategoryProcessForMonth(subBudget1);
             return ResponseEntity.ok(createdBudgetCategories);
         }catch(BudgetCategoryException e){

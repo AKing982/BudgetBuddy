@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 import java.util.Objects;
@@ -13,12 +10,12 @@ import java.util.Objects;
 @NoArgsConstructor(access= AccessLevel.PUBLIC)
 public class EnvelopeBuildDetails
 {
-    private Envelope envelope;
+    private List<Envelope> envelopes;
     private EnvelopeLink linkedEnvelope;
     private String errorMessage;
 
-    public EnvelopeBuildDetails(Envelope envelope, List<EnvelopeContribution> envelopeContributions, EnvelopeLink linkedEnvelope, String errorMessage) {
-        this.envelope = envelope;
+    public EnvelopeBuildDetails(List<Envelope> envelopes, List<EnvelopeContribution> envelopeContributions, EnvelopeLink linkedEnvelope, String errorMessage) {
+        this.envelopes = envelopes;
         this.linkedEnvelope = linkedEnvelope;
         this.errorMessage = errorMessage;
     }
@@ -27,11 +24,11 @@ public class EnvelopeBuildDetails
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         EnvelopeBuildDetails that = (EnvelopeBuildDetails) o;
-        return Objects.equals(envelope, that.envelope) && Objects.equals(linkedEnvelope, that.linkedEnvelope) && Objects.equals(errorMessage, that.errorMessage);
+        return Objects.equals(envelopes, that.envelopes) && Objects.equals(linkedEnvelope, that.linkedEnvelope) && Objects.equals(errorMessage, that.errorMessage);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(envelope, linkedEnvelope, errorMessage);
+        return Objects.hash(envelopes, linkedEnvelope, errorMessage);
     }
 }

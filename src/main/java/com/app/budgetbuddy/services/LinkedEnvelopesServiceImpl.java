@@ -59,8 +59,15 @@ public class LinkedEnvelopesServiceImpl implements LinkedEnvelopesService
     }
 
     @Override
-    public Optional<LinkedEnvelopesEntity> findById(Long id) {
-        return Optional.empty();
+    public Optional<LinkedEnvelopesEntity> findById(Long id)
+    {
+        try
+        {
+            return linkedEnvelopesRepository.findById(id);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the linked envelope with id: {}", id, e);
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -87,6 +94,19 @@ public class LinkedEnvelopesServiceImpl implements LinkedEnvelopesService
         }catch(DataAccessException e){
             log.error("There was an error retrieving the linked envelopes for the user", e);
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean isEnvelopeLinked(Long linkedEnvelopeId, Long envelopeId)
+    {
+        try
+        {
+            return linkedEnvelopesRepository.isEnvelopeLinked(linkedEnvelopeId, envelopeId);
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the linked envelopes for the user", e);
+            return false;
         }
     }
 
