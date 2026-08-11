@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.workbench.envelopes;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.EnvelopeEntity;
 import com.app.budgetbuddy.entities.EnvelopePaymentSchedulesEntity;
 import com.app.budgetbuddy.entities.SubBudgetEntity;
 import com.app.budgetbuddy.exceptions.EnvelopeException;
@@ -163,6 +164,19 @@ public class EnvelopeBuilderService
             }
         }
         return paymentSchedules;
+    }
+
+    public List<Envelope> createAndSaveEnvelopes(final List<NewEnvelopeCriteria> envelopeCriteria, final BudgetCriteria budgetCriteria, final List<SubBudget> subBudgets, final boolean isLinked)
+    {
+        List<Envelope> envelopes = createEnvelopes(envelopeCriteria, budgetCriteria, subBudgets, isLinked);
+        return envelopes.stream()
+                .map(envelope -> {
+            Envelope envelopeEntity = envelopeService.save(envelope);
+            envelope.setId(envelopeEntity.getId());
+                    return envelopeEntity;
+                })
+                .distinct()
+                .toList();
     }
 
     public List<Envelope> createEnvelopes(final List<NewEnvelopeCriteria> envelopeCriteria, final BudgetCriteria budgetCriteria, final List<SubBudget> subBudgets, final boolean isLinked)

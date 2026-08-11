@@ -3,7 +3,9 @@ package com.app.budgetbuddy.workbench.envelopes;
 import com.app.budgetbuddy.workbench.scheduler.EnvelopeContributionJob;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,10 +19,9 @@ public class EnvelopeContributionScheduler
 {
     private final Scheduler scheduler;
 
-    @Autowired
-    public EnvelopeContributionScheduler(Scheduler scheduler)
+    public EnvelopeContributionScheduler(ObjectProvider<Scheduler> schedulerProvider)
     {
-        this.scheduler = scheduler;
+        this.scheduler = schedulerProvider.getIfAvailable();
     }
 
     public void scheduleEnvelopeContribution(Long envelopeId,

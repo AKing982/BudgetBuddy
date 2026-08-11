@@ -4,6 +4,7 @@ import com.app.budgetbuddy.workbench.scheduler.EnvelopeContributionJob;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.ApplicationContext;
@@ -17,6 +18,7 @@ import javax.sql.DataSource;
 import java.util.Properties;
 
 @Configuration
+@ConditionalOnProperty(name="quartz.enabled",havingValue="true", matchIfMissing=false)
 public class SchedulerConfig
 {
     private final DataSource dataSource;
