@@ -42,6 +42,50 @@ class EnvelopeNotificationService {
         }
     }
 
+    public async createNewEnvelopeNotifications(envelopeId: number, startDate: Date, endDate: Date) : Promise<EnvelopeNotification[]>
+    {
+        if(!envelopeId || !startDate || !endDate)
+        {
+            throw new Error('Invalid parameters. envelopeId, startDate, and endDate must be provided.');
+        }
+        try
+        {
+            const response = await axios.post<EnvelopeNotification[]>(`${apiUrl}/envelope-notifications/create-notifications`, null, {
+                params: {
+                    envelopeId: envelopeId,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString()
+                }
+            })
+            return response.data;
+        }catch(error){
+            console.error("There was an error creating new envelope notifications: ", error);
+            throw error;
+        }
+    }
+
+    public async checkForNewAndPastDueNotifications(envelopeId: number, startDate: Date, endDate: Date) : Promise<Boolean>
+    {
+        if(!envelopeId || !startDate || !endDate)
+        {
+            throw new Error('Invalid parameters. envelopeId, startDate, and endDate must be provided.');
+        }
+        try
+        {
+            const response = await axios.get<EnvelopeNotification[]>(`${apiUrl}/envelope-notifications/check-for-new-and-past-due`, {
+                params: {
+                    envelopeId: envelopeId,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString()
+                }
+            })
+           return response.data.length > 0;
+        }catch(error){
+            console.error("There was an error checking for new and past due notifications: ", error);
+            throw error;
+        }
+    }
+
     public async getUserEnvelopeNotifications(userId: number) : Promise<EnvelopeNotification[]>
     {
         return [];

@@ -33,6 +33,39 @@ public class EnvelopeNotificationBuilder
         this.recurringTransactionsRepository = recurringTransactionsRepository;
     }
 
+    public List<EnvelopeNotification> createEnvelopeNotificationsForPeriod(final Envelope envelope, final LocalDate startDate, final LocalDate endDate)
+    {
+        if(envelope == null || startDate == null || endDate == null)
+        {
+            return Collections.emptyList();
+        }
+        List<EnvelopeNotification> envelopeNotifications = new ArrayList<>();
+        List<Contributions> contributions = envelope.getContributions()
+                .stream()
+                .filter(e -> !e.getScheduledDate().isAfter(endDate) && (e.getStatus().equalsIgnoreCase("PAID") || e.getStatus().equalsIgnoreCase("LATE")))
+                .toList();
+        contributions.forEach(contribution -> {
+            boolean isPastDue = contribution.getScheduledDate().isBefore(LocalDate.now());
+            String message = isPastDue
+                    ? "Your contribution of $" + contribution.getAmount() + " for " + envelope.getEnvelopeName() + " is past due."
+                    : "Your contribution of $" + contribution.getAmount() + " for " + envelope.getEnvelopeName() + " is due soon.";
+            EnvelopeNotification envelopeNotification = EnvelopeNotification.builder()
+                    .envelopeName(envelope.getEnvelopeName())
+                    .envelopeId(envelope.getId())
+                    .envelopeStatus(envelope.getEnvelopeStatus())
+                    .isRead(false)
+                    .envelopeType(envelope.getEnvelopeType())
+                    .message(message)
+                    .envelopeStatus(EnvelopeStatus.PENDING)
+                    .dateToContribute(contribution.getScheduledDate())
+                    .title("Contribution Notification for " + startDate + " to " + endDate)
+                    .amount(BigDecimal.valueOf(contribution.getAmount()))
+                    .build();
+            envelopeNotifications.add(envelopeNotification);
+        });
+        return envelopeNotifications;
+    }
+
     public Optional<EnvelopeNotification> createEnvelopeNotification(final Envelope envelope, final List<Contributions> contributions)
     {
         if(envelope == null || contributions == null || contributions.isEmpty())

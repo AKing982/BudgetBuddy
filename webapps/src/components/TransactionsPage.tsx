@@ -349,82 +349,6 @@ const TransactionsPage: React.FC = () => {
         }
     };
 
-    // const combinedTransactions = useMemo(() => {
-    //     const converted: Transaction[] = csvTransactions.filter(c => c.transactionDate).map((c, i) => ({
-    //         transactionId: c.id ? `csv-${c.id}-${i}` : `csv-generated-${i}-${c.transactionDate}-${c.transactionAmount}`,
-    //         amount: c.transactionAmount, date: c.transactionDate!, posted: c.transactionDate,
-    //         name: c.merchantName || c.description || 'Unknown', description: c.description || '',
-    //         authorizedDate: c.transactionDate || null, categoryId: '', extendedDescription: c.extendedDescription || '',
-    //         merchantName: c.merchantName, categories: c.category ? [c.category] : ['Uncategorized'],
-    //         pending: false, logoUrl: null, isoCurrencyCode: '', accountId: '', balance: c.balance,
-    //     }));
-    //     const all = [...transactions, ...converted];
-    //     const seen = new Set<string>();
-    //     return all.filter(t => {
-    //         const key = `${t.date}|${t.amount}|${(t.merchantName || t.name || '').toLowerCase().trim()}`;
-    //         if (seen.has(key)) return false;
-    //         seen.add(key); return true;
-    //     });
-    // }, [transactions, csvTransactions]);
-    //
-    // const sortedTransactions = useMemo(() => {
-    //     const s = [...combinedTransactions];
-    //     if (sortConfig.key) {
-    //         s.sort((a, b) => {
-    //             if (sortConfig.key === 'date') {
-    //                 const d = new Date(sortConfig.direction === 'asc' ? a.posted || a.date : b.posted || b.date).getTime()
-    //                     - new Date(sortConfig.direction === 'asc' ? b.posted || b.date : a.posted || a.date).getTime();
-    //                 return d;
-    //             }
-    //             if (sortConfig.key === 'amount') return sortConfig.direction === 'asc' ? a.amount - b.amount : b.amount - a.amount;
-    //             if (sortConfig.key === 'name') {
-    //                 const an = a.name || '', bn = b.name || '';
-    //                 return sortConfig.direction === 'asc' ? an.localeCompare(bn) : bn.localeCompare(an);
-    //             }
-    //             if (sortConfig.key === 'category') {
-    //                 const ac = a.categories[0] || '', bc = b.categories[0] || '';
-    //                 return sortConfig.direction === 'asc' ? ac.localeCompare(bc) : bc.localeCompare(ac);
-    //             }
-    //             return 0;
-    //         });
-    //     }
-    //     return s;
-    // }, [combinedTransactions, sortConfi
-
-    // const filteredTransactions = useMemo(() => {
-    //     const { startDate, endDate } = getDateRangeFilter(activeFilters.dateRange, selectedMonth);
-    //     const pad = (n: number) => String(n).padStart(2, '0');
-    //     const toDateStr = (val: any): string | null => {
-    //         if (!val) return null;
-    //         if (typeof val === 'string') return val.split('T')[0];
-    //         if (Array.isArray(val)) { const [y, m, d] = val; return `${y}-${pad(m)}-${pad(d)}`; }
-    //         return null;
-    //     };
-    //     const startStr = `${startDate.getFullYear()}-${pad(startDate.getMonth()+1)}-${pad(startDate.getDate())}`;
-    //     const endStr   = `${endDate.getFullYear()}-${pad(endDate.getMonth()+1)}-${pad(endDate.getDate())}`;
-    //
-    //     let filtered = sortedTransactions.filter(t => {
-    //         const ds = toDateStr(t.posted) || toDateStr(t.date);
-    //         return ds && ds >= startStr && ds <= endStr;
-    //     });
-    //     if (searchTerm.trim()) {
-    //         const s = searchTerm.toLowerCase().trim();
-    //         filtered = filtered.filter(t =>
-    //             (t.name?.toLowerCase() ?? '').includes(s) ||
-    //             (t.categories[0]?.toLowerCase() ?? '').includes(s) ||
-    //             (t.merchantName?.toLowerCase() ?? '').includes(s) ||
-    //             (t.amount?.toString() ?? '').includes(s) ||
-    //             formatDate(t.posted, t.date).toLowerCase().includes(s)
-    //         );
-    //     }
-    //     if (activeFilters.categories.length > 0)
-    //         filtered = filtered.filter(t => t.categories.some(c => activeFilters.categories.includes(c)));
-    //     if (activeFilters.type) {
-    //         filtered = filtered.filter(t => activeFilters.type === 'income' ? t.amount < 0 : t.amount > 0);
-    //     }
-    //     return filtered;
-    // }, [sortedTransactions, searchTerm, activeFilters, selectedMonth]);
-
     const combinedTransactions = useMemo(() => {
         const converted: Transaction[] = csvTransactions.filter(c => c.transactionDate).map((c, i) => ({
             transactionId: c.id ? `csv-${c.id}-${i}` : `csv-generated-${i}-${c.transactionDate}-${c.transactionAmount}`,
@@ -434,13 +358,15 @@ const TransactionsPage: React.FC = () => {
             merchantName: c.merchantName, category: c.category || 'Uncategorized',
             pending: false, logoUrl: null, isoCurrencyCode: '', accountId: '', balance: c.balance,
         }));
-        const all = [...transactions, ...converted];
-        const seen = new Set<string>();
-        return all.filter(t => {
-            const key = `${t.date}|${t.amount}|${(t.merchantName || t.name || '').toLowerCase().trim()}`;
-            if (seen.has(key)) return false;
-            seen.add(key); return true;
+
+        const plaidKeys = new Set(
+            transactions.map(t => `${t.date}|${t.amount}|${(t.merchantName || t.name || '').toLowerCase().trim()}`)
+        );
+        const dedupedConverted = converted.filter(c => {
+            const key = `${c.date}|${c.amount}|${(c.merchantName || c.name || '').toLowerCase().trim()}`;
+            return !plaidKeys.has(key);
         });
+        return [...transactions, ...dedupedConverted];
     }, [transactions, csvTransactions]);
 
     const sortedTransactions = useMemo(() => {

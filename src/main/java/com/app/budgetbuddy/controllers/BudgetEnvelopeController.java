@@ -55,7 +55,6 @@ public class BudgetEnvelopeController
         return null;
     }
 
-
     @PostMapping("/create")
     public ResponseEntity<EnvelopeBuildDetails> createEnvelope(@RequestBody EnvelopeCreateRequest envelopeCreateRequest,
                                                                @RequestParam Long userId,

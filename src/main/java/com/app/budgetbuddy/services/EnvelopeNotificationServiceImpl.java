@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -139,6 +140,26 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
 
     @Override
     @Transactional
+    public List<EnvelopeNotification> getNewAndPastDueNotifications(Long envelopeId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            List<EnvelopeNotificationsEntity> envelopeNotificationsEntities = envelopeNotificationRepository.findNewAndPastDueNotificationsForPeriod(envelopeId, startDate, endDate);
+            if(envelopeNotificationsEntities.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            return envelopeNotificationsEntities.stream()
+                    .map(envelopeNotificationToModelConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the envelope notifications", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<EnvelopeNotificationStatus> sendEnvelopeAcceptedNotification(Long notificationId)
     {
         try
@@ -150,7 +171,6 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
             {
                 return Optional.empty();
             }
-//            Boolean envelopeValidated = envelopeContributionValidator.runValidationCheck(envelopeNotification, );
             EnvelopeNotificationStatus notificationStatus = EnvelopeNotificationStatus.builder()
                     .isRead(true)
                     .isAccepted(true)

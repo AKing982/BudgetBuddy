@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LinkedEnvelopeBuilderTest {
@@ -27,8 +28,14 @@ class LinkedEnvelopeBuilderTest {
     @Mock
     private LinkedEnvelopesService linkedEnvelopesService;
 
+    @Mock
+    private EnvelopeBuilderService envelopeBuilderService;
+
+    @Mock
+    private LinkedEnvelopeBuilderService linkedEnvelopeBuilderService;
+
     @InjectMocks
-    private LinkedEnvelopeBuilder linkedEnvelopeBuilderService;
+    private LinkedEnvelopeBuilder linkedEnvelopeBuilder;
 
     @BeforeEach
     void setUp() {
@@ -38,7 +45,7 @@ class LinkedEnvelopeBuilderTest {
     void testBuild_whenCriteriaIsNull_thenThrowEnvelopeException(){
         BudgetCriteria budgetCriteria = mock(BudgetCriteria.class);
         assertThrows(NullPointerException.class, () -> {
-            linkedEnvelopeBuilderService.build(null, budgetCriteria, List.of());
+            linkedEnvelopeBuilder.build(null, budgetCriteria, List.of());
         });
     }
 
@@ -47,7 +54,7 @@ class LinkedEnvelopeBuilderTest {
     {
         List<NewEnvelopeCriteria> criteria = List.of();
         BudgetCriteria budgetCriteria = mock(BudgetCriteria.class);
-        Optional<EnvelopeLink> actual = linkedEnvelopeBuilderService.build(criteria, budgetCriteria, List.of());
+        Optional<EnvelopeLink> actual = linkedEnvelopeBuilder.build(criteria, budgetCriteria, List.of());
         assertTrue(actual.isEmpty());
     }
 
@@ -55,7 +62,7 @@ class LinkedEnvelopeBuilderTest {
     void testBuild_whenBudgetCriteriaIsNull_thenThrowAndCatchEnvelopeException(){
         List<NewEnvelopeCriteria> criteria = List.of();
         assertThrows(NullPointerException.class, () -> {
-            linkedEnvelopeBuilderService.build(criteria, null, List.of());
+            linkedEnvelopeBuilder.build(criteria, null, List.of());
         });
     }
 
@@ -89,9 +96,19 @@ class LinkedEnvelopeBuilderTest {
         budgetCriteria.setBudgeted(BigDecimal.valueOf(3500));
         budgetCriteria.setUserId(1L);
         budgetCriteria.setTotalEnvelopeAmount(BigDecimal.valueOf(3190));
+        budgetCriteria.setActualSpent(BigDecimal.ZERO); // <-- add this
         List<SubBudget> subBudgets = createTestSubBudgets(envelopes);
 
-        Optional<EnvelopeLink> actual = linkedEnvelopeBuilderService.build(criteria, budgetCriteria, subBudgets);
+        when(envelopeBuilderService.createAndSaveEnvelopes(criteria, budgetCriteria, subBudgets, true))
+                .thenReturn(envelopes);
+
+        when(envelopeBuilderService.createEnvelopeContributions(envelopes, budgetCriteria))
+                .thenReturn(contributions);
+
+        when(linkedEnvelopeBuilderService.linkEnvelopes(contributions, envelopes, BigDecimal.valueOf(3150), BigDecimal.valueOf(0)))
+            .thenReturn(expected);
+
+        Optional<EnvelopeLink> actual = linkedEnvelopeBuilder.build(criteria, budgetCriteria, subBudgets);
         assertNotNull(actual);
         assertTrue(actual.isPresent());
         EnvelopeLink envelopeLink = actual.get();
@@ -219,6 +236,8 @@ class LinkedEnvelopeBuilderTest {
         fundCriteria.setStartDate(LocalDate.of(2026, 5, 28));
         fundCriteria.setEnvelopeType(EnvelopeType.FUND);
         fundCriteria.setAutoContribution(true);
+        fundCriteria.setTargetDate(LocalDate.of(2026, 11, 15));
+        fundCriteria.setInitialContribution(1400);
 
         NewEnvelopeCriteria payoffCriteria = new NewEnvelopeCriteria();
         payoffCriteria.setGoalName("Quest 3 Payoff");
@@ -228,6 +247,7 @@ class LinkedEnvelopeBuilderTest {
         payoffCriteria.setStartDate(LocalDate.of(2026, 5, 28));
         payoffCriteria.setEnvelopeType(EnvelopeType.PAYOFF);
         payoffCriteria.setAutoContribution(true);
+        payoffCriteria.setTargetDate(LocalDate.of(2026, 12, 15));
 
         criteria.add(fundCriteria);
         criteria.add(payoffCriteria);

@@ -37,6 +37,12 @@ public class EnvelopeNotificationsEntity
     @Column(name="is_accepted")
     private boolean isAccepted;
 
+    @Column(name="is_checked")
+    private boolean isChecked;
+
+    @Column(name="is_past_due")
+    private boolean isPastDue;
+
     @Column(name="amount")
     private double amount;
 
