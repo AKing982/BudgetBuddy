@@ -14,10 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -113,9 +110,22 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
         }
         try
         {
-            envelopeNotifications.forEach(envelopeNotification ->
-                    envelopeNotificationRepository.save(envelopeNotificationToEntityConverter.convert(envelopeNotification)));
-            return envelopeNotifications;
+            List<EnvelopeNotification> saved = new ArrayList<>();
+            for(EnvelopeNotification envelopeNotification : envelopeNotifications)
+            {
+                boolean alreadyExists = envelopeNotificationRepository.existsByEnvelopeIdAndContributionDate(
+                        envelopeNotification.getEnvelopeId(),
+                        envelopeNotification.getDateToContribute()
+                );
+                if(alreadyExists){
+                    log.info("Envelope notification already exists for envelope id: {} and date: {}", envelopeNotification.getEnvelopeId(), envelopeNotification.getDateToContribute());
+                    log.info("Skipping creation of envelope notification for envelope id: {} and date: {}", envelopeNotification.getEnvelopeId(), envelopeNotification.getDateToContribute());
+                    continue;
+                }
+                envelopeNotificationRepository.save(envelopeNotificationToEntityConverter.convert(envelopeNotification));
+                saved.add(envelopeNotification);
+            }
+            return saved;
         }catch(DataAccessException e){
             log.error("There was an error creating and saving the envelope notifications: ", e);
             return Collections.emptyList();

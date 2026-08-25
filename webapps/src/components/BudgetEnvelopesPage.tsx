@@ -29,11 +29,14 @@ import { VelocityChip, PanelHeader, ContributionRow } from './Shared';
 import EnvelopeLeftPanel, { LeftPanelView } from './EnvelopeLeftPanel';
 import { ManualContributionDialog, AffordabilityDialog } from './Shared';
 import EnvelopeDetailPanel from './EnvelopeDetailPanel';
+import EnvelopeNotificationService from '../services/EnvelopeNotificationService';
+import { EnvelopeNotification } from '../config/Types';
 import PaymentPlanAdjuster from './PaymentPlanAdjuster';
 import { NotificationPrefs, NotificationEventSettings, DEFAULT_NOTIFICATION_EVENT_SETTINGS } from './NotificationToggle';
 import { NotificationsDialog } from './NotificationsDialog';
 import {GoalUpdateValues} from "./GoalUpdateDialog";
 import LinkedGoalUpdateDialog, { LinkedGoalUpdateValues } from './LinkedGoalUpdateDialog';
+import envelopeNotificationService from "../services/EnvelopeNotificationService";
 
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Filler, ChartTooltip, Legend);
@@ -68,7 +71,9 @@ const BudgetEnvelopesPage: React.FC = () => {
     const [selectedId,    setSelectedId]    = useState<number | null>(null);
     const [linkedGoalDialogOpen,  setLinkedGoalDialogOpen]  = useState(false);
     const [linkedGoalDialogGroup, setLinkedGoalDialogGroup] = useState<LinkedEnvelopeGroup | null>(null);
-
+// ── Notification data (replaces the old hardcoded array) ───────────────────
+    const [envelopeNotifications, setEnvelopeNotifications] = useState<EnvelopeNotification[]>([]);
+    const [notifLoading, setNotifLoading] = useState(false);
     /** Whether the left envelopes panel is in edit mode */
     const [envelopePanelEditMode, setEnvelopePanelEditMode] = useState(false);
 
@@ -115,6 +120,9 @@ const BudgetEnvelopesPage: React.FC = () => {
     const monthStartStr = monthStart.toISOString().split('T')[0];
     const monthEndStr   = monthEnd.toISOString().split('T')[0];
 
+
+    // ── Check for new/past-due notifications on page entry, create if needed ──────
+
     // ── Fetch data ─────────────────────────────────────────────────────────────
     useEffect(() => {
         document.title = 'Envelopes';
@@ -156,6 +164,38 @@ const BudgetEnvelopesPage: React.FC = () => {
         setPlanBudget(defaultBudget);
         setPlanApplied(false);
     }, [activeEnvelopes, defaultBudget]);
+
+    useEffect(() => {
+        if (activeEnvelopes.length === 0) return;
+        let cancelled = false;
+        const checkAndCreateNotifications = async () => {
+            const results = await Promise.allSettled(
+                activeEnvelopes.map(async (envelope) => {
+                    // const hasNewOrPastDue = await EnvelopeNotificationService.getInstance()
+                    //     .checkForNewAndPastDueNotifications(envelope.id, monthStart, monthEnd);
+                    // The check endpoint tells us whether there are new/past-due items for this
+                    // period that don't have notifications yet — only create when it's true, so
+                    // we don't duplicate notifications that already exist for the current month.
+                    await EnvelopeNotificationService.getInstance()
+                            .createNewEnvelopeNotifications(envelope.id, monthStart, monthEnd);
+                })
+            );
+            if (cancelled) return;
+            results.forEach((result, i) => {
+                if (result.status === 'rejected') {
+                    console.error(
+                        `Failed to check/create notifications for envelope ${activeEnvelopes[i].id}:`,
+                        result.reason
+                    );
+                }
+            });
+        };
+
+        checkAndCreateNotifications();
+
+        return () => { cancelled = true; };
+    }, [activeEnvelopes, monthStart, monthEnd]);
+
 
     useEffect(() => { setLeftPanelView('envelopes'); }, [selectedId]);
 
@@ -253,18 +293,71 @@ const BudgetEnvelopesPage: React.FC = () => {
         });
     }, []);
 
+    /** Maps an envelope's backend status onto the dialog's badge vocabulary. */
+    const mapNotificationBadge = (status?: string): { badge: string; badgeType: 'due' | 'behind' | 'read' | 'goal' } => {
+        switch (status) {
+            case 'LATE':      return { badge: 'Past due',  badgeType: 'behind' };
+            case 'PENDING':   return { badge: 'Pending',   badgeType: 'due' };
+            case 'PAID':
+            case 'SUBMITTED':
+            case 'COMPLETED': return { badge: 'Completed', badgeType: 'goal' };
+            default:          return { badge: 'Update',    badgeType: 'read' };
+        }
+    };
+
+    const toDialogNotifications = (items: EnvelopeNotification[]) =>
+        items.map(n => {
+            const { badge, badgeType } = mapNotificationBadge((n as any).envelopeStatus);
+            return {
+                id:           String((n as any).id ?? `${(n as any).envelopeId}-${(n as any).dateToContribute}`),
+                envelopeId:   (n as any).envelopeId,
+                envelopeName: (n as any).envelopeName ?? 'Envelope',
+                // Every notification the backend produces today comes from the contribution-schedule
+                // builder — there's no goal/account/group notification source yet. Hardcoding this
+                // keeps the type accurate rather than guessing a category off badgeType, and gives
+                // a single place to update once the backend actually distinguishes notification types.
+                category:     'contribution' as const,
+                date:         (n as any).dateToContribute ? new Date((n as any).dateToContribute).toISOString() : new Date().toISOString(),
+                message:      (n as any).message ?? '',
+                badge,
+                badgeType,
+                isRead:       (n as any).isRead ?? false,
+            };
+        });
+
+    /** Loads notifications for whichever envelope(s) the dialog is about to show — a single
+     *  envelope, or every member of a linked group when opened from the group-level icon. */
+    const loadNotificationsForDialog = useCallback(async (key: number, historyEnvelopes: BudgetEnvelope[]) => {
+        setNotifLoading(true);
+        try {
+            const envelopeIds = historyEnvelopes.length > 0
+                ? historyEnvelopes.map(e => e.id)
+                : (key > 0 ? [key] : []);
+
+            const results = await Promise.all(
+                envelopeIds.map(id => EnvelopeNotificationService.getInstance().getUserEnvelopeNotifications(id))
+            );
+
+            const merged = results.flat().sort(
+                (a, b) => new Date((b as any).dateToContribute).getTime() - new Date((a as any).dateToContribute).getTime()
+            );
+            console.log('Merged notifications:', merged);
+            setEnvelopeNotifications(merged);
+        } catch (err) {
+            console.error('Failed to load envelope notifications:', err);
+            onSnack('Failed to load notifications', 'error');
+            setEnvelopeNotifications([]);
+        } finally {
+            setNotifLoading(false);
+        }
+    }, []);
+
     /**
      * Opens the combined settings/history dialog. `key` is an envelope id for
      * a single envelope, or the group's negative key when opened from the
      * group-level icon; `historyEnvelopes` is just that one envelope, or
      * every member of the group, so the dialog can build its activity log.
      */
-    const openNotifDialog = useCallback((key: number, title: string, historyEnvelopes: BudgetEnvelope[]) => {
-        setNotifDialogKey(key);
-        setNotifDialogTitle(title);
-        setNotifDialogEnvelopes(historyEnvelopes);
-        setNotifDialogOpen(true);
-    }, []);
 
     /** Toggling a channel from inside the dialog should cascade for a group, same as clicking the group icon does. */
     const handleDialogTogglePref = useCallback((channel: 'system' | 'email') => {
@@ -275,6 +368,14 @@ const BudgetEnvelopesPage: React.FC = () => {
             toggleEnvelopeNotif(notifDialogKey, channel);
         }
     }, [notifDialogKey, notifDialogEnvelopes, toggleGroupNotif, toggleEnvelopeNotif]);
+
+    const openNotifDialog = useCallback((key: number, title: string, historyEnvelopes: BudgetEnvelope[]) => {
+        setNotifDialogKey(key);
+        setNotifDialogTitle(title);
+        setNotifDialogEnvelopes(historyEnvelopes);
+        setNotifDialogOpen(true);
+        loadNotificationsForDialog(key, historyEnvelopes);
+    }, [loadNotificationsForDialog]);
 
     // ── Contribution handlers ──────────────────────────────────────────────────
     const openContribDialog = (id: number) => { setContribEnvId(id); setContribOpen(true); };
@@ -745,53 +846,43 @@ const BudgetEnvelopesPage: React.FC = () => {
                 open={notifDialogOpen}
                 onClose={() => setNotifDialogOpen(false)}
                 subjectName={notifDialogTitle}
-                notifications={[
-                    {
-                        id:        '1',
-                        date:      new Date().toISOString(),
-                        message:   'Contribution due — $200 scheduled for today',
-                        badge:     'Due today',
-                        badgeType: 'due',
-                        isRead:    false,
-                    },
-                    {
-                        id:        '2',
-                        date:      new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-                        message:   'Saving pace is behind — need $340/mo to hit your deadline',
-                        badge:     'Falling behind',
-                        badgeType: 'behind',
-                        isRead:    false,
-                    },
-                    {
-                        id:        '3',
-                        date:      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                        message:   '$200 contribution added',
-                        badge:     'Read',
-                        badgeType: 'read',
-                        isRead:    true,
-                    },
-                    {
-                        id:        '4',
-                        date:      new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-                        message:   'Goal milestone reached — 50% of target saved',
-                        badge:     'Goal',
-                        badgeType: 'goal',
-                        isRead:    true,
-                    },
-                ]}
-                onMarkAllRead={() => {
-                    setSnackMsg('All notifications marked as read');
-                    setSnackSev('success');
-                    setSnackOpen(true);
-                    setNotifDialogOpen(false);
+                notifications={toDialogNotifications(envelopeNotifications)}
+                onMarkAllRead={async () => {
+                    try {
+                        const unread = envelopeNotifications.filter(n => !(n as any).isRead);
+                        await Promise.all(
+                            unread.map(n => EnvelopeNotificationService.getInstance().updateEnvelopeNotificationReadStatus((n as any).id, true))
+                        );
+                        setEnvelopeNotifications(prev => prev.map(n => ({ ...n, isRead: true } as EnvelopeNotification)));
+                        setSnackMsg('All notifications marked as read');
+                        setSnackSev('success');
+                        setSnackOpen(true);
+                        setNotifDialogOpen(false);
+                    } catch (err) {
+                        console.error('Failed to mark notifications as read:', err);
+                        setSnackMsg('Failed to mark notifications as read. Please try again.');
+                        setSnackSev('error');
+                        setSnackOpen(true);
+                    }
                 }}
-                onAccept={(id) => {
-                    // TODO: wire to API — mark notification as accepted/actioned
-                    setSnackMsg('Notification accepted');
-                    setSnackSev('success');
-                    setSnackOpen(true);
+                onAccept={async (id) => {
+                    try {
+                        await EnvelopeNotificationService.getInstance().sendEnvelopeAcceptNotification(Number(id));
+                        setEnvelopeNotifications(prev =>
+                            prev.map(n => String((n as any).id) === String(id) ? ({ ...n, isRead: true } as EnvelopeNotification) : n)
+                        );
+                        setSnackMsg('Notification accepted');
+                        setSnackSev('success');
+                        setSnackOpen(true);
+                    } catch (err) {
+                        console.error('Failed to accept notification:', err);
+                        setSnackMsg('Failed to accept notification. Please try again.');
+                        setSnackSev('error');
+                        setSnackOpen(true);
+                    }
                 }}
             />
+
             <CreateEnvelopeDialog
                 open={createOpen}
                 onClose={() => setCreateOpen(false)}

@@ -6,6 +6,7 @@ import com.app.budgetbuddy.repositories.RecurringTransactionsRepository;
 import com.app.budgetbuddy.repositories.TransactionRepository;
 import com.app.budgetbuddy.services.AccountBalanceHistoryService;
 import com.app.budgetbuddy.services.EnvelopeNotificationService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Service
+@Slf4j
 public class EnvelopeNotificationBuilder
 {
     private final EnvelopeNotificationService envelopeNotificationService;
@@ -42,8 +44,12 @@ public class EnvelopeNotificationBuilder
         List<EnvelopeNotification> envelopeNotifications = new ArrayList<>();
         List<Contributions> contributions = envelope.getContributions()
                 .stream()
-                .filter(e -> !e.getScheduledDate().isAfter(endDate) && (e.getStatus().equalsIgnoreCase("PAID") || e.getStatus().equalsIgnoreCase("LATE")))
+//                .filter(e -> !e.getScheduledDate().isAfter(endDate) && (e.getStatus().equalsIgnoreCase("PAID") || e.getStatus().equalsIgnoreCase("LATE")))
                 .toList();
+        // DO notifications already exist for this period?
+        // If they do, then return them,
+        // Otherwise create them and return them.
+        log.info("Contributions: {}", contributions);
         contributions.forEach(contribution -> {
             boolean isPastDue = contribution.getScheduledDate().isBefore(LocalDate.now());
             String message = isPastDue
@@ -56,13 +62,15 @@ public class EnvelopeNotificationBuilder
                     .isRead(false)
                     .envelopeType(envelope.getEnvelopeType())
                     .message(message)
-                    .envelopeStatus(EnvelopeStatus.PENDING)
+                    .envelopeStatus(envelope.getEnvelopeStatus())
                     .dateToContribute(contribution.getScheduledDate())
                     .title("Contribution Notification for " + startDate + " to " + endDate)
                     .amount(BigDecimal.valueOf(contribution.getAmount()))
                     .build();
             envelopeNotifications.add(envelopeNotification);
         });
+        log.info("Envelope Notifications: {}", envelopeNotifications);
+        envelopeNotificationService.createAndSave(envelopeNotifications);
         return envelopeNotifications;
     }
 

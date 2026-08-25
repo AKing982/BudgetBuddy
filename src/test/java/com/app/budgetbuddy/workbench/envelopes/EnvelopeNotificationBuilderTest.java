@@ -503,7 +503,7 @@ class EnvelopeNotificationBuilderTest {
 
         Contributions payoffContribution2 = Contributions.builder()
                 .id(1L)
-                .amount(300.0)
+                .amount(150.0)
                 .contributionDate(LocalDate.now())
                 .merchant("Affirm")
                 .scheduledDate(LocalDate.of(2025, 7, 5))
@@ -513,7 +513,7 @@ class EnvelopeNotificationBuilderTest {
 
         Contributions payoffContribution3 = Contributions.builder()
                 .id(1L)
-                .amount(300.0)
+                .amount(150.0)
                 .contributionDate(LocalDate.now())
                 .merchant("Affirm")
                 .scheduledDate(LocalDate.of(2025, 6, 5))
@@ -533,6 +533,7 @@ class EnvelopeNotificationBuilderTest {
                 .currentSaved(new BigDecimal("150.00"))
                 .targetDate(LocalDate.now().plusMonths(6))
                 .startDate(LocalDate.now())
+                .envelopeStatus(EnvelopeStatus.ACTIVE)
                 .contributions(List.of(payoffContribution, payoffContribution2, payoffContribution3))
                 .status("ACTIVE")
                 .isActive(true)
@@ -545,16 +546,16 @@ class EnvelopeNotificationBuilderTest {
         pastDueNotification.setEnvelopeType(EnvelopeType.PAYOFF);
         pastDueNotification.setAmount(new BigDecimal("150.0"));
         pastDueNotification.setDateToContribute(LocalDate.of(2025, 7, 5));
-        pastDueNotification.setEnvelopeStatus(EnvelopeStatus.LATE);
+        pastDueNotification.setEnvelopeStatus(EnvelopeStatus.ACTIVE);
         pastDueNotification.setRead(false);
 
         EnvelopeNotification pastDueNotification2 = new EnvelopeNotification();
         pastDueNotification2.setEnvelopeId(2L);
         pastDueNotification2.setEnvelopeName("Pay Off TV");
         pastDueNotification2.setEnvelopeType(EnvelopeType.PAYOFF);
-        pastDueNotification2.setAmount(new BigDecimal("300.0"));
+        pastDueNotification2.setAmount(new BigDecimal("150.0"));
         pastDueNotification2.setDateToContribute(LocalDate.of(2025, 6, 5));
-        pastDueNotification2.setEnvelopeStatus(EnvelopeStatus.LATE);
+        pastDueNotification2.setEnvelopeStatus(EnvelopeStatus.ACTIVE);
         pastDueNotification2.setRead(false);
 
         EnvelopeNotification newNotification = new EnvelopeNotification();
@@ -567,8 +568,8 @@ class EnvelopeNotificationBuilderTest {
         newNotification.setRead(false);
 
         expected.add(newNotification);
-        expected.add(pastDueNotification2);
         expected.add(pastDueNotification);
+        expected.add(pastDueNotification2);
 
         List<EnvelopeNotification> actual = envelopeNotificationBuilder.createEnvelopeNotificationsForPeriod(payoffEnvelope, startDate, endDate);
         assertNotNull(actual);

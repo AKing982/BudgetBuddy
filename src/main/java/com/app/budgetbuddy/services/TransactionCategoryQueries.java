@@ -129,11 +129,14 @@ public class TransactionCategoryQueries
                 """;
         try
         {
+            log.info("Executing query: {}", query);
+            log.info("Start date: {}, end date: {}, user id: {}", startDate, endDate, userId);
             List<Object[]> queryResults = em.createQuery(query, Object[].class)
                     .setParameter("startDate", startDate)
                     .setParameter("endDate", endDate)
                     .setParameter("userId", userId)
                     .getResultList();
+            log.info("Results size: {}", queryResults.size());
             return getTransactionMapping(queryResults);
 
         }catch(DataAccessException ex){

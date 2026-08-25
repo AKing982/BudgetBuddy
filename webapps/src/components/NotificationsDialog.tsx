@@ -1,20 +1,24 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-    alpha, Box, Button, Chip, Dialog, DialogContent,
+    alpha, Box, Button, Chip, Collapse, Dialog, DialogContent,
     IconButton, Stack, Typography,
 } from '@mui/material';
-import { Bell, X as XIcon } from 'lucide-react';
+import { Bell, ChevronDown, ChevronUp, X as XIcon } from 'lucide-react';
 import { MAROON } from '../config/Constants';
 import EnvelopeNotificationService from "../services/EnvelopeNotificationService";
-import envelopeNotificationService from "../services/EnvelopeNotificationService";
+
+export type NotificationCategory = 'contribution' | 'goal' | 'account' | 'group';
 
 export interface EnvelopeNotificationItem {
-    id:        string;
-    date:      string;
-    message:   string;
-    badge:     string;
-    badgeType: 'due' | 'behind' | 'reminder' | 'goal' | 'read';
-    isRead:    boolean;
+    id:           string;
+    envelopeId:   number;
+    envelopeName: string;
+    category:     NotificationCategory;
+    date:         string;
+    message:      string;
+    badge:        string;
+    badgeType:    'due' | 'behind' | 'reminder' | 'goal' | 'read';
+    isRead:       boolean;
 }
 
 interface NotificationsDialogProps {
@@ -40,6 +44,19 @@ const DOT_COLORS: Record<string, string> = {
     reminder: '#d97706',
     goal:     '#16a34a',
     read:     '#c4c4c4',
+};
+
+const CATEGORY_META: Record<NotificationCategory, { label: string; bg: string; color: string }> = {
+    contribution: { label: 'Contributions', bg: alpha('#dc2626', 0.10), color: '#991b1b' },
+    goal:         { label: 'Goals',         bg: alpha('#7c3aed', 0.10), color: '#5b21b6' },
+    account:      { label: 'Account',       bg: alpha('#d97706', 0.12), color: '#92400e' },
+    group:        { label: 'Group',         bg: alpha('#0284c7', 0.10), color: '#075985' },
+};
+
+/** Last instant of the current month — anything scheduled after this is "future" and gets collapsed. */
+const endOfCurrentMonth = (): Date => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 };
 
 const NotifCard: React.FC<{
@@ -73,6 +90,9 @@ const NotifCard: React.FC<{
                     fontWeight: selected ? 700 : 600,
                 }}>
                     {n.message}
+                </Typography>
+                <Typography sx={{ fontSize: '0.65rem', color: '#a35c5c', fontWeight: 600, mt: 0.15 }}>
+                    {n.envelopeName}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.4 }}>
                     <Typography sx={{ fontSize: '0.65rem', color: '#aaa', fontVariantNumeric: 'tabular-nums' }}>
@@ -111,11 +131,89 @@ const NotifCard: React.FC<{
 export const NotificationsDialog: React.FC<NotificationsDialogProps> = ({
                                                                             open, onClose, subjectName, notifications, onMarkAllRead, onAccept,
                                                                         }) => {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-
-    const active  = notifications.filter(n => !n.isRead);
-    const history = notifications.filter(n => n.isRead);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [showFuture, setShowFuture] = useState(false);
+    const [envelopeFilter, setEnvelopeFilter] = useState<number | 'all'>('all');
+    const [categoryFilter, setCategoryFilter] = useState<NotificationCategory | 'all'>('all');
     const notificationService = EnvelopeNotificationService.getInstance();
+
+    // ── Dedupe by id first — upstream fetch/creation is producing duplicate notification
+    // records for the same envelope+date, so this strips repeats before anything else runs. ──
+    const deduped = useMemo(() => {
+        const seen = new Set<string>();
+        return notifications.filter(n => {
+            if (seen.has(n.id)) return false;
+            seen.add(n.id);
+            return true;
+        });
+    }, [notifications]);
+
+    // ── Distinct envelopes present, each with a total notification count for its chip. ─────
+    const envelopeChips = useMemo(() => {
+        const counts = new Map<number, { name: string; count: number }>();
+        deduped.forEach(n => {
+            const entry = counts.get(n.envelopeId);
+            if (entry) {
+                entry.count += 1;
+            } else {
+                counts.set(n.envelopeId, { name: n.envelopeName, count: 1 });
+            }
+        });
+        return Array.from(counts.entries()).map(([envelopeId, { name, count }]) => ({ envelopeId, name, count }));
+    }, [deduped]);
+
+    // Reset the selected card and the second filter row whenever the envelope filter changes,
+    // since the category counts (and the Active list it was indexing into) are about to change.
+    const handleSelectEnvelopeFilter = (value: number | 'all') => {
+        setEnvelopeFilter(value);
+        setCategoryFilter('all');
+        setSelectedIndex(null);
+        setShowFuture(false);
+    };
+
+    const byEnvelope = useMemo(
+        () => envelopeFilter === 'all' ? deduped : deduped.filter(n => n.envelopeId === envelopeFilter),
+        [deduped, envelopeFilter]
+    );
+
+    // ── Category counts computed from the envelope-filtered set, so switching envelopes
+    // keeps this row's counts (and which categories even appear) in sync. ───────────────
+    const categoryChips = useMemo(() => {
+        const counts = new Map<NotificationCategory, number>();
+        byEnvelope.forEach(n => {
+            counts.set(n.category, (counts.get(n.category) ?? 0) + 1);
+        });
+        return Array.from(counts.entries()).map(([category, count]) => ({ category, count }));
+    }, [byEnvelope]);
+
+    const handleSelectCategoryFilter = (value: NotificationCategory | 'all') => {
+        setCategoryFilter(value);
+        setSelectedIndex(null);
+        setShowFuture(false);
+    };
+
+    const filtered = useMemo(
+        () => categoryFilter === 'all' ? byEnvelope : byEnvelope.filter(n => n.category === categoryFilter),
+        [byEnvelope, categoryFilter]
+    );
+
+    // ── Split by date: current-month-or-earlier is shown by default, anything scheduled
+    // strictly after this month is collapsed since it isn't actionable yet. ──────────────
+    const { visible, future } = useMemo(() => {
+        const cutoff = endOfCurrentMonth();
+        const visible: EnvelopeNotificationItem[] = [];
+        const future: EnvelopeNotificationItem[] = [];
+        filtered.forEach(n => {
+            (new Date(n.date) <= cutoff ? visible : future).push(n);
+        });
+        return { visible, future };
+    }, [filtered]);
+
+    const active = useMemo(
+        () => visible.filter(n => !n.isRead).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+        [visible]
+    );
+    const history = visible.filter(n => n.isRead);
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
@@ -156,6 +254,84 @@ export const NotificationsDialog: React.FC<NotificationsDialogProps> = ({
 
             <DialogContent sx={{ pt: 2, pb: 2.5, px: 2.5, bgcolor: '#fff' }}>
 
+                {/* Envelope filter chips — only worth showing when more than one envelope is present */}
+                {envelopeChips.length > 1 && (
+                    <Box sx={{
+                        display: 'flex', gap: 0.6, mb: 1, overflowX: 'auto', pb: 0.25,
+                        '&::-webkit-scrollbar': { height: '3px' },
+                        '&::-webkit-scrollbar-thumb': { bgcolor: alpha(MAROON, 0.2), borderRadius: '4px' },
+                    }}>
+                        <Chip
+                            size="small"
+                            label={`All · ${deduped.length}`}
+                            onClick={() => handleSelectEnvelopeFilter('all')}
+                            sx={{
+                                flexShrink: 0, height: 24, fontSize: '0.68rem', fontWeight: 700, borderRadius: '14px',
+                                px: 0.5,
+                                ...(envelopeFilter === 'all'
+                                    ? { bgcolor: MAROON, color: '#fff', '&:hover': { bgcolor: MAROON } }
+                                    : { bgcolor: '#f5e5e5', color: '#7a4a4a', '&:hover': { bgcolor: '#efd9d9' } }),
+                            }}
+                        />
+                        {envelopeChips.map(({ envelopeId, name, count }) => (
+                            <Chip
+                                key={envelopeId}
+                                size="small"
+                                label={`${name} · ${count}`}
+                                onClick={() => handleSelectEnvelopeFilter(envelopeId)}
+                                sx={{
+                                    flexShrink: 0, height: 24, fontSize: '0.68rem', fontWeight: 700, borderRadius: '14px',
+                                    px: 0.5,
+                                    ...(envelopeFilter === envelopeId
+                                        ? { bgcolor: MAROON, color: '#fff', '&:hover': { bgcolor: MAROON } }
+                                        : { bgcolor: '#f5e5e5', color: '#7a4a4a', '&:hover': { bgcolor: '#efd9d9' } }),
+                                }}
+                            />
+                        ))}
+                    </Box>
+                )}
+
+                {/* Category/type filter chips — only worth showing when more than one type is present */}
+                {categoryChips.length > 1 && (
+                    <Box sx={{
+                        display: 'flex', gap: 0.5, mb: 2, overflowX: 'auto', pb: 0.25,
+                        '&::-webkit-scrollbar': { height: '3px' },
+                        '&::-webkit-scrollbar-thumb': { bgcolor: alpha(MAROON, 0.2), borderRadius: '4px' },
+                    }}>
+                        <Chip
+                            size="small"
+                            label="All types"
+                            onClick={() => handleSelectCategoryFilter('all')}
+                            sx={{
+                                flexShrink: 0, height: 20, fontSize: '0.6rem', fontWeight: 700, borderRadius: '12px',
+                                px: 0.4,
+                                ...(categoryFilter === 'all'
+                                    ? { bgcolor: MAROON, color: '#fff', '&:hover': { bgcolor: MAROON } }
+                                    : { bgcolor: '#f0ede6', color: '#888', '&:hover': { bgcolor: '#e5e0d6' } }),
+                            }}
+                        />
+                        {categoryChips.map(({ category, count }) => {
+                            const meta = CATEGORY_META[category];
+                            const isSelected = categoryFilter === category;
+                            return (
+                                <Chip
+                                    key={category}
+                                    size="small"
+                                    label={`${meta.label} · ${count}`}
+                                    onClick={() => handleSelectCategoryFilter(category)}
+                                    sx={{
+                                        flexShrink: 0, height: 20, fontSize: '0.6rem', fontWeight: 700, borderRadius: '12px',
+                                        px: 0.4,
+                                        ...(isSelected
+                                            ? { bgcolor: meta.color, color: '#fff', '&:hover': { bgcolor: meta.color } }
+                                            : { bgcolor: meta.bg, color: meta.color, '&:hover': { filter: 'brightness(0.96)' } }),
+                                    }}
+                                />
+                            );
+                        })}
+                    </Box>
+                )}
+
                 {/* Active section */}
                 <Typography sx={{
                     fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase',
@@ -173,16 +349,15 @@ export const NotificationsDialog: React.FC<NotificationsDialogProps> = ({
                 ) : (
                     <>
                         <Stack sx={{ mb: 1 }}>
-                            {active.map(n => (
+                            {active.map((n, idx) => (
                                 <NotifCard
-                                    key={n.id}
+                                    key={`${n.id}-${idx}`}
                                     n={n}
-                                    selected={selectedId === n.id}
-                                    onSelect={() => setSelectedId(prev => prev === n.id ? null : n.id)}
+                                    selected={selectedIndex === idx}
+                                    onSelect={() => setSelectedIndex(prev => prev === idx ? null : idx)}
                                     onAccept={async () => {
                                         onAccept(n.id);
-                                        console.log(n.id);
-                                        await notificationService.sendEnvelopeAcceptNotification(Number(selectedId));
+                                        await notificationService.sendEnvelopeAcceptNotification(Number(n.id));
                                     }}
                                 />
                             ))}
@@ -223,9 +398,9 @@ export const NotificationsDialog: React.FC<NotificationsDialogProps> = ({
                         '&::-webkit-scrollbar-thumb': { bgcolor: alpha(MAROON, 0.2), borderRadius: '4px' },
                         '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
                     }}>
-                        {history.map(n => (
+                        {history.map((n, idx) => (
                             <NotifCard
-                                key={n.id}
+                                key={`${n.id}-${idx}`}
                                 n={n}
                                 selected={false}
                                 onSelect={() => {}}
@@ -233,6 +408,47 @@ export const NotificationsDialog: React.FC<NotificationsDialogProps> = ({
                             />
                         ))}
                     </Box>
+                )}
+
+                {/* Upcoming (future months) — collapsed by default, not actionable yet */}
+                {future.length > 0 && (
+                    <>
+                        <Box sx={{ height: '1px', bgcolor: '#f0ede7', my: 1.75 }} />
+                        <Button
+                            fullWidth
+                            size="small"
+                            onClick={() => setShowFuture(p => !p)}
+                            endIcon={showFuture ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                            sx={{
+                                justifyContent: 'space-between', textTransform: 'none',
+                                fontWeight: 700, fontSize: '0.68rem', color: '#999',
+                                px: 0.5, minWidth: 0,
+                                '&:hover': { bgcolor: 'transparent', color: MAROON },
+                            }}
+                        >
+                            <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                Upcoming
+                                <Chip size="small" label={future.length} sx={{
+                                    height: 15, fontSize: '0.58rem', fontWeight: 700,
+                                    borderRadius: '4px', bgcolor: '#f0ede6', color: '#999',
+                                    '& .MuiChip-label': { px: '6px' },
+                                }} />
+                            </Box>
+                        </Button>
+                        <Collapse in={showFuture}>
+                            <Stack sx={{ mt: 1 }}>
+                                {future.map((n, idx) => (
+                                    <NotifCard
+                                        key={`${n.id}-${idx}`}
+                                        n={n}
+                                        selected={false}
+                                        onSelect={() => {}}
+                                        onAccept={() => {}}
+                                    />
+                                ))}
+                            </Stack>
+                        </Collapse>
+                    </>
                 )}
             </DialogContent>
         </Dialog>

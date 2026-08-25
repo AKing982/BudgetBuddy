@@ -24,6 +24,8 @@ public interface EnvelopeNotificationRepository extends JpaRepository<EnvelopeNo
     @Query("UPDATE EnvelopeNotificationsEntity ene SET ene.isRead =:status WHERE ene.id =:id")
     void updateEnvelopeNotificationStatus(@Param("id") Long id, @Param("status") boolean status);
 
+    boolean existsByEnvelopeIdAndContributionDate(Long envelopeId, LocalDate dateToContribute);
+
     @Modifying
     @Query("UPDATE EnvelopeNotificationsEntity ene SET ene.isAccepted = true, ene.isRead = true WHERE ene.id =:id")
     void updateEnvelopeNotificationAccepted(@Param("id") Long id);

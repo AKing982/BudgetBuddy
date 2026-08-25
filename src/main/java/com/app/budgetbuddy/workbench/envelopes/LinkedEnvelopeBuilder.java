@@ -21,102 +21,50 @@ import static com.app.budgetbuddy.workbench.envelopes.EnvelopeCalculations.getTo
 public class LinkedEnvelopeBuilder implements EnvelopeBuilder<List<NewEnvelopeCriteria>, EnvelopeLink>
 {
     private final LinkedEnvelopeBuilderService linkedEnvelopeBuilderService;
-    private final EnvelopeContributionsService envelopeContributionsService;
     private final LinkedEnvelopesService linkedEnvelopesService;
-    private final EnvelopeService envelopeService;
     private final EnvelopeBuilderService envelopeBuilderService;
 
     @Autowired
     public LinkedEnvelopeBuilder(LinkedEnvelopeBuilderService linkedEnvelopeBuilderService,
-                                 EnvelopeContributionsService envelopeContributionsService,
                                  LinkedEnvelopesService linkedEnvelopesService,
-                                 EnvelopeService envelopeService,
-                                 EnvelopeBuilderService envelopeBuilderService)
-    {
+                                 EnvelopeBuilderService envelopeBuilderService) {
         this.linkedEnvelopeBuilderService = linkedEnvelopeBuilderService;
-        this.envelopeContributionsService = envelopeContributionsService;
         this.linkedEnvelopesService = linkedEnvelopesService;
-        this.envelopeService = envelopeService;
         this.envelopeBuilderService = envelopeBuilderService;
     }
 
     @Override
-    public Optional<EnvelopeLink> build(final List<NewEnvelopeCriteria> criteria, final BudgetCriteria budgetCriteria, List<SubBudget> subBudgets)
+    public Optional<EnvelopeLink> build(final List<NewEnvelopeCriteria> criteria, final BudgetCriteria budgetCriteria, final List<SubBudget> subBudgets)
     {
-//        List<NewEnvelopeCriteria> feasibleCriteria = new ArrayList<>();
-//        try
-//        {
-            Objects.requireNonNull(criteria, "Criteria cannot be null");
-            Objects.requireNonNull(budgetCriteria, "Budget Criteria cannot be null");
-            Objects.requireNonNull(subBudgets, "SubBudgets cannot be null");
-            if(criteria.isEmpty() || subBudgets.isEmpty())
-            {
-                return Optional.empty();
-            }
-//            log.info("Criteria: {}", criteria);
-//            log.info("Budget Criteria: {}", budgetCriteria);
-            List<NewEnvelopeCriteria> feasibleEnvelopes = EnvelopeCalculations.determineFeasibleEnvelopes(criteria, budgetCriteria);
-//            log.info("Feasible Envelopes: {}", feasibleEnvelopes);
-            List<EnvelopeCriteriaAllocations> envelopeAllocations = EnvelopeCalculations.calculateEnvelopeAllocations(feasibleEnvelopes, budgetCriteria);
-//            log.info("Envelope Criteria Allocations: {}", envelopeAllocations);
-//            // Create the individual envelopes
-            List<Envelope> baseEnvelopes = envelopeBuilderService.createAndSaveEnvelopes(feasibleEnvelopes, budgetCriteria, subBudgets, true);
-//            // Determine the shared budget between all the feasible envelopes
-            BigDecimal sharedBudget = getTotalEnvelopeBudgeted(baseEnvelopes);
+        Objects.requireNonNull(criteria, "Criteria cannot be null");
+        Objects.requireNonNull(budgetCriteria, "Budget Criteria cannot be null");
+        Objects.requireNonNull(subBudgets, "SubBudgets cannot be null");
+        if(criteria.isEmpty() || subBudgets.isEmpty())
+        {
+            return Optional.empty();
+        }
+        List<NewEnvelopeCriteria> feasibleEnvelopes = EnvelopeCalculations.determineFeasibleEnvelopes(criteria, budgetCriteria);
+        List<Envelope> baseEnvelopes = envelopeBuilderService.createAndSaveEnvelopes(feasibleEnvelopes, budgetCriteria, subBudgets, true);
+        // Determine the shared budget between all the feasible envelopes
+        BigDecimal sharedBudget = getTotalEnvelopeBudgeted(baseEnvelopes);
 
-//            // Create the Envelope Contributions for each of the feasible envelopes
-            List<EnvelopeContribution> envelopeContributions = envelopeBuilderService.createEnvelopeContributions(baseEnvelopes, budgetCriteria);
-//            log.info("Envelope Contributions: {}", envelopeContributions);
-            BigDecimal totalContributed = envelopeContributions.stream()
-                    .flatMap(ec -> ec.getContributions().stream())
-                    .map(c -> BigDecimal.valueOf(c.getAmount()))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-//
-            envelopeContributionsService.saveContributions(envelopeContributions);
-//            log.info("Total Contributed: {}", totalContributed);
-//
-//            // Create the Envelope Link
-            EnvelopeLink envelopeLink = linkedEnvelopeBuilderService.linkEnvelopes(envelopeContributions, sharedBudget, totalContributed);
-//            log.info("Envelope Link: {}", envelopeLink);
-//
-//            // Create the Linked Envelope
-            LinkedEnvelopesEntity linkedEnvelopesEntity = buildLinkedEnvelopesEntity(baseEnvelopes, sharedBudget, totalContributed);
-            linkedEnvelopesService.save(linkedEnvelopesEntity);
-//            log.info("Linked Envelope: {}", linkedEnvelopesEntity);
-//            envelopeLink.setId(linkedEnvelopesEntity.getId());
-//            // return the Envelope Link
-            return Optional.of(envelopeLink);
-//
-//        }catch(EnvelopeException e)
-//        {
-//            log.error("There was an error building the linked envelope: ", e);
-//            return Optional.empty();
-//        }
+        // Create the Envelope Contributions for each of the feasible envelopes
+        List<EnvelopeContribution> envelopeContributions = envelopeBuilderService.createEnvelopeContributions(baseEnvelopes, budgetCriteria);
+        BigDecimal totalContributed = getTotalContributed(envelopeContributions);
+
+        // Create the Envelope Link
+        EnvelopeLink envelopeLink = linkedEnvelopeBuilderService.linkEnvelopes(envelopeContributions, baseEnvelopes, sharedBudget, totalContributed);
+        // return the Envelope Link
+        return Optional.of(envelopeLink);
     }
 
-    private LinkedEnvelopesEntity buildLinkedEnvelopesEntity(
-            List<Envelope> savedEnvelopes,
-            BigDecimal sharedBudget,
-            BigDecimal totalContributed)
+    private BigDecimal getTotalContributed(List<EnvelopeContribution> envelopeContributions)
     {
-        // Resolve the EnvelopeEntity references by ID for the ManyToMany join table
-        Set<EnvelopeEntity> members = savedEnvelopes.stream()
-                .map(e -> {
-                    EnvelopeEntity entity = new EnvelopeEntity();
-                    entity.setId(e.getId());
-                    return entity;
-                })
-                .collect(java.util.stream.Collectors.toSet());
-
-        LinkedEnvelopesEntity entity = new LinkedEnvelopesEntity();
-        entity.setSharedBudget(sharedBudget);
-        entity.setTotalAllocation(sharedBudget);
-        entity.setTotalSpent(BigDecimal.ZERO);
-        entity.setScore(0.0);
-        entity.setLinkName(savedEnvelopes.stream()
-                .map(Envelope::getEnvelopeName)
-                .collect(java.util.stream.Collectors.joining(" + ")));
-        entity.setLinkedEnvelopeMembers(members);
-        return entity;
+        return envelopeContributions.stream()
+                .flatMap(ec -> ec.getContributions().stream())
+                .map(c -> BigDecimal.valueOf(c.getAmount()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+
 }

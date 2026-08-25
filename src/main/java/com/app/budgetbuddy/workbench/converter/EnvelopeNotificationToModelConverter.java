@@ -24,6 +24,7 @@ public class EnvelopeNotificationToModelConverter implements Converter<EnvelopeN
         notification.setRead(entity.isRead());
         notification.setAmount(BigDecimal.valueOf(entity.getAmount()));
         notification.setDateToContribute(entity.getContributionDate());
+        notification.setId(entity.getId());
         if(entity.getEnvelope() != null)
         {
             notification.setEnvelopeId(entity.getEnvelope().getId());
