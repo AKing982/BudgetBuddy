@@ -396,9 +396,25 @@ const BudgetEnvelopesPage: React.FC = () => {
         setSnackMsg('Auto-tracking enabled!'); setSnackSev('success'); setSnackOpen(true);
     };
 
-    const handleToggleContribMode = (envelopeId: number, mode: 'MANUAL' | 'AUTO') => {
-        setEnvelopes(prev => prev.map(e => e.id === envelopeId ? { ...e, contributionMode: mode, autoRule: mode === 'MANUAL' ? undefined : e.autoRule } : e));
-        if (mode === 'AUTO') openContribDialog(envelopeId);
+    const handleToggleContribMode = async (envelopeId: number, mode: 'MANUAL' | 'AUTO') => {
+        const previous = envelopes.find(e => e.id === envelopeId);
+        if(!previous) return;
+        setEnvelopes(prev => prev.map(e =>
+        e.id === envelopeId
+        ? { ...e, contributionMode: mode, autoRule: mode === 'MANUAL' ? undefined : e.autoRule }
+        : e
+        ));
+
+        try
+        {
+            await BudgetEnvelopeService.getInstance().updateContributionMode(envelopeId, mode);
+        }catch(error){
+            console.error('Failed to update contribution mode:', error);
+            setEnvelopes(prev => prev.map(e => e.id === envelopeId ? { ...e, contributionMode: previous.contributionMode } : e));
+            setSnackMsg('Failed to update contribution mode. Please try again.'); setSnackSev('error');
+            setSnackSev("error");
+            setSnackOpen(true);
+        }
     };
 
     const handleApplyAffordability = (results: AffordabilityResult[]) => {

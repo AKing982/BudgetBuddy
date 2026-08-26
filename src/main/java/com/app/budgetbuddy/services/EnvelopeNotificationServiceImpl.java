@@ -118,8 +118,6 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
                         envelopeNotification.getDateToContribute()
                 );
                 if(alreadyExists){
-                    log.info("Envelope notification already exists for envelope id: {} and date: {}", envelopeNotification.getEnvelopeId(), envelopeNotification.getDateToContribute());
-                    log.info("Skipping creation of envelope notification for envelope id: {} and date: {}", envelopeNotification.getEnvelopeId(), envelopeNotification.getDateToContribute());
                     continue;
                 }
                 envelopeNotificationRepository.save(envelopeNotificationToEntityConverter.convert(envelopeNotification));

@@ -131,6 +131,24 @@ class BudgetEnvelopeService
         return response.data.map(mapEntity);
     }
 
+    public async updateContributionMode(envelopeId: number, mode: 'MANUAL' | 'AUTO') : Promise<BudgetEnvelope>
+    {
+        if(!envelopeId || !mode)
+        {
+            throw new Error('Invalid input');
+        }
+        try
+        {
+            const response = await axios.put<BudgetEnvelope>(`${API_BASE_URL}/budget-envelope/${envelopeId}/contribution-mode`, null, {
+                params: { contributionMode: mode }
+            });
+            return response.data;
+        }catch(error){
+            console.error(`There was an error updating the contribution mode for envelope ${envelopeId}: `, error);
+            throw error;
+        }
+    }
+
     public async fetchLinkedEnvelopes(userId: number, monthStart: string, monthEnd: string): Promise<LinkedEnvelopeGroup[]> {
         const response = await axios.get<LinkedEnvelopesEntity[]>(
             `${API_BASE_URL}/budget-envelope/${userId}/linked-envelopes`,

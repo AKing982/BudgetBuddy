@@ -117,6 +117,25 @@ public class EnvelopeServiceImpl implements EnvelopeService
 
     @Override
     @Transactional
+    public Optional<EnvelopeEntity> updateContributionMode(Long envelopeId, String contributionMode)
+    {
+        try
+        {
+            if(contributionMode.equalsIgnoreCase("MANUAL") || contributionMode.equalsIgnoreCase("AUTO"))
+            {
+                envelopeRepository.updateContributionMode(envelopeId, contributionMode);
+                return envelopeRepository.findById(envelopeId);
+            }
+            log.error("Unable to update the contribution mode for the envelope. Invalid contribution mode: " + contributionMode);
+            return envelopeRepository.findById(envelopeId);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the contribution mode for the envelope", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
     public List<EnvelopeEntity> findByUserIdAndDates(Long userId, LocalDate monthStart, LocalDate monthEnd)
     {
         try

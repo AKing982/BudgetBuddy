@@ -9,6 +9,7 @@ import com.app.budgetbuddy.services.LinkedEnvelopesService;
 import com.app.budgetbuddy.services.SubBudgetService;
 import com.app.budgetbuddy.workbench.runner.BudgetEnvelopeRunner;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -119,6 +120,27 @@ public class BudgetEnvelopeController
             return ResponseEntity.ok(linkedEnvelopes);
         }catch(DataException ex){
             log.error("There was an error retrieving the linked envelopes: ", ex);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/{envelopeId}/contribution-mode")
+    public ResponseEntity<EnvelopeEntity> updateContributionMode(@PathVariable @NotNull Long envelopeId,
+                                                                 @RequestParam @NotNull String contributionMode)
+    {
+        try
+        {
+            log.info("Updating contribution mode for envelope {}", envelopeId);
+            Optional<EnvelopeEntity> envelopeOptional = envelopeService.updateContributionMode(envelopeId, contributionMode);
+            if(envelopeOptional.isEmpty())
+            {
+                return ResponseEntity.notFound().build();
+            }
+            EnvelopeEntity envelope = envelopeOptional.get();
+            log.info("Updated contribution mode for envelope {} to {}", envelopeId, envelope.getContributionMode());
+            return ResponseEntity.ok(envelope);
+        }catch(DataException ex){
+            log.error("There was an error updating the contribution mode: ", ex);
             return ResponseEntity.internalServerError().build();
         }
     }

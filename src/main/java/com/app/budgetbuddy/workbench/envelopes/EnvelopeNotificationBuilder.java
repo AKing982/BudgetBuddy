@@ -44,7 +44,6 @@ public class EnvelopeNotificationBuilder
         List<EnvelopeNotification> envelopeNotifications = new ArrayList<>();
         List<Contributions> contributions = envelope.getContributions()
                 .stream()
-//                .filter(e -> !e.getScheduledDate().isAfter(endDate) && (e.getStatus().equalsIgnoreCase("PAID") || e.getStatus().equalsIgnoreCase("LATE")))
                 .toList();
         // DO notifications already exist for this period?
         // If they do, then return them,

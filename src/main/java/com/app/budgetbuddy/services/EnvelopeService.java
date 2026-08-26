@@ -13,6 +13,8 @@ public interface EnvelopeService extends ServiceModel<EnvelopeEntity>
 
     Envelope save(Envelope envelope);
 
+    Optional<EnvelopeEntity> updateContributionMode(Long envelopeId, String contributionMode);
+
     List<EnvelopeEntity> findByUserIdAndDates(Long userId, LocalDate monthStart, LocalDate monthEnd);
 
     Optional<Envelope> findByEnvelopeId(Long envelopeId);
