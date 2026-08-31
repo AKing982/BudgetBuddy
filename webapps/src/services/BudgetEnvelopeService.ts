@@ -6,7 +6,7 @@ import {EnvelopeBuildDetails, EnvelopeCreateRequest} from "../config/Types";
 interface EnvelopeEntity{
     id:                  number;
     name:                string;
-    envelopeType:        string;
+    type:        string;
     description?:        string;
     targetAmount:        number;
     budgeted:            number;   // → allocatedAmount
@@ -59,8 +59,9 @@ function mapLinkedEntity(e: LinkedEnvelopesEntity): LinkedEnvelopeGroup {
 }
 
 function toEnvelopeType(raw: string): BudgetEnvelope['envelopeType'] {
+    console.log('Raw Type: ', raw);
     const map: Record<string, BudgetEnvelope['envelopeType']> = {
-        FUND:     'SAVINGS',
+        FUND:     'FUND',
         PAYOFF:   'PAYOFF',
         PURCHASE: 'PURCHASE',
     };
@@ -78,11 +79,11 @@ function mapEntity(e: EnvelopeEntity, index: number): BudgetEnvelope {
     const target    = e.targetAmount   ?? 0;
     const current   = e.currentSaved   ?? 0;
     const remaining = Math.max(target - current, 0);
-
+    console.log('Envelope Entity: ', e);
     return {
         id:                    e.id,
         envelopeName:          e.name,
-        envelopeType:          toEnvelopeType(e.envelopeType),
+        envelopeType:          toEnvelopeType(e.type),
         description:           e.description,
         targetAmount:          target,
         allocatedAmount:       e.budgeted         ?? 0,

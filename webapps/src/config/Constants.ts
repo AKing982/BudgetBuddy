@@ -10,6 +10,7 @@ export const ENVELOPE_COLORS: Record<string, string> = {
     PAYOFF:    '#dc2626',
     PURCHASE:  '#7c3aed',
     EMERGENCY: '#d97706',
+    FUND: '#0284c7'
 };
 
 export const ENVELOPE_TYPE_LABELS: Record<string, string> = {

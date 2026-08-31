@@ -133,6 +133,7 @@ const BudgetEnvelopesPage: React.FC = () => {
         BudgetEnvelopeService.getInstance()
             .fetchBudgetEnvelopes(userId, monthStartStr, monthEndStr)
             .then(data => {
+                console.log('Fetched envelopes:', data);
                 console.log('Fetched envelopes:', data.length);
                 setEnvelopes(data);
                 setContributions([]);

@@ -488,7 +488,7 @@ export interface PaymentPlan {
 export interface BudgetEnvelope {
     id: number;
     envelopeName: string;
-    envelopeType: 'SAVINGS' | 'PAYOFF' | 'PURCHASE' | 'EMERGENCY';
+    envelopeType: 'FUND' | 'PAYOFF' | 'PURCHASE' | 'EMERGENCY' | 'SAVINGS';
     description?: string;
     targetAmount: number;
     allocatedAmount: number;

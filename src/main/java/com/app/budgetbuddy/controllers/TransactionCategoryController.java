@@ -162,8 +162,8 @@ public class TransactionCategoryController
 
     @PutMapping("/update/category")
     public ResponseEntity<Transaction> updateTransactionCategory(@RequestParam String transactionId,
-                                                                    @RequestParam String category,
-                                                                    @RequestParam Long userId)
+                                                                 @RequestParam String category,
+                                                                 @RequestParam Long userId)
     {
         try
         {
