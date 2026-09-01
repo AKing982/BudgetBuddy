@@ -22,6 +22,12 @@ public class AccountBalanceHistoryEntity
     @JoinColumn(name="accountId")
     private AccountEntity account;
 
+    @Column(name="description")
+    private String description;
+
+    @Column(name="transaction_category")
+    private String transactionCategory;
+
     @Column(name="date")
     private LocalDate date;
 

@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.AccountBalanceHistoryEntity;
 import com.app.budgetbuddy.exceptions.EnvelopeException;
 import com.app.budgetbuddy.services.AccountBalanceHistoryService;
+import com.app.budgetbuddy.services.EnvelopeService;
 import com.app.budgetbuddy.services.RecurringTransactionService;
 import com.app.budgetbuddy.services.TransactionService;
 import lombok.extern.slf4j.Slf4j;
@@ -14,24 +15,26 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 
+
 @Slf4j
 @Component
 public class EnvelopeContributionValidatorUtil
 {
-    private static final BigDecimal DEFAULT_TOLERANCE = BigDecimal.valueOf(2.00);
-
     private final TransactionService transactionService;
     private final RecurringTransactionService recurringTransactionService;
     private final AccountBalanceHistoryService accountBalanceHistoryService;
+    private final EnvelopeService envelopeService;
 
     @Autowired
     public EnvelopeContributionValidatorUtil(TransactionService transactionService,
                                              RecurringTransactionService recurringTransactionService,
-                                             AccountBalanceHistoryService accountBalanceHistoryService)
+                                             AccountBalanceHistoryService accountBalanceHistoryService,
+                                             EnvelopeService envelopeService)
     {
         this.transactionService = transactionService;
         this.recurringTransactionService = recurringTransactionService;
         this.accountBalanceHistoryService = accountBalanceHistoryService;
+        this.envelopeService = envelopeService;
     }
 
     /**
@@ -40,125 +43,114 @@ public class EnvelopeContributionValidatorUtil
      * "a specific payment happened," not "money is accumulating somewhere," so an account
      * balance moving isn't meaningful evidence the way it is for a fund.
      */
-    public ContributionValidationResult validateTrackedContribution(EnvelopeNotification envelopeNotification,
-                                                                    Contributions contributions,
-                                                                    Long envelopeId)
+    public ContributionValidationResult validateContribution(EnvelopeNotification envelopeNotification,
+                                                             Contributions contributions)
     {
-        // TODO: confirm method name/signature on TransactionService.
 
-        Optional<TransactionMatch> transactionMatch = transactionService.findMatchingTransaction(envelopeId, contributions);
-        if(transactionMatch.isPresent())
-        {
-            completeContribution(contributions, ContributionProvenance.BANK_VERIFIED, transactionMatch.get().transactionId());
-            saveNotificationHistory(envelopeNotification, EnvelopeStatus.COMPLETED,
-                    "Contribution confirmed via a matching transaction.");
-            return new ContributionValidationResult(true, ContributionProvenance.BANK_VERIFIED, transactionMatch.get().transactionId());
-        }
-
-        // TODO: confirm method name/signature on RecurringTransactionService.
-        Optional<RecurringTransactionMatch> recurringMatch = recurringTransactionService.findMatchingRecurringTransaction(envelopeId, contributions);
-        if (recurringMatch.isPresent())
-        {
-            completeContribution(contributions, ContributionProvenance.RECURRING_MATCHED, recurringMatch.get().transactionId());
-            saveNotificationHistory(envelopeNotification, EnvelopeStatus.COMPLETED,
-                    "Contribution confirmed via a recognized recurring transaction.");
-            return new ContributionValidationResult(true, ContributionProvenance.RECURRING_MATCHED, recurringMatch.get().transactionId());
-        }
-
-        // Neither table has a match — terminate here. Do NOT touch the contribution schedule;
-        // it stays SCHEDULED/PENDING_VERIFICATION until something confirms it or it goes stale.
-        saveNotificationHistory(envelopeNotification, EnvelopeStatus.PENDING,
-                "We couldn't confirm this contribution against your linked accounts yet.");
-        return new ContributionValidationResult(false, null, null);
-    }
-
-    /**
-     * SAVINGS / FUND — requires a linked account. No linked account at all is a configuration
-     * error (this envelope shouldn't be in AUTO mode without one), not just an unconfirmed
-     * result — so it throws rather than quietly returning false.
-     */
-    ContributionValidationResult validateFundedContribution(EnvelopeNotification envelopeNotification,
-                                                            Contributions contributions,
-                                                            Long envelopeId)
-    {
-        // TODO: still unresolved — "which account is linked to this envelope" isn't on
-        // AccountBalanceHistoryService (confirmed, it only takes an accountId it assumes you
-        // already have). Needs to come from EnvelopeService or wherever the FUND envelope's
-        // connected-account relationship actually lives.
-        Optional<LinkedAccount> linkedAccount = resolveLinkedAccount(envelopeId);
-        if (linkedAccount.isEmpty())
-        {
-            saveNotificationHistory(envelopeNotification, EnvelopeStatus.PENDING,
-                    "No savings/fund account is connected to this envelope. Connect an account to enable automatic verification.");
-            throw new EnvelopeException("No linked savings/fund account for envelope " + envelopeId);
-        }
-
-        String accountId = linkedAccount.get().getAccountId();
+        // Check if the contribution made by the user was done by transactions or recurring transactions.
+        // In checking the transactions, check if any transactions match by merchant and contribution amount,
+        // Check whether there are any transactions that match by merchant and contribution amount on the day the user accepted and within 7 days.
+        // if no transactions match, check if there are any recurring transactions that match by merchant and contribution amount and within 7 days.
+        Long envelopeId = envelopeNotification.getEnvelopeId();
+        String merchant = contributions.getMerchant();
+        BigDecimal amount = BigDecimal.valueOf(contributions.getAmount());
         LocalDate scheduledDate = contributions.getScheduledDate();
-        DeltaWindow window = resolveDeltaWindow(scheduledDate);
-
-        // Baseline: last known balance before the contribution was due this period.
-        Optional<AccountBalanceHistoryEntity> baseline = accountBalanceHistoryService
-                .findByAccountIdAndDateRange(accountId, window.baselineStart(), window.baselineEnd());
-
-        // Latest: most recent balance from the due date through today.
-        Optional<AccountBalanceHistoryEntity> latest = accountBalanceHistoryService
-                .findByAccountIdAndDateRange(accountId, window.latestStart(), window.latestEnd());
-
-        if (baseline.isEmpty() || latest.isEmpty())
+        LocalDate contributionDate = contributions.getContributionDate();
+        EnvelopeType envelopeType = envelopeNotification.getEnvelopeType();
+        switch(envelopeType)
         {
-            // Not enough balance history yet — e.g. this is the account's first tracked
-            // period, or Plaid hasn't synced a post-due-date snapshot yet.
-            saveNotificationHistory(envelopeNotification, EnvelopeStatus.PENDING,
-                    "Not enough balance history yet to confirm this contribution.");
-            return new ContributionValidationResult(false, null, null);
+            case PURCHASE:
+            case PAYOFF:
+                Optional<Transaction> transactionOptional = transactionService.findTransactionByContributionCriteria(merchant, amount, contributionDate, scheduledDate);
+                if(transactionOptional.isPresent())
+                {
+                    Transaction transaction = transactionOptional.get();
+                    String transactionId = transaction.getTransactionId();
+
+                    // Build the updated notification
+
+                    // Persist the updated Notification
+
+                    // Update the Envelope Status to PAID
+
+                    return ContributionValidationResult.builder()
+                            .isValidated(true)
+                            .matchedTransactionId(transactionId)
+                            .contributionProvenance(ContributionProvenance.TRANSACTION_VERIFIED)
+                            .build();
+                }
+                else
+                {
+                    Optional<RecurringTransaction> recurringTransactionOptional = recurringTransactionService.findRecurringTransactionByContributionCriteria(merchant, amount, contributionDate, scheduledDate);
+                    if(recurringTransactionOptional.isPresent())
+                    {
+                        RecurringTransaction recurringTransaction = recurringTransactionOptional.get();
+                        String recurringTransactionId = recurringTransaction.getTransactionId();
+
+                        // Build the updated notification
+
+                        // Persist the updated Notification
+
+                        // Update the Envelope Status to PAID
+
+                        return ContributionValidationResult.builder()
+                                .isValidated(true)
+                                .matchedTransactionId(recurringTransactionId)
+                                .contributionProvenance(ContributionProvenance.RECURRING_MATCHED)
+                                .build();
+                    }
+
+                    // If no recurring transaction was found, then default to a contribution validation result that mentions the contribution was not able to be
+                    // verified and will create an updated notification to alert the user.
+                    // update the envelope status to LATE
+                }
+                break;
+            case FUND:
+
+                // Fund/Savings accounts will require a separate linked account to validate contributions.
+                Envelope envelope = envelopeService.findByEnvelopeId(envelopeId)
+                        .orElseThrow(() -> new EnvelopeException("Envelope not found for id: " + envelopeId));
+                String linkedAccountId = envelope.getLinked_account_id();
+                if(linkedAccountId.isEmpty())
+                {
+                    return ContributionValidationResult.builder()
+                            .isValidated(false)
+                            .errorMessage("No Linked Account was found for envelope id: " + envelope.getId() + " terminating validation.")
+                            .build();
+
+                }
+
+                // 1. First use the envelopeId and check if there is a linked account to the envelope.
+                // If there is no linked account tied to the envelope, then return a ContributionValidationResult
+                // with a status of no linked account.
+                Optional<AccountBalanceHistoryEntity> accountBalanceHistoryOptional = accountBalanceHistoryService.findByAccountId(linkedAccountId);
+                if(accountBalanceHistoryOptional.isPresent())
+                {
+                    AccountBalanceHistoryEntity accountBalanceHistoryEntity = accountBalanceHistoryOptional.get();
+                    String accountId = accountBalanceHistoryEntity.getAccount().getId();
+                    String description = accountBalanceHistoryEntity.getDescription();
+                    BigDecimal balance = BigDecimal.valueOf(accountBalanceHistoryEntity.getBalance());
+                    if(description.contains(merchant) && balance.equals(amount))
+                    {
+                        return ContributionValidationResult.builder()
+                                .isValidated(true)
+                                .contributionProvenance(ContributionProvenance.BALANCE_INFERRED)
+                                .matchedAccountId(accountId)
+                                .build();
+                    }
+                }
+
+
+                // 2. If a linked account exists for the envelope, then check data on the account and validate whether there
+                // are any recent balance changes that match the contribution amount. If there are no recent balance changes,
+                // then return a ContributionValidationResult with a status of no recent balance changes.
+
+                // 3. No Fallbacks for fund/savings envelopes.
+                break;
+            default:
+                throw new EnvelopeException("Invalid Envelope Type: " + envelopeType);
         }
 
-        BigDecimal delta = computeDelta(baseline.get().getBalance(), latest.get().getBalance());
-        BigDecimal expectedAmount = BigDecimal.valueOf(contributions.getAmount());
-
-        if (isWithinTolerance(delta, expectedAmount))
-        {
-            completeContribution(contributions, ContributionProvenance.BALANCE_INFERRED, null);
-            saveNotificationHistory(envelopeNotification, EnvelopeStatus.COMPLETED,
-                    "Contribution confirmed via a matching account balance increase.");
-            return new ContributionValidationResult(true, ContributionProvenance.BALANCE_INFERRED, null);
-        }
-        else
-        {
-            saveNotificationHistory(envelopeNotification, EnvelopeStatus.PENDING,
-                    "The linked account's balance change didn't match this contribution for this month.");
-            return new ContributionValidationResult(false, null, null);
-        }
+        return null;
     }
-
-    // ── Pure math — no service dependencies, kept static even though the class isn't ──────────
-
-    record DeltaWindow(LocalDate baselineStart, LocalDate baselineEnd, LocalDate latestStart, LocalDate latestEnd) {}
-
-    /**
-     * TODO: "start of billing period" assumes monthly cadence (calendar month start). For
-     * weekly/biweekly envelopes this should be "since the previous scheduled contribution"
-     * instead — needs the envelope's frequency, which isn't passed in yet.
-     */
-    private static DeltaWindow resolveDeltaWindow(LocalDate scheduledDate)
-    {
-        LocalDate periodStart = scheduledDate.withDayOfMonth(1);
-        return new DeltaWindow(periodStart, scheduledDate.minusDays(1), scheduledDate, LocalDate.now());
-    }
-
-    private static BigDecimal computeDelta(double baselineBalance, double latestBalance)
-    {
-        return BigDecimal.valueOf(latestBalance - baselineBalance);
-    }
-
-    /**
-     * Tolerant comparison — balance deltas can be off by a cent or two from bank rounding, and
-     * may include interest or other small transactions alongside the intended contribution.
-     */
-    private static boolean isWithinTolerance(BigDecimal actualDelta, BigDecimal expectedAmount)
-    {
-        return actualDelta.subtract(expectedAmount).abs().compareTo(DEFAULT_TOLERANCE) <= 0;
-    }
-
 }

@@ -81,4 +81,18 @@ public class AccountBalanceHistoryServiceImpl implements AccountBalanceHistorySe
             return Optional.empty();
         }
     }
+
+    @Override
+    @Transactional
+    public Optional<AccountBalanceHistoryEntity> findByAccountId(String accountId)
+    {
+        try
+        {
+
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the account balance history", e);
+            return Optional.empty();
+        }
+        return Optional.empty();
+    }
 }

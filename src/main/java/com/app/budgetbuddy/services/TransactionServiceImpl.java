@@ -269,6 +269,26 @@ public class TransactionServiceImpl implements TransactionService
 
     @Override
     @Transactional
+    public Optional<Transaction> findTransactionByContributionCriteria(final String merchant, final BigDecimal amount, final LocalDate contributionDate, final LocalDate scheduledDate)
+    {
+        try
+        {
+            Optional<TransactionsEntity> transactionsEntityOptional = transactionRepository.findTransactionByIdAndMerchantAndDateRange(merchant, amount, scheduledDate, contributionDate);
+            if(transactionsEntityOptional.isEmpty())
+            {
+                return Optional.empty();
+            }
+            TransactionsEntity transactionsEntity = transactionsEntityOptional.get();
+            Transaction convertedTransaction = transactionEntityToModelConverter.convert(transactionsEntity);
+            return Optional.of(convertedTransaction);
+        }catch(DataAccessException e){
+            log.error("There was an error fetching transaction by contribution criteria: {}, {}, {}", merchant, amount, contributionDate);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
     public List<Transaction> getTransactionsByMerchantAndAmount(final String merchant, final BigDecimal amount)
     {
         if(merchant == null || amount == null)

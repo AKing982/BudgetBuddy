@@ -29,6 +29,9 @@ public interface TransactionRepository extends JpaRepository<TransactionsEntity,
     @Query("SELECT t.id FROM TransactionsEntity t WHERE t.id IN :transactionIds")
     List<String> findTransactionIdsByIds(@Param("transactionIds") List<String> transactionIds);
 
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.merchantName =:merchant AND t.amount =:amount AND (t.posted BETWEEN :scheduled AND :contributionDate)")
+    Optional<TransactionsEntity> findTransactionByIdAndMerchantAndDateRange(@Param("merchant") String merchant, @Param("amount") BigDecimal amount, @Param("scheduled") LocalDate scheduled, @Param("contributionDate") LocalDate contributionDate);
+
     @Query("SELECT CASE WHEN count(*) > 0 THEN TRUE ELSE FALSE END FROM TransactionsEntity t WHERE t.merchantName =:merchant AND t.account.user.id =:id AND t.posted =:posted AND t.amount =:amount")
     boolean checkTransactionsByMerchantAndPostedDateAndAmountExists(@Param("merchant") String merchant, @Param("id") Long id, @Param("posted") LocalDate posted, @Param("amount") BigDecimal amount);
 

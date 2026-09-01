@@ -9,4 +9,6 @@ public interface AccountBalanceHistoryService extends ServiceModel<AccountBalanc
 {
     Optional<AccountBalanceHistoryEntity> findByAccountIdAndDateRange(
             String accountId, LocalDate startDate, LocalDate endDate);
+
+    Optional<AccountBalanceHistoryEntity> findByAccountId(String accountId);
 }
