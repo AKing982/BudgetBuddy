@@ -3,10 +3,7 @@ package com.app.budgetbuddy.workbench.envelopes;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.AccountBalanceHistoryEntity;
 import com.app.budgetbuddy.exceptions.EnvelopeException;
-import com.app.budgetbuddy.services.AccountBalanceHistoryService;
-import com.app.budgetbuddy.services.EnvelopeService;
-import com.app.budgetbuddy.services.RecurringTransactionService;
-import com.app.budgetbuddy.services.TransactionService;
+import com.app.budgetbuddy.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,17 +20,20 @@ public class EnvelopeContributionValidatorUtil
     private final TransactionService transactionService;
     private final RecurringTransactionService recurringTransactionService;
     private final AccountBalanceHistoryService accountBalanceHistoryService;
+    private final EnvelopeNotificationService envelopeNotificationService;
     private final EnvelopeService envelopeService;
 
     @Autowired
     public EnvelopeContributionValidatorUtil(TransactionService transactionService,
                                              RecurringTransactionService recurringTransactionService,
                                              AccountBalanceHistoryService accountBalanceHistoryService,
+                                             EnvelopeNotificationService envelopeNotificationService,
                                              EnvelopeService envelopeService)
     {
         this.transactionService = transactionService;
         this.recurringTransactionService = recurringTransactionService;
         this.accountBalanceHistoryService = accountBalanceHistoryService;
+        this.envelopeNotificationService = envelopeNotificationService;
         this.envelopeService = envelopeService;
     }
 
@@ -52,11 +52,21 @@ public class EnvelopeContributionValidatorUtil
         // Check whether there are any transactions that match by merchant and contribution amount on the day the user accepted and within 7 days.
         // if no transactions match, check if there are any recurring transactions that match by merchant and contribution amount and within 7 days.
         Long envelopeId = envelopeNotification.getEnvelopeId();
+        Envelope envelope = envelopeService.findByEnvelopeId(envelopeId)
+                .orElseThrow(() -> new EnvelopeException("Envelope not found for id: " + envelopeId));
         String merchant = contributions.getMerchant();
         BigDecimal amount = BigDecimal.valueOf(contributions.getAmount());
         LocalDate scheduledDate = contributions.getScheduledDate();
         LocalDate contributionDate = contributions.getContributionDate();
         EnvelopeType envelopeType = envelopeNotification.getEnvelopeType();
+        EnvelopeNotification updatedNotification = new EnvelopeNotification();
+        updatedNotification.setEnvelopeId(envelopeId);
+        updatedNotification.setDateToContribute(scheduledDate);
+        updatedNotification.setAmount(amount);
+        updatedNotification.setEnvelopeName(envelope.getEnvelopeName());
+        updatedNotification.setTitle("Contribution Notification");
+        updatedNotification.setRead(false);
+        updatedNotification.setEnvelopeType(envelopeType);
         switch(envelopeType)
         {
             case PURCHASE:
@@ -66,13 +76,14 @@ public class EnvelopeContributionValidatorUtil
                 {
                     Transaction transaction = transactionOptional.get();
                     String transactionId = transaction.getTransactionId();
-
                     // Build the updated notification
-
+                    final String message = "Contribution of $" + amount + " for " + merchant + " was made on " + contributionDate + " and is linked to transaction id: " + transactionId;
+                    updatedNotification.setMessage(message);
                     // Persist the updated Notification
-
+                    envelopeNotificationService.createAndSave(updatedNotification);
                     // Update the Envelope Status to PAID
-
+                    envelope.setEnvelopeStatus(EnvelopeStatus.PAID);
+                    envelopeService.save(envelope);
                     return ContributionValidationResult.builder()
                             .isValidated(true)
                             .matchedTransactionId(transactionId)
@@ -86,30 +97,25 @@ public class EnvelopeContributionValidatorUtil
                     {
                         RecurringTransaction recurringTransaction = recurringTransactionOptional.get();
                         String recurringTransactionId = recurringTransaction.getTransactionId();
-
                         // Build the updated notification
-
+                        final String message = "Contribution of $" + amount + " for " + merchant + " was made on " + contributionDate + " and is linked to recurring transaction id: " + recurringTransactionId;
+                        updatedNotification.setMessage(message);
                         // Persist the updated Notification
-
+                        envelopeNotificationService.createAndSave(updatedNotification);
                         // Update the Envelope Status to PAID
-
+                        envelope.setEnvelopeStatus(EnvelopeStatus.PAID);
+                        envelopeService.save(envelope);
                         return ContributionValidationResult.builder()
                                 .isValidated(true)
                                 .matchedTransactionId(recurringTransactionId)
                                 .contributionProvenance(ContributionProvenance.RECURRING_MATCHED)
                                 .build();
                     }
-
-                    // If no recurring transaction was found, then default to a contribution validation result that mentions the contribution was not able to be
-                    // verified and will create an updated notification to alert the user.
-                    // update the envelope status to LATE
                 }
                 break;
             case FUND:
 
                 // Fund/Savings accounts will require a separate linked account to validate contributions.
-                Envelope envelope = envelopeService.findByEnvelopeId(envelopeId)
-                        .orElseThrow(() -> new EnvelopeException("Envelope not found for id: " + envelopeId));
                 String linkedAccountId = envelope.getLinked_account_id();
                 if(linkedAccountId.isEmpty())
                 {
@@ -119,10 +125,7 @@ public class EnvelopeContributionValidatorUtil
                             .build();
 
                 }
-
-                // 1. First use the envelopeId and check if there is a linked account to the envelope.
-                // If there is no linked account tied to the envelope, then return a ContributionValidationResult
-                // with a status of no linked account.
+                //TODO: This is a temporary solution for validating a connected savings/fund account. The general algorithm for this type of account will vary on institutions.
                 Optional<AccountBalanceHistoryEntity> accountBalanceHistoryOptional = accountBalanceHistoryService.findByAccountId(linkedAccountId);
                 if(accountBalanceHistoryOptional.isPresent())
                 {
@@ -139,18 +142,12 @@ public class EnvelopeContributionValidatorUtil
                                 .build();
                     }
                 }
-
-
-                // 2. If a linked account exists for the envelope, then check data on the account and validate whether there
-                // are any recent balance changes that match the contribution amount. If there are no recent balance changes,
-                // then return a ContributionValidationResult with a status of no recent balance changes.
-
-                // 3. No Fallbacks for fund/savings envelopes.
                 break;
             default:
                 throw new EnvelopeException("Invalid Envelope Type: " + envelopeType);
         }
-
-        return null;
+        return ContributionValidationResult.builder()
+                .isValidated(false)
+                .build();
     }
 }

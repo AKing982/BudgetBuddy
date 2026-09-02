@@ -19,34 +19,31 @@ public class EnvelopeContributionValidator
     private TransactionService transactionService;
     private RecurringTransactionService recurringTransactionService;
     private AccountBalanceHistoryService accountBalanceHistoryService;
+    private final EnvelopeContributionValidatorUtil envelopeContributionValidatorUtil;
 
     @Autowired
-    public EnvelopeContributionValidator(TransactionService transactionService, RecurringTransactionService recurringTransactionService, AccountBalanceHistoryService accountBalanceHistoryService)
+    public EnvelopeContributionValidator(TransactionService transactionService, RecurringTransactionService recurringTransactionService, AccountBalanceHistoryService accountBalanceHistoryService,
+                                         EnvelopeContributionValidatorUtil envelopeContributionValidatorUtil)
     {
         this.transactionService = transactionService;
         this.recurringTransactionService = recurringTransactionService;
         this.accountBalanceHistoryService = accountBalanceHistoryService;
+        this.envelopeContributionValidatorUtil = envelopeContributionValidatorUtil;
     }
 
     public Optional<ContributionValidationResult> runValidationCheck(final EnvelopeNotification envelopeNotification, final Contributions contributions)
     {
-//        if(envelopeNotification == null || contributions == null)
-//        {
-//            log.warn("Cannot run validation check. Envelope notification or contributions is null.");
-//            return Optional.empty();
-//        }
-//        Long envelopeId = envelopeNotification.getEnvelopeId();
-//        EnvelopeType envelopeType = envelopeNotification.getEnvelopeType();
-//        try
-//        {
-//            return switch(envelopeType){
-//                case PAYOFF, PURCHASE -> Optional.of()
-//            }
-//        }catch(EnvelopeException e){
-//            log.error("There was an error running the validation check", e);
-//            return Optional.empty();
-//        }
-//        return null;
-        return null;
+        if(envelopeNotification == null || contributions == null)
+        {
+            log.warn("Cannot run validation check. Envelope notification or contributions is null.");
+            return Optional.empty();
+        }
+        try
+        {
+            return Optional.of(envelopeContributionValidatorUtil.validateContribution(envelopeNotification, contributions));
+        }catch(EnvelopeException e){
+            log.error("There was an error running the validation check", e);
+            return Optional.empty();
+        }
     }
 }

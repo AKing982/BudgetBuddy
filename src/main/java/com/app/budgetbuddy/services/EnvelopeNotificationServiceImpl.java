@@ -23,18 +23,15 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
     private final EnvelopeNotificationRepository envelopeNotificationRepository;
     private final EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter;
     private final EnvelopeNotificationToModelConverter envelopeNotificationToModelConverter;
-    private final EnvelopeContributionValidator envelopeContributionValidator;
 
     @Autowired
     public EnvelopeNotificationServiceImpl(EnvelopeNotificationRepository envelopeNotificationRepository,
                                            EnvelopeNotificationToModelConverter envelopeNotificationToModelConverter,
-                                           EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter,
-                                           EnvelopeContributionValidator envelopeContributionValidator)
+                                           EnvelopeNotificationToEntityConverter envelopeNotificationToEntityConverter)
     {
         this.envelopeNotificationRepository = envelopeNotificationRepository;
         this.envelopeNotificationToModelConverter = envelopeNotificationToModelConverter;
         this.envelopeNotificationToEntityConverter = envelopeNotificationToEntityConverter;
-        this.envelopeContributionValidator = envelopeContributionValidator;
     }
 
     @Override

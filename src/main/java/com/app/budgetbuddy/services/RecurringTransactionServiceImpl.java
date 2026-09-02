@@ -204,6 +204,11 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     }
 
     @Override
+    public Optional<RecurringTransaction> findRecurringTransactionByContributionCriteria(String merchant, BigDecimal amount, LocalDate contributionDate, LocalDate scheduledDate) {
+        return Optional.empty();
+    }
+
+    @Override
     public List<String> findRecurringTransactionIds(final List<String> plaidRecurringTransactionIds) {
         if(plaidRecurringTransactionIds.isEmpty()){
             return Collections.emptyList();

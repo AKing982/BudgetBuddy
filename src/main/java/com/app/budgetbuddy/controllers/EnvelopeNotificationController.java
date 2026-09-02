@@ -7,6 +7,7 @@ import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.EnvelopeNotificationService;
 import com.app.budgetbuddy.services.EnvelopeService;
 import com.app.budgetbuddy.workbench.envelopes.EnvelopeNotificationBuilder;
+import com.app.budgetbuddy.workbench.runner.EnvelopeNotificationRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +23,12 @@ import java.util.List;
 @Slf4j
 public class EnvelopeNotificationController
 {
-    private final EnvelopeNotificationService envelopeNotificationService;
-    private final EnvelopeNotificationBuilder envelopeNotificationBuilder;
-    private final EnvelopeService envelopeService;
+    private final EnvelopeNotificationRunner envelopeNotificationRunner;
 
     @Autowired
-    public EnvelopeNotificationController(EnvelopeNotificationService envelopeNotificationService,
-                                          EnvelopeNotificationBuilder envelopeNotificationBuilder,
-                                          EnvelopeService envelopeService)
+    public EnvelopeNotificationController(EnvelopeNotificationRunner envelopeNotificationRunner)
     {
-        this.envelopeNotificationService = envelopeNotificationService;
-        this.envelopeNotificationBuilder = envelopeNotificationBuilder;
-        this.envelopeService = envelopeService;
+        this.envelopeNotificationRunner = envelopeNotificationRunner;
     }
 
     @GetMapping("/check-for-new-and-past-due")
