@@ -1,4 +1,5 @@
 import {BudgetPeriodCategory, BudgetStatus} from "../utils/Items";
+import {FundAccountDetails} from "../components/EnvelopeDetailPanel";
 
 interface Transaction {
     transactionId: string;
@@ -485,6 +486,17 @@ export interface PaymentPlan {
     termMonths:       number;
 }
 
+export interface EnvelopeAccount {
+    id:           string;
+    accountName:  string;
+    officialName: string;
+    type:         string;   // AccountType enum, serialized as its string name
+    subtype:      string;   // AccountSubType enum, serialized as its string name
+    mask:         string;
+    balance:      number;
+}
+
+
 export interface BudgetEnvelope {
     id: number;
     envelopeName: string;
@@ -506,6 +518,7 @@ export interface BudgetEnvelope {
     linked?: boolean;
     balanceThreshold?: number;
     contributions?: ScheduledContribution[];
+    account?: EnvelopeAccount | null;
 }
 
 export interface EnvelopeContribution {

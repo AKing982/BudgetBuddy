@@ -16,6 +16,7 @@ public interface EnvelopeNotificationService extends ServiceModel<EnvelopeNotifi
     List<EnvelopeNotification> getEnvelopeNotificationsByEnvelopeId(Long envelopeId);
 
     List<EnvelopeNotification> getNewAndPastDueNotifications(Long envelopeId, LocalDate startDate, LocalDate endDate);
+    Optional<EnvelopeNotification> findEnvelopeNotificationById(Long notificationId);
 
     Optional<EnvelopeNotificationStatus> sendEnvelopeAcceptedNotification(Long notificationId);
     void updateNotificationReadStatus(boolean readStatus, Long notificationId);

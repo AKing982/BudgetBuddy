@@ -16,18 +16,11 @@ import java.util.Optional;
 @Slf4j
 public class EnvelopeContributionValidator
 {
-    private TransactionService transactionService;
-    private RecurringTransactionService recurringTransactionService;
-    private AccountBalanceHistoryService accountBalanceHistoryService;
     private final EnvelopeContributionValidatorUtil envelopeContributionValidatorUtil;
 
     @Autowired
-    public EnvelopeContributionValidator(TransactionService transactionService, RecurringTransactionService recurringTransactionService, AccountBalanceHistoryService accountBalanceHistoryService,
-                                         EnvelopeContributionValidatorUtil envelopeContributionValidatorUtil)
+    public EnvelopeContributionValidator(EnvelopeContributionValidatorUtil envelopeContributionValidatorUtil)
     {
-        this.transactionService = transactionService;
-        this.recurringTransactionService = recurringTransactionService;
-        this.accountBalanceHistoryService = accountBalanceHistoryService;
         this.envelopeContributionValidatorUtil = envelopeContributionValidatorUtil;
     }
 

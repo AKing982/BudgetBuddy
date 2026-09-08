@@ -33,7 +33,7 @@ interface PlaidExchangeRequest{
     publicToken: string;
 }
 
-interface PlaidAccount {
+export interface PlaidAccount {
     accountId: string;
     name: string;
     officialName: string;

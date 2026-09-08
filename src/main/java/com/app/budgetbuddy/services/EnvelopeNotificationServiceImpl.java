@@ -165,6 +165,25 @@ public class EnvelopeNotificationServiceImpl implements EnvelopeNotificationServ
 
     @Override
     @Transactional
+    public Optional<EnvelopeNotification> findEnvelopeNotificationById(Long notificationId)
+    {
+        if(notificationId == null || notificationId < 1)
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            EnvelopeNotificationsEntity envelopeNotificationsEntity = envelopeNotificationRepository.findById(notificationId)
+                    .orElseThrow(() -> new DataAccessException("Envelope notification not found"));
+            return Optional.of(envelopeNotificationToModelConverter.convert(envelopeNotificationsEntity));
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the envelope notification", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<EnvelopeNotificationStatus> sendEnvelopeAcceptedNotification(Long notificationId)
     {
         try

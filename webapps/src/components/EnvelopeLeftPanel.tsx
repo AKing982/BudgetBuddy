@@ -1,5 +1,5 @@
 import React from 'react';
-import { alpha, Box, Button, Divider, Grid, Typography } from '@mui/material';
+import { alpha, Box, Button, Divider, Grid, Stack, Typography } from '@mui/material';
 import {
     Wallet, BarChart2, CreditCard, Sliders, Pencil, X as XIcon,
     AlertTriangle, PiggyBank,
@@ -79,6 +79,8 @@ const EnvelopeLeftPanel: React.FC<EnvelopeLeftPanelProps> = ({
                                                                  onSelectGroup, selectedGroupId,
                                                              }) => {
     const showPaymentTabs = selectedEnvelope?.envelopeType === 'PAYOFF' && !!selectedEnvelope?.paymentPlan;
+
+    const individualList = filtered.filter(e => !e.linked);
 
     const tabs: { key: LeftPanelView; label: string; icon: React.ReactNode }[] = [
         { key: 'envelopes', label: 'Envelopes', icon: <Wallet size={13} /> },
@@ -168,17 +170,20 @@ const EnvelopeLeftPanel: React.FC<EnvelopeLeftPanelProps> = ({
             {/* ── Envelopes view ──────────────────────────────────────────── */}
             {leftPanelView === 'envelopes' && (
                 <Box sx={{ p: 2.5 }}>
+                    {/* Linked groups — each group card carries its own border, header, and ring/grid
+                        or funding-order body now, so it no longer needs a second tinted wrapper
+                        around the whole section; that was doubling up on framing. */}
                     {linkedEnvelopeGroups.length > 0 && (
                         <>
                             <Typography sx={SECTION_LABEL_SX}>
-                                Linked groups
+                                Linked groups ({linkedEnvelopeGroups.length})
                                 {envelopePanelEditMode && (
                                     <Box component="span" sx={{ ml: 1, color: MAROON, fontWeight: 500, textTransform: 'none', letterSpacing: 0, fontSize: '0.68rem' }}>
                                         — edit group members below
                                     </Box>
                                 )}
                             </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                            <Stack spacing={1.5}>
                                 {linkedEnvelopeGroups.map(group => (
                                     <LinkedEnvelopeGroupCard
                                         key={group.id}
@@ -203,23 +208,25 @@ const EnvelopeLeftPanel: React.FC<EnvelopeLeftPanelProps> = ({
                                         isGroupSelected={selectedGroupId === group.id}
                                     />
                                 ))}
-                            </Box>
-                            <Divider sx={{ my: 2 }} />
+                            </Stack>
+                            {individualList.length > 0 && <Divider sx={{ my: 2.5, borderColor: '#ecd9d9' }} />}
                         </>
                     )}
 
-                    {filtered.filter(e => !e.linked).length > 0 && (
+                    {/* Individual envelopes — unchanged grid, just with a count in the label to
+                        match the linked section above so both read as peers, not a hierarchy. */}
+                    {individualList.length > 0 && (
                         <>
                             <Typography sx={SECTION_LABEL_SX}>
-                                Individual envelopes
+                                Individual envelopes ({individualList.length})
                                 {envelopePanelEditMode && (
                                     <Box component="span" sx={{ ml: 1, color: '#aaa', fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: '0.68rem', fontStyle: 'italic' }}>
                                         — tap + on a group above to move one here
                                     </Box>
                                 )}
                             </Typography>
-                            <Grid container spacing={2}>
-                                {filtered.filter(e => !e.linked).map((env, i) => (
+                            <Grid container spacing={1.5}>
+                                {individualList.map((env, i) => (
                                     <Grid item xs={12} sm={6} key={env.id} sx={{ display: 'flex' }}>
                                         <EnvelopeCard
                                             envelope={env}
@@ -297,6 +304,7 @@ const EnvelopeLeftPanel: React.FC<EnvelopeLeftPanelProps> = ({
 };
 
 export default EnvelopeLeftPanel;
+
 // import React from 'react';
 // import { alpha, Box, Button, Divider, Grid, Typography } from '@mui/material';
 // import {
@@ -306,7 +314,7 @@ export default EnvelopeLeftPanel;
 //
 // import { BudgetEnvelope, EnvelopeContribution } from '../config/Types';
 // import { LinkedEnvelopeGroup } from '../services/BudgetEnvelopeService';
-// import { MAROON } from '../config/Constants';
+// import { MAROON, MAROON_DARK } from '../config/Constants';
 // import { fmt, monthlyContributed } from '../config/Helpers';
 // import EnvelopeCard from './EnvelopeCard';
 // import LinkedEnvelopeGroupCard from './LinkedEnvelopeGroupCard';
@@ -350,16 +358,21 @@ export default EnvelopeLeftPanel;
 //     onSaveGroupEdit:          (groupId: number, newName: string, removedIds: number[], addedIds: number[]) => Promise<void> | void;
 //     onDissolveGroup:          (groupId: number) => Promise<void> | void;
 //     onOpenLinkedGoalUpdate:   (group: LinkedEnvelopeGroup) => void;
+//     /** Called when the user wants to view aggregated stats for a whole group in the right panel */
+//     onSelectGroup:            (group: LinkedEnvelopeGroup) => void;
+//     /** Id of the group currently shown as "group stats" in the right panel, if any */
+//     selectedGroupId:          number | null;
 //
 //     onApplyPlanAdjustment:    (envelopeId: number, newMonthlyAllocation: number) => void;
 // }
 //
-// // ── Shared style tokens — flat, hairline-bordered, maroon as the accent ─────
+// // ── Shared style tokens — warm maroon-tinted surfaces, not stark white ─────
 // const SECTION_LABEL_SX = {
 //     fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase' as const,
-//     letterSpacing: '0.06em', color: '#9a9a9a', mb: 1.25,
+//     letterSpacing: '0.06em', color: '#a35c5c', mb: 1.25,
 // };
-// const BORDER = `1px solid ${alpha(MAROON, 0.12)}`;
+// const BORDER   = `1px solid ${alpha(MAROON, 0.18)}`;
+// const PANEL_BG = '#fdf7f7';
 //
 // const groupNotifKey = (groupId: number) => -groupId;
 //
@@ -370,6 +383,7 @@ export default EnvelopeLeftPanel;
 //                                                                  onSelectEnvelope, onAddManual, onSnack,
 //                                                                  getNotifPrefs, onToggleEnvelopeNotification, onToggleGroupNotification, onOpenNotificationDialog,
 //                                                                  onSaveGroupEdit, onDissolveGroup, onOpenLinkedGoalUpdate, onApplyPlanAdjustment,
+//                                                                  onSelectGroup, selectedGroupId,
 //                                                              }) => {
 //     const showPaymentTabs = selectedEnvelope?.envelopeType === 'PAYOFF' && !!selectedEnvelope?.paymentPlan;
 //
@@ -407,50 +421,53 @@ export default EnvelopeLeftPanel;
 //                 : 'Schedule, acceleration simulator and amortization';
 //
 //     return (
-//         <Box sx={{ borderRadius: '12px', overflow: 'hidden', border: BORDER, bgcolor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+//         <Box sx={{ borderRadius: '12px', overflow: 'hidden', border: BORDER, bgcolor: PANEL_BG, boxShadow: '0 2px 12px rgba(122,31,43,0.1)' }}>
 //
 //             {/* ── Header ──────────────────────────────────────────────────── */}
-//             <Box sx={{ p: 2.5, borderBottom: BORDER, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap' }}>
-//                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
-//                     <Box sx={{ width: 36, height: 36, borderRadius: '8px', bgcolor: alpha(MAROON, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-//                         {headerIcon}
+//             <Box sx={{ background: `linear-gradient(135deg, ${MAROON_DARK} 0%, ${MAROON} 50%, #5a1515 100%)`, px: 3, py: 2.25, position: 'relative', overflow: 'hidden' }}>
+//                 <Box sx={{ position: 'absolute', top: -18, right: -18, width: 90, height: 90, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.07)' }} />
+//                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', position: 'relative' }}>
+//                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+//                         <Box sx={{ width: 36, height: 36, borderRadius: '8px', bgcolor: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+//                             {React.cloneElement(headerIcon as React.ReactElement, { color: '#fff' })}
+//                         </Box>
+//                         <Box sx={{ minWidth: 0 }}>
+//                             <Typography sx={{ fontWeight: 500, fontSize: '0.92rem', color: '#fff' }}>{headerTitle}</Typography>
+//                             <Typography sx={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.7)', mt: 0.1 }}>{headerSubtitle}</Typography>
+//                         </Box>
 //                     </Box>
-//                     <Box sx={{ minWidth: 0 }}>
-//                         <Typography sx={{ fontWeight: 500, fontSize: '0.92rem', color: '#111' }}>{headerTitle}</Typography>
-//                         <Typography sx={{ fontSize: '0.72rem', color: '#888', mt: 0.1 }}>{headerSubtitle}</Typography>
-//                     </Box>
-//                 </Box>
 //
-//                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-//                     {/* Edit / Exit edit — only on the envelopes view when there are linked groups */}
-//                     {leftPanelView === 'envelopes' && linkedEnvelopeGroups.length > 0 && (
-//                         <Button
-//                             size="small"
-//                             onClick={onToggleEditMode}
-//                             startIcon={envelopePanelEditMode ? <XIcon size={12} /> : <Pencil size={12} />}
-//                             sx={{
-//                                 borderRadius: '7px', textTransform: 'none', fontWeight: 500, fontSize: '0.72rem',
-//                                 px: 1.25, py: 0.5, border: '1px solid',
-//                                 ...(envelopePanelEditMode
-//                                     ? { bgcolor: alpha(MAROON, 0.1), color: MAROON, borderColor: alpha(MAROON, 0.25), '&:hover': { bgcolor: alpha(MAROON, 0.16) } }
-//                                     : { bgcolor: 'transparent', color: '#777', borderColor: '#e0e0e0', '&:hover': { borderColor: MAROON, color: MAROON } }),
-//                             }}
-//                         >
-//                             {envelopePanelEditMode ? 'Exit edit' : 'Edit'}
-//                         </Button>
-//                     )}
-//
-//                     {/* View tabs */}
-//                     <Box sx={{ display: 'flex', p: '3px', borderRadius: '8px', bgcolor: '#f5f5f5', gap: '2px' }}>
-//                         {tabs.map(({ key, label, icon }) => (
-//                             <Button key={key} size="small" onClick={() => onSetLeftPanelView(key)} startIcon={icon}
-//                                     sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 500, fontSize: '0.72rem', px: 1.25, py: 0.4, minWidth: 0, gap: 0.5,
-//                                         ...(leftPanelView === key
-//                                             ? { bgcolor: '#fff', color: MAROON, boxShadow: '0 1px 2px rgba(0,0,0,0.08)', '&:hover': { bgcolor: '#fff' } }
-//                                             : { bgcolor: 'transparent', color: '#999', '&:hover': { bgcolor: alpha('#fff', 0.6) } }) }}>
-//                                 {label}
+//                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+//                         {/* Edit / Exit edit — only on the envelopes view when there are linked groups */}
+//                         {leftPanelView === 'envelopes' && linkedEnvelopeGroups.length > 0 && (
+//                             <Button
+//                                 size="small"
+//                                 onClick={onToggleEditMode}
+//                                 startIcon={envelopePanelEditMode ? <XIcon size={12} /> : <Pencil size={12} />}
+//                                 sx={{
+//                                     borderRadius: '7px', textTransform: 'none', fontWeight: 500, fontSize: '0.72rem',
+//                                     px: 1.25, py: 0.5, border: '1px solid',
+//                                     ...(envelopePanelEditMode
+//                                         ? { bgcolor: 'rgba(255,255,255,0.92)', color: MAROON, borderColor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: '#fff' } }
+//                                         : { bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.22)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }),
+//                                 }}
+//                             >
+//                                 {envelopePanelEditMode ? 'Exit edit' : 'Edit'}
 //                             </Button>
-//                         ))}
+//                         )}
+//
+//                         {/* View tabs */}
+//                         <Box sx={{ display: 'flex', p: '3px', borderRadius: '8px', bgcolor: 'rgba(0,0,0,0.22)', gap: '2px' }}>
+//                             {tabs.map(({ key, label, icon }) => (
+//                                 <Button key={key} size="small" onClick={() => onSetLeftPanelView(key)} startIcon={icon}
+//                                         sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 500, fontSize: '0.72rem', px: 1.25, py: 0.4, minWidth: 0, gap: 0.5,
+//                                             ...(leftPanelView === key
+//                                                 ? { bgcolor: 'rgba(255,255,255,0.18)', color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.24)' } }
+//                                                 : { bgcolor: 'transparent', color: 'rgba(255,255,255,0.6)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' } }) }}>
+//                                     {label}
+//                                 </Button>
+//                             ))}
+//                         </Box>
 //                     </Box>
 //                 </Box>
 //             </Box>
@@ -468,29 +485,36 @@ export default EnvelopeLeftPanel;
 //                                     </Box>
 //                                 )}
 //                             </Typography>
-//                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-//                                 {linkedEnvelopeGroups.map(group => (
-//                                     <LinkedEnvelopeGroupCard
-//                                         key={group.id}
-//                                         group={group}
-//                                         onSelectEnvelope={onSelectEnvelope}
-//                                         selectedId={selectedId}
-//                                         editMode={envelopePanelEditMode}
-//                                         onSaveGroupEdit={onSaveGroupEdit}
-//                                         onDissolveGroup={onDissolveGroup}
-//                                         availableEnvelopes={individualEnvelopes}
-//                                         groupNotificationPrefs={getNotifPrefs(groupNotifKey(group.id))}
-//                                         onToggleGroupNotification={(channel) => onToggleGroupNotification(group.id, group.envelopes.map(e => e.id), channel)}
-//                                         onOpenGroupNotificationSettings={() => onOpenNotificationDialog(groupNotifKey(group.id), group.linkName, group.envelopes)}
-//                                         getMemberNotificationPrefs={getNotifPrefs}
-//                                         onToggleMemberNotification={onToggleEnvelopeNotification}
-//                                         onOpenMemberNotificationSettings={(envelopeId) => {
-//                                             const member = group.envelopes.find(e => e.id === envelopeId);
-//                                             if (member) onOpenNotificationDialog(envelopeId, member.envelopeName, [member]);
-//                                         }}
-//                                         onOpenGoalUpdate={() => onOpenLinkedGoalUpdate(group)}
-//                                     />
-//                                 ))}
+//                             {/* Grouped-section wrapper — a single tinted surface the group cards sit inside,
+//                                 instead of floating loose against the panel background. Purely a container;
+//                                 LinkedEnvelopeGroupCard's own internals are untouched. */}
+//                             <Box sx={{ p: 1.25, borderRadius: '12px', bgcolor: alpha(MAROON, 0.035), border: `1px solid ${alpha(MAROON, 0.1)}` }}>
+//                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+//                                     {linkedEnvelopeGroups.map(group => (
+//                                         <LinkedEnvelopeGroupCard
+//                                             key={group.id}
+//                                             group={group}
+//                                             onSelectEnvelope={onSelectEnvelope}
+//                                             selectedId={selectedId}
+//                                             editMode={envelopePanelEditMode}
+//                                             onSaveGroupEdit={onSaveGroupEdit}
+//                                             onDissolveGroup={onDissolveGroup}
+//                                             availableEnvelopes={individualEnvelopes}
+//                                             groupNotificationPrefs={getNotifPrefs(groupNotifKey(group.id))}
+//                                             onToggleGroupNotification={(channel) => onToggleGroupNotification(group.id, group.envelopes.map(e => e.id), channel)}
+//                                             onOpenGroupNotificationSettings={() => onOpenNotificationDialog(groupNotifKey(group.id), group.linkName, group.envelopes)}
+//                                             getMemberNotificationPrefs={getNotifPrefs}
+//                                             onToggleMemberNotification={onToggleEnvelopeNotification}
+//                                             onOpenMemberNotificationSettings={(envelopeId) => {
+//                                                 const member = group.envelopes.find(e => e.id === envelopeId);
+//                                                 if (member) onOpenNotificationDialog(envelopeId, member.envelopeName, [member]);
+//                                             }}
+//                                             onOpenGoalUpdate={() => onOpenLinkedGoalUpdate(group)}
+//                                             onSelectGroup={() => onSelectGroup(group)}
+//                                             isGroupSelected={selectedGroupId === group.id}
+//                                         />
+//                                     ))}
+//                                 </Box>
 //                             </Box>
 //                             <Divider sx={{ my: 2 }} />
 //                         </>
@@ -506,7 +530,9 @@ export default EnvelopeLeftPanel;
 //                                     </Box>
 //                                 )}
 //                             </Typography>
-//                             <Grid container spacing={2}>
+//                             {/* Tightened from spacing={2} to 1.5 — denser grid, closer to how the
+//                                 cards read in the Variant A preview. */}
+//                             <Grid container spacing={1.5}>
 //                                 {filtered.filter(e => !e.linked).map((env, i) => (
 //                                     <Grid item xs={12} sm={6} key={env.id} sx={{ display: 'flex' }}>
 //                                         <EnvelopeCard

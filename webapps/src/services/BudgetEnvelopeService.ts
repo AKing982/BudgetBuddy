@@ -1,4 +1,4 @@
-import {BudgetEnvelope, Contributions} from '../config/Types';
+import {BudgetEnvelope, Contributions, EnvelopeAccount} from '../config/Types';
 import {API_BASE_URL} from "../config/api";
 import axios, {AxiosResponse} from "axios";
 import {EnvelopeBuildDetails, EnvelopeCreateRequest} from "../config/Types";
@@ -21,6 +21,7 @@ interface EnvelopeEntity{
     linked?:           boolean;
     balanceThreshold?:   number;
     contributions?: Contributions[]
+    account?: EnvelopeAccount;
 }
 
 
@@ -98,6 +99,7 @@ function mapEntity(e: EnvelopeEntity, index: number): BudgetEnvelope {
         streakMonths:          0,
         linked:              e.linked ?? false,
         balanceThreshold:      e.balanceThreshold,
+        account:               e.account,
         contributions: (e.contributions ?? []).map(c => ({
             id:            c.id,
             scheduledDate: c.scheduledDate,
@@ -156,6 +158,24 @@ class BudgetEnvelopeService
             { params: { monthStart, monthEnd } }
         );
         return response.data.map(mapLinkedEntity);
+    }
+
+    public async linkAccountToEnvelope(envelopeId: number, accountId: string): Promise<BudgetEnvelope>
+    {
+        if (!envelopeId || !accountId)
+        {
+            throw new Error('envelopeId and accountId are required to link an account to an envelope.');
+        }
+        try
+        {
+            const response = await axios.put<BudgetEnvelope>(`${API_BASE_URL}/budget-envelope/${envelopeId}/link-plaid-account`, null, {
+                params: { accountId }
+            });
+            return response.data;
+        }catch(error){
+            console.error(`There was an error linking account ${accountId} to envelope ${envelopeId}: `, error);
+            throw error;
+        }
     }
 
     public async createEnvelope(

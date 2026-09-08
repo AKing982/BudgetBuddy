@@ -31,11 +31,12 @@ public class EnvelopeEntity
     @JoinColumn(name="userId")
     private UserEntity user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="account_id")
+    private AccountEntity account;
+
     @Column(name="envelope_name")
     private String name;
-
-//    @Column(name="goal")
-//    private String goal;
 
     @Column(name="envelope_type")
     @Enumerated(EnumType.STRING)
@@ -76,6 +77,9 @@ public class EnvelopeEntity
 
     @Column(name="is_linked")
     private boolean isLinked;
+
+    @Column(name="requires_account_id")
+    private boolean requiresAccountId;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name="envelope_subbudget",

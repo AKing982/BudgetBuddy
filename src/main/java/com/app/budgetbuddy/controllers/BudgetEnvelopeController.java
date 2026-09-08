@@ -1,6 +1,7 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.EnvelopeEntity;
 import com.app.budgetbuddy.entities.LinkedEnvelopesEntity;
 import com.app.budgetbuddy.exceptions.DataException;
@@ -77,6 +78,23 @@ public class BudgetEnvelopeController
             return ResponseEntity.ok(result);
         }catch(DataException ex){
             log.error("There was an error creating the envelope: ", ex);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/{envelopeId}/link-plaid-account")
+    public ResponseEntity<EnvelopeEntity> updateLinkedAccount(@PathVariable Long envelopeId,
+                                                              @RequestParam @NotNull String accountId)
+    {
+        log.info("Updating linked account for envelope {}", envelopeId);
+        log.info("Linked account: {}", accountId);
+        try
+        {
+            EnvelopeEntity envelope = envelopeService.updatePlaidAccount(envelopeId, accountId).orElseThrow(() -> new DataException("Envelope not found"));
+            log.info("Updated linked account for envelope {}", envelopeId);
+            return ResponseEntity.ok(envelope);
+        }catch(DataException ex){
+            log.error("There was an error updating the linked account: ", ex);
             return ResponseEntity.internalServerError().build();
         }
     }

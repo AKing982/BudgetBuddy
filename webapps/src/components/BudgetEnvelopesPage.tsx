@@ -20,15 +20,23 @@ import Sidebar from './Sidebar';
 import CreateEnvelopeDialog, { NewEnvelopeForm } from './CreateEnvelopeDialog';
 import MultiEnvelopeDashboard from './MultiEnvelopeDashboard';
 import BudgetEnvelopeService, { LinkedEnvelopeGroup } from '../services/BudgetEnvelopeService';
-import { EnvelopeCreateRequest, EnvelopeType, NewEnvelopeCriteria, ScheduledContribution } from '../config/Types';
+import {
+    EnvelopeAccount,
+    EnvelopeCreateRequest,
+    EnvelopeType,
+    NewEnvelopeCriteria,
+    ScheduledContribution
+} from '../config/Types';
 
 import { BudgetEnvelope, EnvelopeContribution, PlanEntry, PlanResult, AffordabilityResult } from '../config/Types';
 import { MAROON, MAROON_DARK, ENVELOPE_COLORS, ENVELOPE_TYPE_LABELS, STATUS_META, TYPE_ICONS, FREQUENCY_OPTIONS } from '../config/Constants';
 import { fmt, daysUntil, progressPct, velocityDays, requiredMonthly, monthlyContributed, isEnvelopeActiveInMonth, urgencyScore, distributeAuto, computeResults, monthsBetween } from '../config/Helpers';
 import { VelocityChip, PanelHeader, ContributionRow } from './Shared';
 import EnvelopeLeftPanel, { LeftPanelView } from './EnvelopeLeftPanel';
+import EnvelopeSpendingSummary from './EnvelopeSpendingSummary';
+import EnvelopeAlertsPanel from './EnvelopeAlertsPanel';
 import { ManualContributionDialog, AffordabilityDialog } from './Shared';
-import EnvelopeDetailPanel from './EnvelopeDetailPanel';
+import EnvelopeDetailPanel, {FundAccountDetails} from './EnvelopeDetailPanel';
 import EnvelopeNotificationService from '../services/EnvelopeNotificationService';
 import { EnvelopeNotification } from '../config/Types';
 import PaymentPlanAdjuster from './PaymentPlanAdjuster';
@@ -42,6 +50,19 @@ import envelopeNotificationService from "../services/EnvelopeNotificationService
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Filler, ChartTooltip, Legend);
 
 type EnvelopeMode   = 'single' | 'multi';
+
+function toFundAccountDetails(account: EnvelopeAccount | null | undefined): FundAccountDetails | undefined {
+    if (!account) return undefined;
+    return {
+        connectionStatus: 'connected',
+        accountName: account.accountName,
+        accountMask: account.mask,
+        accountType: account.subtype || account.type,
+        currentBalance: account.balance,
+        // institution, apy, contributionYTD, contributionLimitYear, liquidityNote, autoSweep,
+        // closureDeadline/daysUntilClosure — none exist on AccountEntity, left undefined
+    };
+}
 
 /** Default notification preferences applied to an envelope/group the first time it's seen */
 const DEFAULT_NOTIF_PREFS: NotificationPrefs = { system: true, email: false };
@@ -133,14 +154,11 @@ const BudgetEnvelopesPage: React.FC = () => {
         BudgetEnvelopeService.getInstance()
             .fetchBudgetEnvelopes(userId, monthStartStr, monthEndStr)
             .then(data => {
-                console.log('Fetched envelopes:', data);
-                console.log('Fetched envelopes:', data.length);
                 setEnvelopes(data);
                 setContributions([]);
                 return BudgetEnvelopeService.getInstance().fetchLinkedEnvelopes(userId, monthStartStr, monthEndStr);
             })
             .then(linkedData => {
-                console.log('Fetched linked envelopes:', linkedData.length);
                 setLinkedEnvelopeGroups(linkedData);
             })
             .catch(err => console.error('Failed:', err?.response?.status, err?.message))
@@ -172,13 +190,8 @@ const BudgetEnvelopesPage: React.FC = () => {
         const checkAndCreateNotifications = async () => {
             const results = await Promise.allSettled(
                 activeEnvelopes.map(async (envelope) => {
-                    // const hasNewOrPastDue = await EnvelopeNotificationService.getInstance()
-                    //     .checkForNewAndPastDueNotifications(envelope.id, monthStart, monthEnd);
-                    // The check endpoint tells us whether there are new/past-due items for this
-                    // period that don't have notifications yet — only create when it's true, so
-                    // we don't duplicate notifications that already exist for the current month.
                     await EnvelopeNotificationService.getInstance()
-                            .createNewEnvelopeNotifications(envelope.id, monthStart, monthEnd);
+                        .createNewEnvelopeNotifications(envelope.id, monthStart, monthEnd);
                 })
             );
             if (cancelled) return;
@@ -313,10 +326,6 @@ const BudgetEnvelopesPage: React.FC = () => {
                 id:           String((n as any).id ?? `${(n as any).envelopeId}-${(n as any).dateToContribute}`),
                 envelopeId:   (n as any).envelopeId,
                 envelopeName: (n as any).envelopeName ?? 'Envelope',
-                // Every notification the backend produces today comes from the contribution-schedule
-                // builder — there's no goal/account/group notification source yet. Hardcoding this
-                // keeps the type accurate rather than guessing a category off badgeType, and gives
-                // a single place to update once the backend actually distinguishes notification types.
                 category:     'contribution' as const,
                 date:         (n as any).dateToContribute ? new Date((n as any).dateToContribute).toISOString() : new Date().toISOString(),
                 message:      (n as any).message ?? '',
@@ -342,7 +351,6 @@ const BudgetEnvelopesPage: React.FC = () => {
             const merged = results.flat().sort(
                 (a, b) => new Date((b as any).dateToContribute).getTime() - new Date((a as any).dateToContribute).getTime()
             );
-            console.log('Merged notifications:', merged);
             setEnvelopeNotifications(merged);
         } catch (err) {
             console.error('Failed to load envelope notifications:', err);
@@ -401,9 +409,9 @@ const BudgetEnvelopesPage: React.FC = () => {
         const previous = envelopes.find(e => e.id === envelopeId);
         if(!previous) return;
         setEnvelopes(prev => prev.map(e =>
-        e.id === envelopeId
-        ? { ...e, contributionMode: mode, autoRule: mode === 'MANUAL' ? undefined : e.autoRule }
-        : e
+            e.id === envelopeId
+                ? { ...e, contributionMode: mode, autoRule: mode === 'MANUAL' ? undefined : e.autoRule }
+                : e
         ));
 
         try
@@ -444,9 +452,6 @@ const BudgetEnvelopesPage: React.FC = () => {
         addedIds:   number[],
     ) => {
         try {
-            // TODO: replace with real API calls, e.g.:
-            // await BudgetEnvelopeService.getInstance().updateLinkedGroup(groupId, { name: newName, removedIds, addedIds });
-
             // Optimistic local update — rename the group
             setLinkedEnvelopeGroups(prev => prev.map(g => {
                 if (g.id !== groupId) return g;
@@ -494,9 +499,6 @@ const BudgetEnvelopesPage: React.FC = () => {
      */
     const handleDissolveGroup = useCallback(async (groupId: number) => {
         try {
-            // TODO: replace with real API call, e.g.:
-            // await BudgetEnvelopeService.getInstance().dissolveLinkedGroup(groupId);
-
             const group = linkedEnvelopeGroups.find(g => g.id === groupId);
             if (!group) return;
 
@@ -753,8 +755,17 @@ const BudgetEnvelopesPage: React.FC = () => {
                         </Grow>
 
                         <Grid container spacing={3}>
-                            {/* ── Left panel ────────────────────────────────── */}
+                            {/* ── Alerts + left panel + spending summary ────── */}
                             <Grid item xs={12} lg={8}>
+                                {leftPanelView === 'envelopes' && (
+                                    <Box sx={{ mb: 3 }}>
+                                        <EnvelopeAlertsPanel
+                                            envelopes={envelopes}
+                                            onSelectEnvelope={handleSelectEnvelope}
+                                            onViewAll={() => openNotifDialog(0, 'All notifications', envelopes)}
+                                        />
+                                    </Box>
+                                )}
                                 <EnvelopeLeftPanel
                                     animateIn={animateIn}
                                     leftPanelView={leftPanelView}
@@ -787,6 +798,19 @@ const BudgetEnvelopesPage: React.FC = () => {
                                     selectedGroupId={selectedGroupId}
                                     onApplyPlanAdjustment={handleApplyPlanAdjustment}
                                 />
+
+                                {/* Spending-by-category summary — sits directly under the left panel,
+                                    same width, only on the envelopes tab (a payment-plan or plan-adjuster
+                                    view underneath it wouldn't make sense next to spending totals). */}
+                                {leftPanelView === 'envelopes' && (
+                                    <Box sx={{ mt: 3 }}>
+                                        <EnvelopeSpendingSummary
+                                            envelopes={envelopes}
+                                            contributions={contributions}
+                                            onSelectCategory={(type) => setFilterType(type)}
+                                        />
+                                    </Box>
+                                )}
                             </Grid>
 
                             {/* ── Right detail panel ────────────────────────── */}
@@ -800,6 +824,7 @@ const BudgetEnvelopesPage: React.FC = () => {
                                             monthStart={monthStart}
                                             monthEnd={monthEnd}
                                             monthLabel={monthLabel}
+                                            fundAccountDetails={selectedEnvelope?.envelopeType === 'FUND' ? toFundAccountDetails(selectedEnvelope.account) : undefined}
                                             onClose={() => handleSelectEnvelope(null)}
                                             onAddManual={openContribDialog}
                                             onToggleContribMode={handleToggleContribMode}
@@ -811,6 +836,7 @@ const BudgetEnvelopesPage: React.FC = () => {
                                             onOpenLinkedGoalUpdate={handleOpenLinkedGoalUpdate}
                                             onOpenGroupNotificationSettings={(group) => openNotifDialog(groupNotifKey(group.id), group.linkName, group.envelopes)}
                                             initialDetailView={initialDetailView}
+                                            userId={userId}
                                         />
                                     </Box>
                                 </Grow>
@@ -976,30 +1002,47 @@ export default BudgetEnvelopesPage;
 // import CreateEnvelopeDialog, { NewEnvelopeForm } from './CreateEnvelopeDialog';
 // import MultiEnvelopeDashboard from './MultiEnvelopeDashboard';
 // import BudgetEnvelopeService, { LinkedEnvelopeGroup } from '../services/BudgetEnvelopeService';
-// import { EnvelopeCreateRequest, EnvelopeType, NewEnvelopeCriteria, ScheduledContribution } from '../config/Types';
+// import {
+//     EnvelopeAccount,
+//     EnvelopeCreateRequest,
+//     EnvelopeType,
+//     NewEnvelopeCriteria,
+//     ScheduledContribution
+// } from '../config/Types';
 //
 // import { BudgetEnvelope, EnvelopeContribution, PlanEntry, PlanResult, AffordabilityResult } from '../config/Types';
 // import { MAROON, MAROON_DARK, ENVELOPE_COLORS, ENVELOPE_TYPE_LABELS, STATUS_META, TYPE_ICONS, FREQUENCY_OPTIONS } from '../config/Constants';
 // import { fmt, daysUntil, progressPct, velocityDays, requiredMonthly, monthlyContributed, isEnvelopeActiveInMonth, urgencyScore, distributeAuto, computeResults, monthsBetween } from '../config/Helpers';
 // import { VelocityChip, PanelHeader, ContributionRow } from './Shared';
-// import EnvelopeCard     from './EnvelopeCard';
-// import PaymentPlanPanel from './PaymentPlanPanel';
-// import ChartsPanel      from './ChartsPanel';
-// import InsightsPanel    from './InsightsPanel';
+// import EnvelopeLeftPanel, { LeftPanelView } from './EnvelopeLeftPanel';
 // import { ManualContributionDialog, AffordabilityDialog } from './Shared';
-// import EnvelopeDetailPanel from './EnvelopeDetailPanel';
-// import LinkedEnvelopeGroupCard from './LinkedEnvelopeGroupCard';
+// import EnvelopeDetailPanel, {FundAccountDetails} from './EnvelopeDetailPanel';
+// import EnvelopeNotificationService from '../services/EnvelopeNotificationService';
+// import { EnvelopeNotification } from '../config/Types';
 // import PaymentPlanAdjuster from './PaymentPlanAdjuster';
 // import { NotificationPrefs, NotificationEventSettings, DEFAULT_NOTIFICATION_EVENT_SETTINGS } from './NotificationToggle';
 // import { NotificationsDialog } from './NotificationsDialog';
 // import {GoalUpdateValues} from "./GoalUpdateDialog";
 // import LinkedGoalUpdateDialog, { LinkedGoalUpdateValues } from './LinkedGoalUpdateDialog';
+// import envelopeNotificationService from "../services/EnvelopeNotificationService";
 //
 //
 // ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Filler, ChartTooltip, Legend);
 //
 // type EnvelopeMode   = 'single' | 'multi';
-// type LeftPanelView  = 'envelopes' | 'analytics' | 'paymentplan' | 'planadjuster';
+//
+// function toFundAccountDetails(account: EnvelopeAccount | null | undefined): FundAccountDetails | undefined {
+//     if (!account) return undefined;
+//     return {
+//         connectionStatus: 'connected',
+//         accountName: account.accountName,
+//         accountMask: account.mask,
+//         accountType: account.subtype || account.type,
+//         currentBalance: account.balance,
+//         // institution, apy, contributionYTD, contributionLimitYear, liquidityNote, autoSweep,
+//         // closureDeadline/daysUntilClosure — none exist on AccountEntity, left undefined
+//     };
+// }
 //
 // /** Default notification preferences applied to an envelope/group the first time it's seen */
 // const DEFAULT_NOTIF_PREFS: NotificationPrefs = { system: true, email: false };
@@ -1029,7 +1072,9 @@ export default BudgetEnvelopesPage;
 //     const [selectedId,    setSelectedId]    = useState<number | null>(null);
 //     const [linkedGoalDialogOpen,  setLinkedGoalDialogOpen]  = useState(false);
 //     const [linkedGoalDialogGroup, setLinkedGoalDialogGroup] = useState<LinkedEnvelopeGroup | null>(null);
-//
+// // ── Notification data (replaces the old hardcoded array) ───────────────────
+//     const [envelopeNotifications, setEnvelopeNotifications] = useState<EnvelopeNotification[]>([]);
+//     const [notifLoading, setNotifLoading] = useState(false);
 //     /** Whether the left envelopes panel is in edit mode */
 //     const [envelopePanelEditMode, setEnvelopePanelEditMode] = useState(false);
 //
@@ -1076,6 +1121,9 @@ export default BudgetEnvelopesPage;
 //     const monthStartStr = monthStart.toISOString().split('T')[0];
 //     const monthEndStr   = monthEnd.toISOString().split('T')[0];
 //
+//
+//     // ── Check for new/past-due notifications on page entry, create if needed ──────
+//
 //     // ── Fetch data ─────────────────────────────────────────────────────────────
 //     useEffect(() => {
 //         document.title = 'Envelopes';
@@ -1086,6 +1134,7 @@ export default BudgetEnvelopesPage;
 //         BudgetEnvelopeService.getInstance()
 //             .fetchBudgetEnvelopes(userId, monthStartStr, monthEndStr)
 //             .then(data => {
+//                 console.log('Fetched envelopes:', data);
 //                 console.log('Fetched envelopes:', data.length);
 //                 setEnvelopes(data);
 //                 setContributions([]);
@@ -1117,6 +1166,38 @@ export default BudgetEnvelopesPage;
 //         setPlanBudget(defaultBudget);
 //         setPlanApplied(false);
 //     }, [activeEnvelopes, defaultBudget]);
+//
+//     useEffect(() => {
+//         if (activeEnvelopes.length === 0) return;
+//         let cancelled = false;
+//         const checkAndCreateNotifications = async () => {
+//             const results = await Promise.allSettled(
+//                 activeEnvelopes.map(async (envelope) => {
+//                     // const hasNewOrPastDue = await EnvelopeNotificationService.getInstance()
+//                     //     .checkForNewAndPastDueNotifications(envelope.id, monthStart, monthEnd);
+//                     // The check endpoint tells us whether there are new/past-due items for this
+//                     // period that don't have notifications yet — only create when it's true, so
+//                     // we don't duplicate notifications that already exist for the current month.
+//                     await EnvelopeNotificationService.getInstance()
+//                             .createNewEnvelopeNotifications(envelope.id, monthStart, monthEnd);
+//                 })
+//             );
+//             if (cancelled) return;
+//             results.forEach((result, i) => {
+//                 if (result.status === 'rejected') {
+//                     console.error(
+//                         `Failed to check/create notifications for envelope ${activeEnvelopes[i].id}:`,
+//                         result.reason
+//                     );
+//                 }
+//             });
+//         };
+//
+//         checkAndCreateNotifications();
+//
+//         return () => { cancelled = true; };
+//     }, [activeEnvelopes, monthStart, monthEnd]);
+//
 //
 //     useEffect(() => { setLeftPanelView('envelopes'); }, [selectedId]);
 //
@@ -1214,18 +1295,71 @@ export default BudgetEnvelopesPage;
 //         });
 //     }, []);
 //
+//     /** Maps an envelope's backend status onto the dialog's badge vocabulary. */
+//     const mapNotificationBadge = (status?: string): { badge: string; badgeType: 'due' | 'behind' | 'read' | 'goal' } => {
+//         switch (status) {
+//             case 'LATE':      return { badge: 'Past due',  badgeType: 'behind' };
+//             case 'PENDING':   return { badge: 'Pending',   badgeType: 'due' };
+//             case 'PAID':
+//             case 'SUBMITTED':
+//             case 'COMPLETED': return { badge: 'Completed', badgeType: 'goal' };
+//             default:          return { badge: 'Update',    badgeType: 'read' };
+//         }
+//     };
+//
+//     const toDialogNotifications = (items: EnvelopeNotification[]) =>
+//         items.map(n => {
+//             const { badge, badgeType } = mapNotificationBadge((n as any).envelopeStatus);
+//             return {
+//                 id:           String((n as any).id ?? `${(n as any).envelopeId}-${(n as any).dateToContribute}`),
+//                 envelopeId:   (n as any).envelopeId,
+//                 envelopeName: (n as any).envelopeName ?? 'Envelope',
+//                 // Every notification the backend produces today comes from the contribution-schedule
+//                 // builder — there's no goal/account/group notification source yet. Hardcoding this
+//                 // keeps the type accurate rather than guessing a category off badgeType, and gives
+//                 // a single place to update once the backend actually distinguishes notification types.
+//                 category:     'contribution' as const,
+//                 date:         (n as any).dateToContribute ? new Date((n as any).dateToContribute).toISOString() : new Date().toISOString(),
+//                 message:      (n as any).message ?? '',
+//                 badge,
+//                 badgeType,
+//                 isRead:       (n as any).isRead ?? false,
+//             };
+//         });
+//
+//     /** Loads notifications for whichever envelope(s) the dialog is about to show — a single
+//      *  envelope, or every member of a linked group when opened from the group-level icon. */
+//     const loadNotificationsForDialog = useCallback(async (key: number, historyEnvelopes: BudgetEnvelope[]) => {
+//         setNotifLoading(true);
+//         try {
+//             const envelopeIds = historyEnvelopes.length > 0
+//                 ? historyEnvelopes.map(e => e.id)
+//                 : (key > 0 ? [key] : []);
+//
+//             const results = await Promise.all(
+//                 envelopeIds.map(id => EnvelopeNotificationService.getInstance().getUserEnvelopeNotifications(id))
+//             );
+//
+//             const merged = results.flat().sort(
+//                 (a, b) => new Date((b as any).dateToContribute).getTime() - new Date((a as any).dateToContribute).getTime()
+//             );
+//             console.log('Merged notifications:', merged);
+//             setEnvelopeNotifications(merged);
+//         } catch (err) {
+//             console.error('Failed to load envelope notifications:', err);
+//             onSnack('Failed to load notifications', 'error');
+//             setEnvelopeNotifications([]);
+//         } finally {
+//             setNotifLoading(false);
+//         }
+//     }, []);
+//
 //     /**
 //      * Opens the combined settings/history dialog. `key` is an envelope id for
 //      * a single envelope, or the group's negative key when opened from the
 //      * group-level icon; `historyEnvelopes` is just that one envelope, or
 //      * every member of the group, so the dialog can build its activity log.
 //      */
-//     const openNotifDialog = useCallback((key: number, title: string, historyEnvelopes: BudgetEnvelope[]) => {
-//         setNotifDialogKey(key);
-//         setNotifDialogTitle(title);
-//         setNotifDialogEnvelopes(historyEnvelopes);
-//         setNotifDialogOpen(true);
-//     }, []);
 //
 //     /** Toggling a channel from inside the dialog should cascade for a group, same as clicking the group icon does. */
 //     const handleDialogTogglePref = useCallback((channel: 'system' | 'email') => {
@@ -1236,6 +1370,14 @@ export default BudgetEnvelopesPage;
 //             toggleEnvelopeNotif(notifDialogKey, channel);
 //         }
 //     }, [notifDialogKey, notifDialogEnvelopes, toggleGroupNotif, toggleEnvelopeNotif]);
+//
+//     const openNotifDialog = useCallback((key: number, title: string, historyEnvelopes: BudgetEnvelope[]) => {
+//         setNotifDialogKey(key);
+//         setNotifDialogTitle(title);
+//         setNotifDialogEnvelopes(historyEnvelopes);
+//         setNotifDialogOpen(true);
+//         loadNotificationsForDialog(key, historyEnvelopes);
+//     }, [loadNotificationsForDialog]);
 //
 //     // ── Contribution handlers ──────────────────────────────────────────────────
 //     const openContribDialog = (id: number) => { setContribEnvId(id); setContribOpen(true); };
@@ -1256,9 +1398,25 @@ export default BudgetEnvelopesPage;
 //         setSnackMsg('Auto-tracking enabled!'); setSnackSev('success'); setSnackOpen(true);
 //     };
 //
-//     const handleToggleContribMode = (envelopeId: number, mode: 'MANUAL' | 'AUTO') => {
-//         setEnvelopes(prev => prev.map(e => e.id === envelopeId ? { ...e, contributionMode: mode, autoRule: mode === 'MANUAL' ? undefined : e.autoRule } : e));
-//         if (mode === 'AUTO') openContribDialog(envelopeId);
+//     const handleToggleContribMode = async (envelopeId: number, mode: 'MANUAL' | 'AUTO') => {
+//         const previous = envelopes.find(e => e.id === envelopeId);
+//         if(!previous) return;
+//         setEnvelopes(prev => prev.map(e =>
+//         e.id === envelopeId
+//         ? { ...e, contributionMode: mode, autoRule: mode === 'MANUAL' ? undefined : e.autoRule }
+//         : e
+//         ));
+//
+//         try
+//         {
+//             await BudgetEnvelopeService.getInstance().updateContributionMode(envelopeId, mode);
+//         }catch(error){
+//             console.error('Failed to update contribution mode:', error);
+//             setEnvelopes(prev => prev.map(e => e.id === envelopeId ? { ...e, contributionMode: previous.contributionMode } : e));
+//             setSnackMsg('Failed to update contribution mode. Please try again.'); setSnackSev('error');
+//             setSnackSev("error");
+//             setSnackOpen(true);
+//         }
 //     };
 //
 //     const handleApplyAffordability = (results: AffordabilityResult[]) => {
@@ -1266,6 +1424,13 @@ export default BudgetEnvelopesPage;
 //         results.forEach(r => handleAddContribution(r.envelopeId, r.suggested, today, 'Affordability check'));
 //         setSnackMsg(`Applied ${results.length} contribution${results.length !== 1 ? 's' : ''}!`); setSnackSev('success'); setSnackOpen(true);
 //     };
+//
+//     /** Applies an adjusted monthly allocation from the payment plan adjuster. */
+//     const handleApplyPlanAdjustment = useCallback((envelopeId: number, newMonthlyAllocation: number) => {
+//         setEnvelopes(prev => prev.map(e =>
+//             e.id === envelopeId ? { ...e, allocatedAmount: newMonthlyAllocation } : e
+//         ));
+//     }, []);
 //
 //     // ── Linked group edit handlers ─────────────────────────────────────────────
 //
@@ -1420,6 +1585,29 @@ export default BudgetEnvelopesPage;
 //             envelopes.filter(e => !e.linked && isEnvelopeActiveInMonth(e, monthStart, monthEnd)),
 //         [envelopes, monthStart, monthEnd]);
 //
+//     /** The linked group the currently selected envelope belongs to, if any */
+//     const selectedLinkedGroup = useMemo(() => {
+//         if (!selectedEnvelope?.linked) return null;
+//         return linkedEnvelopeGroups.find(g => g.envelopes.some(e => e.id === selectedEnvelope.id)) ?? null;
+//     }, [selectedEnvelope, linkedEnvelopeGroups]);
+//
+//     /** Whether the right panel's current selection came from "View group stats" rather than a specific member */
+//     const [initialDetailView, setInitialDetailView] = useState<'individual' | 'group'>('individual');
+//
+//     /** The group currently shown as "group stats" in the right panel, if any */
+//     const selectedGroupId = initialDetailView === 'group' ? selectedLinkedGroup?.id ?? null : null;
+//
+//     const handleSelectEnvelope = useCallback((id: number | null) => {
+//         setSelectedId(id);
+//         setInitialDetailView('individual');
+//     }, []);
+//
+//     const handleSelectGroup = useCallback((group: LinkedEnvelopeGroup) => {
+//         if (group.envelopes.length === 0) return;
+//         setSelectedId(group.envelopes[0].id);
+//         setInitialDetailView('group');
+//     }, []);
+//
 //     // ── Filter button helper ───────────────────────────────────────────────────
 //     const filterBtn = (label: string, value: string, current: string, setter: (v: string) => void) => (
 //         <Button key={value} size="small" onClick={() => setter(value)} variant={current === value ? 'contained' : 'outlined'}
@@ -1430,6 +1618,10 @@ export default BudgetEnvelopesPage;
 //             {label}
 //         </Button>
 //     );
+//
+//     const onSnack = (msg: string, sev: 'success' | 'error' | 'info' | 'warning') => {
+//         setSnackMsg(msg); setSnackSev(sev); setSnackOpen(true);
+//     };
 //
 //     // ══════════════════════════════════════════════════════════════════════════
 //     return (
@@ -1564,217 +1756,38 @@ export default BudgetEnvelopesPage;
 //                         <Grid container spacing={3}>
 //                             {/* ── Left panel ────────────────────────────────── */}
 //                             <Grid item xs={12} lg={8}>
-//                                 <Box sx={{ borderRadius: '16px', overflow: 'hidden', border: `1px solid ${alpha(MAROON, 0.15)}`, boxShadow: `0 4px 24px ${alpha(MAROON, 0.08)}` }}>
-//
-//                                     {/* Panel header + view toggle */}
-//                                     <Box sx={{ background: `linear-gradient(135deg, ${MAROON_DARK} 0%, ${MAROON} 50%, #5a1515 100%)`, px: 3, py: 2, position: 'relative', overflow: 'hidden' }}>
-//                                         <Box sx={{ position: 'absolute', top: -16, right: -16, width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.06)' }} />
-//                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', gap: 1.5 }}>
-//                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
-//                                                 <Box sx={{ width: 30, height: 30, borderRadius: '8px', bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-//                                                     {leftPanelView === 'envelopes'
-//                                                         ? (envelopePanelEditMode ? <Pencil size={15} color="white" /> : <Wallet size={15} color="white" />)
-//                                                         : leftPanelView === 'analytics' ? <BarChart2 size={15} color="white" />
-//                                                             : leftPanelView === 'planadjuster' ? <Sliders size={15} color="white" />
-//                                                                 : <CreditCard size={15} color="white" />}
-//                                                 </Box>
-//                                                 <Box sx={{ minWidth: 0 }}>
-//                                                     <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: '#fff', letterSpacing: '-0.01em' }}>
-//                                                         {leftPanelView === 'envelopes'
-//                                                             ? (envelopePanelEditMode ? 'Edit envelopes' : 'Your Envelopes')
-//                                                             : leftPanelView === 'analytics' ? 'Analytics'
-//                                                                 : leftPanelView === 'planadjuster' ? `Adjust Plan — ${selectedEnvelope?.envelopeName ?? ''}`
-//                                                                     : `Payment Plan — ${selectedEnvelope?.envelopeName ?? ''}`}
-//                                                     </Typography>
-//                                                     <Typography sx={{ fontSize: '0.67rem', color: 'rgba(255,255,255,0.7)', mt: 0.1 }}>
-//                                                         {leftPanelView === 'envelopes'
-//                                                             ? (envelopePanelEditMode
-//                                                                 ? 'Manage group members · add or remove envelopes'
-//                                                                 : `${filtered.length} envelope${filtered.length !== 1 ? 's' : ''} active in ${monthLabel}`)
-//                                                             : leftPanelView === 'analytics'
-//                                                                 ? 'Velocity, allocation, timeline & insights'
-//                                                                 : leftPanelView === 'planadjuster'
-//                                                                     ? 'Adjust your monthly payment and preview the payoff'
-//                                                                     : 'Schedule, acceleration simulator & amortization'}
-//                                                     </Typography>
-//                                                 </Box>
-//                                             </Box>
-//
-//                                             {/* Right-side controls */}
-//                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-//                                                 {/* Edit / Exit edit button — only shown on envelopes view when there are linked groups */}
-//                                                 {leftPanelView === 'envelopes' && linkedEnvelopeGroups.length > 0 && (
-//                                                     <Button
-//                                                         size="small"
-//                                                         onClick={() => setEnvelopePanelEditMode(p => !p)}
-//                                                         startIcon={envelopePanelEditMode ? <XIcon size={12} /> : <Pencil size={12} />}
-//                                                         sx={{
-//                                                             borderRadius: '7px', textTransform: 'none', fontWeight: 700, fontSize: '0.75rem',
-//                                                             px: 1.5, py: 0.6,
-//                                                             ...(envelopePanelEditMode
-//                                                                 ? { bgcolor: 'rgba(255,255,255,0.9)', color: MAROON, '&:hover': { bgcolor: '#fff' } }
-//                                                                 : { bgcolor: 'rgba(255,255,255,0.14)', color: '#fff', border: '0.5px solid rgba(255,255,255,0.22)', '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' } }),
-//                                                         }}
-//                                                     >
-//                                                         {envelopePanelEditMode ? 'Exit edit' : 'Edit'}
-//                                                     </Button>
-//                                                 )}
-//
-//                                                 {/* View tabs */}
-//                                                 <Box sx={{ display: 'flex', p: '3px', borderRadius: '9px', bgcolor: 'rgba(0,0,0,0.25)', gap: '2px' }}>
-//                                                     {[
-//                                                         { key: 'envelopes'   as const, label: 'Envelopes',  icon: <Wallet     size={12} /> },
-//                                                         { key: 'analytics'   as const, label: 'Analytics',  icon: <BarChart2  size={12} /> },
-//                                                         ...(selectedEnvelope?.envelopeType === 'PAYOFF' && selectedEnvelope?.paymentPlan
-//                                                             ? [
-//                                                                 { key: 'paymentplan' as const, label: 'Pay plan',   icon: <CreditCard size={12} /> },
-//                                                                 { key: 'planadjuster' as const, label: 'Adjust plan', icon: <Sliders size={12} /> },
-//                                                             ]
-//                                                             : []),
-//                                                     ].map(({ key, label, icon }) => (
-//                                                         <Button key={key} size="small" onClick={() => setLeftPanelView(key)} startIcon={icon}
-//                                                                 sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 700, fontSize: '0.72rem', px: 1.5, py: 0.5, minWidth: 0, gap: 0.5, transition: 'all 0.18s',
-//                                                                     ...(leftPanelView === key
-//                                                                         ? { bgcolor: 'rgba(255,255,255,0.18)', color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.24)' } }
-//                                                                         : { bgcolor: 'transparent', color: 'rgba(255,255,255,0.55)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' } }) }}>
-//                                                             {label}
-//                                                         </Button>
-//                                                     ))}
-//                                                 </Box>
-//                                             </Box>
-//                                         </Box>
-//                                     </Box>
-//
-//                                     {/* Envelopes view */}
-//                                     {leftPanelView === 'envelopes' && (
-//                                         <Box sx={{ bgcolor: '#fff', p: 3 }}>
-//                                             {/* Linked groups */}
-//                                             {linkedEnvelopeGroups.length > 0 && (
-//                                                 <>
-//                                                     <Typography sx={{ fontSize: '0.67rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#aaa', mb: 1.25 }}>
-//                                                         Linked groups
-//                                                         {envelopePanelEditMode && (
-//                                                             <Box component="span" sx={{ ml: 1, color: MAROON, fontWeight: 700, textTransform: 'none', letterSpacing: 0, fontSize: '0.65rem' }}>
-//                                                                 — edit group members below
-//                                                             </Box>
-//                                                         )}
-//                                                     </Typography>
-//                                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-//                                                         {linkedEnvelopeGroups.map(group => (
-//                                                             <LinkedEnvelopeGroupCard
-//                                                                 key={group.id}
-//                                                                 group={group}
-//                                                                 onSelectEnvelope={(id: number) => setSelectedId(id)}
-//                                                                 selectedId={selectedId}
-//                                                                 editMode={envelopePanelEditMode}
-//                                                                 onSaveGroupEdit={handleSaveGroupEdit}
-//                                                                 onDissolveGroup={handleDissolveGroup}
-//                                                                 availableEnvelopes={individualEnvelopes}
-//                                                                 groupNotificationPrefs={getNotifPrefs(groupNotifKey(group.id))}
-//                                                                 onToggleGroupNotification={(channel) => toggleGroupNotif(group.id, group.envelopes.map(e => e.id), channel)}
-//                                                                 onOpenGroupNotificationSettings={() => openNotifDialog(groupNotifKey(group.id), group.linkName, group.envelopes)}
-//                                                                 getMemberNotificationPrefs={getNotifPrefs}
-//                                                                 onToggleMemberNotification={toggleEnvelopeNotif}
-//                                                                 onOpenMemberNotificationSettings={(envelopeId) => {
-//                                                                     const member = group.envelopes.find(e => e.id === envelopeId);
-//                                                                     if (member) openNotifDialog(envelopeId, member.envelopeName, [member]);
-//                                                                 }}
-//                                                                 onOpenGoalUpdate={() => handleOpenLinkedGoalUpdate(group)}   // ← add this
-//                                                             />
-//                                                         ))}
-//                                                     </Box>
-//                                                     <Divider sx={{ mb: 2, mt: 2 }} />
-//                                                 </>
-//                                             )}
-//
-//                                             {/* Individual envelopes */}
-//                                             {filtered.filter(e => !e.linked).length > 0 && (
-//                                                 <>
-//                                                     <Typography sx={{ fontSize: '0.67rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#aaa', mb: 1.25 }}>
-//                                                         Individual envelopes
-//                                                         {envelopePanelEditMode && (
-//                                                             <Box component="span" sx={{ ml: 1, color: '#aaa', fontWeight: 500, textTransform: 'none', letterSpacing: 0, fontSize: '0.65rem', fontStyle: 'italic' }}>
-//                                                                 — tap + on a group above to move one here
-//                                                             </Box>
-//                                                         )}
-//                                                     </Typography>
-//                                                     <Grid container spacing={2}>
-//                                                         {filtered.filter(e => !e.linked).map((env, i) => (
-//                                                             <Grid item xs={12} sm={6} key={env.id} sx={{ display: 'flex' }}>
-//                                                                 <EnvelopeCard
-//                                                                     envelope={env}
-//                                                                     animateIn={animateIn}
-//                                                                     timeout={700 + i * 80}
-//                                                                     contributions={contributions}
-//                                                                     monthContributed={monthlyContributed(contributions, env.id, monthStart, monthEnd)}
-//                                                                     onClick={() => !envelopePanelEditMode && setSelectedId(env.id === selectedId ? null : env.id)}
-//                                                                     onAddManual={openContribDialog}
-//                                                                     notificationPrefs={getNotifPrefs(env.id)}
-//                                                                     onToggleNotification={(channel) => toggleEnvelopeNotif(env.id, channel)}
-//                                                                     onOpenNotificationSettings={() => openNotifDialog(env.id, env.envelopeName, [env])}
-//                                                                 />
-//                                                             </Grid>
-//                                                         ))}
-//                                                     </Grid>
-//                                                 </>
-//                                             )}
-//
-//                                             {filtered.length === 0 && !isLoading && (
-//                                                 <Box sx={{ textAlign: 'center', py: 4 }}>
-//                                                     <PiggyBank size={40} color={alpha(MAROON, 0.25)} />
-//                                                     <Typography sx={{ mt: 2, fontWeight: 700, color: '#555' }}>No envelopes active in {monthLabel}</Typography>
-//                                                     <Typography sx={{ mt: 0.5, fontSize: '0.82rem', color: '#aaa' }}>Try navigating to a different month or adjusting the filters above.</Typography>
-//                                                 </Box>
-//                                             )}
-//                                         </Box>
-//                                     )}
-//
-//                                     {/* Analytics view */}
-//                                     {leftPanelView === 'analytics' && !isLoading && (
-//                                         <Box sx={{ bgcolor: '#fff', p: 3 }}>
-//                                             <InsightsPanel envelopes={envelopes} contributions={contributions} />
-//                                             <ChartsPanel   envelopes={envelopes} contributions={contributions} />
-//                                         </Box>
-//                                     )}
-//
-//                                     {/* Payment plan view */}
-//                                     {leftPanelView === 'paymentplan' && selectedEnvelope?.paymentPlan && (
-//                                         <Box sx={{ bgcolor: '#fff', p: 3 }}>
-//                                             {selectedEnvelope.paymentPlan.isDeferred && (
-//                                                 <Box sx={{ mb: 3, p: 2, borderRadius: '10px', bgcolor: alpha('#dc2626', 0.05), border: `1px solid ${alpha('#dc2626', 0.2)}`, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-//                                                     <Box sx={{ width: 34, height: 34, borderRadius: '9px', bgcolor: alpha('#dc2626', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-//                                                         <AlertTriangle size={16} color="#dc2626" />
-//                                                     </Box>
-//                                                     <Box>
-//                                                         <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#dc2626' }}>Deferred interest at risk: {fmt(selectedEnvelope.paymentPlan.deferredInterest)}</Typography>
-//                                                         <Typography sx={{ fontSize: '0.72rem', color: '#7f1d1d', mt: 0.3, lineHeight: 1.5 }}>
-//                                                             If {fmt(selectedEnvelope.remainingAmount)} isn't cleared by {selectedEnvelope.targetDate ? new Date(selectedEnvelope.targetDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—'}, the full 26.99% APR back-interest applies from the original purchase date.
-//                                                         </Typography>
-//                                                     </Box>
-//                                                 </Box>
-//                                             )}
-//                                             <PaymentPlanPanel envelope={selectedEnvelope} contributions={selectedContributions} />
-//                                         </Box>
-//                                     )}
-//
-//                                     {/* Plan adjuster view */}
-//                                     {leftPanelView === 'planadjuster' && selectedEnvelope?.paymentPlan && (
-//                                         <Box sx={{ bgcolor: '#fff', p: 3 }}>
-//                                             <PaymentPlanAdjuster
-//                                                 envelope={selectedEnvelope}
-//                                                 contributions={selectedContributions}
-//                                                 onApply={(envelopeId, newMonthlyAllocation) => {
-//                                                     setEnvelopes(prev => prev.map(e =>
-//                                                         e.id === envelopeId ? { ...e, allocatedAmount: newMonthlyAllocation } : e
-//                                                     ));
-//                                                     setSnackMsg('Payment schedule updated!');
-//                                                     setSnackSev('success');
-//                                                     setSnackOpen(true);
-//                                                 }}
-//                                             />
-//                                         </Box>
-//                                     )}
-//                                 </Box>
+//                                 <EnvelopeLeftPanel
+//                                     animateIn={animateIn}
+//                                     leftPanelView={leftPanelView}
+//                                     onSetLeftPanelView={setLeftPanelView}
+//                                     envelopePanelEditMode={envelopePanelEditMode}
+//                                     onToggleEditMode={() => setEnvelopePanelEditMode(p => !p)}
+//                                     selectedEnvelope={selectedEnvelope}
+//                                     filtered={filtered}
+//                                     linkedEnvelopeGroups={linkedEnvelopeGroups}
+//                                     individualEnvelopes={individualEnvelopes}
+//                                     envelopes={envelopes}
+//                                     contributions={contributions}
+//                                     selectedContributions={selectedContributions}
+//                                     monthStart={monthStart}
+//                                     monthEnd={monthEnd}
+//                                     monthLabel={monthLabel}
+//                                     isLoading={isLoading}
+//                                     selectedId={selectedId}
+//                                     onSelectEnvelope={handleSelectEnvelope}
+//                                     onAddManual={openContribDialog}
+//                                     onSnack={onSnack}
+//                                     getNotifPrefs={getNotifPrefs}
+//                                     onToggleEnvelopeNotification={toggleEnvelopeNotif}
+//                                     onToggleGroupNotification={toggleGroupNotif}
+//                                     onOpenNotificationDialog={openNotifDialog}
+//                                     onSaveGroupEdit={handleSaveGroupEdit}
+//                                     onDissolveGroup={handleDissolveGroup}
+//                                     onOpenLinkedGoalUpdate={handleOpenLinkedGoalUpdate}
+//                                     onSelectGroup={handleSelectGroup}
+//                                     selectedGroupId={selectedGroupId}
+//                                     onApplyPlanAdjustment={handleApplyPlanAdjustment}
+//                                 />
 //                             </Grid>
 //
 //                             {/* ── Right detail panel ────────────────────────── */}
@@ -1788,13 +1801,19 @@ export default BudgetEnvelopesPage;
 //                                             monthStart={monthStart}
 //                                             monthEnd={monthEnd}
 //                                             monthLabel={monthLabel}
-//                                             onClose={() => setSelectedId(null)}
+//                                             fundAccountDetails={selectedEnvelope?.envelopeType === 'FUND' ? toFundAccountDetails(selectedEnvelope.account) : undefined}
+//                                             onClose={() => handleSelectEnvelope(null)}
 //                                             onAddManual={openContribDialog}
 //                                             onToggleContribMode={handleToggleContribMode}
 //                                             onSetLeftPanel={setLeftPanelView}
 //                                             scheduledContributions={selectedEnvelope?.contributions ?? []}
-//                                             onSnack={(msg, sev) => { setSnackMsg(msg); setSnackSev(sev); setSnackOpen(true); }}
-//                                             onSelectEnvelope={(id) => setSelectedId(id)}
+//                                             onSnack={onSnack}
+//                                             onSelectEnvelope={handleSelectEnvelope}
+//                                             linkedGroup={selectedLinkedGroup}
+//                                             onOpenLinkedGoalUpdate={handleOpenLinkedGoalUpdate}
+//                                             onOpenGroupNotificationSettings={(group) => openNotifDialog(groupNotifKey(group.id), group.linkName, group.envelopes)}
+//                                             initialDetailView={initialDetailView}
+//                                             userId={userId}
 //                                         />
 //                                     </Box>
 //                                 </Grow>
@@ -1847,53 +1866,43 @@ export default BudgetEnvelopesPage;
 //                 open={notifDialogOpen}
 //                 onClose={() => setNotifDialogOpen(false)}
 //                 subjectName={notifDialogTitle}
-//                 notifications={[
-//                     {
-//                         id:        '1',
-//                         date:      new Date().toISOString(),
-//                         message:   'Contribution due — $200 scheduled for today',
-//                         badge:     'Due today',
-//                         badgeType: 'due',
-//                         isRead:    false,
-//                     },
-//                     {
-//                         id:        '2',
-//                         date:      new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-//                         message:   'Saving pace is behind — need $340/mo to hit your deadline',
-//                         badge:     'Falling behind',
-//                         badgeType: 'behind',
-//                         isRead:    false,
-//                     },
-//                     {
-//                         id:        '3',
-//                         date:      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-//                         message:   '$200 contribution added',
-//                         badge:     'Read',
-//                         badgeType: 'read',
-//                         isRead:    true,
-//                     },
-//                     {
-//                         id:        '4',
-//                         date:      new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-//                         message:   'Goal milestone reached — 50% of target saved',
-//                         badge:     'Goal',
-//                         badgeType: 'goal',
-//                         isRead:    true,
-//                     },
-//                 ]}
-//                 onMarkAllRead={() => {
-//                     setSnackMsg('All notifications marked as read');
-//                     setSnackSev('success');
-//                     setSnackOpen(true);
-//                     setNotifDialogOpen(false);
+//                 notifications={toDialogNotifications(envelopeNotifications)}
+//                 onMarkAllRead={async () => {
+//                     try {
+//                         const unread = envelopeNotifications.filter(n => !(n as any).isRead);
+//                         await Promise.all(
+//                             unread.map(n => EnvelopeNotificationService.getInstance().updateEnvelopeNotificationReadStatus((n as any).id, true))
+//                         );
+//                         setEnvelopeNotifications(prev => prev.map(n => ({ ...n, isRead: true } as EnvelopeNotification)));
+//                         setSnackMsg('All notifications marked as read');
+//                         setSnackSev('success');
+//                         setSnackOpen(true);
+//                         setNotifDialogOpen(false);
+//                     } catch (err) {
+//                         console.error('Failed to mark notifications as read:', err);
+//                         setSnackMsg('Failed to mark notifications as read. Please try again.');
+//                         setSnackSev('error');
+//                         setSnackOpen(true);
+//                     }
 //                 }}
-//                 onAccept={(id) => {
-//                     // TODO: wire to API — mark notification as accepted/actioned
-//                     setSnackMsg('Notification accepted');
-//                     setSnackSev('success');
-//                     setSnackOpen(true);
+//                 onAccept={async (id) => {
+//                     try {
+//                         await EnvelopeNotificationService.getInstance().sendEnvelopeAcceptNotification(Number(id));
+//                         setEnvelopeNotifications(prev =>
+//                             prev.map(n => String((n as any).id) === String(id) ? ({ ...n, isRead: true } as EnvelopeNotification) : n)
+//                         );
+//                         setSnackMsg('Notification accepted');
+//                         setSnackSev('success');
+//                         setSnackOpen(true);
+//                     } catch (err) {
+//                         console.error('Failed to accept notification:', err);
+//                         setSnackMsg('Failed to accept notification. Please try again.');
+//                         setSnackSev('error');
+//                         setSnackOpen(true);
+//                     }
 //                 }}
 //             />
+//
 //             <CreateEnvelopeDialog
 //                 open={createOpen}
 //                 onClose={() => setCreateOpen(false)}

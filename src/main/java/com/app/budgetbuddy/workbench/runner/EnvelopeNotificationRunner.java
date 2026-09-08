@@ -1,60 +1,51 @@
 package com.app.budgetbuddy.workbench.runner;
 
-import com.app.budgetbuddy.domain.EnvelopeNotification;
-import com.app.budgetbuddy.domain.EnvelopeNotificationStatus;
-import com.app.budgetbuddy.exceptions.RunnerException;
-import com.app.budgetbuddy.services.EnvelopeNotificationService;
-import com.app.budgetbuddy.services.EnvelopeService;
-import com.app.budgetbuddy.workbench.envelopes.EnvelopeNotificationBuilder;
+import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.workbench.EnvelopeNotificationAsyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
 public class EnvelopeNotificationRunner
 {
-    private final EnvelopeNotificationBuilder envelopeNotificationBuilder;
-    private final EnvelopeNotificationService envelopeNotificationService;
-    private final EnvelopeService envelopeService;
+    private final EnvelopeNotificationAsyncService envelopeNotificationAsyncService;
 
     @Autowired
-    public EnvelopeNotificationRunner(EnvelopeNotificationBuilder envelopeNotificationBuilder,
-                                      EnvelopeNotificationService envelopeNotificationService,
-                                      EnvelopeService envelopeService)
+    public EnvelopeNotificationRunner(EnvelopeNotificationAsyncService envelopeNotificationAsyncService)
     {
-        this.envelopeNotificationBuilder = envelopeNotificationBuilder;
-        this.envelopeNotificationService = envelopeNotificationService;
-        this.envelopeService = envelopeService;
+        this.envelopeNotificationAsyncService = envelopeNotificationAsyncService;
     }
 
     public Optional<EnvelopeNotificationStatus> sendEnvelopeNotificationAccept(Long notificationId)
     {
         try
         {
-            EnvelopeNotificationStatus status = envelopeNotificationService.sendEnvelopeAcceptedNotification(notificationId).get();
-            return Optional.of(status);
-        }catch(RunnerException ex){
+            EnvelopeNotificationStatus envelopeNotificationStatus = envelopeNotificationAsyncService.sendAsyncEnvelopeNotificationAccept(notificationId)
+                    .get();
+            return Optional.of(envelopeNotificationStatus);
+        }catch(InterruptedException | ExecutionException ex){
             log.error("There was an error sending the envelope notification accept: ", ex);
             return Optional.empty();
         }
     }
 
-    public List<EnvelopeNotification> createEnvelopeNotifications(Long envelopeId)
+    public List<EnvelopeNotification> createEnvelopeNotifications(Long envelopeId, LocalDate startDate, LocalDate endDate)
     {
-        return null;
+        try
+        {
+            return envelopeNotificationAsyncService.createAsyncEnvelopeNotifications(envelopeId, startDate, endDate).get();
+        }catch(Exception e){
+            log.error("There was an error creating envelope notifications: ", e);
+            return Collections.emptyList();
+        }
     }
 
-    public void updateEnvelopeNotificationReadStatus(boolean readStatus, Long notificationId)
-    {
-
-    }
-
-    public void getEnvelopeNotifications(Long envelopeId)
-    {
-
-    }
 }

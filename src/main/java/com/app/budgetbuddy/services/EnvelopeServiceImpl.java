@@ -1,8 +1,10 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.Envelope;
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.EnvelopeEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
+import com.app.budgetbuddy.repositories.AccountRepository;
 import com.app.budgetbuddy.repositories.EnvelopeRepository;
 import com.app.budgetbuddy.workbench.converter.EnvelopeModelConverter;
 import com.app.budgetbuddy.workbench.converter.EnvelopeToEntityConverter;
@@ -22,16 +24,19 @@ import java.util.Optional;
 @Slf4j
 public class EnvelopeServiceImpl implements EnvelopeService
 {
+    private final AccountRepository accountRepository;
     private final EnvelopeRepository envelopeRepository;
     private final EnvelopeModelConverter envelopeModelConverter;
     private final EnvelopeToEntityConverter envelopeToEntityConverter;
 
     @Autowired
     public EnvelopeServiceImpl(EnvelopeRepository envelopeRepository,
+                               AccountRepository accountRepository,
                                EnvelopeToEntityConverter envelopeToEntityConverter,
                                EnvelopeModelConverter envelopeModelConverter)
     {
         this.envelopeRepository = envelopeRepository;
+        this.accountRepository = accountRepository;
         this.envelopeToEntityConverter = envelopeToEntityConverter;
         this.envelopeModelConverter = envelopeModelConverter;
     }
@@ -117,6 +122,21 @@ public class EnvelopeServiceImpl implements EnvelopeService
 
     @Override
     @Transactional
+    public Optional<EnvelopeEntity> updatePlaidAccount(Long envelopeId, String plaidAccountId)
+    {
+        try
+        {
+            AccountEntity accountEntity = accountRepository.findByAccountId(plaidAccountId).orElseThrow(() -> new RuntimeException("Account not found"));
+            envelopeRepository.updateAccount(envelopeId, accountEntity);
+            return envelopeRepository.findById(envelopeId);
+        }catch(DataAccessException e){
+            log.error("There was an error updating the plaid account for the envelope", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<EnvelopeEntity> updateContributionMode(Long envelopeId, String contributionMode)
     {
         try
@@ -143,6 +163,7 @@ public class EnvelopeServiceImpl implements EnvelopeService
             List<EnvelopeEntity> envelopes = envelopeRepository.findAllByUserId(userId);
             envelopes.forEach(e -> {
                 Hibernate.initialize(e.getContributions());
+                Hibernate.initialize(e.getAccount());
                 log.info("Envelope {} contributions: {}", e.getName(), e.getContributions().size());
             });
 

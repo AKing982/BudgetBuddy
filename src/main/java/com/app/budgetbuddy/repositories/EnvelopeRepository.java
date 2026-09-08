@@ -1,5 +1,6 @@
 package com.app.budgetbuddy.repositories;
 
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.EnvelopeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -15,6 +16,10 @@ public interface EnvelopeRepository extends JpaRepository<EnvelopeEntity, Long>
 {
     @Query("SELECT e FROM EnvelopeEntity e WHERE e.user.id =:userId")
     List<EnvelopeEntity> findAllByUserId(Long userId);
+
+    @Query("UPDATE EnvelopeEntity e SET e.account =:account WHERE e.id =:id")
+    @Modifying
+    void updateAccount(@Param("id") Long id, @Param("account") AccountEntity account);
 
     @Query("UPDATE EnvelopeEntity e SET e.contributionMode =:mode WHERE e.id =:id")
     @Modifying
