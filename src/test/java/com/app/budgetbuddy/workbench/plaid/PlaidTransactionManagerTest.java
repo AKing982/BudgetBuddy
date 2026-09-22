@@ -103,7 +103,7 @@ class PlaidTransactionManagerTest
     {
         when(userService.findById(userId)).thenReturn(Optional.empty());
         assertThrows(UserNotFoundException.class, () -> {
-            transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate);
+            transactionManager.getAsyncTransactionsResponse(userId, "", startDate, endDate);
         });
     }
 
@@ -112,9 +112,8 @@ class PlaidTransactionManagerTest
     {
         plaidLinkEntity.setAccessToken("");
         when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
         assertThrows(InvalidAccessTokenException.class, () -> {
-            transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate);
+            transactionManager.getAsyncTransactionsResponse(userId, "", startDate, endDate);
         });
         verify(userService, times(1)).findById(userId);
         verify(plaidLinkService, times(1)).findPlaidLinkByUserID(userId);
@@ -128,14 +127,14 @@ class PlaidTransactionManagerTest
 
         TransactionsGetResponse expectedResponse = new TransactionsGetResponse();
 
+        String accessToken = "32323232";
         when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
         Call<TransactionsGetResponse> callSuccessful = mock(Call.class);
         when(callSuccessful.execute()).thenReturn(Response.success(expectedResponse));
 
         when(plaidApi.transactionsGet(any(TransactionsGetRequest.class))).thenReturn(callSuccessful);
 
-        TransactionsGetResponse actualResponse = transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate).join();
+        TransactionsGetResponse actualResponse = transactionManager.getAsyncTransactionsResponse(userId, accessToken, startDate, endDate).join();
         assertNotNull(actualResponse);
         assertEquals(expectedResponse.getTotalTransactions(), actualResponse.getTotalTransactions());
     }
@@ -152,7 +151,6 @@ class PlaidTransactionManagerTest
         plaidLinkEntity.setAccessToken("32323232");
 
         when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
         Call<TransactionsGetResponse> firstCall = mock(Call.class);
         Response<TransactionsGetResponse> failedResponse = Response.error(500, ResponseBody.create(MediaType.get("application/json"), "{}"));
         when(firstCall.execute()).thenReturn(failedResponse);
@@ -170,7 +168,7 @@ class PlaidTransactionManagerTest
                 .thenReturn(retryCall2)
                 .thenReturn(retryCall3);
 
-        TransactionsGetResponse actualResponse = transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate).join();
+        TransactionsGetResponse actualResponse = transactionManager.getAsyncTransactionsResponse(userId,plaidLinkEntity.getAccessToken(), startDate, endDate).join();
         assertNotNull(actualResponse);
         assertEquals(expectedResponse.getTotalTransactions(), actualResponse.getTotalTransactions());
         verify(plaidApi, times(4)).transactionsGet(any(TransactionsGetRequest.class));
@@ -183,7 +181,6 @@ class PlaidTransactionManagerTest
 
         plaidLinkEntity.setAccessToken("32323232");
         when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
         Call<TransactionsGetResponse> firstCall = mock(Call.class);
         Response<TransactionsGetResponse> failedResponse = Response.error(500, ResponseBody.create(MediaType.get("application/json"), "{}"));
         when(firstCall.execute()).thenReturn(failedResponse);
@@ -207,7 +204,7 @@ class PlaidTransactionManagerTest
                 .thenReturn(retryCall4)
                 .thenReturn(retryCall5);
         assertThrows(RuntimeException.class, () -> {
-            transactionManager.getAsyncTransactionsResponse(userId, startDate, endDate).join();
+            transactionManager.getAsyncTransactionsResponse(userId, plaidLinkEntity.getAccessToken(), startDate, endDate).join();
         });
     }
 
@@ -328,8 +325,9 @@ class PlaidTransactionManagerTest
 
     @Test
     void testGetAsyncRecurringResposne_whenUserIdNotValid_thenThrowUserNotFoundException() throws IOException{
+        String accessToken = "access_token";
         when(userService.findById(userId)).thenReturn(Optional.empty());
-        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId);
+        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId, accessToken);
 
         CompletionException ex = assertThrows(CompletionException.class, future::join);
         assertTrue(ex.getCause() instanceof UserNotFoundException);
@@ -342,7 +340,6 @@ class PlaidTransactionManagerTest
         Long userId = 1L;
 
         when(userService.findById(userId)).thenReturn(Optional.of(userEntity));
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
         TransactionsRecurringGetRequest transactionsRecurringGetRequest = new TransactionsRecurringGetRequest()
                 .accessToken("access_token")
                 .clientId("BudgetBuddy");
@@ -357,7 +354,7 @@ class PlaidTransactionManagerTest
         when(plaidApi.transactionsRecurringGet(transactionsRecurringGetRequest)).thenReturn(callSuccessful);
         when(callSuccessful.execute()).thenReturn(response);
 
-        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId);
+        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId, "access_token");
         TransactionsRecurringGetResponse actual = future.join();
         assertNotNull(actual);
         assertEquals(expectedResponse.getInflowStreams(), actual.getInflowStreams());
@@ -376,7 +373,6 @@ class PlaidTransactionManagerTest
         plaidLinkEntity.setUser(userEntity);
         plaidLinkEntity.setItemId("item1-2323");
 
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(plaidLinkEntity));
         TransactionsRecurringGetResponse expectedResponse = new TransactionsRecurringGetResponse();
         expectedResponse.setInflowStreams(List.of(new TransactionStream())); // Add dummy data
         expectedResponse.setOutflowStreams(List.of(new TransactionStream()));
@@ -400,7 +396,7 @@ class PlaidTransactionManagerTest
                 .thenReturn(callFail2)
                 .thenReturn(callSuccess);
 
-        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId);
+        CompletableFuture<TransactionsRecurringGetResponse> future = transactionManager.getAsyncRecurringResponse(userId, plaidLinkEntity.getAccessToken());
         TransactionsRecurringGetResponse actual = future.join();
         assertNotNull(actual);
         assertTrue(!future.isCompletedExceptionally());

@@ -74,7 +74,7 @@ class PlaidTransactionRunnerTest
         LocalDate startDate = LocalDate.of(2026, 2, 1);
         LocalDate endDate = LocalDate.of(2026, 2, 5);
 
-        when(plaidTransactionManager.getAsyncTransactionsResponse(anyLong(), any(), any()))
+        when(plaidTransactionManager.getAsyncTransactionsResponse(anyLong(), any(), any(), any()))
                 .thenReturn(CompletableFuture.completedFuture(null))
                 .thenThrow(new TransactionRunnerException("There was an error fetching the transaction response"));
 
@@ -92,7 +92,7 @@ class PlaidTransactionRunnerTest
         TransactionsGetResponse transactionsGetResponse = new TransactionsGetResponse();
         transactionsGetResponse.setTransactions(null);
 
-        when(plaidTransactionManager.getAsyncTransactionsResponse(anyLong(), any(), any()))
+        when(plaidTransactionManager.getAsyncTransactionsResponse(anyLong(), any(), any(), any()))
                 .thenReturn(CompletableFuture.completedFuture(transactionsGetResponse));
 
         List<Transaction> actual = plaidTransactionRunner.getTransactionsResponse(userId, startDate, endDate);
@@ -111,7 +111,7 @@ class PlaidTransactionRunnerTest
         when(response.getInflowStreams()).thenReturn(inflowStreams);
 
         List<RecurringTransaction> expectedTransactions = Arrays.asList(new RecurringTransaction());
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId))
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId, "Access"))
                 .thenReturn(CompletableFuture.completedFuture(response));
         when(recurringTransactionUtil.convertTransactionStreams(outflowStreams, inflowStreams))
                 .thenReturn(expectedTransactions);
@@ -126,7 +126,7 @@ class PlaidTransactionRunnerTest
     @Test
     void testGetRecurringTransactionsResponse_whenResponseIsNull_thenThrowException() throws IOException {
         Long userId = 1L;
-        when(plaidTransactionManager.getAsyncRecurringResponse(anyLong()))
+        when(plaidTransactionManager.getAsyncRecurringResponse(anyLong(), any()))
                 .thenReturn(CompletableFuture.completedFuture(null))
                 .thenThrow(new TransactionRunnerException("There was an error fetching the recurring transactions."));
 
@@ -138,7 +138,7 @@ class PlaidTransactionRunnerTest
     @Test
     void testGetRecurringTransactionsResponse_whenResponseThrowsException_thenCatchException() throws IOException{
         Long userId = 1L;
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId))
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId, "Access"))
                 .thenThrow(new IOException("There was an error fetching the recurring transactions."));
         assertThrows(TransactionRunnerException.class, () -> {
             plaidTransactionRunner.getRecurringTransactionsResponse(userId);
@@ -153,7 +153,7 @@ class PlaidTransactionRunnerTest
         when(transactionsRecurringGetResponse.getInflowStreams()).thenReturn(null);
         when(transactionsRecurringGetResponse.getOutflowStreams()).thenReturn(null);
 
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId))
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId, "Access"))
                 .thenReturn(CompletableFuture.completedFuture(transactionsRecurringGetResponse));
 
         assertThrows(TransactionRunnerException.class, () -> {
@@ -169,7 +169,7 @@ class PlaidTransactionRunnerTest
         when(response.getOutflowStreams()).thenReturn(outflowStreams);
         when(response.getInflowStreams()).thenReturn(null);
 
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId))
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId, "Access"))
                 .thenReturn(CompletableFuture.completedFuture(response));
         when(recurringTransactionUtil.convertTransactionStreams(outflowStreams, Collections.emptyList()))
                 .thenReturn(Arrays.asList(new RecurringTransaction()));
@@ -187,7 +187,7 @@ class PlaidTransactionRunnerTest
         TransactionsRecurringGetResponse response = mock(TransactionsRecurringGetResponse.class);
         when(response.getInflowStreams()).thenReturn(inflowStreams);
         when(response.getOutflowStreams()).thenReturn(null);
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId))
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId, "Access"))
             .thenReturn(CompletableFuture.completedFuture(response));
         when(recurringTransactionUtil.convertTransactionStreams(Collections.emptyList(), inflowStreams))
             .thenReturn(Arrays.asList(new RecurringTransaction()));
@@ -205,7 +205,7 @@ class PlaidTransactionRunnerTest
         TransactionsRecurringGetResponse response = mock(TransactionsRecurringGetResponse.class);
         when(response.getInflowStreams()).thenReturn(inflowStreams);
         when(response.getOutflowStreams()).thenReturn(Collections.emptyList());
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId))
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId, "Access"))
                 .thenReturn(CompletableFuture.completedFuture(response));
         when(recurringTransactionUtil.convertTransactionStreams(Collections.emptyList(), inflowStreams))
             .thenReturn(Arrays.asList(new RecurringTransaction()));
@@ -222,7 +222,7 @@ class PlaidTransactionRunnerTest
         TransactionsRecurringGetResponse response = mock(TransactionsRecurringGetResponse.class);
         when(response.getOutflowStreams()).thenReturn(outflowStreams);
         when(response.getInflowStreams()).thenReturn(Collections.emptyList());
-        when(plaidTransactionManager.getAsyncRecurringResponse(userId))
+        when(plaidTransactionManager.getAsyncRecurringResponse(userId, "Access"))
                 .thenReturn(CompletableFuture.completedFuture(response));
         when(recurringTransactionUtil.convertTransactionStreams(outflowStreams, Collections.emptyList()))
                 .thenReturn(Arrays.asList(new RecurringTransaction()));
@@ -236,7 +236,7 @@ class PlaidTransactionRunnerTest
     void testSyncTransactions_whenPlaidLinkNotFound_thenReturnEmptyList() throws IOException{
         Long userId = 1L;
         when(plaidLinkService.findPlaidLinkByUserID(userId))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of());
         List<Transaction> actual = plaidTransactionRunner.syncTransactions(userId);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
@@ -250,7 +250,7 @@ class PlaidTransactionRunnerTest
         plaidLinkEntity.setItemId("");
         plaidLinkEntity.setUser(UserEntity.builder().id(userId).build());
         when(plaidLinkService.findPlaidLinkByUserID(userId))
-                .thenReturn(Optional.of(plaidLinkEntity));
+                .thenReturn(List.of(plaidLinkEntity));
         assertThrows(InvalidAccessTokenException.class, () -> {
             plaidTransactionRunner.syncTransactions(userId);
         });
@@ -265,7 +265,7 @@ class PlaidTransactionRunnerTest
         plaidLinkEntity.setUser(UserEntity.builder().id(userId).build());
         plaidLinkEntity.setAccessToken("e2323232");
         when(plaidLinkService.findPlaidLinkByUserID(userId))
-                .thenReturn(Optional.of(plaidLinkEntity));
+                .thenReturn(List.of(plaidLinkEntity));
         assertThrows(IllegalArgumentException.class, () -> {
             plaidTransactionRunner.syncTransactions(userId);
         });
@@ -291,7 +291,7 @@ class PlaidTransactionRunnerTest
         when(response.getModified()).thenReturn(List.of(mockUpdatedTransaction));
 
         when(plaidLinkService.findPlaidLinkByUserID(userId))
-            .thenReturn(Optional.of(plaidLinkEntity));
+            .thenReturn(List.of(plaidLinkEntity));
         when(plaidTransactionManager.syncTransactionsForUser(
                 eq("test-secret-key"),  // or isNull()
                 eq("e2323232"),
@@ -320,7 +320,7 @@ class PlaidTransactionRunnerTest
         plaidLinkEntity.setAccessToken("e2323232");
         ReflectionTestUtils.setField(plaidTransactionRunner, "secret", "test-secret-key");
         when(plaidLinkService.findPlaidLinkByUserID(userId))
-                .thenReturn(Optional.of(plaidLinkEntity));
+                .thenReturn(List.of(plaidLinkEntity));
         when(plaidTransactionManager.syncTransactionsForUser(
                 eq("test-secret-key"),  // or isNull()
                 eq("e2323232"),

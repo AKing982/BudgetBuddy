@@ -26,10 +26,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -71,15 +68,21 @@ public class PlaidAccountManager extends AbstractPlaidManager
      * @param userId The user ID.
      * @return The response containing the accounts for the user.
      */
-    public AccountsGetResponse getAccountsForUser(Long userId) throws IOException {
+    public List<AccountsGetResponse> getAccountsForUser(Long userId) throws IOException
+    {
         if(userId == null){
             throw new InvalidUserIDException("Invalid user ID.");
         }
-        PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
-        String accessToken = plaidLinkEntity.getAccessToken();
-        AccountsGetRequest request = createAccountRequest(accessToken);
-        Response<AccountsGetResponse> response = getAccountsForUserWithRetryResponse(request);
-        return response.body();
+        List<AccountsGetResponse> accountsGetResponses = new ArrayList<>();
+        List<PlaidLinkEntity> plaidLinkEntityList = findPlaidLinkByUserId(userId);
+        for(PlaidLinkEntity plaidLinkEntity : plaidLinkEntityList)
+        {
+            String accessToken = plaidLinkEntity.getAccessToken();
+            AccountsGetRequest request = createAccountRequest(accessToken);
+            Response<AccountsGetResponse> response = getAccountsForUserWithRetryResponse(request);
+            accountsGetResponses.add(response.body());
+        }
+        return accountsGetResponses;
     }
 
     /**
@@ -114,19 +117,26 @@ public class PlaidAccountManager extends AbstractPlaidManager
         return accountsResponse;
     }
 
-    public List<AccountEntity> savePlaidAccountsToDatabase(List<PlaidAccount> accounts, Long userId) throws PlaidApiException {
-        if(accounts.isEmpty()){
+    public List<AccountEntity> savePlaidAccountsToDatabase(List<PlaidAccount> accounts, Long userId) throws PlaidApiException
+    {
+        if(accounts.isEmpty())
+        {
             throw new AccountsNotFoundException("No accounts found.");
         }
         Optional<UserEntity> user = userService.findById(userId);
         if(user.isEmpty()){
             throw new UserNotFoundException("User not found.");
         }
-        UserEntity userEntity = user.get();
         List<AccountEntity> accountEntities = new ArrayList<>();
-        for(PlaidAccount account : accounts){
-            if(account != null){
-                AccountEntity accountEntity = accountBaseConverter.convert(account, userEntity);
+        UserEntity userEntity = user.get();
+        for(PlaidAccount account : accounts)
+        {
+            if(account != null)
+            {
+                String itemId = account.getItemId();
+                PlaidLinkEntity plaidLinkEntity = plaidLinkService.findPlaidLinkByItemId(itemId, userId)
+                        .orElseThrow(() -> new PlaidLinkException("Plaid Link not found for item ID: " + itemId));
+                AccountEntity accountEntity = accountBaseConverter.convert(account, userEntity, plaidLinkEntity);
                 accountService.save(accountEntity);
                 accountEntities.add(accountEntity);
             }

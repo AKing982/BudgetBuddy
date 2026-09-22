@@ -30,10 +30,6 @@ public class BPCategoryEntity
     @Column(name="category",  nullable = false)
     private String category;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name="budget_category_id")
-//    private BudgetCategoryEntity budgetCategory;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="bp_category_group_id")
     private BPCategoryGroupEntity categoryGroup;

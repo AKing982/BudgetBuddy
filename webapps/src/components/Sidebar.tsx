@@ -6,7 +6,7 @@ import {
 import { Dashboard, AccountBalance, Search, ShoppingCart } from '@mui/icons-material';
 import {
     Settings, HelpCircle, BellIcon, User, CreditCard,
-    Shield, LogOut, Calculator, Sparkles, BarChartIcon, BarChart2, Wallet,
+    Shield, LogOut, Calculator, Sparkles, BarChartIcon, BarChart2, Wallet, Landmark,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarMenu from './SidebarMenu';
@@ -18,6 +18,7 @@ import UserLogService from '../services/UserLogService';
 import SessionService from '../services/SessionService';
 import {BarChart, PieChart} from "recharts";
 import BudgetEnvelopesPage from "./BudgetEnvelopesPage";
+import {Doughnut} from "react-chartjs-2";
 
 interface MenuItemType {
     text: string;
@@ -92,7 +93,8 @@ const Sidebar: React.FC = () => {
         { text: 'Budgets',         icon: <AccountBalance sx={{ fontSize: 20 }} />, path: getBudgetPath() },
         { text: 'Budget Envelopes', icon: <Wallet /> ,path: '/budget-envelopes' },
         { text: 'Spending Tracker', icon: <BarChart2 size={20} />, path: '/spending-tracker' },
-        { text: 'Balance/Savings Tracker', icon: <PieChart />, path: '/balance-savings-tracker' },
+        // { text: 'Balance/Savings Tracker', icon: <PieChart />, path: '/balance-savings-tracker' },
+        { text: 'Investments', icon: <Landmark size={20} />, path: '/investments' },
         // { text: 'Grocery Tracker', icon: <ShoppingCart sx={{ fontSize: 20 }} />,  path: '/grocery-tracker' },
         { text: 'Transactions',    icon: <Search sx={{ fontSize: 20 }} />,         path: '/transactions' },
         { text: 'BudgetPlanner',   icon: <Calculator size={19} />,                path: '/budget-planner' },

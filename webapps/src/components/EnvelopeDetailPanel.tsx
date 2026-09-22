@@ -376,12 +376,7 @@ const EnvelopeDetailPanel: React.FC<EnvelopeDetailPanelProps> = ({
         setConnectDialogOpen(true);
         setConnectAccountsLoading(true);
         try {
-            const status = await PlaidService.getInstance().checkPlaidLinkStatusByUserId(userId);
-            if (!status.isLinked || status.requiresLinkUpdate) {
-                await handleLinkNewAccount();
-            } else {
-                await loadEligibleAccounts(userId);
-            }
+
         } catch {
             onSnack("Couldn't check your account connection", 'error');
             setConnectDialogOpen(false);

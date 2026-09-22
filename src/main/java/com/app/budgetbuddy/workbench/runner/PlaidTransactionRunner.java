@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.app.budgetbuddy.entities.AccountEntity;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.exceptions.InvalidAccessTokenException;
 import com.app.budgetbuddy.services.RecurringTransactionService;
@@ -69,11 +70,22 @@ public class PlaidTransactionRunner
         this.transactionConverter = transactionConverter;
     }
 
+    private String getAccessTokenFromPlaidLinkEntities(List<PlaidLinkEntity> plaidLinkEntities)
+    {
+        return plaidLinkEntities.stream()
+                .filter(plaidLinkEntity -> plaidLinkEntity.getInstitution().equalsIgnoreCase("Mountain America Credit Union"))
+                .map(PlaidLinkEntity::getAccessToken)
+                .findFirst()
+                .orElseThrow(() -> new InvalidAccessTokenException("No valid access token found"));
+    }
+
     public List<Transaction> getTransactionsResponse(Long userId, LocalDate startDate, LocalDate endDate) throws IOException
     {
         try
         {
-            CompletableFuture<TransactionsGetResponse> transactionFuture = plaidTransactionManager.getAsyncTransactionsResponse(userId, startDate, endDate);
+            List<PlaidLinkEntity> plaidLinkEntities = plaidLinkService.findPlaidLinkByUserID(userId);
+            String accessToken = getAccessTokenFromPlaidLinkEntities(plaidLinkEntities);
+            CompletableFuture<TransactionsGetResponse> transactionFuture = plaidTransactionManager.getAsyncTransactionsResponse(userId,accessToken,startDate, endDate);
             TransactionsGetResponse response = transactionFuture.join();
             if(response == null)
             {
@@ -104,7 +116,8 @@ public class PlaidTransactionRunner
     {
         try
         {
-            CompletableFuture<TransactionsRecurringGetResponse> future = plaidTransactionManager.getAsyncRecurringResponse(userId);
+            String accessToken = getAccessTokenFromPlaidLinkEntities(plaidLinkService.findPlaidLinkByUserID(userId));
+            CompletableFuture<TransactionsRecurringGetResponse> future = plaidTransactionManager.getAsyncRecurringResponse(userId, accessToken);
             TransactionsRecurringGetResponse recurringResponse = future.join();
             if(recurringResponse == null)
             {
@@ -135,34 +148,30 @@ public class PlaidTransactionRunner
 
     public List<Transaction> syncTransactions(Long userId) throws IOException
     {
-        Optional<PlaidLinkEntity> plaidLinkEntityOptional = plaidLinkService.findPlaidLinkByUserID(userId);
-        if(plaidLinkEntityOptional.isEmpty())
+        List<PlaidLinkEntity> plaidLinkEntities = plaidLinkService.findPlaidLinkByUserID(userId);
+        if(plaidLinkEntities.isEmpty())
         {
             return Collections.emptyList();
         }
         try
         {
-            PlaidLinkEntity plaidLinkEntity = plaidLinkEntityOptional.get();
-            String accessToken = plaidLinkEntity.getAccessToken();
-            if(accessToken.isEmpty())
-            {
-                throw new InvalidAccessTokenException("Invalid access token found. Unable to sync transactions.");
-            }
-            String itemId = plaidLinkEntity.getItemId();
-            if(itemId.isEmpty())
-            {
-                throw new IllegalArgumentException("Invalid item id found. Unable to sync transactions.");
-            }
-            CompletableFuture<TransactionsSyncResponse> syncFuture = plaidTransactionManager.syncTransactionsForUser(secret, accessToken, itemId, userId);
-            TransactionsSyncResponse response = syncFuture.join();
-            if(response == null)
-            {
-                throw new TransactionRunnerException("There was an error fetching the transactions from the response.");
-            }
-            List<com.plaid.client.model.Transaction> addedTransactions = response.getAdded();
-            List<com.plaid.client.model.Transaction> modifiedTransactions = response.getModified();
-            return Stream.of(addedTransactions, modifiedTransactions)
-                    .flatMap(transactions -> convertPlaidTransaction(transactions).stream())
+            return plaidLinkEntities.stream()
+                    .filter(e -> e.getInstitution().equalsIgnoreCase("Mountain America Credit Union"))
+                    .filter(plaidLinkEntity -> {
+                        String accessToken = plaidLinkEntity.getAccessToken();
+                        return !accessToken.isEmpty();
+                    })
+                    .map(plaidLinkEntity -> {
+                        try {
+                            return plaidTransactionManager.syncTransactionsForUser(secret, plaidLinkEntity.getAccessToken(), plaidLinkEntity.getItemId(),userId);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .map(CompletableFuture::join)
+                    .filter(Objects::nonNull)
+                    .flatMap(response -> Stream.of(response.getAdded(), response.getModified())
+                            .flatMap(transactions -> convertPlaidTransaction(transactions).stream()))
                     .collect(Collectors.toList());
         }catch(CompletionException ex){
             throw new TransactionRunnerException("There was an error fetching the transactions from the response");

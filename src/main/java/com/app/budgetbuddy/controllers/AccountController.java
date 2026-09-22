@@ -18,7 +18,6 @@ import java.util.List;
 @CrossOrigin(value="http://localhost:3000")
 public class AccountController
 {
-
     private final AccountService accountService;
     private final Logger LOGGER = LoggerFactory.getLogger(AccountController.class);
 

@@ -3,6 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.PlaidLinkStatus;
 import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
+import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.exceptions.PlaidApiException;
 import com.app.budgetbuddy.exceptions.PlaidLinkException;
 import com.app.budgetbuddy.exceptions.UserNotFoundException;
@@ -10,14 +11,13 @@ import com.app.budgetbuddy.repositories.PlaidLinkRepository;
 import com.app.budgetbuddy.repositories.UserRepository;
 import jakarta.persistence.Temporal;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -67,8 +67,36 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
 
     @Override
     @Transactional
-    public Optional<PlaidLinkEntity> findPlaidLinkByUserID(Long userID) {
-        return plaidLinkRepository.findPlaidLinkByUserId(userID);
+    public List<PlaidLinkEntity> findPlaidLinkByUserID(Long userID)
+    {
+        try
+        {
+            List<PlaidLinkEntity> plaidLinks = plaidLinkRepository.findPlaidLinkByUserId(userID);
+            plaidLinks.forEach(plaidLink -> {
+                Hibernate.initialize(plaidLink.getAccounts());
+            });
+            return plaidLinks;
+        }catch(DataAccessException ex){
+            log.error("There was an error retrieving the plaid link by user id: ", ex);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<PlaidLinkEntity> findPlaidLinkByItemId(String itemId, Long userId)
+    {
+        if(itemId == null || itemId.isEmpty())
+        {
+            return Optional.empty();
+        }
+        try
+        {
+            return plaidLinkRepository.findByItemIdAndUserId(itemId, userId);
+        }catch(DataAccessException ex){
+            log.error("There was an error retrieving the plaid link by item id: ", ex);
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -78,20 +106,30 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
 
     @Override
     @Transactional
-    public PlaidLinkStatus checkPlaidLinkStatus(Long userId)
+    public List<PlaidLinkStatus> checkPlaidLinkStatus(Long userId)
     {
-        Optional<PlaidLinkEntity> plaidLink = plaidLinkRepository.findPlaidLinkByUserId(userId);
-        if (plaidLink.isEmpty()) {
-            return new PlaidLinkStatus(false, false);
+        List<PlaidLinkEntity> plaidLink = plaidLinkRepository.findPlaidLinkByUserId(userId);
+        if(plaidLink.isEmpty())
+        {
+            return Collections.emptyList();
         }
-
-        PlaidLinkEntity link = plaidLink.get();
-
-        // Define a threshold for when an update is required (e.g., 30 days)
+        List<PlaidLinkStatus> statuses = new ArrayList<>();
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        boolean needsUpdate = link.getUpdatedAt() == null || link.getUpdatedAt().isBefore(thirtyDaysAgo);
-
-        return new PlaidLinkStatus(true, needsUpdate);
+        for(PlaidLinkEntity link : plaidLink)
+        {
+            boolean needsUpdate = link.getUpdatedAt() == null || link.getUpdatedAt().isBefore(thirtyDaysAgo);
+            if(needsUpdate)
+            {
+                log.info("Plaid link {} for user {} is stale (last updated {}), marking for update",
+                        link.getId(), userId, link.getUpdatedAt());
+            }
+            PlaidLinkStatus status = new PlaidLinkStatus(
+                link.getId(),
+                true,
+                needsUpdate);
+            statuses.add(status);
+        }
+        return statuses;
     }
 
     @Override
@@ -111,11 +149,11 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
 
     @Override
     @Transactional
-    public void markPlaidAsNeedingUpdate(Long userId)
+    public void markPlaidAsNeedingUpdate(Long userId, Long plaidLinkId)
     {
         try
         {
-            plaidLinkRepository.updateRequiresUpdate(userId);
+            plaidLinkRepository.updateRequiresUpdate(userId, plaidLinkId);
         }catch(PlaidLinkException e)
         {
             log.error("There was an error marking the plaid as needing update: ", e);
@@ -126,10 +164,18 @@ public class PlaidLinkServiceImpl implements PlaidLinkService
     @Transactional
     public void markPlaidAsUpdated(Long userId, String accessToken, String oldAccessToken)
     {
-        plaidLinkRepository.findPlaidLinkByUserId(userId).ifPresent(plaidLink -> {
-            plaidLink.setUpdatedAt(LocalDateTime.now());
-            plaidLinkRepository.updateAccessToken(accessToken, oldAccessToken, userId);
-        });
+        if(accessToken == null || oldAccessToken == null)
+        {
+            return;
+        }
+        plaidLinkRepository.findPlaidLinkByUserId(userId)
+                        .stream()
+                        .filter(plaidLink -> plaidLink.getAccessToken().equals(oldAccessToken))
+                .findFirst()
+                .ifPresent(plaidLink -> {
+                    plaidLink.setUpdatedAt(LocalDateTime.now());
+                    plaidLinkRepository.updateAccessToken(accessToken, oldAccessToken, userId);
+                });
     }
 
     private UserEntity findUserByUserID(Long userID)

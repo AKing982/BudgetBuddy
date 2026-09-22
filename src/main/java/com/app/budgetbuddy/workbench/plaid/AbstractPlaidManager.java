@@ -9,6 +9,7 @@ import com.plaid.client.request.PlaidApi;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -28,15 +29,12 @@ public abstract class AbstractPlaidManager
         this.plaidApi = plaidApi;
     }
 
-    protected PlaidLinkEntity findPlaidLinkByUserId(Long userId){
+    protected List<PlaidLinkEntity> findPlaidLinkByUserId(Long userId)
+    {
         if(userId == null){
             throw new InvalidUserIDException("Invalid user ID.");
         }
-        Optional<PlaidLinkEntity> plaidLinkOptional = plaidLinkService.findPlaidLinkByUserID(userId);
-        if(plaidLinkOptional.isEmpty()){
-            throw new PlaidLinkException("No plaid link found for userID: " + userId);
-        }
-        return plaidLinkOptional.get();
+        return plaidLinkService.findPlaidLinkByUserID(userId);
     }
 
     protected String getPlaidAccessToken(PlaidLinkEntity plaidLinkEntity){

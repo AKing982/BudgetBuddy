@@ -3,7 +3,7 @@ import axios, {AxiosError, AxiosInstance, AxiosStatic} from "axios";
 import {Plaid} from "react-plaid-link";
 
 interface PlaidLinkToken {
-    link_token: string;
+    linkToken: string;
     expiration: string;
 }
 
@@ -15,6 +15,37 @@ interface PlaidExchangeResponse {
     accessToken: string;
     itemID: string;
     userID: bigint;
+}
+
+interface InvestmentHolding {
+    id: number;
+    name: string;
+    securityId: string;
+    accountId: string;
+    amount: number;
+    vestedAmount: number;
+    costBasis: number;
+}
+
+interface InvestmentTransactions {
+    id: number;
+    account: {
+        id: string;
+        accountName: string;
+        officialName: string;
+        type: string;
+        subtype: string;
+        mask: string;
+        balance: number;
+    };
+    investmentTransactionId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    date: string;
+    amount: number;
+    type: string;
+    subtype: string;
 }
 
 interface PlaidLinkStatus {
@@ -41,6 +72,38 @@ export interface PlaidAccount {
     type: string;
     subtype: string;
     mask: string;
+}
+
+export interface AccountEntity{
+    id: string;
+    userId: number;
+    plaid_link_id: number;
+    accountName: string;
+    officialName: string;
+    type: string;
+    subtype: string;
+    mask: string;
+    balance: number;
+}
+
+interface UserEntity {
+    id: number;
+    firstName: string;
+    lastName: string;
+    username: string;
+    email: string;
+    password: string;
+    overrideUploadEnabled: boolean;
+    enablePlaidCsvSync: boolean;
+}
+
+interface PlaidLinkEntity {
+    id: number;
+    accessToken: string;
+    itemId: string;
+    institution: string;
+    requiresUpdate: boolean;
+    accounts: AccountEntity[];
 }
 
 interface Transaction {
@@ -75,7 +138,7 @@ interface TransactionDTO {
 
 interface PlaidAccountRequest {
     userId: number;
-    account: PlaidAccount[];
+    accounts: PlaidAccount[];
 }
 
 interface AccountResponse {
@@ -86,6 +149,7 @@ interface AccountResponse {
     subtype: string;
     officialName: string;
     mask: string;
+    itemId: string;
 }
 
 class PlaidService {
@@ -126,7 +190,7 @@ class PlaidService {
         }
     }
 
-    public async checkPlaidLinkStatusByUserId(userId: number) : Promise<PlaidLinkStatus>
+    public async checkPlaidLinkStatusByUserId(userId: number) : Promise<PlaidLinkStatus[]>
     {
         if(userId < 1){
             throw new Error("Invalid userId. UserId must be a positive number.");
@@ -134,7 +198,7 @@ class PlaidService {
         try
         {
             console.log('API URL:', apiUrl);
-            const response = await axios.get(`${apiUrl}/plaid/${userId}/plaid-link`);
+            const response = await axios.get<PlaidLinkStatus[]>(`${apiUrl}/plaid/${userId}/plaid-link`);
             return response.data;
         }catch(error)
         {
@@ -147,6 +211,26 @@ class PlaidService {
             }
             throw error;
         }
+    }
+
+    public async createInvestmentLinkToken() : Promise<PlaidLinkToken> {
+        try
+        {
+            const userId = sessionStorage.getItem('userId');
+            const response = await axios.post<PlaidLinkToken>(`${apiUrl}/plaid/create_investment_link_token`, {
+                userId: userId
+            });
+            return response.data;
+        }catch(error){
+            console.error('Error creating Plaid Investment Link Token: ', error);
+            throw error;
+        }
+    }
+
+    public async fetchLinkedInvestmentAccounts(userId: number): Promise<PlaidAccount[]> {
+        const accounts = await this.fetchAndLinkPlaidAccounts(userId);
+        if (!accounts) return [];
+        return (accounts as PlaidAccount[]).filter(a => a.type?.toLowerCase() === 'investment');
     }
 
     public async savePlaidLinkToDatabase(accessToken: string, itemID: string, userID: bigint) : Promise<any>
@@ -196,6 +280,80 @@ class PlaidService {
     public validateLinkTokenRequest(request: LinkTokenCreateRequest) : void {
         if(request == null){
             throw new Error("")
+        }
+    }
+
+    public async getInvestmentHoldings(userId: number): Promise<AccountEntity[]>
+    {
+        if(!userId)
+        {
+            throw new Error("Invalid userId. UserId must be a positive number.");
+        }
+        try
+        {
+            const response = await axios.get<AccountEntity[]>(`${apiUrl}/plaid/${userId}/investment-accounts`);
+            console.log('Investment Holdings Response: ', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching investment holdings: ', error);
+            throw error;
+        }
+    }
+
+    public async getInvestmentTransactions(userId: number, startDate: string, endDate: string): Promise<InvestmentTransactions[]>
+    {
+        if (!userId || !startDate || !endDate) {
+            throw new Error("Invalid userId, startDate, or endDate.");
+        }
+        console.log('Fetching Investment Transactions for User ID: ', userId);
+        console.log('Start Date: ', startDate);
+        console.log('End Date: ', endDate);
+        try {
+            const response = await axios.get<InvestmentTransactions[]>(`${apiUrl}/plaid/${userId}/investment-transactions`, {
+                params: { startDate, endDate }
+            });
+            console.log('Investment Transactions Response: ', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching investment transactions: ', error);
+            throw error;
+        }
+    }
+
+    public async importPlaidInvestmentHoldings(userId: number): Promise<InvestmentHolding[]>
+    {
+        if(!userId)
+        {
+            throw new Error("Invalid userId. UserId must be a positive number.");
+        }
+        try
+        {
+            const response = await axios.post<InvestmentHolding[]>(`${apiUrl}/plaid/${userId}/import-investment-holdings`);
+            return response.data;
+        }catch(error){
+            console.error('Error importing Plaid Investment Holdings: ', error);
+            throw error;
+        }
+    }
+
+    public async importPlaidInvestmentTransactions(userId: number, startDate: string, endDate: string) : Promise<InvestmentTransactions[]>
+    {
+        if(!userId || !startDate || !endDate)
+        {
+            throw new Error("Invalid userId, startDate, or endDate. UserId must be a positive number, startDate must be a valid date, and endDate must be a valid date.");
+        }
+        try
+        {
+            const response = await axios.post<InvestmentTransactions[]>(`${apiUrl}/plaid/${userId}/import-investments-transactions`, null, {
+                params: {
+                    startDate,
+                    endDate
+                }
+            });
+            return response.data;
+        }catch(error){
+            console.error('Error importing Plaid Investment Transactions: ', error);
+            throw error;
         }
     }
 
@@ -322,6 +480,7 @@ class PlaidService {
     }
 
     public createAccountRequest(accounts: AccountResponse[], userId: number): PlaidAccountRequest {
+
         const accountData = accounts.map(account => ({
             accountId: account.accountId,
             balance: account.balance,
@@ -329,11 +488,12 @@ class PlaidService {
             subtype: account.subtype,
             type: account.type,
             officialName: account.officialName,
-            mask: account.mask
+            mask: account.mask,
+            itemId: account.itemId,
         }));
         return {
             userId: userId,
-            account: accountData
+            accounts: accountData,
         };
     }
 
@@ -379,7 +539,7 @@ class PlaidService {
         }
     }
 
-    public async getAccessTokenForUser(userId: number) : Promise<string>
+    public async getAccessTokenForUser(userId: number) : Promise<string[]>
     {
         try
         {
@@ -406,18 +566,18 @@ class PlaidService {
         }
     }
 
-    public async updatePlaidLink(userId: number, accessToken: string) : Promise<string>
+    public async updatePlaidLink(userId: number, accessTokens: string[]) : Promise<string>
     {
         console.log('UserId: ', userId);
-        console.log('Access Token: ', accessToken);
-        if (!userId || userId < 1 || !accessToken) {
+        console.log('Access Token: ', accessTokens);
+        if (!userId || userId < 1 || !accessTokens) {
             throw new Error("Invalid userId or accessToken provided for Plaid update.");
         }
         try
         {
             const response = await axios.post<{linkToken: string}>(`${apiUrl}/plaid/update_link_token`, {
                 userId,
-                accessToken
+                accessTokens
             });
             if (!response.data || !response.data.linkToken) {
                 throw new Error("Failed to retrieve update link token from server.");

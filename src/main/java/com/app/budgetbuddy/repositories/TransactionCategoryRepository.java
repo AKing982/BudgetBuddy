@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -123,6 +124,13 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
             @Param("userId") Long userId
     );
 
+    @Query("SELECT SUM(t.amount) FROM TransactionCategoryEntity tc " +
+            "INNER JOIN tc.transaction t " +
+            "WHERE t.posted >= :start " +
+            "AND t.posted <= :end " +
+            "AND t.account.user.id = :userId " +
+            "AND tc.matchedCategory IN ('Income')")
+    BigDecimal findTotalIncomeByDateRangeAndUserId(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("userId") Long userId);
 
     @Query("""
         SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(
@@ -154,6 +162,41 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
         GROUP BY tc2.matchedCategory
         """)
     List<BudgetCategorySpending> findSpendingByDateRangeAndUserId(
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("userId") Long userId
+    );
+
+    @Query("""
+        SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(
+            tc.matchedCategory,
+            CAST(ABS(SUM(t.amount)) AS double),
+            CAST(0.0 AS double),
+            MIN(t.posted),
+            MAX(t.posted))
+        FROM TransactionCategoryEntity tc
+        INNER JOIN tc.transaction t
+        WHERE t.posted >= :start
+        AND t.posted <= :end
+        AND t.account.user.id = :userId
+        AND tc.matchedCategory = 'Income'
+        GROUP BY tc.matchedCategory
+        UNION
+        SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(
+            tc2.matchedCategory,
+            CAST(ABS(SUM(csv.transactionAmount)) AS double),
+            CAST(0.0 AS double),
+            MIN(csv.transactionDate),
+            MAX(csv.transactionDate))
+        FROM TransactionCategoryEntity tc2
+        INNER JOIN tc2.csvTransaction csv
+        WHERE csv.transactionDate >= :start
+        AND csv.transactionDate <= :end
+        AND csv.user.id = :userId
+        AND tc2.matchedCategory = 'Income'
+        GROUP BY tc2.matchedCategory
+        """)
+    List<BudgetCategorySpending> findIncomeSpendingByDateRangeAndUserId(
             @Param("start") LocalDate start,
             @Param("end") LocalDate end,
             @Param("userId") Long userId

@@ -44,6 +44,37 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         super(plaidLinkService, userService, plaidApi);
     }
 
+    private InvestmentFilter createInvestmentFilter()
+    {
+        return new InvestmentFilter()
+                .accountSubtypes(Arrays.asList(InvestmentAccountSubtype._401A,
+                        InvestmentAccountSubtype.IRA,
+                        InvestmentAccountSubtype.ROTH,
+                        InvestmentAccountSubtype.ROTH_401K));
+    }
+
+    private LinkTokenAccountFilters createInvestmentAccountFilters(InvestmentFilter investmentFilter)
+    {
+        return new LinkTokenAccountFilters()
+                .investment(investmentFilter);
+    }
+
+    public LinkTokenCreateRequest createInvestmentLinkTokenRequest(String clientUserId)
+    {
+        if(clientUserId.isEmpty())
+        {
+            throw new IllegalArgumentException("Client user id cannot be empty");
+        }
+        return new LinkTokenCreateRequest()
+                .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
+                .clientName("BudgetBuddy")
+                .products(Arrays.asList(Products.INVESTMENTS))
+                .countryCodes(Arrays.asList(CountryCode.US))
+                .webhook("https://budgetbuddy.app/api/v1/plaid/webhook")
+                .redirectUri(redirectUri)
+                .language("en");
+    }
+
     private DepositoryFilter createDepositoryFilter()
     {
         return new DepositoryFilter()
@@ -84,13 +115,45 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
         return new LinkTokenCreateRequest()
                 .user(new LinkTokenCreateRequestUser().clientUserId(clientUserId))
                 .clientName("BudgetBuddy")
-                .products(Arrays.asList(Products.TRANSACTIONS))
+                .products(Arrays.asList(Products.TRANSACTIONS, Products.INVESTMENTS))
                 .countryCodes(Arrays.asList(CountryCode.US))
                 .transactions(transactions)
                 .accountFilters(accountFilters)
                 .webhook("https://budgetbuddy.app/api/v1/plaid/webhook")
                 .redirectUri(redirectUri)
                 .language("en");
+    }
+
+    /**
+     * Creates a link token scoped to investment accounts only.
+     *
+     * @param clientUserId the ID of the client user
+     * @return the created link token response
+     */
+    @Async("taskExecutor")
+    public CompletableFuture<LinkTokenCreateResponse> createInvestmentLinkToken(String clientUserId) throws IOException
+    {
+        if(clientUserId.isEmpty())
+        {
+            throw new IllegalArgumentException("Client user id cannot be empty");
+        }
+        Long userId = Long.valueOf(clientUserId);
+        Optional<UserEntity> userOptional = userService.findById(userId);
+        if(userOptional.isEmpty())
+        {
+            return CompletableFuture.failedFuture(new UserNotFoundException("User with id " + userId + " not found."));
+        }
+        LinkTokenCreateRequest linkTokenCreateRequest = createInvestmentLinkTokenRequest(clientUserId);
+        Response<LinkTokenCreateResponse> linkTokenResponse = plaidApi.linkTokenCreate(linkTokenCreateRequest).execute();
+        if(linkTokenResponse.isSuccessful() && linkTokenResponse.body() != null)
+        {
+            return CompletableFuture.completedFuture(linkTokenResponse.body());
+        }
+        else
+        {
+            String errorBody = linkTokenResponse.errorBody() != null ? linkTokenResponse.errorBody().string() : "No error body";
+            return CompletableFuture.failedFuture(new PlaidLinkException("Investment Plaid Link token creation failed: " + errorBody));
+        }
     }
 
     /**
@@ -201,32 +264,5 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
             return CompletableFuture.completedFuture(response.body());
         }
         return CompletableFuture.failedFuture(new RuntimeException("There was an error exchanging the public token."));
-    }
-
-    @Async("taskExecutor")
-    public CompletableFuture<LinkTokenCreateResponse> createUpdateLinkToken(Long userId, String accessToken) throws IOException
-    {
-//        if (userId == null || userId < 1 || accessToken == null || accessToken.isEmpty())
-//        {
-//            throw new IllegalArgumentException("Invalid userId or accessToken for Plaid update link.");
-//        }
-//
-//        LinkTokenCreateRequest request = new LinkTokenCreateRequest()
-//                .clientName("BudgetBuddy")
-//                .user(new LinkTokenCreateRequestUser().clientUserId(userId.toString()))
-//                .countryCodes(Arrays.asList(CountryCode.US))
-//                .language("en")
-//                .products(Arrays.asList(Products.TRANSACTIONS))
-//                .accessToken(accessToken);
-//
-//        Call<LinkTokenCreateResponse> linkTokenCall = plaidApi.linkTokenCreate(request);
-//        Response<LinkTokenCreateResponse> response = linkTokenCall.execute();
-//
-//        if (!response.isSuccessful() || response.body() == null) {
-//            throw new PlaidApiException("Failed to create update link token: " + response.errorBody().string());
-//        }
-//
-//        return response.body();
-        return null;
     }
 }

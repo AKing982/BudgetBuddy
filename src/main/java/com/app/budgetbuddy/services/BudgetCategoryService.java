@@ -35,7 +35,7 @@ public interface BudgetCategoryService extends ServiceModel<BudgetCategoryEntity
     List<BudgetCategory> getBudgetCategoriesByDate(Long subBudgetId, LocalDate currentDate, LocalDate startDate, LocalDate endDate);
     List<BudgetCategory> getBudgetCategoriesByDateRange(LocalDate startDate, LocalDate endDate, Long userId);
 
-    List<BudgetCategory> getBudgetCategorySpendingByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId);
+    List<BudgetCategory> getBudgetCategorySpendingByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId, boolean requireSalaryOnly);
 
     Optional<BudgetCategoryEntity> findBudgetCategoryById(Long id);
     List<BudgetCategory> saveAll(List<BudgetCategory> budgetCategories);

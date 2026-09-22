@@ -371,25 +371,25 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
 
     @Override
     @Transactional
-    public List<BudgetCategory> getBudgetCategorySpendingByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId)
+    public List<BudgetCategory> getBudgetCategorySpendingByDateRangeOverlaps(LocalDate startDate, LocalDate endDate, Long userId, boolean requireSalaryOnly)
     {
         try
         {
             // TODO: Fix issue with setting proper start date and end date and sub BudgetId for budget categories created below
-            List<BudgetCategorySpending> budgetCategorySpendings = transactionCategoryRepository.findSpendingByDateRangeAndUserId(startDate, endDate, userId);
+            List<BudgetCategorySpending> budgetCategorySpendings = requireSalaryOnly ? transactionCategoryRepository.findIncomeSpendingByDateRangeAndUserId(startDate, endDate, userId) : transactionCategoryRepository.findSpendingByDateRangeAndUserId(startDate, endDate, userId);
             return budgetCategorySpendings.stream()
                     .map(budgetCategorySpending -> {
-                        BudgetCategory budgetCategory = new BudgetCategory();
-                        budgetCategory.setIsActive(true);
-                        budgetCategory.setBudgetedAmount(budgetCategorySpending.totalBudgeted());
-                        budgetCategory.setStartDate(startDate);
-                        budgetCategory.setEndDate(endDate);
-                        budgetCategory.setCategoryName(budgetCategorySpending.categoryName());
-                        budgetCategory.setBudgetActual(budgetCategorySpending.spending());
+                            BudgetCategory budgetCategory = new BudgetCategory();
+                            budgetCategory.setIsActive(true);
+                            budgetCategory.setBudgetedAmount(budgetCategorySpending.totalBudgeted());
+                            budgetCategory.setStartDate(startDate);
+                            budgetCategory.setEndDate(endDate);
+                            budgetCategory.setCategoryName(budgetCategorySpending.categoryName());
+                            budgetCategory.setBudgetActual(budgetCategorySpending.spending());
 //                        log.info("Budget Category for date range {} to {} : {}", startDate, endDate, budgetCategory);
-                        return budgetCategory;
-                    })
-                    .toList();
+                            return budgetCategory;
+                        })
+                        .toList();
 
         }catch(DataAccessException e){
             log.error("There was an error getting the budget category spending by date range overlaps: ", e);

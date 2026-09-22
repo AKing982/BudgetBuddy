@@ -2,6 +2,7 @@ package com.app.budgetbuddy.workbench.budgetplanner;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.repositories.TransactionCategoryRepository;
 import com.app.budgetbuddy.services.BPCategoryGroupService;
 import com.app.budgetbuddy.services.BPCategoryService;
 import com.app.budgetbuddy.services.BudgetCategoryService;
@@ -24,15 +25,18 @@ public class BPCategoryRowBuilderService
 {
     private final BPCategoryGroupService categoryGroupService;
     private final BudgetCategoryService budgetCategoryService;
+    private final TransactionCategoryRepository transactionCategoryRepository;
     private final BPAccountBalanceEngine accountBalanceEngine;
 
     @Autowired
     public BPCategoryRowBuilderService(BPCategoryGroupService bpCategoryGroupService,
                                        BudgetCategoryService budgetCategoryService,
+                                       TransactionCategoryRepository transactionCategoryRepository,
                                        BPAccountBalanceEngine bpAccountBalanceEngine)
     {
         this.categoryGroupService = bpCategoryGroupService;
         this.budgetCategoryService = budgetCategoryService;
+        this.transactionCategoryRepository = transactionCategoryRepository;
         this.accountBalanceEngine = bpAccountBalanceEngine;
     }
 
@@ -49,7 +53,7 @@ public class BPCategoryRowBuilderService
                         DateRange dateRange = column.getDateRange();
                         log.info("Date Range: {}", dateRange);
                         List<BudgetCategory> budgetCategories = isIncome
-                                ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(dateRange.getStartDate(), dateRange.getEndDate(), userId)
+                                ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(dateRange.getStartDate(), dateRange.getEndDate(), userId, false)
                                 : budgetCategoryService.getBudgetCategoriesByDateRange(dateRange.getStartDate(), dateRange.getEndDate(), userId);
                         return budgetCategories.stream()
                                 .map(bc -> BPCategory.builder()
@@ -203,9 +207,10 @@ public class BPCategoryRowBuilderService
                             DateRange dateRange = column.getDateRange();
                             LocalDate startDate = dateRange.getStartDate();
                             LocalDate endDate = dateRange.getEndDate();
-                            BigDecimal totalIncome = isIncomeTemplate
-                                    ? getTotalIncomeForIncomeTemplate(startDate, endDate, userId)
-                                    : budgetCategoryService.getTotalIncomeByDateRange(subBudgetId, startDate, endDate);
+                            BigDecimal totalIncome = transactionCategoryRepository.findTotalIncomeByDateRangeAndUserId(startDate, endDate, userId);
+//                            BigDecimal totalIncome = isIncomeTemplate
+//                                    ? getTotalIncomeForIncomeTemplate(startDate, endDate, userId)
+//                                    : budgetCategoryService.getTotalIncomeByDateRange(subBudgetId, startDate, endDate);
                             log.info("Total income: {}", totalIncome);
                             return BPCategory.builder()
                                     .name("Salary")

@@ -1,9 +1,12 @@
 package com.app.budgetbuddy.controllers;
 
+import com.app.budgetbuddy.domain.InvestmentTransaction;
 import com.app.budgetbuddy.domain.PlaidImportResult;
 import com.app.budgetbuddy.domain.RecurringTransaction;
 import com.app.budgetbuddy.domain.Transaction;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.workbench.runner.CategoryRunner;
+import com.app.budgetbuddy.workbench.runner.PlaidInvestmentRunner;
 import com.app.budgetbuddy.workbench.runner.PlaidTransactionRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -23,12 +26,16 @@ import java.util.List;
 public class PlaidImportController
 {
     private final PlaidTransactionRunner plaidTransactionRunner;
+    private final PlaidInvestmentRunner plaidInvestmentRunner;
     private final CategoryRunner categoryRunner;
 
     @Autowired
-    public PlaidImportController(PlaidTransactionRunner plaidTransactionRunner, CategoryRunner categoryRunner)
+    public PlaidImportController(PlaidTransactionRunner plaidTransactionRunner,
+                                 PlaidInvestmentRunner plaidInvestmentRunner,
+                                 CategoryRunner categoryRunner)
     {
         this.plaidTransactionRunner = plaidTransactionRunner;
+        this.plaidInvestmentRunner = plaidInvestmentRunner;
         this.categoryRunner = categoryRunner;
     }
 

@@ -69,7 +69,7 @@ class PlaidAccountManagerTest {
         Long userId = 1L;
         String accessToken = "access_token";
 
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(List.of(createPlaidLinkEntity()));
         AccountsGetRequest accountsGetRequest = new AccountsGetRequest().accessToken(accessToken);
         AccountsGetResponse expectedResponse = new AccountsGetResponse();
 
@@ -77,7 +77,7 @@ class PlaidAccountManagerTest {
         when(plaidApi.accountsGet(accountsGetRequest)).thenReturn(callSuccessful);
         when(callSuccessful.execute()).thenReturn(Response.success(expectedResponse));
 
-        AccountsGetResponse actual = plaidAccountManager.getAccountsForUser(userId);
+        List<AccountsGetResponse> actual = plaidAccountManager.getAccountsForUser(userId);
         assertNotNull(actual);
    }
 
@@ -85,7 +85,7 @@ class PlaidAccountManagerTest {
    void testGetAccountsForUser_whenExceptionThrown_thenThrowException() throws IOException {
         Long userId = 1L;
         String accessToken = "access_token";
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLinkEntity()));
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(List.of(createPlaidLinkEntity()));
 
         AccountsGetRequest accountsGetRequest = new AccountsGetRequest().accessToken(accessToken);
 

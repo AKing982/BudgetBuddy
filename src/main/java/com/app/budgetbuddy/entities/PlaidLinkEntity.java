@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Table(name="plaidLink")
 @Entity
@@ -45,5 +47,8 @@ public class PlaidLinkEntity
 
     @Column(name="requiresUpdate")
     private boolean requiresUpdate;
+
+    @OneToMany(mappedBy="plaidLink", fetch = FetchType.LAZY)
+    private Set<AccountEntity> accounts = new HashSet<>();
 
 }

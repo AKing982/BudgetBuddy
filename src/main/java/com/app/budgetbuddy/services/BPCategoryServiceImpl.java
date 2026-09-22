@@ -154,9 +154,9 @@ public class BPCategoryServiceImpl implements BPCategoryService
             return entities.stream()
                     .map(bpCategoryEntity -> {
                         BPCategory bpCategory = new BPCategory();
-                        bpCategory.setBudgetCategoryId(bpCategoryEntity.getId());
                         bpCategory.setActual(bpCategoryEntity.getActualAmount());
                         bpCategory.setActive(true);
+                        bpCategory.setId(bpCategoryEntity.getId());
                         bpCategory.setRange(new DateRange(bpCategoryEntity.getStartDate(), bpCategoryEntity.getEndDate()));
                         bpCategory.setName(bpCategoryEntity.getCategory());
                         bpCategory.setBudgeted(bpCategoryEntity.getBudgetedAmount());
@@ -204,9 +204,11 @@ public class BPCategoryServiceImpl implements BPCategoryService
     public void updateCategories(List<BPCategory> categories) {
         try
         {
+            log.info("Updating budget categories: {}", categories);
             categories.forEach(category -> {
                 if(category.getRange() == null || category.getName() == null) return;
-                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findByCategoryAndStartDateAndEndDate(category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+//                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findByCategoryAndStartDateAndEndDate(category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findById(category.getId());
                 if(existing.isEmpty()) return;
                 BigDecimal currentActual = existing.get().getActualAmount();
                 BigDecimal incomingActual = category.getActual();
@@ -236,7 +238,8 @@ public class BPCategoryServiceImpl implements BPCategoryService
             for(BPCategory category : categories)
             {
                 if(category == null) continue;
-                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findByCategoryAndStartDateAndEndDate(category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+//                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findByCategoryAndStartDateAndEndDate(category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());
+                Optional<BPCategoryEntity> existing = bpBudgetCategoryRepository.findById(category.getId());
                 if(existing.isEmpty())
                 {
                     log.warn("No existing category found for category={} startDate={} endDate={}", category.getName(), category.getRange().getStartDate(), category.getRange().getEndDate());

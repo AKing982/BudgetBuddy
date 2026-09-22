@@ -35,6 +35,19 @@ public class AccountServiceImpl implements AccountService
     @Transactional
     public void save(AccountEntity accountEntity)
     {
+        if(accountEntity.getId() == null)
+        {
+            throw new IllegalArgumentException("AccountEntity must have an id");
+        }
+        String officialName = accountEntity.getOfficialName();
+        String accountId = accountEntity.getId();
+        Long userId = accountEntity.getUser().getId();
+        Optional<AccountEntity> accountEntityOptional = accountRepository.findByOfficialNameAndUserIdOrAccountId(userId, officialName, accountId);
+        if(accountEntityOptional.isPresent())
+        {
+            log.info("Account already exists with the following official name: {}", officialName);
+            return;
+        }
         accountRepository.save(accountEntity);
     }
 

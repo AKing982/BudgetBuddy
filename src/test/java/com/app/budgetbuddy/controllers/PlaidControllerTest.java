@@ -229,7 +229,7 @@ class PlaidControllerTest {
     void testCheckPlaidLinkStatus_whenUserIdIsValid_thenReturnOk() throws Exception {
         Long userId = 1L;
 
-        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(Optional.of(createPlaidLink()));
+        when(plaidLinkService.findPlaidLinkByUserID(userId)).thenReturn(List.of(createPlaidLink()));
 
         mockMvc.perform(get("/api/plaid/{userId}/plaid-link", userId)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -259,10 +259,12 @@ class PlaidControllerTest {
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userId);
 
+        List<AccountsGetResponse> accountsGetResponses = new ArrayList<>();
         AccountsGetResponse expectedResponse = new AccountsGetResponse();
         expectedResponse.setAccounts(accountBaseList);
+        accountsGetResponses.add(expectedResponse);
 
-        when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(expectedResponse);
+        when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(accountsGetResponses);
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         mockMvc.perform(get("/api/plaid/users/{userId}/accounts", userId)
                     .contentType(MediaType.APPLICATION_JSON))
@@ -290,9 +292,12 @@ class PlaidControllerTest {
         userEntity.setId(userId);
         List<AccountBase> accountBaseList = new ArrayList<>();
 
+        List<AccountsGetResponse> accountsGetResponses = new ArrayList<>();
         AccountsGetResponse expectedResponse = new AccountsGetResponse();
         expectedResponse.setAccounts(accountBaseList);
-        when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(expectedResponse);
+        accountsGetResponses.add(expectedResponse);
+
+        when(plaidAccountManager.getAccountsForUser(userId)).thenReturn(accountsGetResponses);
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         mockMvc.perform(get("/api/plaid/users/{userId}/accounts", userId)
                 .contentType(MediaType.APPLICATION_JSON))

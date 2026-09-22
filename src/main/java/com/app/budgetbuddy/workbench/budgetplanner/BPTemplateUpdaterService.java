@@ -113,7 +113,7 @@ public class BPTemplateUpdaterService
                     continue;
                 }
                 DateRange range = bpCategory.getRange();
-                budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
+                budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, false) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
             }
             return BPTemplateUpdaterUtil.createUnmatchedBPCategories(bpCategories, budgetCategories, templateDetailId, templateDetail.getLayoutGrid().columns());
 
@@ -154,7 +154,8 @@ public class BPTemplateUpdaterService
                     log.info("Found null DateRange for BPCategory: {}", bpCategory.getName());
                     continue;
                 }
-                List<BudgetCategory> budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
+                // Fetch budget category/transaction category data for standard bp categories
+                List<BudgetCategory> budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, false) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
                 budgetCategories.stream()
                     .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
                     .findFirst()
@@ -174,6 +175,18 @@ public class BPTemplateUpdaterService
                             updatedCategories.add(bpCategory);
                         }
                     });
+
+                // Fetch transaction category data for salary bp categories
+                List<BudgetCategory> salaryBPCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, true) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
+                salaryBPCategories.stream()
+                        .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
+                        .findFirst()
+                        .ifPresent(bc -> {
+                            BigDecimal incoming = BigDecimal.valueOf(bc.getBudgetActual());
+                            BigDecimal existing = bpCategory.getActual();
+                            
+                        })
+                // Update the salary bp category rows with new found data.
             }
             long end = System.currentTimeMillis();
             log.info("End Time: {} | Total Time: {}ms", end, end - start);

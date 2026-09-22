@@ -21,5 +21,5 @@ public class PlaidAccount
     private String type;
     private String subtype;
     private String mask;
-
+    private String itemId;
 }

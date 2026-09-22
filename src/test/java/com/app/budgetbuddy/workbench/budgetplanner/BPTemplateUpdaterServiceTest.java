@@ -317,7 +317,8 @@ class BPTemplateUpdaterServiceTest
         when(budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(
                 LocalDate.of(2025, 1, 1),
                 LocalDate.of(2025, 1, 31),
-                userId))
+                userId,
+                false))
                 .thenReturn(budgetCategories);
 
         List<BPCategory> updatedBPCategories = new ArrayList<>();
@@ -435,7 +436,7 @@ class BPTemplateUpdaterServiceTest
         when(budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(
                 LocalDate.of(2025, 1, 1),
                 LocalDate.of(2025, 1, 31),
-                userId))
+                userId, false))
                 .thenReturn(budgetCategories);
 
         List<BPCategory> actual = bpTemplateUpdaterService.updateBPCategories(templateDetail, userId, isIncomeTemplate);

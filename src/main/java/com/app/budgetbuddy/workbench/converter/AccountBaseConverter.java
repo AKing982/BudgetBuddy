@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.AccountSubType;
 import com.app.budgetbuddy.domain.AccountType;
 import com.app.budgetbuddy.domain.PlaidAccount;
 import com.app.budgetbuddy.entities.AccountEntity;
+import com.app.budgetbuddy.entities.PlaidLinkEntity;
 import com.app.budgetbuddy.entities.UserEntity;
 import com.plaid.client.model.AccountBase;
 import com.plaid.client.model.AccountSubtype;
@@ -11,13 +12,14 @@ import com.plaid.client.model.AccountSubtype;
 public class AccountBaseConverter
 {
 
-    public AccountEntity convert(PlaidAccount accountBase, UserEntity userEntity) {
+    public AccountEntity convert(PlaidAccount accountBase, UserEntity userEntity, PlaidLinkEntity plaidLinkEntity) {
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId(accountBase.getAccountId());
         accountEntity.setBalance(accountBase.getBalance());
         accountEntity.setAccountName(accountBase.getName());
         accountEntity.setSubtype(AccountSubType.fromString(accountBase.getSubtype()));
         accountEntity.setType(AccountType.fromString(accountBase.getType()));
+        accountEntity.setPlaidLink(plaidLinkEntity);
         if(accountBase.getMask() == null)
         {
             accountEntity.setMask("");

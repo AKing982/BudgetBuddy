@@ -92,20 +92,17 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     }
 
 //    @Time(value="plaid.transactions.get", description="Time taken to get transactions ")
-    public CompletableFuture<TransactionsGetResponse> getAsyncTransactionsResponse(Long userId, LocalDate startDate, LocalDate endDate) throws IOException
+    public CompletableFuture<TransactionsGetResponse> getAsyncTransactionsResponse(Long userId, String accessToken, LocalDate startDate, LocalDate endDate) throws IOException
     {
         Optional<UserEntity> user = userService.findById(userId);
         if(user.isEmpty())
         {
             throw new UserNotFoundException("User with id " + userId + " not found");
         }
-        PlaidLinkEntity plaidLink = findPlaidLinkByUserId(userId);
-        String accessToken = plaidLink.getAccessToken();
         if(accessToken.isEmpty())
         {
             throw new InvalidAccessTokenException("Invalid access token");
         }
-
         try
         {
             Thread.sleep(rateLimitDelayMs);
@@ -252,16 +249,13 @@ public class PlaidTransactionManager extends AbstractPlaidManager
     }
 
 //    @Timed(value="plaid.transactions.recurring.get", description="Time taken to get recurring transactions")
-    public CompletableFuture<TransactionsRecurringGetResponse> getAsyncRecurringResponse(Long userId) throws IOException
+    public CompletableFuture<TransactionsRecurringGetResponse> getAsyncRecurringResponse(Long userId, String accessToken) throws IOException
     {
         Optional<UserEntity> userEntityOptional = userService.findById(userId);
         if(userEntityOptional.isEmpty())
         {
             return CompletableFuture.failedFuture(new UserNotFoundException("User with id "+ userId + " was not found."));
         }
-
-        PlaidLinkEntity plaidLinkEntity = findPlaidLinkByUserId(userId);
-        String accessToken = plaidLinkEntity.getAccessToken();
         TransactionsRecurringGetRequest request = createRecurringTransactionRequest(accessToken);
         try
         {
