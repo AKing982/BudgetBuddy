@@ -144,7 +144,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
         WHERE t.posted >= :start
         AND t.posted <= :end
         AND t.account.user.id = :userId
-        AND tc.matchedCategory NOT IN ('Income', 'Deposit', 'Uncategorized')
+        AND tc.matchedCategory NOT IN ('Deposit', 'Uncategorized')
         GROUP BY tc.matchedCategory
         UNION
         SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(
@@ -158,7 +158,7 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
         WHERE csv.transactionDate >= :start
         AND csv.transactionDate <= :end
         AND csv.user.id = :userId
-        AND tc2.matchedCategory NOT IN ('Income', 'Deposit', 'Uncategorized')
+        AND tc2.matchedCategory NOT IN ('Deposit', 'Uncategorized')
         GROUP BY tc2.matchedCategory
         """)
     List<BudgetCategorySpending> findSpendingByDateRangeAndUserId(
@@ -179,7 +179,6 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
         WHERE t.posted >= :start
         AND t.posted <= :end
         AND t.account.user.id = :userId
-        AND tc.matchedCategory = 'Income'
         GROUP BY tc.matchedCategory
         UNION
         SELECT new com.app.budgetbuddy.domain.BudgetCategorySpending(
@@ -193,7 +192,6 @@ public interface TransactionCategoryRepository extends JpaRepository<Transaction
         WHERE csv.transactionDate >= :start
         AND csv.transactionDate <= :end
         AND csv.user.id = :userId
-        AND tc2.matchedCategory = 'Income'
         GROUP BY tc2.matchedCategory
         """)
     List<BudgetCategorySpending> findIncomeSpendingByDateRangeAndUserId(

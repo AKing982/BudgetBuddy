@@ -419,11 +419,13 @@ class BPTemplateUpdaterServiceTest
         expected.add(groceriesBPCategory);
 
         when(bpCategoryService.getCategoriesByTemplateDetailId(1L))
-            .thenReturn(expected);
+                .thenReturn(expected);
 
         BudgetCategory hairCutBudgetCategory = new BudgetCategory();
         hairCutBudgetCategory.setCategoryName("Haircut");
         hairCutBudgetCategory.setBudgetActual(27.00);
+        hairCutBudgetCategory.setStartDate(LocalDate.of(2024, 1, 1));
+        hairCutBudgetCategory.setEndDate(LocalDate.of(2024, 1, 7));
 
         BudgetCategory paymentBudgetCategory = new BudgetCategory();
         paymentBudgetCategory.setCategoryName("Payment");
@@ -441,7 +443,6 @@ class BPTemplateUpdaterServiceTest
 
         List<BPCategory> actual = bpTemplateUpdaterService.updateBPCategories(templateDetail, userId, isIncomeTemplate);
         assertNotNull(actual);
-        assertEquals(expected.size(), actual.size());
         assertTrue(actual.isEmpty());
     }
 
@@ -596,6 +597,62 @@ class BPTemplateUpdaterServiceTest
         assertEquals(BPType.EXPENSE, actual.get(0).getType());
         assertEquals(1L, actual.get(0).getTemplateDetailId());
 
+    }
+
+    @Test
+    void testUpdateBPCategories_whenBPCategorySalaryCategoriesAndBudgetCategoriesAreIncomeCategories_thenBudgetCategories(){
+        BPTemplateDetail templateDetail = new BPTemplateDetail();
+        templateDetail.setLayoutType(BPLayoutType.CLASSIC);
+        templateDetail.setTemplateId(1L);
+        templateDetail.setId(1L);
+        templateDetail.setLayoutGrid(createTestBPLayoutGrid());
+
+        Long userId = 1L;
+        boolean isIncomeTemplate = true;
+        BPCategory salaryBPCategory = new BPCategory();
+        salaryBPCategory.setTemplateDetailId(templateDetail.getId());
+        salaryBPCategory.setName("Salary");
+        salaryBPCategory.setType(BPType.INCOME);
+        salaryBPCategory.setRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
+        salaryBPCategory.setPlannedAmount(new BigDecimal("5000.00"));
+        salaryBPCategory.setActual(BigDecimal.valueOf(0.0));
+        salaryBPCategory.setBudgeted(BigDecimal.valueOf(0.0));
+
+        BudgetCategory salaryBudgetCategory = new BudgetCategory();
+        salaryBudgetCategory.setBudgetedAmount(0.0);
+        salaryBudgetCategory.setCategoryName("Salary");
+        salaryBudgetCategory.setBudgetActual(1927.00);
+        salaryBudgetCategory.setStartDate(LocalDate.of(2025, 1, 1));
+        salaryBudgetCategory.setEndDate(LocalDate.of(2025, 1, 31));
+
+        List<BPCategory> expected = List.of(salaryBPCategory);
+        List<BudgetCategory> budgetCategories = List.of(salaryBudgetCategory);
+
+        when(bpCategoryService.getCategoriesByTemplateDetailId(1L))
+                .thenReturn(expected);
+        when(budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(
+                LocalDate.of(2025, 1, 1),
+                LocalDate.of(2025, 1, 31),
+                userId, false))
+                .thenReturn(budgetCategories);
+
+        List<BPCategory> actual = bpTemplateUpdaterService.updateBPCategories(templateDetail, userId, isIncomeTemplate);
+
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < actual.size(); i++)
+        {
+            BPCategory actualCategory = actual.get(i);
+            BPCategory expectedCategory = expected.get(i);
+            assertEquals(expectedCategory.getName(), actualCategory.getName());
+            assertEquals(expectedCategory.getType(), actualCategory.getType());
+            assertEquals(expectedCategory.getRange(), actualCategory.getRange());
+            assertEquals(expectedCategory.getPlannedAmount(), actualCategory.getPlannedAmount());
+            assertEquals(expectedCategory.getActual(), actualCategory.getActual());
+            assertEquals(expectedCategory.getBudgeted(), actualCategory.getBudgeted());
+            assertEquals(expectedCategory.getColumnIndex(), actualCategory.getColumnIndex());
+            assertEquals(expectedCategory.getTemplateDetailId(), actualCategory.getTemplateDetailId());
+        }
     }
 
     @Test

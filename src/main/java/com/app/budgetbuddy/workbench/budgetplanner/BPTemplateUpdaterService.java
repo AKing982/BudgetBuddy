@@ -134,6 +134,7 @@ public class BPTemplateUpdaterService
             }
             Long templateDetailId = detail.getId();
             List<BPCategory> bpCategories = categoryService.getCategoriesByTemplateDetailId(templateDetailId);
+            log.info("BP Categories: {}", bpCategories);
             List<BPCategory> updatedCategories = new ArrayList<>();
             if(bpCategories.isEmpty())
             {
@@ -156,6 +157,7 @@ public class BPTemplateUpdaterService
                 }
                 // Fetch budget category/transaction category data for standard bp categories
                 List<BudgetCategory> budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, false) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
+                log.info("Budget Categories: {}", budgetCategories);
                 budgetCategories.stream()
                     .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
                     .findFirst()
@@ -163,7 +165,7 @@ public class BPTemplateUpdaterService
                         BigDecimal incoming = BigDecimal.valueOf(bc.getBudgetActual());
                         BigDecimal existing = bpCategory.getActual();
                         if(incoming.compareTo(BigDecimal.ZERO) == 0) return;
-                        if(existing == null || existing.compareTo(BigDecimal.ZERO) == 0 || incoming.compareTo(existing) != 0)
+                        if(existing == null || existing.compareTo(BigDecimal.ZERO) == 0 || incoming.compareTo(existing) > 0)
                         {
                             log.info("Updating category={} range={} to {} | existing={} incoming={}",
                                     bpCategory.getName(),
@@ -172,21 +174,13 @@ public class BPTemplateUpdaterService
                                     existing,
                                     incoming);
                             bpCategory.setActual(incoming);
+                            if(bc.getCategoryName().equalsIgnoreCase("Salary"))
+                            {
+                                bpCategory.setType(BPType.INCOME);
+                            }
                             updatedCategories.add(bpCategory);
                         }
                     });
-
-                // Fetch transaction category data for salary bp categories
-                List<BudgetCategory> salaryBPCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, true) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
-                salaryBPCategories.stream()
-                        .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
-                        .findFirst()
-                        .ifPresent(bc -> {
-                            BigDecimal incoming = BigDecimal.valueOf(bc.getBudgetActual());
-                            BigDecimal existing = bpCategory.getActual();
-                            
-                        })
-                // Update the salary bp category rows with new found data.
             }
             long end = System.currentTimeMillis();
             log.info("End Time: {} | Total Time: {}ms", end, end - start);

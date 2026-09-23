@@ -378,13 +378,20 @@ public class BudgetCategoryServiceImpl implements BudgetCategoryService
             // TODO: Fix issue with setting proper start date and end date and sub BudgetId for budget categories created below
             List<BudgetCategorySpending> budgetCategorySpendings = requireSalaryOnly ? transactionCategoryRepository.findIncomeSpendingByDateRangeAndUserId(startDate, endDate, userId) : transactionCategoryRepository.findSpendingByDateRangeAndUserId(startDate, endDate, userId);
             return budgetCategorySpendings.stream()
+                    .filter(obj -> Objects.nonNull(obj.totalBudgeted()) && Objects.nonNull(obj.spending())
+                            && Objects.nonNull(obj.categoryName()) && Objects.nonNull(obj.startDate()) && Objects.nonNull(obj.endDate()))
                     .map(budgetCategorySpending -> {
+                            String categoryName = budgetCategorySpending.categoryName();
+                            if(categoryName.equalsIgnoreCase("Income"))
+                            {
+                                categoryName = "Salary";
+                            }
                             BudgetCategory budgetCategory = new BudgetCategory();
                             budgetCategory.setIsActive(true);
                             budgetCategory.setBudgetedAmount(budgetCategorySpending.totalBudgeted());
                             budgetCategory.setStartDate(startDate);
                             budgetCategory.setEndDate(endDate);
-                            budgetCategory.setCategoryName(budgetCategorySpending.categoryName());
+                            budgetCategory.setCategoryName(categoryName);
                             budgetCategory.setBudgetActual(budgetCategorySpending.spending());
 //                        log.info("Budget Category for date range {} to {} : {}", startDate, endDate, budgetCategory);
                             return budgetCategory;
