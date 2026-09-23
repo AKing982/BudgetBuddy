@@ -1,0 +1,31 @@
+package com.app.budgetbuddy.domain;
+
+import com.plaid.client.model.DateRange;
+
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter 
+@Setter
+@NoArgsConstructor(access=AccessLevel.PUBLIC)
+@Builder
+public class BPTemplatePointer 
+{
+    private Long id;
+    private Long template_detail_id;
+    private DateRange currentDateRange;
+    private boolean isFuturePointer;
+    private boolean isUpdateEnabled;
+
+    public BPTemplatePointer(Long id, Long template_detail_id, DateRange currentDateRange, boolean isFuturePointer, boolean isUpdateEnabled)
+    {
+        this.id = id;
+        this.template_detail_id = template_detail_id;
+        this.currentDateRange = currentDateRange;
+        this.isFuturePointer = isFuturePointer;
+        this.isUpdateEnabled = isUpdateEnabled;
+    }
+}
