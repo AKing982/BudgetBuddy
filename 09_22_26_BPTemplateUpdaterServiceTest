@@ -1,0 +1,71 @@
+  @Test
+    void testUpdateBPCategories_whenBPCategoriesNoMatchOnBudgetCategories_thenReturnEmptyList(){
+        BPTemplateDetail templateDetail = new BPTemplateDetail();
+        templateDetail.setLayoutType(BPLayoutType.CLASSIC);
+        templateDetail.setTemplateId(1L);
+        templateDetail.setId(1L);
+        templateDetail.setLayoutGrid(createTestBPLayoutGrid());
+
+        Long userId = 1L;
+        boolean isIncomeTemplate = true;
+        List<BPCategory> expected = new ArrayList<>();
+        BPCategory rentBPCategory = new BPCategory();
+        rentBPCategory.setTemplateDetailId(templateDetail.getId());
+        rentBPCategory.setName("Rent");
+        rentBPCategory.setType(BPType.BUDGET);
+        rentBPCategory.setRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
+        rentBPCategory.setPlannedAmount(new BigDecimal("5000.00"));
+        rentBPCategory.setActual(BigDecimal.valueOf(1220.0));
+        rentBPCategory.setBudgeted(BigDecimal.valueOf(1927));
+        rentBPCategory.setColumnIndex(0);
+        expected.add(rentBPCategory);
+
+        BPCategory incomeBPCategory = new BPCategory();
+        incomeBPCategory.setTemplateDetailId(templateDetail.getId());
+        incomeBPCategory.setName("Income");
+        incomeBPCategory.setType(BPType.INCOME);
+        incomeBPCategory.setRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
+        incomeBPCategory.setPlannedAmount(BigDecimal.ZERO);
+        incomeBPCategory.setActual(new BigDecimal("1988.00"));
+        incomeBPCategory.setBudgeted(new BigDecimal("4000.00"));
+        incomeBPCategory.setColumnIndex(1);
+        expected.add(incomeBPCategory);
+
+        BPCategory groceriesBPCategory = new BPCategory();
+        groceriesBPCategory.setTemplateDetailId(templateDetail.getId());
+        groceriesBPCategory.setName("Groceries");
+        groceriesBPCategory.setType(BPType.EXPENSE);
+        groceriesBPCategory.setRange(new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)));
+        groceriesBPCategory.setPlannedAmount(BigDecimal.ZERO);
+        groceriesBPCategory.setActual(new BigDecimal("374.00"));
+        groceriesBPCategory.setBudgeted(new BigDecimal("400.00"));
+        groceriesBPCategory.setColumnIndex(2);
+        expected.add(groceriesBPCategory);
+
+        when(bpCategoryService.getCategoriesByTemplateDetailId(1L))
+            .thenReturn(expected);
+
+        BudgetCategory hairCutBudgetCategory = new BudgetCategory();
+        hairCutBudgetCategory.setCategoryName("Haircut");
+        hairCutBudgetCategory.setBudgetActual(27.00);
+        hairCutBudgetCategory.setStartDate(LocalDate.of(2024, 1, 1));
+        hairCutBudgetCategory.setEndDate(LocalDate.of(2024, 1, 7));
+
+        BudgetCategory paymentBudgetCategory = new BudgetCategory();
+        paymentBudgetCategory.setCategoryName("Payment");
+        paymentBudgetCategory.setBudgetActual(87.95);
+        paymentBudgetCategory.setStartDate(LocalDate.of(2024, 1, 1));
+        paymentBudgetCategory.setEndDate(LocalDate.of(2024, 1, 7));
+
+        List<BudgetCategory> budgetCategories = List.of(hairCutBudgetCategory, paymentBudgetCategory);
+
+        when(budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(
+                LocalDate.of(2025, 1, 1),
+                LocalDate.of(2025, 1, 31),
+                userId, false))
+                .thenReturn(budgetCategories);
+
+        List<BPCategory> actual = bpTemplateUpdaterService.updateBPCategories(templateDetail, userId, isIncomeTemplate);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
