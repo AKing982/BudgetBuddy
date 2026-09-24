@@ -33,22 +33,23 @@ public class BPTemplateUpdaterService
             "Salary", "Expenses", "Balance", "Extra", "Savings"
     );
 
-    List<BPCategory> updateFuturePeriodBPCategories(BPTemplateDetail detail, List<FuturePeriodCategories> categories, DateRange dateRange)
+    List<BPCategory> updateFuturePeriodBPCategories(BPTemplateDetail detail, List<FuturePeriodCategories> categories)
     {
-        Long templateDetailId = detail.getId();
-        List<BPCategory> bpCategories = categoryService.getCategoriesByTemplateDetailId(templateDetailId);
-        if (bpCategories.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<BPCategory> updatedCategories = new ArrayList<>();
-        List<BPColumn> columns = detail.getLayoutGrid().columns();
-        Map<FuturePeriodCategories, List<BPCategory>> futureCategoryByBPCategoryMap = getFutureCategoryByBPCategoryMap(bpCategories, categories, dateRange);
-        log.info("futureCategoryByBPCategoryMap size: {}", futureCategoryByBPCategoryMap.size());
-        List<BPCategory> updatedFuturePeriodCategories = updateExistingFuturePeriodBPCategories(futureCategoryByBPCategoryMap);
-        List<BPCategory> createdFuturePeriodCategories = createMissingFuturePeriodBPCategories(findUnmatchedFuturePeriodCategories(categories, findMatchingFutureCategories(futureCategoryByBPCategoryMap)), dateRange, columns, templateDetailId);
-        updatedCategories.addAll(updatedFuturePeriodCategories);
-        updatedCategories.addAll(createdFuturePeriodCategories);
-        return updatedCategories;
+//        Long templateDetailId = detail.getId();
+//        List<BPCategory> bpCategories = categoryService.getCategoriesByTemplateDetailId(templateDetailId);
+//        if (bpCategories.isEmpty()) {
+//            return Collections.emptyList();
+//        }
+//        List<BPCategory> updatedCategories = new ArrayList<>();
+//        List<BPColumn> columns = detail.getLayoutGrid().columns();
+//        Map<FuturePeriodCategories, List<BPCategory>> futureCategoryByBPCategoryMap = getFutureCategoryByBPCategoryMap(bpCategories, categories, dateRange);
+//        log.info("futureCategoryByBPCategoryMap size: {}", futureCategoryByBPCategoryMap.size());
+//        List<BPCategory> updatedFuturePeriodCategories = updateExistingFuturePeriodBPCategories(futureCategoryByBPCategoryMap);
+//        List<BPCategory> createdFuturePeriodCategories = createMissingFuturePeriodBPCategories(findUnmatchedFuturePeriodCategories(categories, findMatchingFutureCategories(futureCategoryByBPCategoryMap)), dateRange, columns, templateDetailId);
+//        updatedCategories.addAll(updatedFuturePeriodCategories);
+//        updatedCategories.addAll(createdFuturePeriodCategories);
+//        return updatedCategories;
+        return null;
     }
 
     List<BPCategory> updateExistingFuturePeriodBPCategories(Map<FuturePeriodCategories, List<BPCategory>> futurePeriodCategoriesMap)
@@ -155,35 +156,42 @@ public class BPTemplateUpdaterService
                     log.info("Found null DateRange for BPCategory: {}", bpCategory.getName());
                     continue;
                 }
+                BigDecimal existing = Objects.requireNonNullElse(bpCategory.getActual(), BigDecimal.ZERO);
                 // Fetch budget category/transaction category data for standard bp categories
                 List<BudgetCategory> budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, false) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
                 log.info("Budget Categories: {}", budgetCategories);
                 budgetCategories.stream()
-                    .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
-                    .findFirst()
-                    .ifPresent(bc -> {
-                        BigDecimal incoming = BigDecimal.valueOf(bc.getBudgetActual());
-                        BigDecimal existing = bpCategory.getActual();
-                        if(incoming.compareTo(BigDecimal.ZERO) == 0) return;
-                        if(existing == null || existing.compareTo(BigDecimal.ZERO) == 0 || incoming.compareTo(existing) > 0)
-                        {
-                            log.info("Updating category={} range={} to {} | existing={} incoming={}",
-                                    bpCategory.getName(),
-                                    range.getStartDate(),
-                                    range.getEndDate(),
-                                    existing,
-                                    incoming);
-                            bpCategory.setActual(incoming);
-                            if(bc.getCategoryName().equalsIgnoreCase("Salary"))
+                        .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
+                        .filter(obj -> Objects.nonNull(obj.getBudgetActual()))
+                        .findFirst()
+                        .ifPresent(bc -> {
+                            log.info("Current BP Category: {}", bpCategory);
+                            BigDecimal incoming = BigDecimal.valueOf(bc.getBudgetActual());
+
+                            double existingAsDouble = existing.doubleValue();
+                            log.info("Existing: {}", existingAsDouble);
+                            double incomingAsDouble = incoming.doubleValue();
+                            log.info("Incoming: {}", incomingAsDouble);
+                            if(existingAsDouble < incomingAsDouble || incomingAsDouble < existingAsDouble)
                             {
-                                bpCategory.setType(BPType.INCOME);
+                                log.info("Updating category={} range={} to {} | existing={} incoming={}",
+                                        bpCategory.getName(),
+                                        range.getStartDate(),
+                                        range.getEndDate(),
+                                        existing,
+                                        incoming);
+                                bpCategory.setActual(incoming);
+                                if(bc.getCategoryName().equalsIgnoreCase("Salary"))
+                                {
+                                    bpCategory.setType(BPType.INCOME);
+                                }
+                                updatedCategories.add(bpCategory);
                             }
-                            updatedCategories.add(bpCategory);
-                        }
-                    });
+                        });
             }
             long end = System.currentTimeMillis();
             log.info("End Time: {} | Total Time: {}ms", end, end - start);
+            log.info("Updated Categories: {}", updatedCategories);
             return updatedCategories;
 
         }catch(TemplateDetailException e){

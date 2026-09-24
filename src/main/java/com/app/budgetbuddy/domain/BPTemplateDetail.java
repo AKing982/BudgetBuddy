@@ -21,4 +21,6 @@ public class BPTemplateDetail
     private LocalDateTime lastUpdated;
     private LocalDateTime createdAt;
     private boolean enableSync;
+    private BPTemplatePointer currentPointer;
+    private BPTemplatePointer futurePointer;
 }

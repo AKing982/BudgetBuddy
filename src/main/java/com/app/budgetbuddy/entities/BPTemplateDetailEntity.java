@@ -45,6 +45,9 @@ public class BPTemplateDetailEntity
     @Column(name="enable_sync")
     private boolean enableSync;
 
+    @OneToMany(mappedBy = "bpTemplateDetail", fetch = FetchType.LAZY)
+    private List<BPTemplatePointerEntity> pointers = new ArrayList<>();
+
     @OneToMany(mappedBy="bpTemplateDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BPColumnEntity> columns = new ArrayList<>();
 
