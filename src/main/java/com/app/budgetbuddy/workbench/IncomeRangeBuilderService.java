@@ -144,7 +144,12 @@ public class IncomeRangeBuilderService
         return incomeRanges;
     }
 
-    public List<DateRange> generateStandardIncomeRanges(final List<SubBudget> subBudgets, Integer startDay)
+    public List<DateRange> generateIncomeRangesByColumnRangesUpToDate(final List<DateRange> dateRanges, final LocalDate futureDate)
+    {
+        return null;
+    }
+
+    public List<DateRange> generateStandardIncomeRanges(final List<SubBudget> subBudgets, final Integer startDay)
     {
         if(subBudgets == null || subBudgets.isEmpty())
         {

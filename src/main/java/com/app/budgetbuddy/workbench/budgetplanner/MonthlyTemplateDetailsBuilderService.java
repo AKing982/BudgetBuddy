@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.budgetplanner;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
+import com.app.budgetbuddy.entities.BPTemplatePointerEntity;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.BPTemplateDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,18 +21,15 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
     private final BPLayoutGeneratorService layoutGeneratorService;
     private final BPGoalsDetailBuilderService bpGoalsDetailBuilderService;
     private final BPTemplateDetailsService bpTemplateDetailsService;
-    private final BPTemplatePointerBuilderService bpTemplatePointerBuilderService;
 
     @Autowired
     public MonthlyTemplateDetailsBuilderService(BPLayoutGeneratorService layoutBuilderService,
                                                 BPGoalsDetailBuilderService bpGoalsDetailBuilderService,
-                                                BPTemplateDetailsService bpTemplateDetailsService,
-                                                BPTemplatePointerBuilderService bpTemplatePointerBuilderService)
+                                                BPTemplateDetailsService bpTemplateDetailsService)
     {
         this.layoutGeneratorService = layoutBuilderService;
         this.bpGoalsDetailBuilderService = bpGoalsDetailBuilderService;
         this.bpTemplateDetailsService = bpTemplateDetailsService;
-        this.bpTemplatePointerBuilderService = bpTemplatePointerBuilderService;
     }
 
     @Override
@@ -40,22 +38,19 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
         BPLayoutGrid layout = layoutGeneratorService.generateLayoutGrid(bpTemplateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets, startDay);
         List<BPColumn> columns = layout.columns();
         LocalDate currentDate = LocalDate.now();
-        BPTemplatePointer currentPointer = bpTemplatePointerBuilderService.createTemplatePointer(columns, 0L, false, currentDate)
-                .orElseThrow(() -> new DataException("Could not create current pointer"));
         BPTemplateDetail detail = new BPTemplateDetail();
         detail.setLayoutGrid(layout);
-        detail.setCurrentPointer(currentPointer);
         detail.setLayoutType(BPLayoutType.CLASSIC);
         return detail;
     }
 
     @Override
-    public BPTemplateDetailEntity saveDetail(BPTemplateDetail detail, BPTemplateEntity template)
+    public BPTemplateDetailEntity saveDetail(final BPTemplateDetail detail, final BPTemplateEntity template, final BPTemplatePointerEntity currentPointer)
     {
         if(detail == null)
         {
             throw new DataException("Detail cannot be null");
         }
-        return bpTemplateDetailsService.saveModel(detail, template);
+        return bpTemplateDetailsService.saveModel(detail, template, currentPointer);
     }
 }

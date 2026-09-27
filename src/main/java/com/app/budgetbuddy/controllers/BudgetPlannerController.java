@@ -1,12 +1,17 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BPColumnEntity;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.repositories.BPColumnRepository;
+import com.app.budgetbuddy.services.BPCategoryService;
+import com.app.budgetbuddy.services.BPColumnService;
 import com.app.budgetbuddy.services.BPTemplateDetailsService;
 import com.app.budgetbuddy.services.BPTemplateService;
 import com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
@@ -22,15 +27,18 @@ import java.util.List;
 public class BudgetPlannerController
 {
     private final BPTemplateRunner bpTemplateRunner;
+    private final BPColumnRepository bpColumnRepository;
     private final BPTemplateDetailsService bpTemplateDetailsService;
     private final BPTemplateService bpTemplateService;
 
     @Autowired
     public BudgetPlannerController(BPTemplateRunner bpTemplateRunner,
                                    BPTemplateService bpTemplateService,
+                                   BPColumnRepository bpColumnRepository,
                                    BPTemplateDetailsService bpTemplateDetailsService) {
         this.bpTemplateRunner = bpTemplateRunner;
         this.bpTemplateService = bpTemplateService;
+        this.bpColumnRepository = bpColumnRepository;
         this.bpTemplateDetailsService = bpTemplateDetailsService;
     }
 
@@ -67,31 +75,85 @@ public class BudgetPlannerController
         }
     }
 
-    @PutMapping("/{detailId}/add-future-date-ranges")
+    @PostMapping("/move-future-pointer")
+    public ResponseEntity<BPTemplate> moveFuturePointerAndResyncTemplate(@RequestBody MoveFuturePointerRequest moveFuturePointerRequest)
+    {
+        try
+        {
+            LocalDate currentFuturePointerDate = moveFuturePointerRequest.currentPointerDate();
+            LocalDate newFuturePointerDate = moveFuturePointerRequest.newPointerDate();
+            Long templateDetailId = moveFuturePointerRequest.templateDetailId();
+            DateRange dateRange = new DateRange(currentFuturePointerDate, newFuturePointerDate);
+            BPTemplate bpTemplate = bpTemplateRunner.runFuturePointerTemplateBuild(templateDetailId, dateRange);
+            return ResponseEntity.ok(bpTemplate);
+
+            // Use the BPTemplateRunner to create/update bp columns that range from the current future pointer date to the newFuturePointerDate
+            // Also create/update the futurePointer entity
+
+        }catch(DataException ex){
+            log.error("Error moving future pointer: {}", ex.getMessage());
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+    @GetMapping("/date-range-lookup")
+    public ResponseEntity<List<DateRange>> getDateRangeLookUpForPointerRequest(@RequestParam int ahead,
+                                                                               @RequestParam FuturePointerRequest.AheadUnit units,
+                                                                               @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate currentDate,
+                                                                               @RequestParam Long templateDetailId)
+    {
+        try
+        {
+            log.info("Getting date range look up for pointer request ahead: {}, units: {}, templateDetailId: {}", ahead, units, templateDetailId);
+            //TODO: Temporarily using LocalDate.now() until current pointer logic is implemented.
+            DateRange horizon = new FuturePointerRequest(ahead, units, templateDetailId, false, List.of()).horizon(currentDate);
+            List<BPColumnEntity> columnsEntities = bpColumnRepository.findByBpTemplateDetailIdAndRange(templateDetailId, horizon.getStartDate(), horizon.getEndDate());
+            List<BPColumn> columns = columnsEntities.stream()
+                    .map(bpColumnEntity -> {
+                        BPColumn bpColumn = new BPColumn();
+                        bpColumn.setColumnIndex(bpColumnEntity.getColumnIndex());
+                        bpColumn.setDateRange(new DateRange(bpColumnEntity.getStartDate(), bpColumnEntity.getEndDate()));
+                        bpColumn.setPeriod(bpColumnEntity.getPeriod());
+                        bpColumn.setColumnType(bpColumnEntity.getColumnType());
+                        return bpColumn;
+                    })
+                    .toList();
+            if(columns.isEmpty())
+            {
+                return ResponseEntity.ok(List.of());
+            }
+            List<DateRange> foundDateRanges = columns.stream()
+                    .map(BPColumn::getDateRange)
+                    .toList();
+            log.info("Found date ranges: {}", foundDateRanges);
+            return ResponseEntity.ok(foundDateRanges);
+        }catch(DataException ex)
+        {
+            log.error("Error getting date range look up for pointer request: {}", ex.getMessage());
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+    @PutMapping("/add-future-date-ranges")
     public ResponseEntity<BPTemplate> addFutureDateRangesToBudgetTemplateDetail(@RequestBody FuturePointerRequest futurePointerRequest)
     {
         if(futurePointerRequest == null)
         {
             return ResponseEntity.badRequest().body(null);
         }
-        DateRange dateRange = futurePointerRequest.dateRange();
-        if(dateRange == null)
+        Long templateDetailId = futurePointerRequest.templateId();
+        LocalDate currentDate = LocalDate.now();
+        boolean isManual = futurePointerRequest.isManual();
+        DateRange futureDateRange = futurePointerRequest.horizon(currentDate);
+        List<FuturePeriodCategories> futurePeriodCategories = futurePointerRequest.categories();
+        try
         {
-            return ResponseEntity.badRequest().body(null);
+            return null;
+        }catch(DataException ex)
+        {
+            log.error("Error adding future date ranges to budget template detail: {}", ex.getMessage());
+            return ResponseEntity.internalServerError().body(null);
         }
-//        Long templateDetailId = futurePointerRequest.templateDetailId();
-//        DateRange dateRange = futurePointerRequest.dateRange();
-//        List<FuturePeriodCategories> futurePeriodCategories = futurePointerRequest.categories();
-//        try
-//        {
-//
-//        }catch(DataException ex)
-//        {
-//            log.error("Error adding future date ranges to budget template detail: {}", ex.getMessage());
-//            return ResponseEntity.internalServerError().body(null);
-//        }
-//        return null;
-        return null;
     }
 
     @PostMapping("/create-template")

@@ -23,6 +23,11 @@ public class BPTemplateRunner
         this.templateGeneratorService = templateGeneratorService;
     }
 
+    public BPTemplate runFuturePointerTemplateBuild(Long templateDetailId, DateRange dateRange)
+    {
+        return null;
+    }
+
     public BPTemplate runFuturePeriodTemplateBuild(Long templateId, Long userId, DateRange dateRange, List<FuturePeriodCategories> categories)
     {
 //        Optional<BPTemplateDetail> bpTemplateDetailOptional = templateDetailsService.findByTemplateId(templateId);

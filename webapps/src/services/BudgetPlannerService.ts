@@ -1,6 +1,19 @@
 import {BPTemplate, BudgetPlannerRequest} from "../config/Types";
 import {API_BASE_URL} from "../config/api";
 import axios from "axios";
+import {
+    FuturePointerLookupRequest,
+    FuturePointerLookupResult,
+    SetFuturePointerRequest
+} from "../components/FuturePointerDialog";
+import {toIsoDate} from "../utils/CsvImport";
+
+export interface DateRange {
+    startDate: string;
+    endDate: string;
+}
+
+
 
 class BudgetPlannerService {
     private static instance: BudgetPlannerService;
@@ -36,6 +49,35 @@ class BudgetPlannerService {
             console.error("There was an error updating the template category amounts: ", error);
             throw error;
         }
+    }
+
+    public async lookupFuturePointer(request: FuturePointerLookupRequest): Promise<DateRange[]> {
+        try {
+            const res = await axios.get<DateRange[]>(`${API_BASE_URL}/budget-planner/date-range-lookup`, {
+                params: {
+                    ahead: request.ahead,
+                    units: request.units,
+                    currentDate: toIsoDate(request.currentDate),
+                    templateDetailId: request.templateDetailId,
+                },
+            });
+            return res.data ?? [];
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                console.error(`Future pointer lookup failed: ${err.response?.status}`, err.response?.data);
+            }
+            throw err;
+        }
+    }
+
+    public async setFuturePointer(request: SetFuturePointerRequest): Promise<BPTemplate> {
+        const res = await fetch(`${API_BASE_URL}/move-future-pointer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
+        });
+        if (!res.ok) throw new Error(`Set future pointer failed: ${res.status}`);
+        return res.json();
     }
 
     public async resyncTemplate(

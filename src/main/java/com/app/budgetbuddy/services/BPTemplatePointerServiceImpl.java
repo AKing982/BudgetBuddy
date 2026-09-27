@@ -3,6 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.BPTemplatePointer;
 import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.domain.PointerMode;
+import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.entities.BPTemplatePointerEntity;
 import com.app.budgetbuddy.exceptions.BPTemplatePointerException;
 import com.app.budgetbuddy.exceptions.DataAccessException;
@@ -63,6 +64,21 @@ public class BPTemplatePointerServiceImpl implements BPTemplatePointerService
             BPTemplatePointerEntity savedEntity = bpTemplatePointerRepository.save(entity);
             bpTemplatePointer.setId(savedEntity.getId());
             return Optional.of(bpTemplatePointer);
+        }catch(DataAccessException e){
+            log.error("There was an error saving the budget template pointer", e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<BPTemplatePointerEntity> createAndSaveToEntity(BPTemplatePointer bpTemplatePointer)
+    {
+        try
+        {
+            BPTemplatePointerEntity convertedEntity = bpTemplatePointerToEntityConverter.convert(bpTemplatePointer);
+            BPTemplatePointerEntity savedEntity = bpTemplatePointerRepository.save(convertedEntity);
+            return Optional.of(savedEntity);
         }catch(DataAccessException e){
             log.error("There was an error saving the budget template pointer", e);
             return Optional.empty();

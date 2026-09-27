@@ -3,6 +3,7 @@ package com.app.budgetbuddy.services;
 import com.app.budgetbuddy.domain.BPTemplateDetail;
 import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
+import com.app.budgetbuddy.entities.BPTemplatePointerEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPTemplateDetailsRepository;
 import com.app.budgetbuddy.workbench.converter.BPTemplateDetailEntityToModelConverter;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -101,12 +103,13 @@ public class BPTemplateDetailsServiceImpl implements BPTemplateDetailsService
 
     @Override
     @Transactional
-    public BPTemplateDetailEntity saveModel(BPTemplateDetail detail, BPTemplateEntity template)
+    public BPTemplateDetailEntity saveModel(BPTemplateDetail detail, BPTemplateEntity template, BPTemplatePointerEntity currentPointer)
     {
         try
         {
             BPTemplateDetailEntity entity = bpTemplateDetailToEntityConverter.convert(detail);
             entity.setBpTemplate(template);
+            entity.setPointers(List.of(currentPointer));
             return bpTemplateDetailsRepository.save(entity);
         }catch(DataAccessException e){
             log.error("There was an error saving the budget template detail: ", e);

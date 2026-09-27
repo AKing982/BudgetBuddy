@@ -1,17 +1,20 @@
 package com.app.budgetbuddy.services;
 
 import com.app.budgetbuddy.domain.BPColumn;
+import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.entities.BPColumnEntity;
 import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.exceptions.DataAccessException;
 import com.app.budgetbuddy.repositories.BPColumnRepository;
 import com.app.budgetbuddy.repositories.BPTemplateDetailsRepository;
+import com.app.budgetbuddy.workbench.converter.BPColumnEntityToModelConverter;
 import com.app.budgetbuddy.workbench.converter.BPColumnToEntityConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,15 +25,18 @@ public class BPColumnServiceImpl implements BPColumnService
     private final BPColumnRepository bpColumnRepository;
     private final BPTemplateDetailsRepository bpTemplateDetailsRepository;
     private final BPColumnToEntityConverter columnToEntityConverter;
+    private final BPColumnEntityToModelConverter columnEntityToModelConverter;
 
     @Autowired
     public BPColumnServiceImpl(BPColumnRepository bpColumnRepository,
                                BPTemplateDetailsRepository bpTemplateDetailsRepository,
+                               BPColumnEntityToModelConverter columnEntityToModelConverter,
                                BPColumnToEntityConverter columnToEntityConverter)
     {
         this.bpColumnRepository = bpColumnRepository;
         this.bpTemplateDetailsRepository = bpTemplateDetailsRepository;
         this.columnToEntityConverter = columnToEntityConverter;
+        this.columnEntityToModelConverter = columnEntityToModelConverter;
     }
 
     @Override
@@ -114,6 +120,28 @@ public class BPColumnServiceImpl implements BPColumnService
         }catch(DataAccessException e){
             log.error("There was an error deleting the budget columns", e);
             throw new DataAccessException("There was an error deleting the budget columns", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<BPColumn> getColumnsLookupByFutureCriteriaAndTemplateId(Long templateDetailId, DateRange dateRange)
+    {
+        try
+        {
+            LocalDate startDate = dateRange.getStartDate();
+            LocalDate endDate = dateRange.getEndDate();
+            List<BPColumnEntity> columnEntities = bpColumnRepository.findByBpTemplateDetailIdAndRange(templateDetailId, startDate, endDate);
+            if(columnEntities == null || columnEntities.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            return columnEntities.stream()
+                    .map(columnEntityToModelConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the budget columns", e);
+            return Collections.emptyList();
         }
     }
 }

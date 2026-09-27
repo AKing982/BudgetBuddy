@@ -9,7 +9,8 @@ import {
     Chip, CircularProgress,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Add, Save } from '@mui/icons-material';
+import {Add, Save, UploadFile} from '@mui/icons-material';
+import BPCsvImportDialog from './BPCsvImportDialog';
 
 import Sidebar from './Sidebar';
 import ManualTemplateWizard from './ManualTemplateWizard';
@@ -19,7 +20,7 @@ import type { BPTemplate, BudgetPlannerRequest, Period } from '../config/Types';
 import PlanningView from './PlanningView';
 // ForecastPanel intentionally removed — forecast now lives in PlanningView's Forecast tab
 // NEW — the future-pointer request type PlanningView/ClassicSpreadsheet expect.
-import type { SetFuturePointerRequest } from './FuturePointerDialog';
+import type {FuturePointerLookupRequest, SetFuturePointerRequest} from './FuturePointerDialog';
 
 import {
     MAROON, MAROON_DARK, NAVY, SLATE, GREEN, RED, TEAL, AMBER, BLUE, BG,
@@ -226,6 +227,7 @@ const BudgetPlanner: React.FC = () => {
     const [openSaveDialog, setOpenSaveDialog] = useState(false);
     const [saveName,       setSaveName]       = useState('');
     const [syncing,        setSyncing]        = useState(false);
+    const [openImport, setOpenImport] = useState(false);
 
     const service = BudgetPlannerService.getInstance();
 
@@ -296,17 +298,6 @@ const BudgetPlanner: React.FC = () => {
     // On success we resync the template the same way the periodic sync effect
     // above does, so the newly-created/predicted categories show up immediately
     // rather than waiting for the next sync cycle.
-    const handleSetFuturePointer = useCallback(async (request: SetFuturePointerRequest) => {
-        const userId = Number(sessionStorage.getItem('userId'));
-        if (!userId) return;
-        try {
-            // const updated: BPTemplate = await service.setFuturePointer(request, userId);
-            // const mapped = mapBPTemplateToSpreadsheet(updated);
-            // setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
-        } catch (err) {
-            console.error('Failed to set future pointer:', err);
-        }
-    }, [service, selectedId]);
 
     const handleWizardCreate = useCallback(async (config: {
         name: string; periodType: PeriodType; startMonth: string; endMonth: string;
@@ -345,6 +336,20 @@ const BudgetPlanner: React.FC = () => {
         setOpenSaveDialog(false); setSaveName('');
     };
 
+    const handleCsvImport = useCallback((nt: SpreadsheetTemplate) => {
+        setTemplates(prev => [...prev, nt]);
+        setSelectedId(nt.id);
+    }, []);
+
+    const handleLookupFuturePointer = useCallback(
+        (req: FuturePointerLookupRequest) => service.lookupFuturePointer(req),
+        [service]);
+
+    const handleSetFuturePointer = useCallback(async (req: SetFuturePointerRequest) => {
+        const updated: BPTemplate = await service.setFuturePointer(req);
+        setTemplates(prev => prev.map(t => t.id === selectedId ? mapBPTemplateToSpreadsheet(updated) : t));
+    }, [service, selectedId]);
+
     return (
         <Box sx={{ maxWidth: 'calc(100% - 240px)', ml: '240px', minHeight: '100vh', background: BG }}>
             <Sidebar />
@@ -363,6 +368,9 @@ const BudgetPlanner: React.FC = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.875, flexShrink: 0, flexWrap: 'wrap' }}>
                                 <Button variant="outlined" size="small" onClick={() => setOpenWizard(true)} sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.76rem', borderColor: alpha('#000', 0.15), color: '#555', bgcolor: '#fff', '&:hover': { borderColor: MAROON, color: MAROON, bgcolor: alpha(MAROON, 0.04) } }}>
                                     <Add sx={{ fontSize: '0.85rem', mr: 0.25 }} /> New
+                                </Button>
+                                <Button variant="outlined" size="small" onClick={() => setOpenImport(true)} sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.76rem', borderColor: alpha('#000', 0.15), color: '#555', bgcolor: '#fff', '&:hover': { borderColor: MAROON, color: MAROON, bgcolor: alpha(MAROON, 0.04) } }}>
+                                    <UploadFile sx={{ fontSize: '0.85rem', mr: 0.25 }} /> Import
                                 </Button>
                                 {currentTemplate && (
                                     <Button variant="outlined" size="small" onClick={() => setOpenSaveDialog(true)} sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.76rem', borderColor: alpha('#000', 0.15), color: '#555', bgcolor: '#fff', '&:hover': { borderColor: MAROON, color: MAROON, bgcolor: alpha(MAROON, 0.04) } }}>
@@ -411,6 +419,7 @@ const BudgetPlanner: React.FC = () => {
             </Container>
 
             <ManualTemplateWizard open={openWizard} onClose={() => setOpenWizard(false)} onCreateTemplate={handleWizardCreate} />
+            <BPCsvImportDialog open={openImport} onClose={() => setOpenImport(false)} onImport={handleCsvImport} />
 
             <Dialog open={openSaveDialog} onClose={() => setOpenSaveDialog(false)} PaperProps={{ sx: { borderRadius: '12px', p: 1, minWidth: 360 } }}>
                 <DialogTitle sx={{ fontWeight: 700, color: NAVY, pb: 1 }}>Save a copy</DialogTitle>

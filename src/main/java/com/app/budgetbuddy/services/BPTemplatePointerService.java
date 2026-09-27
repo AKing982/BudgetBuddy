@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface BPTemplatePointerService extends ServiceModel<BPTemplatePointerEntity>
 {
     Optional<BPTemplatePointer> createAndSave(BPTemplatePointer bpTemplatePointer);
+    Optional<BPTemplatePointerEntity> createAndSaveToEntity(BPTemplatePointer bpTemplatePointer);
     Optional<BPTemplatePointer> findByDateRangeAndTemplateDetailID(Long templateDetailId, LocalDate startDate, LocalDate endDate);
 }

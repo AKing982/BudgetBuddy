@@ -1,7 +1,10 @@
 package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.*;
+import com.app.budgetbuddy.entities.BPColumnEntity;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.repositories.BPColumnRepository;
+import com.app.budgetbuddy.services.BPColumnService;
 import com.app.budgetbuddy.services.BPTemplateDetailsService;
 import com.app.budgetbuddy.services.BPTemplateService;
 import com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner;
@@ -9,20 +12,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,6 +47,9 @@ class BudgetPlannerControllerTest {
 
     @MockBean
     private BPTemplateService bpTemplateService;
+
+    @MockBean
+    private BPColumnRepository bpColumnRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -289,8 +301,98 @@ class BudgetPlannerControllerTest {
     }
 
     @Test
-    void testAddFutureDateRangesToBudgetTemplateDetail_whenFuturePeriodCategoriesIsEmptyAndManualFalse_thenReturnBPTemplate(){
+    void testGetDateRangeLookup_whenAllParamsMissing_thenReturnBadRequest() throws Exception {
+        mockMvc.perform(get("/api/budget-planner/date-range-lookup"))
+                .andExpect(status().isBadRequest());
+    }
 
+    @ParameterizedTest
+    @ValueSource(strings={"ahead", "units", "currentDate", "templateId"})
+    void testGetDateRangeLookup_whenRequiredParamsMissing_thenReturnBadRequest(String missingParam) throws Exception
+    {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("ahead", "4");
+        params.add("units", FuturePointerRequest.AheadUnit.values()[0].name());
+        params.add("templateId", "1");
+        params.remove(missingParam);
+
+        mockMvc.perform(get("/api/budget-planner/date-range-lookup").params(params))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetDateRangeLookup_whenUnitsInvalid_thenReturnBadRequest() throws Exception {
+        mockMvc.perform(get("/api/budget-planner/date-range-lookup")
+                        .param("ahead", "4")
+                        .param("units", "NOT_A_UNIT")
+                        .param("templateId", "1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetDateRangeLookup_whenFourWeeksAheadMidBiweek_thenReturnOverlappingBiweeklyRanges() throws Exception {
+        List<DateRange> overlapping = List.of(
+                new DateRange(LocalDate.of(2026, 9, 9), LocalDate.of(2026, 9, 22)),
+                new DateRange(LocalDate.of(2026, 9, 23), LocalDate.of(2026, 10, 6)),
+                new DateRange(LocalDate.of(2026, 10, 7), LocalDate.of(2026, 10, 20)));
+
+        when(bpColumnRepository.findByBpTemplateDetailIdAndRange(eq(1L), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(createTestColumnEntities(overlapping, Period.BIWEEKLY));
+
+        mockMvc.perform(get("/api/budget-planner/date-range-lookup")
+                        .param("ahead", "4")
+                        .param("units", "WEEKS")
+                        .param("currentDate", "2026-09-15")
+                        .param("templateDetailId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].startDate").value("2026-09-09"))
+                .andExpect(jsonPath("$[0].endDate").value("2026-09-22"))
+                .andExpect(jsonPath("$[1].startDate").value("2026-09-23"))
+                .andExpect(jsonPath("$[1].endDate").value("2026-10-06"))
+                .andExpect(jsonPath("$[2].startDate").value("2026-10-07"))
+                .andExpect(jsonPath("$[2].endDate").value("2026-10-20"));
+
+        verify(bpColumnRepository).findByBpTemplateDetailIdAndRange(
+                eq(1L), eq(LocalDate.of(2026, 9, 15)), eq(LocalDate.of(2026, 10, 12)));
+    }
+
+    @Test
+    void testAddFutureDateRangesToBudgetTemplateDetail_whenFuturePeriodCategoriesIsEmptyAndManualFalse_thenReturnBPTemplate() throws Exception{
+        Long templateDetailId = 1L;
+        int ahead = 4;
+        FuturePointerRequest.AheadUnit aheadUnit = FuturePointerRequest.AheadUnit.WEEKS;
+        BPTemplate expected = BPTemplate.builder()
+                .id(10L)
+                .templateType(BPTemplateType.values()[0])
+                .period(Period.WEEKLY)
+                .active(true)
+                .isSaved(false)
+                .build();
+        List<FuturePeriodCategories> futurePeriodCategories = List.of(mock(FuturePeriodCategories.class));
+        FuturePointerRequest request = new FuturePointerRequest(ahead, aheadUnit, templateDetailId, false, futurePeriodCategories);
+        mockMvc.perform(put("/api/budget-planner/{id}/add-future-date-ranges", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(jsonPath("$.id").value(10L))
+                .andExpect(jsonPath("$.templateType").value("WEEKLY"))
+                .andExpect(jsonPath("$.period").value("WEEKLY"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.saved").value(false));
+    }
+
+    private static List<BPColumnEntity> createTestColumnEntities(List<DateRange> dateRanges, Period period) {
+        return IntStream.range(0, dateRanges.size())
+                .mapToObj(i -> BPColumnEntity.builder()
+                        .id((long) i + 1)
+                        .columnIndex(i)
+                        .startDate(dateRanges.get(i).getStartDate())
+                        .endDate(dateRanges.get(i).getEndDate())
+                        .period(period)
+                        .columnType(BPColumnType.values()[0])
+                        .isHeader(false)
+                        .build())
+                .toList();
     }
 
 

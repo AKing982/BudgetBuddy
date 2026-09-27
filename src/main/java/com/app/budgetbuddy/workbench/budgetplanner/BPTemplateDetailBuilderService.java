@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench.budgetplanner;
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.entities.BPTemplateDetailEntity;
 import com.app.budgetbuddy.entities.BPTemplateEntity;
+import com.app.budgetbuddy.entities.BPTemplatePointerEntity;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,5 +11,5 @@ import java.util.List;
 public interface BPTemplateDetailBuilderService
 {
     BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria, boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets, Integer startDay);
-    BPTemplateDetailEntity saveDetail(BPTemplateDetail detail, BPTemplateEntity template);
+    BPTemplateDetailEntity saveDetail(BPTemplateDetail detail, BPTemplateEntity template, BPTemplatePointerEntity bpTemplatePointerEntity);
 }
