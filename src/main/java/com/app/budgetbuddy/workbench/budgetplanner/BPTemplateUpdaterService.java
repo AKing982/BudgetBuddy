@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.app.budgetbuddy.workbench.budgetplanner.util.BPTemplateUpdaterUtil.*;
 
@@ -32,6 +33,19 @@ public class BPTemplateUpdaterService
     private static final Set<String> SKIP_UPDATE = Set.of(
             "Salary", "Expenses", "Balance", "Extra", "Savings"
     );
+
+    public List<BPCategory> updateFutureBPCategories(BPTemplateDetail detail, List<FuturePeriodCategories> categories)
+    {
+        if(detail == null)
+        {
+            return Collections.emptyList();
+        }
+        Long templateDetailId = detail.getId();
+        BPTemplatePointer futurePointer = detail.getFuturePointer();
+        DateRange futureDateRange = futurePointer.getCurrentDateRange();
+
+        return null;
+    }
 
     List<BPCategory> updateFuturePeriodBPCategories(BPTemplateDetail detail, List<FuturePeriodCategories> categories)
     {
@@ -143,54 +157,57 @@ public class BPTemplateUpdaterService
             }
             long start = System.currentTimeMillis();
             log.info("Start Time: {} | BP Categories: {}", start, bpCategories);
-            for(BPCategory bpCategory : bpCategories)
+            Map<DateRange, List<BPCategory>> dateRangeBPCategoriesMap = bpCategories.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.groupingBy(BPCategory::getRange));
+            for(Map.Entry<DateRange, List<BPCategory>> entry : dateRangeBPCategoriesMap.entrySet())
             {
-                if(bpCategory == null)
-                {
-                    log.info("Found null BPCategory");
-                    continue;
-                }
-                DateRange range = bpCategory.getRange();
-                if(range == null)
-                {
-                    log.info("Found null DateRange for BPCategory: {}", bpCategory.getName());
-                    continue;
-                }
-                BigDecimal existing = Objects.requireNonNullElse(bpCategory.getActual(), BigDecimal.ZERO);
-                // Fetch budget category/transaction category data for standard bp categories
-                List<BudgetCategory> budgetCategories = isIncomeTemplate ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, false) : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
+                DateRange range = entry.getKey();
+                List<BPCategory> categories = entry.getValue();
+                List<BudgetCategory> budgetCategories = isIncomeTemplate
+                        ? budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(range.getStartDate(), range.getEndDate(), userID, false)
+                        : budgetCategoryService.getBudgetCategoriesByDateRange(range.getStartDate(), range.getEndDate(), userID);
                 log.info("Budget Categories: {}", budgetCategories);
-                budgetCategories.stream()
-                        .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
-                        .filter(obj -> Objects.nonNull(obj.getBudgetActual()))
-                        .findFirst()
-                        .ifPresent(bc -> {
-                            log.info("Current BP Category: {}", bpCategory);
-                            BigDecimal incoming = BigDecimal.valueOf(bc.getBudgetActual());
-
-                            double existingAsDouble = existing.doubleValue();
-                            log.info("Existing: {}", existingAsDouble);
-                            double incomingAsDouble = incoming.doubleValue();
-                            log.info("Incoming: {}", incomingAsDouble);
-                            if(existingAsDouble < incomingAsDouble || incomingAsDouble < existingAsDouble)
-                            {
-                                log.info("Updating category={} range={} to {} | existing={} incoming={}",
-                                        bpCategory.getName(),
-                                        range.getStartDate(),
-                                        range.getEndDate(),
-                                        existing,
-                                        incoming);
-                                bpCategory.setActual(incoming);
-                                if(bc.getCategoryName().equalsIgnoreCase("Salary"))
-                                {
-                                    bpCategory.setType(BPType.INCOME);
-                                }
-                                updatedCategories.add(bpCategory);
-                            }
-                        });
+                for(BPCategory bpCategory : categories)
+                {
+                    BigDecimal existing = Objects.requireNonNullElse(bpCategory.getActual(), BigDecimal.ZERO);
+                    budgetCategories.stream()
+                            .filter(bc -> bc.getCategoryName().equalsIgnoreCase(bpCategory.getName()))
+                            .filter(obj -> Objects.nonNull(obj.getBudgetActual()))
+                            .findFirst()
+                            .ifPresentOrElse(bc -> {
+                                        log.info("Current BP Category: {}", bpCategory);
+                                        BigDecimal incoming = BigDecimal.valueOf(bc.getBudgetActual());
+                                        double existingAsDouble = existing.doubleValue();
+                                        log.info("Existing: {}", existingAsDouble);
+                                        double incomingAsDouble = incoming.doubleValue();
+                                        log.info("Incoming: {}", incomingAsDouble);
+                                        if (existingAsDouble < incomingAsDouble || incomingAsDouble < existingAsDouble) {
+                                            log.info("Updating category={} range={} to {} | existing={} incoming={}",
+                                                    bpCategory.getName(),
+                                                    range.getStartDate(),
+                                                    range.getEndDate(),
+                                                    existing,
+                                                    incoming);
+                                            bpCategory.setActual(incoming);
+                                            if (bc.getCategoryName().equalsIgnoreCase("Salary")) {
+                                                bpCategory.setType(BPType.INCOME);
+                                            }
+                                            updatedCategories.add(bpCategory);
+                                        }
+                                    },
+                                    () -> {
+                                        if (existing.compareTo(BigDecimal.ZERO) != 0) {
+                                            log.info("No match found for category={} range={} - resetting actual={}",
+                                                    bpCategory.getName(), range.getStartDate(), range.getEndDate(), existing);
+                                            bpCategory.setActual(BigDecimal.ZERO);
+                                            updatedCategories.add(bpCategory);
+                                        }
+                                    });
+                }
             }
             long end = System.currentTimeMillis();
-            log.info("End Time: {} | Total Time: {}ms", end, end - start);
+            log.info("End Time: {} | Total Time: {} ms / {} s", end, end - start, (end - start) / 1000.0);
             log.info("Updated Categories: {}", updatedCategories);
             return updatedCategories;
 

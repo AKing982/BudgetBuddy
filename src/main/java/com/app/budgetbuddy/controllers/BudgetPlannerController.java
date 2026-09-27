@@ -2,6 +2,7 @@ package com.app.budgetbuddy.controllers;
 
 import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DataException;
+import com.app.budgetbuddy.services.BPTemplateDetailsService;
 import com.app.budgetbuddy.services.BPTemplateService;
 import com.app.budgetbuddy.workbench.budgetplanner.BPTemplateRunner;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +22,16 @@ import java.util.List;
 public class BudgetPlannerController
 {
     private final BPTemplateRunner bpTemplateRunner;
+    private final BPTemplateDetailsService bpTemplateDetailsService;
     private final BPTemplateService bpTemplateService;
 
     @Autowired
     public BudgetPlannerController(BPTemplateRunner bpTemplateRunner,
-                                   BPTemplateService bpTemplateService) {
+                                   BPTemplateService bpTemplateService,
+                                   BPTemplateDetailsService bpTemplateDetailsService) {
         this.bpTemplateRunner = bpTemplateRunner;
         this.bpTemplateService = bpTemplateService;
+        this.bpTemplateDetailsService = bpTemplateDetailsService;
     }
 
 
@@ -61,6 +65,33 @@ public class BudgetPlannerController
             log.error("Error creating default budget template: {}", ex.getMessage());
             return ResponseEntity.internalServerError().body(null);
         }
+    }
+
+    @PutMapping("/{detailId}/add-future-date-ranges")
+    public ResponseEntity<BPTemplate> addFutureDateRangesToBudgetTemplateDetail(@RequestBody FuturePointerRequest futurePointerRequest)
+    {
+        if(futurePointerRequest == null)
+        {
+            return ResponseEntity.badRequest().body(null);
+        }
+        DateRange dateRange = futurePointerRequest.dateRange();
+        if(dateRange == null)
+        {
+            return ResponseEntity.badRequest().body(null);
+        }
+//        Long templateDetailId = futurePointerRequest.templateDetailId();
+//        DateRange dateRange = futurePointerRequest.dateRange();
+//        List<FuturePeriodCategories> futurePeriodCategories = futurePointerRequest.categories();
+//        try
+//        {
+//
+//        }catch(DataException ex)
+//        {
+//            log.error("Error adding future date ranges to budget template detail: {}", ex.getMessage());
+//            return ResponseEntity.internalServerError().body(null);
+//        }
+//        return null;
+        return null;
     }
 
     @PostMapping("/create-template")
@@ -115,6 +146,7 @@ public class BudgetPlannerController
         return null;
     }
 
+
     @PutMapping("/{id}/update-category-amounts")
     public ResponseEntity<BPTemplate> updateBudgetTemplateCategoryAmounts(@PathVariable Long id,
                                                                           @RequestBody FuturePeriodRequest futurePeriodRequest)
@@ -136,13 +168,4 @@ public class BudgetPlannerController
         }
     }
 
-    @PutMapping("/update-category-amount")
-    public ResponseEntity<BPTemplate> updateBudgetTemplateCategoryAmount(@RequestParam BigDecimal updatedAmount,
-                                                                         @RequestParam LocalDate startDate,
-                                                                         @RequestParam LocalDate endDate,
-                                                                         @RequestParam Long userId,
-                                                                         @RequestParam String category)
-    {
-        return null;
-    }
 }

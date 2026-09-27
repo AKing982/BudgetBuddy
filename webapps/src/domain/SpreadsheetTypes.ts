@@ -81,6 +81,9 @@ export interface SpreadsheetTemplate {
     // Optional raw date ranges parallel to periods[] — used to classify past/present/future
     periodDates?: Array<{ start: Date; end: Date }>;
     viewOverride?: 'rolling-balance' | 'rolling-planned-actual' | 'forecast-classic' | 'forecast-visual' | 'income-dashboard';
+    // The numeric BPTemplateDetail id — needed to submit a future-pointer request
+    // (FuturePointerDialog / ClassicSpreadsheet / PlanningView / BudgetPlanner).
+    templateDetailId?: number;
 }
 
 // ── Budget criteria (per-month goal set) ──────────────────────────────────────

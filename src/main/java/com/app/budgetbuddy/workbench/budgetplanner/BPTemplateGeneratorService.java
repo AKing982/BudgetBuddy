@@ -95,13 +95,10 @@ public class BPTemplateGeneratorService
             throw new TemplateDetailException("Template detail cannot be null");
         }
         BPTemplateEntity savedTemplate = bpTemplateService.saveTemplate(template, userId);
-
         BPTemplateDetailEntity savedTemplateDetail = bpTemplateDetailsService.saveModel(initialTemplateDetail, savedTemplate);
 
         List<BPColumnEntity> savedColumns = bpColumnService.saveColumns(template.getBpTemplateDetail().getLayoutGrid().columns(), savedTemplateDetail);
-
         bpcategoryService.saveCategories(template.getBpTemplateDetail().getLayoutGrid().rows(), savedColumns);
-
         BPTemplate finalTemplate = templateBuilder.buildTemplate(template, template.getBpGoalsDetail(), template.getBpTemplateDetail());
         finalTemplate.setId(savedTemplate.getId());
         return finalTemplate;

@@ -126,6 +126,11 @@ public class DateRange implements Comparable<DateRange>
         return Math.toIntExact(ChronoUnit.DAYS.between(startDate, endDate));
     }
 
+    public static DateRange createDateRangeByStrings(String startDate, String endDate)
+    {
+        return new DateRange(LocalDate.parse(startDate), LocalDate.parse(endDate));
+    }
+
     public DateRange incrementNextPeriod(Period period){
         switch(period)
         {

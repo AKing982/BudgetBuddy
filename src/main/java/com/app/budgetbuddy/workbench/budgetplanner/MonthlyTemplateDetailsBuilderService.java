@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,23 +20,31 @@ public class MonthlyTemplateDetailsBuilderService implements BPTemplateDetailBui
     private final BPLayoutGeneratorService layoutGeneratorService;
     private final BPGoalsDetailBuilderService bpGoalsDetailBuilderService;
     private final BPTemplateDetailsService bpTemplateDetailsService;
+    private final BPTemplatePointerBuilderService bpTemplatePointerBuilderService;
 
     @Autowired
     public MonthlyTemplateDetailsBuilderService(BPLayoutGeneratorService layoutBuilderService,
                                                 BPGoalsDetailBuilderService bpGoalsDetailBuilderService,
-                                                BPTemplateDetailsService bpTemplateDetailsService)
+                                                BPTemplateDetailsService bpTemplateDetailsService,
+                                                BPTemplatePointerBuilderService bpTemplatePointerBuilderService)
     {
         this.layoutGeneratorService = layoutBuilderService;
         this.bpGoalsDetailBuilderService = bpGoalsDetailBuilderService;
         this.bpTemplateDetailsService = bpTemplateDetailsService;
+        this.bpTemplatePointerBuilderService = bpTemplatePointerBuilderService;
     }
 
     @Override
     public BPTemplateDetail buildDetail(BPTemplateType bpTemplateType, BPIncomeCriteria incomeCriteria , boolean requireCategoryHeaders, List<String> categoryHeaders, List<SubBudget> subBudgets, Integer startDay)
     {
         BPLayoutGrid layout = layoutGeneratorService.generateLayoutGrid(bpTemplateType, incomeCriteria, requireCategoryHeaders, categoryHeaders, subBudgets, startDay);
+        List<BPColumn> columns = layout.columns();
+        LocalDate currentDate = LocalDate.now();
+        BPTemplatePointer currentPointer = bpTemplatePointerBuilderService.createTemplatePointer(columns, 0L, false, currentDate)
+                .orElseThrow(() -> new DataException("Could not create current pointer"));
         BPTemplateDetail detail = new BPTemplateDetail();
         detail.setLayoutGrid(layout);
+        detail.setCurrentPointer(currentPointer);
         detail.setLayoutType(BPLayoutType.CLASSIC);
         return detail;
     }

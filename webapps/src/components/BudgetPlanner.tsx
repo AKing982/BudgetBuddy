@@ -18,6 +18,8 @@ import type { BPTemplate, BudgetPlannerRequest, Period } from '../config/Types';
 
 import PlanningView from './PlanningView';
 // ForecastPanel intentionally removed — forecast now lives in PlanningView's Forecast tab
+// NEW — the future-pointer request type PlanningView/ClassicSpreadsheet expect.
+import type { SetFuturePointerRequest } from './FuturePointerDialog';
 
 import {
     MAROON, MAROON_DARK, NAVY, SLATE, GREEN, RED, TEAL, AMBER, BLUE, BG,
@@ -75,6 +77,12 @@ const dateKey = (d: any): string => {
 function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
     const detail     = template.bpTemplateDetail;
     const layoutGrid = detail?.layoutGrid;
+    // NEW — the numeric BPTemplateDetail id, distinct from template.id (the
+    // BPTemplate's own id, used elsewhere as the "templateId" for resync).
+    // SpreadsheetTemplate doesn't declare this field yet — add
+    // `templateDetailId?: number;` to its interface in domain/SpreadsheetTypes.ts,
+    // or TS will flag the two object literals below as excess-property errors.
+    const templateDetailId: number | undefined = (detail as any)?.id;
 
     if (!layoutGrid) {
         return {
@@ -82,6 +90,7 @@ function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
             name:       template.templateType ?? 'New Template',
             periodType: mapPeriodToType(template.period),
             months: [], periods: [], rows: [],
+            templateDetailId,
         };
     }
 
@@ -177,6 +186,7 @@ function mapBPTemplateToSpreadsheet(template: BPTemplate): SpreadsheetTemplate {
         periodType: mapPeriodToType(template.period),
         months, periods, periodDates,
         rows: finalRows,
+        templateDetailId,
     };
 }
 
@@ -277,6 +287,27 @@ const BudgetPlanner: React.FC = () => {
         }));
     }, [selectedId]);
 
+    // NEW — submit handler for the future-pointer dialog. This calls
+    // BudgetPlannerService.setFuturePointer(...), which DOES NOT currently
+    // exist on the service — I don't have BudgetPlannerService.ts, so I can't
+    // add it there myself. Add a method matching this signature (or adjust
+    // the call below to match whatever you name it):
+    //   setFuturePointer(request: SetFuturePointerRequest): Promise<BPTemplate>
+    // On success we resync the template the same way the periodic sync effect
+    // above does, so the newly-created/predicted categories show up immediately
+    // rather than waiting for the next sync cycle.
+    const handleSetFuturePointer = useCallback(async (request: SetFuturePointerRequest) => {
+        const userId = Number(sessionStorage.getItem('userId'));
+        if (!userId) return;
+        try {
+            // const updated: BPTemplate = await service.setFuturePointer(request, userId);
+            // const mapped = mapBPTemplateToSpreadsheet(updated);
+            // setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
+        } catch (err) {
+            console.error('Failed to set future pointer:', err);
+        }
+    }, [service, selectedId]);
+
     const handleWizardCreate = useCallback(async (config: {
         name: string; periodType: PeriodType; startMonth: string; endMonth: string;
         income: number; categories: { name: string; color: string }[]; allocs: Record<string, number>;
@@ -370,6 +401,8 @@ const BudgetPlanner: React.FC = () => {
                                     onPeriodFilter={setPeriodFilter}
                                     onCellChange={handleCellChange}
                                     onSaveTemplate={() => setOpenSaveDialog(true)}
+                                    templateDetailId={(currentTemplate as any).templateDetailId}
+                                    onSetFuturePointer={handleSetFuturePointer}
                                 />
                             </Box>
                         </Box>
@@ -396,12 +429,14 @@ const BudgetPlanner: React.FC = () => {
 export default BudgetPlanner;
 
 // // ── BudgetPlanner.tsx ─────────────────────────────────────────────────────────
-// import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
+// // ForecastPanel removed — forecast functionality lives inside PlanningView's
+// // "Forecast" tab. Layout is a single full-width PlanningView, no side panel.
+// import React, {useState, useEffect, useCallback, useRef} from 'react';
 // import {
-//     Box, Typography, Container, Grid, Grow, Button,
+//     Box, Typography, Container, Grow, Button,
 //     Dialog, DialogTitle, DialogContent, DialogActions,
 //     TextField, FormControl, InputLabel, Select, MenuItem,
-//     Chip, Card, CircularProgress,
+//     Chip, CircularProgress,
 // } from '@mui/material';
 // import { alpha } from '@mui/material/styles';
 // import { Add, Save } from '@mui/icons-material';
@@ -412,6 +447,7 @@ export default BudgetPlanner;
 // import type { BPTemplate, BudgetPlannerRequest, Period } from '../config/Types';
 //
 // import PlanningView from './PlanningView';
+// // ForecastPanel intentionally removed — forecast now lives in PlanningView's Forecast tab
 //
 // import {
 //     MAROON, MAROON_DARK, NAVY, SLATE, GREEN, RED, TEAL, AMBER, BLUE, BG,
@@ -422,7 +458,6 @@ export default BudgetPlanner;
 //     SpreadsheetTemplate, SpreadsheetRow, MonthGroup,
 //     PeriodType, PeriodFilter,
 // } from '../domain/SpreadsheetTypes';
-// import ForecastPanel from "./ForecastPanel";
 //
 // // ── Backend mapping helpers ───────────────────────────────────────────────────
 // function resolveRowType(bpType: string, category: string): SpreadsheetRow['rowType'] {
@@ -483,7 +518,6 @@ export default BudgetPlanner;
 //     const columns  = layoutGrid.columns ?? [];
 //     const gridRows = layoutGrid.rows    ?? [];
 //     const dataCols = columns.filter((c: any) => !c.isHeader);
-//
 //     const now = new Date();
 //
 //     const periods: string[] = dataCols.map((c: any) => {
@@ -497,10 +531,7 @@ export default BudgetPlanner;
 //         const s = parseDateField(c.dateRange?.startDate);
 //         const e = parseDateField(c.dateRange?.endDate);
 //         if (!s || !e) return { start: new Date(), end: new Date() };
-//         return {
-//             start: new Date(s.year, s.month - 1, s.day),
-//             end:   new Date(e.year, e.month - 1, e.day),
-//         };
+//         return { start: new Date(s.year, s.month - 1, s.day), end: new Date(e.year, e.month - 1, e.day) };
 //     });
 //
 //     const monthMap = new Map<string, number[]>();
@@ -523,39 +554,31 @@ export default BudgetPlanner;
 //         const idx = CATEGORY_ORDER.findIndex(c => c.toLowerCase() === label.toLowerCase());
 //         return idx === -1 ? CATEGORY_ORDER.length : idx;
 //     };
+//
 //     const spreadsheetRows: SpreadsheetRow[] = gridRows.map((row: any) => {
 //         const rowType = resolveRowType(row.type, row.category);
-//
 //         const values: (number | null)[] = dataCols.map((col: any) => {
 //             const s = parseDateField(col.dateRange?.startDate);
 //             const e = parseDateField(col.dateRange?.endDate);
-//
 //             const colStart = s ? new Date(s.year, s.month - 1, s.day) : null;
 //             const colEnd   = e ? new Date(e.year, e.month - 1, e.day) : null;
-//
 //             const isFutureCol  = colStart !== null && colStart > now;
 //             const isPresentCol = colStart !== null && colEnd !== null && colStart <= now && colEnd >= now;
 //             const isPastCol    = colEnd   !== null && colEnd < now;
-//
 //             const cell = row.cells?.find((c: any) =>
 //                 dateKey(c.dateRange?.startDate) === dateKey(col.dateRange?.startDate) &&
 //                 dateKey(c.dateRange?.endDate)   === dateKey(col.dateRange?.endDate)
 //             );
 //             if (!cell) return null;
 //             if (rowType === 'balance') return null;
-//
 //             const actual        = cell.actual        != null ? Number(cell.actual)        : null;
 //             const budgeted      = cell.budgeted      != null ? Number(cell.budgeted)      : null;
 //             const plannedAmount = cell.plannedAmount != null ? Number(cell.plannedAmount) : null;
-//
 //             if (rowType === 'salary' || rowType === 'expenses') {
-//                 if (isPastCol || isPresentCol)
-//                     return actual !== null && actual !== 0 ? actual : null;
-//                 if (isFutureCol)
-//                     return plannedAmount !== null && plannedAmount !== 0 ? plannedAmount : null;
+//                 if (isPastCol || isPresentCol) return actual !== null && actual !== 0 ? actual : null;
+//                 if (isFutureCol) return plannedAmount !== null && plannedAmount !== 0 ? plannedAmount : null;
 //                 return null;
 //             }
-//
 //             if (isPastCol || isPresentCol) {
 //                 if (actual   !== null && actual   !== 0) return actual;
 //                 if (budgeted !== null && budgeted !== 0) return budgeted;
@@ -568,39 +591,14 @@ export default BudgetPlanner;
 //             }
 //             return null;
 //         });
-//
 //         return { label: row.category, rowType, values };
 //     });
-//
-//     // const spreadsheetRows: SpreadsheetRow[] = gridRows.map((row: any) => {
-//     //     const rowType = resolveRowType(row.type, row.category);
-//     //     const values: (number | null)[] = dataCols.map((col: any) => {
-//     //         const cell = row.cells?.find((c: any) =>
-//     //             dateKey(c.dateRange?.startDate) === dateKey(col.dateRange?.startDate) &&
-//     //             dateKey(c.dateRange?.endDate)   === dateKey(col.dateRange?.endDate)
-//     //         );
-//     //         if (!cell) return null;
-//     //         if (rowType === 'balance') return null;
-//     //         const actual   = cell.actual   != null ? Number(cell.actual)   : null;
-//     //         const budgeted = cell.budgeted != null ? Number(cell.budgeted) : null;
-//     //         const plannedAmount = cell.plannedAmount != null ? Number(cell.plannedAmount) : null;
-//     //         if (rowType === 'salary' || rowType === 'expenses')
-//     //             return actual !== null && actual !== 0 ? actual : plannedAmount !== null && plannedAmount !== 0 ? plannedAmount : null;
-//     //         if (actual   !== null && actual   !== 0) return actual;
-//     //         if (budgeted !== null && budgeted !== 0) return budgeted;
-//     //         if (plannedAmount !== null && plannedAmount !== 0) return plannedAmount;
-//     //         return null;
-//     //     });
-//     //     return { label: row.category, rowType, values };
-//     // });
 //
 //     const blank = () => Array(dataCols.length).fill(null) as null[];
 //     if (!spreadsheetRows.some((r: SpreadsheetRow) => r.rowType === 'salary'))   spreadsheetRows.push({ label: 'Salary',            rowType: 'salary',   values: blank() });
 //     if (!spreadsheetRows.some((r: SpreadsheetRow) => r.rowType === 'expenses')) spreadsheetRows.push({ label: 'Expenses',          rowType: 'expenses', values: blank() });
 //     if (!spreadsheetRows.some((r: SpreadsheetRow) => r.rowType === 'balance'))  spreadsheetRows.push({ label: 'Remaining Balance', rowType: 'balance',  values: blank() });
-//
 //     spreadsheetRows.sort((a: SpreadsheetRow, b: SpreadsheetRow) => catOrder(a.label) - catOrder(b.label));
-//
 //     const finalRows = recalcSummaryRows(spreadsheetRows, dataCols.length);
 //
 //     return {
@@ -629,11 +627,7 @@ export default BudgetPlanner;
 //             {templates.map(t => (
 //                 <MenuItem key={t.id} value={t.id}>
 //                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-//                         <Chip
-//                             label={t.viewOverride ? t.viewOverride.split('-')[0] : String(t.periodType)}
-//                             size="small"
-//                             sx={{ height: 17, fontSize: '0.6rem', fontWeight: 600, bgcolor: alpha(TEAL, 0.1), color: TEAL }}
-//                         />
+//                         <Chip label={t.viewOverride ? t.viewOverride.split('-')[0] : String(t.periodType)} size="small" sx={{ height: 17, fontSize: '0.6rem', fontWeight: 600, bgcolor: alpha(TEAL, 0.1), color: TEAL }} />
 //                         <Typography sx={{ fontSize: '0.82rem' }}>{t.name}</Typography>
 //                     </Box>
 //                 </MenuItem>
@@ -653,12 +647,10 @@ export default BudgetPlanner;
 //     const [saveName,       setSaveName]       = useState('');
 //     const [syncing,        setSyncing]        = useState(false);
 //
-//     const [selectedPeriodIndex, setSelectedPeriodIndex] = useState<number>(0);
 //     const service = BudgetPlannerService.getInstance();
 //
 //     useEffect(() => { setTimeout(() => setAnimateIn(true), 100); }, []);
 //
-//     // ── Load templates ────────────────────────────────────────────────────────
 //     useEffect(() => {
 //         let cancelled = false;
 //         (async () => {
@@ -671,94 +663,50 @@ export default BudgetPlanner;
 //                     const def = await service.createDefaultTemplate(userId);
 //                     if (cancelled) return;
 //                     const mapped = mapBPTemplateToSpreadsheet(def);
-//                     setTemplates([mapped]);
-//                     setSelectedId(mapped.id);
+//                     setTemplates([mapped]); setSelectedId(mapped.id);
 //                 } else {
 //                     const mapped = bpTemplates.map(mapBPTemplateToSpreadsheet);
-//                     setTemplates(mapped);
-//                     setSelectedId(mapped[0].id);
+//                     setTemplates(mapped); setSelectedId(mapped[0].id);
 //                 }
-//             } catch (err) {
-//                 console.error('Failed to load templates:', err);
-//             }
+//             } catch (err) { console.error('Failed to load templates:', err); }
 //         })();
 //         return () => { cancelled = true; };
 //     }, []);
 //
-//     // ── Sync on template switch ───────────────────────────────────────────────
 //     const syncedIds = useRef<Set<string>>(new Set());
-//
 //     useEffect(() => {
 //         const userId = Number(sessionStorage.getItem('userId'));
 //         if (!userId || !selectedId) return;
-//         if (syncedIds.current.has(selectedId)) return; // already synced this template
-//
+//         if (syncedIds.current.has(selectedId)) return;
 //         const templateId = Number(selectedId);
 //         if (isNaN(templateId)) return;
-//
 //         let cancelled = false;
 //         setSyncing(true);
 //         syncedIds.current.add(selectedId);
-//
 //         (async () => {
-//             try
-//             {
-//                 const updated: BPTemplate = await service.resyncTemplate(
-//                     templateId, userId);
+//             try {
+//                 const updated: BPTemplate = await service.resyncTemplate(templateId, userId);
 //                 if (cancelled) return;
 //                 const mapped = mapBPTemplateToSpreadsheet(updated);
 //                 setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
 //             } catch (err) {
-//                 syncedIds.current.delete(selectedId); // allow retry on failure
+//                 syncedIds.current.delete(selectedId);
 //                 console.error('Sync failed:', err);
-//             } finally {
-//                 if (!cancelled) setSyncing(false);
-//             }
+//             } finally { if (!cancelled) setSyncing(false); }
 //         })();
-//
 //         return () => { cancelled = true; setSyncing(false); };
 //     }, [selectedId]);
-//     // useEffect(() => {
-//     //     const userId = Number(sessionStorage.getItem('userId'));
-//     //     if (!userId || !selectedId) return;
-//     //
-//     //     const templateId = Number(selectedId);
-//     //     if (isNaN(templateId)) return;
-//     //
-//     //     let cancelled = false;
-//     //     setSyncing(true);
-//     //
-//     //     (async () => {
-//     //         try {
-//     //             const updated: BPTemplate = await service.updateTemplateCategories(templateId, userId);
-//     //             console.log('Updated BPTemplate:', updated);
-//     //             if (cancelled) return;
-//     //             const mapped = mapBPTemplateToSpreadsheet(updated);
-//     //             setTemplates(prev => prev.map(t => t.id === selectedId ? mapped : t));
-//     //         } catch (err) {
-//     //             console.error('Sync failed:', err);
-//     //         } finally {
-//     //             if (!cancelled) setSyncing(false);
-//     //         }
-//     //     })();
-//     //
-//     //     return () => { cancelled = true; setSyncing(false); };
-//     // }, [selectedId]);
 //
 //     const currentTemplate = templates.find(t => t.id === selectedId) ?? templates[0];
 //
-//     // ── Cell change handler ───────────────────────────────────────────────────
 //     const handleCellChange = useCallback((ri: number, ci: number, value: number | null) => {
 //         setTemplates(prev => prev.map(t => {
 //             if (t.id !== selectedId) return t;
-//             const rows = t.rows.map((r, i) =>
-//                 i === ri ? { ...r, values: r.values.map((v, j) => j === ci ? value : v) } : r
-//             );
+//             const rows = t.rows.map((r, i) => i === ri ? { ...r, values: r.values.map((v, j) => j === ci ? value : v) } : r);
 //             return { ...t, rows: recalcSummaryRows(rows, t.periods.length) };
 //         }));
 //     }, [selectedId]);
 //
-//     // ── Wizard create ─────────────────────────────────────────────────────────
 //     const handleWizardCreate = useCallback(async (config: {
 //         name: string; periodType: PeriodType; startMonth: string; endMonth: string;
 //         income: number; categories: { name: string; color: string }[]; allocs: Record<string, number>;
@@ -772,8 +720,7 @@ export default BudgetPlanner;
 //             };
 //             const bpTemplate = await service.createBudgetTemplate(req);
 //             const nt = mapBPTemplateToSpreadsheet(bpTemplate);
-//             setTemplates(prev => [...prev, nt]);
-//             setSelectedId(nt.id);
+//             setTemplates(prev => [...prev, nt]); setSelectedId(nt.id);
 //         } catch {
 //             const start = new Date(`${config.startMonth}-01`);
 //             const end   = new Date(`${config.endMonth}-01`);
@@ -781,28 +728,22 @@ export default BudgetPlanner;
 //             const { periods, months, periodDates } = generatePeriods(config.periodType, start, end);
 //             const rows = makeBlankRows(periods.length);
 //             const si = rows.findIndex(r => r.label === 'Salary');
-//             if (si >= 0 && config.income > 0)
-//                 rows[si] = { ...rows[si], values: rows[si].values.map(() => config.income) };
+//             if (si >= 0 && config.income > 0) rows[si] = { ...rows[si], values: rows[si].values.map(() => config.income) };
 //             const nt: SpreadsheetTemplate = { id: generateUUID(), name: config.name, periodType: config.periodType, months, periods, periodDates, rows };
-//             setTemplates(prev => [...prev, nt]);
-//             setSelectedId(nt.id);
+//             setTemplates(prev => [...prev, nt]); setSelectedId(nt.id);
 //         }
 //     }, [service]);
 //
-//     // ── Save copy ─────────────────────────────────────────────────────────────
 //     const handleSaveCopy = () => {
 //         if (!saveName || !currentTemplate) return;
 //         const copy: SpreadsheetTemplate = {
 //             ...currentTemplate, id: generateUUID(), name: saveName,
 //             rows: currentTemplate.rows.map(r => ({ ...r, values: [...r.values] })),
 //         };
-//         setTemplates(prev => [...prev, copy]);
-//         setSelectedId(copy.id);
-//         setOpenSaveDialog(false);
-//         setSaveName('');
+//         setTemplates(prev => [...prev, copy]); setSelectedId(copy.id);
+//         setOpenSaveDialog(false); setSaveName('');
 //     };
 //
-//     // ── Render ────────────────────────────────────────────────────────────────
 //     return (
 //         <Box sx={{ maxWidth: 'calc(100% - 240px)', ml: '240px', minHeight: '100vh', background: BG }}>
 //             <Sidebar />
@@ -810,159 +751,68 @@ export default BudgetPlanner;
 //
 //                 <Grow in={animateIn} timeout={400}>
 //                     <Box sx={{ mb: 4 }}>
-//                         {/* Title + actions */}
 //                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5, flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
 //                             <Box>
 //                                 <Box sx={{ width: 24, height: 2.5, background: MAROON, borderRadius: '2px', mb: 0.875 }} />
-//                                 <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: '#111', letterSpacing: '-0.02em' }}>
-//                                     Budget Planner
-//                                 </Typography>
+//                                 <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: '#111', letterSpacing: '-0.02em' }}>Budget Planner</Typography>
 //                                 <Typography variant="subtitle1" sx={{ color: '#94a3b8', mt: 0.5, fontSize: '0.88rem' }}>
 //                                     Plan across periods · historical actuals · future projections
 //                                 </Typography>
 //                             </Box>
 //                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.875, flexShrink: 0, flexWrap: 'wrap' }}>
-//                                 <Button
-//                                     variant="outlined" size="small"
-//                                     onClick={() => setOpenWizard(true)}
-//                                     sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.76rem', borderColor: alpha('#000', 0.15), color: '#555', bgcolor: '#fff', '&:hover': { borderColor: MAROON, color: MAROON, bgcolor: alpha(MAROON, 0.04) } }}
-//                                 >
+//                                 <Button variant="outlined" size="small" onClick={() => setOpenWizard(true)} sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.76rem', borderColor: alpha('#000', 0.15), color: '#555', bgcolor: '#fff', '&:hover': { borderColor: MAROON, color: MAROON, bgcolor: alpha(MAROON, 0.04) } }}>
 //                                     <Add sx={{ fontSize: '0.85rem', mr: 0.25 }} /> New
 //                                 </Button>
 //                                 {currentTemplate && (
-//                                     <Button
-//                                         variant="outlined" size="small"
-//                                         onClick={() => setOpenSaveDialog(true)}
-//                                         sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.76rem', borderColor: alpha('#000', 0.15), color: '#555', bgcolor: '#fff', '&:hover': { borderColor: MAROON, color: MAROON, bgcolor: alpha(MAROON, 0.04) } }}
-//                                     >
+//                                     <Button variant="outlined" size="small" onClick={() => setOpenSaveDialog(true)} sx={{ borderRadius: '6px', textTransform: 'none', fontWeight: 600, fontSize: '0.76rem', borderColor: alpha('#000', 0.15), color: '#555', bgcolor: '#fff', '&:hover': { borderColor: MAROON, color: MAROON, bgcolor: alpha(MAROON, 0.04) } }}>
 //                                         <Save sx={{ fontSize: '0.8rem', mr: 0.25 }} /> Save copy
 //                                     </Button>
 //                                 )}
 //                             </Box>
 //                         </Box>
-//
-//                         {/* Template selector */}
 //                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
 //                             <TemplateSelector templates={templates} selectedId={selectedId} onChange={setSelectedId} />
 //                         </Box>
 //                     </Box>
 //                 </Grow>
 //
-//                 {/* Planning view */}
-//                 {/*{currentTemplate && (*/}
-//                 {/*    <Grow in={animateIn} timeout={600}>*/}
-//                 {/*        <Box sx={{ position: 'relative' }}>*/}
-//                 {/*            {syncing && (*/}
-//                 {/*                <Box sx={{*/}
-//                 {/*                    position: 'absolute',*/}
-//                 {/*                    inset: 0,*/}
-//                 {/*                    zIndex: 10,*/}
-//                 {/*                    borderRadius: '12px',*/}
-//                 {/*                    bgcolor: alpha('#fff', 0.55),*/}
-//                 {/*                    backdropFilter: 'blur(3px)',*/}
-//                 {/*                    display: 'flex',*/}
-//                 {/*                    flexDirection: 'column',*/}
-//                 {/*                    alignItems: 'center',*/}
-//                 {/*                    justifyContent: 'center',*/}
-//                 {/*                    gap: 1.5,*/}
-//                 {/*                    pointerEvents: 'all',*/}
-//                 {/*                }}>*/}
-//                 {/*                    <CircularProgress size={36} thickness={3.5} sx={{ color: MAROON }} />*/}
-//                 {/*                    <Typography sx={{*/}
-//                 {/*                        fontSize: '0.78rem',*/}
-//                 {/*                        fontWeight: 600,*/}
-//                 {/*                        color: MAROON,*/}
-//                 {/*                        letterSpacing: '0.04em',*/}
-//                 {/*                        textTransform: 'uppercase',*/}
-//                 {/*                    }}>*/}
-//                 {/*                        Syncing categories…*/}
-//                 {/*                    </Typography>*/}
-//                 {/*                </Box>*/}
-//                 {/*            )}*/}
-//                 {/*            <Box sx={{ pointerEvents: syncing ? 'none' : 'auto' }}>*/}
-//                 {/*                <PlanningView*/}
-//                 {/*                    template={currentTemplate}*/}
-//                 {/*                    periodFilter={periodFilter}*/}
-//                 {/*                    onPeriodFilter={setPeriodFilter}*/}
-//                 {/*                    onCellChange={handleCellChange}*/}
-//                 {/*                    onSaveTemplate={() => setOpenSaveDialog(true)}*/}
-//                 {/*                />*/}
-//                 {/*            </Box>*/}
-//                 {/*            /!* ForecastPanel pinned to the right *!/*/}
-//                 {/*            <ForecastPanel*/}
-//                 {/*                template={currentTemplate}*/}
-//                 {/*                selectedPeriodIndex={selectedPeriodIndex}*/}
-//                 {/*                defaultMode="spending"*/}
-//                 {/*            />*/}
-//                 {/*        </Box>*/}
-//                 {/*    </Grow>*/}
-//                 {/*)}*/}
+//                 {/* Full-width PlanningView — ForecastPanel removed, use Forecast tab instead */}
 //                 {currentTemplate && (
-//                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5 }}>
-//
-//                         {/* PlanningView owns its own card/border — takes all remaining width */}
-//                         <Grow in={animateIn} timeout={600}>
-//                             <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
-//                                 {syncing && (
-//                                     <Box sx={{
-//                                         position: 'absolute', inset: 0, zIndex: 10,
-//                                         borderRadius: '12px',
-//                                         bgcolor: alpha('#fff', 0.55),
-//                                         backdropFilter: 'blur(3px)',
-//                                         display: 'flex', flexDirection: 'column',
-//                                         alignItems: 'center', justifyContent: 'center', gap: 1.5,
-//                                         pointerEvents: 'all',
-//                                     }}>
-//                                         <CircularProgress size={36} thickness={3.5} sx={{ color: MAROON }} />
-//                                         <Typography sx={{
-//                                             fontSize: '0.78rem', fontWeight: 600, color: MAROON,
-//                                             letterSpacing: '0.04em', textTransform: 'uppercase',
-//                                         }}>
-//                                             Syncing categories…
-//                                         </Typography>
-//                                     </Box>
-//                                 )}
-//                                 <Box sx={{ pointerEvents: syncing ? 'none' : 'auto' }}>
-//                                     <PlanningView
-//                                         template={currentTemplate}
-//                                         periodFilter={periodFilter}
-//                                         onPeriodFilter={setPeriodFilter}
-//                                         onCellChange={handleCellChange}
-//                                         onSaveTemplate={() => setOpenSaveDialog(true)}
-//                                     />
+//                     <Grow in={animateIn} timeout={600}>
+//                         <Box sx={{ position: 'relative' }}>
+//                             {syncing && (
+//                                 <Box sx={{
+//                                     position: 'absolute', inset: 0, zIndex: 10, borderRadius: '12px',
+//                                     bgcolor: alpha('#fff', 0.55), backdropFilter: 'blur(3px)',
+//                                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5,
+//                                     pointerEvents: 'all',
+//                                 }}>
+//                                     <CircularProgress size={36} thickness={3.5} sx={{ color: MAROON }} />
+//                                     <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: MAROON, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+//                                         Syncing categories…
+//                                     </Typography>
 //                                 </Box>
-//                             </Box>
-//                         </Grow>
-//
-//                         {/* ForecastPanel — completely separate, stands beside PlanningView */}
-//                         <Grow in={animateIn} timeout={700}>
-//                             <Box>
-//                                 <ForecastPanel
+//                             )}
+//                             <Box sx={{ pointerEvents: syncing ? 'none' : 'auto' }}>
+//                                 <PlanningView
 //                                     template={currentTemplate}
-//                                     selectedPeriodIndex={selectedPeriodIndex}
+//                                     periodFilter={periodFilter}
+//                                     onPeriodFilter={setPeriodFilter}
+//                                     onCellChange={handleCellChange}
+//                                     onSaveTemplate={() => setOpenSaveDialog(true)}
 //                                 />
 //                             </Box>
-//                         </Grow>
-//
-//                     </Box>
+//                         </Box>
+//                     </Grow>
 //                 )}
 //             </Container>
 //
-//             <ManualTemplateWizard
-//                 open={openWizard}
-//                 onClose={() => setOpenWizard(false)}
-//                 onCreateTemplate={handleWizardCreate}
-//             />
+//             <ManualTemplateWizard open={openWizard} onClose={() => setOpenWizard(false)} onCreateTemplate={handleWizardCreate} />
 //
 //             <Dialog open={openSaveDialog} onClose={() => setOpenSaveDialog(false)} PaperProps={{ sx: { borderRadius: '12px', p: 1, minWidth: 360 } }}>
 //                 <DialogTitle sx={{ fontWeight: 700, color: NAVY, pb: 1 }}>Save a copy</DialogTitle>
 //                 <DialogContent>
-//                     <TextField
-//                         label="New template name" value={saveName}
-//                         onChange={e => setSaveName(e.target.value)}
-//                         fullWidth margin="normal"
-//                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '7px' } }}
-//                     />
+//                     <TextField label="New template name" value={saveName} onChange={e => setSaveName(e.target.value)} fullWidth margin="normal" sx={{ '& .MuiOutlinedInput-root': { borderRadius: '7px' } }} />
 //                 </DialogContent>
 //                 <DialogActions sx={{ px: 3, pb: 2 }}>
 //                     <Button onClick={() => setOpenSaveDialog(false)} sx={{ color: SLATE, textTransform: 'none', fontWeight: 600 }}>Cancel</Button>

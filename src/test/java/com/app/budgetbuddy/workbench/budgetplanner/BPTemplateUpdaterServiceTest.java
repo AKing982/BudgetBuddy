@@ -17,8 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -840,11 +839,10 @@ class BPTemplateUpdaterServiceTest
 
         BPTemplatePointer futurePointer = BPTemplatePointer.builder()
                 .currentDateRange(new DateRange(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 7)))
-                .isFuturePointer(true)
                 .isUpdateEnabled(true)
-                .template_detail_id(1L)
+                .templateDetailId(1L)
                 .build();
-        templateDetail.setPointers(List.of(futurePointer));
+        templateDetail.setFuturePointer(futurePointer);
         List<BPCategory> actual = bpTemplateUpdaterService.updateFuturePeriodBPCategories(templateDetail, null);
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
@@ -860,15 +858,121 @@ class BPTemplateUpdaterServiceTest
         templateDetail.setLayoutGrid(createTestBPLayoutGrid());
         BPTemplatePointer currentPointer = BPTemplatePointer.builder()
                 .currentDateRange(new DateRange(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 7)))
-                .isFuturePointer(false)
                 .isUpdateEnabled(true)
-                .template_detail_id(1L)
+                .templateDetailId(1L)
                 .build();
-        templateDetail.setPointers(null);
+        templateDetail.setCurrentPointer(currentPointer);
         List<FuturePeriodCategories> categories = new ArrayList<>();
         categories.add(mock(FuturePeriodCategories.class));
 
         List<BPCategory> actual = bpTemplateUpdaterService.updateFuturePeriodBPCategories(templateDetail, categories);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testUpdateBPCategorie_whenExistingCategoryHasNoMatchInCurrentPeriod_thenResetActualToZero(){
+        BPTemplateDetail templateDetail = new BPTemplateDetail();
+        templateDetail.setLayoutType(BPLayoutType.CLASSIC);
+        templateDetail.setTemplateId(1L);
+        templateDetail.setId(1L);
+        templateDetail.setLayoutGrid(createTestBPLayoutGrid());
+
+        Long userId = 1L;
+        boolean isIncomeTemplate = true;
+        DateRange range = new DateRange(LocalDate.of(2026, 7, 29), LocalDate.of(2026, 8, 11));
+
+        // Create existing BPCategories
+        BPCategory utilitiesCategory = new BPCategory();
+        utilitiesCategory.setTemplateDetailId(1L);
+        utilitiesCategory.setName("Utilities");
+        utilitiesCategory.setType(BPType.EXPENSE);
+        utilitiesCategory.setRange(range);
+        utilitiesCategory.setActual(new BigDecimal("152.32"));
+        utilitiesCategory.setBudgeted(BigDecimal.ZERO);
+        utilitiesCategory.setColumnIndex(0);
+
+        BPCategory electricCategory = new BPCategory();
+        electricCategory.setTemplateDetailId(1L);
+        electricCategory.setName("Electric");
+        electricCategory.setType(BPType.EXPENSE);
+        electricCategory.setRange(range);
+        electricCategory.setActual(new BigDecimal("152.32"));
+        electricCategory.setBudgeted(BigDecimal.ZERO);
+        electricCategory.setColumnIndex(1);
+
+        List<BPCategory> existingBPCategories = List.of(utilitiesCategory, electricCategory);
+        BudgetCategory electricBudgetCategory = new BudgetCategory();
+        electricBudgetCategory.setBudgetActual(152.32);
+        electricBudgetCategory.setBudgetedAmount(0.0);
+        electricBudgetCategory.setCategoryName("Electric");
+        electricBudgetCategory.setIsActive(true);
+        electricBudgetCategory.setUserId(1L);
+        electricBudgetCategory.setStartDate(LocalDate.of(2026, 7, 29));
+        electricBudgetCategory.setEndDate(LocalDate.of(2026, 8, 11));
+        electricBudgetCategory.setId(1L);
+
+        List<BudgetCategory> budgetCategories = List.of(electricBudgetCategory);
+        when(bpCategoryService.getCategoriesByTemplateDetailId(1L))
+                .thenReturn(existingBPCategories);
+        when(budgetCategoryService.getBudgetCategorySpendingByDateRangeOverlaps(any(LocalDate.class), any(LocalDate.class), anyLong(), anyBoolean()))
+                .thenReturn(budgetCategories);
+        List<BPCategory> actual = bpTemplateUpdaterService.updateBPCategories(templateDetail, userId, isIncomeTemplate);
+        assertNotNull(actual);
+        assertEquals(1, actual.size());
+        assertEquals(1, actual.size());
+
+        BPCategory reset = actual.get(0);
+        assertEquals("Utilities", reset.getName());
+        assertEquals(BigDecimal.ZERO, reset.getActual());
+    }
+
+    @Test
+    void testUpdateBPCategories_whenExistingBPCategoriesAndBudgetCategoriesAreIdentical_thenReturnEmptyBPCategories(){
+        BPTemplateDetail templateDetail = new BPTemplateDetail();
+        templateDetail.setLayoutType(BPLayoutType.CLASSIC);
+        templateDetail.setTemplateId(1L);
+        templateDetail.setId(1L);
+        templateDetail.setLayoutGrid(createTestBPLayoutGrid());
+        Long userId = 1L;
+        boolean isIncomeTemplate = false;
+        DateRange range = new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31));
+        BPCategory rentCategory = new BPCategory();
+        rentCategory.setTemplateDetailId(1L);
+        rentCategory.setName("Rent");
+        rentCategory.setType(BPType.EXPENSE);
+        rentCategory.setRange(range);
+        rentCategory.setActual(new BigDecimal("1220.00"));
+        rentCategory.setBudgeted(BigDecimal.ZERO);
+        rentCategory.setColumnIndex(0);
+
+        BPCategory groceriesCategory = new BPCategory();
+        groceriesCategory.setTemplateDetailId(1L);
+        groceriesCategory.setName("Groceries");
+        groceriesCategory.setType(BPType.EXPENSE);
+        groceriesCategory.setRange(range);
+        groceriesCategory.setActual(new BigDecimal("300.00"));
+        groceriesCategory.setBudgeted(BigDecimal.ZERO);
+        groceriesCategory.setColumnIndex(1);
+
+        List<BPCategory> existingCategories = List.of(rentCategory, groceriesCategory);
+
+        BudgetCategory rentBudgetCategory = new BudgetCategory();
+        rentBudgetCategory.setCategoryName("Rent");
+        rentBudgetCategory.setBudgetActual(1220.00); // identical to existing
+
+        BudgetCategory groceriesBudgetCategory = new BudgetCategory();
+        groceriesBudgetCategory.setCategoryName("Groceries");
+        groceriesBudgetCategory.setBudgetActual(300.00); // identical to existing
+
+        when(bpCategoryService.getCategoriesByTemplateDetailId(1L))
+                .thenReturn(existingCategories);
+        when(budgetCategoryService.getBudgetCategoriesByDateRange(
+                range.getStartDate(), range.getEndDate(), userId))
+                .thenReturn(List.of(rentBudgetCategory, groceriesBudgetCategory));
+
+        List<BPCategory> actual = bpTemplateUpdaterService.updateBPCategories(templateDetail, userId, isIncomeTemplate);
+
         assertNotNull(actual);
         assertTrue(actual.isEmpty());
     }
