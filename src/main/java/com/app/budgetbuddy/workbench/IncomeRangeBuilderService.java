@@ -3,6 +3,7 @@ package com.app.budgetbuddy.workbench;
 import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.domain.PostedDateInfo;
 import com.app.budgetbuddy.domain.SubBudget;
+import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.TransactionCategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -137,16 +138,31 @@ public class IncomeRangeBuilderService
         List<DateRange> incomeRanges = new ArrayList<>();
         for(int i = 0; i < pastPostedDates.size() - 1; i++)
         {
-            LocalDate current = pastPostedDates.get(i);
+            LocalDate current = pastPostedDates.
+                    get(i);
             LocalDate dayPriorNext = pastPostedDates.get(i + 1).minusDays(1);
             incomeRanges.add(new DateRange(current, dayPriorNext));
         }
         return incomeRanges;
     }
 
-    public List<DateRange> generateIncomeRangesByColumnRangesUpToDate(final List<DateRange> dateRanges, final LocalDate futureDate)
+    public List<DateRange> generateIncomeRangesUpToFuturePointerDate(final List<DateRange> existingRanges, final LocalDate nextFuturePointerDate)
     {
-        return null;
+        try
+        {
+            if(existingRanges == null || existingRanges.isEmpty() || nextFuturePointerDate == null)
+            {
+                throw new DataException("Existing Date Ranges list or  next future pointer date was found null...");
+            }
+            Optional<LocalDate> lastDateOpt = existingRanges.stream()
+                    .map(DateRange::getEndDate)
+                    .max(Comparator.naturalOrder());
+            LocalDate lastExistingDate = lastDateOpt.get().plusDays(1);
+            return new DateRange(lastExistingDate, nextFuturePointerDate).splitIntoFullBiWeeksThrough(nextFuturePointerDate);
+        }catch(DataException ex){
+            log.error("There was an error generating income ranges up through the next future pointer date: {}", ex.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     public List<DateRange> generateStandardIncomeRanges(final List<SubBudget> subBudgets, final Integer startDay)

@@ -214,6 +214,24 @@ public class DateRange implements Comparable<DateRange>
         return dateRanges;
     }
 
+    public List<DateRange> splitIntoFullBiWeeksThrough(final LocalDate date)
+    {
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate current = startDate;
+        while(!current.isAfter(endDate))
+        {
+            LocalDate rangeEnd = current.plusWeeks(2).minusDays(1);
+            DateRange biWeek = new DateRange(current, rangeEnd);
+            dateRanges.add(biWeek);
+            if(biWeek.containsDate(date))
+            {
+                break;
+            }
+            current = rangeEnd.plusDays(1);
+        }
+        return dateRanges;
+    }
+
     public List<DateRange> splitIntoBiWeeks(){
         List<DateRange> dateRanges = new ArrayList<>();
         LocalDate current = startDate;

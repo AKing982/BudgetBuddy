@@ -4,6 +4,7 @@ import com.app.budgetbuddy.domain.Budget;
 import com.app.budgetbuddy.domain.DateRange;
 import com.app.budgetbuddy.domain.SubBudget;
 import com.app.budgetbuddy.services.TransactionCategoryService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,9 +21,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Slf4j
 class IncomeRangeBuilderServiceTest {
 
     @Mock
@@ -167,6 +170,79 @@ class IncomeRangeBuilderServiceTest {
         assertEquals(LocalDate.of(2025, 10, 15), actual.get(1).getStartDate());
         assertEquals(LocalDate.of(2025, 10, 28), actual.get(1).getEndDate());
     }
+
+    @Test
+    void testGenerateIncomeRangesUptoFuturePointerDate_whenExistingDateRangesNull_thenReturnEmptyList(){
+        LocalDate nextFuturePointerDate = LocalDate.of(2026, 10, 21);
+        List<DateRange> actual = incomeRangeBuilderService.generateIncomeRangesUpToFuturePointerDate(null, nextFuturePointerDate);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testGenerateIncomeRangesUpToFuturePointerDate_whenNextFuturePointerDateIsNull_thenThrowExceptionAndReturnEmptyList(){
+        List<DateRange> existingDateRanges = List.of(mock(DateRange.class));
+        List<DateRange> actual = incomeRangeBuilderService.generateIncomeRangesUpToFuturePointerDate(existingDateRanges, null);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+
+    @Test
+    void testGenerateIncomeRangesUpToFuturePointerDate_whenExistingDateRangesAndPointerDateValid_thenReturnDateRanges(){
+        List<DateRange> existingDateRanges = createTestExistingDateRanges();
+        log.info("Existing Date Ranges: ", existingDateRanges.size());
+        LocalDate nextFuturePointerDate = LocalDate.of(2026, 11, 17);
+
+        List<DateRange> expected = new ArrayList<>();
+        DateRange firstRange = new DateRange(LocalDate.of(2026, 10, 7), LocalDate.of(2026, 10, 20));
+        DateRange secondRange = new DateRange(LocalDate.of(2026, 10, 21), LocalDate.of(2026, 11, 3));
+        DateRange thirdRange = new DateRange(LocalDate.of(2026, 11, 4), LocalDate.of(2026, 11, 17));
+        expected.add(firstRange);
+        expected.add(secondRange);
+        expected.add(thirdRange);
+
+        List<DateRange> actual = incomeRangeBuilderService.generateIncomeRangesUpToFuturePointerDate(existingDateRanges, nextFuturePointerDate);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < expected.size(); i++)
+        {
+            assertEquals(expected.get(i), actual.get(i));
+        }
+    }
+
+    @Test
+    void testGenerateIncomeRangesUpToFuturePointerDate_whenExistingDateRangesAndNewFuturePointerDateDoesNotOverlapIncomeEndDate_thenReturnDateRanges(){
+        List<DateRange> existingDateRanges = createTestExistingDateRanges();
+        LocalDate nextFuturePointerDate = LocalDate.of(2026, 11, 15);
+        List<DateRange> expected = new ArrayList<>();
+        DateRange firstRange = new DateRange(LocalDate.of(2026, 10, 7), LocalDate.of(2026, 10, 20));
+        DateRange secondRange = new DateRange(LocalDate.of(2026, 10, 21), LocalDate.of(2026, 11, 3));
+        DateRange thirdRange = new DateRange(LocalDate.of(2026, 11, 4), LocalDate.of(2026, 11, 17));
+        expected.add(firstRange);
+        expected.add(secondRange);
+        expected.add(thirdRange);
+
+        List<DateRange> actual = incomeRangeBuilderService.generateIncomeRangesUpToFuturePointerDate(existingDateRanges, nextFuturePointerDate);
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for(int i = 0; i < expected.size(); i++)
+        {
+            assertEquals(expected.get(i), actual.get(i));
+        }
+    }
+
+    private List<DateRange> createTestExistingDateRanges()
+    {
+        List<DateRange> dateRanges = new ArrayList<>();
+        LocalDate startDate = LocalDate.of(2026, 7, 1);
+        LocalDate endDate = LocalDate.of(2026, 10, 6);
+        DateRange dateRange = new DateRange(startDate, endDate);
+        List<DateRange> biWeeks = dateRange.splitIntoBiWeeks();
+        log.info("Bi weeks: " + biWeeks);
+        return biWeeks;
+    }
+
 
 
     @AfterEach

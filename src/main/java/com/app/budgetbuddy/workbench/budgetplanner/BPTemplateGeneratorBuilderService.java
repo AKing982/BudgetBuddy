@@ -59,7 +59,7 @@ public class BPTemplateGeneratorBuilderService
     public List<BPColumn> buildFutureColumns(final BPTemplateType templateType, final List<BPColumn> existingColumns, final LocalDate nextFuturePointerDate)
     {
         LocalDate lastEnd = getLastDate(existingColumns);
-        if(!nextFuturePointerDate.isAfter(lastEnd))
+        if(!nextFuturePointerDate.isAfter(lastEnd) || existingColumns.isEmpty())
         {
             return List.of();
         }
@@ -74,7 +74,7 @@ public class BPTemplateGeneratorBuilderService
                     List<DateRange> existingRanges = existingColumns.stream()
                             .map(BPColumn::getDateRange)
                             .toList();
-                    dateRanges = incomeRangeBuilderService.generateIncomeRangesByColumnRangesUpToDate(existingRanges, nextFuturePointerDate)
+                    dateRanges = incomeRangeBuilderService.generateIncomeRangesUpToFuturePointerDate(existingRanges, nextFuturePointerDate)
                             .stream()
                             .filter(r -> r.getStartDate().isAfter(lastEnd))
                             .toList();
