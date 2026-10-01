@@ -148,6 +148,16 @@ public class BPTemplatePointerBuilderService
         return Optional.empty();
     }
 
+    public Optional<BPTemplatePointer> resyncCurrentPointerOnNewCurrentPeriod(final BPTemplatePointer currentPointer, final LocalDate currentDate, final List<BPColumn> columns)
+    {
+        return null;
+    }
+
+    public Optional<BPTemplatePointer> resyncCurrentAndFuturePointersOnOverlap(final BPTemplatePointer currentPointer, final LocalDate currentDate, final BPTemplatePointer futurePointer, final List<BPColumn> columns)
+    {
+        return null;
+    }
+
     private boolean isFutureShiftedRangeInColumns(List<BPColumn> columns, DateRange shiftedDateRange)
     {
         return columns.stream()
