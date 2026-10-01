@@ -1,0 +1,46 @@
+ public Optional<BPTemplatePointer> resyncCurrentPointerOnNewCurrentPeriod(final BPTemplatePointer currentPointer, final LocalDate currentDate, final List<BPColumn> columns)
+    {
+        try
+        {
+            if(currentPointer == null || currentDate == null)
+            {
+                throw new BPTemplatePointerException("Current Template Pointer or current date was found null");
+            }
+            DateRange currentPointerRange = currentPointer.getCurrentDateRange();
+            LocalDate currentPointerStart = currentPointerRange.getStartDate();
+            LocalDate currentPointerEnd = currentPointerRange.getEndDate();
+            DateRange nextDateRange = new DateRange();
+            Long templateDetailId = currentPointer.getTemplateDetailId();
+            PointerMode pointerMode = currentPointer.getPointerMode();
+            boolean isLocked = currentPointer.isLocked();
+            boolean isUpdateEnabled = currentPointer.isUpdateEnabled();
+            String status = currentPointer.getStatus();
+            BPTemplatePointer shiftedPointer = null;
+            if(currentPointerStart.isBefore(currentDate) && currentPointerEnd.isBefore(currentDate))
+            {
+                // Shift the current pointer to the next period using the bp columns
+                for(BPColumn column : columns)
+                {
+                    DateRange columnRange = column.getDateRange();
+                    if(columnRange.containsDate(currentDate))
+                    {
+                        nextDateRange = columnRange;
+                        break;
+                    }
+                }
+                 shiftedPointer = BPTemplatePointer.buildPointer(nextDateRange, templateDetailId, pointerMode, isUpdateEnabled,isLocked, status);
+            } 
+            else if(currentPointerStart.isAfter(currentDate) && currentPointerEnd.isAfter(currentDate))
+            {
+                throw new BPTemplatePointerException("Current Pointer was found after the current date.");
+            }
+            else
+            {
+                return Optional.of(currentPointer);
+            }
+            return Optional.of(shiftedPointer);
+        }catch(BPTemplatePointerException ex){
+            log.error("There was an error resyncing the current pointer to the current period: ", ex.getMessage());
+            return Optional.empty();
+        }
+    }
