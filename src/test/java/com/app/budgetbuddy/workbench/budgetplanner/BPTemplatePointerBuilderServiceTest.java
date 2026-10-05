@@ -253,6 +253,181 @@ class BPTemplatePointerBuilderServiceTest {
         assertEquals(expectedPointer, actual.get());
     }
 
+    @Test
+    void testResyncCurrentPointerOnNewCurrentPeriod_whenCurrentPointerIsNull_thenReturnEmptyOptional(){
+
+        LocalDate currentDate = LocalDate.of(2026, 10, 1);
+        List<BPColumn> columns = createTestColumns();
+        Optional<BPTemplatePointer> actual = bpTemplatePointerBuilderService.resyncCurrentPointer(null, currentDate, columns);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testResyncCurrentPointerOnNewCurrentPeriod_whenCurrentDateIsNull_thenReturnEmptyOptional(){
+        DateRange dateRange = new DateRange(
+                LocalDate.of(2026, 9, 23),
+                LocalDate.of(2026, 10, 6));
+
+        BPTemplatePointer expectedPointer = BPTemplatePointer.builder()
+                .pointerMode(PointerMode.FUTURE)
+                .currentDateRange(dateRange)
+                .isUpdateEnabled(false)
+                .isLocked(true)
+                .status("Active")
+                .templateDetailId(1L)
+                .build();
+        List<BPColumn> columns = createTestColumns();
+        Optional<BPTemplatePointer> actual = bpTemplatePointerBuilderService.resyncCurrentPointer(expectedPointer, null, columns);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testResyncCurrentPointerOnNewCurrentPeriod_whenCurrentPointerOnPreviousPeriodAndCurrentDateOnNewPeriod_thenReturnCurrentPointer(){
+        DateRange dateRange = new DateRange(
+                LocalDate.of(2026, 9, 23),
+                LocalDate.of(2026, 10, 6));
+
+        BPTemplatePointer currentPointer = BPTemplatePointer.builder()
+                .pointerMode(PointerMode.CURRENT)
+                .currentDateRange(dateRange)
+                .isUpdateEnabled(false)
+                .isLocked(true)
+                .status("Active")
+                .templateDetailId(1L)
+                .build();
+        LocalDate currentDate = LocalDate.of(2026, 10, 7);
+        List<BPColumn> columns = createTestColumns();
+
+        BPTemplatePointer expected = BPTemplatePointer.builder()
+                .currentDateRange(new DateRange(LocalDate.of(2026, 10, 7), LocalDate.of(2026, 10, 20)))
+                .isUpdateEnabled(false)
+                .isLocked(true)
+                .status("Active")
+                .templateDetailId(1L)
+                .pointerMode(PointerMode.CURRENT)
+                .build();
+
+        Optional<BPTemplatePointer> actual = bpTemplatePointerBuilderService.resyncCurrentPointer(currentPointer, currentDate, columns);
+        assertNotNull(actual);
+        assertEquals(expected, actual.get());
+    }
+
+    @Test
+    void testResyncCurrentPointerOnNewCurrentPeriod_whenCurrentPointerOnCurrentPeriod_thenReturnSamePointer(){
+        DateRange dateRange = new DateRange(
+                LocalDate.of(2026, 10, 7),
+                LocalDate.of(2026, 10, 20));
+        LocalDate currentDate = LocalDate.of(2026, 10, 9);
+        List<BPColumn> columns = createTestColumns();
+        BPTemplatePointer currentPointer = BPTemplatePointer.builder()
+                .currentDateRange(dateRange)
+                .isLocked(true)
+                .isUpdateEnabled(false)
+                .status("Active")
+                .pointerMode(PointerMode.CURRENT)
+                .templateDetailId(1L)
+                .build();
+
+        Optional<BPTemplatePointer> actual = bpTemplatePointerBuilderService.resyncCurrentPointer(currentPointer, currentDate, columns);
+        assertNotNull(actual);
+        assertTrue(actual.isPresent());
+        assertEquals(currentPointer, actual.get());
+    }
+
+    @Test
+    void testResyncCurrentPointerOnNewCurrentPeriod_whenCurrentPointerAfterCurrentDate_thenThrowException(){
+        LocalDate currentDate = LocalDate.of(2026, 10, 9);
+        List<BPColumn> columns = createTestColumns();
+        DateRange dateRange = new DateRange(
+                LocalDate.of(2026, 10, 11),
+                LocalDate.of(2026, 10, 25));
+        BPTemplatePointer currentPointer = BPTemplatePointer.builder()
+                .currentDateRange(dateRange)
+                .isLocked(true)
+                .isUpdateEnabled(false)
+                .status("Active")
+                .pointerMode(PointerMode.CURRENT)
+                .templateDetailId(1L)
+                .build();
+
+        Optional<BPTemplatePointer> actual = bpTemplatePointerBuilderService.resyncCurrentPointer(currentPointer, currentDate, columns);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testResyncPointers_whenCurrentPointerNull_thenReturnEmptyOptional(){
+        LocalDate currentDate = LocalDate.of(2026, 10, 1);
+        BPTemplatePointer futurePointer = BPTemplatePointer.builder()
+                .currentDateRange(new DateRange(LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 10)))
+                .isLocked(false)
+                .isUpdateEnabled(true)
+                .status("Active")
+                .pointerMode(PointerMode.FUTURE)
+                .templateDetailId(1L)
+                .build();
+        List<BPColumn> columns = createTestColumns();
+        Optional<PointerResync> actual = bpTemplatePointerBuilderService.resyncPointers(null, currentDate, futurePointer, columns);
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testResyncPointers_whenFuturePointerIsNull_thenReturnEmptyOptional(){
+        BPTemplatePointer currentPointer = createPointer(new DateRange(LocalDate.of(2026, 10, 6), LocalDate.of(2026, 10, 19)), PointerMode.CURRENT, true);
+        Optional<PointerResync> actual = bpTemplatePointerBuilderService.resyncPointers(currentPointer, LocalDate.of(2026, 10, 10), null, createTestColumns());
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    void testResyncPointers_whenNoColumnContainsCurrentDate_thenReturnEmptyOptional(){
+        BPTemplatePointer currentPointer = createPointer(range(10, 6, 10, 19), PointerMode.CURRENT, true);
+        BPTemplatePointer futurePointer  = createPointer(range(11, 3, 11, 16), PointerMode.FUTURE, false);
+
+        Optional<PointerResync> expected = Optional.empty();
+        Optional<PointerResync> actual = bpTemplatePointerBuilderService.resyncPointers(currentPointer, LocalDate.of(2026, 12, 1), futurePointer, createTestColumns());
+
+        assertEquals(expected, actual);
+    }
+
+
+    @Test
+    void testResyncPointers_whenCurrentAndFuturePointerOnSamePeriod_thenMoveFuturePointerToNextPeriod(){
+        BPTemplatePointer currentPointer = createPointer(range(9, 23, 10, 6), PointerMode.CURRENT, true);
+        BPTemplatePointer futurePointer  = createPointer(range(9, 23, 10, 6), PointerMode.FUTURE, false);
+
+        BPTemplatePointer expectedFuture = BPTemplatePointer.builder()
+                .pointerMode(PointerMode.FUTURE)
+                .currentDateRange(range(10, 7, 10, 20))
+                .isLocked(false)
+                .isUpdateEnabled(true)
+                .status("Active")
+                .templateDetailId(1L)
+                .build();
+        PointerResync expected = new PointerResync(currentPointer, expectedFuture, true);
+        Optional<PointerResync> actual = bpTemplatePointerBuilderService.resyncPointers(currentPointer, LocalDate.of(2026, 10, 1), futurePointer, createTestColumns());
+        assertEquals(Optional.of(expected), actual);
+    }
+
+    private DateRange range(int startMonth, int startDay, int endMonth, int endDay){
+        return new DateRange(LocalDate.of(2026, startMonth, startDay), LocalDate.of(2026, endMonth, endDay));
+    }
+
+    private BPTemplatePointer createPointer(DateRange range, PointerMode mode, boolean isLocked){
+        return BPTemplatePointer.builder()
+                .currentDateRange(range)
+                .isLocked(isLocked)
+                .isUpdateEnabled(true)
+                .status("Active")
+                .pointerMode(mode)
+                .templateDetailId(1L)
+                .build();
+    }
+
+
     private List<BPColumn> createTestColumnsWithNullCurrentDateRangeAndCurrentPointer(){
         List<BPColumn> columns = new ArrayList<>();
         columns.add(BPColumn.builder()
@@ -582,6 +757,23 @@ class BPTemplatePointerBuilderServiceTest {
 
         return columns;
     }
+
+//    private List<BPColumn> createTestColumns(){
+//        List<BPColumn> columns = new ArrayList<>();
+//        LocalDate start = LocalDate.of(2026, 5, 20);
+//        for(int i = 0; i < 8; i++){
+//            LocalDate end = start.plusWeeks(2).minusDays(1);
+//            columns.add(BPColumn.builder()
+//                    .columnIndex(i)
+//                    .dateRange(new DateRange(start, end))
+//                    .period(Period.BIWEEKLY)
+//                    .columnType(BPColumnType.ACTUAL)
+//                    .isHeader(false)
+//                    .build());
+//            start = end.plusDays(1);
+//        }
+//        return columns;
+//    }
 
     private List<BPColumn> createTestColumns() {
         List<BPColumn> columns = new ArrayList<>();

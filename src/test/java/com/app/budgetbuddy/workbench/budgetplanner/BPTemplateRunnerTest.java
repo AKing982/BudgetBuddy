@@ -2,12 +2,33 @@ package com.app.budgetbuddy.workbench.budgetplanner;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.app.budgetbuddy.domain.BPColumn;
+import com.app.budgetbuddy.domain.BPColumnType;
+import com.app.budgetbuddy.domain.BPGridCell;
+import com.app.budgetbuddy.domain.BPGridRow;
+import com.app.budgetbuddy.domain.BPLayoutGrid;
+import com.app.budgetbuddy.domain.BPLayoutType;
+import com.app.budgetbuddy.domain.BPTemplate;
+import com.app.budgetbuddy.domain.BPTemplateDetail;
+import com.app.budgetbuddy.domain.BPTemplateType;
+import com.app.budgetbuddy.domain.BPType;
+import com.app.budgetbuddy.domain.DateRange;
+import com.app.budgetbuddy.domain.Period;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class BPTemplateRunnerTest {
@@ -21,6 +42,191 @@ class BPTemplateRunnerTest {
     @BeforeEach
     void setUp() {
     }
+
+//    @Test
+//    public void testSyncBPTemplate_whenSyncedTemplateIsEmpty_thenReturnThrowDataException(){
+//        Long templateId = 1L;
+//        Long userId = 1L;
+//
+//        BPTemplate expected = new BPTemplate();
+//        expected.setActive(true);
+//        expected.setBpTemplateDetail(createTestTemplateDetail());
+//        expected.setTemplateType(BPTemplateType.MONTHLY_STD);
+//
+//        when(bpTemplateGeneratorService.resyncTemplate(templateId, userId))
+//                .thenReturn(Optional.empty());
+//
+//        Optional<BPTemplate> actual = bpTemplateRunner.syncBPTemplate(templateId, userId);
+//        assertNotNull(actual);
+//        assertTrue(actual.isEmpty());
+//    }
+//
+//    @Test
+//    public void testRunFuturePointerTemplateBuild_whenTemplateDetailIdIsNull_thenThrowCatchExceptionAndReturnEmptyOptional(){
+//        DateRange pointerDateRange = new DateRange(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 6));
+//        Optional<BPTemplate> actual = bpTemplateRunner.runFuturePointerTemplateBuild(null, pointerDateRange);
+//        assertNotNull(actual);
+//        assertTrue(actual.isEmpty());
+//    }
+
+    private List<BPColumn> createTestColumns() {
+        List<BPColumn> columns = new ArrayList<>();
+
+        columns.add(BPColumn.builder()
+                .columnIndex(0)
+                .dateRange(new DateRange(
+                        LocalDate.of(2025, 1, 1),
+                        LocalDate.of(2025, 1, 31)))
+                .period(Period.MONTHLY)
+                .columnType(BPColumnType.ACTUAL)
+                .isHeader(false)
+                .build());
+
+        columns.add(BPColumn.builder()
+                .columnIndex(1)
+                .dateRange(new DateRange(
+                        LocalDate.of(2025, 2, 1),
+                        LocalDate.of(2025, 2, 28)))
+                .period(Period.MONTHLY)
+                .columnType(BPColumnType.ACTUAL)
+                .isHeader(false)
+                .build());
+
+        columns.add(BPColumn.builder()
+                .columnIndex(2)
+                .dateRange(new DateRange(
+                        LocalDate.of(2025, 3, 1),
+                        LocalDate.of(2025, 3, 31)))
+                .period(Period.MONTHLY)
+                .columnType(BPColumnType.ACTUAL)
+                .isHeader(false)
+                .build());
+
+        return columns;
+    }
+
+    private BPTemplateDetail createTestTemplateDetail() {
+        BPTemplateDetail templateDetail = new BPTemplateDetail();
+        templateDetail.setId(1L);
+        templateDetail.setTemplateId(1L);
+        templateDetail.setLayoutType(BPLayoutType.CLASSIC);
+        templateDetail.setLayoutGrid(createTestBPLayoutGrid());
+        return templateDetail;
+    }
+
+
+    private List<BPGridRow> createTestGridRows() {
+        return createTestGridRows(List.of());
+    }
+
+    private BPLayoutGrid createTestBPLayoutGrid() {
+        return new BPLayoutGrid(createTestColumns(), createTestGridRows());
+    }
+
+    private List<BPGridRow> createTestGridRows(List<BPGridCell> extraCells) {
+        List<BPGridRow> rows = new ArrayList<>();
+
+        // Income row
+        rows.add(new BPGridRow(
+                "Income",
+                BPType.INCOME,
+                withCells(List.of(
+                        new BPGridCell(0,
+                                new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)),
+                                new BigDecimal("5000.00"),
+                                new BigDecimal("5000.00"),
+                                BigDecimal.ZERO, true, false),
+                        new BPGridCell(1,
+                                new DateRange(LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 28)),
+                                new BigDecimal("5000.00"),
+                                new BigDecimal("5000.00"),
+                                BigDecimal.ZERO, false, true),
+                        new BPGridCell(2,
+                                new DateRange(LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31)),
+                                new BigDecimal("5200.00"),
+                                new BigDecimal("5000.00"),
+                                BigDecimal.ZERO, false, true)
+                ), extraCells)
+        ));
+
+        // Expenses row
+        rows.add(new BPGridRow(
+                "Expenses",
+                BPType.EXPENSE,
+                withCells(List.of(
+                        new BPGridCell(0,
+                                new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)),
+                                new BigDecimal("3200.00"),
+                                new BigDecimal("3500.00"),
+                                BigDecimal.ZERO, false, true),
+                        new BPGridCell(1,
+                                new DateRange(LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 28)),
+                                new BigDecimal("3600.00"),
+                                new BigDecimal("3500.00"),
+                                BigDecimal.ZERO, false, true),
+                        new BPGridCell(2,
+                                new DateRange(LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31)),
+                                new BigDecimal("3100.00"),
+                                new BigDecimal("3500.00"),
+                                BigDecimal.ZERO, false, true)
+                ), extraCells)
+        ));
+
+        // Balance row
+        rows.add(new BPGridRow(
+                "Balance",
+                BPType.BALANCE,
+                withCells(List.of(
+                        new BPGridCell(0,
+                                new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)),
+                                new BigDecimal("1800.00"),
+                                new BigDecimal("1500.00"),
+                                BigDecimal.ZERO, true, false),
+                        new BPGridCell(1,
+                                new DateRange(LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 28)),
+                                new BigDecimal("1400.00"),
+                                new BigDecimal("1500.00"),
+                                BigDecimal.ZERO, true, false),
+                        new BPGridCell(2,
+                                new DateRange(LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31)),
+                                new BigDecimal("2100.00"),
+                                new BigDecimal("1500.00"),
+                                BigDecimal.ZERO, true, false)
+                ), extraCells)
+        ));
+
+        // Savings row
+        rows.add(new BPGridRow(
+                "Savings",
+                BPType.BUDGET,
+                withCells(List.of(
+                        new BPGridCell(0,
+                                new DateRange(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)),
+                                new BigDecimal("500.00"),
+                                new BigDecimal("500.00"),
+                                BigDecimal.ZERO, false, true),
+                        new BPGridCell(1,
+                                new DateRange(LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 28)),
+                                new BigDecimal("300.00"),
+                                new BigDecimal("500.00"),
+                                BigDecimal.ZERO, false, true),
+                        new BPGridCell(2,
+                                new DateRange(LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31)),
+                                new BigDecimal("600.00"),
+                                new BigDecimal("500.00"),
+                                BigDecimal.ZERO, false, true)
+                ), extraCells)
+        ));
+
+        return rows;
+    }
+
+    private List<BPGridCell> withCells(List<BPGridCell> base, List<BPGridCell> extra) {
+        List<BPGridCell> cells = new ArrayList<>(base);
+        cells.addAll(extra);
+        return cells;
+    }
+
 
 
 

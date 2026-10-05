@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,6 +83,29 @@ public class BPTemplatePointerServiceImpl implements BPTemplatePointerService
         }catch(DataAccessException e){
             log.error("There was an error saving the budget template pointer", e);
             return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<BPTemplatePointer> findByTemplateDetailId(Long templateDetailId)
+    {
+        try
+        {
+            List<BPTemplatePointerEntity> entities = bpTemplatePointerRepository.findByBpTemplateDetailId(templateDetailId);
+            return entities.stream()
+                    .map(bpTemplatePointerEntity -> BPTemplatePointer.builder()
+                            .pointerMode(PointerMode.valueOf(bpTemplatePointerEntity.getPointerMode()))
+                            .templateDetailId(templateDetailId)
+                            .currentDateRange(DateRange.createDateRangeByStrings(bpTemplatePointerEntity.getRangeStartDate(), bpTemplatePointerEntity.getRangeEndDate()))
+                            .isUpdateEnabled(bpTemplatePointerEntity.isUpdateEnabled())
+                            .isLocked(bpTemplatePointerEntity.isLocked())
+                            .status(bpTemplatePointerEntity.getStatus())
+                            .build())
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the budget template pointer", e);
+            return Collections.emptyList();
         }
     }
 

@@ -13,4 +13,5 @@ public interface BPColumnService extends ServiceModel<BPColumnEntity>
     List<BPColumnEntity> saveColumns(List<BPColumn> columns, BPTemplateDetailEntity detail);
     void deleteColumnsByDetailEntity(BPTemplateDetailEntity detail);
     List<BPColumn> getColumnsLookupByFutureCriteriaAndTemplateId(Long templateDetailId, DateRange dateRanges);
+    List<BPColumn> getColumnsByTemplateDetailId(Long templateDetailId);
 }

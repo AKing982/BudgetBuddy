@@ -19,6 +19,18 @@ public class BPTemplatePointer
     private boolean isLocked;
     private String status;
 
+    public static BPTemplatePointer buildPointer(DateRange dateRange, Long templateDetailId, PointerMode pointerMode, boolean isUpdateEnabled, boolean isLocked, String status)
+    {
+        return BPTemplatePointer.builder()
+                .currentDateRange(dateRange)
+                .isLocked(isLocked)
+                .isUpdateEnabled(isUpdateEnabled)
+                .pointerMode(pointerMode)
+                .status(status)
+                .templateDetailId(templateDetailId)
+                .build();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

@@ -148,14 +148,86 @@ public class BPTemplatePointerBuilderService
         return Optional.empty();
     }
 
-    public Optional<BPTemplatePointer> resyncCurrentPointerOnNewCurrentPeriod(final BPTemplatePointer currentPointer, final LocalDate currentDate, final List<BPColumn> columns)
+    public Optional<BPTemplatePointer> resyncCurrentPointer(final BPTemplatePointer currentPointer, final LocalDate currentDate, final List<BPColumn> columns)
     {
-        return null;
+        try
+        {
+            if(currentPointer == null || currentDate == null)
+            {
+                throw new BPTemplatePointerException("Current Template Pointer or current date was found null");
+            }
+            DateRange currentPointerRange = currentPointer.getCurrentDateRange();
+            LocalDate currentPointerStart = currentPointerRange.getStartDate();
+            LocalDate currentPointerEnd = currentPointerRange.getEndDate();
+            DateRange nextDateRange = new DateRange();
+            Long templateDetailId = currentPointer.getTemplateDetailId();
+            PointerMode pointerMode = currentPointer.getPointerMode();
+            boolean isLocked = currentPointer.isLocked();
+            boolean isUpdateEnabled = currentPointer.isUpdateEnabled();
+            String status = currentPointer.getStatus();
+            BPTemplatePointer shiftedPointer = null;
+            if(currentPointerStart.isBefore(currentDate) && currentPointerEnd.isBefore(currentDate))
+            {
+                // Shift the current pointer to the next period using the bp columns
+                for(BPColumn column : columns)
+                {
+                    DateRange columnRange = column.getDateRange();
+                    if(columnRange.containsDate(currentDate))
+                    {
+                        nextDateRange = columnRange;
+                        break;
+                    }
+                }
+                shiftedPointer = BPTemplatePointer.buildPointer(nextDateRange, templateDetailId, pointerMode, isUpdateEnabled,isLocked, status);
+            }
+            else if(currentPointerStart.isAfter(currentDate) && currentPointerEnd.isAfter(currentDate))
+            {
+                throw new BPTemplatePointerException("Current Pointer was found after the current date.");
+            }
+            else
+            {
+                return Optional.of(currentPointer);
+            }
+            return Optional.of(shiftedPointer);
+        }catch(BPTemplatePointerException ex){
+            log.error("There was an error resyncing the current pointer to the current period: {}", ex.getMessage());
+            return Optional.empty();
+        }
     }
 
-    public Optional<BPTemplatePointer> resyncCurrentAndFuturePointersOnOverlap(final BPTemplatePointer currentPointer, final LocalDate currentDate, final BPTemplatePointer futurePointer, final List<BPColumn> columns)
+    //TODO: In the case that the current pointer and future pointer are in the same period, move the future pointer to the next period and let the current period point to the current pointer.
+    public Optional<PointerResync> resyncPointers(final BPTemplatePointer currentPointer, final LocalDate currentDate, final BPTemplatePointer futurePointer, final List<BPColumn> columns)
     {
-        return null;
+        try
+        {
+            if(currentPointer == null || futurePointer == null)
+            {
+                throw new BPTemplatePointerException("The current pointer was found null");
+            }
+            DateRange currentPointerRange = currentPointer.getCurrentDateRange();
+            DateRange futurePointerRange = futurePointer.getCurrentDateRange();
+            PointerResync pointerResync = null;
+            for(BPColumn column : columns)
+            {
+                DateRange columnRange = column.getDateRange();
+                if(columnRange.containsDate(currentDate) && columnRange.equals(currentPointerRange) && columnRange.equals(futurePointerRange))
+                {
+                    // Shift the future pointer ahead to the next period
+                    DateRange nextColumnDateRange = columns.get(column.getColumnIndex() + 1).getDateRange();
+                    futurePointer.setCurrentDateRange(nextColumnDateRange);
+                    pointerResync = new PointerResync(currentPointer, futurePointer, true);
+                    break;
+                }
+            }
+            if(pointerResync == null)
+            {
+                return Optional.empty();
+            }
+            return Optional.of(pointerResync);
+        }catch(BPTemplatePointerException ex){
+            log.error("There was an error resyncing the current and future pointers: " + ex.getMessage());
+            return Optional.empty();
+        }
     }
 
     private boolean isFutureShiftedRangeInColumns(List<BPColumn> columns, DateRange shiftedDateRange)

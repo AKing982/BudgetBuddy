@@ -19,6 +19,9 @@ public interface BPColumnRepository extends JpaRepository<BPColumnEntity, Long>
     @Query("SELECT bce FROM BPColumnEntity bce WHERE bce.bpTemplateDetail.id =:id AND bce.startDate >= :start AND bce.endDate <= :end")
     List<BPColumnEntity> findByBpTemplateDetailIdAndRange(@Param("id") Long templateDetailId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
+    @Query("SELECT bce FROM BPColumnEntity bce WHERE bce.bpTemplateDetail.id =:id")
+    List<BPColumnEntity> findByBpTemplateDetailId(@Param("id") Long id);
+
     @Modifying
     @Query("DELETE FROM BPColumnEntity bce WHERE bce.bpTemplateDetail.id =:id")
     void deleteByBpTemplateDetailId(@Param("id") Long id);

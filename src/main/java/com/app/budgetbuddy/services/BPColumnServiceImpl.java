@@ -144,4 +144,24 @@ public class BPColumnServiceImpl implements BPColumnService
             return Collections.emptyList();
         }
     }
+
+    @Override
+    @Transactional
+    public List<BPColumn> getColumnsByTemplateDetailId(Long templateDetailId)
+    {
+        try
+        {
+            List<BPColumnEntity> columnEntities = bpColumnRepository.findByBpTemplateDetailId(templateDetailId);
+            if(columnEntities == null || columnEntities.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+            return columnEntities.stream()
+                    .map(columnEntityToModelConverter::convert)
+                    .toList();
+        }catch(DataAccessException e){
+            log.error("There was an error retrieving the budget columns", e);
+            return Collections.emptyList();
+        }
+    }
 }
