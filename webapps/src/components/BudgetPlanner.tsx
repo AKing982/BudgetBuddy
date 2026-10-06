@@ -15,6 +15,7 @@ import BPCsvImportDialog from './BPCsvImportDialog';
 import Sidebar from './Sidebar';
 import ManualTemplateWizard from './ManualTemplateWizard';
 import BudgetPlannerService from '../services/BudgetPlannerService';
+import BPTemplatePointerService, {BPTemplatePointer} from "../services/BPTemplatePointerService";
 import type { BPTemplate, BudgetPlannerRequest, Period } from '../config/Types';
 
 import PlanningView from './PlanningView';
@@ -31,6 +32,7 @@ import type {
     SpreadsheetTemplate, SpreadsheetRow, MonthGroup,
     PeriodType, PeriodFilter,
 } from '../domain/SpreadsheetTypes';
+import {toIsoDate} from "../utils/CsvImport";
 
 // ── Backend mapping helpers ───────────────────────────────────────────────────
 function resolveRowType(bpType: string, category: string): SpreadsheetRow['rowType'] {
@@ -217,6 +219,11 @@ const TemplateSelector: React.FC<{
     </FormControl>
 );
 
+interface TemplatePointers {
+    current: BPTemplatePointer | null;
+    future:  BPTemplatePointer | null;
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 const BudgetPlanner: React.FC = () => {
     const [animateIn,      setAnimateIn]      = useState(false);
@@ -228,8 +235,10 @@ const BudgetPlanner: React.FC = () => {
     const [saveName,       setSaveName]       = useState('');
     const [syncing,        setSyncing]        = useState(false);
     const [openImport, setOpenImport] = useState(false);
+    const [pointers, setPointers] = useState<TemplatePointers>({current: null, future: null});
 
     const service = BudgetPlannerService.getInstance();
+    const pointerService = BPTemplatePointerService.getInstance();
 
     useEffect(() => { setTimeout(() => setAnimateIn(true), 100); }, []);
 
@@ -346,9 +355,19 @@ const BudgetPlanner: React.FC = () => {
         [service]);
 
     const handleSetFuturePointer = useCallback(async (req: SetFuturePointerRequest) => {
-        const updated: BPTemplate = await service.setFuturePointer(req);
-        setTemplates(prev => prev.map(t => t.id === selectedId ? mapBPTemplateToSpreadsheet(updated) : t));
-    }, [service, selectedId]);
+        const movedFuture = await pointerService.createFuturePointer({
+            currentPointerDate: toIsoDate(new Date()),
+            newPointerDate: req.newPointerDate,
+            templateDetailId: req.templateDetailId,
+        });
+        setPointers(prev => ({...prev, futurePointer: movedFuture}));
+        const userId = Number(sessionStorage.getItem('userId'));
+        const templateId = Number(selectedId);
+        if(userId && !isNaN(templateId)) {
+            const updated: BPTemplate = await service.resyncTemplate(templateId, userId);
+            setTemplates(prev => prev.map(t => t.id === selectedId ? mapBPTemplateToSpreadsheet(updated) : t));
+        }
+    }, [pointerService,service, selectedId]);
 
     return (
         <Box sx={{ maxWidth: 'calc(100% - 240px)', ml: '240px', minHeight: '100vh', background: BG }}>

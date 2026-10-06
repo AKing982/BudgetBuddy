@@ -15,6 +15,7 @@ import { MAROON, NAVY, SLATE } from '../domain/SpreadsheetTypes';
 import type { SpreadsheetTemplate } from '../domain/SpreadsheetTypes';
 import type { Period } from '../config/Types';
 import BudgetPlannerService from '../services/BudgetPlannerService';
+import {toIsoDate} from "../utils/CsvImport";
 
 const MAROON_DARK = '#4a1010';
 const AMBER = '#b45309';
@@ -34,8 +35,10 @@ export interface FuturePointerLookupRequest {
 export interface LookupDateRange { startDate: BackendDate; endDate: BackendDate }
 export type FuturePointerLookupResult = LookupDateRange[];
 
+export type MoveDirection = 'LATER' | 'EARLIER';
 export interface SetFuturePointerRequest extends FuturePointerLookupRequest {
-    // true when the lookup found no (or not enough) ranges and the user confirmed creating them
+    direction: MoveDirection;
+    newPointerDate: string;   // yyyy-mm-dd — where the pointer's new range starts
     createRanges: boolean;
 }
 
@@ -154,9 +157,15 @@ const FuturePointerDialog: React.FC<Props> = ({
     };
 
     const handleConfirm = async () => {
+        if (!target) return;
         setPhase('saving'); setError(null);
         try {
-            const req: SetFuturePointerRequest = { ...request(), createRanges: mustCreate };
+            const req: SetFuturePointerRequest = {
+                ...request(),
+                direction: 'LATER',
+                newPointerDate: toIsoDate(target),
+                createRanges: mustCreate,
+            };
             if (onSubmit) await onSubmit(req);
             else await service.setFuturePointer(req);
             reset(); onClose();
