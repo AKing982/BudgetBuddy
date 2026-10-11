@@ -21,7 +21,9 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -123,6 +125,37 @@ public class PlaidLinkTokenProcessor extends AbstractPlaidManager
                 .redirectUri(redirectUri)
                 .language("en");
     }
+
+    @Async("taskExecutor")
+    public CompletableFuture<LinkTokenCreateResponse> createUpdateModeLinkToken(String userId, String accessToken)
+    {
+        return CompletableFuture.supplyAsync(() -> {
+            LinkTokenCreateRequest request = new LinkTokenCreateRequest()
+                    .user(new LinkTokenCreateRequestUser().clientUserId(userId))
+                    .clientName("BudgetBuddy")
+                    .countryCodes(List.of(CountryCode.US))
+                    .language("en")
+                    .webhook("https://budgetbuddy.app/api/v1/plaid/webhook")
+                    .redirectUri(redirectUri)
+                    .products(Arrays.asList(Products.TRANSACTIONS, Products.INVESTMENTS))
+                    .accountFilters(createAccountFilters(createDepositoryFilter()))
+                    .transactions(createLinkTokenTransactions())
+                    .accessToken(accessToken);   // update mode; no .products()
+
+            try
+            {
+                Response<LinkTokenCreateResponse> response = plaidApi.linkTokenCreate(request).execute();
+                if(!response.isSuccessful() || response.body() == null)
+                {
+                    throw new RuntimeException("Update mode link token failed: " + response.errorBody().string());
+                }
+                return response.body();
+            }catch(IOException e){
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
 
     /**
      * Creates a link token scoped to investment accounts only.

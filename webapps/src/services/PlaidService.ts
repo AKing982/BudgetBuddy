@@ -227,6 +227,20 @@ class PlaidService {
         }
     }
 
+    async getPlaidLinksNeedingReauth(userId: number): Promise<number[]> {
+        const res = await axios.get(`${apiUrl}/plaid/${userId}/plaid/items/reauth-required`);
+        return res.data;
+    }
+
+    async createUpdateLinkToken(userId: number, plaidLinkId: number): Promise<string> {
+        const res = await axios.post(`${apiUrl}/plaid/${userId}/plaid/items/${plaidLinkId}/update-link-token`);
+        return res.data.linkToken;
+    }
+
+    async markPlaidLinkReconnected(userId: number, plaidLinkId: number): Promise<void> {
+        await axios.post(`${apiUrl}/plaid/${userId}/plaid/items/${plaidLinkId}/reconnected`);
+    }
+
     public async fetchLinkedInvestmentAccounts(userId: number): Promise<PlaidAccount[]> {
         const accounts = await this.fetchAndLinkPlaidAccounts(userId);
         if (!accounts) return [];

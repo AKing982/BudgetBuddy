@@ -19,7 +19,6 @@ import java.util.*;
 @Slf4j
 public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsService<SubBudget>
 {
-    private TreeMap<Integer, List<SubBudget>> yearlySubBudgets = new TreeMap<>();
     private SubBudgetService subBudgetService;
     private BudgetHealthService<SubBudget> subBudgetBudgetHealthService;
 
@@ -107,6 +106,7 @@ public class SubBudgetStatisticsServiceImpl extends AbstractBudgetStatisticsServ
         }
     }
 
+    //TODO: Reimplement logic to calculate actual budgeted for the month based on estimated income, what was spent, saved, remaining, total bills, total recurring (optional) and total bucket plans
     @Override
     public List<BudgetStats> getBudgetStats(SubBudget subBudget)
     {

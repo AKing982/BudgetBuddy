@@ -21,6 +21,7 @@ import NewPortfolioDialog from './NewPortfolioDialog';
 import ContributionsPanel from './ContributionsPanel';
 import MoneyFlowSummary from './MoneyFlowSummary';
 import PlaidService from '../services/PlaidService';
+import ReconnectPlaidButton from "./ReconnectPlaidButton";
 import {
     MAROON,
     InvestmentAccount,
@@ -76,6 +77,7 @@ const InvestmentsPage: React.FC = () => {
     const [newPortfolioOpen, setNewPortfolioOpen] = useState(false);
     const [loadingPlaidData, setLoadingPlaidData] = useState(false);
     const [plaidLoadError, setPlaidLoadError] = useState<string | null>(null);
+    const [plaidLinkNeedsReauth, setPlaidLinkNeedsReauth] = useState<number[]>([]);
     const [hasLoadedRealData, setHasLoadedRealData] = useState(false);
     const userId = Number(sessionStorage.getItem('userId'));
 
@@ -98,6 +100,13 @@ const InvestmentsPage: React.FC = () => {
             const now = new Date();
             const startDate = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
             const endDate = now.toISOString().split('T')[0];
+            try {
+                const ids = await plaidService.getPlaidLinksNeedingReauth(userId);
+                console.log('Plaid links needing reauth:', ids);
+                setPlaidLinkNeedsReauth(ids);
+            }catch(e){
+                console.error('Could not check plaid link status: ', e)
+            }
 
             // Safety net: AddAccountButton already imports holdings/transactions
             // right after linking, but that import can fail silently (its own
@@ -291,6 +300,12 @@ const InvestmentsPage: React.FC = () => {
                         {plaidLoadError}
                     </Alert>
                 )}
+                {plaidLinkNeedsReauth.map(plaidLinkId => (
+                    <Alert key={plaidLinkId} severity="error" sx={{ mb: 2.5, borderRadius: '10px', fontSize: '0.8rem' }}
+                           action={<ReconnectPlaidButton userId={userId} plaidLinkId={plaidLinkId} onReconnected={loadInvestmentDataFromDb} />}>
+                        Your bank connection expired, so the data below may be out of date. Reconnect to resume syncing.
+                    </Alert>
+                ))}
 
                 {/* ── Summary strip ──────────────────────────────────────────── */}
                 <Grow in={animateIn} timeout={600}>

@@ -31,6 +31,18 @@ public class BudgetStatisticsEntity
     @NotNull
     private BigDecimal totalSpent;
 
+    @Column(name="total_bills")
+    private BigDecimal totalBills;
+
+    @Column(name="total_recurring")
+    private BigDecimal totalRecurring;
+
+    @Column(name="bucket_plans")
+    private BigDecimal bucketPlans;
+
+    @Column(name="income_days_left")
+    private Integer incomeDaysLeft;
+
     @Column(name="averageSpendingPerDay")
     @NotNull
     private BigDecimal averageSpendingPerDay;

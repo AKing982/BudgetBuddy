@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -110,6 +111,13 @@ public class PlaidInvestmentRunner
             }
             CompletableFuture<InvestmentsTransactionsGetResponse> investmentsGetResponse = plaidInvestmentManager.getAsyncInvestmentTransactionsResponse(userId, accessToken, startDate, endDate);
             InvestmentsTransactionsGetResponse transactionsResponse = investmentsGetResponse.join();
+            log.info("Plaid returned {} of {} investment transactions, earliest date: {}",
+                    transactionsResponse.getInvestmentTransactions().size(),
+                    transactionsResponse.getTotalInvestmentTransactions(),
+                    transactionsResponse.getInvestmentTransactions().stream()
+                            .map(InvestmentTransaction::getDate)
+                            .min(Comparator.naturalOrder())
+                            .orElse(null));
             List<InvestmentTransaction> investmentTransactions = transactionsResponse.getInvestmentTransactions();
             return investmentTransactions.stream()
                     .map(investmentTransactionsConverter::convert)

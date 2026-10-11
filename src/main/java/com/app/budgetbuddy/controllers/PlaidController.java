@@ -37,6 +37,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.CompletionException;
 
 @RestController
 @RequestMapping(value="/api/plaid")
@@ -134,7 +135,7 @@ public class PlaidController
         {
             List<AccountEntity> investmentAccounts = accountRepository.findByUserId(userId)
                     .stream()
-                    .filter(e -> e.getOfficialName().equalsIgnoreCase("Fidelity"))
+                    .filter(e -> e.getOfficialName().equalsIgnoreCase("Fidelity") || e.getOfficialName().equalsIgnoreCase("Investment"))
                     .toList();
             return ResponseEntity.status(200).body(investmentAccounts);
 
@@ -379,6 +380,67 @@ public class PlaidController
             log.error("There was an error getting the transactions", e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/{userId}/plaid/items/reauth-required")
+    public ResponseEntity<List<Long>> itemsNeedingReauth(@PathVariable Long userId)
+    {
+        try
+        {
+            List<Long> plaidLinkIds = plaidLinkService.findPlaidLinkByUserID(userId)
+                    .stream()
+                    .filter(PlaidLinkEntity::isRequiresUpdate)
+                    .map(PlaidLinkEntity::getId)
+                    .toList();
+            return ResponseEntity.status(200).body(plaidLinkIds);
+        }catch(DataException ex){
+            log.error("There was an error fetching the user plaid items needing reauth: {}", ex.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/{userId}/plaid/items/{plaidLinkId}/update-link-token")
+    public ResponseEntity<?> createUpdateLinkToken(@PathVariable Long userId, @PathVariable Long plaidLinkId)
+    {
+        Optional<PlaidLinkEntity> plaidLink = findUserPlaidLink(userId, plaidLinkId);
+        if(plaidLink.isEmpty())
+        {
+            return ResponseEntity.notFound().build();
+        }
+        try
+        {
+            LinkTokenCreateResponse response = plaidLinkTokenProcessor
+                    .createUpdateModeLinkToken(String.valueOf(userId), plaidLink.get().getAccessToken())
+                    .join();
+            return ResponseEntity.status(201).body(Map.of("linkToken", response.getLinkToken()));
+        }catch(CompletionException ex){
+            log.error("There was an error fetching the user plaid items needing reauth: {}", ex.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/{userId}/plaid/items/{plaidLinkId}/reconnected")
+    public ResponseEntity<Void> markPlaidLinkReconnected(@PathVariable Long userId, @PathVariable Long plaidLinkId)
+    {
+        Optional<PlaidLinkEntity> plaidLink = findUserPlaidLink(userId, plaidLinkId);
+        if(plaidLink.isEmpty())
+        {
+            return ResponseEntity.notFound().build();
+        }
+        PlaidLinkEntity plaidLinkEntity = plaidLink.get();
+        plaidLinkEntity.setRequiresUpdate(false);
+        plaidLinkService.save(plaidLinkEntity);
+        log.info("Plaid link {} for user {} reconnected via update mode", plaidLinkId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+
+    private Optional<PlaidLinkEntity> findUserPlaidLink(Long userId, Long plaidLinkId)
+    {
+        return plaidLinkService.findPlaidLinkByUserID(userId)
+                .stream()
+                .filter(link -> link.getId().equals(plaidLinkId))
+                .findFirst();
     }
 
     @GetMapping("/{userId}/investment-transactions")

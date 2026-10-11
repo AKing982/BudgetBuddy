@@ -69,6 +69,12 @@ public class PlaidInvestmentManager extends AbstractPlaidManager
         }
         else
         {
+            String errorBody = investmentHoldingsResponse.errorBody() != null ? investmentHoldingsResponse.errorBody().string() : "";
+            if(errorBody.contains("ITEM_LOGIN_REQUIRED"))
+            {
+                markLinkNeedsReauth(userId, accessToken);
+                return CompletableFuture.failedFuture(new RuntimeException("ITEM_LOGIN_REQUIRED: re-authentication needed for investment holdings"));
+            }
             int attempts = 0;
             while(attempts < MAX_ATTEMPTS)
             {
@@ -81,7 +87,6 @@ public class PlaidInvestmentManager extends AbstractPlaidManager
                     }
                     else
                     {
-                        attempts++;
                         if(attempts == MAX_ATTEMPTS)
                         {
                             log.error("There was an error fetching investment holdings: {}", investmentHoldingsResponse2.errorBody().string());
@@ -108,6 +113,12 @@ public class PlaidInvestmentManager extends AbstractPlaidManager
         }
         else
         {
+            String errorBody = investmentsTransactionsResponse.errorBody() != null ? investmentsTransactionsResponse.errorBody().string() : "";
+            if(errorBody.contains("ITEM_LOGIN_REQUIRED"))
+            {
+                markLinkNeedsReauth(userId, accessToken);
+                return CompletableFuture.failedFuture(new RuntimeException("ITEM_LOGIN_REQUIRED: re-authentication needed for investment transactions"));
+            }
             int attempts = 0;
             while(attempts < MAX_ATTEMPTS)
             {
@@ -133,5 +144,17 @@ public class PlaidInvestmentManager extends AbstractPlaidManager
             }
         }
         return CompletableFuture.failedFuture(new RuntimeException("There was an error getting the investment transactions response"));
+    }
+
+    private void markLinkNeedsReauth(Long userId, String accessToken)
+    {
+        plaidLinkService.findPlaidLinkByUserID(userId)
+                .stream()
+                .filter(link -> accessToken.equals(link.getAccessToken()))
+                .findFirst()
+                .ifPresent(link -> {
+                    log.warn("Plaid link {} for user {} requires re-authentication", link.getId(), userId);
+                    plaidLinkService.markPlaidAsNeedingUpdate(userId, link.getId());
+                });
     }
 }
