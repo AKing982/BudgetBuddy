@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -53,6 +54,11 @@ public class PayPeriodStatisticsQueryService
     public List<IncomeCategory> loadIncomes(Long subBudgetId, LocalDate startDate, LocalDate endDate)
     {
         return null;
+    }
+
+    public Integer loadDaysLeftTillNextIncome(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        return 0;
     }
 
 }
