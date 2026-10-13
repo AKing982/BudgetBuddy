@@ -1,6 +1,6 @@
 package com.app.budgetbuddy.workbench.budget;
 
-import com.app.budgetbuddy.domain.PayPeriodStatistics;
+import com.app.budgetbuddy.domain.*;
 import com.app.budgetbuddy.exceptions.DataException;
 import com.app.budgetbuddy.services.PayPeriodStatisticsService;
 import jakarta.persistence.EntityManager;
@@ -30,22 +30,29 @@ public class PayPeriodStatisticsQueryService
         this.entityManager = entityManager;
     }
 
-    public List<PayPeriodStatistics> loadPayPeriodStatistics(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    public List<ExpenseCategory> loadExpenseBills(Long subBudgetId, LocalDate startDate, LocalDate endDate)
     {
-        try
-        {
-            if(subBudgetId == null || startDate == null || endDate == null)
-            {
-                throw new DataException("subBudgetId or start date cannot be null");
-            }
-        }catch(DataException e){
-            log.error("Error loading pay period statistics: ", e);
-            return Collections.emptyList();
-        }
         return null;
     }
 
+    public List<ExpenseCategory> loadExpenses(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        return null;
+    }
 
+    public List<SavingsCategory> loadSavings(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        return null;
+    }
 
+    public List<RecurringCategory> loadRecurring(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        return null;
+    }
+
+    public List<IncomeCategory> loadIncomes(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    {
+        return null;
+    }
 
 }

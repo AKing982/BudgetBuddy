@@ -18,17 +18,17 @@ public class IncomeCategory
     private BigDecimal budgetedIncome;
     private BigDecimal actualBudgetedIncome;
     private BigDecimal remainingIncome;
-    private LocalDate startMonth;
-    private LocalDate endMonth;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private boolean isActive;
 
-    public IncomeCategory(BigDecimal budgetedIncome, BigDecimal actualBudgetedIncome, BigDecimal remainingIncome, LocalDate startMonth, LocalDate endMonth, boolean isActive)
+    public IncomeCategory(BigDecimal budgetedIncome, BigDecimal actualBudgetedIncome, BigDecimal remainingIncome, LocalDate startDate, LocalDate endDate, boolean isActive)
     {
         this.budgetedIncome = budgetedIncome;
         this.actualBudgetedIncome = actualBudgetedIncome;
         this.remainingIncome = remainingIncome;
-        this.startMonth = startMonth;
-        this.endMonth = endMonth;
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.isActive = isActive;
     }
 }

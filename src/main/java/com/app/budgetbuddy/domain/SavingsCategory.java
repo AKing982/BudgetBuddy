@@ -1,9 +1,6 @@
 package com.app.budgetbuddy.domain;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,6 +8,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
+@Builder
 public class SavingsCategory
 {
     private final String categoryName = "Savings Category";
@@ -28,5 +26,17 @@ public class SavingsCategory
         this.isActive = isActive;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    public static SavingsCategory create(BigDecimal budgeted, BigDecimal saved,  boolean isActive, LocalDate startDate, LocalDate endDate)
+    {
+        return SavingsCategory.builder()
+                .budgetedSavingsTarget(budgeted)
+                .actualSavedAmount(saved)
+                .remainingToSave(budgeted.subtract(saved))
+                .isActive(isActive)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
     }
 }
