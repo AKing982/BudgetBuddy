@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -31,22 +30,22 @@ public class PayPeriodStatisticsQueryService
         this.entityManager = entityManager;
     }
 
-    public List<ExpenseCategory> loadExpenseBills(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    public List<ExpenseCategory> loadExpenses(final Long subBudgetId, final LocalDate startDate, final LocalDate endDate)
     {
+        try
+        {
+            if(subBudgetId == null || startDate == null || endDate == null)
+            {
+                throw new DataException("Invalid parameters provided to loadExpenses");
+            }
+        }catch(DataException e){
+            log.error("Error loading expenses for subBudgetId {} between {} and {}: {}", subBudgetId, startDate, endDate, e.getMessage(), e);
+            return Collections.emptyList();
+        }
         return null;
     }
 
-    public List<ExpenseCategory> loadExpenses(Long subBudgetId, LocalDate startDate, LocalDate endDate)
-    {
-        return null;
-    }
-
-    public List<SavingsCategory> loadSavings(Long subBudgetId, LocalDate startDate, LocalDate endDate)
-    {
-        return null;
-    }
-
-    public List<RecurringCategory> loadRecurring(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    public List<RecurringCategory> loadRecurring(Long subBudgetId, LocalDate startDate, LocalDate endDate, RecurringType recurringType)
     {
         return null;
     }

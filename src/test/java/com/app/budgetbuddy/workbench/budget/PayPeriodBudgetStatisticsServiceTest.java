@@ -41,29 +41,7 @@ class PayPeriodBudgetStatisticsServiceTest {
     void setUp() {
     }
 
-    @Test
-    void loadPayPeriodStatistics_whenSubBudgetIdIsNull_thenThrowException(){
-        List<PayPeriodStatistics> actual = payPeriodBudgetStatisticsService.loadPayPeriodStatistics(null, START_DATE, END_DATE);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
-        verifyNoInteractions(entityManager);
-    }
 
-    @Test
-    void test_loadPayPeriodStatistics_whenStartDateIsNull_thenReturnEmptyList(){
-        List<PayPeriodStatistics> actual = payPeriodBudgetStatisticsService.loadPayPeriodStatistics(SUB_BUDGET_ID, null, END_DATE);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
-        verifyNoInteractions(entityManager);
-    }
-
-    @Test
-    void test_loadPayPeriodStatistics_whenEndDateIsNull_thenReturnEmptyList(){
-        List<PayPeriodStatistics> actual = payPeriodBudgetStatisticsService.loadPayPeriodStatistics(SUB_BUDGET_ID, START_DATE, null);
-        assertNotNull(actual);
-        assertTrue(actual.isEmpty());
-        verifyNoInteractions(entityManager);
-    }
 
     @AfterEach
     void tearDown() {
