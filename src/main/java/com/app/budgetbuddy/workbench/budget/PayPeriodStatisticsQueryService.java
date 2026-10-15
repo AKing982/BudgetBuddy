@@ -9,9 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -30,34 +32,189 @@ public class PayPeriodStatisticsQueryService
         this.entityManager = entityManager;
     }
 
-    public List<ExpenseCategory> loadExpenses(final Long subBudgetId, final LocalDate startDate, final LocalDate endDate)
+    public List<ExpenseCategory> loadExpenses(final Long userId, final LocalDate startDate, final LocalDate endDate)
     {
         try
         {
-            if(subBudgetId == null || startDate == null || endDate == null)
+            if(startDate == null || endDate == null)
             {
                 throw new DataException("Invalid parameters provided to loadExpenses");
             }
+            final String[] expenseList = new String[]{"Gas", "Groceries", "Order Out", "Other"};
+            final String expenseQuery = PayPeriodStatisticsQueryUtil.buildExpenseQuery();
+            List<Object[]> results = PayPeriodStatisticsQueryUtil.executeExpenseQuery(expenseList, expenseQuery, userId, startDate, endDate, entityManager);
+            if(results == null || results.isEmpty())
+            {
+                log.error("No Expense Categories found between {} and {} for userID {}", startDate, endDate, userId);
+                return Collections.emptyList();
+            }
+            return PayPeriodStatisticsQueryUtil.buildExpenseCategories(results,startDate, endDate);
+
         }catch(DataException e){
-            log.error("Error loading expenses for subBudgetId {} between {} and {}: {}", subBudgetId, startDate, endDate, e.getMessage(), e);
+            log.error("Error loading expenses for subBudgetId {} between {} and {}: {}", startDate, endDate, e.getMessage(), e);
             return Collections.emptyList();
+        }
+    }
+
+    public List<RecurringCategory> loadRecurring(final Long userID, final LocalDate startDate, final LocalDate endDate, final RecurringType recurringType)
+    {
+        try
+        {
+            if(userID == null || startDate == null || endDate == null || recurringType == null)
+            {
+                throw new DataException("Invalid Parameters provided to fetch recurring categories");
+            }
+            String recurringQuery = buildRecurringQuery();
+            List<Object[]> results = executeRecurringQuery(recurringQuery, userID, startDate, endDate, recurringType);
+            if(results == null || results.isEmpty())
+            {
+                log.error("No Recurring Categories found for userId {} between {} and {} for recurring type {}", userID, startDate, endDate, recurringType);
+                return Collections.emptyList();
+            }
+            return buildRecurringCategories(results);
+
+        }catch(DataException ex){
+            log.error("Error loading recurring categories for userID {} between {} and {} for recurring type {}: {}", userID, startDate, endDate, recurringType, ex.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    public List<BucketPlans> loadBucketPlans(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        return null;
+    }
+
+    public List<IncomeCategory> loadIncomes(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            if(userId == null || startDate == null || endDate == null)
+            {
+                throw new DataException("Invalid Parameters provided to fetch income categories");
+            }
+            final String incomeQuery = buildIncomeQuery();
+            List<Object[]> results = entityManager.createQuery(incomeQuery, Object[].class)
+                    .setParameter("userId", userId)
+                    .setParameter("startDate", startDate)
+                    .setParameter("endDate", endDate)
+                    .getResultList();
+            return results.stream()
+                    .filter(Objects::nonNull)
+                    .map(result -> {
+                        BigDecimal actual = (BigDecimal) result[1];
+                        IncomeCategory incomeCategory = new IncomeCategory();
+                        incomeCategory.setActive(true);
+                        incomeCategory.setActualBudgetedIncome(actual);
+                        incomeCategory.setStartDate(startDate);
+                        incomeCategory.setEndDate(endDate);
+                        return incomeCategory;
+                    })
+                    .distinct()
+                    .toList();
+        }catch(DataException ex){
+            log.error("Error loading income categories for userId {} between {} and {}", userId, startDate, endDate);
+            return Collections.emptyList();
+        }
+    }
+
+    public Integer loadDaysLeftTillNextIncomeDate(Long userId, LocalDate startDate, LocalDate endDate)
+    {
+        try
+        {
+            if(userId == null || startDate == null || endDate == null)
+            {
+                throw new DataException("Invalid Parameters provided to fetch days till next income: ");
+            }
+//            final String query = """
+//                    SELECT *
+//                    FROM RecurringTransactionEntity rt
+//                    WHERE rt.userId =:userId AND (t.lastDate BETWEEN :startDate AND :endDate)
+//                    AND
+//                    """;
+        }catch(DataException ex)
+        {
+            log.error("Error loading days till next income: ");
+            return 0;
         }
         return null;
     }
 
-    public List<RecurringCategory> loadRecurring(Long subBudgetId, LocalDate startDate, LocalDate endDate, RecurringType recurringType)
+    private String buildIncomeQuery()
     {
-        return null;
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT tc.matchedCategory, SUM(ABS(t.amount)) ");
+        sb.append("FROM TransactionCategoryEntity tc ");
+        sb.append("INNER JOIN Transactions t ");
+        sb.append(" ON tc.transaction_id = t.transactionId ");
+        sb.append("INNER JOIN AccountsEntity a ");
+        sb.append(" ON t.acctId = a.acctId ");
+        sb.append("WHERE a.user.userId = :userID AND (t.posted BETWEEN :startDate AND :endDate)");
+        sb.append("AND tc.matchedCategory = 'Income'");
+        sb.append("GROUP BY tc.matchedCategory DESC");
+        return sb.toString();
     }
 
-    public List<IncomeCategory> loadIncomes(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    private List<RecurringCategory> buildRecurringCategories(List<Object[]> results)
     {
-        return null;
+        return results.stream()
+                .filter(Objects::nonNull)
+                .map(result -> {
+                    String primaryCategory = (String) result[0];
+                    BigDecimal actual = (BigDecimal) result[1];
+                    LocalDate firstDate = (LocalDate) result[2];
+                    LocalDate lastDate = (LocalDate) result[3];
+                    boolean isActive = (boolean) result[4];
+                    RecurringCategory recurringCategory = new RecurringCategory();
+                    recurringCategory.setActive(isActive);
+                    recurringCategory.setCategoryName(primaryCategory);
+                    recurringCategory.setFirstDate(firstDate);
+                    recurringCategory.setLastDate(lastDate);
+                    recurringCategory.setMinAmount(actual);
+                    return recurringCategory;
+                })
+                .distinct()
+                .toList();
     }
 
-    public Integer loadDaysLeftTillNextIncome(Long subBudgetId, LocalDate startDate, LocalDate endDate)
+    private List<Object[]> executeRecurringQuery(String query, Long userId, LocalDate startDate, LocalDate endDate, RecurringType recurringType)
     {
-        return 0;
+        return entityManager.createQuery(query, Object[].class)
+                .setParameter("userID", userId)
+                .setParameter("startDate", startDate)
+                .setParameter("recurringType", recurringType)
+                .setParameter("endDate", endDate)
+                .getResultList();
+    }
+
+    private String buildRecurringQuery()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ")
+                .append("CASE ")
+                .append("WHEN rt.primaryCategory IS NOT NULL THEN rt.primaryCategory ")
+                .append("ELSE rt.secondaryCategory ")
+                .append("END AS category, ")
+                .append("SUM(ABS(rt.lastAmount)) AS totalAmount, ")
+                .append("rt.firstDate AS firstDate, ")
+                .append("rt.lastDate AS lastPosting, ")
+                .append("rt.active ")
+                .append("FROM RecurringTransactionEntity rt ")
+                .append("WHERE rt.user.userId = :userID ")
+                .append("AND rt.lastDate BETWEEN :startDate AND :endDate ")
+                .append("AND rt.type = :recurringType ")
+                .append("AND ( ")
+                .append("rt.primaryCategory IN ('Electric', 'Utilities', 'Rent', 'Gas Bill', 'Insurance') ")
+                .append("OR rt.primaryCategory NOT IN ('Electric', 'Utilities', 'Gas Bill', 'Insurance') ")
+                .append(") ")
+                .append("GROUP BY ")
+                .append("CASE ")
+                .append("WHEN rt.primaryCategory IS NOT NULL THEN rt.primaryCategory ")
+                .append("ELSE rt.secondaryCategory ")
+                .append("END, ")
+                .append("rt.lastDate, ")
+                .append("rt.active");
+
+        return sb.toString();
     }
 
 }

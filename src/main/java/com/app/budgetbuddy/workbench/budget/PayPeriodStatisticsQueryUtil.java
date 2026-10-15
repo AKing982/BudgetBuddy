@@ -1,0 +1,55 @@
+package com.app.budgetbuddy.workbench.budget;
+
+import com.app.budgetbuddy.domain.ExpenseCategory;
+import jakarta.persistence.EntityManager;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+public class PayPeriodStatisticsQueryUtil
+{
+    public static List<ExpenseCategory> buildExpenseCategories(List<Object[]> resultList, LocalDate startDate, LocalDate endDate)
+    {
+        return resultList.stream()
+                .map(result -> {
+                    String matchedCategory = (String) result[0];
+                    BigDecimal actual = (BigDecimal) result[1];
+                    ExpenseCategory expenseCategory = new ExpenseCategory();
+                    expenseCategory.setActive(true);
+                    expenseCategory.setActualExpenses(actual);
+                    expenseCategory.setCategory(matchedCategory);
+                    expenseCategory.setStartDate(startDate);
+                    expenseCategory.setEndDate(endDate);
+                    expenseCategory.setVariable(true);
+                    return expenseCategory;
+                })
+                .distinct()
+                .toList();
+    }
+
+    public static List<Object[]> executeExpenseQuery(String[] expenseList, String query, Long userId, LocalDate startDate, LocalDate endDate, EntityManager entityManager)
+    {
+        return entityManager.createQuery(query, Object[].class)
+                .setParameter("userId", userId)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDate)
+                .setParameter("expenseList", expenseList)
+                .getResultList();
+    }
+
+    public static String buildExpenseQuery()
+    {
+        return """
+                    SELECT tc.matchedCategory, SUM(ABS(t.amount))
+                    FROM TransactionCategoryEntity tc
+                    INNER JOIN Transactions t
+                        ON tc.transaction_id = t.transactionId
+                    INNER JOIN Accounts a
+                        ON t.acctId = a.acctId
+                    WHERE (t.posted BETWEEN :startDate AND :endDate)
+                        AND (t.matchedCategory IN (:expenseList)) AND a.userId :userId
+                    GROUP BY t.amount DESC
+                    """;
+    }
+}
